@@ -31,7 +31,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def symbol: Symbol = null //!!!OPT!!! symbol is about 3% of hot compile times -- megamorphic dispatch?
     def symbol_=(sym: Symbol) { throw new UnsupportedOperationException("symbol_= inapplicable for " + this) }
     def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
-    def hasSymbol = false
+    def hasSymbolField = false
+    @deprecated("Use hasSymbolField", "2.11.0") def hasSymbol = hasSymbolField
 
     def isDef = false
 
@@ -62,7 +63,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     private[scala] def copyAttrs(tree: Tree): this.type = {
       rawatt = tree.rawatt
       tpe = tree.tpe
-      if (hasSymbol) symbol = tree.symbol
+      if (hasSymbolField) symbol = tree.symbol
       this
     }
 
@@ -210,7 +211,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   trait TypTree extends Tree with TypTreeApi
 
   abstract class SymTree extends Tree with SymTreeContextApi {
-    override def hasSymbol = true
+    override def hasSymbolField = true
     override var symbol: Symbol = NoSymbol
   }
 
@@ -1412,7 +1413,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       }
 
       if (tree.tpe ne null) tree.tpe = symSubst(tree.tpe)
-      if (tree.hasSymbol) {
+      if (tree.hasSymbolField) {
         subst(from, to)
         tree match {
           case Ident(name0) if tree.symbol != NoSymbol =>

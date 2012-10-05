@@ -53,7 +53,7 @@ trait Typers extends Modes with Adaptations with Tags {
   object UnTyper extends Traverser {
     override def traverse(tree: Tree) = {
       if (tree != EmptyTree) tree.tpe = null
-      if (tree.hasSymbol) tree.symbol = NoSymbol
+      if (tree.hasSymbolField) tree.symbol = NoSymbol
       super.traverse(tree)
     }
   }
@@ -242,7 +242,7 @@ trait Typers extends Modes with Adaptations with Tags {
      *  of its symbol was not volatile?
      */
     protected def isStableExceptVolatile(tree: Tree) = {
-      tree.hasSymbol && tree.symbol != NoSymbol && tree.tpe.isVolatile &&
+      tree.hasSymbolField && tree.symbol != NoSymbol && tree.tpe.isVolatile &&
       { val savedTpe = tree.symbol.info
         val savedSTABLE = tree.symbol getFlag STABLE
         tree.symbol setInfo AnyRefClass.tpe
@@ -915,7 +915,7 @@ trait Typers extends Modes with Adaptations with Tags {
           // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
           // tree setType tree.tpe.normalize
           tree
-        } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && !inHKMode(mode) &&
+        } else if (tree.hasSymbolField && !tree.symbol.typeParams.isEmpty && !inHKMode(mode) &&
           !(tree.symbol.isJavaDefined && context.unit.isJava)) { // (7)
           // @M When not typing a higher-kinded type ((mode & HKmode) == 0)
           // or raw type (tree.symbol.isJavaDefined && context.unit.isJava), types must be of kind *,
@@ -923,7 +923,7 @@ trait Typers extends Modes with Adaptations with Tags {
           // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
           MissingTypeParametersError(tree)
         } else if ( // (7.1) @M: check kind-arity
-        // @M: removed check for tree.hasSymbol and replace tree.symbol by tree.tpe.symbol (TypeTree's must also be checked here, and they don't directly have a symbol)
+        // @M: removed check for tree.hasSymbolField and replace tree.symbol by tree.tpe.symbol (TypeTree's must also be checked here, and they don't directly have a symbol)
         (inHKMode(mode)) &&
           // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
           // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
@@ -1457,7 +1457,7 @@ trait Typers extends Modes with Adaptations with Tags {
         // Determine
         //  - supertparams: Missing type parameters from supertype
         //  - supertpe: Given supertype, polymorphic in supertparams
-        val supertparams = if (supertpt.hasSymbol) supertpt.symbol.typeParams else List()
+        val supertparams = if (supertpt.hasSymbolField) supertpt.symbol.typeParams else List()
         var supertpe = supertpt.tpe
         if (!supertparams.isEmpty)
           supertpe = PolyType(supertparams, appliedType(supertpe, supertparams map (_.tpeHK)))
@@ -2896,7 +2896,7 @@ trait Typers extends Modes with Adaptations with Tags {
       def duplErrorTree(err: AbsTypeError) = { issue(err); duplErrTree }
 
       def preSelectOverloaded(fun: Tree): Tree = {
-        if (fun.hasSymbol && fun.symbol.isOverloaded) {
+        if (fun.hasSymbolField && fun.symbol.isOverloaded) {
           // remove alternatives with wrong number of parameters without looking at types.
           // less expensive than including them in inferMethodAlternative (see below).
           def shapeType(arg: Tree): Type = arg match {
@@ -3297,12 +3297,13 @@ trait Typers extends Modes with Adaptations with Tags {
       // println(util.Position.formatMessage(uncheckedPattern.pos, "made unchecked type test into a checked one", true))
 
       val args = List(uncheckedPattern)
+      val app  = atPos(uncheckedPattern.pos)(Apply(classTagExtractor, args))
       // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
       // and re-typechecks of the target of the unapply call in PATTERNmode,
       // this breaks down when the classTagExtractor (which defineds the unapply member) is not a simple reference to an object,
       // but an arbitrary tree as is the case here
-      doTypedUnapply(Apply(classTagExtractor, args), classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
-      }
+      doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
+    }
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
@@ -4199,7 +4200,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val tpt1 = {
           val tpt0 = typedTypeConstructor(tpt)
           if (checkStablePrefixClassType(tpt0))
-            if (tpt0.hasSymbol && !tpt0.symbol.typeParams.isEmpty) {
+            if (tpt0.hasSymbolField && !tpt0.symbol.typeParams.isEmpty) {
               context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
               notifyUndetparamsAdded(context.undetparams)
               TypeTree().setOriginal(tpt0)
@@ -4411,12 +4412,12 @@ trait Typers extends Modes with Adaptations with Tags {
                 else doTypedApply(tree, fun2, args, mode, pt)
 
             /*
-              if (fun2.hasSymbol && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
+              if (fun2.hasSymbolField && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
                 res.tpe = res.tpe.notNull
               }
               */
               // TODO: In theory we should be able to call:
-              //if (fun2.hasSymbol && fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass) {
+              //if (fun2.hasSymbolField && fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass) {
               // But this causes cyclic reference for Array class in Cleanup. It is easy to overcome this
               // by calling ArrayClass.info here (or some other place before specialize).
               if (fun2.symbol == Array_apply && !res.isErrorTyped) {
@@ -5022,7 +5023,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
         if (tpt1.isErrorTyped) {
           tpt1
-        } else if (!tpt1.hasSymbol) {
+        } else if (!tpt1.hasSymbolField) {
           AppliedTypeNoParametersError(tree, tpt1.tpe)
         } else {
           val tparams = tpt1.symbol.typeParams
@@ -5131,14 +5132,12 @@ trait Typers extends Modes with Adaptations with Tags {
         var block1 = typed(tree.block, pt)
         var catches1 = typedCases(tree.catches, ThrowableClass.tpe, pt)
 
-        for (cdef <- catches1 if cdef.guard.isEmpty) {
-          def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
-          def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
-          cdef.pat match {
-            case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
-            case i @ Ident(name) if unbound(i) => warn(name)
-            case _ =>
-          }
+        for (cdef <- catches1; if treeInfo catchesThrowable cdef) {
+          val name = (treeInfo assignedNameOfPattern cdef).decoded
+          context.warning(cdef.pat.pos,
+            s"""|This catches all Throwables, which often has undesirable consequences.
+                |If intentional, use `case $name : Throwable` to clear this warning.""".stripMargin
+          )
         }
 
         val finalizer1 =
@@ -5394,7 +5393,7 @@ trait Typers extends Modes with Adaptations with Tags {
         if (context.retyping &&
             (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
           tree.tpe = null
-          if (tree.hasSymbol) tree.symbol = NoSymbol
+          if (tree.hasSymbolField) tree.symbol = NoSymbol
         }
 
         alreadyTyped = tree.tpe ne null

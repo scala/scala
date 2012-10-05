@@ -509,7 +509,7 @@ abstract class TreeBrowsers {
     /** Return a textual representation of this t's symbol */
     def symbolText(t: Tree): String = {
       val prefix =
-        if (t.hasSymbol)  "[has] "
+        if (t.hasSymbolField)  "[has] "
         else if (t.isDef) "[defines] "
         else ""
 

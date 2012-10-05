@@ -22,7 +22,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
 
   def mkCheckInit(tree: Tree): Tree = {
     val tpe =
-      if (tree.tpe != null || !tree.hasSymbol) tree.tpe
+      if (tree.tpe != null || !tree.hasSymbolField) tree.tpe
       else tree.symbol.tpe
 
     if (!global.phase.erasedTypes && settings.warnSelectNullable.value &&

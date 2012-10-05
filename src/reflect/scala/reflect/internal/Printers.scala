@@ -546,8 +546,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case _ => print(value.toString)
           }
         case tree: Tree =>
-          val hasSymbol = tree.hasSymbol && tree.symbol != NoSymbol
-          val isError = hasSymbol && tree.symbol.name.toString == nme.ERROR.toString
+          val hasSymbolField = tree.hasSymbolField && tree.symbol != NoSymbol
+          val isError = hasSymbolField && tree.symbol.name.toString == nme.ERROR.toString
           printProduct(
             tree,
             preamble = _ => {
@@ -560,7 +560,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
                   if (isError) print("<")
                   print(name)
                   if (isError) print(": error>")
-                } else if (hasSymbol) {
+                } else if (hasSymbolField) {
                   tree match {
                     case _: Ident | _: Select | _: SelectFromTypeTree => print(tree.symbol)
                     case _ => print(tree.symbol.name)

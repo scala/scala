@@ -124,7 +124,7 @@ trait Metalevels {
         withinSplice { super.transform(TreeSplice(ReifiedTree(universe, mirror, symtab1, rtree, tpe, rtpe, concrete))) }
       case TreeSplice(splicee) =>
         if (reifyDebug) println("entering splice: " + splicee)
-        val breaches = splicee filter (sub => sub.hasSymbol && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
+        val breaches = splicee filter (sub => sub.hasSymbolField && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
         if (!insideSplice && breaches.nonEmpty) {
           // we used to convert dynamic splices into runtime evals transparently, but we no longer do that
           // why? see comments above
