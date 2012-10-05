@@ -397,19 +397,31 @@ abstract class TreeInfo {
     case _                          => false
   }
 
-  /** Does this CaseDef catch Throwable? */
-  def catchesThrowable(cdef: CaseDef) = catchesAllOf(cdef, ThrowableClass.tpe)
+  private def hasNoSymbol(t: Tree) = t.symbol == null || t.symbol == NoSymbol
 
-  /** Does this CaseDef catch everything of a certain Type? */
-  def catchesAllOf(cdef: CaseDef, threshold: Type) = {
-    def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
+  /** If this CaseDef assigns a name to its top-level pattern,
+   *  in the form 'expr @ pattern' or 'expr: pattern', returns
+   *  the name. Otherwise, nme.NO_NAME.
+   *
+   *  Note: in the case of Constant patterns such as 'case x @ "" =>',
+   *  the pattern matcher eliminates the binding and inlines the constant,
+   *  so as far as this method is likely to be able to determine,
+   *  the name is NO_NAME.
+   */
+  def assignedNameOfPattern(cdef: CaseDef): Name = cdef.pat match {
+    case Bind(name, _)  => name
+    case Ident(name)    => name
+    case _              => nme.NO_NAME
+  }
+
+  /** Does this CaseDef catch Throwable? */
+  def catchesThrowable(cdef: CaseDef) = (
     cdef.guard.isEmpty && (unbind(cdef.pat) match {
       case Ident(nme.WILDCARD)       => true
-      case i@Ident(name)             => unbound(i)
-      case Typed(_, tpt)             => (tpt.tpe != null) && (threshold <:< tpt.tpe)
+      case i@Ident(name)             => hasNoSymbol(i)
       case _                         => false
     })
-  }
+  )
 
   /** Is this pattern node a catch-all or type-test pattern? */
   def isCatchCase(cdef: CaseDef) = cdef match {
