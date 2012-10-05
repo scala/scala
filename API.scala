@@ -134,7 +134,7 @@ final class API(val global: CallbackGlobal) extends Compat
 			if(a.assocs.isEmpty) Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
 			else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument]
 		)
-	private def annotated(in: Symbol, as: List[AnnotationInfo], tpe: Type) = new xsbti.api.Annotated(simpleType(in, tpe), annotations(in, as))
+	private def annotated(in: Symbol, as: List[AnnotationInfo], tpe: Type) = new xsbti.api.Annotated(processType(in, tpe), annotations(in, as))
 
 	private def viewer(s: Symbol) = (if(s.isModule) s.moduleClass else s).thisType
 	private def printMember(label: String, in: Symbol, t: Type) = println(label + " in " + in + " : " + t + " (debug: " + debugString(t) + " )")
