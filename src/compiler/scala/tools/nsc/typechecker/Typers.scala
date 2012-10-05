@@ -2898,19 +2898,18 @@ trait Typers extends Modes with Adaptations with Tags {
       def preSelectOverloaded(fun: Tree): Tree = {
         if (fun.hasSymbolField && fun.symbol.isOverloaded) {
           // remove alternatives with wrong number of parameters without looking at types.
-          // less expensive than including them in inferMethodAlternatvie (see below).
+          // less expensive than including them in inferMethodAlternative (see below).
           def shapeType(arg: Tree): Type = arg match {
             case Function(vparams, body) =>
-              functionType(vparams map (vparam => AnyClass.tpe), shapeType(body))
+              functionType(vparams map (_ => AnyClass.tpe), shapeType(body))
             case AssignOrNamedArg(Ident(name), rhs) =>
               NamedType(name, shapeType(rhs))
             case _ =>
               NothingClass.tpe
           }
           val argtypes = args map shapeType
-          val pre = fun.symbol.tpe.prefix
-
-          var sym = fun.symbol filter { alt =>
+          val pre      = fun.symbol.tpe.prefix
+          var sym      = fun.symbol filter { alt =>
             // must use pt as expected type, not WildcardType (a tempting quick fix to #2665)
             // now fixed by using isWeaklyCompatible in exprTypeArgs
             // TODO: understand why exactly -- some types were not inferred anymore (`ant clean quick.bin` failed)
@@ -2921,16 +2920,15 @@ trait Typers extends Modes with Adaptations with Tags {
             // Types: "refs = Array(Map(), Map())".  I determined that inference fails if there are at
             // least two invariant type parameters. See the test case I checked in to help backstop:
             // pos/isApplicableSafe.scala.
-            isApplicableSafe(context.undetparams, followApply(pre.memberType(alt)), argtypes, pt)
+            isApplicableSafe(context.undetparams, followApply(pre memberType alt), argtypes, pt)
           }
           if (sym.isOverloaded) {
-            val sym1 = sym filter (alt => {
-              // eliminate functions that would result from tupling transforms
-              // keeps alternatives with repeated params
-              hasExactlyNumParams(followApply(alt.tpe), argtypes.length) ||
-                // also keep alts which define at least one default
-                alt.tpe.paramss.exists(_.exists(_.hasDefault))
-            })
+            // eliminate functions that would result from tupling transforms
+            // keeps alternatives with repeated params
+            val sym1 = sym filter (alt =>
+                 isApplicableBasedOnArity(pre memberType alt, argtypes.length, varargsStar = false, tuplingAllowed = false)
+              || alt.tpe.params.exists(_.hasDefault)
+            )
             if (sym1 != NoSymbol) sym = sym1
           }
           if (sym == NoSymbol) fun
@@ -2944,16 +2942,19 @@ trait Typers extends Modes with Adaptations with Tags {
         case OverloadedType(pre, alts) =>
           def handleOverloaded = {
             val undetparams = context.extractUndetparams()
-
-            val argtpes = new ListBuffer[Type]
-            val amode = forArgMode(fun, mode)
+            val argtpes     = new ListBuffer[Type]
+            val amode       = forArgMode(fun, mode)
             val args1 = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>
                 // named args: only type the righthand sides ("unknown identifier" errors otherwise)
                 val rhs1 = typedArg(rhs, amode, BYVALmode, WildcardType)
                 argtpes += NamedType(name, rhs1.tpe.deconst)
                 // the assign is untyped; that's ok because we call doTypedApply
-                atPos(arg.pos) { new AssignOrNamedArg(arg.lhs, rhs1) }
+                treeCopy.AssignOrNamedArg(arg, arg.lhs, rhs1)
+              case arg @ Typed(repeated, Ident(tpnme.WILDCARD_STAR)) =>
+                val arg1 = typedArg(arg, amode, BYVALmode, WildcardType)
+                argtpes += RepeatedType(arg1.tpe.deconst)
+                arg1
               case arg =>
                 val arg1 = typedArg(arg, amode, BYVALmode, WildcardType)
                 argtpes += arg1.tpe.deconst
@@ -2963,7 +2964,7 @@ trait Typers extends Modes with Adaptations with Tags {
             if (context.hasErrors)
               setError(tree)
             else {
-              inferMethodAlternative(fun, undetparams, argtpes.toList, pt, varArgsOnly = treeInfo.isWildcardStarArgList(args))
+              inferMethodAlternative(fun, undetparams, argtpes.toList, pt)
               doTypedApply(tree, adapt(fun, forFunMode(mode), WildcardType), args1, mode, pt)
             }
           }
@@ -2972,17 +2973,16 @@ trait Typers extends Modes with Adaptations with Tags {
         case mt @ MethodType(params, _) =>
           val paramTypes = mt.paramTypes
           // repeat vararg as often as needed, remove by-name
-          val formals = formalTypes(paramTypes, args.length)
+          val argslen = args.length
+          val formals = formalTypes(paramTypes, argslen)
 
           /** Try packing all arguments into a Tuple and apply `fun`
            *  to that. This is the last thing which is tried (after
            *  default arguments)
            */
           def tryTupleApply: Option[Tree] = {
-            // if 1 formal, 1 arg (a tuple), otherwise unmodified args
-            val tupleArgs = actualArgs(tree.pos.makeTransparent, args, formals.length)
-
-            if (!sameLength(tupleArgs, args) && !isUnitForVarArgs(args, params)) {
+            if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
+              val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
