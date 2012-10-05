@@ -2973,14 +2973,15 @@ trait Typers extends Modes with Adaptations with Tags {
         case mt @ MethodType(params, _) =>
           val paramTypes = mt.paramTypes
           // repeat vararg as often as needed, remove by-name
-          val formals = formalTypes(paramTypes, args.length)
+          val argslen = args.length
+          val formals = formalTypes(paramTypes, argslen)
 
           /** Try packing all arguments into a Tuple and apply `fun`
            *  to that. This is the last thing which is tried (after
            *  default arguments)
            */
           def tryTupleApply: Option[Tree] = {
-            if (eligibleForTupleConversion(formals, args) && !phase.erasedTypes) {
+            if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails

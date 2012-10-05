@@ -695,15 +695,15 @@ trait Infer extends Checkable {
       case _ =>
         val paramsCount   = tpe.params.length
         val simpleMatch   = paramsCount == argsCount
-        def varargsTarget = isVarArgsList(tpe.params)
+        val varargsTarget = isVarArgsList(tpe.params)
         def varargsMatch  = varargsTarget && (paramsCount - 1) <= argsCount
-        def tuplingMatch  = tuplingAllowed && (argsCount != 1) && (paramsCount == 1 || paramsCount == 2 && varargsTarget)
+        def tuplingMatch  = tuplingAllowed && eligibleForTupleConversion(paramsCount, argsCount, varargsTarget)
 
         // A varargs star call, e.g. (x, y:_*) can only match a varargs method
         // with the same number of parameters.  See SI-5859 for an example of what
         // would fail were this not enforced before we arrived at isApplicable.
         if (varargsStar)
-          varargsTarget && (paramsCount == argsCount)
+          varargsTarget && simpleMatch
         else
           simpleMatch || varargsMatch || tuplingMatch
     }
@@ -772,40 +772,46 @@ trait Infer extends Checkable {
     /** True if the given parameter list can accept a tupled argument list,
      *  and the argument list can be tupled (based on its length.)
      */
-    def eligibleForTupleConversion(formals: List[Type], args: List[_]): Boolean = {
-      // Can't have exactly one argument; can't have more than MaxTupleArity.
-      def argumentsOk = args match {
-        case _ :: Nil => false
-        case _        => (args lengthCompare MaxTupleArity) <= 0
+    def eligibleForTupleConversion(paramsCount: Int, argsCount: Int, varargsTarget: Boolean): Boolean = {
+      def canSendTuple = argsCount match {
+        case 0 => !varargsTarget        // avoid () to (()) conversion - SI-3224
+        case 1 => false                 // can't tuple a single argument
+        case n => n <= MaxTupleArity    // <= 22 arguments
       }
-      // Must have either one parameter, or two with the second being varargs.
-      def paramsOk = formals match {
-        case _ :: Nil         => true
-        case _ :: last :: Nil => args.nonEmpty && isScalaRepeatedParamType(last)  // avoid () to (()) conversion on varargs; see SI-3224
-        case _                => false
+      def canReceiveTuple = paramsCount match {
+        case 1 => true
+        case 2 => varargsTarget
+        case _ => false
       }
-
-      argumentsOk && paramsOk
+      canSendTuple && canReceiveTuple
+    }
+    def eligibleForTupleConversion(formals: List[Type], argsCount: Int): Boolean = formals match {
+      case p :: Nil                                     => eligibleForTupleConversion(1, argsCount, varargsTarget = isScalaRepeatedParamType(p))
+      case _ :: p :: Nil if isScalaRepeatedParamType(p) => eligibleForTupleConversion(2, argsCount, varargsTarget = true)
+      case _                                            => false
     }
 
-    /** If the given argument types are eligible for tuple conversion, the type
-     *  of the tuple.  Otherwise, NoType.
+    /** The type of an argument list after being coerced to a tuple.
+     *  @pre: the argument list is eligible for tuple conversion.
      */
-    def typeAfterTupleConversion(formals: List[Type], argtpes: List[Type]): Type = (
-      if (eligibleForTupleConversion(formals, argtpes)) {
-        if (argtpes.isEmpty) UnitClass.tpe           // empty argument list is 0-tuple
-        else tupleType(argtpes map {                 // already ruled out 1-element list
-          case NamedType(name, tp) => UnitClass.tpe  // not a named arg - only assignments here
-          case RepeatedType(tp)    => tp
-          case tp                  => tp
-        })
-      }
-      else NoType
+    private def typeAfterTupleConversion(argtpes: List[Type]): Type = (
+      if (argtpes.isEmpty) UnitClass.tpe           // aka "Tuple0"
+      else tupleType(argtpes map {
+        case NamedType(name, tp) => UnitClass.tpe  // not a named arg - only assignments here
+        case RepeatedType(tp)    => tp             // but probably shouldn't be tupling a call containing :_*
+        case tp                  => tp
+      })
     )
 
-    def tupleIfNecessary(formals: List[Type], argtpes: List[Type]): List[Type] = typeAfterTupleConversion(formals, argtpes) match {
-      case NoType => argtpes
-      case tpe    => tpe :: Nil
+    /** If the argument list needs to be tupled for the parameter list,
+     *  a list containing the type of the tuple.  Otherwise, the original
+     *  argument list.
+     */
+    def tupleIfNecessary(formals: List[Type], argtpes: List[Type]): List[Type] = {
+      if (eligibleForTupleConversion(formals, argtpes.size))
+        typeAfterTupleConversion(argtpes) :: Nil
+      else
+        argtpes
     }
 
     /** Is there an instantiation of free type variables `undetparams`
@@ -829,11 +835,12 @@ trait Infer extends Checkable {
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
         case mt @ MethodType(params, _) =>
-          val formals = formalTypes(mt.paramTypes, argtpes0.length, removeByName = false)
+          val argslen = argtpes0.length
+          val formals = formalTypes(mt.paramTypes, argslen, removeByName = false)
 
-          def tryTupleApply = typeAfterTupleConversion(formals, argtpes0) match {
-            case NoType     => false
-            case tupledType => isApplicable(undetparams, ftpe, tupledType :: Nil, pt)
+          def tryTupleApply = {
+            val tupled = tupleIfNecessary(mt.paramTypes, argtpes0)
+            (tupled ne argtpes0) && isApplicable(undetparams, ftpe, tupled, pt)
           }
           def typesCompatible(argtpes: List[Type]) = {
             val restpe = ftpe.resultType(argtpes)
@@ -1558,10 +1565,11 @@ trait Infer extends Checkable {
             || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)
           )
         }
+        // todo: missing test case for bests.isEmpty
         bests match {
           case best :: Nil                              => tree setSymbol best setType (pre memberType best)
           case best :: competing :: _ if alts0.nonEmpty => if (!pt.isErroneous) AmbiguousExprAlternativeError(tree, pre, best, competing, pt, isSecondTry)
-          case _                                        => if (bests.isEmpty || alts0.isEmpty) NoBestExprAlternativeError(tree, pt, isSecondTry) // todo: missing test case
+          case _                                        => if (bests.isEmpty || alts0.isEmpty) NoBestExprAlternativeError(tree, pt, isSecondTry)
         }
       }
     }
