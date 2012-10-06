@@ -867,6 +867,12 @@ trait Definitions extends api.StandardDefinitions {
         removeRedundantObjects(parents)
     }
 
+    /** Flatten curried parameter lists of a method type. */
+    def allParameters(tpe: Type): List[Symbol] = tpe match {
+      case MethodType(params, res) => params ::: allParameters(res)
+      case _                       => Nil
+    }
+
     def typeStringNoPackage(tp: Type) =
       "" + tp stripPrefix tp.typeSymbol.enclosingPackage.fullName + "."
 
