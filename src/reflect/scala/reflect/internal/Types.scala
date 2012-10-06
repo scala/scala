@@ -2806,9 +2806,13 @@ trait Types extends api.Types { self: SymbolTable =>
     override def kind = "OverloadedType"
   }
 
-  def overloadedType(pre: Type, alternatives: List[Symbol]): Type =
-    if (alternatives.tail.isEmpty) pre memberType alternatives.head
-    else OverloadedType(pre, alternatives)
+  /** The canonical creator for OverloadedTypes.
+   */
+  def overloadedType(pre: Type, alternatives: List[Symbol]): Type = alternatives match {
+    case Nil        => NoType
+    case alt :: Nil => pre memberType alt
+    case _          => OverloadedType(pre, alternatives)
+  }
 
   /** A class remembering a type instantiation for some a set of overloaded
    *  polymorphic symbols.
@@ -3398,6 +3402,13 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   case class NamedType(name: Name, tp: Type) extends Type {
     override def safeToString: String = name.toString +": "+ tp
+  }
+  /** As with NamedType, used only when calling isApplicable.
+   *  Records that the application has a wildcard star (aka _*)
+   *  at the end of it.
+   */
+  case class RepeatedType(tp: Type) extends Type {
+    override def safeToString: String = tp + ": _*"
   }
 
   /** A temporary type representing the erasure of a user-defined value type.
