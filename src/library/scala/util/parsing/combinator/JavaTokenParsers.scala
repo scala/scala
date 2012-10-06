@@ -21,11 +21,12 @@ import scala.annotation.migration
  *  - `floatingPointNumber`
  */
 trait JavaTokenParsers extends RegexParsers {
-  /** Anything starting with an ASCII alphabetic character or underscore,
-   *  followed by zero or more repetitions of regex's `\w`.
+  /** Anything that is a valid Java identifier, according to
+   * <a href="http://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.8">The Java Language Spec</a>.
+   * Generally, this means a letter, followed by zero or more letters or numbers.
    */
   def ident: Parser[String] =
-    """[a-zA-Z_]\w*""".r
+    """\p{javaJavaIdentifierStart}\p{javaJavaIdentifierPart}*""".r
   /** An integer, without sign or with a negative sign. */
   def wholeNumber: Parser[String] =
     """-?\d+""".r
