@@ -358,7 +358,7 @@ abstract class ClassfileParser {
       }
       value match {
         case  ct: Constant => ct
-        case cls: Symbol   => Constant(cls.tpe)
+        case cls: Symbol   => Constant(cls.tpe_*)
         case arr: Type     => Constant(arr)
       }
     }
@@ -512,9 +512,9 @@ abstract class ClassfileParser {
       }
       else raiseLoaderLevel {
         val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
-                        else pool.getSuperClass(in.nextChar).tpe
+                        else pool.getSuperClass(in.nextChar).tpe_*
         val ifaceCount = in.nextChar
-        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
+        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe_*
         if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
         superType :: ifaces
       }
@@ -753,7 +753,7 @@ abstract class ClassfileParser {
 
           val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
           assert(!classSym.isOverloaded, classSym.alternatives)
-          var tpe = processClassType(processInner(classSym.tpe))
+          var tpe = processClassType(processInner(classSym.tpe_*))
           while (sig.charAt(index) == '.') {
             accept('.')
             val name = subName(c => c == ';' || c == '<' || c == '.').toTypeName
@@ -786,7 +786,7 @@ abstract class ClassfileParser {
           index += 1
           val restype = if (sym != null && sym.isClassConstructor) {
             accept('V')
-            clazz.tpe
+            clazz.tpe_*
           } else
             sig2type(tparams, skiptvs)
           JavaMethodType(sym.newSyntheticValueParams(paramtypes.toList), restype)

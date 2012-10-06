@@ -165,7 +165,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     This(sym.name.toTypeName) setSymbol sym setType sym.thisType
 
   def mkAttributedIdent(sym: Symbol): Tree =
-    Ident(sym.name) setSymbol sym setType sym.tpe
+    Ident(sym.name) setSymbol sym setType sym.tpeHK
 
   def mkAttributedSelect(qual: Tree, sym: Symbol): Tree = {
     // Tests involving the repl fail without the .isEmptyPackage condition.

@@ -98,7 +98,7 @@ trait ModelFactoryImplicitSupport {
     else {
       var context: global.analyzer.Context = global.analyzer.rootContext(NoCompilationUnit)
 
-      val results = global.analyzer.allViewsFrom(sym.tpe, context, sym.typeParams)
+      val results = global.analyzer.allViewsFrom(sym.tpe_*, context, sym.typeParams)
       var conversions = results.flatMap(result => makeImplicitConversion(sym, result._1, result._2, context, inTpl))
       // also keep empty conversions, so they appear in diagrams
       // conversions = conversions.filter(!_.members.isEmpty)
@@ -109,7 +109,7 @@ trait ModelFactoryImplicitSupport {
           hardcoded.arraySkipConversions.contains(conv.conversionQualifiedName))
 
       // Filter out non-sensical conversions from value types
-      if (isPrimitiveValueType(sym.tpe))
+      if (isPrimitiveValueType(sym.tpe_*))
         conversions = conversions.filter((ic: ImplicitConversionImpl) =>
           hardcoded.valueClassFilter(sym.nameString, ic.conversionQualifiedName))
 

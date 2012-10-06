@@ -642,7 +642,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isThisSym = isTerm && owner.thisSym == this
     final def isError = hasFlag(IS_ERROR)
-    final def isErroneous = isError || isInitialized && tpe.isErroneous
+    final def isErroneous = isError || isInitialized && tpe_*.isErroneous
 
     def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
 
@@ -1186,16 +1186,57 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
-    /** Get type. The type of a symbol is:
-     *  for a type symbol, the type corresponding to the symbol itself,
-     *    @M you should use tpeHK for a type symbol with type parameters if
-     *       the kind of the type need not be *, as tpe introduces dummy arguments
-     *       to generate a type of kind *
-     *  for a term symbol, its usual type.
-     *  See the tpe/tpeHK overrides in TypeSymbol for more.
+    /** The "type" of this symbol.  The type of a term symbol is its usual
+     *  type.  A TypeSymbol is more complicated; see that class for elaboration.
+     *  Since tpe forwards to tpe_*, if you call it on a type symbol with unapplied
+     *  type parameters, the type returned will contain dummies types.  These will
+     *  hide legitimate errors or create spurious ones if used as normal types.
      */
-    def tpe: Type = info
-    def tpeHK: Type = tpe
+    final def tpe: Type = tpe_*
+
+    /** typeConstructor throws an exception when called on term
+     *  symbols; this is a more forgiving alternative.  Calls
+     *  typeConstructor on TypeSymbols, returns info otherwise.
+     */
+    def tpeHK: Type = info
+
+    /** Only applicable to TypeSymbols, it is the type corresponding
+     *  to the symbol itself.  For instance, the type of a List might
+     *  be List[Int] - the same symbol's typeConstructor is simply List.
+     *  One might be tempted to write that as List[_], and in some
+     *  contexts this is possible, but it is discouraged because it is
+     *  syntactically indistinguishable from and easily confused with the
+     *  type List[T] forSome { type T; }, which can also be written List[_].
+     */
+    def typeConstructor: Type = (
+      // Avoiding a third override in NoSymbol to preserve bimorphism
+      if (this eq NoSymbol)
+        abort("no-symbol does not have a type constructor (this may indicate scalac cannot find fundamental classes)")
+      else
+        abort("typeConstructor inapplicable for " + this)
+    )
+
+    /** The type of this symbol, guaranteed to be of kind *.
+     *  If there are unapplied type parameters, they will be
+     *  substituted with dummy type arguments derived from the
+     *  type parameters.  Such types are not valid in a general
+     *  sense and will cause difficult-to-find bugs if allowed
+     *  to roam free.
+     *
+     *  If you call tpe_* explicitly to obtain these types,
+     *  you are responsible for them as if it they were your own
+     *  minor children.
+     */
+    def tpe_* : Type = info
+
+    // Alternate implementation of def tpe for warning about misuse,
+    // disabled to keep the method maximally hotspot-friendly:
+    // def tpe: Type = {
+    //   val result = tpe_*
+    //   if (settings.debug.value && result.typeArgs.nonEmpty)
+    //     printCaller(s"""Call to ${this.tpe} created $result: call tpe_* or tpeHK""")("")
+    //   result
+    // }
 
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
@@ -1431,14 +1472,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isOverloaded)
         alternatives withFilter (_.isJavaDefined) foreach (_ modifyInfo rawToExistential)
     }
-
-    /** The type constructor of a symbol is:
-     *  For a type symbol, the type corresponding to the symbol itself,
-     *  excluding parameters.
-     *  Not applicable for term symbols.
-     */
-    def typeConstructor: Type =
-      abort("typeConstructor inapplicable for " + this)
 
     /** The logic approximately boils down to finding the most recent phase
      *  which immediately follows any of parser, namer, typer, or erasure.
@@ -1722,7 +1755,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def thisSym: Symbol = this
 
     /** The type of `this` in a class, or else the type of the symbol itself. */
-    def typeOfThis = thisSym.tpe
+    def typeOfThis = thisSym.tpe_*
 
     /** If symbol is a class, the type <code>this.type</code> in this class,
      * otherwise <code>NoPrefix</code>.
@@ -2607,6 +2640,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       owner.newNonClassSymbol(name, pos, newFlags)
   }
 
+  /** Let's say you have a type definition
+   *
+   *  {{{
+   *    type T <: Number
+   *  }}}
+   *
+   *  and tsym is the symbol corresponding to T. Then
+   *
+   *  {{{
+   *    tsym is an instance of AbstractTypeSymbol
+   *    tsym.info = TypeBounds(Nothing, Number)
+   *    tsym.tpe  = TypeRef(NoPrefix, T, List())
+   *  }}}
+   */
   class AbstractTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
@@ -2675,63 +2722,57 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def newPrefix = if (this hasFlag EXISTENTIAL | PARAM) NoPrefix else owner.thisType
     private def newTypeRef(targs: List[Type]) = typeRef(newPrefix, this, targs)
 
-    /** Let's say you have a type definition
+    /** A polymorphic type symbol has two distinct "types":
      *
-     *  {{{
-     *    type T <: Number
-     *  }}}
+     *  tpe_*  a TypeRef with: dummy type args, no unapplied type parameters, and kind *
+     *  tpeHK  a TypeRef with: no type args, unapplied type parameters, and
+     *           kind (*,*,...,*) => * depending on the number of tparams.
      *
-     *  and tsym is the symbol corresponding to T. Then
-     *
-     *  {{{
-     *    tsym.info = TypeBounds(Nothing, Number)
-     *    tsym.tpe  = TypeRef(NoPrefix, T, List())
-     *  }}}
+     * The dummy type args in tpe_* are created by wrapping a TypeRef
+     * around the type parameter symbols.  Types containing dummies will
+     * hide errors or introduce spurious ones if they are passed around
+     * as if normal types.  They should only be used in local operations
+     * where they will either be discarded immediately after, or will
+     * undergo substitution in which the dummies are replaced by actual
+     * type arguments.
      */
-    override def tpe: Type = {
-      if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor)
-      if (tpePeriod != currentPeriod) {
-        if (isValid(tpePeriod)) {
-          tpePeriod = currentPeriod
-        } else {
-          if (isInitialized) tpePeriod = currentPeriod
-          tpeCache = NoType
-          val targs =
-            if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map (_.typeConstructor)
-            //@M! use typeConstructor to generate dummy type arguments,
-            // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
-            // memberType should be used instead, that's why it uses tpeHK and not tpe
-          tpeCache = newTypeRef(targs)
-        }
-      }
-      assert(tpeCache ne null/*, "" + this + " " + phase*/)//debug
+    override def tpe_* : Type = {
+      maybeUpdateTypeCache()
       tpeCache
     }
-
-    /** @M -- tpe vs tpeHK:
-     *
-     *    tpe: creates a TypeRef with dummy type arguments and kind *
-     *  tpeHK: creates a TypeRef with no type arguments but with type parameters
-     *
-     * If typeParams is nonEmpty, calling tpe may hide errors or
-     * introduce spurious ones. (For example, when deriving a type from
-     * the symbol of a type argument that may be higher-kinded.) As far
-     * as I can tell, it only makes sense to call tpe in conjunction
-     * with a substitution that replaces the generated dummy type
-     * arguments by their actual types.
-     *
-     * TODO: the above conditions desperately need to be enforced by code.
-     */
-    override def tpeHK = typeConstructor // @M! used in memberType
-
     override def typeConstructor: Type = {
+      maybeUpdateTyconCache()
+      tyconCache
+    }
+    override def tpeHK: Type = typeConstructor
+
+    private def maybeUpdateTyconCache() {
       if ((tyconCache eq null) || tyconRunId != currentRunId) {
         tyconCache = newTypeRef(Nil)
         tyconRunId = currentRunId
       }
       assert(tyconCache ne null)
-      tyconCache
+    }
+    private def maybeUpdateTypeCache() {
+      if (tpePeriod != currentPeriod) {
+        if (isValid(tpePeriod))
+          tpePeriod = currentPeriod
+        else
+          updateTypeCache()   // perform the actual update
+      }
+    }
+    private def updateTypeCache() {
+      if (tpeCache eq NoType)
+        throw CyclicReference(this, typeConstructor)
+
+      if (isInitialized)
+        tpePeriod = currentPeriod
+
+      tpeCache = NoType // cycle marker
+      tpeCache = newTypeRef(
+        if (phase.erasedTypes && this != ArrayClass || unsafeTypeParams.isEmpty) Nil
+        else unsafeTypeParams map (_.typeConstructor)
+      )
     }
 
     override def info_=(tp: Type) {
@@ -3166,8 +3207,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def owner: Symbol =
       abort("no-symbol does not have an owner")
-    override def typeConstructor: Type =
-      abort("no-symbol does not have a type constructor (this may indicate scalac cannot find fundamental classes)")
   }
 
   protected def makeNoSymbol: NoSymbol = new NoSymbol

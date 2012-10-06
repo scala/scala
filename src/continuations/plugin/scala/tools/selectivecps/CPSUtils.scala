@@ -57,7 +57,7 @@ trait CPSUtils {
   protected def newMarker(sym: Symbol): AnnotationInfo = AnnotationInfo marker sym.tpe
 
   protected def newCpsParamsMarker(tp1: Type, tp2: Type) =
-    newMarker(appliedType(MarkerCPSTypes.tpe, List(tp1, tp2)))
+    newMarker(appliedType(MarkerCPSTypes, tp1, tp2))
 
   // annotation checker
 

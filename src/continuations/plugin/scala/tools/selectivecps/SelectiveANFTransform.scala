@@ -172,7 +172,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           debuglog("transforming valdef " + vd.symbol)
 
           if (getExternalAnswerTypeAnn(tpt.tpe).isEmpty) {
-            
+
             atOwner(vd.symbol) {
 
               val rhs1 = transExpr(rhs, None, None)
@@ -468,7 +468,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           val sym: Symbol = (
             currentOwner.newValue(newTermName(unit.fresh.newName("tmp")), tree.pos, Flags.SYNTHETIC)
               setInfo valueTpe
-              setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil))
+              setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe_*, Nil, Nil))
           )
           expr.changeOwner(currentOwner -> sym)
 
@@ -500,9 +500,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           // TODO: better yet: do without annotations on symbols
 
           val spcVal = getAnswerTypeAnn(anfRhs.tpe)
-          if (spcVal.isDefined) {
-              tree.symbol.setAnnotations(List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil)))
-          }
+          spcVal foreach (_ => tree.symbol setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe_*, Nil, Nil)))
 
           (stms:::List(treeCopy.ValDef(tree, mods, name, tpt, anfRhs)), linearize(spc, spcVal)(unit, tree.pos))
 

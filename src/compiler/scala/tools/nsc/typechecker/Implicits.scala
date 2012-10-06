@@ -997,7 +997,7 @@ trait Implicits {
                       case Some(imap) => imap
                       case None =>
                         val result = new InfoMap
-                        getClassParts(sym.tpe)(result, new mutable.HashSet(), pending + sym)
+                        getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
                         infoMapCache(sym) = result
                         result
                     }

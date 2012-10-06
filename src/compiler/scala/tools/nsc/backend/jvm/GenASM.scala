@@ -83,7 +83,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         // Before erasure so we can identify generic mains.
         enteringErasure {
           val companion     = sym.linkedClassOfClass
-          val companionMain = companion.tpe.member(nme.main)
+          val companionMain = companion.tpe_*.member(nme.main)
 
           if (hasJavaMainMethod(companion))
             failNoForwarder("companion contains its own main method")
@@ -2885,7 +2885,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
                 (kind: @unchecked) match {
                   case FLOAT  => emit(Opcodes.FCMPG)
                   case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
-                
+
                 }
             }
             genCompare

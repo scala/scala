@@ -1116,7 +1116,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
       constructorCache enter (jconstr, constr)
       val tparams = jconstr.getTypeParameters.toList map createTypeParameter
       val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
-      setMethType(constr, tparams, paramtpes, clazz.tpe)
+      setMethType(constr, tparams, paramtpes, clazz.tpe_*)
       constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
       copyAnnotations(constr, jconstr)
       constr
