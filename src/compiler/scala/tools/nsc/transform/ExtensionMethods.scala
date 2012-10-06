@@ -131,15 +131,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       val GenPolyType(tparamsFromMethod, methodResult) = origInfo cloneInfo extensionMeth
       // Start with the class type parameters - clones will be method type parameters
       // so must drop their variance.
-      var tparamsFromClass = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
+      val tparamsFromClass = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
       def fix(tp: Type) = tp.substSym(clazz.typeParams, tparamsFromClass)
 
-      val thisParamType = appliedType(clazz.typeConstructor, tparamsFromClass map (_.tpeHK))
+      val thisParamType = appliedType(clazz, tparamsFromClass map (_.tpeHK): _*)
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
-      val resultType = methodResult match {
-        case MethodType(_, _)          => MethodType(List(thisParam), methodResult)
-        case NullaryMethodType(restpe) => MethodType(List(thisParam), restpe)
-      }
+      val resultType    = MethodType(List(thisParam), dropNullaryMethod(methodResult))
+
       // We can't substitute symbols on the entire polytype because we
       // need to modify the bounds of the cloned type parameters, but we
       // don't want to substitute for the cloned type parameters themselves.
@@ -152,7 +150,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       //
       // And the difference is visible here.  See how B is bounded from below by A#16149
       // in both cases, but in the failing case, the other type parameter has turned into
-      // a different A.
+      // a different A. (What is that A? It is a clone of the original A created in
+      // SubstMap during the call to substSym, but I am not clear on all the particulars.)
       //
       //  bad: [B#16154 >: A#16149, A#16155 <: AnyRef#2189]($this#16156: Foo#6965[A#16155])(x#16157: B#16154)List#2457[B#16154]
       // good: [B#16151 >: A#16149, A#16149 <: AnyRef#2189]($this#16150: Foo#6965[A#16149])(x#16153: B#16151)List#2457[B#16151]

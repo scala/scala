@@ -669,6 +669,11 @@ trait Definitions extends api.StandardDefinitions {
       case _        => Nil
     }
 
+    def dropNullaryMethod(tp: Type) = tp match {
+      case NullaryMethodType(restpe) => restpe
+      case _                         => tp
+    }
+
     def unapplyUnwrap(tpe:Type) = tpe.finalResultType.normalize match {
       case RefinedType(p :: _, _) => p.normalize
       case tp                     => tp
