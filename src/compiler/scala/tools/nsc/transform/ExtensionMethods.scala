@@ -76,13 +76,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   }
 
   /** This method removes the `$this` argument from the parameter list a method.
-   *  
+   *
    *  A method may be a `PolyType`, in which case we tear out the `$this` and the class
    *  type params from its nested `MethodType`.
    *  It may be a `MethodType`, either with a curried parameter list in which the first argument
    *  is a `$this` - we just return the rest of the list.
    *  This means that the corresponding symbol was generated during `extmethods`.
-   *  
+   *
    *  It may also be a `MethodType` in which the `$this` does not appear in a curried parameter list.
    *  The curried lists disappear during `uncurry`, and the methods may be duplicated afterwards,
    *  for instance, during `specialize`.
@@ -111,20 +111,51 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         if (unboxed.isDerivedValueClass) checkNonCyclic(pos, seen + clazz, unboxed)
       }
 
+   /** We will need to clone the info of the original method (which obtains clones
+    *  of the method type parameters), clone the type parameters of the value class,
+    *  and create a new polymethod with the union of all those type parameters, with
+    *  their infos adjusted to be consistent with their new home. Example:
+    *
+    *    class Foo[+A <: AnyRef](val xs: List[A]) extends AnyVal {
+    *      def baz[B >: A](x: B): List[B] = x :: xs
+    *      // baz has to be transformed into this extension method, where
+    *      // A is cloned from class Foo and  B is cloned from method baz:
+    *      // def extension$baz[B >: A <: Any, A >: Nothing <: AnyRef]($this: Foo[A])(x: B): List[B]
+    *    }
+    *
+    *  TODO: factor out the logic for consolidating type parameters from a class
+    *  and a method for re-use elsewhere, because nobody will get this right without
+    *  some higher level facilities.
+    */
     def extensionMethInfo(extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type = {
-      // No variance for method type parameters
-      var newTypeParams = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
-      val thisParamType = appliedType(clazz.typeConstructor, newTypeParams map (_.tpeHK))
+      val GenPolyType(tparamsFromMethod, methodResult) = origInfo cloneInfo extensionMeth
+      // Start with the class type parameters - clones will be method type parameters
+      // so must drop their variance.
+      var tparamsFromClass = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
+      def fix(tp: Type) = tp.substSym(clazz.typeParams, tparamsFromClass)
+
+      val thisParamType = appliedType(clazz.typeConstructor, tparamsFromClass map (_.tpeHK))
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
-      def transform(clonedType: Type): Type = clonedType match {
-        case MethodType(params, restpe) =>
-          // I assume it was a bug that this was dropping params... [Martin]: No, it wasn't; it's curried.
-          MethodType(List(thisParam), clonedType)
-        case NullaryMethodType(restpe) =>
-          MethodType(List(thisParam), restpe)
+      val resultType = methodResult match {
+        case MethodType(_, _)          => MethodType(List(thisParam), methodResult)
+        case NullaryMethodType(restpe) => MethodType(List(thisParam), restpe)
       }
-      val GenPolyType(tparams, restpe) = origInfo cloneInfo extensionMeth
-      GenPolyType(tparams ::: newTypeParams, transform(restpe) substSym (clazz.typeParams, newTypeParams))
+      // We can't substitute symbols on the entire polytype because we
+      // need to modify the bounds of the cloned type parameters, but we
+      // don't want to substitute for the cloned type parameters themselves.
+      val tparams = tparamsFromMethod ::: tparamsFromClass
+      GenPolyType(tparams map (_ modifyInfo fix), fix(resultType))
+
+      // For reference, calling fix on the GenPolyType plays out like this:
+      // error: scala.reflect.internal.Types$TypeError: type arguments [B#7344,A#6966]
+      // do not conform to method extension$baz#16148's type parameter bounds
+      //
+      // And the difference is visible here.  See how B is bounded from below by A#16149
+      // in both cases, but in the failing case, the other type parameter has turned into
+      // a different A.
+      //
+      //  bad: [B#16154 >: A#16149, A#16155 <: AnyRef#2189]($this#16156: Foo#6965[A#16155])(x#16157: B#16154)List#2457[B#16154]
+      // good: [B#16151 >: A#16149, A#16149 <: AnyRef#2189]($this#16150: Foo#6965[A#16149])(x#16153: B#16151)List#2457[B#16151]
     }
 
     private def allParams(tpe: Type): List[Symbol] = tpe match {
