@@ -9,7 +9,7 @@ class C {
 object Test extends App {
   val decls = typeOf[C].typeSymbol.typeSignature.declarations.sorted.toList.filter(sym => !sym.isTerm || (sym.isMethod && !sym.asMethod.isConstructor))
   println(decls map (_.isImplicit))
-  val param = decls.find(_.name.toString == "d").get.asMethod.params.last.head
+  val param = decls.find(_.name.toString == "d").get.asMethod.paramss.last.head
   param.typeSignature
   println(param.isImplicit)
 }

@@ -540,12 +540,13 @@ trait Symbols { self: Universe =>
     def typeParams: List[Symbol]
 
     /** All parameter lists of the method.
+     *  The name ending with "ss" indicates that the result type is a list of lists.
      *
      *  Can be used to distinguish nullary methods and methods with empty parameter lists.
      *  For a nullary method, returns the empty list (i.e. `List()`).
      *  For a method with an empty parameter list, returns a list that contains the empty list (i.e. `List(List())`).
      */
-    def params: List[List[Symbol]]
+    def paramss: List[List[Symbol]]
 
     /** Does this method support variable length argument lists?
      */
