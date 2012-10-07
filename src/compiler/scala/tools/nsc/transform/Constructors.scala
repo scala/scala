@@ -127,7 +127,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         import CODE._
         val result = mkAssign(to, Ident(from))
 
-        if (from.name != nme.OUTER) result
+        if (from.name != nme.OUTER ||
+            from.tpe.typeSymbol.isPrimitiveValueClass) result
         else localTyper.typedPos(to.pos) {
           IF (from OBJ_EQ NULL) THEN Throw(NewFromConstructor(NPEConstructor)) ELSE result
         }

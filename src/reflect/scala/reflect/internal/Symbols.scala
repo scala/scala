@@ -2615,8 +2615,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       res
     }
 
-    override def params: List[List[Symbol]] = paramss
-
     override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 
     override def returnType: Type = {
