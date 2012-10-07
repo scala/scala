@@ -1520,9 +1520,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       try compileUnitsInternal(units, fromPhase)
       catch { case ex: Throwable =>
         val shown = if (settings.verbose.value) {
-          val pw = new java.io.PrintWriter(new java.io.StringWriter)
+          val sw = new java.io.StringWriter()
+          val pw = new java.io.PrintWriter(sw)
           ex.printStackTrace(pw)
-          pw.toString
+          pw.flush()
+          sw.toString
         } else ex.getClass.getName
         // ex.printStackTrace(Console.out) // DEBUG for fsc, note that error stacktraces do not print in fsc
         globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
