@@ -477,7 +477,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     var summaryParsed = false
 
     def document(): Body = {
-      nextChar()
       val blocks = new mutable.ListBuffer[Block]
       while (char != endOfText)
         blocks += block()
@@ -559,21 +558,21 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     def code(): Block = {
       jumpWhitespace()
       jump("{{{")
-      readUntil("}}}")
+      val str = readUntil("}}}")
       if (char == endOfText)
         reportError(pos, "unclosed code block")
       else
         jump("}}}")
       blockEnded("code block")
-      Code(normalizeIndentation(getRead))
+      Code(normalizeIndentation(str))
     }
 
     /** {{{ title ::= ('=' inline '=' | "==" inline "==" | ...) '\n' }}} */
     def title(): Block = {
       jumpWhitespace()
-      val inLevel = repeatJump("=")
+      val inLevel = repeatJump('=')
       val text = inline(check("=" * inLevel))
-      val outLevel = repeatJump("=", inLevel)
+      val outLevel = repeatJump('=', inLevel)
       if (inLevel != outLevel)
         reportError(pos, "unbalanced or unclosed heading")
       blockEnded("heading")
@@ -583,7 +582,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     /** {{{ hrule ::= "----" { '-' } '\n' }}} */
     def hrule(): Block = {
       jumpWhitespace()
-      repeatJump("-")
+      repeatJump('-')
       blockEnded("horizontal rule")
       HorizontalRule()
     }
@@ -621,8 +620,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
       }
 
       do {
-        readUntil { char == safeTagMarker || char == endOfText }
-        val str = getRead()
+        val str = readUntil { char == safeTagMarker || char == endOfText }
         nextChar()
 
         list += str
@@ -660,8 +658,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
         else if (check(",,")) subscript()
         else if (check("[[")) link()
         else {
-          readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
-          Text(getRead())
+          val str = readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
+          Text(str)
         }
       }
 
@@ -698,9 +696,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
 
     def htmlTag(): HtmlTag = {
       jump(safeTagMarker)
-      readUntil(safeTagMarker)
+      val read = readUntil(safeTagMarker)
       if (char != endOfText) jump(safeTagMarker)
-      var read = getRead
       HtmlTag(read)
     }
 
@@ -762,14 +759,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     def link(): Inline = {
       val SchemeUri = """([a-z]+:.*)""".r
       jump("[[")
-      var parens = 1
-      readUntil { parens += 1; !check("[") }
-      getRead // clear the buffer
+      var parens = 2 + repeatJump('[')
       val start = "[" * parens
       val stop  = "]" * parens
       //println("link with " + parens + " matching parens")
-      readUntil { check(stop) || check(" ") }
-      val target = getRead()
+      val target = readUntil { check(stop) || check(" ") }
       val title =
         if (!check(stop)) Some({
           jump(" ")
@@ -860,7 +854,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
       (char == endOfText) ||
       ((char == endOfLine) && {
         val poff = offset
-        val pc = char
         nextChar() // read EOL
         val ok = {
           checkSkipInitWhitespace(endOfLine) ||
@@ -870,7 +863,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
           checkSkipInitWhitespace('\u003D')
         }
         offset = poff
-        char = pc
         ok
       })
     }
@@ -882,40 +874,31 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
 
   protected sealed class CharReader(buffer: String) { reader =>
 
-    var char: Char = _
     var offset: Int = 0
+    def char: Char =
+      if (offset >= buffer.length) endOfText else buffer charAt offset
 
     final def nextChar() {
-      if (offset >= buffer.length)
-        char = endOfText
-      else {
-        char = buffer charAt offset
-        offset += 1
-      }
+      offset += 1
     }
 
     final def check(chars: String): Boolean = {
       val poff = offset
-      val pc = char
       val ok = jump(chars)
       offset = poff
-      char = pc
       ok
     }
 
     def checkSkipInitWhitespace(c: Char): Boolean = {
       val poff = offset
-      val pc = char
       jumpWhitespace()
       val ok = jump(c)
       offset = poff
-      char = pc
       ok
     }
 
     def checkSkipInitWhitespace(chars: String): Boolean = {
       val poff = offset
-      val pc = char
       jumpWhitespace()
       val (ok0, chars0) =
         if (chars.charAt(0) == ' ')
@@ -924,20 +907,17 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
           (true, chars)
       val ok = ok0 && jump(chars0)
       offset = poff
-      char = pc
       ok
     }
 
     def countWhitespace: Int = {
       var count = 0
       val poff = offset
-      val pc = char
       while (isWhitespace(char) && char != endOfText) {
         nextChar()
         count += 1
       }
       offset = poff
-      char = pc
       count
     }
 
@@ -964,38 +944,10 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
       index == chars.length
     }
 
-    final def checkedJump(chars: String): Boolean = {
-      val poff = offset
-      val pc = char
-      val ok = jump(chars)
-      if (!ok) {
-        offset = poff
-        char = pc
-      }
-      ok
-    }
-
-    final def repeatJump(chars: String, max: Int): Int = {
+    final def repeatJump(c: Char, max: Int = Int.MaxValue): Int = {
       var count = 0
-      var more = true
-      while (more && count < max) {
-        if (!checkedJump(chars))
-          more = false
-        else
-          count += 1
-      }
-      count
-    }
-
-    final def repeatJump(chars: String): Int = {
-      var count = 0
-      var more = true
-      while (more) {
-        if (!checkedJump(chars))
-          more = false
-        else
-          count += 1
-      }
+      while (jump(c) && count < max)
+        count += 1
       count
     }
 
@@ -1035,46 +987,40 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
 
     /* READERS */
 
-    private val readBuilder = new mutable.StringBuilder
-
-    final def getRead(): String = {
-      val bld = readBuilder.toString
-      readBuilder.clear()
-      if (bld.length < 6) bld.intern else bld
-    }
-
-    final def readUntil(ch: Char): Int = {
-      var count = 0
-      while (char != ch && char != endOfText) {
-        readBuilder += char
-        nextChar()
-      }
-      count
-    }
-
-    final def readUntil(chars: String): Int = {
-      assert(chars.length > 0)
-      var count = 0
-      val c = chars.charAt(0)
-      while (!check(chars) && char != endOfText) {
-        readBuilder += char
-        nextChar()
+    final def readUntil(c: Char): String = {
+      withRead {
         while (char != c && char != endOfText) {
-          readBuilder += char
           nextChar()
         }
       }
-      count
     }
 
-    final def readUntil(pred: => Boolean): Int = {
-      var count = 0
-      while (!pred && char != endOfText) {
-        readBuilder += char
-        nextChar()
+    final def readUntil(chars: String): String = {
+      assert(chars.length > 0)
+      withRead {
+        val c = chars.charAt(0)
+        while (!check(chars) && char != endOfText) {
+          nextChar()
+          while (char != c && char != endOfText)
+            nextChar()
+        }
       }
-      count
     }
+
+    final def readUntil(pred: => Boolean): String = {
+      withRead {
+        while (char != endOfText && !pred) {
+          nextChar()
+        }
+      }
+    }
+
+    private def withRead(read: => Unit): String = {
+      val start = offset
+      read
+      buffer.substring(start, offset)
+    }
+
 
     /* CHARS CLASSES */
 
