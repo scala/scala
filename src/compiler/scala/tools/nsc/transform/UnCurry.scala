@@ -134,7 +134,7 @@ abstract class UnCurry extends InfoTransform
     def isByNameRef(tree: Tree) = (
          tree.isTerm
       && !byNameArgs(tree)
-      && tree.hasSymbolWhich(s => isByNameParamType(s.tpe))
+      && tree.hasSymbolWhich(isByName)
     )
 
     /** Uncurry a type of a tree node.

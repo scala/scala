@@ -568,7 +568,7 @@ abstract class Pickler extends SubComponent {
           tag
         case sym: ClassSymbol =>
           writeSymInfo(sym)
-          if (sym.thisSym.tpe != sym.tpe) writeRef(sym.typeOfThis)
+          if (sym.thisSym.tpe_* != sym.tpe_*) writeRef(sym.typeOfThis)
           CLASSsym
         case sym: TypeSymbol =>
           writeSymInfo(sym)

@@ -55,7 +55,7 @@ trait TypeKinds { self: ICodes =>
 
     def toType: Type = reversePrimitiveMap get this map (_.tpe) getOrElse {
       this match {
-        case REFERENCE(cls) => cls.tpe
+        case REFERENCE(cls) => cls.tpe_*
         case ARRAY(elem)    => arrayType(elem.toType)
         case _              => abort("Unknown type kind.")
       }

@@ -848,7 +848,7 @@ trait Namers extends MethodSynthesis {
 
       val sym = (
         if (hasType || hasName) {
-          owner.typeOfThis = if (hasType) selfTypeCompleter(tpt) else owner.tpe
+          owner.typeOfThis = if (hasType) selfTypeCompleter(tpt) else owner.tpe_*
           val selfSym = owner.thisSym setPos self.pos
           if (hasName) selfSym setName name else selfSym
         }
@@ -934,7 +934,7 @@ trait Namers extends MethodSynthesis {
 
       // DEPMETTODO: do we need to skolemize value parameter symbols?
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
-        tpt defineType context.enclClass.owner.tpe
+        tpt defineType context.enclClass.owner.tpe_*
         tpt setPos meth.pos.focus
       }
       var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe

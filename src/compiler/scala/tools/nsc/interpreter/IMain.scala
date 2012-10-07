@@ -1064,7 +1064,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
   def cleanMemberDecl(owner: Symbol, member: Name): Type = exitingTyper {
     normalizeNonPublic {
-      owner.info.nonPrivateDecl(member).tpe match {
+      owner.info.nonPrivateDecl(member).tpe_* match {
         case NullaryMethodType(tp) => tp
         case tp                    => tp
       }
