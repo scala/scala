@@ -1,52 +1,43 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines types and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/** A trait that defines types and operations on them.
  *
- *  While [[scala.reflect.api.Symbols symbols]] establish the structure of the program by representing the hierarchy
- *  of definitions, types bring meaning to symbols. A type is not, say, `Int` -- that's just its symbol
- *  (assuming we are talking about `scala.Int`, and not just the name). A type is the information about all members
- *  that compose that thing: methods, fields, type parameters, nested classes and traits, etc. If a symbol represents
- *  a definition, a type represents the whole structure of that definition. It is the union of all definitions that
- *  compose a class, the description of what goes into a method and what comes out, etc.
+ *  Type instances represent information about the type of a corresponding symbol. This includes its members 
+ *  (methods, fields, type parameters, nested classes, traits, etc) either declared directly or inherited, its base types, 
+ *  its erasure and so on. Types also provide operation to test for type conformance or euqivalence or for widening.
  *
  *  === Instantiating types ===
  *
  *  There are three ways to instantiate types. The simplest one involves the [[scala.reflect.api.TypeTags#typeOf]] method,
  *  which takes a type argument and produces a `Type` instance that represents that argument. For example, `typeOf[List[Int]]`
  *  produces a [[scala.reflect.api.Types#TypeRef]], which corresponds to a type `List` applied to a type argument `Int`.
- *  When type parameters are involved (as, for example, in `typeOf[List[A]]`), `typeOf` won't work, and one should use
- *  [[scala.reflect.api.TypeTags#weakTypeOf]] instead. Refer to [[scala.reflect.api.TypeTags the type tags page]] to find out
+ *  Method `typeOf` does not work for types with type parameters, such as `typeOf[List[A]]` where `A` is a type variable. 
+ *  In this case, use [[scala.reflect.api.TypeTags#weakTypeOf]] instead. Refer to [[scala.reflect.api.TypeTags the type tags page]] to find out
  *  more about this distinction.
  *
  *  `typeOf` requires spelling out a type explicitly, but there's also a way to capture types implicitly with the [[scala.reflect.api.TypeTag#TypeTag]]
- *  context bound. Once a type parameter `T` is annotated with the `TypeTag` context bound, the for each usage of the enclosing class or method,
- *  the compiler will automatically produce a `Type` evidence, available via `typeTag[T]`. For example, inside a method
- *  `def test[T: TypeTag](x: T) = ...` one can use `typeTag[T]` to obtain the information about the exact type of `x` passed into that method.
- *  Similarly to the situation `typeOf`, sometimes `typeTag` does not work, and one has to use `weakTypeTag`.
- *  [[scala.reflect.api.TypeTags The type tags page]] tells more about this feature.
+ *  context bound. See [[scala.reflect.api.TypeTags the type tags page]] for details.
  *
- *  Finally types can be instantiated manually using factory methods such as `typeRef` or `polyType`.
- *  This is necessary only in cases when `typeOf` or `typeTag` cannot be applied, because the type cannot be spelt out
+ *  Finally, types can be instantiated manually using factory methods such as `typeRef` or `polyType`.
+ *  This is necessary only in cases when `typeOf` or `typeTag` cannot be applied because the type cannot be spelt out
  *  in a Scala snippet, usually when writing macros. Manual construction requires deep knowledge of Scala compiler internals
- *  and shouldn't be used, when there are other alternatives available.
+ *  and should be avoided if possible.
  *
  *  === Using types ===
  *
- *  Arguably the most useful application of types is looking up members. Every type has `members` and `declarations` methods (along with
- *  their singular counterparts `member` and `declaration`), which provide the list of definitions associated with that type.
- *  For example, to look up the `map` method of `List`, one could write `typeOf[List[_]].member("map": TermName)`, getting a `MethodSymbol`
+ *  Common operations on types are querying them for inner declarations or type conformance tests.
  *
- *  Another popular use case is doing subtype tests. Types expose `<:<` and `weak_<:<` methods for that purpose. The latter is
- *  an extension of the former - it also works with numeric types (for example, `Int <:< Long` is false, but `Int weak_<:< Long` is true).
- *  Unlike the subtype tests implemented by manifests, tests provided by `Type`s are aware of all the intricacies of the Scala type system
- *  and work correctly even for involved types.
+ *  Every type has `members` and `declarations` methods (along with their singular counterparts `member` and `declaration`), 
+ *  which provide the list of definitions associated with that type. For example, to look up the `map` method of `List`, one can 
+ *  write `typeOf[List[_]].member("map": TermName)`, getting a `MethodSymbol`
  *
- *  Finally a word must be said about equality of types. Due to an implementation detail, the vanilla `==` method should not be used
- *  to compare types for equality, as it might work in some circumstances and fizzle under conditions that are slightly different.
- *  Instead one should always use the `=:=` method. As an added bonus, `=:=` also knows about type aliases, e.g.
- *  `typeOf[scala.List[_]] =:= typeOf[scala.collection.immutable.List[_]]`.
+ *  Types expose `<:<` and `weak_<:<` methods to test for subtype relationships. The latter is an extension of the former - it also works 
+ *  with numeric types (for example, `Int <:< Long` is false, but `Int weak_<:< Long` is true). Unlike the subtype tests implemented by 
+ *  type tags, tests provided by `Type`s are aware of all the intricacies of the Scala type system and work correctly even for involved types.
+ *
+ *  The vanilla `==` method should not be used to compare types for equality. Instead, one should always use the `=:=` method. 
+ *  Operator `=:=` knows about type aliases, e.g., `typeOf[scala.List[_]] =:= typeOf[scala.collection.immutable.List[_]]`.
  *
  *  === Exploring types ===
  *
@@ -71,34 +62,6 @@ package api
  *  res1 @ 10139edf: String = I've been called for an x typed as List[Any]
  *  }}}
  *
- *  === How to get an internal representation of a type? ===
- *
- *  The `toString` method on types is designed to print a close-to-Scala representation
- *  of the code that a given type represents. This is usually convenient, but sometimes
- *  one would like to look under the covers and see what exactly are the elements that
- *  constitute a certain type.
- *
- *  Scala reflection provides a way to dig deeper through [[scala.reflect.api.Printers]]
- *  and their `showRaw` method. Refer to the page linked above for a series of detailed
- *  examples.
- *
- *  {{{
- *  scala> import scala.reflect.runtime.universe._
- *  import scala.reflect.runtime.universe._
- *
- *  scala> def tpe = typeOf[{ def x: Int; val y: List[Int] }]
- *  tpe: reflect.runtime.universe.Type
- *
- *  scala> show(tpe)
- *  res0: String = scala.AnyRef{def x: Int; val y: scala.List[Int]}
- *
- *  scala> showRaw(tpe)
- *  res1: String = RefinedType(
- *    List(TypeRef(ThisType(scala), newTypeName("AnyRef"), List())),
- *    Scope(
- *      newTermName("x"),
- *      newTermName("y")))
- *  }}}
  */
 trait Types { self: Universe =>
 
@@ -184,7 +147,8 @@ trait Types { self: Universe =>
     /** Does this type conform to given type argument `that`? */
     def <:< (that: Type): Boolean
 
-    /** Is this type a weak subtype of that type? True also for numeric types, i.e. Int weak_<:< Long.
+    /** Does this type weakly conform to given type argument `that`, i.e., either conforms in terms of `<:<` or both are primitive number types
+     *  that conform according to Section "Weak Conformance" in the spec. For example, Int weak_<:< Long.
      */
     def weak_<:<(that: Type): Boolean
 

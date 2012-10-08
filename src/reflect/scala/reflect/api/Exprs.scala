@@ -11,29 +11,20 @@ import scala.reflect.runtime.{universe => ru}
 /** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines strongly-typed tree wrappers and operations on them.
  *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
  *
- *  Expr wraps an abstract syntax tree ([[scala.reflect.api.Trees#Tree]]) and tags it with its type ([[scala.reflect.api.Types#Type]]).
+ *  `Expr` wraps an abstract syntax tree ([[scala.reflect.api.Trees#Tree]]) and tags it with its type ([[scala.reflect.api.Types#Type]]).
  *
- *  Usually exprs are created via [[scala.reflect.api.Universe#reify]], in which case a compiler
+ *  Usually `Expr`s are created via [[scala.reflect.api.Universe#reify]], in which case a compiler
  *  produces a [[scala.reflect.api.TreeCreator]] for the provided expression and also
  *  creates a complementary [[scala.reflect.api.TypeTags#WeakTypeTag]] that corresponds to the type of that expression.
  *
- *  Thanks to using TreeCreators, exprs are essentially tree factories, capable of instantiating
- *  themselves in any universe and mirror. This is achieved by the `in` method, which performs
- *  migration of a given expression to another mirror. Migration means that all symbolic references
+ * `Expr`s can also be created manually via the `Expr` companion object, but then the burden of providing a `TreeCreator` lies on the programmer.
+ *  Compile-time reflection via macros, as described in [[scala.reflect.macros.Aliases]], provides an easier way to instantiate exprs manually.
+ *  Manual creation, however, is very rarely needed when working with runtime reflection. 
+ *
+ *  `Expr` can be migrated from one mirror to another by using the `in` method. Migration means that all symbolic references
  *  to classes/objects/packages in the expression are re-resolved within the new mirror
- *  (typically using that mirror's classloader). Default universe of an expr is typically
- *  [[scala.reflect.runtime.package#universe]], default mirror is typically [[scala.reflect.runtime.package#currentMirror]].
- *
- *  Exprs can also be created manually, but then the burden of providing a TreeCreator lies on the programmer.
- *  However, on the one hand, manual creation is very rarely needed when working with runtime reflection,
- *  while, on the other hand, compile-time reflection via macros provides an easier way to instantiate exprs,
- *  described in [[scala.reflect.macros.Aliases]].
- *
- *  === Known issues ===
- *
- *  Exprs are marked as serializable, but this functionality is not yet implemented.
- *  An issue tracker entry: [[https://issues.scala-lang.org/browse/SI-5919 https://issues.scala-lang.org/browse/SI-5919]]
- *  has been created to track the implementation of this feature.
+ *  (typically using that mirror's classloader). The default universe of an `Expr` is typically
+ *  [[scala.reflect.runtime.package#universe]], the default mirror is typically [[scala.reflect.runtime.package#currentMirror]].
  */
 trait Exprs { self: Universe =>
 

@@ -1,8 +1,10 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines mirrors and operations on them.
- *  See [[scala.reflect.api.package the overview page]] for a description of mirrors and infomation on getting started with Scala reflection API.
+/** This trait provides support for Mirrors in the reflection API. 
+ *
+ *  See the [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for a description of mirrors 
+ *  and infomation on getting started with Scala reflection API.
  */
 trait Mirrors { self: Universe =>
 

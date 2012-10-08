@@ -1,15 +1,14 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines scopes and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/** This trait provides support for scopes in the reflection API.
  *
- *  A scope object generally maps names to symbols available in some lexical scope.
+ *  A scope object generally maps names to symbols available in a corresponding lexical scope.
  *  Scopes can be nested. The base type exposed to the reflection API, however,
  *  only exposes a minimal interface, representing a scope as an iterable of symbols.
  *
  *  For rare occasions when it is necessary to create a scope manually,
- *  e.g. to populate members of [[scala.reflect.api.Types#RefinedType]],
+ *  e.g., to populate members of [[scala.reflect.api.Types#RefinedType]],
  *  there is the `newScopeWith` function.
  *
  *  Additional functionality is exposed in member scopes that are returned by

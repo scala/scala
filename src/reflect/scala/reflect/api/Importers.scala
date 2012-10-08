@@ -1,25 +1,24 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines importers and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/** This trait provides support for importers, a facility to migrate reflection artifacts between universes. 
  *
- *  As described in [[scala.reflect.api.package]], reflection artifacts are contained in universes.
- *  Typically all processing happens within a single universe (e.g. a compile-time macro universe
- *  or a runtime reflection universe), but sometimes there is a need to migrate artifacts from
- *  one universe to another (e.g. runtime compilation works by importing runtime reflection trees
- *  into a runtime compiler universe, compiling the importees and exporting the result back).
+ *  Reflection artifacts, such as symbols and types, are contained in universes. Typically all processing happens 
+ *  within a single universe (e.g. a compile-time macro universe or a runtime reflection universe), but sometimes 
+ *  there is a need to migrate artifacts from one universe to another. For example, runtime compilation works by 
+ *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the 
+ *  result back.
  *
- *  Reflection artifacts are firmly grounded in their universes, it is impossible
- *  to just move them around. Instead importers locate or recreate corresponding artifacts
- *  in the target universe. For example, to import `foo.bar.Baz` from the source universe to the target universe,
+ *  Reflection artifacts are firmly grounded in their universes, which is reflected by the fact that types of artifacts 
+ *  from different universes are not compatible. By using importers, however, they be imported from one universe 
+ *  into another. For example, to import `foo.bar.Baz` from the source universe to the target universe,
  *  an importer will first check whether the entire owner chain exists in the target universe.
  *  If it does, then nothing else will be done. Otherwise, the importer will recreate the entire owner chain
  *  and will import the corresponding type signaturers into the target universe.
  *
  *  Since importers match symbol tables of the source and the target universes using plain string names,
- *  it is programmer's responsibility to make sure that imports don't distort semantics (e.g. that
- *  `foo.bar.Baz` in the source universe means the same that `foo.bar.Baz` does in the target universe).
+ *  it is programmer's responsibility to make sure that imports don't distort semantics, e.g., that
+ *  `foo.bar.Baz` in the source universe means the same that `foo.bar.Baz` does in the target universe.
  *
  *  === Known issues ===
  *

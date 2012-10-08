@@ -1,14 +1,15 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines symbols and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/** This trait defines symbols and operations on them.
+ *
+ *  See the [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for a description of symbols 
+ *  and infomation on getting started with Scala reflection API.
  *
  *  === Symbols from a compile-time perspective ===
  *
- *  [[http://dcsobral.blogspot.ch/2012/08/json-serialization-with-reflection-in.html To quote Daniel Sobral]],
- *  anything you define in Scala has a symbol. If you give something a name,
- *  then it has a symbol associated with it. If you didn't give it a name, but you could have, then it has a symbol.
+ *  Anything you define in Scala has a symbol. If you give something a name, then it has a symbol associated with it. 
+ *  If you didn't give it a name, but you could have, then it has a symbol.
  *
  *  Symbols are used by the Scala compiler to establish bindings. When typechecking a Scala program,
  *  the compiler populates [[scala.reflect.api.Trees#RefTrees ref trees]], such as [[scala.reflect.api.Trees#Ident Ident]]

@@ -6,7 +6,7 @@ package api
  *  The refinement consists of an upgrade to the mirror API, which gets extended from [[scala.reflect.api.Mirror]]
  *  to [[scala.reflect.api.JavaMirrors#JavaMirror]].
  *
- *  See [[scala.reflect.api.package the overview page]] for details on how to use runtime reflection.
+ *  See the [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for details on how to use runtime reflection.
  */
 trait JavaUniverse extends Universe with JavaMirrors { self =>
 

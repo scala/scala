@@ -3,87 +3,28 @@ package api
 
 import scala.collection.immutable.ListMap
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines annotations and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/** This trait provides annotation support for the reflection API. 
  *
- *  Scala reflection supports:
- *    1. Annotations on definitions or types produced by the Scala compiler, i.e. subtypes of both
- *    [[scala.annotation.StaticAnnotation]] and [[scala.annotation.ClassfileAnnotation]] attached to program definitions or types
- *    (note: subclassing just [[scala.annotation.Annotation]] is not enough to have the corresponding
- *    metadata persisted for runtime reflection).
- *    1. Annotations on definitions produced by the Java compiler, i.e. subtypes of [[java.lang.annotation.Annotation]]
+ *  The API distinguishes between two kinds of annotations:
+ *    1. ''Java annotations'': annotations on definitions produced by the Java compiler, i.e., subtypes of [[java.lang.annotation.Annotation]]
  *    attached to program definitions. When read by Scala reflection, the [[scala.annotation.ClassfileAnnotation]] trait
  *    is automatically added as a subclass to every Java annotation.
- *
- *  First of all [[scala.reflect.api.Annotations#Annotation]] provides `tpe`, which describes the type of the annotation.
- *  Depending on the superclasses of `tpe`, there are two flavors of annotations.
- *
- *  When annotations that subclass of [[scala.annotation.StaticAnnotation]] (dubbed ''Scala annotations'') are compiled by the Scala compiler,
- *  the information about them is ''pickled'', i.e. stored in special attributes in class files. To the contrast,
- *  annotations subclassing [[scala.annotation.ClassfileAnnotation]] (called ''Java annotations'') are written to class files as Java annotations.
- *  This distinction is manifested in the contract of [[scala.reflect.api.Annotations#Annotation]], which exposes
- *  both `scalaArgs` and `javaArgs`.
- *
- *  For Scala annotations, arguments are stored in `scalaArgs` and `javaArgs` is empty. Arguments in
- *  `scalaArgs` are represented as typed trees. Note that these trees are not transformed by any phases
- *  following the type-checker.
- *
- *  For Java annotations, `scalaArgs` is empty and arguments are stored in `javaArgs`.
- *  In this case, unlike in Java, Scala reflection only provides a key-value store of type [[scala.collection.immutable.ListMap]] from [[scala.reflect.api.Names#Name]] to
- *  [[scala.reflect.api.Annotations#JavaArgument]] that describes the annotations. Instances of `JavaArgument`
- *  represent different kinds of Java annotation arguments: literals (primitive and string constants), arrays and nested annotations.
- *  One shoud match against [[scala.reflect.api.Annotations#LiteralArgument]], [[scala.reflect.api.Annotations#ArrayArgument]] and [[scala.reflect.api.Annotations#NestedArgument]]
- *  to analyze them. We acknowledge that this process can be made more convenient and created [[https://issues.scala-lang.org/browse/SI-6423 an issue]] in the issue tracker
- *  to discuss possible improvements and track progress.
- *
- *  === Example ===
- *
- *  Entry points to the annotation API are [[scala.reflect.api.Symbols#Symbol.annotations]] (for definition annotations)
- *  and [[scala.reflect.api.Types#AnnotatedType]] (for type annotations).
- *
- *  To get annotations attached to a definition, first load the corresponding symbol (either explicitly using a [[scala.reflect.api.Mirror]]
- *  such as [[scala.reflect.runtime.package#currentMirror]]
- *  or implicitly using [[scala.reflect.api.TypeTags#typeOf]] and then either acquiring its `typeSymbol` or navigating its `members`).
- *  After the symbol is loaded, call its `annotations` method.
- *
- *  When inspecting a symbol for annotations, one should make sure that the inspected symbol is indeed the target of the annotation being looked for.
- *  Since single Scala definitions might produce multiple underlying definitions in bytecode, sometimes the notion of annotation's target is convoluted.
- *  For example, by default an annotation placed on a `val` will be attached to the private underlying field rather than to the getter
- *  (therefore to get such an annotation, one needs to do not `getter.annotations`, but `getter.asTerm.accessed.annotations`).
- *  This can get nasty with abstract vals, which don't have underlying fields and therefore ignore their annotations unless special measures are taken.
- *  See [[scala.annotation.meta.package]] for more information.
- *
- *  To get annotations attached to a type, simply pattern match that type against [[scala.reflect.api.Types#AnnotatedType]].
-
- *  {{{
- *  import scala.reflect.runtime.universe._
- *
- *  class S(x: Int, y: Int) extends scala.annotation.StaticAnnotation
- *  class J(x: Int, y: Int) extends scala.annotation.ClassfileAnnotation
- *
- *  object Test extends App {
- *    val x = 2
- *
- *    // Scala annotations are the most flexible with respect to
- *    // the richness of metadata they can store.
- *    // Arguments of such annotations are stored as abstract syntax trees,
- *    // so they can represent and persist arbitrary Scala expressions.
- *    @S(x, 2) class C
- *    val c = typeOf[C].typeSymbol
- *    println(c.annotations)                           // List(S(Test.this.x, 2))
- *    val tree = c.annotations(0).scalaArgs(0)
- *    println(showRaw(tree))                           // Select(..., newTermName("x"))
- *    println(tree.symbol.owner)                       // object Test
- *    println(showRaw(c.annotations(0).scalaArgs(1)))  // Literal(Constant(2))
- *
- *    // Java annotations are limited to predefined kinds of arguments:
- *    // literals (primitives and strings), arrays and nested annotations.
- *    @J(x = 2, y = 2) class D
- *    val d = typeOf[D].typeSymbol
- *    println(d.annotations)                           // List(J(x = 2, y = 2))
- *    println(d.annotations(0).javaArgs)               // Map(x -> 2, y -> 2)
- *  }
- *  }}}
+ *    2. ''Scala annotations'': annotations on definitions or types produced by the Scala compiler. 
+ *    
+ *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] or [[scala.annotation.ClassfileAnnotation]] is compiled, 
+ *  it is stored as special attributes in the corresponding classfile, and not as a Java annotation. Note that subclassing 
+ *  just [[scala.annotation.Annotation]] is not enough to have the corresponding metadata persisted for runtime reflection.
+ *  
+ *  The distinction between Java and Scala annotations is manifested in the contract of [[scala.reflect.api.Annotations#Annotation]], which exposes
+ *  both `scalaArgs` and `javaArgs`. For Scala or Java annotations extending [[scala.annotation.ClassfileAnnotation]] `scalaArgs` is empty 
+ *  and arguments are stored in `javaArgs`. For all other Scala annotations, arguments are stored in `scalaArgs` and `javaArgs` is empty.
+ * 
+ *  Arguments in `scalaArgs` are represented as typed trees. Note that these trees are not transformed by any phases
+ *  following the type-checker. Arguments in `javaArgs` are repesented as a map from [[scala.reflect.api.Names#Name]] to
+ *  [[scala.reflect.api.Annotations#JavaArgument]]. Instances of `JavaArgument` represent different kinds of Java annotation arguments: 
+ *    - literals (primitive and string constants),
+ *    - arrays and 
+ *    - nested annotations.
  */
 trait Annotations { self: Universe =>
 

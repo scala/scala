@@ -1,7 +1,7 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that provides type tag <-> manifest interop.
+/** This trait provides type tag <-> manifest interoperability.
  */
 trait TagInterop { self: Universe =>
   // TODO `mirror` parameters are now of type `Any`, because I can't make these path-dependent types work
