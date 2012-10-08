@@ -24,8 +24,8 @@ import scala.collection.GenSeq
 
 /** An immutable variant of `ParSeq`.
  *
- *  @define Coll `mutable.ParSeq`
- *  @define coll mutable parallel sequence
+ *  @define Coll `immutable.ParSeq`
+ *  @define coll immutable parallel sequence
  */
 trait ParSeq[+T]
 extends scala.collection/*.immutable*/.GenSeq[T]
