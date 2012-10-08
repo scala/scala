@@ -1,10 +1,9 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines positions and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/** This trait defines the concept of positions and operations on them.
  *
- *  The main documentation entry about positions is located at [[scala.reflect.api.Position]].
+ *  @see [[scala.reflect.api.Position]]
  */
 trait Positions {
   self: Universe =>

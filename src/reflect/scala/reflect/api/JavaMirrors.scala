@@ -3,11 +3,9 @@ package api
 
 /** A refinement of [[scala.reflect.api.Mirror]] for runtime reflection using JVM classloaders.
  *
- *  With this upgrade, mirrors become capable of converting Scala reflection artifacts (symbols and types)
- *  into Java reflection artifacts (classes) and vice versa. Consequently refined mirrors
- *  become capable of performing reflective invocations (getting/settings field values, calling methods, etc).
- *
- *  See [[scala.reflect.api.package the overview page]] for details on how to use runtime reflection.
+ *  This refinement equips mirrors with reflection capabilities for the JVM. `JavaMirror` can
+ *  convert Scala reflection artifacts (symbols and types) into Java reflection artifacts (classes)
+ *  and vice versa. It can also perform reflective invocations (getting/settings field values, calling methods, etc).
  */
 trait JavaMirrors { self: JavaUniverse =>
 
