@@ -1,6 +1,6 @@
 import scala.collection.{ immutable, mutable }
 
-object Test extends Application {
+object Test extends App {
   def mutableStack[T](xs: T*): mutable.Stack[T] = {
     val s = new mutable.Stack[T]
     s.pushAll(xs)
