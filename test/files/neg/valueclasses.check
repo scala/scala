@@ -25,13 +25,13 @@ class V5(private val x: Int) extends AnyVal // fail
 valueclasses.scala:19: error: value class needs to have exactly one public val parameter
 class V6(val x: Int, val y: String) extends AnyVal // fail
       ^
-valueclasses.scala:20: error: illegal parameter for value class
+valueclasses.scala:20: error: field definition is not allowed in value class
 class V7(val x: Int, private[this] val y: String) extends AnyVal // fail
                                        ^
 valueclasses.scala:21: error: value class needs to have exactly one public val parameter
 class V8(var x: Int) extends AnyVal // fail
       ^
-valueclasses.scala:24: error: this statement is not allowed in value class: private[this] val y: Int = V9.this.x
+valueclasses.scala:24: error: field definition is not allowed in value class
   val y = x    // fail
       ^
 valueclasses.scala:29: error: type parameter of value class may not be specialized
