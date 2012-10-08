@@ -120,10 +120,7 @@ trait MemberLookup {
   private object OnlyTerm extends SearchStrategy
 
   private def lookupInRootPackage(pos: Position, members: List[String]) =
-    if (members.length == 1)
-      lookupInTemplate(pos, members, EmptyPackage) ::: lookupInTemplate(pos, members, RootPackage)
-    else
-      lookupInTemplate(pos, members, RootPackage)
+    lookupInTemplate(pos, members, EmptyPackage) ::: lookupInTemplate(pos, members, RootPackage)
 
   private def createLinks(syms: List[(Symbol, Symbol)]): List[LinkTo] =
     syms.flatMap { case (sym, owner) =>
@@ -153,7 +150,7 @@ trait MemberLookup {
 
       case tplName::rest =>
         def completeSearch(syms: List[Symbol]) =
-          syms filter {sym => sym.isPackage || sym.isClass || sym.isModule} flatMap (lookupInTemplate(pos, rest, _))
+          syms flatMap (lookupInTemplate(pos, rest, _))
 
         completeSearch(lookupInTemplate(pos, tplName, container, OnlyTerm)) match {
           case Nil => completeSearch(lookupInTemplate(pos, tplName, container, OnlyType))
