@@ -19,6 +19,6 @@ trait Parsers {
     } catch {
       case ToolBoxError(msg, cause) =>
         // todo. provide a position
-        throw new ParseError(universe.NoPosition, msg)
+        throw new ParseException(universe.NoPosition, msg)
     }
 }

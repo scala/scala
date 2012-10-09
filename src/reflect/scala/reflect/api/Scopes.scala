@@ -21,6 +21,9 @@ trait Scopes { self: Universe =>
    */
   implicit val ScopeTag: ClassTag[Scope]
 
+  /** Create a new scope with the given initial elements. */
+  def newScopeWith(elems: Symbol*): Scope
+
   /** The type of member scopes, as in class definitions, for example. */
   type MemberScope >: Null <: Scope with MemberScopeApi
 
@@ -28,7 +31,7 @@ trait Scopes { self: Universe =>
   trait MemberScopeApi extends ScopeApi {
     /** Sorts the symbols included in this scope so that:
      *    1) Symbols appear in the linearization order of their owners.
-     *    2) Symbols with the same owner appear in reverse order of their declarations.
+     *    2) Symbols with the same owner appear in same order of their declarations.
      *    3) Synthetic members (e.g. getters/setters for vals/vars) might appear in arbitrary order.
      */
     def sorted: List[Symbol]
@@ -38,13 +41,4 @@ trait Scopes { self: Universe =>
    *  Can be used for pattern matching, instance tests, serialization and likes.
    */
   implicit val MemberScopeTag: ClassTag[MemberScope]
-
-  /** Create a new scope. */
-  def newScope: Scope
-
-  /** Create a new scope nested in another one with which it shares its elements. */
-  def newNestedScope(outer: Scope): Scope
-
-  /** Create a new scope with the given initial elements. */
-  def newScopeWith(elems: Symbol*): Scope
 }

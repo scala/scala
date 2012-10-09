@@ -21,14 +21,12 @@ trait FlagSets { self: Universe =>
 
   val Flag: FlagValues
 
-  type FlagValues >: Null <: FlagValuesApi
-
   // Q: I have a pretty flag. Can I put it here?
   // A: Only if there's a tree that cannot be built without it.
   //    If you want to put a flag here so that it can be tested against,
   //    introduce an `isXXX` method in one of the `api.Symbols` classes instead.
 
-  trait FlagValuesApi {
+  trait FlagValues {
 
     /** Flag indicating that tree represents a trait */
     val TRAIT: FlagSet

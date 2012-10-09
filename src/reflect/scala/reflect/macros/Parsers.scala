@@ -10,5 +10,6 @@ trait Parsers {
   def parse(code: String): Tree
 }
 
-// should be path-dependent, otherwise exception handling becomes a mess
-case class ParseError(val pos: scala.reflect.api.Position, val msg: String) extends Throwable(msg)
+/** Indicates an error during [[scala.reflect.macros.Parsers#Parse]].
+ */
+case class ParseException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)

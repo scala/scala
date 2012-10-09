@@ -166,9 +166,6 @@ trait Mirrors { self: Universe =>
   /** A mirror that reflects the instance or static parts of a runtime class */
   trait TemplateMirror {
 
-    /** The runtime class reflected by this mirror */
-    def runtimeClass: RuntimeClass
-
     /** True if the mirror represents the static part
      *  of a runtime class or the companion object of a Scala class.
      *  One has:
@@ -180,18 +177,6 @@ trait Mirrors { self: Universe =>
 
     /** The Scala symbol corresponding to the reflected runtime class or object */
     def symbol: Symbol
-
-    /** Optionally, the mirror of the companion reflected by this mirror.
-     *  If this mirror reflects a Scala object, the mirror for the companion class, or None
-     *  if the mirror represents a Scala object that comes without a class.
-     *  Otherwise, if the mirror represents the static part of a runtime class, the
-     *  mirror representing the instance part of the same class.
-     *  Otherwise, if the mirror represents a Scala instance class, the mirror for the companion
-     *  object of that class, or None if no such object exists.
-     *  Otherwise, if the mirror represents a runtime instance class, a mirror representing the static
-     *  part of the same class.
-     */
-    def companion: Option[TemplateMirror]
   }
 
   /** A mirror that reflects a Scala object definition or the static parts of a runtime class */
@@ -205,14 +190,6 @@ trait Mirrors { self: Universe =>
      *  If this mirror reflects the static part of a runtime class, returns `null`.
      */
     def instance: Any
-
-    /** Optionally, the mirror of the companion class if the object reflected by this mirror.
-     *  If this mirror reflects a Scala object, the mirror for the companion class, or None
-     *  if the mirror represents a Scala object that comes without a class.
-     *  Otherwise, if the mirror represents the static part of a runtime class, the
-     *  mirror representing the instance part of the same class.
-     */
-    override def companion: Option[ClassMirror]
   }
 
   /** A mirror that reflects the instance parts of a runtime class */
@@ -232,14 +209,6 @@ trait Mirrors { self: Universe =>
      *  It must be a member (declared or inherited) of the class underlying this mirror.
      */
     def reflectConstructor(constructor: MethodSymbol): MethodMirror
-
-    /** Optionally, the mirror of the companion object of the class reflected by this mirror.
-     *  If this mirror represents a Scala instance class, the mirror for the companion
-     *  object of that class, or None if no such object exists.
-     *  Otherwise, if the mirror represents a runtime instance class, a mirror representing the static
-     *  part of the same class.
-     */
-    override def companion: Option[ModuleMirror]
   }
 
   /** A mirror that reflects instances and static classes */

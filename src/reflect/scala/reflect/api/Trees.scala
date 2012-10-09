@@ -99,9 +99,6 @@ trait Trees { self: Universe =>
      */
     def symbol: Symbol
 
-    /** ... */
-    def hasSymbol: Boolean
-
     /** Provides an alternate if tree is empty
      *  @param  alt  The alternate tree
      *  @return If this tree is non empty, this tree, otherwise `alt`.
@@ -1967,12 +1964,12 @@ trait Trees { self: Universe =>
   val Modifiers: ModifiersCreator
 
   abstract class ModifiersCreator {
-    def apply(): Modifiers = Modifiers(NoFlags, EmptyTypeName, List())
+    def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
   }
 
   def Modifiers(flags: FlagSet, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
-  def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, EmptyTypeName)
+  def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, tpnme.EMPTY)
 
   /** ... */
   lazy val NoMods = Modifiers()

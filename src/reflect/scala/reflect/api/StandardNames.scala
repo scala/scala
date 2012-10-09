@@ -23,7 +23,6 @@ trait StandardNames {
   trait NamesApi {
     type NameType >: Null <: Name
     val WILDCARD: NameType
-    val ROOT: NameType
     val EMPTY: NameType
     val ERROR: NameType
     val PACKAGE: NameType
@@ -38,7 +37,6 @@ trait StandardNames {
 
   trait TypeNamesApi extends NamesApi {
     type NameType = TypeName
-    val EMPTY: NameType
     val WILDCARD_STAR: NameType
   }
 }

@@ -5,7 +5,7 @@ import java.io.{ PrintWriter, StringWriter }
 
 trait Printers { self: Universe =>
 
-  trait TreePrinter {
+  protected trait TreePrinter {
     def print(args: Any*)
     protected var printTypes = false
     protected var printIds = false
@@ -52,7 +52,7 @@ trait Printers { self: Universe =>
 
   /** Hook to define what `show(...)` means.
    */
-  def newTreePrinter(out: PrintWriter): TreePrinter
+  protected def newTreePrinter(out: PrintWriter): TreePrinter
 
   /** Renders internal structure of a reflection artifact.
    */
@@ -61,7 +61,7 @@ trait Printers { self: Universe =>
 
   /** Hook to define what `showRaw(...)` means.
    */
-  def newRawTreePrinter(out: PrintWriter): TreePrinter
+  protected def newRawTreePrinter(out: PrintWriter): TreePrinter
 
   /** Renders a prettified representation of a name.
    */
