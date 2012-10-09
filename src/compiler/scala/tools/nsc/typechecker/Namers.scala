@@ -377,6 +377,8 @@ trait Namers extends MethodSynthesis {
         && (clazz.sourceFile ne null)
         && (module.sourceFile ne null)
         && !(module isCoDefinedWith clazz)
+        && module.exists
+        && clazz.exists
       )
       if (fails) {
         context.unit.error(tree.pos, (
