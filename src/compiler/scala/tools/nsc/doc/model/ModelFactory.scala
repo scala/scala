@@ -31,6 +31,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
   import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
+  // Defaults for member grouping, that may be overridden by the template
+  val defaultGroup = "Ungrouped"
+  val defaultGroupName = "Ungrouped"
+  val defaultGroupDesc = None
+  val defaultGroupPriority = 1000
+
   def templatesCount = docTemplatesCache.count(_._2.isDocTemplate) - droppedPackages.size
 
   private var _modelFinished = false
@@ -121,7 +127,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       }
       if (inTpl != null) thisFactory.comment(sym, thisTpl, inTpl) else None
     }
-    def group = if (comment.isDefined) comment.get.group.getOrElse("No Group") else "No Group"
+    def group = if (comment.isDefined) comment.get.group.getOrElse(defaultGroup) else defaultGroup
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     def inDefinitionTemplates = this match {
@@ -493,16 +499,21 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         if (entity != default) return entity
       }
       // query linearization
-      for (tpl <- linearizationTemplates.collect{ case dtpl: DocTemplateImpl if dtpl!=this => dtpl}) {
-        val entity = tpl.groupSearch(extractor, default)
-        if (entity != default) return entity
-      }
-      default
+      if (!sym.isPackage)
+        for (tpl <- linearizationTemplates.collect{ case dtpl: DocTemplateImpl if dtpl!=this => dtpl}) {
+          val entity = tpl.groupSearch(extractor, default)
+          if (entity != default) return entity
+        }
+      // query inTpl, going up the ownerChain
+      if (inTpl != null)
+        inTpl.groupSearch(extractor, default)
+      else
+        default
     }
 
-    def groupDescription(group: String): Option[Body] = groupSearch(_.groupDesc.get(group), None)
-    def groupPriority(group: String): Int = groupSearch(_.groupPrio.get(group) match { case Some(prio) => prio; case _ => 0 }, 0)
-    def groupName(group: String): String = groupSearch(_.groupNames.get(group) match { case Some(name) => name; case _ => group }, group)
+    def groupDescription(group: String): Option[Body] = groupSearch(_.groupDesc.get(group), if (group == defaultGroup) defaultGroupDesc else None)
+    def groupPriority(group: String): Int = groupSearch(_.groupPrio.get(group) match { case Some(prio) => prio; case _ => 0 }, if (group == defaultGroup) defaultGroupPriority else 0)
+    def groupName(group: String): String = groupSearch(_.groupNames.get(group) match { case Some(name) => name; case _ => group }, if (group == defaultGroup) defaultGroupName else group)
   }
 
   abstract class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
