@@ -7,6 +7,7 @@ package scala.tools.nsc
 package doc
 
 import java.io.File
+import java.net.URI
 import java.lang.System
 import scala.language.postfixOps
 
@@ -194,10 +195,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
   )
 
-  val docExternalUrls = MultiStringSetting (
-    "-external-urls",
-    "externalUrl(s)",
-    "comma-separated list of package_names=doc_URL for external dependencies, where package names are ':'-separated"
+  val docExternalUris = MultiStringSetting (
+    "-external-uris",
+    "externalUri(s)",
+    "comma-separated list of file://classpath_entry_path#doc_URL URIs for external dependencies"
   )
 
   val docGroups = BooleanSetting (
@@ -244,21 +245,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     }
   }
 
-  // TODO: Enable scaladoc to scoop up the package list from another scaladoc site, just as javadoc does
-  //   -external-urls 'http://www.scala-lang.org/archives/downloads/distrib/files/nightly/docs/library'
-  // should trigger scaldoc to fetch the package-list file. The steps necessary:
-  // 1 - list all packages generated in scaladoc in the package-list file, exactly as javadoc:
-  //     see http://docs.oracle.com/javase/6/docs/api/package-list for http://docs.oracle.com/javase/6/docs/api
-  // 2 - download the file and add the packages to the list
-  lazy val extUrlMapping: Map[String, String] = (Map.empty[String, String] /: docExternalUrls.value) {
-    case (map, binding) =>
-      val idx = binding indexOf "="
-      val pkgs = binding substring (0, idx) split ":"
-      var url = binding substring (idx + 1)
-      val index = "/index.html"
-      url = if (url.endsWith(index)) url else url + index
-      map ++ (pkgs map (_ -> url))
-  }
+  lazy val extUrlMapping: Map[String, String] = docExternalUris.value map { s =>
+    val uri = new URI(s)
+    uri.getSchemeSpecificPart -> uri.getFragment
+  } toMap
 
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,
