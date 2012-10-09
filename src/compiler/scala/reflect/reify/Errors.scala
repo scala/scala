@@ -71,4 +71,9 @@ trait Errors {
     val msg = "internal error: erroneous reifees are not supported, make sure that your reifee has typechecked successfully before passing it to the reifier"
     throw new UnexpectedReificationError(defaultErrorPosition, msg)
   }
+
+  def CannotReifyInvalidLazyVal(tree: ValDef) = {
+    val msg = "internal error: could not reconstruct original lazy val due to missing accessor"
+    throw new UnexpectedReificationError(tree.pos, msg)
+  }
 }
