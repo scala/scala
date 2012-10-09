@@ -46,13 +46,13 @@ trait Reshape {
           if (discard) hk else ta
         case classDef @ ClassDef(mods, name, params, impl) =>
           val Template(parents, self, body) = impl
-          var body1 = trimAccessors(classDef, body)
+          var body1 = trimAccessors(classDef, reshapeLazyVals(body))
           body1 = trimSyntheticCaseClassMembers(classDef, body1)
           var impl1 = Template(parents, self, body1).copyAttrs(impl)
           ClassDef(mods, name, params, impl1).copyAttrs(classDef)
         case moduledef @ ModuleDef(mods, name, impl) =>
           val Template(parents, self, body) = impl
-          var body1 = trimAccessors(moduledef, body)
+          var body1 = trimAccessors(moduledef, reshapeLazyVals(body))
           body1 = trimSyntheticCaseClassMembers(moduledef, body1)
           var impl1 = Template(parents, self, body1).copyAttrs(impl)
           ModuleDef(mods, name, impl1).copyAttrs(moduledef)
@@ -60,15 +60,11 @@ trait Reshape {
           val discardedParents = parents collect { case tt: TypeTree => tt } filter isDiscarded
           if (reifyDebug && discardedParents.length > 0) println("discarding parents in Template: " + discardedParents.mkString(", "))
           val parents1 = parents diff discardedParents
-          val body1 = trimSyntheticCaseClassCompanions(body)
+          val body1 = reshapeLazyVals(trimSyntheticCaseClassCompanions(body))
           Template(parents1, self, body1).copyAttrs(template)
         case block @ Block(stats, expr) =>
-          val stats1 = trimSyntheticCaseClassCompanions(stats)
+          val stats1 = reshapeLazyVals(trimSyntheticCaseClassCompanions(stats))
           Block(stats1, expr).copyAttrs(block)
-        case valdef @ ValDef(mods, name, tpt, rhs) if valdef.symbol.isLazy =>
-          if (reifyDebug) println("dropping $lzy in lazy val's name: " + tree)
-          val name1 = if (name endsWith nme.LAZY_LOCAL) name dropRight nme.LAZY_LOCAL.length else name
-          ValDef(mods, name1, tpt, rhs).copyAttrs(valdef)
         case unapply @ UnApply(fun, args) =>
           def extractExtractor(tree: Tree): Tree = {
             val Apply(fun, args) = tree
@@ -248,6 +244,20 @@ trait Reshape {
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
     }
 
+    private def toPreTyperLazyVal(ddef: DefDef): ValDef = {
+      def extractRhs(rhs: Tree) = rhs match {
+        case Block(Assign(lhs, rhs)::Nil, _) if lhs.symbol.isLazy => rhs
+        case _ => rhs // unit or trait case
+      }
+      val DefDef(mods0, name0, _, _, tpt0, rhs0) = ddef
+      val name1 = nme.dropLocalSuffix(name0)
+      val Modifiers(flags0, privateWithin0, annotations0) = mods0
+      var flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
+      val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
+      val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
+      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
+    }
+
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
       val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
       val accessors = scala.collection.mutable.Map[ValDef, List[DefDef]]()
@@ -270,7 +280,7 @@ trait Reshape {
       });
 
       var stats1 = stats flatMap {
-        case vdef @ ValDef(mods, name, tpt, rhs) =>
+        case vdef @ ValDef(mods, name, tpt, rhs) if !mods.isLazy =>
           val mods1 = if (accessors.contains(vdef)) {
             val ddef = accessors(vdef)(0) // any accessor will do
             val Modifiers(flags, privateWithin, annotations) = mods
@@ -287,7 +297,9 @@ trait Reshape {
           val vdef1 = ValDef(mods2, name1, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
           Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync
-        case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        case ddef: DefDef if !ddef.mods.isLazy =>
+          // lazy val accessors are removed in reshapeLazyVals
+          // as they are needed to recreate lazy vals
           if (accessors.values.exists(_.contains(ddef))) {
             if (reifyDebug) println("discarding accessor method: " + ddef)
             None
@@ -299,6 +311,34 @@ trait Reshape {
       }
 
       stats1
+    }
+
+    private def reshapeLazyVals(stats: List[Tree]): List[Tree] = {
+      val lazyvaldefs:Map[Symbol, DefDef] = stats.collect({ case ddef: DefDef if ddef.mods.isLazy => ddef }).
+        map((ddef: DefDef) => ddef.symbol -> ddef).toMap
+      // lazy valdef and defdef are in the same block.
+      // only that valdef needs to have its rhs rebuilt from defdef
+      stats flatMap (stat => stat match {
+        case vdef: ValDef if vdef.symbol.isLazy =>
+          if (reifyDebug) println(s"reconstructing original lazy value for $vdef")
+          val ddefSym = vdef.symbol.lazyAccessor
+          val vdef1 = lazyvaldefs.get(ddefSym) match {
+            case Some(ddef) =>
+              toPreTyperLazyVal(ddef)
+            case None       =>
+              CannotReifyInvalidLazyVal(vdef)
+          }
+          if (reifyDebug) println(s"reconstructed lazy val is $vdef1")
+          vdef1::Nil
+        case ddef: DefDef if ddef.symbol.isLazy =>
+          def hasUnitType(sym: Symbol) = (sym.tpe.typeSymbol == UnitClass) && sym.tpe.annotations.isEmpty
+          if (hasUnitType(ddef.symbol)) {
+            // since lazy values of type Unit don't have val's
+            // we need to create them from scratch
+            toPreTyperLazyVal(ddef) :: Nil
+          } else Nil
+        case _ => stat::Nil
+      })
     }
 
     private def trimSyntheticCaseClassMembers(deff: Tree, stats: List[Tree]): List[Tree] =
