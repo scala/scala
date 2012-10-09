@@ -2337,7 +2337,7 @@ DOCUMENTATION
       docfooter="epfl"
       docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
-      skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.runtime:scala.reflect.io"
+      skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       addparams="${scalac.args.all}"
