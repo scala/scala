@@ -13,6 +13,7 @@ import scala.tools.nsc.util.FailedInterrupt
 import scala.tools.nsc.util.EmptyAction
 import scala.tools.nsc.util.WorkScheduler
 import scala.reflect.internal.util.{SourceFile, Position}
+import scala.tools.nsc.util.InterruptReq
 
 /** Interface of interactive compiler to a client such as an IDE
  *  The model the presentation compiler consists of the following parts:
@@ -413,6 +414,16 @@ trait CompilerControl { self: Global =>
     override def doQuickly[A](op: () => A): A = {
       throw new FailedInterrupt(new Exception("Posted a work item to a compiler that's shutting down"))
     }
+
+    override def askDoQuickly[A](op: () => A): InterruptReq { type R = A } = {
+      val ir = new InterruptReq {
+        type R = A
+        val todo = () => throw new MissingResponse
+      }
+      ir.execute()
+      ir
+    }
+
   }
 
 }

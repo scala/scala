@@ -47,7 +47,10 @@ abstract class InterruptReq {
   }
 
   def onComplete(k: Continuation) = synchronized {
-    waiting = k :: waiting
+    if (result.isDefined)
+      k(result.get)
+    else
+      waiting = k :: waiting
   }
 }
 
