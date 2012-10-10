@@ -148,7 +148,7 @@ trait Symbols { self: Universe =>
    *  @groupprio FreeType      -2
    *  @groupname Term          TermSymbol Members
    *  @groupprio Term          -1
-   *  @groupname FreeTerm      FreeType Symbol Members
+   *  @groupname FreeTerm      FreeTerm Symbol Members
    *  @groupprio FreeTerm      -2
    *  @groupname Class         Class Symbol Members
    *  @groupprio Class         -2
