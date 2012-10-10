@@ -124,12 +124,13 @@ trait MemberLookup {
 
   private def createLinks(syms: List[(Symbol, Symbol)]): List[LinkTo] =
     syms.flatMap { case (sym, owner) =>
-      if (sym.isClass || sym.isModule || sym.isTrait || sym.isPackage)
-        findTemplateMaybe(sym) map (LinkToTpl(_))
-      else
-        findTemplateMaybe(owner) flatMap { inTpl =>
-          inTpl.members find (_.asInstanceOf[EntityImpl].sym == sym) map (LinkToMember(_, inTpl))
-        }
+      findTemplateMaybe(sym) match {
+        case Some(tpl) => LinkToTpl(tpl) :: Nil
+        case None =>
+          findTemplateMaybe(owner) flatMap { inTpl =>
+            inTpl.members find (_.asInstanceOf[EntityImpl].sym == sym) map (LinkToMember(_, inTpl))
+          }
+      }
     }
 
   private def lookupInTemplate(pos: Position, members: List[String], container: Symbol): List[(Symbol, Symbol)] = {

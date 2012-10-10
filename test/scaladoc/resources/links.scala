@@ -4,6 +4,8 @@
 // SI-4224 "Wiki-links should support method targets"
 // SI-3695 "support non-fully-qualified type links in scaladoc comments"
 // SI-6487 "Scaladoc can't link to inner classes"
+// SI-6495 "Scaladoc won't pick up group name, priority and description from owner chain"
+// SI-6501 "Scaladoc won't link to a @template type T as a template but as a member"
 package scala.test.scaladoc.links {
   import language.higherKinds
   class C
@@ -56,6 +58,7 @@ package scala.test.scaladoc.links {
    *  - [[#localMethod                                     object TEST -> localMethod]] (should exercise Java-style links to empty members)
    *  - [[ImOutside                                        class ImOutside (check correct lookup in EmptyPackage)]]
    *  - [[ImOutside.Inner#foo                              class ImOutside#class Inner#method foo (check correct lookup in EmptyPackage)]]
+   *  - [[ImOutside.T                                      class ImOutside#type T (check correct linking to templates)]]
    *  - [[ImOutside.T#foo                                  class ImOutside#type T#method foo (check correct interaction between @template and links)]]
    */
   object TEST {
