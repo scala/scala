@@ -4,7 +4,7 @@ import scala.reflect.api.{Universe => ApiUniverse}
 
 /** The Scala reflection API (located at scala-reflect.jar).
  *
- *  Using Scala reflection requires understanding of a couple of basic concepts like Symbols, Types, Mirror and Universes.
+ *  Using Scala reflection requires understanding of a couple of basic concepts like [[Symbols Symbols]], [[Types Types]], [[Mirror Mirrors]] and [[Universe Universes]].
  *  @see [[http://docs.scala-lang.org/overviews/reflection/overview.html]].
  *
  *  In Scala 2.10.0, reflection API and its implementation have experimental status. This means that the API and the docs are not complete and can be changed
