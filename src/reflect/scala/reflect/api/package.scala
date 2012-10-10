@@ -14,8 +14,8 @@ import scala.reflect.api.{Universe => ApiUniverse}
  *  @groupprio Extractors 10
  *  @groupprio Tags       11
  *  @groupdesc API        The methods available for each reflection entity, without the implementation. Since the
- *                        reflection entities are abstract types that are later overridden, their API counterparts
- *                        guarantee a minimum set of methods implemented in both runtime reflection and macros.
+ *                        reflection entities are later overridden by runtime reflection and macros, their API
+ *                        counterparts guarantee a minimum set of methods that are implemented.
  *  @groupdesc Extractors Extractors provide the machinery necessary to allow pattern matching and construction of
  *                        reflection entities that is similar to case classes, although the entities are only abstract
  *                        types that are later overridden.

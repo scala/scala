@@ -70,8 +70,6 @@ package api
  * by an abstract type `X`, optionally together with a class `XApi` that defines `X`'s' interface.
  * `X`'s companion object, if it exists, is represented by a value `X` that is of type `XExtractor`.
  * Moreover, for each type `X`, there is a value `XTag` of type `ClassTag[X]` that allows to pattern match on `X`.
- *
- * @groupprio default 5
  */
 abstract class Universe extends Symbols
                            with Types
