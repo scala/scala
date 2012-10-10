@@ -43,6 +43,7 @@ class Settings extends MutableSettings {
   val printtypes        = new BooleanSetting(false)
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
+  val breakCycles       = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
   val maxClassfileName  = new IntSetting(255)

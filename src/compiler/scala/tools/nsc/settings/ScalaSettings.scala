@@ -127,6 +127,7 @@ trait ScalaSettings extends AbsScalaSettings
   val overrideObjects = BooleanSetting    ("-Yoverride-objects", "Allow member objects to be overridden.")
   val overrideVars    = BooleanSetting    ("-Yoverride-vars", "Allow vars to be overridden.")
   val Yhelp           = BooleanSetting    ("-Y", "Print a synopsis of private options.")
+  val breakCycles     = BooleanSetting    ("-Ybreak-cycles", "Attempt to break cycles encountered during typing")
   val browse          = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check           = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Yshow           = PhasesSetting     ("-Yshow", "(Requires -Xshow-class or -Xshow-object) Show after")
