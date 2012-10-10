@@ -4,6 +4,8 @@ package api
 /** This trait defines the concept of positions and operations on them.
  *
  *  @see [[scala.reflect.api.Position]]
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Positions {
   self: Universe =>

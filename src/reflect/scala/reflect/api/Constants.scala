@@ -10,6 +10,8 @@ package api
  *  This trait is the [[scala.reflect.api.Universe reflection API]] component that mirrors constant irreducible expressions
  *  such as `true`, `0` and `classOf[List]`. Constant values appear in the program abstract syntax tree and in annotation parameters
  *  wrapped in [[Constant `Constant`]] case classes.
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Constants {
   self: Universe =>

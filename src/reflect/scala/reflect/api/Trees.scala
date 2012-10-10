@@ -32,6 +32,8 @@ package api
  *  @groupprio Factories 1
  *  @groupname Copying   Tree Copying
  *  @groupprio Copying   1
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Trees { self: Universe =>
 

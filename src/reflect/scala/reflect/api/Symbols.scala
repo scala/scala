@@ -18,6 +18,8 @@ package api
  *  @define SYMACCESSORS Class [[Symbol]] defines `isXXX` test methods such as `isPublic` or `isFinal`, `params` and
  *  `returnType` methods for method symbols, `baseClasses` for class symbols and so on. Some of these methods don't
  *  make sense for certain subclasses of `Symbol` and return `NoSymbol`, `Nil` or other empty values.
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Symbols { self: Universe =>
 
@@ -330,7 +332,7 @@ trait Symbols { self: Universe =>
     /** Source file if this symbol is created during this compilation run,
      *  or a class file if this symbol is loaded from a *.class or *.jar.
      *
-     *  The return type is [[scala.reflect.io.AbstractFile]], which belongs to an experimental part of Scala reflection.
+     *  The return type is `scala.reflect.io.AbstractFile`, which belongs to an experimental part of Scala reflection.
      *  It should not be used unless you know what you are doing. In subsequent releases, this API will be refined
      *  and exposed as a part of scala.reflect.api.
      *

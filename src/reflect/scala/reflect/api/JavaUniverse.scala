@@ -8,6 +8,8 @@ package api
  *
  *  See the [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for details on how to use runtime reflection.
  *  @groupname JavaUniverse Java Mirrors
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait JavaUniverse extends Universe with JavaMirrors { self =>
 

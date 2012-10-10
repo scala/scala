@@ -26,7 +26,7 @@ trait Position extends Attachments {
 
   /** Java file corresponding to the source file of this position.
    *
-   *  The return type is [[scala.reflect.io.AbstractFile]], which belongs to an experimental part of Scala reflection.
+   *  The return type is `scala.reflect.io.AbstractFile`, which belongs to an experimental part of Scala reflection.
    *  It should not be used unless you know what you are doing. In subsequent releases, this API will be refined
    *  and exposed as a part of scala.reflect.api.
    *

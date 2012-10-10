@@ -8,6 +8,8 @@ package macros
  *  such as `Symbol.deSkolemize` or `Tree.attachments`.
  *  @groupname Macros Macro Specific Additions
  *  @groupprio Macros -1
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 abstract class Universe extends scala.reflect.api.Universe {
 
@@ -224,7 +226,7 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  Exposes information about the file as a part of a real or virtual file system
      *  along with the contents of that file.
      *
-     *  The return type is [[scala.reflect.io.AbstractFile]], which belongs to an experimental part of Scala reflection.
+     *  The return type is `scala.reflect.io.AbstractFile`, which belongs to an experimental part of Scala reflection.
      *  It should not be used unless you know what you are doing. In subsequent releases, this API will be refined
      *  and exposed as a part of scala.reflect.api.
      */

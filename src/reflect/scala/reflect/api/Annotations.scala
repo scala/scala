@@ -23,6 +23,8 @@ import scala.collection.immutable.ListMap
  *    - literals (primitive and string constants),
  *    - arrays and
  *    - nested annotations.
+ *
+ *  @contentDiagram
  */
 trait Annotations { self: Universe =>
 

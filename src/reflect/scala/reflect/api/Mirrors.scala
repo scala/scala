@@ -5,6 +5,8 @@ package api
  *
  *  See the [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for a description of mirrors
  *  and infomation on getting started with Scala reflection API.
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Mirrors { self: Universe =>
 

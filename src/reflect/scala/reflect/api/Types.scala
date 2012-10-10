@@ -64,6 +64,8 @@ package api
  *
  *  @groupname TypeCreators Types - Creation
  *  @groupname TypeOps      Types - Operations
+ *
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Types { self: Universe =>
 

@@ -2,6 +2,7 @@ package scala.reflect
 package api
 
 /** This trait provides type tag <-> manifest interoperability.
+ *  @groupname TagInterop TypeTag and Manifest Interoperability
  */
 trait TagInterop { self: Universe =>
   // TODO `mirror` parameters are now of type `Any`, because I can't make these path-dependent types work
@@ -16,7 +17,7 @@ trait TagInterop { self: Universe =>
    * {{{
    * typeTagToManifest(scala.reflect.runtime.currentMirror, implicitly[TypeTag[String]])
    * }}}
-   * @group Tags
+   * @group TagInterop
    */
   def typeTagToManifest[T: ClassTag](mirror: Any, tag: Universe#TypeTag[T]): Manifest[T] =
     throw new UnsupportedOperationException("This universe does not support tag -> manifest conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")
@@ -30,7 +31,7 @@ trait TagInterop { self: Universe =>
    * {{{
    * manifestToTypeTag(scala.reflect.runtime.currentMirror, implicitly[Manifest[String]])
    * }}}
-   * @group Tags
+   * @group TagInterop
    */
   def manifestToTypeTag[T](mirror: Any, manifest: Manifest[T]): Universe#TypeTag[T] =
     throw new UnsupportedOperationException("This universe does not support manifest -> tag conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")
