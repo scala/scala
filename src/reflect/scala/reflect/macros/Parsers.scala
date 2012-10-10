@@ -14,6 +14,6 @@ trait Parsers {
   def parse(code: String): Tree
 }
 
-/** Indicates an error during [[scala.reflect.macros.Parsers#Parse]].
+/** Indicates an error during [[scala.reflect.macros.Parsers#parse]].
  */
 case class ParseException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)

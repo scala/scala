@@ -19,7 +19,7 @@ trait Evals {
    *  {{{
    *  scala> def impl(c: Context)(x: c.Expr[String]) = {
    *       | val x1 = c.Expr[String](c.resetAllAttrs(x.tree.duplicate))
-   *       | println(s"compile-time value is: ${c.eval(x1)}")
+   *       | println(s"compile-time value is: \${c.eval(x1)}")
    *       | x
    *       | }
    *  impl: (c: Context)(x: c.Expr[String])c.Expr[String]

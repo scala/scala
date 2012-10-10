@@ -1,16 +1,16 @@
 package scala.reflect
 package api
 
-/** This trait provides support for importers, a facility to migrate reflection artifacts between universes. 
+/** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
  *
- *  Reflection artifacts, such as symbols and types, are contained in universes. Typically all processing happens 
- *  within a single universe (e.g. a compile-time macro universe or a runtime reflection universe), but sometimes 
- *  there is a need to migrate artifacts from one universe to another. For example, runtime compilation works by 
- *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the 
+ *  Reflection artifacts, such as symbols and types, are contained in universes. Typically all processing happens
+ *  within a single universe (e.g. a compile-time macro universe or a runtime reflection universe), but sometimes
+ *  there is a need to migrate artifacts from one universe to another. For example, runtime compilation works by
+ *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the
  *  result back.
  *
- *  Reflection artifacts are firmly grounded in their universes, which is reflected by the fact that types of artifacts 
- *  from different universes are not compatible. By using importers, however, they be imported from one universe 
+ *  Reflection artifacts are firmly grounded in their universes, which is reflected by the fact that types of artifacts
+ *  from different universes are not compatible. By using importers, however, they be imported from one universe
  *  into another. For example, to import `foo.bar.Baz` from the source universe to the target universe,
  *  an importer will first check whether the entire owner chain exists in the target universe.
  *  If it does, then nothing else will be done. Otherwise, the importer will recreate the entire owner chain
@@ -65,11 +65,14 @@ package api
  */
 trait Importers { self: Universe =>
 
-  /** Creates an importer that moves reflection artifacts between universes. */
+  /** Creates an importer that moves reflection artifacts between universes.
+   *  @group Importers
+   */
   def mkImporter(from0: Universe): Importer { val from: from0.type }
 
   /** The API of importers.
    *  The main source of information about importers is the [[scala.reflect.api.Importers]] page.
+   *  @group Importers
    */
   trait Importer {
     /** The source universe of reflection artifacts that will be processed.

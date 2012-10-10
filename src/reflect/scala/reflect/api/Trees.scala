@@ -6,40 +6,50 @@ package scala.reflect
 package api
 
 /** This trait defines the node types used in Scala abstract syntax trees (AST) and operations on them.
- * 
- *  All tree node types are sub types of [[scala.reflect.api#Tree Tree]].
- *  
- *  Trees are immutable, except for three fields 
+ *
+*  All tree node types are sub types of [[scala.reflect.api.Trees#Tree Tree]].
+ *
+ *  Trees are immutable, except for three fields
  *  [[Trees#TreeApi.pos pos]], [[Trees#TreeApi.symbol symbol]], and [[Trees#TreeApi.tpe tpe]], which are assigned when a tree is typechecked
  *  to attribute it with the information gathered by the typechecker.
- *  
+ *
  *  [[scala.reflect.api.Universe#reify reify]] can be used to get the tree for a given Scala expression.
- *  
+ *
  *  [[scala.reflect.api.Universe#showRaw showRaw]] can be used to get a readable representation of a tree.
  *
  *  === Examples ===
  * `Literal(Constant(5))` creates an AST representing a literal 5 in Scala source code.
- * 
+ *
  * `Apply(Select(Select(This(newTypeName("scala")), newTermName("Predef")), newTermName("print")), List(Literal(Constant("Hello World"))))`
  * creates an AST representing `print("Hello World")`.
- * 
+ *
  * `import scala.reflect.runtime.universe.{reify,showRaw}`
- * `print( showRaw( reify{5}.tree ) )` // prints Literal(Constant(5)) 
+ * `print( showRaw( reify{5}.tree ) )` // prints Literal(Constant(5))
  *
  *  @see [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html#trees]].
+ *  @groupname Traversal Tree Traversal and Transformation
+ *  @groupprio Traversal 1
+ *  @groupprio Factories 1
+ *  @groupname Copying   Tree Copying
+ *  @groupprio Copying   1
  */
 trait Trees { self: Universe =>
 
-  /** The type of Scala abstract syntax trees. */
+  /** The type of Scala abstract syntax trees.
+   *  @group Trees
+   *  @template
+   */
   type Tree >: Null <: TreeApi
 
   /** A tag that preserves the identity of the `Tree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TreeTag: ClassTag[Tree]
 
   /** The API that all trees support.
    *  The main source of information about trees is the [[scala.reflect.api.Trees]] page.
+   *  @group API
    */
   trait TreeApi extends Product { this: Tree =>
     /** Does this tree represent a definition? (of a method, of a class, etc) */
@@ -69,7 +79,7 @@ trait Trees { self: Universe =>
      *  Some node factory methods set `tpe` immediately after creation.
      *
      *  When the typechecker encounters a tree with a non-null tpe,
-     *  it will assume it to be correct and not check it again. This means one has 
+     *  it will assume it to be correct and not check it again. This means one has
      *  to be careful not to erase the `tpe` field of subtrees.
      */
     def tpe: Type
@@ -163,65 +173,89 @@ trait Trees { self: Universe =>
     override def toString: String = treeToString(this)
   }
 
-  /** Obtains string representation of a tree */
+  /** Obtains string representation of a tree
+   *  @group Trees
+   */
   protected def treeToString(tree: Tree): String
 
-  /** The empty tree */
+  /** The empty tree
+   *  @group Trees
+   */
   val EmptyTree: Tree
 
   /** A tree for a term.  Not all trees representing terms are TermTrees; use isTerm
    *  to reliably identify terms.
+   *  @group Trees
+   *  @template
    */
   type TermTree >: Null <: AnyRef with Tree with TermTreeApi
 
   /** A tag that preserves the identity of the `TermTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TermTreeTag: ClassTag[TermTree]
 
-  /** The API that all term trees support */
+  /** The API that all term trees support
+   *  @group API
+   */
   trait TermTreeApi extends TreeApi { this: TermTree =>
   }
 
   /** A tree for a type. Not all trees representing types are TypTrees; use isType
    *  to reliably identify types.
+   *  @group Trees
+   *  @template
    */
   type TypTree >: Null <: AnyRef with Tree with TypTreeApi
 
   /** A tag that preserves the identity of the `TypTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TypTreeTag: ClassTag[TypTree]
 
-  /** The API that all typ trees support */
+  /** The API that all typ trees support
+   *  @group API
+   */
   trait TypTreeApi extends TreeApi { this: TypTree =>
   }
 
   /** A tree with a mutable symbol field, initialized to NoSymbol.
+   *  @group Trees
+   *  @template
    */
   type SymTree >: Null <: AnyRef with Tree with SymTreeApi
 
   /** A tag that preserves the identity of the `SymTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val SymTreeTag: ClassTag[SymTree]
 
-  /** The API that all sym trees support */
+  /** The API that all sym trees support
+   *  @group API
+   */
   trait SymTreeApi extends TreeApi { this: SymTree =>
     /** @inheritdoc */
     def symbol: Symbol
   }
 
   /** A tree with a name - effectively, a DefTree or RefTree.
+   *  @group Trees
+   *  @template
    */
   type NameTree >: Null <: AnyRef with Tree with NameTreeApi
 
   /** A tag that preserves the identity of the `NameTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val NameTreeTag: ClassTag[NameTree]
 
-  /** The API that all name trees support */
+  /** The API that all name trees support
+   *  @group API
+   */
   trait NameTreeApi extends TreeApi { this: NameTree =>
     /** The underlying name.
      *  For example, the `<List>` part of `Ident("List": TermName)`.
@@ -232,15 +266,20 @@ trait Trees { self: Universe =>
   /** A tree which references a symbol-carrying entity.
    *  References one, as opposed to defining one; definitions
    *  are in DefTrees.
+   *  @group Trees
+   *  @template
    */
   type RefTree >: Null <: SymTree with NameTree with RefTreeApi
 
   /** A tag that preserves the identity of the `RefTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val RefTreeTag: ClassTag[RefTree]
 
-  /** The API that all ref trees support */
+  /** The API that all ref trees support
+   *  @group API
+   */
   trait RefTreeApi extends SymTreeApi with NameTreeApi { this: RefTree =>
     /** The qualifier of the reference.
      *  For example, the `<scala>` part of `Select("scala": TermName, "List": TermName)`.
@@ -253,15 +292,20 @@ trait Trees { self: Universe =>
   }
 
   /** A tree which defines a symbol-carrying entity.
+   *  @group Trees
+   *  @template
    */
   type DefTree >: Null <: SymTree with NameTree with DefTreeApi
 
   /** A tag that preserves the identity of the `DefTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val DefTreeTag: ClassTag[DefTree]
 
-  /** The API that all def trees support */
+  /** The API that all def trees support
+   *  @group API
+   */
   trait DefTreeApi extends SymTreeApi with NameTreeApi { this: DefTree =>
     /** @inheritdoc */
     def name: Name
@@ -269,43 +313,56 @@ trait Trees { self: Universe =>
 
   /** Common base class for all member definitions: types, classes,
    *  objects, packages, vals and vars, defs.
+   *  @group Trees
+   *  @template
    */
   type MemberDef >: Null <: DefTree with MemberDefApi
 
   /** A tag that preserves the identity of the `MemberDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val MemberDefTag: ClassTag[MemberDef]
 
-  /** The API that all member defs support */
+  /** The API that all member defs support
+   *  @group API
+   */
   trait MemberDefApi extends DefTreeApi { this: MemberDef =>
     /** Modifiers of the declared member. */
     def mods: Modifiers
   }
 
   /** A packaging, such as `package pid { stats }`
+   *  @group Trees
+   *  @template
    */
   type PackageDef >: Null <: MemberDef with PackageDefApi
 
   /** A tag that preserves the identity of the `PackageDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val PackageDefTag: ClassTag[PackageDef]
 
-  /** The constructor/deconstructor for `PackageDef` instances. */
+  /** The constructor/deconstructor for `PackageDef` instances.
+   *  @group Extractors
+   */
   val PackageDef: PackageDefExtractor
 
   /** An extractor class to create and pattern match with syntax `PackageDef(pid, stats)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    `package` pid { stats }
+   *  @group Extractors
    */
   abstract class PackageDefExtractor {
     def apply(pid: RefTree, stats: List[Tree]): PackageDef
     def unapply(packageDef: PackageDef): Option[(RefTree, List[Tree])]
   }
 
-  /** The API that all package defs support */
+  /** The API that all package defs support
+   *  @group API
+   */
   trait PackageDefApi extends MemberDefApi { this: PackageDef =>
     /** The (possibly, fully-qualified) name of the package. */
     val pid: RefTree
@@ -315,30 +372,40 @@ trait Trees { self: Universe =>
   }
 
   /** A common base class for class and object definitions.
+   *  @group Trees
+   *  @template
    */
   type ImplDef >: Null <: MemberDef with ImplDefApi
 
   /** A tag that preserves the identity of the `ImplDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ImplDefTag: ClassTag[ImplDef]
 
-  /** The API that all impl defs support */
+  /** The API that all impl defs support
+   *  @group API
+   */
   trait ImplDefApi extends MemberDefApi { this: ImplDef =>
     /** The body of the definition. */
     val impl: Template
   }
 
   /** A class definition.
+   *  @group Trees
+   *  @template
    */
   type ClassDef >: Null <: ImplDef with ClassDefApi
 
   /** A tag that preserves the identity of the `ClassDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ClassDefTag: ClassTag[ClassDef]
 
-  /** The constructor/deconstructor for `ClassDef` instances. */
+  /** The constructor/deconstructor for `ClassDef` instances.
+   *  @group Extractors
+   */
   val ClassDef: ClassDefExtractor
 
   /** An extractor class to create and pattern match with syntax `ClassDef(mods, name, tparams, impl)`.
@@ -349,13 +416,16 @@ trait Trees { self: Universe =>
    *  Where impl stands for:
    *
    *    `extends` parents { defs }
+   *  @group Extractors
    */
   abstract class ClassDefExtractor {
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template): ClassDef
     def unapply(classDef: ClassDef): Option[(Modifiers, TypeName, List[TypeDef], Template)]
   }
 
-  /** The API that all class defs support */
+  /** The API that all class defs support
+   *  @group API
+   */
   trait ClassDefApi extends ImplDefApi { this: ClassDef =>
     /** @inheritdoc */
     val mods: Modifiers
@@ -373,15 +443,20 @@ trait Trees { self: Universe =>
   /** An object definition, e.g. `object Foo`.  Internally, objects are
    *  quite frequently called modules to reduce ambiguity.
    *  Eliminated by compiler phase refcheck.
+   *  @group Trees
+   *  @template
    */
   type ModuleDef >: Null <: ImplDef with ModuleDefApi
 
   /** A tag that preserves the identity of the `ModuleDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ModuleDefTag: ClassTag[ModuleDef]
 
-  /** The constructor/deconstructor for `ModuleDef` instances. */
+  /** The constructor/deconstructor for `ModuleDef` instances.
+   *  @group Extractors
+   */
   val ModuleDef: ModuleDefExtractor
 
   /** An extractor class to create and pattern match with syntax `ModuleDef(mods, name, impl)`.
@@ -392,13 +467,16 @@ trait Trees { self: Universe =>
    *  Where impl stands for:
    *
    *    `extends` parents { defs }
+   *  @group Extractors
    */
   abstract class ModuleDefExtractor {
     def apply(mods: Modifiers, name: TermName, impl: Template): ModuleDef
     def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
   }
 
-  /** The API that all module defs support */
+  /** The API that all module defs support
+   *  @group API
+   */
   trait ModuleDefApi extends ImplDefApi { this: ModuleDef =>
     /** @inheritdoc */
     val mods: Modifiers
@@ -411,15 +489,20 @@ trait Trees { self: Universe =>
   }
 
   /** A common base class for ValDefs and DefDefs.
+   *  @group Trees
+   *  @template
    */
   type ValOrDefDef >: Null <: MemberDef with ValOrDefDefApi
 
   /** A tag that preserves the identity of the `ValOrDefDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ValOrDefDefTag: ClassTag[ValOrDefDef]
 
-  /** The API that all val defs and def defs support */
+  /** The API that all val defs and def defs support
+   *  @group API
+   */
   trait ValOrDefDefApi extends MemberDefApi { this: ValOrDefDef =>
     /** @inheritdoc */
     def name: Name // can't be a TermName because macros can be type names.
@@ -443,15 +526,20 @@ trait Trees { self: Universe =>
    *   - lazy values, e.g. "lazy val x" - the LAZY flag set in mods
    *   - method parameters, see vparamss in [[scala.reflect.api.Trees#DefDef]] - the PARAM flag is set in mods
    *   - explicit self-types, e.g. class A { self: Bar => }
+   *  @group Trees
+   *  @template
    */
   type ValDef >: Null <: ValOrDefDef with ValDefApi
 
   /** A tag that preserves the identity of the `ValDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ValDefTag: ClassTag[ValDef]
 
-  /** The constructor/deconstructor for `ValDef` instances. */
+  /** The constructor/deconstructor for `ValDef` instances.
+   *  @group Extractors
+   */
   val ValDef: ValDefExtractor
 
   /** An extractor class to create and pattern match with syntax `ValDef(mods, name, tpt, rhs)`.
@@ -467,13 +555,16 @@ trait Trees { self: Universe =>
    *
    *  If the type of a value is not specified explicitly (i.e. is meant to be inferred),
    *  this is expressed by having `tpt` set to `TypeTree()` (but not to an `EmptyTree`!).
+   *  @group Extractors
    */
   abstract class ValDefExtractor {
     def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
     def unapply(valDef: ValDef): Option[(Modifiers, TermName, Tree, Tree)]
   }
 
-  /** The API that all val defs support */
+  /** The API that all val defs support
+   *  @group API
+   */
   trait ValDefApi extends ValOrDefDefApi { this: ValDef =>
     /** @inheritdoc */
     val mods: Modifiers
@@ -490,15 +581,20 @@ trait Trees { self: Universe =>
 
   /** A method or macro definition.
    *  @param name   The name of the method or macro. Can be a type name in case this is a type macro
+   *  @group Trees
+   *  @template
    */
   type DefDef >: Null <: ValOrDefDef with DefDefApi
 
   /** A tag that preserves the identity of the `DefDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val DefDefTag: ClassTag[DefDef]
 
-  /** The constructor/deconstructor for `DefDef` instances. */
+  /** The constructor/deconstructor for `DefDef` instances.
+   *  @group Extractors
+   */
   val DefDef: DefDefExtractor
 
   /** An extractor class to create and pattern match with syntax `DefDef(mods, name, tparams, vparamss, tpt, rhs)`.
@@ -508,13 +604,16 @@ trait Trees { self: Universe =>
    *
    *  If the return type is not specified explicitly (i.e. is meant to be inferred),
    *  this is expressed by having `tpt` set to `TypeTree()` (but not to an `EmptyTree`!).
+   *  @group Extractors
    */
   abstract class DefDefExtractor {
     def apply(mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
     def unapply(defDef: DefDef): Option[(Modifiers, Name, List[TypeDef], List[List[ValDef]], Tree, Tree)]
   }
 
-  /** The API that all def defs support */
+  /** The API that all def defs support
+   *  @group API
+   */
   trait DefDefApi extends ValOrDefDefApi { this: DefDef =>
     /** @inheritdoc */
     val mods: Modifiers
@@ -537,15 +636,20 @@ trait Trees { self: Universe =>
 
   /** An abstract type, a type parameter, or a type alias.
    *  Eliminated by erasure.
+   *  @group Trees
+   *  @template
    */
   type TypeDef >: Null <: MemberDef with TypeDefApi
 
   /** A tag that preserves the identity of the `TypeDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TypeDefTag: ClassTag[TypeDef]
 
-  /** The constructor/deconstructor for `TypeDef` instances. */
+  /** The constructor/deconstructor for `TypeDef` instances.
+   *  @group Extractors
+   */
   val TypeDef: TypeDefExtractor
 
   /** An extractor class to create and pattern match with syntax `TypeDef(mods, name, tparams, rhs)`.
@@ -558,13 +662,16 @@ trait Trees { self: Universe =>
    *  First usage illustrates `TypeDefs` representing type aliases and type parameters.
    *  Second usage illustrates `TypeDefs` representing abstract types,
    *  where lo and hi are both `TypeBoundsTrees` and `Modifier.deferred` is set in mods.
+   *  @group Extractors
    */
   abstract class TypeDefExtractor {
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree): TypeDef
     def unapply(typeDef: TypeDef): Option[(Modifiers, TypeName, List[TypeDef], Tree)]
   }
 
-  /** The API that all type defs support */
+  /** The API that all type defs support
+   *  @group API
+   */
   trait TypeDefApi extends MemberDefApi { this: TypeDef =>
     /** @inheritdoc */
     val mods: Modifiers
@@ -594,15 +701,20 @@ trait Trees { self: Universe =>
    *  assigned to the Idents.
    *
    *  Forward jumps within a block are allowed.
+   *  @group Trees
+   *  @template
    */
   type LabelDef >: Null <: DefTree with TermTree with LabelDefApi
 
   /** A tag that preserves the identity of the `LabelDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val LabelDefTag: ClassTag[LabelDef]
 
-  /** The constructor/deconstructor for `LabelDef` instances. */
+  /** The constructor/deconstructor for `LabelDef` instances.
+   *  @group Extractors
+   */
   val LabelDef: LabelDefExtractor
 
   /** An extractor class to create and pattern match with syntax `LabelDef(name, params, rhs)`.
@@ -611,18 +723,21 @@ trait Trees { self: Universe =>
    *  It is used for tailcalls and like.
    *  For example, while/do are desugared to label defs as follows:
    *  {{{
-   *    while (cond) body ==> LabelDef($L, List(), if (cond) { body; L$() } else ())
+   *    while (cond) body ==> LabelDef(\$L, List(), if (cond) { body; L\$() } else ())
    *  }}}
    *  {{{
-   *    do body while (cond) ==> LabelDef($L, List(), body; if (cond) L$() else ())
+   *    do body while (cond) ==> LabelDef(\$L, List(), body; if (cond) L\$() else ())
    *  }}}
+   *  @group Extractors
    */
   abstract class LabelDefExtractor {
     def apply(name: TermName, params: List[Ident], rhs: Tree): LabelDef
     def unapply(labelDef: LabelDef): Option[(TermName, List[Ident], Tree)]
   }
 
-  /** The API that all label defs support */
+  /** The API that all label defs support
+   *  @group API
+   */
   trait LabelDefApi extends DefTreeApi with TermTreeApi { this: LabelDef =>
     /** @inheritdoc */
     val name: TermName
@@ -648,26 +763,34 @@ trait Trees { self: Universe =>
    * @param namePos   its position or -1 if undefined
    * @param rename    the name the import is renamed to (== name if no renaming)
    * @param renamePos the position of the rename or -1 if undefined
+   *  @group Trees
+   *  @template
    */
   type ImportSelector >: Null <: AnyRef with ImportSelectorApi
 
   /** A tag that preserves the identity of the `ImportSelector` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ImportSelectorTag: ClassTag[ImportSelector]
 
-  /** The constructor/deconstructor for `ImportSelector` instances. */
+  /** The constructor/deconstructor for `ImportSelector` instances.
+   *  @group Extractors
+   */
   val ImportSelector: ImportSelectorExtractor
 
   /** An extractor class to create and pattern match with syntax `ImportSelector(name:, namePos, rename, renamePos)`.
    *  This is not an AST node, it is used as a part of the `Import` node.
+   *  @group Extractors
    */
   abstract class ImportSelectorExtractor {
     def apply(name: Name, namePos: Int, rename: Name, renamePos: Int): ImportSelector
     def unapply(importSelector: ImportSelector): Option[(Name, Int, Name, Int)]
   }
 
-  /** The API that all import selectors support */
+  /** The API that all import selectors support
+   *  @group API
+   */
   trait ImportSelectorApi { this: ImportSelector =>
     /** The imported name. */
     val name: Name
@@ -692,15 +815,20 @@ trait Trees { self: Universe =>
    *
    *  @param expr
    *  @param selectors
+   *  @group Trees
+   *  @template
    */
   type Import >: Null <: SymTree with ImportApi
 
   /** A tag that preserves the identity of the `Import` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ImportTag: ClassTag[Import]
 
-  /** The constructor/deconstructor for `Import` instances. */
+  /** The constructor/deconstructor for `Import` instances.
+   *  @group Extractors
+   */
   val Import: ImportExtractor
 
   /** An extractor class to create and pattern match with syntax `Import(expr, selectors)`.
@@ -719,13 +847,16 @@ trait Trees { self: Universe =>
    *
    *  The symbol of an `Import` is an import symbol @see Symbol.newImport.
    *  It's used primarily as a marker to check that the import has been typechecked.
+   *  @group Extractors
    */
   abstract class ImportExtractor {
     def apply(expr: Tree, selectors: List[ImportSelector]): Import
     def unapply(import_ : Import): Option[(Tree, List[ImportSelector])]
   }
 
-  /** The API that all imports support */
+  /** The API that all imports support
+   *  @group API
+   */
   trait ImportApi extends SymTreeApi { this: Import =>
     /** The qualifier of the import.
      *  See the example for [[scala.reflect.api.Trees#ImportExtractor]].
@@ -742,15 +873,20 @@ trait Trees { self: Universe =>
    *
    *  @param parents
    *  @param body
+   *  @group Trees
+   *  @template
    */
   type Template >: Null <: SymTree with TemplateApi
 
   /** A tag that preserves the identity of the `Template` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TemplateTag: ClassTag[Template]
 
-  /** The constructor/deconstructor for `Template` instances. */
+  /** The constructor/deconstructor for `Template` instances.
+   *  @group Extractors
+   */
   val Template: TemplateExtractor
 
   /** An extractor class to create and pattern match with syntax `Template(parents, self, body)`.
@@ -770,13 +906,16 @@ trait Trees { self: Universe =>
    *        def bar  // owner is local dummy
    *      }
    *    }
+   *  @group Extractors
    */
   abstract class TemplateExtractor {
     def apply(parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def unapply(template: Template): Option[(List[Tree], ValDef, List[Tree])]
   }
 
-  /** The API that all templates support */
+  /** The API that all templates support
+   *  @group API
+   */
   trait TemplateApi extends SymTreeApi { this: Template =>
     /** Superclasses of the template. */
     val parents: List[Tree]
@@ -791,15 +930,21 @@ trait Trees { self: Universe =>
     val body: List[Tree]
   }
 
-  /** Block of expressions (semicolon separated expressions) */
+  /** Block of expressions (semicolon separated expressions)
+   *  @group Trees
+   *  @template
+   */
   type Block >: Null <: TermTree with BlockApi
 
   /** A tag that preserves the identity of the `Block` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val BlockTag: ClassTag[Block]
 
-  /** The constructor/deconstructor for `Block` instances. */
+  /** The constructor/deconstructor for `Block` instances.
+   *  @group Extractors
+   */
   val Block: BlockExtractor
 
   /** An extractor class to create and pattern match with syntax `Block(stats, expr)`.
@@ -808,13 +953,16 @@ trait Trees { self: Universe =>
    *    { stats; expr }
    *
    *  If the block is empty, the `expr` is set to `Literal(Constant(()))`.
+   *  @group Extractors
    */
   abstract class BlockExtractor {
     def apply(stats: List[Tree], expr: Tree): Block
     def unapply(block: Block): Option[(List[Tree], Tree)]
   }
 
-  /** The API that all blocks support */
+  /** The API that all blocks support
+   *  @group API
+   */
   trait BlockApi extends TermTreeApi { this: Block =>
     /** All, but the last, expressions in the block.
      *  Can very well be an empty list.
@@ -828,15 +976,20 @@ trait Trees { self: Universe =>
   /** Case clause in a pattern match.
    *  (except for occurrences in switch statements).
    *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher)
+   *  @group Trees
+   *  @template
    */
   type CaseDef >: Null <: AnyRef with Tree with CaseDefApi
 
   /** A tag that preserves the identity of the `CaseDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val CaseDefTag: ClassTag[CaseDef]
 
-  /** The constructor/deconstructor for `CaseDef` instances. */
+  /** The constructor/deconstructor for `CaseDef` instances.
+   *  @group Extractors
+   */
   val CaseDef: CaseDefExtractor
 
   /** An extractor class to create and pattern match with syntax `CaseDef(pat, guard, body)`.
@@ -846,13 +999,16 @@ trait Trees { self: Universe =>
    *
    *  If the guard is not present, the `guard` is set to `EmptyTree`.
    *  If the body is not specified, the `body` is set to `Literal(Constant())`
+   *  @group Extractors
    */
   abstract class CaseDefExtractor {
     def apply(pat: Tree, guard: Tree, body: Tree): CaseDef
     def unapply(caseDef: CaseDef): Option[(Tree, Tree, Tree)]
   }
 
-  /** The API that all case defs support */
+  /** The API that all case defs support
+   *  @group API
+   */
   trait CaseDefApi extends TreeApi { this: CaseDef =>
     /** The pattern of the pattern matching clause. */
     val pat: Tree
@@ -873,28 +1029,36 @@ trait Trees { self: Universe =>
    * Eliminated by compiler phases Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher),
    * except for
    *  occurrences in encoded Switch stmt (i.e. remaining Match(CaseDef(...)))
+   *  @group Trees
+   *  @template
    */
   type Alternative >: Null <: TermTree with AlternativeApi
 
   /** A tag that preserves the identity of the `Alternative` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val AlternativeTag: ClassTag[Alternative]
 
-  /** The constructor/deconstructor for `Alternative` instances. */
+  /** The constructor/deconstructor for `Alternative` instances.
+   *  @group Extractors
+   */
   val Alternative: AlternativeExtractor
 
   /** An extractor class to create and pattern match with syntax `Alternative(trees)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    pat1 | ... | patn
+   *  @group Extractors
    */
   abstract class AlternativeExtractor {
     def apply(trees: List[Tree]): Alternative
     def unapply(alternative: Alternative): Option[List[Tree]]
   }
 
-  /** The API that all alternatives support */
+  /** The API that all alternatives support
+   *  @group API
+   */
   trait AlternativeApi extends TermTreeApi { this: Alternative =>
     /** Alternatives of the pattern matching clause. */
     val trees: List[Tree]
@@ -903,28 +1067,36 @@ trait Trees { self: Universe =>
   /** Repetition of pattern.
    *
    *  Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
+   *  @group Trees
+   *  @template
    */
   type Star >: Null <: TermTree with StarApi
 
   /** A tag that preserves the identity of the `Star` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val StarTag: ClassTag[Star]
 
-  /** The constructor/deconstructor for `Star` instances. */
+  /** The constructor/deconstructor for `Star` instances.
+   *  @group Extractors
+   */
   val Star: StarExtractor
 
   /** An extractor class to create and pattern match with syntax `Star(elem)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    pat*
+   *  @group Extractors
    */
   abstract class StarExtractor {
     def apply(elem: Tree): Star
     def unapply(star: Star): Option[Tree]
   }
 
-  /** The API that all stars support */
+  /** The API that all stars support
+   *  @group API
+   */
   trait StarApi extends TermTreeApi { this: Star =>
     /** The quantified pattern. */
     val elem: Tree
@@ -936,28 +1108,36 @@ trait Trees { self: Universe =>
    *
    *  @param name
    *  @param body
+   *  @group Trees
+   *  @template
    */
   type Bind >: Null <: DefTree with BindApi
 
   /** A tag that preserves the identity of the `Bind` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val BindTag: ClassTag[Bind]
 
-  /** The constructor/deconstructor for `Bind` instances. */
+  /** The constructor/deconstructor for `Bind` instances.
+   *  @group Extractors
+   */
   val Bind: BindExtractor
 
   /** An extractor class to create and pattern match with syntax `Bind(name, body)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    pat*
+   *  @group Extractors
    */
   abstract class BindExtractor {
     def apply(name: Name, body: Tree): Bind
     def unapply(bind: Bind): Option[(Name, Tree)]
   }
 
-  /** The API that all binds support */
+  /** The API that all binds support
+   *  @group API
+   */
   trait BindApi extends DefTreeApi { this: Bind =>
     /** The name that can be used to refer to this fragment of the matched expression.
      *  The `list` part of the `list @ List(x, y)`.
@@ -997,27 +1177,35 @@ trait Trees { self: Universe =>
    *  }}}
    *
    * Introduced by typer. Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).
+   *  @group Trees
+   *  @template
    */
   type UnApply >: Null <: TermTree with UnApplyApi
 
   /** A tag that preserves the identity of the `UnApply` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val UnApplyTag: ClassTag[UnApply]
 
-  /** The constructor/deconstructor for `UnApply` instances. */
+  /** The constructor/deconstructor for `UnApply` instances.
+   *  @group Extractors
+   */
   val UnApply: UnApplyExtractor
 
   /** An extractor class to create and pattern match with syntax `UnApply(fun, args)`.
    *  This AST node does not have direct correspondence to Scala code,
    *  and is introduced when typechecking pattern matches and `try` blocks.
+   *  @group Extractors
    */
   abstract class UnApplyExtractor {
     def apply(fun: Tree, args: List[Tree]): UnApply
     def unapply(unApply: UnApply): Option[(Tree, List[Tree])]
   }
 
-  /** The API that all unapplies support */
+  /** The API that all unapplies support
+   *  @group API
+   */
   trait UnApplyApi extends TermTreeApi { this: UnApply =>
     /** A dummy node that carries the type of unapplication.
      *  See the example for [[scala.reflect.api.Trees#UnApplyExtractor]].
@@ -1030,15 +1218,21 @@ trait Trees { self: Universe =>
     val args: List[Tree]
   }
 
-  /** Anonymous function, eliminated by compiler phase lambdalift */
+  /** Anonymous function, eliminated by compiler phase lambdalift
+   *  @group Trees
+   *  @template
+   */
   type Function >: Null <: TermTree with SymTree with FunctionApi
 
   /** A tag that preserves the identity of the `Function` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val FunctionTag: ClassTag[Function]
 
-  /** The constructor/deconstructor for `Function` instances. */
+  /** The constructor/deconstructor for `Function` instances.
+   *  @group Extractors
+   */
   val Function: FunctionExtractor
 
   /** An extractor class to create and pattern match with syntax `Function(vparams, body)`.
@@ -1048,13 +1242,16 @@ trait Trees { self: Universe =>
    *
    *  The symbol of a Function is a synthetic TermSymbol.
    *  It is the owner of the function's parameters.
+   *  @group Extractors
    */
   abstract class FunctionExtractor {
     def apply(vparams: List[ValDef], body: Tree): Function
     def unapply(function: Function): Option[(List[ValDef], Tree)]
   }
 
-  /** The API that all functions support */
+  /** The API that all functions support
+   *  @group API
+   */
   trait FunctionApi extends TermTreeApi with SymTreeApi { this: Function =>
     /** The list of parameters of the function.
      */
@@ -1065,28 +1262,37 @@ trait Trees { self: Universe =>
     val body: Tree
   }
 
-  /** Assignment */
+  /** Assignment
+   *  @group Trees
+   *  @template
+   */
   type Assign >: Null <: TermTree with AssignApi
 
   /** A tag that preserves the identity of the `Assign` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val AssignTag: ClassTag[Assign]
 
-  /** The constructor/deconstructor for `Assign` instances. */
+  /** The constructor/deconstructor for `Assign` instances.
+   *  @group Extractors
+   */
   val Assign: AssignExtractor
 
   /** An extractor class to create and pattern match with syntax `Assign(lhs, rhs)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    lhs = rhs
+   *  @group Extractors
    */
   abstract class AssignExtractor {
     def apply(lhs: Tree, rhs: Tree): Assign
     def unapply(assign: Assign): Option[(Tree, Tree)]
   }
 
-  /** The API that all assigns support */
+  /** The API that all assigns support
+   *  @group API
+   */
   trait AssignApi extends TermTreeApi { this: Assign =>
     /** The left-hand side of the assignment.
      */
@@ -1099,15 +1305,20 @@ trait Trees { self: Universe =>
 
   /** Either an assignment or a named argument. Only appears in argument lists,
    *  eliminated by compiler phase typecheck (doTypedApply), resurrected by reifier.
+   *  @group Trees
+   *  @template
    */
   type AssignOrNamedArg >: Null <: TermTree with AssignOrNamedArgApi
 
   /** A tag that preserves the identity of the `AssignOrNamedArg` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val AssignOrNamedArgTag: ClassTag[AssignOrNamedArg]
 
-  /** The constructor/deconstructor for `AssignOrNamedArg` instances. */
+  /** The constructor/deconstructor for `AssignOrNamedArg` instances.
+   *  @group Extractors
+   */
   val AssignOrNamedArg: AssignOrNamedArgExtractor
 
   /** An extractor class to create and pattern match with syntax `AssignOrNamedArg(lhs, rhs)`.
@@ -1120,13 +1331,16 @@ trait Trees { self: Universe =>
    *    @annotation(lhs = rhs)
    *  }}}
    *
+   *  @group Extractors
    */
   abstract class AssignOrNamedArgExtractor {
     def apply(lhs: Tree, rhs: Tree): AssignOrNamedArg
     def unapply(assignOrNamedArg: AssignOrNamedArg): Option[(Tree, Tree)]
   }
 
-  /** The API that all assigns support */
+  /** The API that all assigns support
+   *  @group API
+   */
   trait AssignOrNamedArgApi extends TermTreeApi { this: AssignOrNamedArg =>
     /** The left-hand side of the expression.
      */
@@ -1137,15 +1351,21 @@ trait Trees { self: Universe =>
     val rhs: Tree
   }
 
-  /** Conditional expression */
+  /** Conditional expression
+   *  @group Trees
+   *  @template
+   */
   type If >: Null <: TermTree with IfApi
 
   /** A tag that preserves the identity of the `If` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val IfTag: ClassTag[If]
 
-  /** The constructor/deconstructor for `If` instances. */
+  /** The constructor/deconstructor for `If` instances.
+   *  @group Extractors
+   */
   val If: IfExtractor
 
   /** An extractor class to create and pattern match with syntax `If(cond, thenp, elsep)`.
@@ -1154,13 +1374,16 @@ trait Trees { self: Universe =>
    *    `if` (cond) thenp `else` elsep
    *
    *  If the alternative is not present, the `elsep` is set to `Literal(Constant(()))`.
+   *  @group Extractors
    */
   abstract class IfExtractor {
     def apply(cond: Tree, thenp: Tree, elsep: Tree): If
     def unapply(if_ : If): Option[(Tree, Tree, Tree)]
   }
 
-  /** The API that all ifs support */
+  /** The API that all ifs support
+   *  @group API
+   */
   trait IfApi extends TermTreeApi { this: If =>
     /** The condition of the if.
      */
@@ -1186,15 +1409,20 @@ trait Trees { self: Universe =>
    *    or `Alternative(lit|...|lit)`
    *  - except for an "otherwise" branch, which has pattern
    *    `Ident(nme.WILDCARD)`
+   *  @group Trees
+   *  @template
    */
   type Match >: Null <: TermTree with MatchApi
 
   /** A tag that preserves the identity of the `Match` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val MatchTag: ClassTag[Match]
 
-  /** The constructor/deconstructor for `Match` instances. */
+  /** The constructor/deconstructor for `Match` instances.
+   *  @group Extractors
+   */
   val Match: MatchExtractor
 
   /** An extractor class to create and pattern match with syntax `Match(selector, cases)`.
@@ -1203,13 +1431,16 @@ trait Trees { self: Universe =>
    *    selector `match` { cases }
    *
    * `Match` is also used in pattern matching assignments like `val (foo, bar) = baz`.
+   *  @group Extractors
    */
   abstract class MatchExtractor {
     def apply(selector: Tree, cases: List[CaseDef]): Match
     def unapply(match_ : Match): Option[(Tree, List[CaseDef])]
   }
 
-  /** The API that all matches support */
+  /** The API that all matches support
+   *  @group API
+   */
   trait MatchApi extends TermTreeApi { this: Match =>
     /** The scrutinee of the pattern match. */
     val selector: Tree
@@ -1218,15 +1449,21 @@ trait Trees { self: Universe =>
     val cases: List[CaseDef]
   }
 
-  /** Return expression */
+  /** Return expression
+   *  @group Trees
+   *  @template
+   */
   type Return >: Null <: TermTree with SymTree with ReturnApi
 
   /** A tag that preserves the identity of the `Return` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ReturnTag: ClassTag[Return]
 
-  /** The constructor/deconstructor for `Return` instances. */
+  /** The constructor/deconstructor for `Return` instances.
+   *  @group Extractors
+   */
   val Return: ReturnExtractor
 
   /** An extractor class to create and pattern match with syntax `Return(expr)`.
@@ -1235,27 +1472,36 @@ trait Trees { self: Universe =>
    *    `return` expr
    *
    *  The symbol of a Return node is the enclosing method.
+   *  @group Extractors
    */
   abstract class ReturnExtractor {
     def apply(expr: Tree): Return
     def unapply(return_ : Return): Option[Tree]
   }
 
-  /** The API that all returns support */
+  /** The API that all returns support
+   *  @group API
+   */
   trait ReturnApi extends TermTreeApi { this: Return =>
     /** The returned expression. */
     val expr: Tree
   }
 
-  /** TODO comment me! */
+  /** Try catch node
+   *  @group Trees
+   *  @template
+   */
   type Try >: Null <: TermTree with TryApi
 
   /** A tag that preserves the identity of the `Try` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TryTag: ClassTag[Try]
 
-  /** The constructor/deconstructor for `Try` instances. */
+  /** The constructor/deconstructor for `Try` instances.
+   *  @group Extractors
+   */
   val Try: TryExtractor
 
   /** An extractor class to create and pattern match with syntax `Try(block, catches, finalizer)`.
@@ -1264,13 +1510,16 @@ trait Trees { self: Universe =>
    *    `try` block `catch` { catches } `finally` finalizer
    *
    *  If the finalizer is not present, the `finalizer` is set to `EmptyTree`.
+   *  @group Extractors
    */
   abstract class TryExtractor {
     def apply(block: Tree, catches: List[CaseDef], finalizer: Tree): Try
     def unapply(try_ : Try): Option[(Tree, List[CaseDef], Tree)]
   }
 
-  /** The API that all tries support */
+  /** The API that all tries support
+   *  @group API
+   */
   trait TryApi extends TermTreeApi { this: Try =>
     /** The protected block. */
     val block: Tree
@@ -1282,43 +1531,56 @@ trait Trees { self: Universe =>
     val finalizer: Tree
   }
 
-  /** Throw expression */
+  /** Throw expression
+   *  @group Trees
+   *  @template
+   */
   type Throw >: Null <: TermTree with ThrowApi
 
   /** A tag that preserves the identity of the `Throw` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ThrowTag: ClassTag[Throw]
 
-  /** The constructor/deconstructor for `Throw` instances. */
+  /** The constructor/deconstructor for `Throw` instances.
+   *  @group Extractors
+   */
   val Throw: ThrowExtractor
 
   /** An extractor class to create and pattern match with syntax `Throw(expr)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    `throw` expr
+   *  @group Extractors
    */
   abstract class ThrowExtractor {
     def apply(expr: Tree): Throw
     def unapply(throw_ : Throw): Option[Tree]
   }
 
-  /** The API that all tries support */
+  /** The API that all tries support
+   *  @group API
+   */
   trait ThrowApi extends TermTreeApi { this: Throw =>
     /** The thrown expression. */
     val expr: Tree
   }
 
   /** Object instantiation
+   *  @group Trees
+   *  @template
    */
   type New >: Null <: TermTree with NewApi
 
   /** A tag that preserves the identity of the `New` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val NewTag: ClassTag[New]
 
   /** The constructor/deconstructor for `New` instances.
+   *  @group Extractors
    */
   val New: NewExtractor
 
@@ -1330,6 +1592,7 @@ trait Trees { self: Universe =>
    *  This node always occurs in the following context:
    *
    *    (`new` tpt).<init>[targs](args)
+   *  @group Extractors
    */
   abstract class NewExtractor {
     /** A user level `new`.
@@ -1341,7 +1604,9 @@ trait Trees { self: Universe =>
     def unapply(new_ : New): Option[Tree]
   }
 
-  /** The API that all news support */
+  /** The API that all news support
+   *  @group API
+   */
   trait NewApi extends TermTreeApi { this: New =>
     /** The tree that represents the type being instantiated.
      *  See the example for [[scala.reflect.api.Trees#NewExtractor]].
@@ -1349,28 +1614,37 @@ trait Trees { self: Universe =>
     val tpt: Tree
   }
 
-  /** Type annotation, eliminated by compiler phase cleanup */
+  /** Type annotation, eliminated by compiler phase cleanup
+   *  @group Trees
+   *  @template
+   */
   type Typed >: Null <: TermTree with TypedApi
 
   /** A tag that preserves the identity of the `Typed` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TypedTag: ClassTag[Typed]
 
-  /** The constructor/deconstructor for `Typed` instances. */
+  /** The constructor/deconstructor for `Typed` instances.
+   *  @group Extractors
+   */
   val Typed: TypedExtractor
 
   /** An extractor class to create and pattern match with syntax `Typed(expr, tpt)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    expr: tpt
+   *  @group Extractors
    */
   abstract class TypedExtractor {
     def apply(expr: Tree, tpt: Tree): Typed
     def unapply(typed: Typed): Option[(Tree, Tree)]
   }
 
-  /** The API that all typeds support */
+  /** The API that all typeds support
+   *  @group API
+   */
   trait TypedApi extends TermTreeApi { this: Typed =>
     /** The expression being ascribed with the type. */
     val expr: Tree
@@ -1380,15 +1654,20 @@ trait Trees { self: Universe =>
   }
 
   /** Common base class for Apply and TypeApply.
+   *  @group Trees
+   *  @template
    */
   type GenericApply >: Null <: TermTree with GenericApplyApi
 
   /** A tag that preserves the identity of the `GenericApply` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val GenericApplyTag: ClassTag[GenericApply]
 
-  /** The API that all applies support */
+  /** The API that all applies support
+   *  @group API
+   */
   trait GenericApplyApi extends TermTreeApi { this: GenericApply =>
     /** The target of the application. */
     val fun: Tree
@@ -1401,40 +1680,55 @@ trait Trees { self: Universe =>
    *  but I can't find that explicitly stated anywhere.  Unless your last name
    *  is odersky, you should probably treat it as true.
    */
-  /** Explicit type application. */
+  /** Explicit type application.
+   *  @group Trees
+   *  @template
+   */
   type TypeApply >: Null <: GenericApply with TypeApplyApi
 
   /** A tag that preserves the identity of the `TypeApply` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TypeApplyTag: ClassTag[TypeApply]
 
-  /** The constructor/deconstructor for `TypeApply` instances. */
+  /** The constructor/deconstructor for `TypeApply` instances.
+   *  @group Extractors
+   */
   val TypeApply: TypeApplyExtractor
 
   /** An extractor class to create and pattern match with syntax `TypeApply(fun, args)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    fun[args]
+   *  @group Extractors
    */
   abstract class TypeApplyExtractor {
     def apply(fun: Tree, args: List[Tree]): TypeApply
     def unapply(typeApply: TypeApply): Option[(Tree, List[Tree])]
   }
 
-  /** The API that all type applies support */
+  /** The API that all type applies support
+   *  @group API
+   */
   trait TypeApplyApi extends GenericApplyApi { this: TypeApply =>
   }
 
-  /** Value application */
+  /** Value application
+   *  @group Trees
+   *  @template
+   */
   type Apply >: Null <: GenericApply with ApplyApi
 
   /** A tag that preserves the identity of the `Apply` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ApplyTag: ClassTag[Apply]
 
-  /** The constructor/deconstructor for `Apply` instances. */
+  /** The constructor/deconstructor for `Apply` instances.
+   *  @group Extractors
+   */
   val Apply: ApplyExtractor
 
   /** An extractor class to create and pattern match with syntax `Apply(fun, args)`.
@@ -1449,27 +1743,35 @@ trait Trees { self: Universe =>
    *  Is expressed as:
    *
    *    Apply(TypeApply(fun, targs), args)
+   *  @group Extractors
    */
   abstract class ApplyExtractor {
     def apply(fun: Tree, args: List[Tree]): Apply
     def unapply(apply: Apply): Option[(Tree, List[Tree])]
   }
 
-  /** The API that all applies support */
+  /** The API that all applies support
+   *  @group API
+   */
   trait ApplyApi extends GenericApplyApi { this: Apply =>
   }
 
   /** Super reference, where `qual` is the corresponding `this` reference.
    *  A super reference `C.super[M]` is represented as `Super(This(C), M)`.
+   *  @group Trees
+   *  @template
    */
   type Super >: Null <: TermTree with SuperApi
 
   /** A tag that preserves the identity of the `Super` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val SuperTag: ClassTag[Super]
 
-  /** The constructor/deconstructor for `Super` instances. */
+  /** The constructor/deconstructor for `Super` instances.
+   *  @group Extractors
+   */
   val Super: SuperExtractor
 
   /** An extractor class to create and pattern match with syntax `Super(qual, mix)`.
@@ -1485,13 +1787,16 @@ trait Trees { self: Universe =>
    *
    *  The symbol of a Super is the class _from_ which the super reference is made.
    *  For instance in C.super(...), it would be C.
+   *  @group Extractors
    */
   abstract class SuperExtractor {
     def apply(qual: Tree, mix: TypeName): Super
     def unapply(super_ : Super): Option[(Tree, TypeName)]
   }
 
-  /** The API that all supers support */
+  /** The API that all supers support
+   *  @group API
+   */
   trait SuperApi extends TermTreeApi { this: Super =>
     /** The qualifier of the `super` expression.
      *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
@@ -1504,15 +1809,21 @@ trait Trees { self: Universe =>
     val mix: TypeName
   }
 
-  /** Self reference */
+  /** Self reference
+   *  @group Trees
+   *  @template
+   */
   type This >: Null <: TermTree with SymTree with ThisApi
 
   /** A tag that preserves the identity of the `This` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ThisTag: ClassTag[This]
 
-  /** The constructor/deconstructor for `This` instances. */
+  /** The constructor/deconstructor for `This` instances.
+   *  @group Extractors
+   */
   val This: ThisExtractor
 
   /** An extractor class to create and pattern match with syntax `This(qual)`.
@@ -1522,13 +1833,16 @@ trait Trees { self: Universe =>
    *
    *  The symbol of a This is the class to which the this refers.
    *  For instance in C.this, it would be C.
+   *  @group Extractors
    */
   abstract class ThisExtractor {
     def apply(qual: TypeName): This
     def unapply(this_ : This): Option[TypeName]
   }
 
-  /** The API that all thises support */
+  /** The API that all thises support
+   *  @group API
+   */
   trait ThisApi extends TermTreeApi with SymTreeApi { this: This =>
     /** The qualifier of the `this` expression.
      *  For an unqualified `this` refers to the enclosing class.
@@ -1536,28 +1850,37 @@ trait Trees { self: Universe =>
     val qual: TypeName
   }
 
-  /** A member selection <qualifier> . <name> */
+  /** A member selection <qualifier> . <name>
+   *  @group Trees
+   *  @template
+   */
   type Select >: Null <: RefTree with SelectApi
 
   /** A tag that preserves the identity of the `Select` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val SelectTag: ClassTag[Select]
 
-  /** The constructor/deconstructor for `Select` instances. */
+  /** The constructor/deconstructor for `Select` instances.
+   *  @group Extractors
+   */
   val Select: SelectExtractor
 
   /** An extractor class to create and pattern match with syntax `Select(qual, name)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    qualifier.selector
+   *  @group Extractors
    */
   abstract class SelectExtractor {
     def apply(qualifier: Tree, name: Name): Select
     def unapply(select: Select): Option[(Tree, Name)]
   }
 
-  /** The API that all selects support */
+  /** The API that all selects support
+   *  @group API
+   */
   trait SelectApi extends RefTreeApi { this: Select =>
     /** @inheritdoc */
     val qualifier: Tree
@@ -1567,15 +1890,20 @@ trait Trees { self: Universe =>
   }
 
   /** A reference to identifier `name`.
+   *  @group Trees
+   *  @template
    */
   type Ident >: Null <: RefTree with IdentApi
 
   /** A tag that preserves the identity of the `Ident` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val IdentTag: ClassTag[Ident]
 
-  /** The constructor/deconstructor for `Ident` instances. */
+  /** The constructor/deconstructor for `Ident` instances.
+   *  @group Extractors
+   */
   val Ident: IdentExtractor
 
   /** An extractor class to create and pattern match with syntax `Ident(qual, name)`.
@@ -1585,33 +1913,42 @@ trait Trees { self: Universe =>
    *
    *  Type checker converts idents that refer to enclosing fields or methods to selects.
    *  For example, name ==> this.name
+   *  @group Extractors
    */
   abstract class IdentExtractor {
     def apply(name: Name): Ident
     def unapply(ident: Ident): Option[Name]
   }
 
-  /** The API that all idents support */
+  /** The API that all idents support
+   *  @group API
+   */
   trait IdentApi extends RefTreeApi { this: Ident =>
     /** @inheritdoc */
     val name: Name
   }
 
   /** Marks underlying reference to id as boxed.
-   *  @pre id must refer to a captured variable
+   *
+   *  <b>Precondition:<\b> id must refer to a captured variable
    *  A reference such marked will refer to the boxed entity, no dereferencing
    *  with `.elem` is done on it.
    *  This tree node can be emitted by macros such as reify that call referenceCapturedVariable.
    *  It is eliminated in LambdaLift, where the boxing conversion takes place.
+   *  @group Trees
+   *  @template
    */
   type ReferenceToBoxed >: Null <: TermTree with ReferenceToBoxedApi
 
   /** A tag that preserves the identity of the `ReferenceToBoxed` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ReferenceToBoxedTag: ClassTag[ReferenceToBoxed]
 
-  /** The constructor/deconstructor for `ReferenceToBoxed` instances. */
+  /** The constructor/deconstructor for `ReferenceToBoxed` instances.
+   *  @group Extractors
+   */
   val ReferenceToBoxed: ReferenceToBoxedExtractor
 
   /** An extractor class to create and pattern match with syntax `ReferenceToBoxed(ident)`.
@@ -1632,40 +1969,52 @@ trait Trees { self: Universe =>
    *    Select(Ident(x), "elem")
    *
    *  If `ReferenceToBoxed` were used instead of Ident, no transformation would be performed.
+   *  @group Extractors
    */
   abstract class ReferenceToBoxedExtractor {
     def apply(ident: Ident): ReferenceToBoxed
     def unapply(referenceToBoxed: ReferenceToBoxed): Option[Ident]
   }
 
-  /** The API that all references support */
+  /** The API that all references support
+   *  @group API
+   */
   trait ReferenceToBoxedApi extends TermTreeApi { this: ReferenceToBoxed =>
     /** The underlying reference. */
     val ident: Tree
   }
 
-  /** Literal */
+  /** Literal
+   *  @group Trees
+   *  @template
+   */
   type Literal >: Null <: TermTree with LiteralApi
 
   /** A tag that preserves the identity of the `Literal` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val LiteralTag: ClassTag[Literal]
 
-  /** The constructor/deconstructor for `Literal` instances. */
+  /** The constructor/deconstructor for `Literal` instances.
+   *  @group Extractors
+   */
   val Literal: LiteralExtractor
 
   /** An extractor class to create and pattern match with syntax `Literal(value)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    value
+   *  @group Extractors
    */
   abstract class LiteralExtractor {
     def apply(value: Constant): Literal
     def unapply(literal: Literal): Option[Constant]
   }
 
-  /** The API that all literals support */
+  /** The API that all literals support
+   *  @group API
+   */
   trait LiteralApi extends TermTreeApi { this: Literal =>
     /** The compile-time constant underlying the literal. */
     val value: Constant
@@ -1675,15 +2024,20 @@ trait Trees { self: Universe =>
    *  annotation ascriptions, annotations on definitions are stored in the Modifiers.
    *  Eliminated by typechecker (typedAnnotated), the annotations are then stored in
    *  an AnnotatedType.
+   *  @group Trees
+   *  @template
    */
   type Annotated >: Null <: AnyRef with Tree with AnnotatedApi
 
   /** A tag that preserves the identity of the `Annotated` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val AnnotatedTag: ClassTag[Annotated]
 
-  /** The constructor/deconstructor for `Annotated` instances. */
+  /** The constructor/deconstructor for `Annotated` instances.
+   *  @group Extractors
+   */
   val Annotated: AnnotatedExtractor
 
   /** An extractor class to create and pattern match with syntax `Annotated(annot, arg)`.
@@ -1691,13 +2045,16 @@ trait Trees { self: Universe =>
    *
    *    arg @annot    // for types
    *    arg: @annot   // for exprs
+   *  @group Extractors
    */
   abstract class AnnotatedExtractor {
     def apply(annot: Tree, arg: Tree): Annotated
     def unapply(annotated: Annotated): Option[(Tree, Tree)]
   }
 
-  /** The API that all annotateds support */
+  /** The API that all annotateds support
+   *  @group API
+   */
   trait AnnotatedApi extends TreeApi { this: Annotated =>
     /** The annotation. */
     val annot: Tree
@@ -1706,43 +2063,58 @@ trait Trees { self: Universe =>
     val arg: Tree
   }
 
-  /** Singleton type, eliminated by RefCheck */
+  /** Singleton type, eliminated by RefCheck
+   *  @group Trees
+   *  @template
+   */
   type SingletonTypeTree >: Null <: TypTree with SingletonTypeTreeApi
 
   /** A tag that preserves the identity of the `SingletonTypeTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val SingletonTypeTreeTag: ClassTag[SingletonTypeTree]
 
-  /** The constructor/deconstructor for `SingletonTypeTree` instances. */
+  /** The constructor/deconstructor for `SingletonTypeTree` instances.
+   *  @group Extractors
+   */
   val SingletonTypeTree: SingletonTypeTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `SingletonTypeTree(ref)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    ref.type
+   *  @group Extractors
    */
   abstract class SingletonTypeTreeExtractor {
     def apply(ref: Tree): SingletonTypeTree
     def unapply(singletonTypeTree: SingletonTypeTree): Option[Tree]
   }
 
-  /** The API that all singleton type trees support */
+  /** The API that all singleton type trees support
+   *  @group API
+   */
   trait SingletonTypeTreeApi extends TypTreeApi { this: SingletonTypeTree =>
     /** The underlying reference. */
     val ref: Tree
   }
 
-  /** Type selection <qualifier> # <name>, eliminated by RefCheck */
+  /** Type selection <qualifier> # <name>, eliminated by RefCheck
+   *  @group Trees
+   *  @template
+   */
   // [Eugene++] don't see why we need it, when we have Select
   type SelectFromTypeTree >: Null <: TypTree with RefTree with SelectFromTypeTreeApi
 
   /** A tag that preserves the identity of the `SelectFromTypeTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val SelectFromTypeTreeTag: ClassTag[SelectFromTypeTree]
 
-  /** The constructor/deconstructor for `SelectFromTypeTree` instances. */
+  /** The constructor/deconstructor for `SelectFromTypeTree` instances.
+   *  @group Extractors
+   */
   val SelectFromTypeTree: SelectFromTypeTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `SelectFromTypeTree(qualifier, name)`.
@@ -1751,13 +2123,16 @@ trait Trees { self: Universe =>
    *    qualifier # selector
    *
    *  Note: a path-dependent type p.T is expressed as p.type # T
+   *  @group Extractors
    */
   abstract class SelectFromTypeTreeExtractor {
     def apply(qualifier: Tree, name: TypeName): SelectFromTypeTree
     def unapply(selectFromTypeTree: SelectFromTypeTree): Option[(Tree, TypeName)]
   }
 
-  /** The API that all selects from type trees support */
+  /** The API that all selects from type trees support
+   *  @group API
+   */
   trait SelectFromTypeTreeApi extends TypTreeApi with RefTreeApi { this: SelectFromTypeTree =>
     /** @inheritdoc */
     val qualifier: Tree
@@ -1766,55 +2141,73 @@ trait Trees { self: Universe =>
     val name: TypeName
   }
 
-  /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck */
+  /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck
+   *  @group Trees
+   *  @template
+   */
   type CompoundTypeTree >: Null <: TypTree with CompoundTypeTreeApi
 
   /** A tag that preserves the identity of the `CompoundTypeTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val CompoundTypeTreeTag: ClassTag[CompoundTypeTree]
 
-  /** The constructor/deconstructor for `CompoundTypeTree` instances. */
+  /** The constructor/deconstructor for `CompoundTypeTree` instances.
+   *  @group Extractors
+   */
   val CompoundTypeTree: CompoundTypeTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `CompoundTypeTree(templ)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    parent1 with ... with parentN { refinement }
+   *  @group Extractors
    */
   abstract class CompoundTypeTreeExtractor {
     def apply(templ: Template): CompoundTypeTree
     def unapply(compoundTypeTree: CompoundTypeTree): Option[Template]
   }
 
-  /** The API that all compound type trees support */
+  /** The API that all compound type trees support
+   *  @group API
+   */
   trait CompoundTypeTreeApi extends TypTreeApi { this: CompoundTypeTree =>
     /** The template of the compound type - represents the parents, the optional self-type and the optional definitions. */
     val templ: Template
   }
 
-  /** Applied type <tpt> [ <args> ], eliminated by RefCheck */
+  /** Applied type <tpt> [ <args> ], eliminated by RefCheck
+   *  @group Trees
+   *  @template
+   */
   type AppliedTypeTree >: Null <: TypTree with AppliedTypeTreeApi
 
   /** A tag that preserves the identity of the `AppliedTypeTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val AppliedTypeTreeTag: ClassTag[AppliedTypeTree]
 
-  /** The constructor/deconstructor for `AppliedTypeTree` instances. */
+  /** The constructor/deconstructor for `AppliedTypeTree` instances.
+   *  @group Extractors
+   */
   val AppliedTypeTree: AppliedTypeTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `AppliedTypeTree(tpt, args)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    tpt[args]
+   *  @group Extractors
    */
   abstract class AppliedTypeTreeExtractor {
     def apply(tpt: Tree, args: List[Tree]): AppliedTypeTree
     def unapply(appliedTypeTree: AppliedTypeTree): Option[(Tree, List[Tree])]
   }
 
-  /** The API that all applied type trees support */
+  /** The API that all applied type trees support
+   *  @group API
+   */
   trait AppliedTypeTreeApi extends TypTreeApi { this: AppliedTypeTree =>
     /** The target of the application. */
     val tpt: Tree
@@ -1823,28 +2216,37 @@ trait Trees { self: Universe =>
     val args: List[Tree]
   }
 
-  /** Document me! */
+  /** Type bounds tree node
+   *  @group Trees
+   *  @template
+   */
   type TypeBoundsTree >: Null <: TypTree with TypeBoundsTreeApi
 
   /** A tag that preserves the identity of the `TypeBoundsTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TypeBoundsTreeTag: ClassTag[TypeBoundsTree]
 
-  /** The constructor/deconstructor for `TypeBoundsTree` instances. */
+  /** The constructor/deconstructor for `TypeBoundsTree` instances.
+   *  @group Extractors
+   */
   val TypeBoundsTree: TypeBoundsTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `TypeBoundsTree(lo, hi)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    >: lo <: hi
+   *  @group Extractors
    */
   abstract class TypeBoundsTreeExtractor {
     def apply(lo: Tree, hi: Tree): TypeBoundsTree
     def unapply(typeBoundsTree: TypeBoundsTree): Option[(Tree, Tree)]
   }
 
-  /** The API that all type bound trees support */
+  /** The API that all type bound trees support
+   *  @group API
+   */
   trait TypeBoundsTreeApi extends TypTreeApi { this: TypeBoundsTree =>
     /** The lower bound.
      *  Is equal to `Ident(<scala.Nothing>)` if not specified explicitly.
@@ -1857,28 +2259,37 @@ trait Trees { self: Universe =>
     val hi: Tree
   }
 
-  /** TODO Document me! */
+  /** Existential type tree node
+   *  @group Trees
+   *  @template
+   */
   type ExistentialTypeTree >: Null <: TypTree with ExistentialTypeTreeApi
 
   /** A tag that preserves the identity of the `ExistentialTypeTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val ExistentialTypeTreeTag: ClassTag[ExistentialTypeTree]
 
-  /** The constructor/deconstructor for `ExistentialTypeTree` instances. */
+  /** The constructor/deconstructor for `ExistentialTypeTree` instances.
+   *  @group Extractors
+   */
   val ExistentialTypeTree: ExistentialTypeTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `ExistentialTypeTree(tpt, whereClauses)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    tpt forSome { whereClauses }
+   *  @group Extractors
    */
   abstract class ExistentialTypeTreeExtractor {
     def apply(tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
     def unapply(existentialTypeTree: ExistentialTypeTree): Option[(Tree, List[Tree])]
   }
 
-  /** The API that all existential type trees support */
+  /** The API that all existential type trees support
+   *  @group API
+   */
   trait ExistentialTypeTreeApi extends TypTreeApi { this: ExistentialTypeTree =>
     /** The underlying type of the existential type. */
     val tpt: Tree
@@ -1888,30 +2299,39 @@ trait Trees { self: Universe =>
   }
 
   /** A synthetic tree holding an arbitrary type.  Not to be confused with
-    * with TypTree, the trait for trees that are only used for type trees.
-    * TypeTree's are inserted in several places, but most notably in
-    * `RefCheck`, where the arbitrary type trees are all replaced by
-    * TypeTree's. */
+   *  with TypTree, the trait for trees that are only used for type trees.
+   *  TypeTree's are inserted in several places, but most notably in
+   *  `RefCheck`, where the arbitrary type trees are all replaced by
+   *  TypeTree's.
+   *  @group Trees
+   *  @template
+   */
   type TypeTree >: Null <: TypTree with TypeTreeApi
 
   /** A tag that preserves the identity of the `TypeTree` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val TypeTreeTag: ClassTag[TypeTree]
 
-  /** The constructor/deconstructor for `TypeTree` instances. */
+  /** The constructor/deconstructor for `TypeTree` instances.
+   *  @group Extractors
+   */
   val TypeTree: TypeTreeExtractor
 
   /** An extractor class to create and pattern match with syntax `TypeTree()`.
    *  This AST node does not have direct correspondence to Scala code,
    *  and is emitted by everywhere when we want to wrap a `Type` in a `Tree`.
+   *  @group Extractors
    */
   abstract class TypeTreeExtractor {
     def apply(): TypeTree
     def unapply(typeTree: TypeTree): Boolean
   }
 
-  /** The API that all type trees support */
+  /** The API that all type trees support
+   *  @group API
+   */
   trait TypeTreeApi extends TypTreeApi { this: TypeTree =>
     /** The precursor of this tree.
      *  Is equal to `EmptyTree` if this type tree doesn't have precursors.
@@ -1923,149 +2343,185 @@ trait Trees { self: Universe =>
    *    val _: _
    *  This is used as a placeholder in the `self` parameter Template if there is
    *  no definition of a self value of self type.
+   *  @group Trees
    */
   val emptyValDef: ValDef
 
 // ---------------------- factories ----------------------------------------------
 
   /** A factory method for `ClassDef` nodes.
+   *  @group Factories
    */
   def ClassDef(sym: Symbol, impl: Template): ClassDef
 
   /** A factory method for `ModuleDef` nodes.
+   *  @group Factories
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def ValDef(sym: Symbol, rhs: Tree): ValDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def ValDef(sym: Symbol): ValDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def DefDef(sym: Symbol, rhs: Tree): DefDef
 
   /** A factory method for `ValDef` nodes.
+   *  @group Factories
    */
   def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef
 
   /** A factory method for `TypeDef` nodes.
+   *  @group Factories
    */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef
 
   /** A factory method for `TypeDef` nodes.
+   *  @group Factories
    */
   def TypeDef(sym: Symbol): TypeDef
 
   /** A factory method for `LabelDef` nodes.
+   *  @group Factories
    */
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef
 
   /** A factory method for `Block` nodes.
    *  Flattens directly nested blocks.
+   *  @group Factories
    */
   def Block(stats: Tree*): Block
 
   /** A factory method for `CaseDef` nodes.
+   *  @group Factories
    */
   def CaseDef(pat: Tree, body: Tree): CaseDef
 
   /** A factory method for `Bind` nodes.
+   *  @group Factories
    */
   def Bind(sym: Symbol, body: Tree): Bind
 
   /** A factory method for `Try` nodes.
+   *  @group Factories
    */
   def Try(body: Tree, cases: (Tree, Tree)*): Try
 
   /** A factory method for `Throw` nodes.
+   *  @group Factories
    */
   def Throw(tpe: Type, args: Tree*): Throw
 
   /** Factory method for object creation `new tpt(args_1)...(args_n)`
    *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
+   *  @group Factories
    */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree
 
   /** 0-1 argument list new, based on a type.
+   *  @group Factories
    */
   def New(tpe: Type, args: Tree*): Tree
 
   /** 0-1 argument list new, based on a symbol.
+   *  @group Factories
    */
   def New(sym: Symbol, args: Tree*): Tree
 
   /** A factory method for `Apply` nodes.
+   *  @group Factories
    */
   def Apply(sym: Symbol, args: Tree*): Tree
 
   /** 0-1 argument list new, based on a type tree.
+   *  @group Factories
    */
   def ApplyConstructor(tpt: Tree, args: List[Tree]): Tree
 
   /** A factory method for `Super` nodes.
+   *  @group Factories
    */
   def Super(sym: Symbol, mix: TypeName): Tree
 
   /** A factory method for `This` nodes.
+   *  @group Factories
    */
   def This(sym: Symbol): Tree
 
   /** A factory method for `Select` nodes.
-   *  The string `name` argument is assumed to represent a [[scala.reflect.api.Names#TermName].
+   *  The string `name` argument is assumed to represent a [[scala.reflect.api.Names#TermName `TermName`]].
+   *  @group Factories
    */
   def Select(qualifier: Tree, name: String): Select
 
   /** A factory method for `Select` nodes.
+   *  @group Factories
    */
   def Select(qualifier: Tree, sym: Symbol): Select
 
   /** A factory method for `Ident` nodes.
+   *  @group Factories
    */
   def Ident(name: String): Ident
 
   /** A factory method for `Ident` nodes.
+   *  @group Factories
    */
   def Ident(sym: Symbol): Ident
 
   /** A factory method for `TypeTree` nodes.
+   *  @group Factories
    */
   def TypeTree(tp: Type): TypeTree
 
 // ---------------------- copying ------------------------------------------------
 
   /** The type of standard (lazy) tree copiers.
+   *  @template
+   *  @group Copying
    */
   type TreeCopier <: TreeCopierOps
 
   /** The standard (lazy) tree copier.
+   *  @group Copying
    */
   val treeCopy: TreeCopier = newLazyTreeCopier
 
   /** Creates a strict tree copier.
+   *  @group Copying
    */
   def newStrictTreeCopier: TreeCopier
 
   /** Creates a lazy tree copier.
+   *  @group Copying
    */
   def newLazyTreeCopier: TreeCopier
 
   /** The API of a tree copier.
+   *  @group API
    */
   abstract class TreeCopierOps {
     /** Creates a `ClassDef` node from the given components, having a given `tree` as a prototype.
@@ -2277,6 +2733,7 @@ trait Trees { self: Universe =>
 // ---------------------- traversing and transforming ------------------------------
 
   /** A class that implement a default tree traversal strategy: breadth-first component-wise.
+   *  @group Traversal
    */
   class Traverser {
     protected[scala] var currentOwner: Symbol = rootMirror.RootClass
@@ -2315,17 +2772,20 @@ trait Trees { self: Universe =>
     def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
   }
 
-  /** Delegates the traversal strategy to [[scala.reflect.internal.Trees]],
+  /** Delegates the traversal strategy to `scala.reflect.internal.Trees`,
    *  because pattern matching on abstract types we have here degrades performance.
+   *  @group Traversal
    */
   protected def itraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
   /** Provides an extension hook for the traversal strategy.
    *  Future-proofs against new node types.
+   *  @group Traversal
    */
   protected def xtraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
   /** A class that implement a default tree transformation strategy: breadth-first component-wise cloning.
+   *  @group Traversal
    */
   abstract class Transformer {
     /** The underlying tree copier. */
@@ -2396,25 +2856,32 @@ trait Trees { self: Universe =>
     }
   }
 
-  /** Delegates the transformation strategy to [[scala.reflect.internal.Trees]],
+  /** Delegates the transformation strategy to `scala.reflect.internal.Trees`,
    *  because pattern matching on abstract types we have here degrades performance.
+   *  @group Traversal
    */
   protected def itransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
   /** Provides an extension hook for the transformation strategy.
    *  Future-proofs against new node types.
+   *  @group Traversal
    */
   protected def xtransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
-  /** The type of tree modifiers. */
+  /** The type of tree modifiers.
+   *  @group Traversal
+   */
   type Modifiers >: Null <: AnyRef with ModifiersApi
 
   /** A tag that preserves the identity of the `Modifiers` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Traversal
    */
   implicit val ModifiersTag: ClassTag[Modifiers]
 
-  /** The API that all Modifiers support */
+  /** The API that all Modifiers support
+   *  @group API
+   */
   abstract class ModifiersApi {
     /** The underlying flags of the enclosing definition.
      *  Is equal to `NoFlags` if none are specified explicitly.
@@ -2440,23 +2907,32 @@ trait Trees { self: Universe =>
       Modifiers(flags, privateWithin, f(annotations))
   }
 
-  /** The constructor/deconstructor for `Modifiers` instances. */
+  /** The constructor/deconstructor for `Modifiers` instances.
+   *  @group Traversal
+   */
   val Modifiers: ModifiersCreator
 
   /** An extractor class to create and pattern match with syntax `Modifiers(flags, privateWithin, annotations)`.
    *  Modifiers encapsulate flags, visibility annotations and Scala annotations for member definitions.
+   *  @group Traversal
    */
   abstract class ModifiersCreator {
     def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
   }
 
-  /** The factory for `Modifiers` instances. */
+  /** The factory for `Modifiers` instances.
+   *  @group Traversal
+   */
   def Modifiers(flags: FlagSet, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
 
-  /** The factory for `Modifiers` instances. */
+  /** The factory for `Modifiers` instances.
+   *  @group Traversal
+   */
   def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, tpnme.EMPTY)
 
-  /** An empty `Modifiers` object: no flags, empty visibility annotation and no Scala annotations. */
+  /** An empty `Modifiers` object: no flags, empty visibility annotation and no Scala annotations.
+   *  @group Traversal
+   */
   lazy val NoMods = Modifiers()
 }

@@ -70,6 +70,7 @@ package api
  * by an abstract type `X`, optionally together with a class `XApi` that defines `X`'s' interface.
  * `X`'s companion object, if it exists, is represented by a value `X` that is of type `XExtractor`.
  * Moreover, for each type `X`, there is a value `XTag` of type `ClassTag[X]` that allows to pattern match on `X`.
+ * @groupprio Universe -1
  */
 abstract class Universe extends Symbols
                            with Types
@@ -96,8 +97,8 @@ abstract class Universe extends Symbols
    *
    * {{{
    * val five = reify{ 5 }    // Literal(Constant(5))
-   * reify{ 2 + 4 }           // Apply( Select( Literal(Constant(2)), newTermName("$plus")), List( Literal(Constant(4)) ) )
-   * reify{ five.splice + 4 } // Apply( Select( Literal(Constant(5)), newTermName("$plus")), List( Literal(Constant(4)) ) )
+   * reify{ 2 + 4 }           // Apply( Select( Literal(Constant(2)), newTermName("\$plus")), List( Literal(Constant(4)) ) )
+   * reify{ five.splice + 4 } // Apply( Select( Literal(Constant(5)), newTermName("\$plus")), List( Literal(Constant(4)) ) )
    * }}}
    *
    * The produced tree is path dependent on the Universe `reify` was called from.
@@ -128,7 +129,7 @@ abstract class Universe extends Symbols
    *
    *  {{{
    *    val two = mirror.reify(2)                         // Literal(Constant(2))
-   *    val four = mirror.reify(two.splice + two.splice)  // Apply(Select(two.tree, newTermName("$plus")), List(two.tree))
+   *    val four = mirror.reify(two.splice + two.splice)  // Apply(Select(two.tree, newTermName("\$plus")), List(two.tree))
    *
    *    def macroImpl[T](c: Context) = {
    *      ...
@@ -145,6 +146,7 @@ abstract class Universe extends Symbols
    *      locally defined entities get erased and replaced with their original trees
    *    - Free variables are detected and wrapped in symbols of the type `FreeTermSymbol` or `FreeTypeSymbol`
    *    - Mutable variables that are accessed from a local function are wrapped in refs
+   * @group Universe
    */
   // implementation is hardwired to `scala.reflect.reify.Taggers`
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`

@@ -16,6 +16,7 @@ trait TagInterop { self: Universe =>
    * {{{
    * typeTagToManifest(scala.reflect.runtime.currentMirror, implicitly[TypeTag[String]])
    * }}}
+   * @group Tags
    */
   def typeTagToManifest[T: ClassTag](mirror: Any, tag: Universe#TypeTag[T]): Manifest[T] =
     throw new UnsupportedOperationException("This universe does not support tag -> manifest conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")
@@ -29,6 +30,7 @@ trait TagInterop { self: Universe =>
    * {{{
    * manifestToTypeTag(scala.reflect.runtime.currentMirror, implicitly[Manifest[String]])
    * }}}
+   * @group Tags
    */
   def manifestToTypeTag[T](mirror: Any, manifest: Manifest[T]): Universe#TypeTag[T] =
     throw new UnsupportedOperationException("This universe does not support manifest -> tag conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")

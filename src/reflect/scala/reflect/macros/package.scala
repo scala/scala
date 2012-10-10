@@ -6,7 +6,7 @@ package scala.reflect
  *  Within these functions the programmer has access to compiler APIs exposed in [[scala.reflect.macros.Context]].
  *  For example, it is possible to generate, analyze and typecheck code.
  *
- *  See the [[docs.scala-lang.org/overviews/macros.html Macros Guide]] on how to get started with Scala macros.
+ *  See the [[http://docs.scala-lang.org/overviews/macros.html Macros Guide]] on how to get started with Scala macros.
  */
 package object macros {
 }

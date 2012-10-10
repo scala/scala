@@ -19,17 +19,18 @@ import scala.reflect.runtime.{universe => ru}
  *
  * `Expr`s can also be created manually via the `Expr` companion object, but then the burden of providing a `TreeCreator` lies on the programmer.
  *  Compile-time reflection via macros, as described in [[scala.reflect.macros.Aliases]], provides an easier way to instantiate exprs manually.
- *  Manual creation, however, is very rarely needed when working with runtime reflection. 
+ *  Manual creation, however, is very rarely needed when working with runtime reflection.
  *
  *  `Expr` can be migrated from one mirror to another by using the `in` method. Migration means that all symbolic references
  *  to classes/objects/packages in the expression are re-resolved within the new mirror
  *  (typically using that mirror's classloader). The default universe of an `Expr` is typically
- *  [[scala.reflect.runtime.package#universe]], the default mirror is typically [[scala.reflect.runtime.package#currentMirror]].
+ *  [[scala.reflect.runtime#universe]], the default mirror is typically [[scala.reflect.runtime#currentMirror]].
  */
 trait Exprs { self: Universe =>
 
   /** Expr wraps an abstract syntax tree and tags it with its type.
    *  The main source of information about exprs is the [[scala.reflect.api.Exprs]] page.
+   *  @group Expressions
    */
   trait Expr[+T] extends Equals with Serializable {
     /**
@@ -123,6 +124,7 @@ trait Exprs { self: Universe =>
    * in which case the tree first needs to be wrapped in an expr.
 
    * The main source of information about exprs is the [[scala.reflect.api.Exprs]] page.
+   *  @group Expressions
    */
   object Expr {
     def apply[T: WeakTypeTag](mirror: scala.reflect.api.Mirror[self.type], treec: TreeCreator): Expr[T] = new ExprImpl[T](mirror.asInstanceOf[Mirror], treec)

@@ -13,10 +13,14 @@ package api
 trait StandardDefinitions {
   self: Universe =>
 
-  /** A value containing all standard definitions. */
+  /** A value containing all standard definitions in [[DefinitionsApi]]
+   *  @group Definitions
+   */
   val definitions: DefinitionsApi
 
-  /** Defines standard symbols (and types via its base trait). */
+  /** Defines standard symbols (and types via its base trait).
+   *  @group API
+   */
   trait DefinitionsApi extends StandardTypes {
     /** The module class symbol of package `scala`. */
     def ScalaPackageClass: ClassSymbol
@@ -252,7 +256,9 @@ trait StandardDefinitions {
     def ScalaNumericValueClasses: List[ClassSymbol]
   }
 
-  /** Defines standard types. */
+  /** Defines standard types.
+   *  @group Definitions
+   */
   trait StandardTypes {
     /** The type of primitive type `Unit`. */
     val UnitTpe: Type

@@ -58,14 +58,14 @@ import scala.language.implicitConversions
  *   TypeTag allows unbound type arguments for which type tags are available:
  *   {{{
  *   scala> def foo3[T:TypeTag] = firstTypeArg( implicitly[TypeTag[Container[T]]] )
- *   foo3: [T](implicit evidence$1: reflect.runtime.universe.TypeTag[T])reflect.runtime.universe.Type
+ *   foo3: [T](implicit evidence\$1: reflect.runtime.universe.TypeTag[T])reflect.runtime.universe.Type
  *   scala> foo3[Person]
  *   res1: reflect.runtime.universe.Type = Person
  *   }}}
  *   WeakTypeTag contains concrete type arguments if available via existing tags:
  *   {{{
  *   scala> def foo4[T:WeakTypeTag] = firstTypeArg( implicitly[WeakTypeTag[Container[T]]] )
- *   foo4: [T](implicit evidence$1: reflect.runtime.universe.WeakTypeTag[T])reflect.runtime.universe.Type
+ *   foo4: [T](implicit evidence\$1: reflect.runtime.universe.WeakTypeTag[T])reflect.runtime.universe.Type
  *   scala> foo4[Person]
  *   res1: reflect.runtime.universe.Type = Person
  *   }}}
@@ -141,6 +141,7 @@ import scala.language.implicitConversions
  *  has been created to track the implementation of this feature.
  *
  * @see [[scala.reflect.ClassTag]], [[scala.reflect.api.Universe#TypeTag]], [[scala.reflect.api.Universe#WeakTypeTag]]
+ * @group TypeTags Type Tags
  */
 trait TypeTags { self: Universe =>
 
@@ -157,6 +158,7 @@ trait TypeTags { self: Universe =>
    * [[scala.reflect.api.Universe#TypeTag]] instead, which statically guarantees this property.
    *
    * @see [[scala.reflect.api.TypeTags]]
+   * @group TypeTags
    */
   @annotation.implicitNotFound(msg = "No WeakTypeTag available for ${T}")
   trait WeakTypeTag[T] extends Equals with Serializable {
@@ -193,6 +195,7 @@ trait TypeTags { self: Universe =>
 
   /**
    * Type tags corresponding to primitive types and constructor/extractor for WeakTypeTags.
+   * @group TypeTags
    */
   object WeakTypeTag {
     val Byte    : WeakTypeTag[scala.Byte]       = TypeTag.Byte
@@ -235,6 +238,7 @@ trait TypeTags { self: Universe =>
     def unapply[T](ttag: WeakTypeTag[T]): Option[Type] = Some(ttag.tpe)
   }
 
+  /* @group TypeTags */
   private class WeakTypeTagImpl[T](val mirror: Mirror, val tpec: TypeCreator) extends WeakTypeTag[T] {
     lazy val tpe: Type = tpec(mirror)
     def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # WeakTypeTag[T] = {
@@ -250,6 +254,7 @@ trait TypeTags { self: Universe =>
    * unresolved type parameters or abstract types.
    *
    * @see [[scala.reflect.api.TypeTags]]
+   * @group TypeTags
    */
   @annotation.implicitNotFound(msg = "No TypeTag available for ${T}")
   trait TypeTag[T] extends WeakTypeTag[T] with Equals with Serializable {
@@ -273,6 +278,7 @@ trait TypeTags { self: Universe =>
 
   /**
    * Type tags corresponding to primitive types and constructor/extractor for WeakTypeTags.
+   * @group TypeTags
    */
   object TypeTag {
     val Byte:    TypeTag[scala.Byte]       = new PredefTypeTag[scala.Byte]       (ByteTpe,    _.TypeTag.Byte)
@@ -314,6 +320,7 @@ trait TypeTags { self: Universe =>
     def unapply[T](ttag: TypeTag[T]): Option[Type] = Some(ttag.tpe)
   }
 
+  /* @group TypeTags */
   private class TypeTagImpl[T](mirror: Mirror, tpec: TypeCreator) extends WeakTypeTagImpl[T](mirror, tpec) with TypeTag[T] {
     override def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # TypeTag[T] = {
       val otherMirror1 = otherMirror.asInstanceOf[scala.reflect.api.Mirror[otherMirror.universe.type]]
@@ -322,12 +329,14 @@ trait TypeTags { self: Universe =>
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
 
+  /* @group TypeTags */
   private class PredefTypeCreator[T](copyIn: Universe => Universe#TypeTag[T]) extends TypeCreator {
     def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Type = {
       copyIn(m.universe).asInstanceOf[U # TypeTag[T]].tpe
     }
   }
 
+  /* @group TypeTags */
   private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe#TypeTag[T]) extends TypeTagImpl[T](rootMirror, new PredefTypeCreator(copyIn)) {
     override lazy val tpe: Type = _tpe
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
@@ -335,22 +344,26 @@ trait TypeTags { self: Universe =>
 
   /**
    * Shortcut for `implicitly[WeakTypeTag[T]]`
+   * @group TypeTags
    */
   def weakTypeTag[T](implicit attag: WeakTypeTag[T]) = attag
 
   /**
    * Shortcut for `implicitly[TypeTag[T]]`
+   * @group TypeTags
    */
   def typeTag[T](implicit ttag: TypeTag[T]) = ttag
 
   // big thanks to Viktor Klang for this brilliant idea!
   /**
    * Shortcut for `implicitly[WeakTypeTag[T]].tpe`
+   * @group TypeTags
    */
   def weakTypeOf[T](implicit attag: WeakTypeTag[T]): Type = attag.tpe
 
   /**
    * Shortcut for `implicitly[TypeTag[T]].tpe`
+   * @group TypeTags
    */
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 }

@@ -6,14 +6,19 @@ package macros
  *  This universe provides mutability for reflection artifacts (e.g. macros can change types of compiler trees,
  *  add annotation to symbols representing definitions, etc) and exposes some internal compiler functionality
  *  such as `Symbol.deSkolemize` or `Tree.attachments`.
+ *  @groupname Macros Macro Specific Additions
+ *  @groupprio Macros -1
  */
 abstract class Universe extends scala.reflect.api.Universe {
 
-  /** A factory that encapsulates common tree-building functions. */
+  /** A factory that encapsulates common tree-building functions.
+   *  @group Macros
+   */
   val treeBuild: TreeBuilder { val global: Universe.this.type }
 
   /** The API of reflection artifacts that support [[scala.reflect.macros.Attachments]].
    *  These artifacts are trees and symbols.
+   *  @group Macros
    */
   trait AttachableApi {
     /** The attachment of the reflection artifact. */
@@ -33,9 +38,14 @@ abstract class Universe extends scala.reflect.api.Universe {
 
   // Symbol extensions ---------------------------------------------------------------
 
+  /**  The `Symbol` API is extended for macros: See [[SymbolContextApi]] for details.
+   *
+   *  @group Macros
+   */
   override type Symbol >: Null <: SymbolContextApi
 
   /** The extended API of symbols that's supported in macro context universes
+   *  @group API
    */
   trait SymbolContextApi extends SymbolApi with AttachableApi { self: Symbol =>
 
@@ -81,9 +91,14 @@ abstract class Universe extends scala.reflect.api.Universe {
 
   // Tree extensions ---------------------------------------------------------------
 
+  /**  The `Tree` API is extended for macros: See [[TreeContextApi]] for details.
+   *
+   *  @group Macros
+   */
   override type Tree >: Null <: TreeContextApi
 
   /** The extended API of trees that's supported in macro context universes
+   *  @group API
    */
   trait TreeContextApi extends TreeApi with AttachableApi { self: Tree =>
 
@@ -102,7 +117,7 @@ abstract class Universe extends scala.reflect.api.Universe {
     /** Like `setType`, but if this is a previously empty TypeTree that
      *  fact is remembered so that resetAllAttrs will snap back.
      *
-     *  @PP: Attempting to elaborate on the above, I find: If defineType
+     *  \@PP: Attempting to elaborate on the above, I find: If defineType
      *  is called on a TypeTree whose type field is null or NoType,
      *  this is recorded as "wasEmpty = true". That value is used in
      *  ResetAttrsTraverser, which nulls out the type field of TypeTrees
@@ -129,6 +144,7 @@ abstract class Universe extends scala.reflect.api.Universe {
   override type SymTree >: Null <: Tree with SymTreeContextApi
 
   /** The extended API of sym trees that's supported in macro context universes
+   *  @group API
    */
   trait SymTreeContextApi extends SymTreeApi { this: SymTree =>
     /** Sets the `symbol` field of the sym tree. */
@@ -139,6 +155,7 @@ abstract class Universe extends scala.reflect.api.Universe {
   override type TypeTree >: Null <: TypTree with TypeTreeContextApi
 
   /** The extended API of sym trees that's supported in macro context universes
+   *  @group API
    */
   trait TypeTreeContextApi extends TypeTreeApi { this: TypeTree =>
     /** Sets the `original` field of the type tree. */
@@ -149,6 +166,7 @@ abstract class Universe extends scala.reflect.api.Universe {
   override type Ident >: Null <: RefTree with IdentContextApi
 
   /** The extended API of idents that's supported in macro context universes
+   *  @group API
    */
   trait IdentContextApi extends IdentApi { this: Ident =>
     /** Was this ident created from a backquoted identifier? */
@@ -156,24 +174,31 @@ abstract class Universe extends scala.reflect.api.Universe {
   }
 
   /** Mark a variable as captured; i.e. force boxing in a *Ref type.
+   *  @group Macros
    */
   def captureVariable(vble: Symbol): Unit
 
   /** Mark given identifier as a reference to a captured variable itself
    *  suppressing dereferencing with the `elem` field.
+   *  @group Macros
    */
   def referenceCapturedVariable(vble: Symbol): Tree
 
   /** Convert type of a captured variable to *Ref type.
+   *  @group Macros
    */
   def capturedVariableType(vble: Symbol): Type
 
-  /** The type of compilation runs. */
+  /** The type of compilation runs.
+   *  @template
+   *  @group Macros
+   */
   type Run <: RunContextApi
 
   /** Compilation run uniquely identifies current invocation of the compiler
    *  (e.g. can be used to implement per-run caches for macros) and provides access to units of work
    *  of the invocation (currently processed unit of work and the list of all units).
+   *  @group API
    */
   trait RunContextApi {
     /** Currently processed unit of work (a real or a virtual file). */
@@ -183,11 +208,15 @@ abstract class Universe extends scala.reflect.api.Universe {
     def units: Iterator[CompilationUnit]
   }
 
-  /** The type of compilation units. */
+  /** The type of compilation units.
+   *  @template
+   *  @group Macros
+   */
   type CompilationUnit <: CompilationUnitContextApi
 
   /** Compilation unit describes a unit of work of the compilation run.
    *  It provides such information as file name, textual representation of the unit and the underlying AST.
+   *  @group API
    */
   trait CompilationUnitContextApi {
     /** Source file corresponding to this compilation unit.

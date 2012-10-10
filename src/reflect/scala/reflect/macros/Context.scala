@@ -73,7 +73,7 @@ trait Context extends Aliases
    *  x: Coll[String] = ...
    *
    *  scala> x.filter(_ != "")
-   *  $line11.$read.$iw.$iw.$iw.$iw.$iw.$iw.$iw.$iw.$iw.$iw.$iw.$iw.x
+   *  \$line11.\$read.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.\$iw.x
    *  res1 @ 35563b4b: x.type = ...
    *  }}}
    *

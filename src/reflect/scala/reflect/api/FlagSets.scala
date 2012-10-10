@@ -32,26 +32,35 @@ import scala.language.implicitConversions
  */
 trait FlagSets { self: Universe =>
 
-  /** An abstract type representing sets of flags (like private, final, etc.) that apply to definition trees and symbols */
+  /** An abstract type representing sets of flags (like private, final, etc.) that apply to definition trees and symbols
+   *  @template
+   *  @group Flags
+   */
   type FlagSet
 
   /** A tag that preserves the identity of the `FlagSet` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
    */
   implicit val FlagSetTag: ClassTag[FlagSet]
 
   /** The API of `FlagSet` instances.
    *  The main source of information about flag sets is the [[scala.reflect.api.FlagSets]] page.
+   *  @group Flags
    */
   trait FlagOps extends Any {
     /** Produces a flag set that's a union of this flag set and the provided flag set. */
     def | (right: FlagSet): FlagSet
   }
 
-  /** The API of `FlagSet` instances. */
+  /** The API of `FlagSet` instances.
+   *  @group Flags
+   */
   implicit def addFlagOps(left: FlagSet): FlagOps
 
-  /** A module that contains all possible values that can constitute flag sets. */
+  /** A module that contains all possible values that can constitute flag sets.
+   *  @group Flags
+   */
   val Flag: FlagValues
 
   // Q: I have a pretty flag. Can I put it here?
@@ -61,6 +70,7 @@ trait FlagSets { self: Universe =>
 
   /** All possible values that can constitute flag sets.
    *  The main source of information about flag sets is the [[scala.reflect.api.FlagSets]] page.
+   *  @group Flags
    */
   trait FlagValues {
 
@@ -140,6 +150,8 @@ trait FlagSets { self: Universe =>
     val DEFAULTINIT: FlagSet
   }
 
-  /** The empty set of flags */
+  /** The empty set of flags
+   *  @group Flags
+   */
   val NoFlags: FlagSet
 }
