@@ -22,6 +22,7 @@ package scala.test.scaladoc.links {
   object Target {
     type T = Int => Int
     type S = Int
+    type ::[X] = scala.collection.immutable.::[X]
     class C
     def foo(i: Int) = 2
     def foo(z: String) = 3
@@ -43,6 +44,7 @@ package scala.test.scaladoc.links {
    *  - [[[[Target!.foo[A[_[_]]]*                          trait Target -> def foo with 3 nested tparams]]]] (should exercise nested parens)
    *  - [[Target$.T                                        object Target -> type T]]
    *  - [[Target$.S                                        object Target -> type S]]
+   *  - [[Target$.::                                       object Target -> type ::]]
    *  - [[Target$.foo(z:Str*                               object Target -> def foo]]
    *  - [[Target$.bar                                      object Target -> def bar]]
    *  - [[[[Target$.foo[A[_[_]]]*                          trait Target -> def foo with 3 nested tparams]]]] (should exercise nested parens)
