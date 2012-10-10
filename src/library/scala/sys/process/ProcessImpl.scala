@@ -222,7 +222,10 @@ private[process] trait ProcessImpl {
       p.exitValue()
     }
     override def destroy() = {
-      try p.destroy()
+      try{
+        outputThreads foreach (_.stop())
+        p.destroy()
+      }
       finally inputThread.interrupt()
     }
   }
