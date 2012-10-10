@@ -37,17 +37,15 @@ package object concurrent {
    */
   def promise[T]()(implicit execctx: ExecutionContext): Promise[T] = Promise[T]()
 
-  /** Used to designate a piece of code which potentially blocks, allowing the BlockContext to adjust the runtime's behavior.
+  /** Used to designate a piece of code which potentially blocks, allowing the current [[BlockContext]] to adjust
+   *  the runtime's behavior.
    *  Properly marking blocking code may improve performance or avoid deadlocks. 
    *
-   *  If you have an `Awaitable` then you should use Await.result instead of `blocking`.
+   *  Blocking on an [[Awaitable]] should be done using [[Await.result]] instead of `blocking`.
    *
    *  @param body         A piece of code which contains potentially blocking or long running calls.
-   *
-   *  Calling this method may throw the following exceptions:
-   *  - CancellationException - if the computation was cancelled
-   *  - InterruptedException - in the case that a wait within the blockable object was interrupted
-   *  - TimeoutException - in the case that the blockable object timed out
+   *  @throws `CancellationException` if the computation was cancelled
+   *  @throws `InterruptedException` in the case that a wait within the blocking `body` was interrupted
    */
   @throws(classOf[Exception])
   def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
