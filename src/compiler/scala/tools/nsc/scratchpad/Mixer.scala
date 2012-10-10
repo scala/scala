@@ -6,6 +6,7 @@ import scala.runtime.ScalaRunTime.stringOf
 import java.lang.reflect.InvocationTargetException
 import collection.mutable.ArrayBuffer
 
+@deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
 class Mixer {
 
   protected val stdSeparator = "//> "
