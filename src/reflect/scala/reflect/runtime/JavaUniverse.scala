@@ -7,8 +7,7 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
  *
  *  Should not be instantiated directly, use [[scala.reflect.runtime.universe]] instead.
  *
- *  @contentDiagram hideNodes "*Api"
- *  @groupprio Ungrouped -5
+ *  @contentDiagram hideNodes "*Api" "*Extractor"
  */
 class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.SymbolTable { self =>
 
