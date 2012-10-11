@@ -48,9 +48,9 @@ trait MemberLookup {
           }
 
           if (sym.isClass || sym.isModule || sym.isTrait || sym.isPackage)
-            findExternalLink(linkName(sym))
+            findExternalLink(sym, linkName(sym))
           else if (owner.isClass || owner.isModule || owner.isTrait || owner.isPackage)
-            findExternalLink(linkName(owner) + "@" + externalSignature(sym))
+            findExternalLink(sym, linkName(owner) + "@" + externalSignature(sym))
           else
             None
         }
@@ -173,7 +173,7 @@ trait MemberLookup {
     // and removing NoType classes
     def cleanupBogusClasses(syms: List[Symbol]) = { syms.filter(_.info != NoType) }
 
-    def syms(name: Name) = container.info.nonPrivateMember(name).alternatives
+    def syms(name: Name) = container.info.nonPrivateMember(name.encodedName).alternatives
     def termSyms = cleanupBogusClasses(syms(newTermName(name)))
     def typeSyms = cleanupBogusClasses(syms(newTypeName(name)))
 
