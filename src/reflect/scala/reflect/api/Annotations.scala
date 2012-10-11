@@ -24,7 +24,7 @@ import scala.collection.immutable.ListMap
  *    - arrays and
  *    - nested annotations.
  *
- *  @contentDiagram
+ *  @contentDiagram hideNodes "*Api"
  */
 trait Annotations { self: Universe =>
 
