@@ -3362,10 +3362,10 @@ trait Typers extends Modes with Adaptations with Tags {
         // if at least one of the types in an intersection is checkable, use the checkable ones
         // this avoids problems as in run/matchonseq.scala, where the expected type is `Coll with scala.collection.SeqLike`
         // Coll is an abstract type, but SeqLike of course is not
-        case RefinedType(parents, _)  if (parents.length >= 2) && (parents.exists(tp => !infer.containsUnchecked(tp))) =>
+        case RefinedType(ps, _) if ps.length > 1 && (ps exists infer.isCheckable) =>
           None
 
-        case ptCheckable if infer.containsUnchecked(ptCheckable) =>
+        case ptCheckable if infer isUncheckable ptCheckable =>
           val classTagExtractor = resolveClassTag(pos, ptCheckable)
 
           if (classTagExtractor != EmptyTree && unapplyMember(classTagExtractor.tpe) != NoSymbol)

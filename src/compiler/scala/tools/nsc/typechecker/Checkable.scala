@@ -154,6 +154,7 @@ trait Checkable {
     def neverSubClass = isNeverSubClass(Xsym, Psym)
     def neverMatches  = result == StaticallyFalse
     def isUncheckable = result == Uncheckable
+    def isCheckable   = !isUncheckable
     def uncheckableMessage = uncheckableType match {
       case NoType                                   => "something"
       case tp @ RefinedType(_, _)                   => "refinement " + tp
@@ -232,6 +233,17 @@ trait Checkable {
 
   trait InferCheckable {
     self: Inferencer =>
+
+    def isUncheckable(P0: Type) = !isCheckable(P0)
+
+    def isCheckable(P0: Type): Boolean = (
+      uncheckedOk(P0) || (P0.widen match {
+        case TypeRef(_, NothingClass | NullClass | AnyValClass, _) => false
+        case RefinedType(_, decls) if !decls.isEmpty               => false
+        case p                                                     =>
+          new CheckabilityChecker(AnyClass.tpe, p) isCheckable
+      })
+    )
 
     /** TODO: much better error positions.
      *  Kind of stuck right now because they just pass us the one tree.
