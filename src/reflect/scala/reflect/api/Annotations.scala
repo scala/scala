@@ -6,11 +6,16 @@ import scala.collection.immutable.ListMap
 /** This trait provides annotation support for the reflection API.
  *
  *  The API distinguishes between two kinds of annotations:
- *  1. ''Java annotations'': annotations on definitions produced by the Java compiler, i.e., subtypes of `java.lang.annotation.Annotation` attached to program definitions. When read by Scala reflection, the [[scala.annotation.ClassfileAnnotation]] trait is automatically added as a subclass to every Java annotation.
- *  1. ''Scala annotations'': annotations on definitions or types produced by the Scala compiler.
  *
- *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] or [[scala.annotation.ClassfileAnnotation]] is compiled,
- *  it is stored as special attributes in the corresponding classfile, and not as a Java annotation. Note that subclassing
+ *  <ul>
+ *  <li>''Java annotations'': annotations on definitions produced by the Java compiler, i.e., subtypes of [[java.lang.annotation.Annotation]]
+ *  attached to program definitions. When read by Scala reflection, the [[scala.annotation.ClassfileAnnotation]] trait
+ *  is automatically added as a subclass to every Java annotation.</li>
+ *  <li>''Scala annotations'': annotations on definitions or types produced by the Scala compiler.</li>
+ *  </ul>
+ *    
+ *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] or [[scala.annotation.ClassfileAnnotation]] is compiled, 
+ *  it is stored as special attributes in the corresponding classfile, and not as a Java annotation. Note that subclassing 
  *  just [[scala.annotation.Annotation]] is not enough to have the corresponding metadata persisted for runtime reflection.
  *
  *  The distinction between Java and Scala annotations is manifested in the contract of [[scala.reflect.api.Annotations#Annotation]], which exposes

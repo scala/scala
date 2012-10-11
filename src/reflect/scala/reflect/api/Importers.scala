@@ -3,33 +3,23 @@ package api
 
 /** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
  *
- *  Reflection artifacts, such as symbols and types, are contained in universes. Typically all processing happens
- *  within a single universe (e.g. a compile-time macro universe or a runtime reflection universe), but sometimes
- *  there is a need to migrate artifacts from one universe to another. For example, runtime compilation works by
- *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the
+ *  Reflection artifacts, such as [[scala.reflect.api.Symbols Symbols]] and [[scala.reflect.api.Types Types]],
+ *  are contained in [[scala.reflect.api.Universes Universe]]s. Typically all processing happens 
+ *  within a single `Universe` (e.g. a compile-time macro `Universe` or a runtime reflection `Universe`), but sometimes 
+ *  there is a need to migrate artifacts from one `Universe` to another. For example, runtime compilation works by 
+ *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the 
  *  result back.
  *
- *  Reflection artifacts are firmly grounded in their universes, which is reflected by the fact that types of artifacts
- *  from different universes are not compatible. By using importers, however, they be imported from one universe
- *  into another. For example, to import `foo.bar.Baz` from the source universe to the target universe,
- *  an importer will first check whether the entire owner chain exists in the target universe.
+ *  Reflection artifacts are firmly grounded in their `Universe`s, which is reflected by the fact that types of artifacts 
+ *  from different universes are not compatible. By using `Importer`s, however, they be imported from one universe 
+ *  into another. For example, to import `foo.bar.Baz` from the source `Universe` to the target `Universe`,
+ *  an importer will first check whether the entire owner chain exists in the target `Universe`.
  *  If it does, then nothing else will be done. Otherwise, the importer will recreate the entire owner chain
- *  and will import the corresponding type signaturers into the target universe.
+ *  and will import the corresponding type signatures into the target `Universe`.
  *
- *  Since importers match symbol tables of the source and the target universes using plain string names,
+ *  Since importers match `Symbol` tables of the source and the target `Universe`s using plain string names,
  *  it is programmer's responsibility to make sure that imports don't distort semantics, e.g., that
- *  `foo.bar.Baz` in the source universe means the same that `foo.bar.Baz` does in the target universe.
- *
- *  === Known issues ===
- *
- *  Importers didn't undergo as much testing as most of the reflection API did,
- *  so they might be flaky from time to time. Please report issues if you encounter them.
- *
- *  Importers are currently not mirror-aware, they always use `rootMirror`
- *  of the target universe to resolve symbols. This might cause troubles in cases when the target universe
- *  need a non-standard way of symbol resolution (e.g. a classloader that's different from the default one).
- *  We have created [[https://issues.scala-lang.org/browse/SI-6241 https://issues.scala-lang.org/browse/SI-6241]],
- *  an issue in the issue tracker, to track the implementation of this feature.
+ *  `foo.bar.Baz` in the source `Universe` means the same that `foo.bar.Baz` does in the target `Universe`.
  *
  *  === Example ===
  *

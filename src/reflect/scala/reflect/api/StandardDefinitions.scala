@@ -5,10 +5,11 @@
 package scala.reflect
 package api
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines standard symbols and types.
+/** All Scala standard symbols and types.
  *
- *  These standard reflection artifacts can be referred to using `definitions` (typically imported with
- *  a blanket import `import definitions._`) and are listed in [[scala.reflect.api.StandardDefinitions#DefinitionsApi]].
+ * These standard definitions can accessed to using `definitions`. 
+ * They're typically imported with a blanket import `import definitions`, and are
+ * listed in [[scala.reflect.api.StandardDefinitions#DefinitionsApi]].
  */
 trait StandardDefinitions {
   self: Universe =>

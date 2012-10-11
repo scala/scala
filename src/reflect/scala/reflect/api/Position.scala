@@ -16,6 +16,30 @@ import scala.reflect.macros.Attachments
  *  The compiler adds more information to positions, such a ranges in the source file and defines different types of
  *  positions depending on how a symbol or tree node was generated. The guide fully describes compiler-generated positions.
  *
+ *  - INV1: A tree with an offset position never contains a child
+ *        with a range position
+ *  - INV2: If the child of a tree with a range position also has a range position,
+ *        then the child's range is contained in the parent's range.
+ *  - INV3: Opaque range positions of children of the same node are non-overlapping
+ *        (this means their overlap is at most a single point).
+ *
+ *  The following tests are useful on positions:
+ *  `pos.isDefined`     true if position is not a NoPosition,
+ *  `pos.isRange`       true if position is a range,
+ *  `pos.isOpaqueRange` true if position is an opaque range,
+ *
+ *  There are also convenience methods, such as
+ *  `pos.startOrPoint`,
+ *  `pos.endOrPoint`,
+ *  `pos.pointOrElse(default)`.
+ *  These are less strict about the kind of position on which they can be applied.
+ *
+ *  The following conversion methods are often used:
+ *  `pos.focus`           converts a range position to an offset position, keeping its point;
+ *                        returns all other positions unchanged,
+ *  `pos.makeTransparent` converts an opaque range position into a transparent one.
+ *                        returns all other positions unchanged.
+ *
  *  @groupname Common   Commonly used methods
  */
 trait Position extends Attachments {

@@ -3,32 +3,51 @@ package api
 
 import scala.language.implicitConversions
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines flag sets and operations on them.
- *  See [[scala.reflect.api.Universe]] for a description of how the reflection API is encoded with the cake pattern.
+/**
+ * The trait that defines flag sets and operations on them.
  *
- *  Flags are used to provide modifiers for abstract syntax trees that represent definitions
- *  via the `flags` field of [[scala.reflect.api.Trees#Modifiers]]. Trees that accept modifiers are:
- *  [[scala.reflect.api.Trees#ClassDef]] (classes and traits), [[scala.reflect.api.Trees#ModuleDef]] (objects),
- *  [[scala.reflect.api.Trees#ValDef]] (vals, vars, parameters and self-type annotations),
- *  [[scala.reflect.api.Trees#DefDef]] (methods and constructors) and
- *  [[scala.reflect.api.Trees#TypeDef]] (type aliases, abstract type members and type parameters).
+ * `Flag`s are used to provide modifiers for abstract syntax trees that represent definitions
+ * via the `flags` field of [[scala.reflect.api.Trees#Modifiers]]. Trees that accept modifiers are:
  *
- *  For example, to create a class named `C` one would write `ClassDef(Modifiers(NoFlags), newTypeName("C"), Nil, ...)`.
- *  Here the flag set is empty, representing a vanilla class definition. To make `C` private, one would write
- *  `ClassDef(Modifiers(PRIVATE), newTypeName("C"), Nil, ...)`. Flags can also be combined with the vertical bar operator (`|`).
- *  For example, a private final class is written as followed: `ClassDef(Modifiers(PRIVATE | FINAL), newTypeName("C"), Nil, ...)`.
+ *   - '''[[scala.reflect.api.Trees#ClassDef]]'''. Classes and traits.
+ *   - '''[[scala.reflect.api.Trees#ModuleDef]]'''. Objects.
+ *   - '''[[scala.reflect.api.Trees#ValDef]]'''. Vals, vars, parameters and self-type annotations.
+ *   - '''[[scala.reflect.api.Trees#DefDef]]'''. Methods and constructors.
+ *   - '''[[scala.reflect.api.Trees#TypeDef]]'''. Type aliases, abstract type members and type parameters.
  *
- *  The list of all available flags is defined in [[scala.reflect.api.FlagSets#FlagValues]], available via the [[scala.reflect.api.FlagSets#Flag]]
- *  (typically one writes a blanket import for that, e.g. `import scala.reflect.runtime.universe.Flag._`).
+ * For example, to create a class named `C` one would write something like:
+ * {{{
+ *  ClassDef(Modifiers(NoFlags), newTypeName("C"), Nil, ...)
+ * }}}
+ * 
+ * Here, the flag set is empty. 
  *
- *  Definition trees are compiled down to symbols, so flags on modifiers of such trees are transformed into flags on the resulting symbols.
- *  Unlike trees, symbols don't expose flags, but rather provide `isXXX` test methods (e.g. `isFinal` can be used to test finality). These test methods
- *  might require an upcast with `asTerm`, `asType` or `asClass` as some flags only make sense for certain flavors of symbols.
+ * To make `C` private, one would write something like:
+ * {{{
+ *  ClassDef(Modifiers(PRIVATE), newTypeName("C"), Nil, ...)
+ * }}}
  *
- *  === Known issues ===
+ * Flags can also be combined with the vertical bar operator (`|`).
+ * For example, a private final class is written something like:
+ * {{{
+ *  ClassDef(Modifiers(PRIVATE | FINAL), newTypeName("C"), Nil, ...)
+ * }}}
  *
- *  This API is considered to be a candidate for redesign. It is quite probable that in future releases of the reflection API
- *  flag sets will be replaced with something else.
+ * The list of all available flags is defined in [[scala.reflect.api.FlagSets#FlagValues]], available via
+ * [[scala.reflect.api.FlagSets#Flag]]. (Typically one writes a blanket import for this, e.g.
+ * `import scala.reflect.runtime.universe.Flag._`).
+ *
+ * Definition trees are compiled down to symbols, so flags on modifiers of these trees are transformed into flags
+ * on the resulting symbols. Unlike trees, symbols don't expose flags, but rather provide `isXXX` test methods
+ * (e.g. `isFinal` can be used to test finality). These test methods might require an upcast with `asTerm`,
+ * `asType` or `asClass` as some flags only make sense for certain kinds of symbols.
+ *
+ * ''Of Note:'' This part of the Reflection API is being considered as a candidate for redesign. It is
+ * quite possible that in future releases of the reflection API, flag sets could be replaced with something else.
+ *
+ * For more details about `FlagSet`s and other aspects of Scala reflection, see the 
+ * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ *
  */
 trait FlagSets { self: Universe =>
 

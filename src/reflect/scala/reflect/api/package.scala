@@ -2,13 +2,22 @@ package scala.reflect
 
 import scala.reflect.api.{Universe => ApiUniverse}
 
-/** The Scala reflection API (located at scala-reflect.jar).
+/** The Scala Reflection API (located in scala-reflect.jar).
  *
- *  Using Scala reflection requires understanding of a couple of basic concepts like [[Symbols Symbols]], [[Types Types]], [[Mirror Mirrors]] and [[Universe Universes]].
- *  @see [[http://docs.scala-lang.org/overviews/reflection/overview.html]].
+ * In Scala 2.10.0, the Scala Reflection API and its implementation have an "experimental" status.
+ * This means that the API and the docs are not complete and can be changed in binary- and source-incompatible
+ * manner in 2.10.1. This also means that the implementation has some known issues.
  *
- *  In Scala 2.10.0, reflection API and its implementation have experimental status. This means that the API and the docs are not complete and can be changed
- *  in binary- and source-incompatible manner in 2.10.1. This also means that the implementation has known issues
+ * The following types are the backbone of the Scala Reflection API, and serve as a good starting point
+ * for information about Scala Reflection:
+ *
+ *  - [[scala.reflect.api.Symbols]]
+ *  - [[scala.reflect.api.Types]]
+ *  - [[scala.reflect.api.Mirrors]]
+ *  - [[scala.reflect.api.Universe]]
+ *
+ *  For more information about Scala Reflection, see the 
+ * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
  *  @groupprio API        9
  *  @groupprio Extractors 10

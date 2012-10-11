@@ -5,7 +5,7 @@ package api
  *
  *  Names are simple wrappers for strings. [[scala.reflect.api.Names#Name Name]] has two subtypes [[scala.reflect.api.Names#TermName TermName]] and [[scala.reflect.api.Names#TypeName TypeName]] which
  *  distinguish names of terms (like objects or members) and types. A term and a type of the
- *  same name can co-exist in an object.
+ *  same name can co-exist in an object. 
  *
  *  === Examples ===
  *
@@ -13,7 +13,7 @@ package api
  *  use `typeOf[List[_]].member(newTermName("map"))`. To search for a type member, use
  *  newTypeName instead.
  *
- *  @see [[http://docs.scala-lang.org/overviews/reflection/overview.html]].
+ *  See the [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for more about Scala Reflection.
  *
  *  @contentDiagram hideNodes "*Api"
  */

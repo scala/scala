@@ -5,7 +5,12 @@ package api
  *
  *  This refinement equips mirrors with reflection capabilities for the JVM. `JavaMirror` can
  *  convert Scala reflection artifacts (symbols and types) into Java reflection artifacts (classes)
- *  and vice versa. It can also perform reflective invocations (getting/settings field values, calling methods, etc).
+ *  and vice versa. It can also perform reflective invocations (getting/setting field values,
+ *  calling methods, etc).
+ *
+ *  For more information about `Mirrors`s, see [[scala.reflect.api.Mirrors]] or the
+ *  [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
+ *
  *  @groupname JavaMirrors Java Mirrors
  */
 trait JavaMirrors { self: JavaUniverse =>
@@ -15,7 +20,7 @@ trait JavaMirrors { self: JavaUniverse =>
    */
   type RuntimeClass = java.lang.Class[_]
 
-  /** In runtime reflection universes, mirrors are JavaMirrors.
+  /** In runtime reflection universes, mirrors are `JavaMirrors`.
    *  @group JavaMirrors
    */
   override type Mirror >: Null <: JavaMirror
@@ -23,10 +28,12 @@ trait JavaMirrors { self: JavaUniverse =>
   /** A refinement of [[scala.reflect.api.Mirror]] for runtime reflection using JVM classloaders.
    *
    *  With this upgrade, mirrors become capable of converting Scala reflection artifacts (symbols and types)
-   *  into Java reflection artifacts (classes) and vice versa. Consequently refined mirrors
-   *  become capable of performing reflective invocations (getting/settings field values, calling methods, etc).
+   *  into Java reflection artifacts (classes) and vice versa. Consequently, refined mirrors
+   *  become capable of performing reflective invocations (getting/setting field values, calling methods, etc).
    *
-   *  See [[scala.reflect.api.package the overview page]] for details on how to use runtime reflection.
+   *  For more information about `Mirrors`s, see [[scala.reflect.api.Mirrors]] or the
+   * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
+   *
    *  @group JavaMirrors
    */
   trait JavaMirror extends scala.reflect.api.Mirror[self.type] with RuntimeMirror {
@@ -35,7 +42,10 @@ trait JavaMirrors { self: JavaUniverse =>
   }
 
   /** Creates a runtime reflection mirror from a JVM classloader.
-   *  See [[scala.reflect.api.package the overview page]] for details on how to use runtime reflection.
+   *
+   *  For more information about `Mirrors`s, see [[scala.reflect.api.Mirrors]] or the
+   * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
+   *
    *  @group JavaMirrors
    */
   def runtimeMirror(cl: ClassLoader): Mirror

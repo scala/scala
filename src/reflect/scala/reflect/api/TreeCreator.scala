@@ -3,7 +3,7 @@ package api
 
 /** This is an internal implementation class.
  *
- * @see [[http://docs.scala-lang.org/overviews/reflection/architecture.html]].
+ * This class is used internally by Scala Reflection, and is not recommended for use in client code.
  */
 abstract class TreeCreator {
   def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Tree

@@ -3,9 +3,12 @@ package api
 
 import java.io.{ PrintWriter, StringWriter }
 
-/** A slice of [[scala.reflect.api.Universe the Scala reflection cake]] that defines prettyprinting functionality.
+/** Utilities for nicely printing [[scala.reflect.api.Trees]] and [[scala.reflect.api.Types]].
  *
- *  === Examples (trees) ===
+ *  === Printing Trees ===
+ *  The method `show` displays the "prettified" representation of reflection artifacts.
+ *  This representation provides one with the desugared Java representation of Scala code. 
+ *  For example:
  *
  *  {{{
  *  scala> import scala.reflect.runtime.universe._
@@ -14,9 +17,6 @@ import java.io.{ PrintWriter, StringWriter }
  *  scala> def tree = reify{ final class C { def x = 2 } }.tree
  *  tree: reflect.runtime.universe.Tree
  *
- *  // show displays prettified representation of reflection artifacts
- *  // which is typically close to Scala code, but sometimes not quite
- *  // (e.g. here the constructor is shown in a desugared way)
  *  scala> show(tree)
  *  res0: String =
  *  {
@@ -29,21 +29,17 @@ import java.io.{ PrintWriter, StringWriter }
  *    };
  *    ()
  *  }
+ * }}}
+ * 
+ * The method `showRaw` displays internal structure of a given reflection object
+ * as a Scala abstract syntax tree (AST), the representation that the Scala typechecker
+ * operates on.
  *
- *  // showRaw displays internal structure of a given reflection object
- *  // trees and types (type examples are shown below) are case classes
- *  // so they are shown in a form that's almost copy/pasteable
- *  //
- *  // almost copy/pasteable, but not completely - that's because of symbols
- *  // there's no good way to get a roundtrip-surviving representation of symbols
- *  // in general case, therefore only symbol names are shown (e.g. take a look at AnyRef)
- *  //
- *  // in such a representation, it's impossible to distinguish Idents/Selects
- *  // that have underlying symbols vs ones that don't have symbols, because in both cases
- *  // only names will be printed
- *  //
- *  // to overcome this limitation, use `printIds` and `printKinds` - optional parameters
- *  // of the `showRaw` method (an example is shown below)
+ * Note, that while this representation appears to generate correct trees that one
+ * might think would be possible to use in a macro implementation, this is not usually
+ * the case. Symbols aren't fully represented (only their names are). Thus, this method
+ * is best-suited for use simply inspecting ASTs given some valid Scala code.
+ * {{{
  *  scala> showRaw(tree)
  *  res1: String = Block(List(
  *    ClassDef(Modifiers(FINAL), newTypeName("C"), List(), Template(
@@ -57,15 +53,17 @@ import java.io.{ PrintWriter, StringWriter }
  *        DefDef(Modifiers(), newTermName("x"), List(), List(), TypeTree(),
  *          Literal(Constant(2))))))),
  *    Literal(Constant(())))
- *
+ * }}}
+ * 
+ * The method `showRaw` can also print [[scala.reflect.api.Types]] next to the artifacts
+ * being inspected
+ * {{{
  *  scala> import scala.tools.reflect.ToolBox // requires scala-compiler.jar
  *  import scala.tools.reflect.ToolBox
  *
  *  scala> import scala.reflect.runtime.{currentMirror => cm}
  *  import scala.reflect.runtime.{currentMirror=>cm}
  *
- *  // showRaw can also print types next to the artifacts being inspected
- *  // provide true for a `printTypes` arguments to achieve this effect
  *  scala> showRaw(cm.mkToolBox().typeCheck(tree), printTypes = true)
  *  res2: String = Block[1](List(
  *    ClassDef[2](Modifiers(FINAL), newTypeName("C"), List(), Template[3](
@@ -89,8 +87,9 @@ import java.io.{ PrintWriter, StringWriter }
  *  [8] ConstantType(Constant(2))
  *  }}}
  *
- *  === Examples (types) ===
+ *  === Printing Types ===
  *
+ * The method `show` 
  *  {{{
  *  scala> import scala.reflect.runtime.universe._
  *  import scala.reflect.runtime.universe._
@@ -98,10 +97,14 @@ import java.io.{ PrintWriter, StringWriter }
  *  scala> def tpe = typeOf[{ def x: Int; val y: List[Int] }]
  *  tpe: reflect.runtime.universe.Type
  *
- *  // show has already been discussed above
  *  scala> show(tpe)
  *  res0: String = scala.AnyRef{def x: Int; val y: scala.List[Int]}
+ *  }}}
  *
+ * Like the method `showRaw` for [[scala.reflect.api.Trees]], `showRaw`
+ * for [[scala.reflect.api.Types]] provides a visualization of the Scala
+ * AST operated on by the Scala typechecker.
+ * {{{
  *  // showRaw has already been discussed above
  *  scala> showRaw(tpe)
  *  res1: String = RefinedType(
@@ -109,18 +112,10 @@ import java.io.{ PrintWriter, StringWriter }
  *    Scope(
  *      newTermName("x"),
  *      newTermName("y")))
+ * }}}
  *
- *  // when `printIds` and/or `printKinds` arguments are provided for showRaw
- *  // the prettyprinter reveals underlying symbols and their flavors
- *  //
- *  // courtesy of `printKinds` we can see four different symbols: a package class `scala`,
- *  // a type alias `AnyRef`, a method named `x` and a getter named `y`.
- *  //
- *  // thanks to `printIds` we can see unique identifiers of symbols
- *  // so that it becomes possible to distinguish, say, `scala.collection.immutable.List`
- *  // from `scala.collection.mutable.List` (this also helps in rare cases
- *  // when the same reflection entity is represented by multiple symbols, but let's
- *  // not speak of these horrors here)
+ * `printIds` and/or `printKinds` can additionally be supplied as arguments in a call to
+ * `showRaw` which additionally shows the unique identifiers of symbols.
  *  scala> showRaw(tpe, printIds = true, printKinds = true)
  *  res2: String = RefinedType(
  *    List(TypeRef(ThisType(scala#2043#PK), newTypeName("AnyRef")#691#TPE, List())),
@@ -128,6 +123,10 @@ import java.io.{ PrintWriter, StringWriter }
  *      newTermName("x")#2540#METH,
  *      newTermName("y")#2541#GET))
  *  }}}
+ *
+ * For more details about `Printer`s and other aspects of Scala reflection, see the 
+ * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ *
  */
 trait Printers { self: Universe =>
 
@@ -176,8 +175,9 @@ trait Printers { self: Universe =>
    */
   override protected def treeToString(tree: Tree) = show(tree)
 
-  /** Renders a prettified representation of a reflection artifact.
-   *  Typically it looks very close to the Scala code it represents.
+  /** Renders a representation of a reflection artifact
+   * as desugared Java code.
+   *
    * @group Printers
    */
   def show(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None): String =
@@ -188,7 +188,9 @@ trait Printers { self: Universe =>
    */
   protected def newTreePrinter(out: PrintWriter): TreePrinter
 
-  /** Renders internal structure of a reflection artifact.
+  /** Renders internal structure of a reflection artifact as the
+   * visualization of a Scala syntax tree.
+   *
    * @group Printers
    */
   def showRaw(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None): String =
