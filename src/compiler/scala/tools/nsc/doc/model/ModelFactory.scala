@@ -292,7 +292,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         val tps = (this match {
           case a: AliasType => sym.tpe.dealias.parents
           case a: AbstractType => sym.info.bounds match {
-            case TypeBounds(lo, hi) => List(hi)
+            case TypeBounds(lo, RefinedType(parents, decls)) => parents
+            case TypeBounds(lo, hi) => hi :: Nil
             case _ => Nil
           }
           case _ => sym.tpe.parents
