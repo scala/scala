@@ -2,72 +2,35 @@ package scala.reflect
 
 import scala.reflect.api.{Universe => ApiUniverse}
 
-/**
- * The main package of Scala's reflection library.
+/** The Scala Reflection API (located in scala-reflect.jar).
  *
- * The reflection library is structured according to the 'cake pattern'. The main layer
- * resides in package [[scala.reflect.api]] and defines an interface to the following main types:
+ * In Scala 2.10.0, the Scala Reflection API and its implementation have an "experimental" status.
+ * This means that the API and the docs are not complete and can be changed in binary- and source-incompatible
+ * manner in 2.10.1. This also means that the implementation has some known issues.
  *
- *   - [[scala.reflect.api.Types#Type Types]] represent types
- *   - [[scala.reflect.api.Symbols#Symbol Symbols]] represent definitions
- *   - [[scala.reflect.api.Trees#Tree Trees]] represent abstract syntax trees
- *   - [[scala.reflect.api.Names#Name Names]] represent term and type names
- *   - [[scala.reflect.api.Annotations#Annotation Annotations]] represent annotations
- *   - [[scala.reflect.api.Positions#Position Positions]] represent source positions of tree nodes
- *   - [[scala.reflect.api.FlagSets#FlagSet FlagSet]] represent sets of flags that apply to symbols and
- *     definition trees
- *   - [[scala.reflect.api.Constants#Constant Constants]] represent compile-time constants.
+ * The following types are the backbone of the Scala Reflection API, and serve as a good starting point
+ * for information about Scala Reflection:
  *
- * Each of these types are defined in their own enclosing traits, which are ultimately all inherited by class
- * [[scala.reflect.api.Universe Universe]]. The main universe defines a minimal interface to the above types.
- * Universes that provide additional functionality such as deeper introspection or runtime code generation,
- * are defined in packages [[scala.reflect.api]] and `scala.tools.reflect`.
+ *  - [[scala.reflect.api.Symbols]]
+ *  - [[scala.reflect.api.Types]]
+ *  - [[scala.reflect.api.Mirrors]]
+ *  - [[scala.reflect.api.Universe]]
  *
- * The cake pattern employed here requires to write certain Scala idioms with more indirections that usual.
- * What follows is a description of these indirections, which will help to navigate the Scaladocs easily.
+ *  For more information about Scala Reflection, see the 
+ * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
- * For instance, consider the base type of all abstract syntax trees: [[scala.reflect.api.Trees#Tree]].
- * This type is not a class but is abstract and has an upper bound of [[scala.reflect.api.Trees#TreeApi]],
- * which is a class defining the minimal base interface for all trees.
- *
- * For a more interesting tree type, consider [[scala.reflect.api.Trees#If]] representing if-expressions.
- * It is defined next to a value `If` of type [[scala.reflect.api.Trees#IfExtractor]].
- * This value serves as the companion object defining a factory method `apply` and a corresponding `unapply`
- * for pattern matching.
- *
- * {{{
- * import scala.reflect.runtime.universe._
- * val cond = reify{ condition }.tree // <- just some tree representing a condition
- * val body = Literal(Constant(1))
- * val other = Literal(Constant(2))
- * val iftree = If(cond,body,other)
- * }}}
- *
- * is equivalent to
- *
- * {{{
- * import scala.reflect.runtime.universe._
- * val iftree = reify{ if( condition ) 1 else 2 }.tree
- * }}}
- *
- * and can be pattern matched as
- *
- * {{{
- * iftree match { case If(cond,body,other) => ... }
- * }}}
- *
- * Moreover, there is an implicit value [[scala.reflect.api.Trees#IfTag]] of type
- * `ClassTag[If]` that is used by the Scala compiler so that we can indeed pattern match on `If`:
- * {{{
- *   iftree match { case _:If => ... }
- * }}}
- * Without the given implicit value, this pattern match would raise an "unchecked" warning at compile time
- * since `If` is an abstract type that gets erased at runtime. See [[scala.reflect.ClassTag]] for details.
- *
- * To summarize: each tree type `X` (and similarly for other types such as `Type` or `Symbol`) is represented
- * by an abstract type `X`, optionally together with a class `XApi` that defines `X`'s' interface.
- * `X`'s companion object, if it exists, is represented by a value `X` that is of type `XExtractor`.
- * Moreover, for each type `X`, there is a value `XTag` of type `ClassTag[X]` that allows to pattern match on `X`.
+ *  @groupprio API        9
+ *  @groupprio Extractors 10
+ *  @groupprio Tags       11
+ *  @groupdesc API        The methods available for each reflection entity, without the implementation. Since the
+ *                        reflection entities are later overridden by runtime reflection and macros, their API
+ *                        counterparts guarantee a minimum set of methods that are implemented.
+ *  @groupdesc Extractors Extractors provide the machinery necessary to allow pattern matching and construction of
+ *                        reflection entities that is similar to case classes, although the entities are only abstract
+ *                        types that are later overridden.
+ *  @groupdesc Tags       Implicit values that provide [[scala.reflect.ClassTag `ClassTags`]] for the reflection
+ *                        classes. These are abstract in the interface but are later filled in to provide ClassTags
+ *                        for the either the runtime reflection or macros entities, depending on the use.
  */
 package object api {
 

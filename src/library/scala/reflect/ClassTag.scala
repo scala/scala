@@ -5,19 +5,34 @@ import java.lang.{ Class => jClass }
 import scala.language.{implicitConversions, existentials}
 import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
 
-/** A `ClassTag[T]` wraps a runtime class (the erasure) and can create array instances.
+/**
  *
- *  If an implicit value of type ClassTag[T] is requested, the compiler will create one.
- *  The runtime class (i.e. the erasure, a java.lang.Class on the JVM) of T can be accessed
- *  via the `runtimeClass` field. References to type parameters or abstract type members are
- *  replaced by the concrete types if ClassTags are available for them.
+ * A `ClassTag[T]` stores the erased class of a given type `T`, accessible via the `runtimeClass`
+ * field. This is particularly useful for instantiating `Array`s whose element types are unknown
+ * at compile time.
  *
- *  Besides accessing the erasure, a ClassTag knows how to instantiate single- and multi-
- *  dimensional `Arrays` where the element type is unknown at compile time.
+ * `ClassTag`s are a weaker special case of [[scala.reflect.api.TypeTags#TypeTag]]s, in that they
+ * wrap only the runtime class of a given type, whereas a `TypeTag` contains all static type
+ * information. That is, `ClassTag`s are constructed from knowing only the top-level class of a
+ * type, without necessarily knowing all of its argument types. This runtime information is enough
+ * for runtime `Array` creation.
  *
- * [[scala.reflect.ClassTag]] corresponds to a previous concept of [[scala.reflect.ClassManifest]].
+ * For example:
+ * {{{
+ *   scala> def mkArray[T : ClassTag](elems: T*) = Array[T](elems: _*)
+ *   mkArray: [T](elems: T*)(implicit evidence$1: scala.reflect.ClassTag[T])Array[T]
  *
- * @see [[scala.reflect.api.TypeTags]]
+ *   scala> mkArray(42, 13)
+ *   res0: Array[Int] = Array(42, 13)
+ *
+ *   scala> mkArray("Japan","Brazil","Germany")
+ *   res1: Array[String] = Array(Japan, Brazil, Germany)
+ * }}}
+ * 
+ * See [[scala.reflect.api.TypeTags]] for more examples, or the
+ * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
+ * for more details.
+ *
  */
 @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
 trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
@@ -29,7 +44,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    */
   def runtimeClass: jClass[_]
 
-  /** Produces a `ClassTag` that knows how to build `Array[Array[T]]` */
+  /** Produces a `ClassTag` that knows how to instantiate an `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(runtimeClass))
 
   /** Produces a new array with element type `T` and length `len` */
