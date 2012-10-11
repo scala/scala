@@ -11,6 +11,8 @@ package api
  *  to obtain the symbol that represents their declaration. During the typechecking phase, the compiler looks up the
  *  symbol based on the name and scope and sets the [[Trees.SymTreeApi.symbol `symbol` field]] of tree nodes.
  *
+ *  @contentDiagram hideNodes "*Api"
+ *
  *  @see [[http://docs.scala-lang.org/overviews/reflection/overview.html]]
  *
  *  The Reflection Guide provides more details on symbol usage and attached intricacies.
@@ -18,8 +20,6 @@ package api
  *  @define SYMACCESSORS Class [[Symbol]] defines `isXXX` test methods such as `isPublic` or `isFinal`, `params` and
  *  `returnType` methods for method symbols, `baseClasses` for class symbols and so on. Some of these methods don't
  *  make sense for certain subclasses of `Symbol` and return `NoSymbol`, `Nil` or other empty values.
- *
- *  @contentDiagram hideNodes "*Api"
  */
 trait Symbols { self: Universe =>
 
