@@ -3,8 +3,11 @@ package runtime
 
 import internal.{SomePhase, NoPhase, Phase, TreeGen}
 
-/** The universe for standard runtime reflection from Java.
- *  This type implements all abstract term members in internal.SymbolTable.
+/** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
+ *
+ *  Should not be instantiated directly, use [[scala.reflect.runtime.universe]] instead.
+ *
+ *  @contentDiagram hideNodes "*Api" "*Extractor"
  */
 class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.SymbolTable { self =>
 

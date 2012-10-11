@@ -1,6 +1,9 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  exposes functions to save reflection artifacts for runtime.
+ */
 trait Reifiers {
   self: Context =>
 
