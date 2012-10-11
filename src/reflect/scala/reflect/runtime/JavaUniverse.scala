@@ -5,7 +5,10 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
 
 /** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *
- *  Should not be instantiated directly, use [[scala.reflect.runtime.package#universe]] instead.
+ *  Should not be instantiated directly, use [[scala.reflect.runtime.universe]] instead.
+ *
+ *  @contentDiagram hideNodes "*Api"
+ *  @groupprio Ungrouped -5
  */
 class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.SymbolTable { self =>
 

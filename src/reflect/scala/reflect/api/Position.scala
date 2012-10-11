@@ -17,7 +17,6 @@ import scala.reflect.macros.Attachments
  *  positions depending on how a symbol or tree node was generated. The guide fully describes compiler-generated positions.
  *
  *  @groupname Common   Commonly used methods
- *  @groupname default  Compiler-specific methods
  */
 trait Position extends Attachments {
 
