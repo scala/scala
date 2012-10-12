@@ -32,25 +32,23 @@ import DocParser.Parsed
   *
   * @author Gilles Dubochet */
 class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
-  /** The unique compiler instance used by this processor and constructed from its `settings`. */
-  object compiler extends Global(settings, reporter) with interactive.RangePositions {
-    override protected def computeInternalPhases() {
-      phasesSet += syntaxAnalyzer
-      phasesSet += analyzer.namerFactory
-      phasesSet += analyzer.packageObjects
-      phasesSet += analyzer.typerFactory
-      phasesSet += superAccessors
-      phasesSet += pickler
-      phasesSet += refChecks
+  def mkCompiler = 
+    new Global(settings, reporter) with interactive.RangePositions {
+      override protected def computeInternalPhases() {
+        phasesSet += syntaxAnalyzer
+        phasesSet += analyzer.namerFactory
+        phasesSet += analyzer.packageObjects
+        phasesSet += analyzer.typerFactory
+      }
+      override def forScaladoc = true
     }
-    override def forScaladoc = true
-  }
 
   /** Creates a scaladoc site for all symbols defined in this call's `source`,
     * as well as those defined in `sources` of previous calls to the same processor.
     * @param source The list of paths (relative to the compiler's source path,
-    *        or absolute) of files to document or the source code. */
-  def makeUniverse(source: Either[List[String], String]): Option[Universe] = {
+    *        or absolute) of files to document or the source code.
+    * @param compiler The compiler instance to run typer on. */
+  def makeUniverse(source: Either[List[String], String], compiler: Global = mkCompiler): Option[Universe] = {
     assert(settings.docformat.value == "html")
     source match {
       case Left(files) =>
