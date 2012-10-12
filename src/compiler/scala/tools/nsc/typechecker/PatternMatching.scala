@@ -192,7 +192,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
   trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
     import typer.{typed, context, silent, reallyExists}
-    // import typer.infer.containsUnchecked
 
     // Why is it so difficult to say "here's a name and a context, give me any
     // matching symbol in scope" ? I am sure this code is wrong, but attempts to
