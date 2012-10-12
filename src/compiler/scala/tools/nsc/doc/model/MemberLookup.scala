@@ -48,9 +48,9 @@ trait MemberLookup {
           }
 
           if (sym.isClass || sym.isModule || sym.isTrait || sym.isPackage)
-            findExternalLink(linkName(sym))
+            findExternalLink(sym, linkName(sym))
           else if (owner.isClass || owner.isModule || owner.isTrait || owner.isPackage)
-            findExternalLink(linkName(owner) + "@" + externalSignature(sym))
+            findExternalLink(sym, linkName(owner) + "@" + externalSignature(sym))
           else
             None
         }
