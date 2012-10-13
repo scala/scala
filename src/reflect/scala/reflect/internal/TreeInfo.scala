@@ -104,6 +104,34 @@ abstract class TreeInfo {
       false
   }
 
+  /** As if the name of the method didn't give it away,
+   *  this logic is designed around issuing helpful
+   *  warnings and minimizing spurious ones.  That means
+   *  don't reuse it for important matters like inlining
+   *  decisions.
+   */
+  def isPureExprForWarningPurposes(tree: Tree) = tree match {
+    case EmptyTree | Literal(Constant(())) => false
+    case _                                 =>
+      def isWarnableRefTree = tree match {
+        case t: RefTree => isExprSafeToInline(t.qualifier) && t.symbol != null && t.symbol.isAccessor
+        case _          => false
+      }
+      def isWarnableSymbol = {
+        val sym = tree.symbol
+        (sym == null) || !(sym.isModule || sym.isLazy) || {
+          debuglog("'Pure' but side-effecting expression in statement position: " + tree)
+          false
+        }
+      }
+
+      (    !tree.isErrorTyped
+        && (isExprSafeToInline(tree) || isWarnableRefTree)
+        && isWarnableSymbol
+      )
+  }
+
+
   @deprecated("Use isExprSafeToInline instead", "2.10.0")
   def isPureExpr(tree: Tree) = isExprSafeToInline(tree)
 
