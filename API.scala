@@ -124,7 +124,7 @@ final class API(val global: CallbackGlobal) extends Compat
 			}
 		}
 		else if(sym.isRoot || sym.isRootPackage) Constants.emptyType
-		else new xsbti.api.Projection(simpleType(in, pre), sym.nameString)
+		else new xsbti.api.Projection(simpleType(in, pre), simpleName(sym))
 	}
 	private def reference(sym: Symbol): xsbti.api.ParameterRef = new xsbti.api.ParameterRef(tparamID(sym))
 
@@ -163,7 +163,7 @@ final class API(val global: CallbackGlobal) extends Compat
 			}
 		}
 		def parameterS(s: Symbol): xsbti.api.MethodParameter =
-			makeParameter(s.nameString, s.info, s.info.typeSymbol, s)
+			makeParameter(simpleName(s), s.info, s.info.typeSymbol, s)
 
 		// paramSym is only for 2.8 and is to determine if the parameter has a default
 		def makeParameter(name: String, tpe: Type, ts: Symbol, paramSym: Symbol): xsbti.api.MethodParameter =
