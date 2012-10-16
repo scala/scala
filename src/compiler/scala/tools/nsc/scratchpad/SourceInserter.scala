@@ -6,6 +6,7 @@ import util.SourceFile
 
 import util.Chars._
 
+@deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
 object SourceInserter {
   def stripRight(cs: Array[Char]): Array[Char] = {
     val lines =
