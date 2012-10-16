@@ -2,6 +2,12 @@ import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.{currentMirror => cm}
 
+package scala {
+  object ExceptionUtils {
+    def unwrapThrowable(ex: Throwable): Throwable = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+  }
+}
+
 object Test extends App {
   def key(sym: Symbol) = sym + ": " + sym.typeSignature
   def test(tpe: Type, receiver: Any, method: String, args: Any*) {
@@ -13,7 +19,7 @@ object Test extends App {
         println(result)
       } catch {
         case ex: Throwable =>
-          val realex = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+          val realex = scala.ExceptionUtils.unwrapThrowable(ex)
           println(realex.getClass + ": " + realex.getMessage)
       }
     print(s"testing ${tpe.typeSymbol.name}.$method: ")
