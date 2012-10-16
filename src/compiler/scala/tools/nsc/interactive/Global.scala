@@ -68,6 +68,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
   override def forInteractive = true
+  /* The same compiler is used for generating scaladoc in the IDE. */
+  override def forScaladoc = true
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
