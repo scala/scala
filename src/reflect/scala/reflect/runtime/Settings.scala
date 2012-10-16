@@ -7,7 +7,7 @@ import scala.reflect.internal.settings.MutableSettings
  *  This should be refined, so that settings are settable via command
  *  line options or properties.
  */
-class Settings extends MutableSettings {
+private[reflect] class Settings extends MutableSettings {
 
   trait Setting extends SettingValue { }
 

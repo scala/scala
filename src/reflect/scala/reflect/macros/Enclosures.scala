@@ -1,6 +1,11 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that exposes
+ *  enclosing trees (method, class, compilation unit and currently compiled application),
+ *  the enclosing position of the macro expansion, as well as macros and implicits
+ *  that are currently in-flight.
+ */
 trait Enclosures {
   self: Context =>
 
