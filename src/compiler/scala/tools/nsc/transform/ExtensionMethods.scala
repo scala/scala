@@ -56,11 +56,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       case OverloadedType(_, alts) =>
         val index = alts indexOf imeth
         assert(index >= 0, alts+" does not contain "+imeth)
-        def altName(index: Int) = newTermName("extension"+index+"$"+imeth.name)
+        def altName(index: Int) = newTermName(imeth.name+"$extension"+index)
         altName(index) #:: ((0 until alts.length).toStream filter (index != _) map altName)
       case tpe =>
         assert(tpe != NoType, imeth.name+" not found in "+imeth.owner+"'s decls: "+imeth.owner.info.decls)
-        Stream(newTermName("extension$"+imeth.name))
+        Stream(newTermName(imeth.name+"$extension"))
     }
   }
 
@@ -68,10 +68,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
    */
   def extensionMethod(imeth: Symbol): Symbol = atPhase(currentRun.refchecksPhase) {
     val companionInfo = imeth.owner.companionModule.info
-    val candidates = extensionNames(imeth) map (companionInfo.decl(_))
+    val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty,
-      s"no extension method found for $imeth:${imeth.tpe}+among ${candidates map (c => c.name+":"+c.tpe)} / ${extensionNames(imeth)}")
+      s"no extension method found for $imeth:${imeth.tpe} among ${candidates map (c => c.name+":"+c.tpe)} / ${extensionNames(imeth)}")
     matching.head
   }
 
