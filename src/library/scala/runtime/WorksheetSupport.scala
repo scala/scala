@@ -4,6 +4,7 @@ import scala.runtime.ScalaRunTime.stringOf
 
 /** A utility object that's needed by the code that executes a worksheet.
  */
+@deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
 object WorksheetSupport {
 
   /** The offset in the source which should be printed */
