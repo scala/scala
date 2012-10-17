@@ -1,0 +1,28 @@
+header h1 {
+	text-align: center;
+}
+
+header .date {
+	text-align: center;
+}
+
+.container > h1 a, 
+.container > h2 a, 
+.container > h3 a, 
+.container > h4 a, 
+.container > h5 a,
+.container > h6 a {
+	text-decoration: none;
+	color: #111;
+}
+
+pre {
+	margin-left: 3em;
+	padding: 1em;
+	background-color: #EEE;
+	border: 1px solid #333;
+}
+
+code {
+	background-color: #EEE;
+}
