@@ -208,7 +208,7 @@ abstract class TailCalls extends Transform {
           debuglog("Cannot rewrite recursive call at: " + fun.pos + " because: " + reason)
 
           ctx.failReason = reason
-          treeCopy.Apply(tree, target, transformArgs)
+          treeCopy.Apply(tree, noTailTransform(target), transformArgs)
         }
         /** Position of failure is that of the tree being considered.
          */
@@ -220,7 +220,7 @@ abstract class TailCalls extends Transform {
           debuglog("Rewriting tail recursive call:  " + fun.pos.lineContent.trim)
 
           accessed += ctx.label
-          typedPos(fun.pos)(Apply(Ident(ctx.label), recv :: transformArgs))
+          typedPos(fun.pos)(Apply(Ident(ctx.label), noTailTransform(recv) :: transformArgs))
         }
 
         if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
@@ -361,7 +361,9 @@ abstract class TailCalls extends Transform {
 
         case Alternative(_) | Star(_) | Bind(_, _) =>
           sys.error("We should've never gotten inside a pattern")
-        case EmptyTree | Super(_, _) | This(_) | Select(_, _) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>
+        case Select(qual, name) =>
+          treeCopy.Select(tree, noTailTransform(qual), name)
+        case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>
           tree
         case _ =>
           super.transform(tree)
