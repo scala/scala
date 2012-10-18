@@ -441,6 +441,7 @@ i.e. `"\""`. The value of a string literal is an instance of
 class `String`{.scala}. 
 
 (@) Here are some string literals:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 "Hello,\nWorld!"       
 "This string contains a \" character."
