@@ -35,6 +35,22 @@ trait Contexts { self: Analyzer =>
     val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
   }
 
+  sealed abstract class NameLookup { def symbol: Symbol }
+  case class LookupSucceeded(qualifier: Tree, symbol: Symbol) extends NameLookup
+  case class LookupAmbiguous(msg: String) extends NameLookup { def symbol = NoSymbol }
+  case class LookupInaccessible(symbol: Symbol, msg: String) extends NameLookup
+  case class LookupNotFound() extends NameLookup { def symbol = NoSymbol }
+  // case object LookupNotFound extends NameLookup { def symbol = NoSymbol }
+  //
+  // !!! Bug - case object LookupNotFound does not match - we get an
+  // "impossible" MatchError.  case class LookupNotFound() matches in
+  // the same spot.
+
+  def ambiguousImports(imp1: ImportInfo, imp2: ImportInfo) =
+    LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
+  def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
+    LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
+
   private val startContext = {
     NoContext.make(
     Template(List(), emptyValDef, List()) setSymbol global.NoSymbol setType global.NoType,
@@ -480,8 +496,7 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Is `sym` accessible as a member of tree `site` with type
-     *  `pre` in current context?
+    /** Is `sym` accessible as a member of `pre` in current context?
      */
     def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean = false): Boolean = {
       lastAccessCheckDetails = ""
