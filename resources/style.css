@@ -26,3 +26,11 @@ pre {
 code {
 	background-color: #EEE;
 }
+
+ol[type="1"] {
+	list-style-type: none;
+}
+
+ol[type="1"] li:before {
+	content: "Example ";
+}
