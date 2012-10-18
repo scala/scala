@@ -1,6 +1,9 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  partially exposes the type checker to macro writers.
+ */
 trait Typers {
   self: Context =>
 
@@ -24,11 +27,11 @@ trait Typers {
    *  Unlike `enclosingImplicits`, this is a def, which means that it gets recalculated on every invocation,
    *  so it might change depending on what is going on during macro expansion.
    */
- def openImplicits: List[(Type, Tree)]
+  def openImplicits: List[(Type, Tree)]
 
   /** Typechecks the provided tree against the expected type `pt` in the macro callsite context.
    *
-   *  If `silent` is false, `TypeError` will be thrown in case of a typecheck error.
+   *  If `silent` is false, `TypecheckException` will be thrown in case of a typecheck error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Ymacro-debug-verbose.
    *  Unlike in `inferImplicitValue` and `inferImplicitView`, `silent` is false by default.
@@ -36,26 +39,32 @@ trait Typers {
    *  Typechecking can be steered with the following optional parameters:
    *    `withImplicitViewsDisabled` recursively prohibits implicit views (though, implicit vals will still be looked up and filled in), default value is false
    *    `withMacrosDisabled` recursively prohibits macro expansions and macro-based implicits, default value is false
+   *
+   *  @throws [[scala.reflect.macros.TypecheckException]]
    */
   def typeCheck(tree: Tree, pt: Type = WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
 
   /** Infers an implicit value of the expected type `pt` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.
    *
-   *  If `silent` is false, `TypeError` will be thrown in case of an inference error.
+   *  If `silent` is false, `TypecheckException` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
    *  Unlike in `typeCheck`, `silent` is true by default.
+   *
+   *  @throws [[scala.reflect.macros.TypecheckException]]
    */
   def inferImplicitValue(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 
   /** Infers an implicit view from the provided tree `tree` of the type `from` to the type `to` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.
    *
-   *  If `silent` is false, `TypeError` will be thrown in case of an inference error.
+   *  If `silent` is false, `TypecheckException` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
    *  Unlike in `typeCheck`, `silent` is true by default.
+   *
+   *  @throws [[scala.reflect.macros.TypecheckException]]
    */
   def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 
@@ -72,12 +81,8 @@ trait Typers {
    *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
    */
   def resetLocalAttrs(tree: Tree): Tree
-
-  /** Represents an error during typechecking
-   */
-  type TypeError <: Throwable
-  val TypeError: TypeErrorExtractor
-  abstract class TypeErrorExtractor {
-    def unapply(error: TypeError): Option[(Position, String)]
-  }
 }
+
+/** Indicates an error during one of the methods in [[scala.reflect.macros.Typers]].
+ */
+case class TypecheckException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)

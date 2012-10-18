@@ -3,15 +3,18 @@ package api
 
 /**
  * This is an internal implementation class.
+ * @groupname TreeBuilders Tree Building
  */
 private[reflect] trait BuildUtils { self: Universe =>
 
+  /** @group TreeBuilders */
   val build: BuildApi
 
   // this API abstracts away the functionality necessary for reification
   // it's too gimmicky and unstructured to be exposed directly in the universe
   // but we need it in a publicly available place for reification to work
 
+  /** @group TreeBuilders */
   abstract class BuildApi {
     /** Selects type symbol with given simple name `name` from the defined members of `owner`.
      */

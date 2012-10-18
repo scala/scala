@@ -1,6 +1,9 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  exposes functions to save reflection artifacts for runtime.
+ */
 trait Reifiers {
   self: Context =>
 
@@ -76,6 +79,14 @@ trait Reifiers {
 
 // made these guys non path-dependent, otherwise exception handling quickly becomes a mess
 
-case class ReificationError(val pos: scala.reflect.api.Position, val msg: String) extends Throwable(msg)
+/** Indicates an expected error during one of the `reifyXXX` methods in [[scala.reflect.macros.Reifiers]].
+ *  Such errors represent one of the standard ways for reification to go wrong, e.g.
+ *  an attempt to create a `TypeTag` from a weak type.
+ */
+case class ReificationException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)
 
-case class UnexpectedReificationError(val pos: scala.reflect.api.Position, val msg: String, val cause: Throwable = null) extends Throwable(msg, cause)
+/** Indicates an unexpected expected error during one of the `reifyXXX` methods in [[scala.reflect.macros.Reifiers]].
+ *  Such errors wrap random crashes in reification logic and are distinguished from expected [[scala.reflect.macros.ReificationException]]s
+ *  so that the latter can be reported as compilation errors, while the former manifest themselves as compiler crashes.
+ */
+case class UnexpectedReificationException(val pos: scala.reflect.api.Position, val msg: String, val cause: Throwable = null) extends Exception(msg, cause)

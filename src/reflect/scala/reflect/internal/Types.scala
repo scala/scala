@@ -3923,7 +3923,17 @@ trait Types extends api.Types { self: SymbolTable =>
     def avoidWiden: Boolean = avoidWidening
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
-      if (!lobounds.contains(tp)) {
+      // For some reason which is still a bit fuzzy, we must let Nothing through as
+      // a lower bound despite the fact that Nothing is always a lower bound.  My current
+      // supposition is that the side-effecting type constraint accumulation mechanism
+      // depends on these subtype tests being performed to make forward progress when
+      // there are mutally recursive type vars.
+      // See pos/t6367 and pos/t6499 for the competing test cases.
+      val mustConsider = tp.typeSymbol match {
+        case NothingClass => true
+        case _            => !(lobounds contains tp)
+      }
+      if (mustConsider) {
         if (isNumericBound && isNumericValueType(tp)) {
           if (numlo == NoType || isNumericSubType(numlo, tp))
             numlo = tp
@@ -3943,7 +3953,13 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false) {
-      if (!hibounds.contains(tp)) {
+      // My current test case only demonstrates the need to let Nothing through as
+      // a lower bound, but I suspect the situation is symmetrical.
+      val mustConsider = tp.typeSymbol match {
+        case AnyClass => true
+        case _        => !(hibounds contains tp)
+      }
+      if (mustConsider) {
         checkWidening(tp)
         if (isNumericBound && isNumericValueType(tp)) {
           if (numhi == NoType || isNumericSubType(tp, numhi))
@@ -6330,21 +6346,26 @@ trait Types extends api.Types { self: SymbolTable =>
         })
         if (!cyclic) {
           if (up) {
-            if (bound.typeSymbol != AnyClass)
+            if (bound.typeSymbol != AnyClass) {
+              log(s"$tvar addHiBound $bound.instantiateTypeParams($tparams, $tvars)")
               tvar addHiBound bound.instantiateTypeParams(tparams, tvars)
+            }
             for (tparam2 <- tparams)
               tparam2.info.bounds.lo.dealias match {
                 case TypeRef(_, `tparam`, _) =>
+                  log(s"$tvar addHiBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
                   tvar addHiBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
                 case _ =>
               }
           } else {
             if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
+              log(s"$tvar addLoBound $bound.instantiateTypeParams($tparams, $tvars)")
               tvar addLoBound bound.instantiateTypeParams(tparams, tvars)
             }
             for (tparam2 <- tparams)
               tparam2.info.bounds.hi.dealias match {
                 case TypeRef(_, `tparam`, _) =>
+                  log(s"$tvar addLoBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
                   tvar addLoBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
                 case _ =>
               }
@@ -6353,14 +6374,15 @@ trait Types extends api.Types { self: SymbolTable =>
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
 
         //println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen)))
-
-        tvar setInst (
+        val newInst = (
           if (up) {
             if (depth != AnyDepth) glb(tvar.constr.hiBounds, depth) else glb(tvar.constr.hiBounds)
           } else {
             if (depth != AnyDepth) lub(tvar.constr.loBounds, depth) else lub(tvar.constr.loBounds)
-          })
-
+          }
+        )
+        log(s"$tvar setInst $newInst")
+        tvar setInst newInst
         //Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen))+" = "+tvar.constr.inst)//@MDEBUG
       }
     }

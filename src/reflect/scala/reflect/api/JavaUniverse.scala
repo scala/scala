@@ -1,19 +1,19 @@
 package scala.reflect
 package api
 
-trait JavaUniverse extends Universe with Mirrors { self =>
+/** A refinement of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
+ *
+ *  The refinement consists of an upgrade to the mirror API, which gets extended from [[scala.reflect.api.Mirror]]
+ *  to [[scala.reflect.api.JavaMirrors#JavaMirror]].
+ *
+ *  See the [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for details on how to use runtime reflection.
+ *  @groupname JavaUniverse Java Mirrors
+ *
+ *  @contentDiagram hideNodes "*Api"
+ */
+trait JavaUniverse extends Universe with JavaMirrors { self =>
 
-  type RuntimeClass = java.lang.Class[_]
-
-  override type Mirror >: Null <: JavaMirror
-
-  trait JavaMirror extends scala.reflect.api.Mirror[self.type] with RuntimeMirror {
-    val classLoader: ClassLoader
-    override def toString = s"JavaMirror with ${runtime.ReflectionUtils.show(classLoader)}"
-  }
-
-  def runtimeMirror(cl: ClassLoader): Mirror
-
+  /*  @group JavaUniverse */
   override def typeTagToManifest[T: ClassTag](mirror0: Any, tag: Universe # TypeTag[T]): Manifest[T] = {
     // SI-6239: make this conversion more precise
     val mirror = mirror0.asInstanceOf[Mirror]
@@ -21,6 +21,7 @@ trait JavaUniverse extends Universe with Mirrors { self =>
     Manifest.classType(runtimeClass).asInstanceOf[Manifest[T]]
   }
 
+  /*  @group JavaUniverse */
   override def manifestToTypeTag[T](mirror0: Any, manifest: Manifest[T]): Universe # TypeTag[T] =
     TypeTag(mirror0.asInstanceOf[Mirror], new TypeCreator {
       def apply[U <: Universe with Singleton](mirror: scala.reflect.api.Mirror[U]): U # Type = {
