@@ -100,7 +100,7 @@ object Test extends DirectTest {
     // we want the Scaladoc compiler here, because it keeps DocDef nodes in the tree
     val settings = new Settings(_ => ())
     val command = new ScalaDoc.Command((CommandLineParser tokenize extraSettings) ++ args.toList, settings)
-    new DocFactory(new ConsoleReporter(settings), settings).compiler
+    new DocFactory(new ConsoleReporter(settings), settings).mkCompiler
   }
 
   override def isDebug = false // so we don't get the newSettings warning

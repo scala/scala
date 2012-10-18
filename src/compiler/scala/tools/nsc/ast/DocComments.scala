@@ -19,10 +19,16 @@ import scala.collection.mutable
  */
 trait DocComments { self: Global =>
 
-  var cookedDocComments = Map[Symbol, String]()
+  val cookedDocComments = mutable.HashMap[Symbol, String]()
 
   /** The raw doc comment map */
   val docComments = mutable.HashMap[Symbol, DocComment]()
+
+  def clearDocComments() {
+    cookedDocComments.clear()
+    docComments.clear()
+    defs.clear()
+  }
 
   /** Associate comment with symbol `sym` at position `pos`. */
   def docComment(sym: Symbol, docStr: String, pos: Position = NoPosition) =
@@ -55,25 +61,20 @@ trait DocComments { self: Global =>
    *  If a symbol does not have a doc comment but some overridden version of it does,
    *  the doc comment of the overridden version is copied instead.
    */
-  def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.get(sym) match {
-    case Some(comment) =>
-      comment
-    case None =>
-      val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
+  def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.getOrElseUpdate(sym, {
+    val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
                        else DocComment(docStr).template
-      val comment = superComment(sym) match {
-        case None =>
-          if (ownComment.indexOf("@inheritdoc") != -1)
-            reporter.warning(sym.pos, "The comment for " + sym +
-                " contains @inheritdoc, but no parent comment is available to inherit from.")
-          ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
-        case Some(sc) =>
-          if (ownComment == "") sc
-          else expandInheritdoc(sc, merge(sc, ownComment, sym), sym)
-      }
-      cookedDocComments += (sym -> comment)
-      comment
-  }
+    superComment(sym) match {
+      case None =>
+        if (ownComment.indexOf("@inheritdoc") != -1)
+          reporter.warning(sym.pos, "The comment for " + sym +
+              " contains @inheritdoc, but no parent comment is available to inherit from.")
+        ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
+      case Some(sc) =>
+        if (ownComment == "") sc
+        else expandInheritdoc(sc, merge(sc, ownComment, sym), sym)
+    }
+  })
 
   /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
    *

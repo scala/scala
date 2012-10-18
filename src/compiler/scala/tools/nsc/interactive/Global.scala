@@ -24,7 +24,7 @@ import scala.language.implicitConversions
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
+class Global(settings: Settings, _reporter: Reporter, projectName: String = "", keepDocComments: Boolean = false)
   extends scala.tools.nsc.Global(settings, _reporter)
      with CompilerControl
      with RangePositions
@@ -68,6 +68,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
   override def forInteractive = true
+  /* The same compiler is used for generating scaladoc in the IDE. */
+  override def forScaladoc = keepDocComments
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
