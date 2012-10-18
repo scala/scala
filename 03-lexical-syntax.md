@@ -9,7 +9,7 @@ otherwise mentioned, the following descriptions of Scala tokens refer
 to Scala mode, and literal characters ‘c’ refer to the ASCII fragment
 \\u0000-\\u007F
 
-In Scala mode, \textit{Unicode escapes} are replaced by the corresponding
+In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
@@ -43,7 +43,7 @@ plainid  ::=  upper idrest
            |  varid
            |  op
 id       ::=  plainid
-           |  ‘\`’ stringLit ‘\`’
+           |  ‘`’ stringLit ‘`’
 idrest   ::=  {letter | digit} [‘_’ op]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -296,8 +296,6 @@ protected class Data { ... }
 Literals
 ----------
 
-\label{sec:literals}
-
 There are literals for integer numbers, floating point numbers,
 characters, booleans, symbols, strings.  The syntax of these literals is in
 each case as in Java.
@@ -326,8 +324,8 @@ decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
 hexNumeral      ::=  ‘0’ ‘x’ hexDigit {hexDigit}
 octalNumeral    ::=  ‘0’ octalDigit {octalDigit}
 digit           ::=  ‘0’ | nonZeroDigit
-nonZeroDigit    ::=  ‘1’ | $\cdots$ | ‘9’
-octalDigit      ::=  ‘0’ | $\cdots$ | ‘7’
+nonZeroDigit    ::=  ‘1’ | … | ‘9’
+octalDigit      ::=  ‘0’ | … | ‘7’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Integer literals are usually of type `Int`{.scala}, or of type
@@ -484,8 +482,8 @@ The expression
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
  """the present string
-   |spans three 
-   |lines.""".stripMargin
+    spans three 
+    lines.""".stripMargin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 evaluates to
@@ -578,7 +576,7 @@ brace and immediately followed by a character starting an XML name.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
  ( whitespace | ‘(’ | ‘{’ ) ‘<’ (XNameStart | ‘!’ | ‘?’)
 
-  XNameStart ::= ‘_’ | BaseChar | Ideographic $\mbox{\rm\em (as in W3C XML, but without }$ ‘:’
+  XNameStart ::= ‘_’ | BaseChar | Ideographic // as in W3C XML, but without ‘:’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The scanner switches from XML mode to Scala mode if either

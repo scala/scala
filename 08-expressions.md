@@ -78,7 +78,7 @@ $T$ forSome { type $t_1[\tps_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\tps_n] >: L
   SimpleExpr    ::=  Literal
 \end{lstlisting}
 
-Typing of literals is as described in (\sref{sec:literals}); their
+Typing of literals is as described [here](#literals); their
 evaluation is immediate.
 
 
