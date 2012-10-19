@@ -1342,7 +1342,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
         // Additional interface parents based on annotations and other cues
         def newParentForAttr(attr: Symbol): Option[Symbol] = attr match {
-          case SerializableAttr => Some(SerializableClass)
           case CloneableAttr    => Some(CloneableClass)
           case RemoteAttr       => Some(RemoteInterfaceClass)
           case _                => None

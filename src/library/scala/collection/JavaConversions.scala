@@ -91,42 +91,6 @@ object JavaConversions extends WrapAsScala with WrapAsJava {
   @deprecated("Use a member of scala.collection.convert.Wrappers", "2.10.0") val MutableSeqWrapper            = Wrappers.MutableSeqWrapper
   @deprecated("Use a member of scala.collection.convert.Wrappers", "2.10.0") val MutableSetWrapper            = Wrappers.MutableSetWrapper
   @deprecated("Use a member of scala.collection.convert.Wrappers", "2.10.0") val SeqWrapper                   = Wrappers.SeqWrapper
-
-  // Note to implementors: the cavalcade of deprecated methods herein should
-  // serve as a warning to any who follow: don't overload implicit methods.
-
-  @deprecated("use bufferAsJavaList instead", "2.9.0")
-  def asJavaList[A](b : mutable.Buffer[A]): ju.List[A] = bufferAsJavaList[A](b)
-
-  @deprecated("use mutableSeqAsJavaList instead", "2.9.0")
-  def asJavaList[A](b : mutable.Seq[A]): ju.List[A] = mutableSeqAsJavaList[A](b)
-
-  @deprecated("use seqAsJavaList instead", "2.9.0")
-  def asJavaList[A](b : Seq[A]): ju.List[A] = seqAsJavaList[A](b)
-
-  @deprecated("use mutableSetAsJavaSet instead", "2.9.0")
-  def asJavaSet[A](s : mutable.Set[A]): ju.Set[A] = mutableSetAsJavaSet[A](s)
-
-  @deprecated("use setAsJavaSet instead", "2.9.0")
-  def asJavaSet[A](s: Set[A]): ju.Set[A] = setAsJavaSet[A](s)
-
-  @deprecated("use mutableMapAsJavaMap instead", "2.9.0")
-  def asJavaMap[A, B](m : mutable.Map[A, B]): ju.Map[A, B] = mutableMapAsJavaMap[A, B](m)
-
-  @deprecated("use mapAsJavaMap instead", "2.9.0")
-  def asJavaMap[A, B](m : Map[A, B]): ju.Map[A, B] = mapAsJavaMap[A, B](m)
-
-  @deprecated("use iterableAsScalaIterable instead", "2.9.0")
-  def asScalaIterable[A](i : jl.Iterable[A]): Iterable[A] = iterableAsScalaIterable[A](i)
-
-  @deprecated("use collectionAsScalaIterable instead", "2.9.0")
-  def asScalaIterable[A](i : ju.Collection[A]): Iterable[A] = collectionAsScalaIterable[A](i)
-
-  @deprecated("use mapAsScalaMap instead", "2.9.0")
-  def asScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap[A, B](m)
-
-  @deprecated("use propertiesAsScalaMap instead", "2.9.0")
-  def asScalaMap(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)
 }
 
 

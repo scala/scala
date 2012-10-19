@@ -16,9 +16,7 @@ trait Foo {
   }
 }
 
-
-@serializable
-class Bar extends Foo {
+class Bar extends Foo with Serializable {
   @transient protected var first: Any = null
   def size = a
   @transient var second: Any = null

@@ -40,7 +40,7 @@ private[html] object SyntaxHigh {
 
   /** Standard library classes/objects, sorted alphabetically */
   val standards = Array (
-    "WeakTypeTag", "Any", "AnyRef", "AnyVal", "App", "Application", "Array",
+    "WeakTypeTag", "Any", "AnyRef", "AnyVal", "App", "Array",
     "Boolean", "Byte", "Char", "Class", "ClassTag", "ClassManifest",
     "Console", "Double", "Enumeration", "Float", "Function", "Int",
     "List", "Long", "Manifest", "Map",
