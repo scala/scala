@@ -39,9 +39,15 @@ code {
 
 /* examples */
 ol[type="1"] {
+	list-style-type: none;
+	margin-left: 0;
+}
+
+ol[type="1"] li {
+	margin-top: 1em;
+	padding: 1em;
 	background-color: #E5ECF9;
 	border: 1px dashed black;
-	list-style-type: none;
 }
 
 ol[type="1"] li:before {

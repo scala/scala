@@ -94,17 +94,17 @@ equivalents ‘=>’ and ‘<-’, are also reserved.
 
 (@) Here are examples of identifiers:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    x         Object        maxIndex   p2p      empty_?
-    +         `yield`       αρετη     _y       dot_product_*
-    __system  _MAX_LEN_     
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        x         Object        maxIndex   p2p      empty_?
+        +         `yield`       αρετη     _y       dot_product_*
+        __system  _MAX_LEN_     
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (@) Backquote-enclosed strings are a solution when one needs to
-access Java identifiers that are reserved words in Scala. For
-instance, the statement `Thread.yield()` is illegal, since
-`yield` is a reserved word in Scala. However, here's a
-work-around: `` Thread.`yield`() ``{.scala}
+    access Java identifiers that are reserved words in Scala. For
+    instance, the statement `Thread.yield()` is illegal, since
+    `yield` is a reserved word in Scala. However, here's a
+    work-around: `` Thread.`yield`() ``{.scala}
 
 
 Newline Characters
@@ -202,95 +202,95 @@ A single new line token is accepted
 - after an annotation ([here](#user-defined-annotations)).
 
 (@) The following code contains four well-formed statements, each
-on two lines. The newline tokens between the two lines are not
-treated as statement separators.
+    on two lines. The newline tokens between the two lines are not
+    treated as statement separators.
 
-~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-if (x > 0)
-  x = x - 1
+    ~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    if (x > 0)
+      x = x - 1
 
-while (x > 0)
-  x  = x / 2
+    while (x > 0)
+      x  = x / 2
 
-for (x <- 1 to 10)
-  println(x)
+    for (x <- 1 to 10)
+      println(x)
 
-type
-  IntList = List[Int]
-~~~~~~~~~~~~~~~~~~~~~~
+    type
+      IntList = List[Int]
+    ~~~~~~~~~~~~~~~~~~~~~~
 
 (@) The following code designates an anonymous class:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-new Iterator[Int]
-{
-  private var x = 0
-  def hasNext = true
-  def next = { x += 1; x }
-}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    new Iterator[Int]
+    {
+      private var x = 0
+      def hasNext = true
+      def next = { x += 1; x }
+    }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With an additional newline character, the same code is interpreted as
-an object creation followed by a local block:
+    With an additional newline character, the same code is interpreted as
+    an object creation followed by a local block:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-new Iterator[Int] 
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    new Iterator[Int] 
 
-{
-  private var x = 0
-  def hasNext = true
-  def next = { x += 1; x }
-}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    {
+      private var x = 0
+      def hasNext = true
+      def next = { x += 1; x }
+    }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (@) The following code designates a single expression:
 
-~~~~~~~~~~~~ {.scala}
-  x < 0 ||
-  x > 10
-~~~~~~~~~~~~
+    ~~~~~~~~~~~~ {.scala}
+      x < 0 ||
+      x > 10
+    ~~~~~~~~~~~~
 
-With an additional newline character, the same code is interpreted as
-two expressions:
+    With an additional newline character, the same code is interpreted as
+    two expressions:
 
-~~~~~~~~~~~ {.scala}
-  x < 0 ||
+    ~~~~~~~~~~~ {.scala}
+      x < 0 ||
 
-  x > 10
-~~~~~~~~~~~
+      x > 10
+    ~~~~~~~~~~~
 
 (@) The following code designates a single, curried function definition:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-def func(x: Int)
-        (y: Int) = x + y
-~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    def func(x: Int)
+            (y: Int) = x + y
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With an additional newline character, the same code is interpreted as
-an abstract function definition and a syntactically illegal statement:
+    With an additional newline character, the same code is interpreted as
+    an abstract function definition and a syntactically illegal statement:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-def func(x: Int)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    def func(x: Int)
 
-        (y: Int) = x + y
-~~~~~~~~~~~~~~~~~~~~~~~~~
+            (y: Int) = x + y
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (@) The following code designates an attributed definition:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-@serializable
-protected class Data { ... }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    @serializable
+    protected class Data { ... }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With an additional newline character, the same code is interpreted as
-an attribute and a separate statement (which is syntactically
-illegal).
+    With an additional newline character, the same code is interpreted as
+    an attribute and a separate statement (which is syntactically
+    illegal).
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-@serializable
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    @serializable
 
-protected class Data { ... }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    protected class Data { ... }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Literals
@@ -350,9 +350,9 @@ is _pt_. The numeric ranges given by these types are:
 
 (@) Here are some integer literals:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-0          21          0xFFFFFFFF       0777L
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    0          21          0xFFFFFFFF       0777L
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ### Floating Point Literals
@@ -379,15 +379,15 @@ whitespace character between the two tokens.
 
 (@) Here are some floating point literals:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-0.0        1e30f      3.14159f      1.0e-100      .1
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    0.0        1e30f      3.14159f      1.0e-100      .1
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (@) The phrase `1.toString`{.scala} parses as three different tokens:
-`1`{.scala}, `.`{.scala}, and `toString`{.scala}. On the
-other hand, if a space is inserted after the period, the phrase
-`1. toString`{.scala} parses as the floating point literal
-`1.`{.scala} followed by the identifier `toString`{.scala}.
+    `1`{.scala}, `.`{.scala}, and `toString`{.scala}. On the
+    other hand, if a space is inserted after the period, the phrase
+    `1. toString`{.scala} parses as the floating point literal
+    `1.`{.scala} followed by the identifier `toString`{.scala}.
 
 
 ### Boolean Literals
@@ -413,9 +413,9 @@ by an [escape sequence](#escape-sequences).
 
 (@) Here are some character literals:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-'a'    '\u0041'    '\n'    '\t'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    'a'    '\u0041'    '\n'    '\t'
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note that `'\u000A'` is _not_ a valid character literal because
 Unicode conversion is done before literal parsing and the Unicode
@@ -440,10 +440,10 @@ class `String`{.scala}.
 
 (@) Here are some string literals:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-"Hello,\nWorld!"       
-"This string contains a \" character."
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    "Hello,\nWorld!"       
+    "This string contains a \" character."
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #### Multi-Line String Literals
 
@@ -462,19 +462,19 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 
 (@) Here is a multi-line string literal:
 
-~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-  """the present string
-     spans three 
-     lines."""
-~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+      """the present string
+         spans three 
+         lines."""
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
-This would produce the string:
+    This would produce the string:
 
-~~~~~~~~~~~~~~~~~~~
-the present string
-     spans three 
-     lines.
-~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~
+    the present string
+         spans three 
+         lines.
+    ~~~~~~~~~~~~~~~~~~~
 
 The Scala library contains a utility method `stripMargin`
 which can be used to strip leading whitespace from multi-line strings.
@@ -596,11 +596,11 @@ as text.
 (@) The following value definition uses an XML literal with two embedded
 Scala expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-val b = <book>
-          <title>The Scala Language Specification</title>
-          <version>{scalaBook.version}</version>
-          <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
-        </book>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    val b = <book>
+              <title>The Scala Language Specification</title>
+              <version>{scalaBook.version}</version>
+              <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
+            </book>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
