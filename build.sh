@@ -2,8 +2,8 @@
 find . -name "*.md" | \
 cat 01-title.md \
     02-preface.md \
-    03-lexical-syntax.md > build/ScalaReference.md
-#    04-identifiers-names-and-scopes.md \
+    03-lexical-syntax.md \
+    04-identifiers-names-and-scopes.md > build/ScalaReference.md
 #    05-types.md \
 #    06-basic-declarations-and-definitions.md \
 #    07-classes-and-objects.md \

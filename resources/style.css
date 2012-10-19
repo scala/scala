@@ -18,6 +18,7 @@ header .date {
 
 pre {
 	margin-left: 3em;
+	margin-right: 3em;
 	padding: 1em;
 	background-color: #EEE;
 	border: 1px solid #333;
@@ -27,7 +28,19 @@ code {
 	background-color: #EEE;
 }
 
+code > span {
+	font-weight: normal !important;
+}
+
+code {
+	padding-left: 0.1em;
+	padding-right: 0.1em;
+}
+
+/* examples */
 ol[type="1"] {
+	background-color: #E5ECF9;
+	border: 1px dashed black;
 	list-style-type: none;
 }
 
