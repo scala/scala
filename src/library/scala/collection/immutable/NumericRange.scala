@@ -124,21 +124,21 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     else locationAfterN(idx)
   }
-  
+
   import NumericRange.defaultOrdering
-  
+
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
     if (ord eq defaultOrdering(num)) {
       if (num.signum(step) > 0) start
       else last
     } else super.min(ord)
-  
-  override def max[T1 >: T](implicit ord: Ordering[T1]): T = 
+
+  override def max[T1 >: T](implicit ord: Ordering[T1]): T =
     if (ord eq defaultOrdering(num)) {
       if (num.signum(step) > 0) last
       else start
     } else super.max(ord)
-  
+
   // Motivated by the desire for Double ranges with BigDecimal precision,
   // we need some way to map a Range and get another Range.  This can't be
   // done in any fully general way because Ranges are not arbitrary
@@ -174,17 +174,22 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
       override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
-      override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
+      override def contains(el: A)(implicit dummy: DummyImplicit): Boolean =
+        underlyingRange exists (x => fm(x) == el)
     }
   }
 
-  // a well-typed contains method.
-  def containsTyped(x: T): Boolean =
-    isWithinBoundaries(x) && (((x - start) % step) == zero)
+  @deprecated("Use contains", "2.10.0") def containsTyped(x: T): Boolean =
+    contains(x)(implicitly[DummyImplicit]) // making extra sure the right method is called
 
-  override def contains[A1 >: T](x: A1): Boolean =
-    try containsTyped(x.asInstanceOf[T])
-    catch { case _: ClassCastException => false }
+  /** The implicit is to make it possible to overload with the inherited
+   *  contains, which erases to (Object)Boolean - as would this method,
+   *  without the extra parameter.  Since it'll be up to 10^6 times faster
+   *  to do a membership check this way than it will be by calling == on
+   *  every range element, we work harder than usual to overload it.
+   */
+  def contains(x: T)(implicit dummy: DummyImplicit): Boolean =
+    isWithinBoundaries(x) && (((x - start) % step) == zero)
 
   final override def sum[B >: T](implicit num: Numeric[B]): B = {
     import num.Ops
@@ -213,7 +218,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
 /** A companion object for numeric ranges.
  */
 object NumericRange {
-  
+
   /** Calculates the number of elements in a range given start, end, step, and
    *  whether or not it is inclusive.  Throws an exception if step == 0 or
    *  the number of elements exceeds the maximum Int.
@@ -272,7 +277,7 @@ object NumericRange {
     new Exclusive(start, end, step)
   def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]): Inclusive[T] =
     new Inclusive(start, end, step)
-  
+
   private[collection] val defaultOrdering = Map[Numeric[_], Ordering[_]](
     Numeric.BigIntIsIntegral -> Ordering.BigInt,
     Numeric.IntIsIntegral -> Ordering.Int,
@@ -284,6 +289,6 @@ object NumericRange {
     Numeric.DoubleAsIfIntegral -> Ordering.Double,
     Numeric.BigDecimalAsIfIntegral -> Ordering.BigDecimal
   )
-  
+
 }
 
