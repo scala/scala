@@ -326,7 +326,8 @@ trait Reshape {
             case Some(ddef) =>
               toPreTyperLazyVal(ddef)
             case None       =>
-              CannotReifyInvalidLazyVal(vdef)
+              if (reifyDebug) println("couldn't find corresponding lazy val accessor")
+              vdef
           }
           if (reifyDebug) println(s"reconstructed lazy val is $vdef1")
           vdef1::Nil

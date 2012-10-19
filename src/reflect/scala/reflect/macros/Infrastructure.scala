@@ -1,6 +1,9 @@
 package scala.reflect
 package macros
 
+/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  provides facilities to communicate with the compiler's infrastructure.
+ */
 trait Infrastructure {
   self: Context =>
 

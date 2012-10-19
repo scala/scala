@@ -23,7 +23,7 @@ package object concurrent {
    *  The result becomes available once the asynchronous computation is completed.
    *  
    *  @tparam T       the type of the result
-   *  @param body     the asychronous computation
+   *  @param body     the asynchronous computation
    *  @param execctx  the execution context on which the future is run
    *  @return         the `Future` holding the result of the computation
    */
@@ -37,17 +37,15 @@ package object concurrent {
    */
   def promise[T]()(implicit execctx: ExecutionContext): Promise[T] = Promise[T]()
 
-  /** Used to designate a piece of code which potentially blocks, allowing the BlockContext to adjust the runtime's behavior.
+  /** Used to designate a piece of code which potentially blocks, allowing the current [[BlockContext]] to adjust
+   *  the runtime's behavior.
    *  Properly marking blocking code may improve performance or avoid deadlocks. 
    *
-   *  If you have an `Awaitable` then you should use Await.result instead of `blocking`.
+   *  Blocking on an [[Awaitable]] should be done using [[Await.result]] instead of `blocking`.
    *
    *  @param body         A piece of code which contains potentially blocking or long running calls.
-   *
-   *  Calling this method may throw the following exceptions:
-   *  - CancellationException - if the computation was cancelled
-   *  - InterruptedException - in the case that a wait within the blockable object was interrupted
-   *  - TimeoutException - in the case that the blockable object timed out
+   *  @throws `CancellationException` if the computation was cancelled
+   *  @throws `InterruptedException` in the case that a wait within the blocking `body` was interrupted
    */
   @throws(classOf[Exception])
   def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
@@ -67,19 +65,21 @@ package concurrent {
    */
   object Await {
     /**
-     * Await the "resolved" state of this Awaitable.
-     * Invokes ready() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
-     *
-     * @param awaitable
-     *        the `Awaitable` on which `ready` is to be called
-     * @param atMost
-     *        maximum wait time, which may be negative (no waiting is done),
-     *        [[Duration.Inf]] for unbounded waiting, or a finite positive
-     *        duration
-     * @return the awaitable itself
-     * @throws InterruptedException     if the wait call was interrupted
-     * @throws TimeoutException         if after waiting for the specified time this Awaitable is still not ready
-     * @throws IllegalArgumentException if `atMost` is [[Duration.Undefined]]
+     * Await the "completed" state of an `Awaitable`.
+     * 
+     * Although this method is blocking, the internal use of [[scala.concurrent.blocking blocking]] ensures that
+     * the underlying [[ExecutionContext]] is prepared to properly manage the blocking.
+     * 
+     * @param  awaitable
+     *         the `Awaitable` to be awaited
+     * @param  atMost
+     *         maximum wait time, which may be negative (no waiting is done),
+     *         [[scala.concurrent.duration.Duration.Inf Duration.Inf]] for unbounded waiting, or a finite positive
+     *         duration
+     * @return the `awaitable`
+     * @throws InterruptedException     if the current thread is interrupted while waiting
+     * @throws TimeoutException         if after waiting for the specified time this `Awaitable` is still not ready
+     * @throws IllegalArgumentException if `atMost` is [[scala.concurrent.duration.Duration.Undefined Duration.Undefined]]
      */
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
@@ -87,19 +87,21 @@ package concurrent {
       blocking(awaitable.ready(atMost)(AwaitPermission))
     
     /**
-     * Await and return the result of this Awaitable, which is either of type T or a thrown exception (any Throwable).
-     * Invokes result() on the awaitable, properly wrapped by a call to `scala.concurrent.blocking`.
-     *
-     * @param awaitable
-     *        the `Awaitable` on which `result` is to be called
-     * @param atMost
-     *        maximum wait time, which may be negative (no waiting is done),
-     *        [[Duration.Inf]] for unbounded waiting, or a finite positive
-     *        duration
-     * @return the value if the Awaitable was successful within the specific maximum wait time
-     * @throws InterruptedException     if the wait call was interrupted
-     * @throws TimeoutException         if after waiting for the specified time this Awaitable is still not ready
-     * @throws IllegalArgumentException if `atMost` is [[Duration.Undefined]]
+     * Await and return the result (of type `T`) of an `Awaitable`.
+     * 
+     * Although this method is blocking, the internal use of [[scala.concurrent.blocking blocking]] ensures that
+     * the underlying [[ExecutionContext]] to properly detect blocking and ensure that there are no deadlocks.
+     * 
+     * @param  awaitable
+     *         the `Awaitable` to be awaited
+     * @param  atMost
+     *         maximum wait time, which may be negative (no waiting is done),
+     *         [[scala.concurrent.duration.Duration.Inf Duration.Inf]] for unbounded waiting, or a finite positive
+     *         duration
+     * @return the result value if `awaitable` is completed within the specific maximum wait time
+     * @throws InterruptedException     if the current thread is interrupted while waiting
+     * @throws TimeoutException         if after waiting for the specified time `awaitable` is still not ready
+     * @throws IllegalArgumentException if `atMost` is [[scala.concurrent.duration.Duration.Undefined Duration.Undefined]]
      */
     @throws(classOf[Exception])
     def result[T](awaitable: Awaitable[T], atMost: Duration): T =

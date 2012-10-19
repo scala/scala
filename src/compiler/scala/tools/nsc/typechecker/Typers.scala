@@ -1430,6 +1430,9 @@ trait Typers extends Modes with Adaptations with Tags {
             //see https://issues.scala-lang.org/browse/SI-6463
             case _: ClassDef =>
               implRestriction(tree, "nested class")
+            case Select(sup @ Super(qual, mix), selector) if selector != nme.CONSTRUCTOR && qual.symbol == clazz && mix != tpnme.EMPTY =>
+              //see https://issues.scala-lang.org/browse/SI-6483
+              implRestriction(sup, "qualified super reference")
             case _ =>
           }
           super.traverse(tree)

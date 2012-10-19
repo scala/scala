@@ -2,32 +2,41 @@ package scala.reflect
 package api
 
 /**
- * The base interface for all mirrors.
+ * The base class for all mirrors.
+ *
+ * See [[scala.reflect.api.Mirrors]] or [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ * for a complete overview of `Mirror`s.
  *
  * @tparam U the type of the universe this mirror belongs to.
- *
- * This is defined outside the reflection universe cake pattern implementation
- * so that it can be referenced from outside. For example TypeCreator and TreeCreator
- * reference Mirror and also need to be defined outside the cake as they are
- * used by type tags, which can be migrated between different universes and consequently
- * cannot be bound to a fixed one.
- *
- * @see [[Mirrors]]
  */
+// Note: Unlike most Scala reflection artifact classes, `Mirror` is not defined as an inner class,
+// so that it can be referenced from outside. For example, [[scala.reflect.api.TypeCreator]] and [[scala.reflect.api.TreeCreator]]
+// reference `Mirror` and also need to be defined outside the cake as they are used by type tags, which can be migrated between 
+// different universes and consequently cannot be bound to a fixed one.
 abstract class Mirror[U <: Universe with Singleton] {
-  /** The universe this mirror belongs to. */
+  /** The universe this mirror belongs to.
+   *  @group Mirror
+   */
   val universe: U
 
-  /** The class symbol of the `_root_` package */
+  /** The class symbol of the `_root_` package
+   *  @group Mirror
+   */
   def RootClass: U#ClassSymbol
 
-  /** The module symbol of the `_root_` package */
+  /** The module symbol of the `_root_` package
+   *  @group Mirror
+   */
   def RootPackage: U#ModuleSymbol
 
-  /** The module class symbol of the default (unnamed) package */
+  /** The module class symbol of the default (unnamed) package
+   *  @group Mirror
+   */
   def EmptyPackageClass: U#ClassSymbol
 
-  /** The module symbol of the default (unnamed) package */
+  /** The module symbol of the default (unnamed) package
+   *  @group Mirror
+   */
   def EmptyPackage: U#ModuleSymbol
 
   /** The symbol corresponding to the globally accessible class with the
@@ -71,6 +80,7 @@ abstract class Mirror[U <: Universe with Singleton] {
    *
    *  In the example above, to load a symbol that corresponds to the class B declared in the object foo,
    *  use staticModule("foo") to load the module symbol and then navigate typeSignature.members of its moduleClass.
+   *  @group Mirror
    */
   def staticClass(fullName: String): U#ClassSymbol
 
@@ -97,11 +107,13 @@ abstract class Mirror[U <: Universe with Singleton] {
    *
    *  In the example above, to load a symbol that corresponds to the object B declared in the object foo,
    *  use staticModule("foo") to load the module symbol and then navigate typeSignature.members of its moduleClass.
+   *  @group Mirror
    */
   def staticModule(fullName: String): U#ModuleSymbol
 
   /** The symbol corresponding to a package with the
    *  given fully qualified name `fullName`.
+   *  @group Mirror
    */
   def staticPackage(fullName: String): U#ModuleSymbol
 }
