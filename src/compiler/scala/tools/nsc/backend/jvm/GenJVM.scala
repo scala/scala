@@ -218,7 +218,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     // Additional interface parents based on annotations and other cues
     def newParentForAttr(attr: Symbol): Option[Symbol] = attr match {
-      case SerializableAttr => Some(SerializableClass)
       case CloneableAttr    => Some(JavaCloneableClass)
       case RemoteAttr       => Some(RemoteInterfaceClass)
       case _                => None
