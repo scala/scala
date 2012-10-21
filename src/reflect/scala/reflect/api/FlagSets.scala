@@ -10,7 +10,7 @@ import scala.language.implicitConversions
  * via the `flags` field of [[scala.reflect.api.Trees#Modifiers]]. Trees that accept modifiers are:
  *
  *   - '''[[scala.reflect.api.Trees#ClassDef]]'''. Classes and traits.
- *   - '''[[scala.reflect.api.Trees#ModuleDef]]'''. Objects.
+ *   - '''[[scala.reflect.api.Trees#ObjectDef]]'''. Objects.
  *   - '''[[scala.reflect.api.Trees#ValDef]]'''. Vals, vars, parameters and self-type annotations.
  *   - '''[[scala.reflect.api.Trees#DefDef]]'''. Methods and constructors.
  *   - '''[[scala.reflect.api.Trees#TypeDef]]'''. Type aliases, abstract type members and type parameters.

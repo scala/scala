@@ -59,7 +59,7 @@ trait StandardNames {
     val ERROR: NameType
 
     /** The term or type name `package`.
-     *  Used to get modules representing package objects.
+     *  Used to get objects representing package objects.
      */
     val PACKAGE: NameType
   }

@@ -117,7 +117,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     // which share the name
     def isCorrespondingSym(from: Symbol, to: Symbol): Boolean =
       (from.hasFlag(Flags.TRAIT) == to.hasFlag(Flags.TRAIT)) && // has to run in 2.8, so no hasTraitFlag
-      (from.hasFlag(Flags.MODULE) == to.hasFlag(Flags.MODULE))
+      (from.hasFlag(Flags.OBJECT) == to.hasFlag(Flags.OBJECT))
 
     // For testing purposes only, order irrelevant for compilation
     def toStringSet(set: Set[AbstractFile]): String =

@@ -38,7 +38,7 @@ trait GenAndroid {
       clasz.symbol.newValue(newTermName(fieldName), NoPosition, Flags.STATIC | Flags.FINAL)
         setInfo AndroidCreatorClass.tpe
     )
-    val methodSymbol = definitions.getMember(clasz.symbol.companionModule, fieldName)
+    val methodSymbol = definitions.getMember(clasz.symbol.companionObject, fieldName)
     clasz addField new IField(fieldSymbol)
     block emit CALL_METHOD(methodSymbol, Static(false))
     block emit STORE_FIELD(fieldSymbol, true)
@@ -50,11 +50,11 @@ trait GenAndroid {
     jclass.addNewField(PublicStaticFinal,
                        fieldName,
                        creatorType)
-    val moduleName = javaName(clasz.symbol)+"$"
-    clinit.emitGETSTATIC(moduleName,
-                         nme.MODULE_INSTANCE_FIELD.toString,
-                         new JObjectType(moduleName))
-    clinit.emitINVOKEVIRTUAL(moduleName, fieldName,
+    val objectName = javaName(clasz.symbol)+"$"
+    clinit.emitGETSTATIC(objectName,
+                         nme.OBJECT_INSTANCE_FIELD.toString,
+                         new JObjectType(objectName))
+    clinit.emitINVOKEVIRTUAL(objectName, fieldName,
                              new JMethodType(creatorType, Array()))
     clinit.emitPUTSTATIC(jclass.getName(), fieldName, creatorType)
   }

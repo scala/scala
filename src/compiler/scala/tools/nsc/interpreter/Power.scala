@@ -48,7 +48,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
   import intp.{ beQuietDuring, typeOfExpression, interpret, parse }
   import intp.global._
   import definitions.{ compilerTypeFromTag, compilerSymbolFromTag}
-  import rootMirror.{ getClassIfDefined, getModuleIfDefined }
+  import rootMirror.{ getClassIfDefined, getObjectIfDefined }
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -157,7 +157,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
       m.decodedName, "" + elimRefinement(m.accessedOrSelf.tpe) stripPrefix "scala.tools.nsc.")
 
     ( rutil.info[ReplValsImpl].membersDeclared
-        filter (m => m.isPublic && !m.hasModuleFlag && !m.isConstructor)
+        filter (m => m.isPublic && !m.hasObjectFlag && !m.isConstructor)
         sortBy (_.decodedName)
            map to_str
       mkString ("Name and type of values imported into the repl in power mode.\n\n", "\n", "")
@@ -206,7 +206,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def name        = symbol.name
     def companion   = symbol.companionSymbol
     def info        = symbol.info
-    def moduleClass = symbol.moduleClass
+    def objectClass = symbol.objectClass
     def owner       = symbol.owner
     def owners      = symbol.ownerChain drop 1
     def signature   = symbol.defString
@@ -381,9 +381,9 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   trait ReplUtilities {
     // [Eugene to Paul] needs review!
-    // def module[T: Manifest] = getModuleIfDefined(manifest[T].erasure.getName stripSuffix nme.MODULE_SUFFIX_STRING)
+    // def object[T: Manifest] = getObjectIfDefined(manifest[T].erasure.getName stripSuffix nme.OBJECT_SUFFIX_STRING)
     // def clazz[T: Manifest] = getClassIfDefined(manifest[T].erasure.getName)
-    def module[T: ru.TypeTag] = ru.typeOf[T].typeSymbol.suchThat(_.isPackage)
+    def objct[T: ru.TypeTag] = ru.typeOf[T].typeSymbol.suchThat(_.isPackage)
     def clazz[T: ru.TypeTag] = ru.typeOf[T].typeSymbol.suchThat(_.isClass)
     def info[T: ru.TypeTag : ClassTag] = InternalInfo[T]
     def ?[T: ru.TypeTag : ClassTag] = InternalInfo[T]

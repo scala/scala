@@ -10,9 +10,9 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
   override protected def freshExistentialName(suffix: String) =
     synchronized { super.freshExistentialName(suffix) }
 
-  // Set the fields which point companions at one another.  Returns the module.
-  override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
-    synchronized { super.connectModuleToClass(m, moduleClass) }
+  // Set the fields which point companions at one another.  Returns the object.
+  override def connectObjectToClass(m: ObjectSymbol, objectClass: ClassSymbol): ObjectSymbol =
+    synchronized { super.connectObjectToClass(m, objectClass) }
 
   override def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
     new FreeTermSymbol(name, value, origin) with SynchronizedTermSymbol initFlags flags
@@ -68,11 +68,11 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
       new ClassSymbol(this, pos, name) with SynchronizedClassSymbol initFlags newFlags
 
-    override protected def createModuleClassSymbol(name: TypeName, pos: Position, newFlags: Long): ModuleClassSymbol =
-      new ModuleClassSymbol(this, pos, name) with SynchronizedModuleClassSymbol initFlags newFlags
+    override protected def createObjectClassSymbol(name: TypeName, pos: Position, newFlags: Long): ObjectClassSymbol =
+      new ObjectClassSymbol(this, pos, name) with SynchronizedObjectClassSymbol initFlags newFlags
 
     override protected def createPackageClassSymbol(name: TypeName, pos: Position, newFlags: Long): PackageClassSymbol =
-      new PackageClassSymbol(this, pos, name) with SynchronizedModuleClassSymbol initFlags newFlags
+      new PackageClassSymbol(this, pos, name) with SynchronizedObjectClassSymbol initFlags newFlags
 
     override protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol =
       new RefinementClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
@@ -89,10 +89,10 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createMethodSymbol(name: TermName, pos: Position, newFlags: Long): MethodSymbol =
       new MethodSymbol(this, pos, name) with SynchronizedMethodSymbol initFlags newFlags
 
-    override protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
-      new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+    override protected def createObjectSymbol(name: TermName, pos: Position, newFlags: Long): ObjectSymbol =
+      new ObjectSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
 
-    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol = createModuleSymbol(name, pos, newFlags)
+    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ObjectSymbol = createObjectSymbol(name, pos, newFlags)
 
     // TODO
     // override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long)
@@ -132,8 +132,8 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override def addChild(sym: Symbol) = synchronized { super.addChild(sym) }
   }
 
-  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
-    override def sourceModule = synchronized { super.sourceModule }
+  trait SynchronizedObjectClassSymbol extends ObjectClassSymbol with SynchronizedClassSymbol {
+    override def sourceObject = synchronized { super.sourceObject }
     override def implicitMembers: Scope = synchronized { super.implicitMembers }
   }
 }

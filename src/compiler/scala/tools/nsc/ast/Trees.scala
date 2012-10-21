@@ -294,10 +294,10 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         if (tree.symbol != null && tree.symbol != NoSymbol) {
           val sym = tree.symbol
           registerLocal(sym)
-          registerLocal(sym.sourceModule)
-          registerLocal(sym.moduleClass)
+          registerLocal(sym.sourceObject)
+          registerLocal(sym.objectClass)
           registerLocal(sym.companionClass)
-          registerLocal(sym.companionModule)
+          registerLocal(sym.companionObject)
           sym match {
             case sym: TermSymbol => registerLocal(sym.referenced)
             case _ => ;

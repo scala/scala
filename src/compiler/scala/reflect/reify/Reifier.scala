@@ -108,10 +108,10 @@ abstract class Reifier extends States
       // needs to be solved some day
       // maybe try `resetLocalAttrs` once the dust settles
       var importantSymbols = Set[Symbol](
-        NothingClass, AnyClass, SingletonClass, PredefModule, ScalaRunTimeModule, TypeCreatorClass, TreeCreatorClass, MirrorClass,
+        NothingClass, AnyClass, SingletonClass, PredefObject, ScalaRunTimeObject, TypeCreatorClass, TreeCreatorClass, MirrorClass,
         ApiUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)
       importantSymbols ++= importantSymbols map (_.companionSymbol)
-      importantSymbols ++= importantSymbols map (_.moduleClass)
+      importantSymbols ++= importantSymbols map (_.objectClass)
       importantSymbols ++= importantSymbols map (_.linkedClassOfClass)
       def isImportantSymbol(sym: Symbol): Boolean = sym != null && sym != NoSymbol && importantSymbols(sym)
       val untyped = resetAllAttrs(result, leaveAlone = {
