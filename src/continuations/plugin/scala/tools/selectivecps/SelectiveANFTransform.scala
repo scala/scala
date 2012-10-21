@@ -195,9 +195,12 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         case _ =>
           if (hasAnswerTypeAnn(tree.tpe)) {
-            if (!cpsAllowed)
-              unit.error(tree.pos, "cps code not allowed here / " + tree.getClass + " / " + tree)
-
+            if (!cpsAllowed) {
+              if (tree.symbol.isLazy)
+                unit.error(tree.pos, "implementation restriction: cps annotations not allowed on lazy value definitions")
+              else
+                unit.error(tree.pos, "cps code not allowed here / " + tree.getClass + " / " + tree)
+            }
             log(tree)
           }
 
