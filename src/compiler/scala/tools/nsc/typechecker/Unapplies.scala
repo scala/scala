@@ -12,8 +12,7 @@ import symtab.Flags._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Unapplies extends ast.TreeDSL
-{
+trait Unapplies extends ast.TreeDSL {
   self: Analyzer =>
 
   import global._
@@ -23,11 +22,11 @@ trait Unapplies extends ast.TreeDSL
 
   private val unapplyParamName = nme.x_0
 
-  // In the typeCompleter (templateSig) of a case class (resp it's module),
+  // In the typeCompleter (templateSig) of a case class (resp it's object),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed. During naming (in
   // `enterClassDef`), the case class ClassDef is added as an attachment to the
-  // moduleClass symbol of the companion module.
+  // objectClass symbol of the companion object.
   class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
 
   /** returns type list for return type of the extraction
@@ -112,9 +111,9 @@ trait Unapplies extends ast.TreeDSL
     }
   }
 
-  /** The module corresponding to a case class; overrides toString to show the module's name
+  /** The object corresponding to a case class; overrides toString to show the object's name
    */
-  def caseModuleDef(cdef: ClassDef): ModuleDef = {
+  def caseObjectDef(cdef: ClassDef): ObjectDef = {
     // > MaxFunctionArity is caught in Namers, but for nice error reporting instead of
     // an abrupt crash we trim the list here.
     def primaries      = constrParamss(cdef).head take MaxFunctionArity map (_.tpt)
@@ -129,15 +128,20 @@ trait Unapplies extends ast.TreeDSL
       TypeTree(),
       Literal(Constant(cdef.name.decode)))
 
-    companionModuleDef(cdef, parents, List(toString))
+    companionObjectDef(cdef, parents, List(toString))
   }
+  @deprecated("Use `caseObjectDef` instead.", "2.11.0")
+  def caseModuleDef(cdef: ClassDef): ObjectDef = caseObjectDef(cdef)
 
-  def companionModuleDef(cdef: ClassDef, parents: List[Tree] = Nil, body: List[Tree] = Nil): ModuleDef = atPos(cdef.pos.focus) {
-    ModuleDef(
+  def companionObjectDef(cdef: ClassDef, parents: List[Tree] = Nil, body: List[Tree] = Nil): ObjectDef = atPos(cdef.pos.focus) {
+    ObjectDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
       Template(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
   }
+  @deprecated("Use `companionObjectDef` instead.", "2.11.0")
+  def companionModuleDef(cdef: ClassDef, parents: List[Tree] = Nil, body: List[Tree] = Nil): ObjectDef =
+    companionObjectDef(cdef, parents, body)
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)
 
@@ -155,24 +159,28 @@ trait Unapplies extends ast.TreeDSL
 
   /** The apply method corresponding to a case class
    */
-  def caseModuleApplyMeth(cdef: ClassDef): DefDef = factoryMeth(caseMods, nme.apply, cdef)
+  def caseObjectApplyMeth(cdef: ClassDef): DefDef = factoryMeth(caseMods, nme.apply, cdef)
+  @deprecated("Use `caseObjectApplyMeth` instead.", "2.11.0")
+  def caseModuleApplyMeth(cdef: ClassDef): DefDef = caseObjectApplyMeth(cdef)
 
   /** The unapply method corresponding to a case class
    */
-  def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
+  def caseObjectUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams   = cdef.tparams map copyUntypedInvariant
     val method    = constrParamss(cdef) match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
     }
     val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
-    val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
+    val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneObject)
     val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef) }, ifNull)(Ident(unapplyParamName))
 
     atPos(cdef.pos.focus)(
       DefDef(caseMods, method, tparams, List(cparams), TypeTree(), body)
     )
   }
+  @deprecated("Use `caseObjectUnapplyMeth` instead.", "2.11.0")
+  def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = caseObjectUnapplyMeth(cdef)
 
   /**
    * Generates copy methods for case classes. Copy only has defaults on the first

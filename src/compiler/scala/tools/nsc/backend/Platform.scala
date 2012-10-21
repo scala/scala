@@ -42,7 +42,7 @@ trait Platform {
   /**
    * Tells whether a class should be loaded and entered into the package
    * scope. On .NET, this method returns `false` for all synthetic classes
-   * (anonymous classes, implementation classes, module classes), their
+   * (anonymous classes, implementation classes, object classes), their
    * symtab is encoded in the pickle of another class.
    */
   def doLoad(cls: ClassPath[BinaryRepr]#ClassRep): Boolean

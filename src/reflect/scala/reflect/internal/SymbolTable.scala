@@ -230,12 +230,12 @@ abstract class SymbolTable extends macros.Universe
     }
   }
 
-  def openPackageModule(container: Symbol, dest: Symbol) {
+  def openPackageObject(container: Symbol, dest: Symbol) {
     // unlink existing symbols in the package
     for (member <- container.info.decls.iterator) {
       if (!member.isPrivate && !member.isConstructor) {
         // todo: handle overlapping definitions in some way: mark as errors
-        // or treat as abstractions. For now the symbol in the package module takes precedence.
+        // or treat as abstractions. For now the symbol in the package object takes precedence.
         for (existing <- dest.info.decl(member.name).alternatives)
           dest.info.decls.unlink(existing)
       }
@@ -249,10 +249,13 @@ abstract class SymbolTable extends macros.Universe
     // enter decls of parent classes
     for (p <- container.parentSymbols) {
       if (p != definitions.ObjectClass) {
-        openPackageModule(p, dest)
+        openPackageObject(p, dest)
       }
     }
   }
+  @deprecated("Use `openPackageObject` instead.", "2.11.0")
+  def openPackageModule(container: Symbol, dest: Symbol): Unit =
+    openPackageObject(container, dest)
 
   /** Convert array parameters denoting a repeated parameter of a Java method
    *  to `JavaRepeatedParamClass` types.
@@ -279,18 +282,21 @@ abstract class SymbolTable extends macros.Universe
   }
 
   /** if there's a `package` member object in `pkgClass`, enter its members into it. */
-  def openPackageModule(pkgClass: Symbol) {
+  def openPackageObject(pkgClass: Symbol) {
 
-    val pkgModule = pkgClass.info.decl(nme.PACKAGEkw)
-    def fromSource = pkgModule.rawInfo match {
+    val pkgObject = pkgClass.info.decl(nme.PACKAGEkw)
+    def fromSource = pkgObject.rawInfo match {
       case ltp: SymLoader => ltp.fromSource
       case _ => false
     }
-    if (pkgModule.isModule && !fromSource) {
-      // println("open "+pkgModule)//DEBUG
-      openPackageModule(pkgModule, pkgClass)
+    if (pkgObject.isObject && !fromSource) {
+      // println("open "+pkgObject)//DEBUG
+      openPackageObject(pkgObject, pkgClass)
     }
   }
+  @deprecated("Use `openPackageObject` instead.", "2.11.0")
+  def openPackageModule(pkgClass: Symbol): Unit =
+    openPackageObject(pkgClass)
 
   object perRunCaches {
     import java.lang.ref.WeakReference

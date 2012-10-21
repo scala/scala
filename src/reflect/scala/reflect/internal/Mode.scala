@@ -36,7 +36,7 @@ object Mode {
   final val POLYmode: Mode      = 0x020
 
   /** QUALmode is orthogonal to above. When set
-   *  expressions may be packages and Java statics modules.
+   *  expressions may be packages and Java statics objects.
    */
   final val QUALmode: Mode      = 0x040
 

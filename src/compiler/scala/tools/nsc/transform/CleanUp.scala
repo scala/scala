@@ -558,7 +558,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             if (tpe.typeSymbol == UnitClass)
               REF(BoxedUnit_TYPE)
             else
-              Select(REF(boxedModule(tpe.typeSymbol)), nme.TYPE_)
+              Select(REF(boxedObject(tpe.typeSymbol)), nme.TYPE_)
           }
 
           else tree
@@ -611,10 +611,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       //
       // See SI-6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
-      if wrapRefArrayMeth.symbol == Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
+      if wrapRefArrayMeth.symbol == Predef_wrapRefArray && appMeth.symbol == ArrayObject_genericApply =>
         super.transform(arg)
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
-      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
+      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayObject_apply(elemtpt.tpe) =>
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
 
       case _ =>
@@ -684,7 +684,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         deriveTemplate(template)(newCtor :: _)
       }
     }
-
   } // CleanUpTransformer
 
 }

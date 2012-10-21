@@ -23,7 +23,7 @@ abstract class TreeInfo {
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
     case PackageDef(_, _)
        | ClassDef(_, _, _, _)
-       | ModuleDef(_, _, _)
+       | ObjectDef(_, _, _)
        | DefDef(_, _, _, _, _, _)
        | Import(_, _) => true
     case _ => false
@@ -65,13 +65,13 @@ abstract class TreeInfo {
       false
   }
 
-  // TODO SI-5304 tighten this up so we don't elide side effect in module loads
+  // TODO SI-5304 tighten this up so we don't elide side effect in object loads
   def isQualifierSafeToElide(tree: Tree): Boolean = isExprSafeToInline(tree)
 
   /** Is tree an expression which can be inlined without affecting program semantics?
    *
    *  Note that this is not called "isExprPure" since purity (lack of side-effects)
-   *  is not the litmus test.  References to modules and lazy vals are side-effecting,
+   *  is not the litmus test.  References to object and lazy vals are side-effecting,
    *  both because side-effecting code may be executed and because the first reference
    *  takes a different code path than all to follow; but they are safe to inline
    *  because the expression result from evaluating them is always the same.
@@ -125,7 +125,7 @@ abstract class TreeInfo {
       }
       def isWarnableSymbol = {
         val sym = tree.symbol
-        (sym == null) || !(sym.isModule || sym.isLazy) || {
+        (sym == null) || !(sym.isObject || sym.isLazy) || {
           debuglog("'Pure' but side-effecting expression in statement position: " + tree)
           false
         }
@@ -663,12 +663,12 @@ abstract class TreeInfo {
   }
 
   /** Does list of trees start with a definition of
-   *  a class of module with given name (ignoring imports)
+   *  a class of object with given name (ignoring imports)
    */
   def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
       case Import(_, _) :: xs               => firstDefinesClassOrObject(xs, name)
       case Annotated(_, tree1) :: Nil       => firstDefinesClassOrObject(List(tree1), name)
-      case ModuleDef(_, `name`, _) :: Nil   => true
+      case ObjectDef(_, `name`, _) :: Nil   => true
       case ClassDef(_, `name`, _, _) :: Nil => true
       case _                                => false
     }

@@ -12,7 +12,8 @@ trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefObject }
+
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */
@@ -27,7 +28,7 @@ trait Imports {
   }
 
   /** Symbols whose contents are language-defined to be imported. */
-  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
+  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefObject)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
   def allImportedNames = importHandlers flatMap (_.importedNames)

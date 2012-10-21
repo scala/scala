@@ -1504,7 +1504,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           tree.symbol.info // make sure specializations have been performed
           atOwner(tree, symbol) {
             val specMembers = implSpecClasses(stats) map localTyper.typed
-            treeCopy.PackageDef(tree, pid, transformStats(stats ::: specMembers, symbol.moduleClass))
+            treeCopy.PackageDef(tree, pid, transformStats(stats ::: specMembers, symbol.objectClass))
           }
 
         case Template(parents, self, body) =>

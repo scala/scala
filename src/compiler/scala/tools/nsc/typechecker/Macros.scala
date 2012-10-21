@@ -45,7 +45,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   import MacrosStats._
   def globalSettings = global.settings
 
-  /** `MacroImplBinding` and its companion module are responsible for
+  /** `MacroImplBinding` and its companion object are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
    *
    *  The first officially released version of macros persisted these bindings across compilation runs
@@ -105,14 +105,14 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     def pickleAtom(obj: Any): Tree =
       obj match {
-        case list: List[_] => Apply(Ident(ListModule), list map pickleAtom)
+        case list: List[_] => Apply(Ident(ListObject), list map pickleAtom)
         case s: String => Literal(Constant(s))
         case i: Int => Literal(Constant(i))
       }
 
     def unpickleAtom(tree: Tree): Any =
       tree match {
-        case Apply(list @ Ident(_), args) if list.symbol == ListModule => args map unpickleAtom
+        case Apply(list @ Ident(_), args) if list.symbol == ListObject => args map unpickleAtom
         case Literal(Constant(s: String)) => s
         case Literal(Constant(i: Int)) => i
       }
@@ -125,10 +125,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       def className: String = {
         def loop(sym: Symbol): String = sym match {
           case sym if sym.isTopLevel =>
-            val suffix = if (sym.isModuleClass) "$" else ""
+            val suffix = if (sym.isObjectClass) "$" else ""
             sym.fullName + suffix
           case sym =>
-            val separator = if (sym.owner.isModuleClass) "" else "$"
+            val separator = if (sym.owner.isObjectClass) "" else "$"
             loop(sym.owner) + separator + sym.javaSimpleName.toString
         }
 
@@ -411,7 +411,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         if (!meth.isMethod) MacroDefInvalidBodyError()
         if (!meth.isPublic) MacroImplNotPublicError()
         if (meth.isOverloaded) MacroImplOverloadedError()
-        if (!owner.isStaticOwner && !owner.moduleClass.isStaticOwner) MacroImplNotStaticError()
+        if (!owner.isStaticOwner && !owner.objectClass.isStaticOwner) MacroImplNotStaticError()
         if (meth.typeParams.length != targs.length) MacroImplWrongNumberOfTypeArgumentsError(typed)
         bindMacroImpl(macroDef, typed)
       case _ =>

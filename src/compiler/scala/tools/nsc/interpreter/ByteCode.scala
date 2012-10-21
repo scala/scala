@@ -17,24 +17,24 @@ object ByteCode {
    */
   private lazy val DECODER: Option[AnyRef] =
     for (clazz <- appLoader.tryToLoadClass[AnyRef]("scala.tools.scalap.Decode$")) yield
-      clazz.getField(MODULE_INSTANCE_NAME).get(null)
+      clazz.getField(OBJECT_INSTANCE_NAME).get(null)
 
   private def decoderMethod(name: String, args: JClass*): Option[reflect.Method] = {
     for (decoder <- DECODER ; m <- Option(decoder.getClass.getMethod(name, args: _*))) yield m
   }
 
   private lazy val aliasMap = {
-    for (module <- DECODER ; method <- decoderMethod("typeAliases", classOf[String])) yield
-      method.invoke(module, _: String).asInstanceOf[Option[Map[String, String]]]
+    for (objInstance <- DECODER ; method <- decoderMethod("typeAliases", classOf[String])) yield
+      method.invoke(objInstance, _: String).asInstanceOf[Option[Map[String, String]]]
   }
 
   /** Scala sig bytes.
    */
   def scalaSigBytesForPath(path: String) =
     for {
-      module <- DECODER
+      objInstance <- DECODER
       method <- decoderMethod("scalaSigAnnotationBytes", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
+      names <- method.invoke(objInstance, path).asInstanceOf[Option[Array[Byte]]]
     }
     yield names
 

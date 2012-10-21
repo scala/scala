@@ -16,8 +16,7 @@ abstract class Erasure extends AddInterfaces
                           with scala.reflect.internal.transform.Erasure
                           with typechecker.Analyzer
                           with TypingTransformers
-                          with ast.TreeDSL
-{
+                          with ast.TreeDSL {
   import global._
   import definitions._
   import CODE._
@@ -204,7 +203,7 @@ abstract class Erasure extends AddInterfaces
       else tparams map paramSig mkString ("<", "", ">")
     )
 
-    // Anything which could conceivably be a module (i.e. isn't known to be
+    // Anything which could conceivably be an object (i.e. isn't known to be
     // a type parameter or similar) must go through here or the signature is
     // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
     def fullNameInSig(sym: Symbol) = "L" + enteringIcode(sym.javaBinaryName)
@@ -532,7 +531,7 @@ abstract class Erasure extends AddInterfaces
         val pt        = member.tpe.resultType
         lazy val zero =
           if      (_false.tpe <:< pt)    _false
-          else if (NoneModule.tpe <:< pt) REF(NoneModule)
+          else if (NoneObject.tpe <:< pt) REF(NoneObject)
           else EmptyTree
 
         if (guardExtractor && (zero ne EmptyTree)) {
@@ -1152,9 +1151,9 @@ abstract class Erasure extends AddInterfaces
                     // the overloading logic presently hidden away in a few different
                     // places to be properly exposed so we can just call "resolveOverload"
                     // after typer.  Until then:
-                    val alts    = ScalaRunTimeModule.info.member(nme.hash_).alternatives
+                    val alts    = ScalaRunTimeObject.info.member(nme.hash_).alternatives
                     def alt1    = alts find (_.info.paramTypes.head =:= qual.tpe)
-                    def alt2    = ScalaRunTimeModule.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
+                    def alt2    = ScalaRunTimeObject.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
                     val newTree = gen.mkRuntimeCall(nme.hash_, qual :: Nil) setSymbol (alt1 getOrElse alt2)
 
                     global.typer.typed(newTree)

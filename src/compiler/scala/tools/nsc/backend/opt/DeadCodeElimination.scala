@@ -133,19 +133,19 @@ abstract class DeadCodeElimination extends SubComponent {
               moveToWorkListIf(false)
 
             case STORE_LOCAL(l) =>
-              /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
-               * (otherwise any side-effects of the module's constructor go lost).
-               *   (a) The other two cases where a module's value is stored (STORE_FIELD and STORE_ARRAY_ITEM)
+              /* SI-4935 Check whether an object is stack top, if so mark the instruction that loaded it
+               * (otherwise any side-effects of the object's constructor go lost).
+               *   (a) The other two cases where an object's value is stored (STORE_FIELD and STORE_ARRAY_ITEM)
                *       are already marked (case clause below).
-               *   (b) A CALL_METHOD targeting a method `m1` where the receiver is potentially a module (case clause below)
-               *       will have the module's load marked provided `isSideEffecting(m1)`.
-               *       TODO check for purity (the ICode?) of the module's constructor (besides m1's purity).
+               *   (b) A CALL_METHOD targeting a method `m1` where the receiver is potentially a object (case clause below)
+               *       will have the object's load marked provided `isSideEffecting(m1)`.
+               *       TODO check for purity (the ICode?) of the object's constructor (besides m1's purity).
                *       See also https://github.com/paulp/scala/blob/topic/purity-analysis/src/compiler/scala/tools/nsc/backend/opt/DeadCodeElimination.scala
                */
               val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
                 val (bb1, idx1) = p
                 bb1(idx1) match {
-                  case LOAD_MODULE(module) => isLoadNeeded(module)
+                  case LOAD_OBJECT(objct) => isLoadNeeded(objct)
                   case _                   => false
                 }
               }
@@ -173,7 +173,7 @@ abstract class DeadCodeElimination extends SubComponent {
                 val (bb1, idx1) = p
                 bb1(idx1) match {
                   case CALL_METHOD(m1, _) if isSideEffecting(m1) => true
-                  case LOAD_EXCEPTION(_) | DUP(_) | LOAD_MODULE(_) => true
+                  case LOAD_EXCEPTION(_) | DUP(_) | LOAD_OBJECT(_) => true
                   case _ =>
                     dropOf((bb1, idx1)) = (bb,idx) :: dropOf.getOrElse((bb1, idx1), Nil)
                     debuglog("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
@@ -181,8 +181,8 @@ abstract class DeadCodeElimination extends SubComponent {
                 }
               }
               moveToWorkListIf(necessary)
-            case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
-              moveToWorkList() // SI-4859 Module initialization might side-effect.
+            case LOAD_OBJECT(sym) if isLoadNeeded(sym) =>
+              moveToWorkList() // SI-4859 Object initialization might side-effect.
             case _ => ()
               moveToWorkListIf(false)
           }
@@ -191,8 +191,8 @@ abstract class DeadCodeElimination extends SubComponent {
       }
     }
 
-    private def isLoadNeeded(module: Symbol): Boolean = {
-      module.info.member(nme.CONSTRUCTOR).filter(isSideEffecting) != NoSymbol
+    private def isLoadNeeded(obj: Symbol): Boolean = {
+      obj.info.member(nme.CONSTRUCTOR).filter(isSideEffecting) != NoSymbol
     }
 
     /** Mark useful instructions. Instructions in the worklist are each inspected and their

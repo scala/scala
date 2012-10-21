@@ -481,10 +481,10 @@ abstract class ICodeCheckers {
 
            pushStack(toTypeKind(field.tpe))
 
-         case LOAD_MODULE(module) =>
-           checkBool((module.isModule || module.isModuleClass),
-                     "Expected module: " + module + " flags: " + module.flagString);
-           pushStack(toTypeKind(module.tpe));
+         case LOAD_OBJECT(obj) =>
+           checkBool((obj.isObject || obj.isObjectClass),
+                     "Expected object: " + obj + " flags: " + obj.flagString);
+           pushStack(toTypeKind(obj.tpe));
 
          case STORE_THIS(kind) =>
            val actualType = popStack

@@ -78,7 +78,7 @@ package object reify {
       def isUnsafeToUseThis = {
         val isInsideConstructorSuper = typer0.context.enclosingContextChain exists (_.inSelfSuperCall)
         // Note: It's ok to check for any object here, because if we were in an enclosing class, we'd already have returned its classOf
-        val isInsideObject = typer0.context.enclosingContextChain map (_.tree) exists {	case _: ModuleDef => true; case _ => false }
+        val isInsideObject = typer0.context.enclosingContextChain map (_.tree) exists {	case _: ObjectDef => true; case _ => false }
         isInsideConstructorSuper && isInsideObject
       }
       if (!classInScope.isEmpty) reifyRuntimeClass(global)(typer0, classInScope.symbol.toTypeConstructor, concrete = true)

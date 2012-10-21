@@ -4,7 +4,7 @@ object Macros {
   def impl(c:Context): c.Expr[Any] = {
     import c.universe._
 
-    val selfTree = This(c.enclosingImpl.symbol.asModule.moduleClass)
+    val selfTree = This(c.enclosingImpl.symbol.asObject.objectClass)
     c.Expr[AnyRef](selfTree)
   }
 

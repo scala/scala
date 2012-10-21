@@ -20,10 +20,10 @@ package object util {
   def shortClassOfInstance(x: AnyRef): String = shortClass(x.getClass)
   def shortClass(clazz: Class[_]): String = {
     val name: String = (clazz.getName split '.').last
-    def isModule     = name endsWith "$"                        // object
+    def isObject     = name endsWith "$"                        // object
     def isAnon       = (name split '$').last forall (_.isDigit) // anonymous class
 
-    if (isModule)
+    if (isObject)
       (name split '$' filterNot (_ == "")).last + "$"
     else if (isAnon) {
       val parents = clazz.getSuperclass :: clazz.getInterfaces.toList

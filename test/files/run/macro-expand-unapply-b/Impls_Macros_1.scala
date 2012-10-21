@@ -26,7 +26,7 @@ object Macros {
       else Apply(Ident(TermName("Some")), List(Apply(Ident(TermName("Tuple" + nresults)), results())))
 
     val name = TermName(java.util.UUID.randomUUID().toString.replace("-", ""))
-    val mdef = ModuleDef(NoMods, name, Template(List(Select(Ident(TermName("scala")), TypeName("AnyRef"))), emptyValDef, List(
+    val mdef = ObjectDef(NoMods, name, Template(List(Select(Ident(TermName("scala")), TypeName("AnyRef"))), emptyValDef, List(
       DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(),
         Block(List(pendingSuperCall), Literal(Constant(())))),
       DefDef(Modifiers(), TermName("unapply"), List(), List(List(ValDef(Modifiers(PARAM), TermName("x"), Ident(TypeName("Any")), EmptyTree))), TypeTree(),

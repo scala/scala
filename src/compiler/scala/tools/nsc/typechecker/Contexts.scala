@@ -15,7 +15,7 @@ import scala.annotation.tailrec
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{ JavaLangPackage, ScalaPackage, PredefModule }
+  import definitions.{ JavaLangPackage, ScalaPackage, PredefObject }
 
   object NoContext extends Context {
     outer      = this
@@ -31,7 +31,7 @@ trait Contexts { self: Analyzer =>
     // Possible lists of root imports
     val javaList         = JavaLangPackage :: Nil
     val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
-    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
+    val completeList     = JavaLangPackage :: ScalaPackage :: PredefObject :: Nil
   }
 
   def ambiguousImports(imp1: ImportInfo, imp2: ImportInfo) =
@@ -490,7 +490,7 @@ trait Contexts { self: Analyzer =>
      */
     def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
-      sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
+      sub.isObjectClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
 
     /** Return the closest enclosing context that defines a subclass of `clazz`
      *  or a companion object thereof, or `NoContext` if no such context exists.
@@ -547,7 +547,7 @@ trait Contexts { self: Analyzer =>
           target.isType || { // allow accesses to types from arbitrary subclasses fixes #4737
             val res =
               isSubClassOrCompanion(pre.widen.typeSymbol, c.owner) ||
-              c.owner.isModuleClass &&
+              c.owner.isObjectClass &&
               isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
             if (!res)
               lastAccessCheckDetails =
@@ -758,15 +758,15 @@ trait Contexts { self: Analyzer =>
         log(s"Cannot look for $sym in package object of $pkg; $what is not initialized.")
         false
       }
-      def pkgClass = if (pkg.isTerm) pkg.moduleClass else pkg
+      def pkgClass = if (pkg.isTerm) pkg.objectClass else pkg
       def matchesInfo = (
         // need to be careful here to not get a cyclic reference during bootstrap
         if (pkg.isInitialized) {
-          val module = pkg.info member nme.PACKAGEkw
-          if (module.isInitialized)
-            module.info.member(sym.name).alternatives contains sym
+          val obj = pkg.info member nme.PACKAGEkw
+          if (obj.isInitialized)
+            obj.info.member(sym.name).alternatives contains sym
           else
-            uninitialized("" + module)
+            uninitialized("" + obj)
         }
         else uninitialized("" + pkg)
       )
@@ -965,7 +965,7 @@ trait Contexts { self: Analyzer =>
      * Used to find symbols are owned by methods (or fields), they can't be
      * found in some scope.
      *
-     * Examples: companion module of classes owned by a method, default getter
+     * Examples: companion object of classes owned by a method, default getter
      * methods of nested methods. See NamesDefaults.scala
      */
     def lookup(name: Name, expectedOwner: Symbol) = {

@@ -69,17 +69,19 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     Block(Assign(lhsRef, rhs) :: Nil, lhsRef)
   }
 
-  def newModule(accessor: Symbol, tpe: Type) = {
+  def newObject(accessor: Symbol, tpe: Type) = {
     val ps = tpe.typeSymbol.primaryConstructor.info.paramTypes
     if (ps.isEmpty) New(tpe)
     else New(tpe, This(accessor.owner.enclClass))
   }
+  @deprecated("Use `newObject` instead.", "2.11.0")
+  def newModule(accessor: Symbol, tpe: Type) = newObject(accessor, tpe)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     mkRuntimeCall(meth, Nil, args)
 
   def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
-    mkMethodCall(ScalaRunTimeModule, meth, targs, args)
+    mkMethodCall(ScalaRunTimeObject, meth, targs, args)
 
   def mkSysErrorCall(message: String): Tree =
     mkMethodCall(Sys_error, List(Literal(Constant(message))))
@@ -94,7 +96,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    */
   def mkManifestFactoryCall(full: Boolean, constructor: String, tparg: Type, args: List[Tree]): Tree =
     mkMethodCall(
-      if (full) FullManifestModule else PartialManifestModule,
+      if (full) FullManifestObject else PartialManifestObject,
       newTermName(constructor),
       List(tparg),
       args
@@ -139,7 +141,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    */
   def mkWrapArray(tree: Tree, elemtp: Type) = {
     mkMethodCall(
-      PredefModule,
+      PredefObject,
       wrapArrayMethodName(elemtp),
       if (isPrimitiveValueType(elemtp)) Nil else List(elemtp),
       List(tree)

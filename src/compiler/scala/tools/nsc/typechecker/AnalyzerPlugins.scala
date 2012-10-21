@@ -86,9 +86,9 @@ trait AnalyzerPlugins { self: Analyzer =>
      *            typer for the template.
      *   - pt   : WildcardType
      *
-     * Case defTree: ModuleDef
+     * Case defTree: ObjectDef
      *   - tpe  : A ClassInfoType computed by templateSig
-     *   - typer: The typer for the module. context.owner of this typer is the module class symbol
+     *   - typer: The typer for the object. context.owner of this typer is the object class symbol
      *   - pt   : WildcardType
      *
      * Case defTree: DefDef

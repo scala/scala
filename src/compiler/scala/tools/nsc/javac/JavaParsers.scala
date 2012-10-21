@@ -589,7 +589,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
       atPos(cdef.pos) {
-        ModuleDef(cdef.mods & (Flags.AccessFlags | Flags.JAVA), cdef.name.toTermName,
+        ObjectDef(cdef.mods & (Flags.AccessFlags | Flags.JAVA), cdef.name.toTermName,
                   makeTemplate(List(), statics))
       }
 

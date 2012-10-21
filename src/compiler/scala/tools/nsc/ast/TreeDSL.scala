@@ -262,7 +262,7 @@ trait TreeDSL {
     def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
       case Nil                        => UNIT
       case List(tree) if flattenUnary => tree
-      case _                          => Apply(TupleClass(trees.length).companionModule, trees: _*)
+      case _                          => Apply(TupleClass(trees.length).companionObject, trees: _*)
     }
 
     /** Implicits - some of these should probably disappear **/

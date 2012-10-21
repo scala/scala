@@ -24,7 +24,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
                 if (tree.symbol.thisSym != tree.symbol) =>
                   ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
                 case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
-                case ModuleDef(_, _, impl)             => ModuleDef(tree.symbol, impl)
+                case ObjectDef(_, _, impl)             => ObjectDef(tree.symbol, impl)
                 case ValDef(_, _, _, rhs)              => ValDef(tree.symbol, rhs)
                 case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss, rhs)
                 case TypeDef(_, _, _, rhs)             => TypeDef(tree.symbol, rhs)

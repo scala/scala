@@ -240,7 +240,7 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
     case Some(ext : ExternalSymbol) => true
     case _ => false
   }
-  def isTopLevelClass (symbol : Symbol) = !symbol.isModule && isTopLevel(symbol)
+  def isTopLevelClass (symbol : Symbol) = !symbol.isObject && isTopLevel(symbol)
 }
 
   case class AttributeInfo(symbol : Symbol, typeRef : Type, value : Option[Any], values : Seq[String ~ Any]) // sym_Ref info_Ref {constant_Ref} {nameRef constantRef}
@@ -252,7 +252,7 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
    *                  | 49 TREE len_Nat 1 EMPTYtree
    *                  | 49 TREE len_Nat 2 PACKAGEtree type_Ref sym_Ref mods_Ref name_Ref {tree_Ref}
    *                  | 49 TREE len_Nat 3 CLASStree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}
-   *                  | 49 TREE len_Nat 4 MODULEtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref
+   *                  | 49 TREE len_Nat 4 OBJECTtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref
    *                  | 49 TREE len_Nat 5 VALDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref tree_Ref
    *                  | 49 TREE len_Nat 6 DEFDEFtree type_Ref sym_Ref mods_Ref name_Ref numtparams_Nat {tree_Ref} numparamss_Nat {numparams_Nat {tree_Ref}} tree_Ref tree_Ref
    *                  | 49 TREE len_Nat 7 TYPEDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}

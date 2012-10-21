@@ -77,7 +77,7 @@ trait Enclosures {
    */
   def enclosingTemplate: universe.Template
 
-  /** Tree that corresponds to the enclosing ImplDef tree (i.e. either ClassDef or ModuleDef).
+  /** Tree that corresponds to the enclosing ImplDef tree (i.e. either ClassDef or ObjectDef).
    *  Throws `EnclosureException` if there's no such enclosing tree.
    */
   def enclosingImpl: universe.ImplDef

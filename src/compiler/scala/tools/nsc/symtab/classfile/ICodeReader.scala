@@ -24,7 +24,7 @@ abstract class ICodeReader extends ClassfileParser {
   var instanceCode: IClass = null          // the ICode class for the current symbol
   var staticCode:   IClass = null          // the ICode class static members
   var method: IMethod = NoIMethod          // the current IMethod
-  var isScalaModule = false
+  var isScalaObject = false
 
   /** Read back bytecode for the given class symbol. It returns
    *  two IClass objects, one for static members and one
@@ -33,8 +33,9 @@ abstract class ICodeReader extends ClassfileParser {
   def readClass(cls: Symbol): (IClass, IClass) = {
     cls.info // ensure accurate type information
 
-    isScalaModule = cls.isModule && !cls.isJavaDefined
+    isScalaObject = cls.isObject && !cls.isJavaDefined
     log("ICodeReader reading " + cls)
+
     val name = cls.javaClassName
 
     classPath.findSourceFile(name) match {
@@ -45,16 +46,16 @@ abstract class ICodeReader extends ClassfileParser {
     (staticCode, instanceCode)
   }
 
-  /** If we're parsing a scala module, the owner of members is always
-   *  the module symbol.
+  /** If we're parsing a scala object, the owner of members is always
+   *  the object symbol.
    */
   override def getOwner(jflags: Int): Symbol =
-    if (isScalaModule) this.staticModule
+    if (isScalaObject) this.staticObject
     else super.getOwner(jflags)
 
   override def parseClass() {
     this.instanceCode = new IClass(clazz)
-    this.staticCode   = new IClass(staticModule)
+    this.staticCode   = new IClass(staticObject)
 
     in.nextChar
     pool getClassSymbol in.nextChar
@@ -163,16 +164,16 @@ abstract class ICodeReader extends ClassfileParser {
       iface.owner.info // force the mixin type-transformer
       rootMirror.getClassByName(name)
     }
-    else if (nme.isModuleName(name)) {
-      val strippedName = nme.stripModuleSuffix(name)
-      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModuleByName(strippedName)
+    else if (nme.isObjectName(name)) {
+      val strippedName = nme.stripObjectSuffix(name)
+      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getObjectByName(strippedName)
     }
     else {
       forceMangledName(name, false)
       exitingFlatten(rootMirror.getClassByName(name.toTypeName))
     }
-    if (sym.isModule)
-      sym.moduleClass
+    if (sym.isObject)
+      sym.objectClass
     else
       sym
   }
@@ -467,8 +468,8 @@ abstract class ICodeReader extends ClassfileParser {
 
         case JVM.getstatic    =>
           val field = pool.getMemberSymbol(in.nextChar, true); size += 2
-          if (field.hasModuleFlag)
-            code emit LOAD_MODULE(field)
+          if (field.hasObjectFlag)
+            code emit LOAD_OBJECT(field)
           else
             code emit LOAD_FIELD(field, true)
         case JVM.putstatic   =>
@@ -627,7 +628,7 @@ abstract class ICodeReader extends ClassfileParser {
    *  There are two possible classes, the static part and the instance part.
    */
   def getCode(flags: Int): IClass =
-    if (isScalaModule) staticCode
+    if (isScalaObject) staticCode
     else if ((flags & JAVA_ACC_STATIC) != 0) staticCode
     else instanceCode
 
