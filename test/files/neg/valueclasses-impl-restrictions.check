@@ -2,20 +2,16 @@ valueclasses-impl-restrictions.scala:3: error: implementation restriction: neste
 This restriction is planned to be removed in subsequent releases.
       object X
              ^
-valueclasses-impl-restrictions.scala:4: error: implementation restriction: lazy val is not allowed in value class
-This restriction is planned to be removed in subsequent releases.
-      lazy val y = 1
-               ^
-valueclasses-impl-restrictions.scala:10: error: implementation restriction: nested trait is not allowed in value class
+valueclasses-impl-restrictions.scala:9: error: implementation restriction: nested trait is not allowed in value class
 This restriction is planned to be removed in subsequent releases.
   trait I2 {
         ^
-valueclasses-impl-restrictions.scala:16: error: implementation restriction: nested class is not allowed in value class
+valueclasses-impl-restrictions.scala:15: error: implementation restriction: nested class is not allowed in value class
 This restriction is planned to be removed in subsequent releases.
     val i2 = new I2 { val q = x.s }
                  ^
-valueclasses-impl-restrictions.scala:22: error: implementation restriction: nested class is not allowed in value class
+valueclasses-impl-restrictions.scala:21: error: implementation restriction: nested class is not allowed in value class
 This restriction is planned to be removed in subsequent releases.
   private[this] class I2(val q: String)
                       ^
-5 errors found
+four errors found
