@@ -33,4 +33,9 @@ class TailRec {
       }.foo
     }
   }
+
+  Some(new AnyRef) map { phooie =>
+    @tailrec
+    def inner(i: Int): Int = 1 + inner(i)
+  } getOrElse 42
 }
