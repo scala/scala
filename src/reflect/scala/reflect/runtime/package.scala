@@ -1,17 +1,30 @@
 package scala.reflect
 
+/** Entry points into runtime reflection.
+ *  See [[scala.reflect.api.package the overview page]] for details on how to use them.
+ */
 package object runtime {
 
-  // type is api.JavaUniverse because we only want to expose the `scala.reflect.api.*` subset of reflection
+  /** The entry point into Scala runtime reflection.
+   * 
+   * To use Scala runtime reflection, simply use or import `scala.reflect.runtime.universe._`
+   *
+   * See [[scala.reflect.api.Universe]] or the
+   * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
+   * for more details.
+   */
   lazy val universe: api.JavaUniverse = new runtime.JavaUniverse
 
+  /** The runtime reflection mirror that corresponds to the current lexical context.
+   *  It's typically equivalent to `universe.runtimeMirror(getClass.getClassLoader)` invoked at the call site.
+   */
   // implementation hardwired to the `currentMirror` method below
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   def currentMirror: universe.Mirror = ??? // macro
 }
 
 package runtime {
-  object Macros {
+  private[scala] object Macros {
     def currentMirror(c: scala.reflect.macros.Context): c.Expr[universe.Mirror] = {
       import c.universe._
       val runtimeClass = c.reifyEnclosingRuntimeClass
