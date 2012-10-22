@@ -670,6 +670,11 @@ trait Definitions extends api.StandardDefinitions {
       case _        => Nil
     }
 
+    def dropNullaryMethod(tp: Type) = tp match {
+      case NullaryMethodType(restpe) => restpe
+      case _                         => tp
+    }
+
     def unapplyUnwrap(tpe:Type) = tpe.finalResultType.normalize match {
       case RefinedType(p :: _, _) => p.normalize
       case tp                     => tp
@@ -861,6 +866,12 @@ trait Definitions extends api.StandardDefinitions {
         parents filterNot (_.typeSymbol eq ObjectClass)
       else
         removeRedundantObjects(parents)
+    }
+
+    /** Flatten curried parameter lists of a method type. */
+    def allParameters(tpe: Type): List[Symbol] = tpe match {
+      case MethodType(params, res) => params ::: allParameters(res)
+      case _                       => Nil
     }
 
     def typeStringNoPackage(tp: Type) =

@@ -410,8 +410,19 @@ trait Infer extends Checkable {
 
     /** Like weakly compatible but don't apply any implicit conversions yet.
      *  Used when comparing the result type of a method with its prototype.
+     *
      *  [Martin] I think Infer is also created by Erasure, with the default
      *  implementation of isCoercible
+     *  [Paulp] (Assuming the above must refer to my comment on isCoercible)
+     *  Nope, I examined every occurrence of Inferencer in trunk.  It
+     *  appears twice as a self-type, once at its definition, and once
+     *  where it is instantiated in Typers.  There are no others.
+     *
+         % ack -A0 -B0 --no-filename '\bInferencer\b' src
+             self: Inferencer =>
+             self: Inferencer =>
+           class Inferencer(context: Context) extends InferencerContextErrors with InferCheckable {
+             val infer = new Inferencer(context0) {
      */
     def isConservativelyCompatible(tp: Type, pt: Type): Boolean =
       context.withImplicitsDisabled(isWeaklyCompatible(tp, pt))
