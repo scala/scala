@@ -3,8 +3,8 @@ find . -name "*.md" | \
 cat 01-title.md \
     02-preface.md \
     03-lexical-syntax.md \
-    04-identifiers-names-and-scopes.md > build/ScalaReference.md
-#    05-types.md \
+    04-identifiers-names-and-scopes.md \
+    05-types.md > build/ScalaReference.md 
 #    06-basic-declarations-and-definitions.md \
 #    07-classes-and-objects.md \
 #    08-expressions.md \
@@ -24,10 +24,11 @@ pandoc -f markdown \
        --number-sections \
        --bibliography=Scala.bib \
        --template=resources/scala-ref-template.html5 \
-       --self-contained \
-       --mathml \
+       --mathjax \
        -o build/ScalaReference.html \
        build/ScalaReference.md
+
+cp -Rf resources build/
 
 # pdf generation - not working yet
 #pandoc -f markdown \

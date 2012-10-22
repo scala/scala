@@ -66,6 +66,7 @@ code fragment.
   replaced with \\uABCD.
 - The macro \URange{ABCD}{DCBA} used for unicode character ranges can be
   replaced with \\uABCD-\\uDBCA.
+- The macro \commadots can be replaced with ` , … , `.
 - There is no adequate replacement for `\textsc{...}` (small caps) in pandoc 
   markdown. While unicode contains a number of small capital letters, it is
   notably missing Q and X as these glyphs are intended for phonetic spelling,
