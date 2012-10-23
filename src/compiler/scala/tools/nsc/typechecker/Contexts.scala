@@ -740,6 +740,9 @@ trait Contexts { self: Analyzer =>
       )
     }
 
+    /** The symbol with name `name` imported via the import in `imp`,
+     *  if any such symbol is accessible from this context.
+     */
     def importedAccessibleSymbol(imp: ImportInfo, name: Name) = {
       imp importedSymbol name filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
     }
@@ -759,7 +762,7 @@ trait Contexts { self: Analyzer =>
           module.isInitialized && (module.info.member(sym.name).alternatives contains sym)
         }
       )
-      def isInPkgObj(sym: Symbol) = (
+      def inPackageObject(sym: Symbol) = (
            !sym.isPackage
         && !sym.owner.isPackageClass
         && (sym.owner ne NoSymbol)
@@ -767,8 +770,8 @@ trait Contexts { self: Analyzer =>
       )
 
       pkgClass.isPackageClass && (
-        if (sym.isOverloaded) sym.alternatives forall isInPkgObj
-        else isInPkgObj(sym)
+        if (sym.isOverloaded) sym.alternatives forall inPackageObject
+        else inPackageObject(sym)
       )
     }
 
