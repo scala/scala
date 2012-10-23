@@ -1,0 +1,19 @@
+import-precedence.scala:18: error: reference to X is ambiguous;
+it is imported twice in the same scope by
+import uniq1.uniq2._
+and import uniq1.X
+    object Y { def f = X }
+                       ^
+import-precedence.scala:61: error: reference to X is ambiguous;
+it is imported twice in the same scope by
+import uniq1.uniq2._
+and import uniq1._
+  object Y { def f = X }
+                     ^
+import-precedence.scala:67: error: reference to X is ambiguous;
+it is imported twice in the same scope by
+import uniq1.uniq2.X
+and import uniq1.X
+  object Y { def f = X }
+                     ^
+three errors found
