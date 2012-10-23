@@ -39,9 +39,6 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
       phasesSet += analyzer.namerFactory
       phasesSet += analyzer.packageObjects
       phasesSet += analyzer.typerFactory
-      phasesSet += superAccessors
-      phasesSet += pickler
-      phasesSet += refChecks
     }
     override def forScaladoc = true
   }
