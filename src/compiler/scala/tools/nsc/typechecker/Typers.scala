@@ -3971,15 +3971,30 @@ trait Typers extends Modes with Adaptations with Tags {
     }
 
     def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
-      def isPatternMode = inPatternMode(mode)
+      def isPatternMode        = inPatternMode(mode)
+      def inPatternConstructor = inAllModes(mode, PATTERNmode | FUNmode)
+      def isQualifierMode      = (mode & QUALmode) != 0
 
-      //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
       //@M! get the type of the qualifier in a Select tree, otherwise: NoType
       def prefixType(fun: Tree): Type = fun match {
         case Select(qualifier, _) => qualifier.tpe
-//        case Ident(name) => ??
-        case _ => NoType
+        case _                    => NoType
       }
+      // Lookup in the given class using the root mirror.
+      def lookupInOwner(owner: Symbol, name: Name): Symbol =
+        if (isQualifierMode) rootMirror.missingHook(owner, name) else NoSymbol
+
+      // Lookup in the given qualifier.  Used in last-ditch efforts by typedIdent and typedSelect.
+      def lookupInRoot(name: Name): Symbol  = lookupInOwner(rootMirror.RootClass, name)
+      def lookupInEmpty(name: Name): Symbol = lookupInOwner(rootMirror.EmptyPackageClass, name)
+      def lookupInQualifier(qual: Tree, name: Name): Symbol = (
+        if (name == nme.ERROR || qual.tpe.widen.isErroneous)
+          NoSymbol
+        else lookupInOwner(qual.tpe.typeSymbol, name) orElse {
+          NotAMemberError(tree, qual, name)
+          NoSymbol
+        }
+      )
 
       def typedAnnotated(atd: Annotated): Tree = {
         val ann = atd.annot

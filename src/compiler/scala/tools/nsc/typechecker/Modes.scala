@@ -109,6 +109,7 @@ trait Modes {
   final def inFunMode(mode: Int)                  = (mode & FUNmode) != 0
   final def inPolyMode(mode: Int)                 = (mode & POLYmode) != 0
   final def inPatternMode(mode: Int)              = (mode & PATTERNmode) != 0
+  final def inPatternNotFunMode(mode: Int)        = inPatternMode(mode) && !inFunMode(mode)
   final def inExprModeOr(mode: Int, others: Int)  = (mode & (EXPRmode | others)) != 0
   final def inExprModeButNot(mode: Int, prohibited: Int) =
     (mode & (EXPRmode | prohibited)) == EXPRmode
