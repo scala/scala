@@ -1,8 +1,8 @@
 package scala.reflect.reify
 
 import scala.tools.nsc.Global
-import scala.reflect.macros.ReificationError
-import scala.reflect.macros.UnexpectedReificationError
+import scala.reflect.macros.ReificationException
+import scala.reflect.macros.UnexpectedReificationException
 import scala.reflect.reify.utils.Utils
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.
@@ -132,12 +132,12 @@ abstract class Reifier extends States
 
       untyped
     } catch {
-      case ex: ReificationError =>
+      case ex: ReificationException =>
         throw ex
-      case ex: UnexpectedReificationError =>
+      case ex: UnexpectedReificationException =>
         throw ex
       case ex: Throwable =>
-        throw new UnexpectedReificationError(defaultErrorPosition, "reification crashed", ex)
+        throw new UnexpectedReificationException(defaultErrorPosition, "reification crashed", ex)
     }
   }
 }

@@ -12,7 +12,7 @@ import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ Exceptional, ClassPath, MergedClassPath, StatisticsInfo, ScalaClassLoader, returning }
+import util.{ Exceptional, ClassPath, MergedClassPath, StatisticsInfo, ScalaClassLoader, returning, stackTraceString }
 import scala.reflect.internal.util.{ NoPosition, OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -1046,6 +1046,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
 
+  override def isPastTyper = (
+       (curRun ne null)
+    && (currentRun.typerPhase ne null)
+    && (globalPhase.id > currentRun.typerPhase.id)
+  )
+
   // TODO - trim these to the absolute minimum.
   @inline final def exitingErasure[T](op: => T): T        = exitingPhase(currentRun.erasurePhase)(op)
   @inline final def exitingPostErasure[T](op: => T): T    = exitingPhase(currentRun.posterasurePhase)(op)
@@ -1519,11 +1525,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
       catch { case ex: Throwable =>
-        val shown = if (settings.verbose.value) {
-          val pw = new java.io.PrintWriter(new java.io.StringWriter)
-          ex.printStackTrace(pw)
-          pw.toString
-        } else ex.getClass.getName
+        val shown = if (settings.verbose.value) 
+           stackTraceString(ex)
+         else 
+           ex.getClass.getName
         // ex.printStackTrace(Console.out) // DEBUG for fsc, note that error stacktraces do not print in fsc
         globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
         throw ex
@@ -1743,12 +1748,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // deprecated method: but I see no simple way out, so I leave it for now.
   def forJVM           = settings.target.value startsWith "jvm"
   override def forMSIL = settings.target.value startsWith "msil"
-  def forInteractive   = onlyPresentation
-  def forScaladoc      = onlyPresentation
+  def forInteractive   = false
+  def forScaladoc      = false
   def createJavadoc    = false
-
-  @deprecated("Use forInteractive or forScaladoc, depending on what you're after", "2.9.0")
-  def onlyPresentation = false
 }
 
 object Global {

@@ -194,7 +194,7 @@ trait Typers extends Modes with Adaptations with Tags {
         case PolyType(_, _) => EmptyTree
         case _ =>
           def wrapImplicit(from: Type): Tree = {
-            val result = inferImplicit(tree, functionType(from :: Nil, to), reportAmbiguous, true, context, saveErrors)
+            val result = inferImplicit(tree, functionType(from.withoutAnnotations :: Nil, to), reportAmbiguous, true, context, saveErrors)
             if (result.subst != EmptyTreeTypeSubstituter) {
               result.subst traverse tree
               notifyUndetparamsInferred(result.subst.from, result.subst.to)
@@ -292,8 +292,7 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def checkNonCyclic(pos: Position, tp: Type): Boolean = {
       def checkNotLocked(sym: Symbol) = {
-        sym.initialize
-        sym.lockOK || { CyclicAliasingOrSubtypingError(pos, sym); false }
+        sym.initialize.lockOK || { CyclicAliasingOrSubtypingError(pos, sym); false }
       }
       tp match {
         case TypeRef(pre, sym, args) =>
@@ -320,7 +319,7 @@ trait Typers extends Modes with Adaptations with Tags {
     }
 
     def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): Boolean = try {
-      if (!lockedSym.lock(CyclicReferenceError(pos, lockedSym))) false
+      if (!lockedSym.lock(CyclicReferenceError(pos, tp, lockedSym))) false
       else checkNonCyclic(pos, tp)
     } finally {
       lockedSym.unlock()
@@ -1045,15 +1044,21 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def insertApply(): Tree = {
         assert(!inHKMode(mode), modeString(mode)) //@M
-        val qual = adaptToName(tree, nme.apply) match {
-          case id @ Ident(_) =>
-            val pre = if (id.symbol.owner.isPackageClass) id.symbol.owner.thisType
-            else if (id.symbol.owner.isClass)
-              context.enclosingSubClassContext(id.symbol.owner).prefix
-            else NoPrefix
-            stabilize(id, pre, EXPRmode | QUALmode, WildcardType)
-          case sel @ Select(qualqual, _) =>
-            stabilize(sel, qualqual.tpe, EXPRmode | QUALmode, WildcardType)
+        val adapted = adaptToName(tree, nme.apply)
+        def stabilize0(pre: Type): Tree = stabilize(adapted, pre, EXPRmode | QUALmode, WildcardType)
+        // TODO reconcile the overlap between Typers#stablize and TreeGen.stabilize
+        val qual = adapted match {
+          case This(_) =>
+            gen.stabilize(adapted)
+          case Ident(_) =>
+            val owner = adapted.symbol.owner
+            val pre =
+              if (owner.isPackageClass) owner.thisType
+              else if (owner.isClass) context.enclosingSubClassContext(owner).prefix
+              else NoPrefix
+            stabilize0(pre)
+          case Select(qualqual, _) =>
+            stabilize0(qualqual.tpe)
           case other =>
             other
         }
@@ -1425,9 +1430,9 @@ trait Typers extends Modes with Adaptations with Tags {
             //see https://issues.scala-lang.org/browse/SI-6463
             case _: ClassDef =>
               implRestriction(tree, "nested class")
-            case x: ValDef if x.mods.isLazy =>
-              //see https://issues.scala-lang.org/browse/SI-6358
-              implRestriction(tree, "lazy val")
+            case Select(sup @ Super(qual, mix), selector) if selector != nme.CONSTRUCTOR && qual.symbol == clazz && mix != tpnme.EMPTY =>
+              //see https://issues.scala-lang.org/browse/SI-6483
+              implRestriction(sup, "qualified super reference")
             case _ =>
           }
           super.traverse(tree)
@@ -1907,7 +1912,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       val rhs1 =
         if (vdef.rhs.isEmpty) {
-          if (sym.isVariable && sym.owner.isTerm && !isPastTyper)
+          if (sym.isVariable && sym.owner.isTerm && !sym.isLazy && !isPastTyper)
             LocalVarUninitializedError(vdef)
           vdef.rhs
         } else {
@@ -2333,9 +2338,15 @@ trait Typers extends Modes with Adaptations with Tags {
             case _ =>
           }
         }
-        val stats1 = typedStats(block.stats, context.owner)
+        val stats1 = if (isPastTyper) block.stats else
+          block.stats.flatMap(stat => stat match {
+            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
+              namer.addDerivedTrees(Typer.this, vd)
+            case _ => stat::Nil
+            })
+        val stats2 = typedStats(stats1, context.owner)
         val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
-        treeCopy.Block(block, stats1, expr1)
+        treeCopy.Block(block, stats2, expr1)
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle
@@ -2711,17 +2722,6 @@ trait Typers extends Modes with Adaptations with Tags {
       case Some(imp1: Import) => imp1
       case _                  => log("unhandled import: "+imp+" in "+unit); imp
     }
-    private def isWarnablePureExpression(tree: Tree) = tree match {
-      case EmptyTree | Literal(Constant(())) => false
-      case _                                 =>
-        !tree.isErrorTyped && (treeInfo isExprSafeToInline tree) && {
-          val sym = tree.symbol
-          (sym == null) || !(sym.isModule || sym.isLazy) || {
-            debuglog("'Pure' but side-effecting expression in statement position: " + tree)
-            false
-          }
-        }
-    }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
@@ -2758,7 +2758,7 @@ trait Typers extends Modes with Adaptations with Tags {
                     ConstructorsOrderError(stat)
                 }
 
-                if (isWarnablePureExpression(result)) context.warning(stat.pos,
+                if (treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
                   "a pure expression does nothing in statement position; " +
                   "you may be omitting necessary parentheses"
                 )
@@ -3360,10 +3360,10 @@ trait Typers extends Modes with Adaptations with Tags {
         // if at least one of the types in an intersection is checkable, use the checkable ones
         // this avoids problems as in run/matchonseq.scala, where the expected type is `Coll with scala.collection.SeqLike`
         // Coll is an abstract type, but SeqLike of course is not
-        case RefinedType(parents, _)  if (parents.length >= 2) && (parents.exists(tp => !infer.containsUnchecked(tp))) =>
+        case RefinedType(ps, _) if ps.length > 1 && (ps exists infer.isCheckable) =>
           None
 
-        case ptCheckable if infer.containsUnchecked(ptCheckable) =>
+        case ptCheckable if infer isUncheckable ptCheckable =>
           val classTagExtractor = resolveClassTag(pos, ptCheckable)
 
           if (classTagExtractor != EmptyTree && unapplyMember(classTagExtractor.tpe) != NoSymbol)

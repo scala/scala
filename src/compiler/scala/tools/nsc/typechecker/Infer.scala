@@ -410,8 +410,19 @@ trait Infer extends Checkable {
 
     /** Like weakly compatible but don't apply any implicit conversions yet.
      *  Used when comparing the result type of a method with its prototype.
+     *
      *  [Martin] I think Infer is also created by Erasure, with the default
      *  implementation of isCoercible
+     *  [Paulp] (Assuming the above must refer to my comment on isCoercible)
+     *  Nope, I examined every occurrence of Inferencer in trunk.  It
+     *  appears twice as a self-type, once at its definition, and once
+     *  where it is instantiated in Typers.  There are no others.
+     *
+         % ack -A0 -B0 --no-filename '\bInferencer\b' src
+             self: Inferencer =>
+             self: Inferencer =>
+           class Inferencer(context: Context) extends InferencerContextErrors with InferCheckable {
+             val infer = new Inferencer(context0) {
      */
     def isConservativelyCompatible(tp: Type, pt: Type): Boolean =
       context.withImplicitsDisabled(isWeaklyCompatible(tp, pt))
@@ -1362,51 +1373,6 @@ trait Infer extends Checkable {
         }
       }
     }
-
-    /** Does `tp` contain any types that cannot be checked at run-time (i.e., after erasure, will isInstanceOf[erased(tp)] imply conceptualIsInstanceOf[tp]?)
-     * we should find a way to ask erasure: hey, is `tp` going to make it through you with all of its isInstanceOf resolving powers intact?
-     * TODO: at the very least, reduce duplication wrt checkCheckable
-     */
-    def containsUnchecked(tp: Type): Boolean = {
-      def check(tp: Type, bound: List[Symbol]): Boolean = {
-        def isSurroundingTypeParam(sym: Symbol) = {
-          val e = context.scope.lookupEntry(sym.name)
-            (    (e ne null)
-              && (e.sym == sym )
-              && !e.sym.isTypeParameterOrSkolem
-              && (e.owner == context.scope)
-            )
-        }
-        def isLocalBinding(sym: Symbol) = (
-          sym.isAbstractType && (
-               (bound contains sym)
-            || (sym.name == tpnme.WILDCARD)
-            || isSurroundingTypeParam(sym)
-          )
-        )
-        tp.normalize match {
-          case SingleType(pre, _) =>
-            check(pre, bound)
-          case TypeRef(_, ArrayClass, arg :: _) =>
-            check(arg, bound)
-          case tp @ TypeRef(pre, sym, args) =>
-            (  (sym.isAbstractType && !isLocalBinding(sym))
-            || (args exists (x => !isLocalBinding(x.typeSymbol)))
-            || check(pre, bound)
-            )
-          // case RefinedType(_, decls) if decls.nonEmpty =>
-          //   patternWarning(tp, "refinement ")
-          case RefinedType(parents, _) =>
-            parents exists (p => check(p, bound))
-          case ExistentialType(quantified, tp1) =>
-            check(tp1, bound ::: quantified)
-          case _ =>
-            false
-        }
-      }
-      check(tp, Nil)
-    }
-
 
     /** Type intersection of simple type tp1 with general type tp2.
      *  The result eliminates some redundancies.

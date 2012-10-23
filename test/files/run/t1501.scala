@@ -31,7 +31,7 @@ object Test {
     val settings = new Settings()
     settings.classpath.value = System.getProperty("java.class.path")
     val tool = new interpreter.IMain(settings)
-    val global = tool.compiler
+    val global = tool.global
 
     import global._
     import definitions._

@@ -7,7 +7,7 @@ import scala.reflect.internal.settings.MutableSettings
  *  This should be refined, so that settings are settable via command
  *  line options or properties.
  */
-class Settings extends MutableSettings {
+private[reflect] class Settings extends MutableSettings {
 
   trait Setting extends SettingValue { }
 
@@ -43,6 +43,7 @@ class Settings extends MutableSettings {
   val printtypes        = new BooleanSetting(false)
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
+  val breakCycles       = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
   val maxClassfileName  = new IntSetting(255)

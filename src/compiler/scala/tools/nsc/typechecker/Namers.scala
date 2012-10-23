@@ -113,10 +113,8 @@ trait Namers extends MethodSynthesis {
       || (context.unit.isJava)
     )
     def noFinishGetterSetter(vd: ValDef) = (
-         vd.mods.isPrivateLocal
-      || vd.symbol.isModuleVar
-      || vd.symbol.isLazy
-    )
+         (vd.mods.isPrivateLocal && !vd.mods.isLazy) // all lazy vals need accessors, even private[this]
+      || vd.symbol.isModuleVar)
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
       if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym
@@ -393,6 +391,8 @@ trait Namers extends MethodSynthesis {
         && (clazz.sourceFile ne null)
         && (module.sourceFile ne null)
         && !(module isCoDefinedWith clazz)
+        && module.exists
+        && clazz.exists
       )
       if (fails) {
         context.unit.error(tree.pos, (
@@ -707,41 +707,55 @@ trait Namers extends MethodSynthesis {
 
 // --- Lazy Type Assignment --------------------------------------------------
 
-    def initializeLowerBounds(tp: Type): Type = {
+    def findCyclicalLowerBound(tp: Type): Symbol = {
       tp match {
         case TypeBounds(lo, _) =>
           // check that lower bound is not an F-bound
-          for (TypeRef(_, sym, _) <- lo)
-            sym.initialize
+          // but carefully: class Foo[T <: Bar[_ >: T]] should be allowed
+          for (tp1 @ TypeRef(_, sym, _) <- lo) {
+            if (settings.breakCycles.value) {
+              if (!sym.maybeInitialize) {
+                log(s"Cycle inspecting $lo for possible f-bounds: ${sym.fullLocationString}")
+                return sym
+              }
+            }
+            else sym.initialize
+          }
         case _ =>
       }
-      tp
+      NoSymbol
     }
 
     def monoTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+      // this early test is there to avoid infinite baseTypes when
+      // adding setters and getters --> bug798
+      // It is a def in an attempt to provide some insulation against
+      // uninitialized symbols misleading us. It is not a certainty
+      // this accomplishes anything, but performance is a non-consideration
+      // on these flag checks so it can't hurt.
+      def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
       logAndValidate(sym) {
-        val tp = initializeLowerBounds(typeSig(tree))
+        val tp = typeSig(tree)
+
+        findCyclicalLowerBound(tp) andAlso { sym =>
+          if (needsCycleCheck) {
+            // neg/t1224:  trait C[T] ; trait A { type T >: C[T] <: C[C[T]] }
+            // To avoid an infinite loop on the above, we cannot break all cycles
+            log(s"Reinitializing info of $sym to catch any genuine cycles")
+            sym reset sym.info
+            sym.initialize
+          }
+        }
         sym setInfo {
           if (sym.isJavaDefined) RestrictJavaArraysMap(tp)
           else tp
         }
-        // this early test is there to avoid infinite baseTypes when
-        // adding setters and getters --> bug798
-        val needsCycleCheck = (sym.isAliasType || sym.isAbstractType) && !sym.isParameter
-        if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
-          sym setInfo ErrorType
+        if (needsCycleCheck) {
+          log(s"Needs cycle check: ${sym.debugLocationString}")
+          if (!typer.checkNonCyclic(tree.pos, tp))
+            sym setInfo ErrorType
+        }
       }
-      // tree match {
-      //   case ClassDef(_, _, _, impl) =>
-      //     val parentsOK = (
-      //          treeInfo.isInterface(sym, impl.body)
-      //       || (sym eq ArrayClass)
-      //       || (sym isSubClass AnyValClass)
-      //     )
-      //     if (!parentsOK)
-      //       ensureParent(sym, AnyRefClass)
-      //   case _ => ()
-      // }
     }
 
     def moduleClassTypeCompleter(tree: ModuleDef) = {

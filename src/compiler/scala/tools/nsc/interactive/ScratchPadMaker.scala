@@ -6,6 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.Chars.{isLineBreakChar, isWhitespace}
 import ast.parser.Tokens._
 
+@deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
 trait ScratchPadMaker { self: Global =>
 
   import definitions._

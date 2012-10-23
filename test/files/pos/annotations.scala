@@ -2,7 +2,7 @@ class ann(i: Int) extends scala.annotation.Annotation
 class cfann(x: String) extends annotation.ClassfileAnnotation
 
 // annotations on abstract types
-abstract class C1[@serializable @cloneable +T, U, V[_]]
+abstract class C1[@cloneable +T, U, V[_]]
 abstract class C2[@deprecated
                   @ann(1) T <: Number,
                   V]

@@ -1,6 +1,6 @@
 package scala.reflect.reify
 
-import scala.reflect.macros.{ReificationError, UnexpectedReificationError}
+import scala.reflect.macros.{ReificationException, UnexpectedReificationException, TypecheckException}
 import scala.reflect.macros.runtime.Context
 
 abstract class Taggers {
@@ -65,22 +65,22 @@ abstract class Taggers {
           translatingReificationErrors(materializer)
       }
     try c.typeCheck(result)
-    catch { case terr @ c.TypeError(pos, msg) => failTag(result, terr) }
+    catch { case terr @ TypecheckException(pos, msg) => failTag(result, terr) }
   }
 
   def materializeExpr(universe: Tree, mirror: Tree, expr: Tree): Tree = {
     val result = translatingReificationErrors(c.reifyTree(universe, mirror, expr))
     try c.typeCheck(result)
-    catch { case terr @ c.TypeError(pos, msg) => failExpr(result, terr) }
+    catch { case terr @ TypecheckException(pos, msg) => failExpr(result, terr) }
   }
 
   private def translatingReificationErrors(materializer: => Tree): Tree = {
     try materializer
     catch {
-      case ReificationError(pos, msg) =>
+      case ReificationException(pos, msg) =>
         c.error(pos.asInstanceOf[c.Position], msg) // this cast is a very small price for the sanity of exception handling
         EmptyTree
-      case UnexpectedReificationError(pos, err, cause) if cause != null =>
+      case UnexpectedReificationException(pos, err, cause) if cause != null =>
         throw cause
     }
   }

@@ -24,7 +24,7 @@ import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
-trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
+private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -446,8 +446,7 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
             extends TemplateMirror {
       def outer: AnyRef
       def erasure: ClassSymbol
-      lazy val runtimeClass = classToJava(erasure)
-      lazy val signature = typeToScala(runtimeClass)
+      lazy val signature = typeToScala(classToJava(erasure))
     }
 
     private class JavaClassMirror(val outer: AnyRef, val symbol: ClassSymbol)
@@ -457,10 +456,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
       def reflectConstructor(constructor: MethodSymbol) = {
         checkConstructorOf(constructor, symbol)
         new JavaConstructorMirror(outer, constructor)
-      }
-      def companion: Option[ModuleMirror] = symbol.companionModule match {
-       case module: ModuleSymbol => Some(new JavaModuleMirror(outer, module))
-       case _ => None
       }
       override def toString = s"class mirror for ${symbol.fullName} (bound to $outer)"
     }
@@ -475,10 +470,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
         else
           if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClass))
           else innerSingletonInstance(outer, symbol.name)
-      }
-      def companion: Option[ClassMirror] = symbol.companionClass match {
-        case cls: ClassSymbol => Some(new JavaClassMirror(outer, cls))
-        case _ => None
       }
       override def toString = s"module mirror for ${symbol.fullName} (bound to $outer)"
     }
@@ -1279,6 +1270,6 @@ trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUnive
   }
 }
 
-class ReflectError(msg: String) extends java.lang.Error(msg)
+private[reflect] class ReflectError(msg: String) extends java.lang.Error(msg)
 
-class HasJavaClass[J](val getClazz: J => java.lang.Class[_])
+private[reflect] class HasJavaClass[J](val getClazz: J => java.lang.Class[_])

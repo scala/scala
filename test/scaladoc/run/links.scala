@@ -5,6 +5,9 @@ import scala.tools.partest.ScaladocModelTest
 // SI-4497 "Links in ScalaDoc - Spec and implementation unsufficient"
 // SI-4224 "Wiki-links should support method targets"
 // SI-3695 "support non-fully-qualified type links in scaladoc comments"
+// SI-6487 "Scaladoc can't link to inner classes"
+// SI-6495 "Scaladoc won't pick up group name, priority and description from owner chain"
+// SI-6501 "Scaladoc won't link to a @template type T as a template but as a member"
 object Test extends ScaladocModelTest {
 
   override def resourceFile = "links.scala"
@@ -22,7 +25,7 @@ object Test extends ScaladocModelTest {
 
     val memberLinks = countLinks(TEST.comment.get, _.link.isInstanceOf[LinkToMember])
     val templateLinks = countLinks(TEST.comment.get, _.link.isInstanceOf[LinkToTpl])
-    assert(memberLinks == 15,  memberLinks +   " == 15 (the member links in object TEST)")
-    assert(templateLinks == 5, templateLinks + " ==  5 (the template links in object TEST)")
+    assert(memberLinks == 18,  memberLinks +   " == 18 (the member links in object TEST)")
+    assert(templateLinks == 6, templateLinks + " ==  6 (the template links in object TEST)")
   }
 }
