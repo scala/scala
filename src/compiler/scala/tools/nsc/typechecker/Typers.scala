@@ -68,7 +68,20 @@ trait Typers extends Modes with Adaptations with Tags {
   }
 */
 
-  sealed abstract class SilentResult[+T]
+  sealed abstract class SilentResult[+T] {
+    @inline final def map[U](f: T => U): SilentResult[U] = this match {
+      case SilentResultValue(value) => SilentResultValue(f(value))
+      case x: SilentTypeError       => x
+    }
+    @inline final def filter(p: T => Boolean): SilentResult[T] = this match {
+      case SilentResultValue(value) if !p(value) => SilentTypeError(TypeErrorWrapper(new TypeError(NoPosition, "!p")))
+      case _                                     => this
+    }
+    @inline final def orElse[T1 >: T](f: AbsTypeError => T1): T1 = this match {
+      case SilentResultValue(value) => value
+      case SilentTypeError(err)     => f(err)
+    }
+  }
   case class SilentTypeError(err: AbsTypeError) extends SilentResult[Nothing] { }
   case class SilentResultValue[+T](value: T) extends SilentResult[T] { }
 
