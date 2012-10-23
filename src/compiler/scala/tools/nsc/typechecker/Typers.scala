@@ -4743,6 +4743,18 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
+      /** A symbol qualifies if:
+       *  - it exists
+       *  - it is not stale (stale symbols are made to disappear here)
+       *  - if we are in a pattern constructor, method definitions do not qualify
+       *    unless they are stable.  Otherwise, 'case x :: xs' would find the :: method.
+       */
+      def qualifies(sym: Symbol) = (
+           sym.hasRawInfo
+        && reallyExists(sym)
+        && !(inPatternConstructor && sym.isMethod && !sym.isStable)
+      )
+
       /** Attribute an identifier consisting of a simple name or an outer reference.
        *
        *  @param tree      The tree representing the identifier.
@@ -4751,244 +4763,49 @@ trait Typers extends Modes with Adaptations with Tags {
        *                   (2) Change imported symbols to selections
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
-        var errorContainer: AbsTypeError = null
-        def ambiguousError(msg: String) = {
-          assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
-          errorContainer = AmbiguousIdentError(tree, name, msg)
-        }
-        def identError(tree: AbsTypeError) = {
-          assert(errorContainer == null, "Cannot set ambiguous error twice for identifier")
-          errorContainer = tree
-        }
+        def emptyPackageOk = settings.exposeEmptyPackage.value // setting to enable unqualified idents in empty package
 
-        var defSym: Symbol = tree.symbol  // the directly found symbol
-        var pre: Type = NoPrefix          // the prefix type of defSym, if a class member
-        var qual: Tree = EmptyTree        // the qualifier tree if transformed tree is a select
-        var inaccessibleSym: Symbol = NoSymbol // the first symbol that was found but that was discarded
-                                          // for being inaccessible; used for error reporting
-        var inaccessibleExplanation: String = ""
+        def issue(err: AbsTypeError) = {
+          // Avoiding some spurious error messages: see SI-2388.
+          val suppress = reporter.hasErrors && (name startsWith tpnme.ANON_CLASS_NAME)
+          if (!suppress)
+            ErrorUtils.issueTypeError(err)
 
-        // If a special setting is given, the empty package will be checked as a
-        // last ditch effort before failing.  This method sets defSym and returns
-        // true if a member of the given name exists.
-        def checkEmptyPackage(): Boolean = {
-          defSym = rootMirror.EmptyPackageClass.tpe.nonPrivateMember(name)
-          defSym != NoSymbol
-        }
-        def correctForPackageObject(sym: Symbol): Symbol = {
-          if (sym.isTerm && isInPackageObject(sym, pre.typeSymbol)) {
-            val sym1 = pre member sym.name
-            if ((sym1 eq NoSymbol) || (sym eq sym1)) sym else {
-              qual = gen.mkAttributedQualifier(pre)
-              log(s"""
-                |  !!! Overloaded package object member resolved incorrectly.
-                |        prefix: $pre
-                |     Discarded: ${sym.defString}
-                |         Using: ${sym1.defString}
-                """.stripMargin)
-              sym1
-            }
-          }
-          else sym
-        }
-        def startingIdentContext = (
-          // ignore current variable scope in patterns to enforce linearity
-          if ((mode & (PATTERNmode | TYPEPATmode)) == 0) context
-          else context.outer
-        )
-        // A symbol qualifies if it exists and is not stale. Stale symbols
-        // are made to disappear here. In addition,
-        // if we are in a constructor of a pattern, we ignore all definitions
-        // which are methods (note: if we don't do that
-        // case x :: xs in class List would return the :: method)
-        // unless they are stable or are accessors (the latter exception is for better error messages).
-        def qualifies(sym: Symbol): Boolean = (
-             sym.hasRawInfo  // this condition avoids crashing on self-referential pattern variables
-          && reallyExists(sym)
-          && ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod || sym.hasFlag(ACCESSOR))
-        )
-
-        if (defSym == NoSymbol) {
-          var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
-
-          var cx = startingIdentContext
-          while (defSym == NoSymbol && cx != NoContext && (cx.scope ne null)) { // cx.scope eq null arises during FixInvalidSyms in Duplicators
-            pre = cx.enclClass.prefix
-            // !!! FIXME.  This call to lookupEntry is at the root of all the
-            // bad behavior with overloading in package objects.  lookupEntry
-            // just takes the first symbol it finds in scope, ignoring the rest.
-            // When a selection on a package object arrives here, the first
-            // overload is always chosen.  "correctForPackageObject" exists to
-            // undo that decision.  Obviously it would be better not to do it in
-            // the first place; however other things seem to be tied to obtaining
-            // that ScopeEntry, specifically calculating the nesting depth.
-            defEntry = cx.scope.lookupEntry(name)
-            if ((defEntry ne null) && qualifies(defEntry.sym))
-              defSym = correctForPackageObject(defEntry.sym)
-            else {
-              cx = cx.enclClass
-              val foundSym = pre.member(name) filter qualifies
-              defSym = foundSym filter (context.isAccessible(_, pre, false))
-              if (defSym == NoSymbol) {
-                if ((foundSym ne NoSymbol) && (inaccessibleSym eq NoSymbol)) {
-                  inaccessibleSym = foundSym
-                  inaccessibleExplanation = analyzer.lastAccessCheckDetails
-                }
-                cx = cx.outer
-              }
-            }
-          }
-
-          val symDepth = if (defEntry eq null) cx.depth
-                         else cx.depth - (cx.scope.nestingLevel - defEntry.owner.nestingLevel)
-          var impSym: Symbol = NoSymbol      // the imported symbol
-          var imports = context.imports      // impSym != NoSymbol => it is imported from imports.head
-          while (!reallyExists(impSym) && !imports.isEmpty && imports.head.depth > symDepth) {
-            impSym = imports.head.importedSymbol(name)
-            if (!impSym.exists) imports = imports.tail
-          }
-
-          // detect ambiguous definition/import,
-          // update `defSym` to be the final resolved symbol,
-          // update `pre` to be `sym`s prefix type in case it is an imported member,
-          // and compute value of:
-
-          if (defSym.exists && impSym.exists) {
-            // imported symbols take precedence over package-owned symbols in different
-            // compilation units. Defined symbols take precedence over erroneous imports.
-            if (defSym.isDefinedInPackage &&
-                (!currentRun.compiles(defSym) ||
-                 context.unit.exists && defSym.sourceFile != context.unit.source.file))
-              defSym = NoSymbol
-            else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
-              impSym = NoSymbol
-          }
-          if (defSym.exists) {
-            if (impSym.exists)
-              ambiguousError(
-                "it is both defined in "+defSym.owner +
-                " and imported subsequently by \n"+imports.head)
-            else if (!defSym.owner.isClass || defSym.owner.isPackageClass || defSym.isTypeParameterOrSkolem)
-              pre = NoPrefix
-            else
-              qual = atPos(tree.pos.focusStart)(gen.mkAttributedQualifier(pre))
-          } else {
-            if (impSym.exists) {
-              var impSym1: Symbol = NoSymbol
-              var imports1 = imports.tail
-
-              /** It's possible that seemingly conflicting identifiers are
-               *  identifiably the same after type normalization.  In such cases,
-               *  allow compilation to proceed.  A typical example is:
-               *    package object foo { type InputStream = java.io.InputStream }
-               *    import foo._, java.io._
-               */
-              def ambiguousImport() = {
-                // The types of the qualifiers from which the ambiguous imports come.
-                // If the ambiguous name is a value, these must be the same.
-                def t1  = imports.head.qual.tpe
-                def t2  = imports1.head.qual.tpe
-                // The types of the ambiguous symbols, seen as members of their qualifiers.
-                // If the ambiguous name is a monomorphic type, we can relax this far.
-                def mt1 = t1 memberType impSym
-                def mt2 = t2 memberType impSym1
-                def characterize = List(
-                  s"types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}",
-                  s"member type 1: $mt1",
-                  s"member type 2: $mt2",
-                  s"$impSym == $impSym1  ${impSym == impSym1}",
-                  s"${impSym.debugLocationString} ${impSym.getClass}",
-                  s"${impSym1.debugLocationString} ${impSym1.getClass}"
-                ).mkString("\n  ")
-
-                // The symbol names are checked rather than the symbols themselves because
-                // each time an overloaded member is looked up it receives a new symbol.
-                // So foo.member("x") != foo.member("x") if x is overloaded.  This seems
-                // likely to be the cause of other bugs too...
-                if (t1 =:= t2 && impSym.name == impSym1.name)
-                  log(s"Suppressing ambiguous import: $t1 =:= $t2 && $impSym == $impSym1")
-                // Monomorphism restriction on types is in part because type aliases could have the
-                // same target type but attach different variance to the parameters. Maybe it can be
-                // relaxed, but doesn't seem worth it at present.
-                else if (mt1 =:= mt2 && name.isTypeName && impSym.isMonomorphicType && impSym1.isMonomorphicType)
-                  log(s"Suppressing ambiguous import: $mt1 =:= $mt2 && $impSym and $impSym1 are equivalent")
-                else {
-                  log(s"Import is genuinely ambiguous:\n  " + characterize)
-                  ambiguousError(s"it is imported twice in the same scope by\n${imports.head}\nand ${imports1.head}")
-                }
-              }
-              while (errorContainer == null && !imports1.isEmpty &&
-                     (!imports.head.isExplicitImport(name) ||
-                      imports1.head.depth == imports.head.depth)) {
-                impSym1 = imports1.head.importedSymbol(name)
-                if (reallyExists(impSym1)) {
-                  if (imports1.head.isExplicitImport(name)) {
-                    if (imports.head.isExplicitImport(name) ||
-                        imports1.head.depth != imports.head.depth) ambiguousImport()
-                    impSym = impSym1
-                    imports = imports1
-                  } else if (!imports.head.isExplicitImport(name) &&
-                             imports1.head.depth == imports.head.depth) ambiguousImport()
-                }
-                imports1 = imports1.tail
-              }
-              defSym = impSym
-              val qual0 = imports.head.qual
-              if (!(shortenImports && qual0.symbol.isPackage)) // optimization: don't write out package prefixes
-                qual = atPos(tree.pos.focusStart)(resetPos(qual0.duplicate))
-              pre = qual.tpe
-            }
-            else if (settings.exposeEmptyPackage.value && checkEmptyPackage())
-              log("Allowing empty package member " + name + " due to settings.")
-            else {
-              if ((mode & QUALmode) != 0) {
-                val lastTry = rootMirror.missingHook(rootMirror.RootClass, name)
-                if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
-              }
-              if (settings.debug.value) {
-                log(context.imports)//debug
-              }
-              if (inaccessibleSym eq NoSymbol) {
-                // Avoiding some spurious error messages: see SI-2388.
-                if (reporter.hasErrors && (name startsWith tpnme.ANON_CLASS_NAME)) ()
-                else identError(SymbolNotFoundError(tree, name, context.owner, startingIdentContext))
-              } else
-                identError(InferErrorGen.AccessError(
-                  tree, inaccessibleSym, context.enclClass.owner.thisType, context.enclClass.owner,
-                  inaccessibleExplanation
-                ))
-              defSym = context.owner.newErrorSymbol(name)
-            }
-          }
-        }
-        if (errorContainer != null) {
-          ErrorUtils.issueTypeError(errorContainer)
           setError(tree)
-        } else {
-          if (defSym.owner.isPackageClass)
-            pre = defSym.owner.thisType
-
-          // Inferring classOf type parameter from expected type.
-          if (defSym.isThisSym) {
-            typed1(This(defSym.owner) setPos tree.pos, mode, pt)
-          }
-          // Inferring classOf type parameter from expected type.  Otherwise an
-          // actual call to the stubbed classOf method is generated, returning null.
-          else if (isPredefMemberNamed(defSym, nme.classOf) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty)
-            typedClassOf(tree, TypeTree(pt.typeArgs.head))
-          else {
-            val tree1 = (
-              if (qual == EmptyTree) tree
-              // atPos necessary because qualifier might come from startContext
-              else atPos(tree.pos)(Select(qual, name))
-            )
-            val (tree2, pre2) = makeAccessible(tree1, defSym, pre, qual)
-            // assert(pre.typeArgs isEmpty) // no need to add #2416-style check here, right?
-            val tree3 = stabilize(tree2, pre2, mode, pt)
-            // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
-            //         inference errors in pattern matching.
-            tree3 setType dropIllegalStarTypes(tree3.tpe)
-          }
+        }
+        // ignore current variable scope in patterns to enforce linearity
+        val startContext = if (inNoModes(mode, PATTERNmode | TYPEPATmode)) context else context.outer
+        val nameLookup   = tree.symbol match {
+          case NoSymbol   => startContext.lookupSymbol(name, qualifies)
+          case sym        => LookupSucceeded(EmptyTree, sym)
+        }
+        val defSym = (
+          nameLookup.symbol
+            orElse ( if (emptyPackageOk) lookupInEmpty(name) else NoSymbol )
+            orElse (lookupInRoot(name) andAlso (sym => return typed1(tree setSymbol sym, mode, pt)))
+            orElse (context.owner newErrorSymbol name)
+        )
+        import InferErrorGen._
+        nameLookup match {
+          case LookupAmbiguous(msg)         => issue(AmbiguousIdentError(tree, name, msg))
+          case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
+          case LookupNotFound()             => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+          case LookupSucceeded(qual, sym)   =>
+            // this -> Foo.this
+            if (sym.isThisSym)
+              typed1(This(sym.owner) setPos tree.pos, mode, pt)
+            // Inferring classOf type parameter from expected type.  Otherwise an
+            // actual call to the stubbed classOf method is generated, returning null.
+            else if (isPredefMemberNamed(sym, nme.classOf) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty)
+              typedClassOf(tree, TypeTree(pt.typeArgs.head))
+            else {
+              val pre1  = if (sym.owner.isPackageClass) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
+              val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
+              val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
+              // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
+              //         inference errors in pattern matching.
+              stabilize(tree2, pre2, mode, pt) modifyType dropIllegalStarTypes
+            }
         }
       }
 
