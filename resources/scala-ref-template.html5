@@ -26,6 +26,15 @@ $endif$
 $for(css)$
   <link rel="stylesheet" href="$css$">
 $endfor$
+  <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+            skipTags: ["script", "noscript", "style", "textarea"],
+            inlineMath: [ ["$$", "$$"], ["\\(", "\\)"] ],
+            processEscapes: true
+        }
+    });
+  </script>
 $if(math)$
   $math$
 $endif$
