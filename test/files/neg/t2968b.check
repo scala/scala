@@ -1,0 +1,4 @@
+t2968b.scala:7: error: '}' expected but eof found.
+// missing brace
+                ^
+one error found
