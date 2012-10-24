@@ -557,6 +557,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                 accept(SEMI)
                 blankExpr
               } else {
+                if (inInterface && in.token == DEFAULT) skipTo(SEMI)
                 accept(SEMI)
                 EmptyTree
               }
