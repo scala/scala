@@ -1118,6 +1118,7 @@ trait Typers extends Modes with Adaptations with Tags {
           else if (inAllModes(mode, EXPRmode | FUNmode) &&
             !tree.tpe.isInstanceOf[MethodType] &&
             !tree.tpe.isInstanceOf[OverloadedType] &&
+            !tree.tpe.isInstanceOf[PolyType] &&
             applyPossible)
             insertApply()
           else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
