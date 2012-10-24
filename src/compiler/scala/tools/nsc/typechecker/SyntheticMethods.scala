@@ -306,7 +306,22 @@ trait SyntheticMethods extends ast.TreeDSL {
         else Nil
       )
 
-      def impls = for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
+      /** Always generate overrides for equals and hashCode in value classes,
+       *  so they can appear in universal traits without breaking value semantics.
+       */
+      def impls = {
+        if (clazz.isDerivedValueClass)
+          for ((m, impl) <- methods) yield {
+            if (settings.lint.value)
+              (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
+                currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+              }
+
+            impl()
+          }
+        else
+          for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
+      }
       def extras = (
         if (needsReadResolve) {
           // Aha, I finally decoded the original comment.
