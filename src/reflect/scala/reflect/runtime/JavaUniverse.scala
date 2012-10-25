@@ -17,7 +17,7 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
   def forInteractive = false
   def forScaladoc = false
 
-  def log(msg: => AnyRef): Unit = println(" [] "+msg)
+  def log(msg: => AnyRef): Unit = if (settings.debug.value) println(" [] "+msg)
 
   type TreeCopier = InternalTreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
