@@ -5,8 +5,8 @@ cat 01-title.md \
     03-lexical-syntax.md \
     04-identifiers-names-and-scopes.md \
     05-types.md \
+    06-basic-declarations-and-definitions.md \
     16-references.md > build/ScalaReference.md
-#    06-basic-declarations-and-definitions.md \
 #    07-classes-and-objects.md \
 #    08-expressions.md \
 #    09-implicit-parameters-and-views.md \

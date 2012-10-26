@@ -17,6 +17,27 @@ General
 Conversion from LaTeX - Guidelines
 ----------------------------------
 
+### Chapter conversion Checklist
+
+#. Convert all `\section{...}`
+#. Convert all `\subsection{...}`
+#. Convert all `\subsubsection{...}`
+#. Convert all `{\em ...}`
+#. Convert all `\lstlisting`
+#. Convert all `\lstinline`
+#. Convert all `\sref{sec:...}`
+#. Convert all `\begin{itemize}`
+#. Convert all `\begin{enumerate}`
+#. Convert all `\example`
+#. Convert all `\code`
+#. Convert all `\footnote`
+#. Convert all single quote pairs
+#. Convert all double quote pairs
+#. Look for manually defined enumerated lists (1. 2. 3. etc)
+#. Remove `%@M` comments
+#. Convert all extra macros (`\commadots`, etc)
+
+
 ### Code
 
 Code blocks using the listings package of form
@@ -108,3 +129,4 @@ Finding rendering errors
 
 - MathJAX errors will appear within the rendered DOM as span elements with
   class `mtext` and style attribute `color: red` applied.
+
