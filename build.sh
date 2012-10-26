@@ -6,6 +6,7 @@ cat 01-title.md \
     04-identifiers-names-and-scopes.md \
     05-types.md \
     06-basic-declarations-and-definitions.md \
+    15-scala-syntax-summary.md \
     16-references.md > build/ScalaReference.md
 #    07-classes-and-objects.md \
 #    08-expressions.md \
@@ -15,7 +16,7 @@ cat 01-title.md \
 #    12-xml-expressions-and-patterns.md \
 #    13-user-defined-annotations.md \
 #    14-the-scala-standard-library.md \
-#    15-scala-syntax-summary.md \
+
 
 pandoc -f markdown \
        -t html5 \
