@@ -4,7 +4,8 @@ cat 01-title.md \
     02-preface.md \
     03-lexical-syntax.md \
     04-identifiers-names-and-scopes.md \
-    05-types.md > build/ScalaReference.md 
+    05-types.md \
+    16-references.md > build/ScalaReference.md
 #    06-basic-declarations-and-definitions.md \
 #    07-classes-and-objects.md \
 #    08-expressions.md \
@@ -24,7 +25,7 @@ pandoc -f markdown \
        --number-sections \
        --bibliography=Scala.bib \
        --template=resources/scala-ref-template.html5 \
-       --mathjax \
+       --mathjax='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' \
        -o build/ScalaReference.html \
        build/ScalaReference.md
 

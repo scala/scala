@@ -36,7 +36,9 @@ code {
 /* examples */
 ol[type="1"] {
 	list-style-type: none;
-	margin-left: 0;
+	margin-left: 3em;
+	margin-right: 3em;
+	padding: 0;
 }
 
 ol[type="1"] li {
@@ -48,4 +50,20 @@ ol[type="1"] li {
 
 ol[type="1"] li:before {
 	content: "Example ";
+}
+
+#popoutTOC {
+	position: fixed;
+	top: 0;
+	left: 0;
+	margin: 0;
+	padding: 0;
+}
+
+#popoutTOC .head {
+
+}
+
+#popoutTOC .links {
+	display: none;
 }

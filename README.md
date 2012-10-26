@@ -62,6 +62,14 @@ code fragment.
 
 ### Macro replacements:
 
+- While MathJAX just support LaTeX style command definition, it is recommended
+  to not use this as it will likely cause issues with preparing the document
+  for PDF or ebook distribution.
+- `\SS` (which I could not find defined within the latex source) seems to be
+  closest to `\mathscr{S}`
+- `\TYPE` is equivalent to `\boldsymbol{type}'
+- As MathJAX has no support for slanted font (latex command \sl), so in all
+  instances this should be replaced with \mathit{}
 - The macro \U{ABCD} used for unicode character references can be
   replaced with \\uABCD.
 - The macro \URange{ABCD}{DCBA} used for unicode character ranges can be
@@ -93,3 +101,10 @@ syntax
     #. first entry
     #. ...
     #. last entry
+
+
+Finding rendering errors
+------------------------
+
+- MathJAX errors will appear within the rendered DOM as span elements with
+  class `mtext` and style attribute `color: red` applied.

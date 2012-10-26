@@ -26,6 +26,8 @@ $endif$
 $for(css)$
   <link rel="stylesheet" href="$css$">
 $endfor$
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+  <script type="text/javascript" src="resources/ScalaReference.js"></script>
   <script type="text/x-mathjax-config">
       MathJax.Hub.Config({
         tex2jax: {

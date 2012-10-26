@@ -23,7 +23,7 @@ classes (Unicode general category given in parentheses):
 #. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`{.grammar}
 #. Letters, which include lower case letters(Ll), upper case letters(Lu), 
    titlecase letters(Lt), other letters(Lo), letter numerals(Nl) and the 
-   two characters \\u0024 ‘$’ and \\u005F ‘_’, which both count as upper case 
+   two characters \\u0024 ‘\\$’ and \\u005F ‘_’, which both count as upper case 
    letters
 #. Digits ` ‘0’ | … | ‘9’ `{.grammar}
 #. Parentheses ` ‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `{.grammar}
@@ -70,9 +70,9 @@ decomposes into the three identifiers `big_bob`, `++=`, and
 _variable identifiers_, which start with a lower case letter, and
 _constant identifiers_, which do not.
 
-The ‘$’ character is reserved
+The ‘\$’ character is reserved
 for compiler-synthesized identifiers.  User programs should not define
-identifiers which contain ‘$’ characters.
+identifiers which contain ‘\$’ characters.
 
 The following names are reserved words instead of being members of the
 syntactic class `id` of lexical identifiers.

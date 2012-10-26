@@ -41,18 +41,18 @@ val x = 1;
 neither binding of `x` shadows the other. Consequently, the
 reference to `x` in the third line above would be ambiguous.
 
-A reference to an unqualified (type- or term-) identifier _x_ is bound
+A reference to an unqualified (type- or term-) identifier $x$ is bound
 by the unique binding, which
 
 - defines an entity with name $x$ in the same namespace as the identifier, and
-- shadows all other bindings that define entities with name _x_ in that 
+- shadows all other bindings that define entities with name $x$ in that 
   namespace.
 
-It is an error if no such binding exists.  If _x_ is bound by an
-import clause, then the simple name _x_ is taken to be equivalent to
-the qualified name to which _x_ is mapped by the import clause. If _x_
-is bound by a definition or declaration, then _x_ refers to the entity
-introduced by that binding. In that case, the type of _x_ is the type
+It is an error if no such binding exists.  If $x$ is bound by an
+import clause, then the simple name $x$ is taken to be equivalent to
+the qualified name to which $x$ is mapped by the import clause. If $x$
+is bound by a definition or declaration, then $x$ refers to the entity
+introduced by that binding. In that case, the type of $x$ is the type
 of the referenced entity.
 
 (@) Assume the following two definitions of a objects named 
@@ -95,9 +95,9 @@ of the referenced entity.
     }}}}}}
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A reference to a qualified (type- or term-) identifier `e.x` refers to
-the member of the type _T_ of _e_ which has the name _x_ in the same
-namespace as the identifier. It is an error if _T_ is not a 
-[value type](#value-types). The type of `e.x` is the member type of the
-referenced entity in _T_.
+A reference to a qualified (type- or term-) identifier $e.x$ refers to
+the member of the type $T$ of $e$ which has the name $x$ in the same
+namespace as the identifier. It is an error if $T$ is not a 
+[value type](#value-types). The type of $e.x$ is the member type of the
+referenced entity in $T$.
 
