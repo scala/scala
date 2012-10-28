@@ -394,32 +394,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  protected def newJavap() = new JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp)) {
-    override def tryClass(path: String): Array[Byte] = {
-      val hd :: rest = path split '.' toList;
-      // If there are dots in the name, the first segment is the
-      // key to finding it.
-      if (rest.nonEmpty) {
-        intp optFlatName hd match {
-          case Some(flat) =>
-            val clazz = flat :: rest mkString NAME_JOIN_STRING
-            val bytes = super.tryClass(clazz)
-            if (bytes.nonEmpty) bytes
-            else super.tryClass(clazz + MODULE_SUFFIX_STRING)
-          case _          => super.tryClass(path)
-        }
-      }
-      else {
-        // Look for Foo first, then Foo$, but if Foo$ is given explicitly,
-        // we have to drop the $ to find object Foo, then tack it back onto
-        // the end of the flattened name.
-        def className  = intp flatName path
-        def moduleName = (intp flatName path.stripSuffix(MODULE_SUFFIX_STRING)) + MODULE_SUFFIX_STRING
+  protected def newJavap() = {
+    val intp = ILoop.this.intp
+    import intp._
 
-        val bytes = super.tryClass(className)
-        if (bytes.nonEmpty) bytes
-        else super.tryClass(moduleName)
-      }
+    new JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp)) {
+      override def tryClass(path: String) = super.tryClass(translatePath(path) getOrElse path)
     }
   }
   private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())

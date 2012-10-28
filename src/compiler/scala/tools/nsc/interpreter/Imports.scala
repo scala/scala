@@ -12,7 +12,7 @@ trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
   def isNoImports = settings.noimports.value
@@ -104,7 +104,9 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name]): ComputedImports = {
+  protected def importsCode(wanted0: Set[Name]): ComputedImports = {
+    val wanted = wanted0 filterNot isUnlinked
+
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -173,11 +175,11 @@ trait Imports {
         // the name of the variable, so that we don't need to
         // handle quoting keywords separately.
         case x =>
-          for (imv <- x.definedNames) {
-            if (currentImps contains imv) addWrapper()
+          for (sym <- x.definedSymbols) {
+            if (currentImps contains sym.name) addWrapper()
 
-            code append ("import " + (req fullPath imv) + "\n")
-            currentImps += imv
+            code append (s"import ${x.path}\n")
+            currentImps += sym.name
           }
       }
     }
