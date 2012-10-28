@@ -329,7 +329,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       }
   }
 
-  private def pathToPhaseWrapper = intp.pathToTerm("$r") + ".phased.atCurrent"
+  private def pathToPhaseWrapper = intp.originalPath("$r") + ".phased.atCurrent"
+
   private def phaseCommand(name: String): Result = {
     val phased: Phased = power.phased
     import phased.NoPhaseName
