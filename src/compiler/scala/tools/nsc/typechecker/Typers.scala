@@ -2492,6 +2492,7 @@ trait Typers extends Modes with Adaptations with Tags {
       val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE_typed)).duplicate.asInstanceOf[CaseDef]) else Nil
       // println("casesTrue "+ casesTrue)
       def parentsPartial(targs: List[Type]) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, targs))
+      def parentsPartialAscribed = appliedType(PartialFunctionClass.typeConstructor, targs)
 
       def applyMethod = {
         // rig the show so we can get started typing the method body -- later we'll correct the infos...
@@ -2590,7 +2591,16 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def translated =
         if (members.head eq EmptyTree) setError(tree)
-        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
+        else {
+          typed(atPos(tree.pos) {
+            // Don't leak implementation details into the type, see SI-6575
+            val ascribedNewInstance = {
+              val newInstance = New(anonClass.tpe)
+              if (isPartial) Typed(newInstance, TypeTree(parentsPartialAscribed)) else newInstance
+            }
+            Block(List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus)), atPos(tree.pos.focus)(ascribedNewInstance))
+          }, mode, pt)
+        }
     }
 
     // Function(params, Match(sel, cases)) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('sel match { cases }')` }
