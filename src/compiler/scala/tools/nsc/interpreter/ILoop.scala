@@ -9,7 +9,7 @@ package interpreter
 import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader }
 import session._
-import scala.util.Properties.{ jdkHome, javaVersion }
+import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
 import scala.tools.util.{ Javap }
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import io.{ File, Directory }
@@ -20,6 +20,8 @@ import scala.tools.util._
 import scala.language.{implicitConversions, existentials}
 import scala.reflect.classTag
 import scala.tools.reflect.StdRuntimeTags._
+import scala.concurrent.{ ExecutionContext, Await, Future, future }
+import ExecutionContext.Implicits._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -36,17 +38,33 @@ import scala.tools.reflect.StdRuntimeTags._
 class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                 extends AnyRef
                    with LoopCommands
-                   with ILoopInit
 {
   def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
   def this() = this(None, new JPrintWriter(Console.out, true))
+
+  @deprecated("Use `intp` instead.", "2.9.0") def interpreter = intp
+  @deprecated("Use `intp` instead.", "2.9.0") def interpreter_= (i: Interpreter): Unit = intp = i
 
   var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
   var intp: IMain = _
 
-  @deprecated("Use `intp` instead.", "2.9.0") def interpreter = intp
-  @deprecated("Use `intp` instead.", "2.9.0") def interpreter_= (i: Interpreter): Unit = intp = i
+  private var globalFuture: Future[Boolean] = _
+
+  /** Print a welcome message */
+  def printWelcome() {
+    echo(s"""
+      |Welcome to Scala $versionString ($javaVmName, Java $javaVersion).
+      |Type in expressions to have them evaluated.
+      |Type :help for more information.""".trim.stripMargin
+    )
+    replinfo("[info] started at " + new java.util.Date)
+  }
+
+  protected def asyncMessage(msg: String) {
+    if (isReplInfo || isReplPower)
+      echoAndRefresh(msg)
+  }
 
   /** Having inherited the difficult "var-ness" of the repl instance,
    *  I'm trying to work around it by moving operations into a class from
@@ -495,33 +513,30 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       true
   }
 
+  // return false if repl should exit
+  def processLine(line: String): Boolean = {
+    import scala.concurrent.duration._
+    Await.ready(globalFuture, 60.seconds)
+
+    (line ne null) && (command(line) match {
+      case Result(false, _)      => false
+      case Result(_, Some(line)) => addReplay(line) ; true
+      case _                     => true
+    })
+  }
+
+  private def readOneLine() = {
+    out.flush()
+    in readLine prompt
+  }
+
   /** The main read-eval-print loop for the repl.  It calls
    *  command() for each line of input, and stops when
    *  command() returns false.
    */
-  def loop() {
-    def readOneLine() = {
-      out.flush()
-      in readLine prompt
-    }
-    // return false if repl should exit
-    def processLine(line: String): Boolean = {
-      if (isAsync) {
-        if (!awaitInitialized()) return false
-        runThunks()
-      }
-      if (line eq null) false               // assume null means EOF
-      else command(line) match {
-        case Result(false, _)           => false
-        case Result(_, Some(finalLine)) => addReplay(finalLine) ; true
-        case _                          => true
-      }
-    }
-    def innerLoop() {
-      if ( try processLine(readOneLine()) catch crashRecovery )
-        innerLoop()
-    }
-    innerLoop()
+  @tailrec final def loop() {
+    if ( try processLine(readOneLine()) catch crashRecovery )
+      loop()
   }
 
   /** interpret all lines from a specified file */
@@ -767,45 +782,40 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         SimpleReader()
     }
   }
-  def process(settings: Settings): Boolean = savingContextLoader {
-    this.settings = settings
-    createInterpreter()
 
-    // sets in to some kind of reader depending on environmental cues
-    in = in0 match {
-      case Some(reader) => SimpleReader(reader, out, true)
-      case None         =>
-        // some post-initialization
-        chooseReader(settings) match {
-          case x: JLineReader => addThunk(x.consoleReader.postInit) ; x
-          case x              => x
-        }
+  private def loopPostInit() {
+    in match {
+      case x: JLineReader => x.consoleReader.postInit
+      case _              =>
     }
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
-    addThunk(intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain])))
-    addThunk({
-      val autorun = replProps.replAutorunCode.option flatMap (f => io.File(f).safeSlurp())
-      if (autorun.isDefined) intp.quietRun(autorun.get)
-    })
-
-    loadFiles(settings)
-    // it is broken on startup; go ahead and exit
-    if (intp.reporter.hasErrors)
-      return false
-
-    // This is about the illusion of snappiness.  We call initialize()
-    // which spins off a separate thread, then print the prompt and try
-    // our best to look ready.  The interlocking lazy vals tend to
-    // inter-deadlock, so we break the cycle with a single asynchronous
-    // message to an actor.
-    if (isAsync) {
-      intp initialize initializedCallback()
-      createAsyncListener() // listens for signal to run postInitialization
+    intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
+    // Auto-run code via some setting.
+    ( replProps.replAutorunCode.option
+        flatMap (f => io.File(f).safeSlurp())
+        foreach (intp quietRun _)
+    )
+    // classloader and power mode setup
+    intp.setContextClassLoader
+    if (isReplPower) {
+      replProps.power setValue true
+      unleashAndSetPhase()
+      asyncMessage(power.banner)
     }
-    else {
+  }
+  def process(settings: Settings): Boolean = savingContextLoader {
+    this.settings = settings
+    createInterpreter()
+    var thunks: List[() => Unit] = Nil
+
+    // sets in to some kind of reader depending on environmental cues
+    in = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, true))
+    globalFuture = future {
       intp.initializeSynchronous()
-      postInitialization()
+      loopPostInit()
+      loadFiles(settings)
+      !intp.reporter.hasErrors
     }
     printWelcome()
 
