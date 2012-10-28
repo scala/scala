@@ -494,14 +494,20 @@ abstract class ExplicitOuter extends InfoTransform
 
         case This(qual) =>
           if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) tree
-          else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
+          else {
+            transform { // recurse to allow apply other transformations to the outer path, e.g. access widening for @inline. See run/inline-outer.
+              atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym))
+            }
+          } // (5)
 
         case Select(qual, name) =>
           // make not private symbol acessed from inner classes, as well as
           // symbols accessed from @inline methods
           //
-          // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
-          // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
+          // run/synchronized.scala breaks if we use
+          // `sym.owner.enclMethod hasAnnotation ScalaInlineClass` here
+          //
+          // Inliners has tacit knowledge of this widening. See `IMethodInfo#assumedPublic`.
           if (currentClass != sym.owner ||
               (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
             sym.makeNotPrivate(sym.owner)

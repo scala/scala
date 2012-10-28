@@ -2111,7 +2111,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // generate ACC_FINAL on "final" methods which are actually lateFINAL.
         if (isMethod && !isDeferred)
           setFlag(lateFINAL)
-        if (!isStaticModule && !isClassConstructor) {
+        if (!isStaticModule && !isClassConstructor && !nme.isLocalName(name)) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
         }

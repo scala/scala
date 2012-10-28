@@ -681,7 +681,11 @@ abstract class Inliners extends SubComponent {
         }
         */
 
-        def checkField(f: Symbol)   = check(f, f.isPrivate && !canMakePublic(f))
+        // ExplicitOuter makes symbols accessed by @inlined methods public. This happens
+        // after pickling, so things look private in the symbols we get from ICodeReader.
+        def assumedPublic = hasInline(sym)
+
+        def checkField(f: Symbol)   = check(f, f.isPrivate && !assumedPublic && !canMakePublic(f))
         def checkSuper(n: Symbol)   = check(n, n.isPrivate || !n.isClassConstructor)
         def checkMethod(n: Symbol)  = check(n, n.isPrivate)
 
