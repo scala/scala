@@ -234,15 +234,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case sel @ Select(qual, name) =>
           def transformSelect = {
-
-          // FIXME Once Inliners is modified with the "'meta-knowledge' that all fields accessed by @inline will be made public" [1]
-          //       this can be removed; the correct place for this in in ExplicitOuter.
-          //
-          // [1] https://groups.google.com/forum/#!topic/scala-internals/iPkMCygzws4
-          //
-          if (closestEnclMethod(currentOwner) hasAnnotation definitions.ScalaInlineClass)
-            sym.makeNotPrivate(sym.owner)
-
           qual match {
             case This(_) =>
               // warn if they are selecting a private[this] member which

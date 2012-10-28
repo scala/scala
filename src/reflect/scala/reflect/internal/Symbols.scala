@@ -3269,14 +3269,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   def mapParamss[T](sym: Symbol)(f: Symbol => T): List[List[T]] = mmap(sym.info.paramss)(f)
 
-  /** Return closest enclosing method, unless shadowed by an enclosing class. */
-  // TODO Move back to ExplicitOuter when the other call site is removed.
-  // no use of closures here in the interest of speed.
-  final def closestEnclMethod(from: Symbol): Symbol =
-    if (from.isSourceMethod) from
-    else if (from.isClass) NoSymbol
-    else closestEnclMethod(from.owner)
-
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {

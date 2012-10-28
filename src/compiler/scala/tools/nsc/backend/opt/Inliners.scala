@@ -686,8 +686,8 @@ abstract class Inliners extends SubComponent {
         def assumedPublic = hasInline(sym)
 
         def checkField(f: Symbol)   = check(f, f.isPrivate && !assumedPublic && !canMakePublic(f))
-        def checkSuper(n: Symbol)   = check(n, n.isPrivate || !n.isClassConstructor)
-        def checkMethod(n: Symbol)  = check(n, n.isPrivate)
+        def checkSuper(n: Symbol)   = check(n, n.isPrivate && !assumedPublic || !n.isClassConstructor)
+        def checkMethod(n: Symbol)  = check(n, n.isPrivate && !assumedPublic)
 
         def getAccess(i: Instruction) = i match {
           case CALL_METHOD(n, SuperCall(_)) => checkSuper(n)
