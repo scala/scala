@@ -1262,7 +1262,11 @@ trait Namers extends MethodSynthesis {
           case defn: MemberDef =>
             val ainfos = defn.mods.annotations filterNot (_ eq null) map { ann =>
               // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
-              AnnotationInfo lazily beforeTyper(typer typedAnnotation ann)
+              AnnotationInfo lazily {
+                val context1 = typer.context.make(ann)
+                context1.setReportErrors()
+                beforeTyper(newTyper(context1) typedAnnotation ann)
+              }
             }
             if (ainfos.nonEmpty) {
               annotated setAnnotations ainfos

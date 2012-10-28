@@ -1,0 +1,4 @@
+t6558.scala:5: error: not found: type sth
+    @sth
+     ^
+one error found
