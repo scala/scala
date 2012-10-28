@@ -1516,8 +1516,8 @@ trait Types extends api.Types { self: SymbolTable =>
     }
     private def lowerString = if (emptyLowerBound) "" else " >: " + lo
     private def upperString = if (emptyUpperBound) "" else " <: " + hi
-    private def emptyLowerBound = typeIsNothing(lo)
-    private def emptyUpperBound = typeIsAny(hi)
+    private def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
+    private def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
     // override def isNullable: Boolean = NullClass.tpe <:< lo;
@@ -7240,8 +7240,12 @@ trait Types extends api.Types { self: SymbolTable =>
   /** Members of the given class, other than those inherited
    *  from Any or AnyRef.
    */
-  def nonTrivialMembers(clazz: Symbol): Iterable[Symbol] =
-    clazz.info.members filterNot (sym => sym.owner == ObjectClass || sym.owner == AnyClass)
+  def nonTrivialMembers(clazz: Symbol): Scope = clazz.info.members filterNot isUniversalMember
+
+  /** Members which can be imported into other scopes.
+   */
+  def importableMembers(clazz: Symbol): Scope = importableMembers(clazz.info)
+  def importableMembers(pre: Type): Scope     = pre.members filter isImportable
 
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe

@@ -341,36 +341,19 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def iterator: Iterator[Symbol] = toList.iterator
 
-/*
-    /** Does this scope contain an entry for `sym`?
-     */
-    def contains(sym: Symbol): Boolean = lookupAll(sym.name) contains sym
+    def containsName(name: Name) = lookupEntry(name) != null
+    def containsSymbol(s: Symbol) = lookupAll(s.name) contains s
 
-    /** A scope that contains all symbols of this scope and that also contains `sym`.
-     */
-    def +(sym: Symbol): Scope =
-      if (contains(sym)) this
-      else {
-        val result = cloneScope
-        result enter sym
-        result
-      }
-
-    /** A scope that contains all symbols of this scope except `sym`.
-     */
-    def -(sym: Symbol): Scope =
-      if (!contains(sym)) this
-      else {
-        val result = cloneScope
-        result unlink sym
-        result
-      }
-*/
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    override def filter(p: Symbol => Boolean): Scope =
-      if (!(toList forall p)) newScopeWith(toList filter p: _*) else this
-
+    override def filterNot(p: Symbol => Boolean): Scope = (
+      if (toList exists p) newScopeWith(toList filterNot p: _*)
+      else this
+    )
+    override def filter(p: Symbol => Boolean): Scope = (
+      if (toList forall p) this
+      else newScopeWith(toList filter p: _*)
+    )
     @deprecated("Use `toList.reverse` instead", "2.10.0")
     def reverse: List[Symbol] = toList.reverse
 
