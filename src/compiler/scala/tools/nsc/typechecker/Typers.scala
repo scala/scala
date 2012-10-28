@@ -2590,7 +2590,15 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def translated =
         if (members.head eq EmptyTree) setError(tree)
-        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
+        else {
+          val typedBlock = typed(atPos(tree.pos)(
+            Block(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus), atPos(tree.pos.focus)(New(anonClass.tpe)))
+          ), mode, pt)
+          // Don't leak implementation details into the type, see SI-6575
+          if (isPartial && !typedBlock.isErrorTyped)
+            typedBlock modifyType (_ baseType PartialFunctionClass)
+          else typedBlock
+        }
     }
 
     // Function(params, Match(sel, cases)) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('sel match { cases }')` }
