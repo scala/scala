@@ -147,18 +147,18 @@ abstract class ClosureElimination extends SubComponent {
                 case _ =>
               }
 
-            case UNBOX(_) =>
+            case UNBOX(boxType) =>
               info.stack match {
                 case Deref(LocalVar(loc1)) :: _ if info.bindings isDefinedAt LocalVar(loc1) =>
                   val value = info.getBinding(loc1)
                   value match {
-                    case Boxed(LocalVar(loc2)) =>
+                    case Boxed(LocalVar(loc2)) if loc2.kind == boxType =>
                       bb.replaceInstruction(i, DROP(icodes.ObjectReference) :: valueToInstruction(info.getBinding(loc2)) :: Nil)
                       debuglog("replaced " + i + " with " + info.getBinding(loc2))
                     case _ =>
                       ()
                   }
-                case Boxed(LocalVar(loc1)) :: _ =>
+                case Boxed(LocalVar(loc1)) :: _ if loc1.kind == boxType =>
                   val loc2 = info.getAlias(loc1)
                   bb.replaceInstruction(i, DROP(icodes.ObjectReference) :: valueToInstruction(Deref(LocalVar(loc2))) :: Nil)
                   debuglog("replaced " + i + " with " + LocalVar(loc2))
