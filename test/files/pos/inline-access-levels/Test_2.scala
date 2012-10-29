@@ -6,6 +6,9 @@ object Test {
 
     A.actOnX(_ + 1)
 
-  }
+    val a = new A
 
+    a.actOnX(_ + 1)
+
+  }
 }
