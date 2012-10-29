@@ -2602,7 +2602,9 @@ trait Typers extends Modes with Adaptations with Tags {
           }
           // Don't leak implementation details into the type, see SI-6575
           if (isPartial && !typedBlock.isErrorTyped)
-            typedBlock modifyType (_ baseType PartialFunctionClass)
+            typedPos(tree.pos, mode, pt) {
+              Typed(typedBlock, TypeTree(typedBlock.tpe baseType PartialFunctionClass))
+            }
           else typedBlock
         }
     }
