@@ -1,0 +1,53 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> case class Bippy(x: Int)
+defined class Bippy
+
+scala> val x = Bippy(1)
+x: Bippy = Bippy(1)
+
+scala> $intp.showDirectory
+repl-out-dir-run.obj
+    $line1
+        $eval$.class
+        $eval.class
+    $line2
+        $eval$.class
+        $eval.class
+        $read$$iw$$iw$.class
+        $read$$iw$.class
+        $read$.class
+        $read.class
+    $line3
+        $eval$.class
+        $eval.class
+        $read$$iw$$iw$.class
+        $read$$iw$$iw$Bippy$.class
+        $read$$iw$$iw$Bippy.class
+        $read$$iw$.class
+        $read$.class
+        $read.class
+    $line4
+        $eval$.class
+        $eval.class
+        $read$$iw$$iw$.class
+        $read$$iw$.class
+        $read$.class
+        $read.class
+    $line5
+        $eval$.class
+        $eval.class
+        $read$$iw$$iw$.class
+        $read$$iw$.class
+        $read$.class
+        $read.class
+    $repl_$init.class
+    Test$.class
+    Test.class
+
+scala> 
+
+scala> 
