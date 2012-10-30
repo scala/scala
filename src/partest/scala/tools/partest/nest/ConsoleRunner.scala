@@ -95,8 +95,6 @@ class ConsoleRunner extends DirectRunner {
       else if (parsed isSet "--pack") new ConsoleFileManager("build/pack")
       else new ConsoleFileManager  // auto detection, see ConsoleFileManager.findLatest
 
-    def argNarrowsTests(x: String) = denotesTestSet(x) || denotesTestPath(x)
-
     NestUI._verbose         = parsed isSet "--verbose"
     fileManager.showDiff    = true
     // parsed isSet "--show-diff"

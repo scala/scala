@@ -142,7 +142,6 @@ object ScalaClassLoader {
          with HasClassPath {
 
     private var classloaderURLs: Seq[URL] = urls
-    private def classpathString = ClassPath.fromURLs(urls: _*)
     def classPathURLs: Seq[URL] = classloaderURLs
     def classPath: ClassPath[_] = JavaClassPath fromURLs classPathURLs
 

@@ -43,18 +43,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def modelFinished: Boolean = _modelFinished
   private var universe: Universe = null
 
-  private def dbg(msg: String) = if (sys.props contains "scala.scaladoc.debug") println(msg)
   protected def closestPackage(sym: Symbol) = {
     if (sym.isPackage || sym.isPackageClass) sym
     else sym.enclosingPackage
-  }
-
-  private def printWithoutPrefix(memberSym: Symbol, templateSym: Symbol) = {
-    dbg(
-      "memberSym " + memberSym + " templateSym " + templateSym + " encls = " +
-      closestPackage(memberSym) + ", " + closestPackage(templateSym)
-    )
-    memberSym.isOmittablePrefix || (closestPackage(memberSym) == closestPackage(templateSym))
   }
 
   def makeModel: Option[Universe] = {

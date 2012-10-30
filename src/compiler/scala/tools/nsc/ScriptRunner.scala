@@ -57,17 +57,6 @@ class ScriptRunner extends HasCompileSocket {
     else scriptFile.stripSuffix(".scala") + ".jar"
   )
 
-  /** Read the entire contents of a file as a String. */
-  private def contentsOfFile(filename: String) = File(filename).slurp()
-
-  /** Split a fully qualified object name into a
-   *  package and an unqualified object name */
-  private def splitObjectName(fullname: String): (Option[String], String) =
-    (fullname lastIndexOf '.') match {
-      case -1   => (None, fullname)
-      case idx  => (Some(fullname take idx), fullname drop (idx + 1))
-    }
-
   /** Compile a script using the fsc compilation daemon.
    */
   private def compileWithDaemon(settings: GenericRunnerSettings, scriptFileIn: String) = {

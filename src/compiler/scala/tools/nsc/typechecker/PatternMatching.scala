@@ -2054,7 +2054,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // throws an AnalysisBudget.Exception when the prop results in a CNF that's too big
     // TODO: be smarter/more efficient about this (http://lara.epfl.ch/w/sav09:tseitin_s_encoding)
     def eqFreePropToSolvable(p: Prop): Formula = {
-      def negationNormalFormNot(p: Prop, budget: Int = AnalysisBudget.max): Prop =
+      def negationNormalFormNot(p: Prop, budget: Int): Prop =
         if (budget <= 0) throw AnalysisBudget.exceeded
         else p match {
           case And(a, b) =>  Or(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))

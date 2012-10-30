@@ -95,7 +95,7 @@ import scala.language.implicitConversions
  *   scala> paramInfo(List(1, 2))
  *   type of List(1, 2) has type arguments List(Int)
  * }}}
- * 
+ *
  * === `WeakTypeTag`s ===
  *
  *`WeakTypeTag[T]` generalizes `TypeTag[T]`. Unlike a regular `TypeTag`, components of

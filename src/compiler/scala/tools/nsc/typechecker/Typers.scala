@@ -2480,7 +2480,6 @@ trait Typers extends Modes with Adaptations with Tags {
       assert(isPartial)
 
       private val anonClass = context.owner.newAnonymousFunctionClass(tree.pos)
-      private val funThis   = This(anonClass)
 
       anonClass addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
@@ -3959,14 +3958,6 @@ trait Typers extends Modes with Adaptations with Tags {
 
     def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       def isPatternMode = inPatternMode(mode)
-
-      //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
-      //@M! get the type of the qualifier in a Select tree, otherwise: NoType
-      def prefixType(fun: Tree): Type = fun match {
-        case Select(qualifier, _) => qualifier.tpe
-//        case Ident(name) => ??
-        case _ => NoType
-      }
 
       def typedAnnotated(atd: Annotated): Tree = {
         val ann = atd.annot

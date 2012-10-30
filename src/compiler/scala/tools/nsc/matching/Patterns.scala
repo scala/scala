@@ -189,13 +189,6 @@ trait Patterns extends ast.TreeDSL {
     private lazy val packedType = global.typer.computeType(tpt, tpt.tpe)
     private lazy val consRef    = appliedType(ConsClass, packedType)
     private lazy val listRef    = appliedType(ListClass, packedType)
-    private lazy val seqRef     = appliedType(SeqClass, packedType)
-
-    private def thisSeqRef = {
-      val tc = (tree.tpe baseType SeqClass).typeConstructor
-      if (tc.typeParams.size == 1) appliedType(tc, List(packedType))
-      else seqRef
-    }
 
     // Fold a list into a well-typed x :: y :: etc :: tree.
     private def listFolder(hd: Tree, tl: Tree): Tree = unbind(hd) match {

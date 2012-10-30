@@ -200,17 +200,6 @@ abstract class Duplicators extends Analyzer {
       typed(ddef)
     }
 
-    private def inspectTpe(tpe: Type) = {
-      tpe match {
-        case MethodType(_, res) =>
-          res + ", " + res.bounds.hi + ", " + (res.bounds.hi match {
-            case TypeRef(_, _, args) if (args.length > 0) => args(0) + ", " + args(0).bounds.hi
-            case _ => "non-tref: " + res.bounds.hi.getClass
-          })
-        case _ =>
-      }
-    }
-
     /** Optionally cast this tree into some other type, if required.
      *  Unless overridden, just returns the tree.
      */

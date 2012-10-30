@@ -101,10 +101,6 @@ trait Types extends api.Types { self: SymbolTable =>
 
   protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
-  /** Empty immutable maps to avoid allocations. */
-  private val emptySymMap   = immutable.Map[Symbol, Symbol]()
-  private val emptySymCount = immutable.Map[Symbol, Int]()
-
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
@@ -5799,6 +5795,8 @@ trait Types extends api.Types { self: SymbolTable =>
    *  types which are used internally in type applications and
    *  types which are not.
    */
+  /**** Not used right now, but kept around to document which Types
+   *    land in which bucket.
   private def isInternalTypeNotUsedAsTypeArg(tp: Type): Boolean = tp match {
     case AntiPolyType(pre, targs)            => true
     case ClassInfoType(parents, defs, clazz) => true
@@ -5809,6 +5807,7 @@ trait Types extends api.Types { self: SymbolTable =>
     case TypeBounds(lo, hi)                  => true
     case _                                   => false
   }
+  ****/
   private def isInternalTypeUsedAsTypeArg(tp: Type): Boolean = tp match {
     case WildcardType           => true
     case BoundedWildcardType(_) => true

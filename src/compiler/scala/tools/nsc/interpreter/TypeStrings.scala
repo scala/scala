@@ -39,7 +39,6 @@ trait StructuredTypeStrings extends DestructureTypes {
   val ParamGrouping   = Grouping("(", ", ", ")", true)
   val BlockGrouping   = Grouping(" { ", "; ", "}", false)
 
-  private implicit def lowerName(n: Name): String = "" + n
   private def str(level: Int)(body: => String): String = "  " * level + body
   private def block(level: Int, grouping: Grouping)(name: String, nodes: List[TypeNode]): String = {
     val l1 = str(level)(name + grouping.ldelim)
@@ -214,9 +213,6 @@ trait TypeStrings {
   private def tparamString[T: ru.TypeTag] : String = {
     import ru._
     def typeArguments: List[ru.Type] = ru.typeOf[T] match { case ru.TypeRef(_, _, args) => args; case _ => Nil }
-    // [Eugene to Paul] need to use not the `rootMirror`, but a mirror with the REPL's classloader
-    // how do I get to it? acquiring context classloader seems unreliable because of multithreading
-    def typeVariables: List[java.lang.Class[_]] = typeArguments map (targ => ru.rootMirror.runtimeClass(targ))
     brackets(typeArguments map (jc => tvarString(List(jc))): _*)
   }
 

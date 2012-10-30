@@ -69,7 +69,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   private var inherited: mutable.Map[AbstractFile, immutable.Set[Inherited]] = _
 
   /** Reverse of definitions, used for caching */
-  private var classes: mutable.Map[String, AbstractFile] =
+  private val classes: mutable.Map[String, AbstractFile] =
     new mutable.HashMap[String, AbstractFile] {
       override def default(key: String) = null
   }

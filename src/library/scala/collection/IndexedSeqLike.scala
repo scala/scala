@@ -53,7 +53,6 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
   // pre: start >= 0, end <= self.length
   @SerialVersionUID(1756321872811029277L)
   protected class Elements(start: Int, end: Int) extends AbstractIterator[A] with BufferedIterator[A] with Serializable {
-    private def initialSize = if (end <= start) 0 else end - start
     private var index = start
     private def available = (end - index) max 0
 

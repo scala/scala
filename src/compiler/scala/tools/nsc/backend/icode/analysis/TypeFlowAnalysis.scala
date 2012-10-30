@@ -546,9 +546,6 @@ abstract class TypeFlowAnalysis {
       relevantBBs ++= blocks
     }
 
-    /* the argument is also included in the result */
-    private def transitivePreds(b: BasicBlock): Set[BasicBlock] = { transitivePreds(List(b)) }
-
     /* those BBs in the argument are also included in the result */
     private def transitivePreds(starters: Traversable[BasicBlock]): Set[BasicBlock] = {
       val result = mutable.Set.empty[BasicBlock]
@@ -558,19 +555,6 @@ abstract class TypeFlowAnalysis {
         toVisit = toVisit.tail
         result += h
         for(p <- h.predecessors; if !result(p) && !toVisit.contains(p)) { toVisit = p :: toVisit }
-      }
-      result.toSet
-    }
-
-    /* those BBs in the argument are also included in the result */
-    private def transitiveSuccs(starters: Traversable[BasicBlock]): Set[BasicBlock] = {
-      val result = mutable.Set.empty[BasicBlock]
-      var toVisit: List[BasicBlock] = starters.toList.distinct
-      while(toVisit.nonEmpty) {
-        val h   = toVisit.head
-        toVisit = toVisit.tail
-        result += h
-        for(p <- h.successors; if !result(p) && !toVisit.contains(p)) { toVisit = p :: toVisit }
       }
       result.toSet
     }
@@ -683,12 +667,6 @@ abstract class TypeFlowAnalysis {
     private def enqueue(b: BasicBlock) {
       assert(in(b) ne typeFlowLattice.bottom)
       if(!worklist.contains(b)) { worklist += b }
-    }
-
-    /* this is not a general purpose method to add to the worklist,
-     * because the assert is expected to hold only when called from MTFAGrowable.reinit() */
-    private def enqueue(bs: Traversable[BasicBlock]) {
-      bs foreach enqueue
     }
 
     private def blankOut(blocks: scala.collection.Set[BasicBlock]) {

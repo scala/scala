@@ -21,8 +21,6 @@ trait MemberHandlers {
 
   private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
-
-  private def codegen(xs: String*): String = codegen(true, xs: _*)
   private def codegen(leadingPlus: Boolean, xs: String*): String = {
     val front = if (leadingPlus) "+ " else ""
     front + (xs map string2codeQuoted mkString " + ")

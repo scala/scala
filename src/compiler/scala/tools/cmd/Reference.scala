@@ -46,7 +46,7 @@ object Reference {
   val MaxLine = 80
 
   class Accumulators() {
-    private var _help     = new ListBuffer[() => String]
+    private val _help    = new ListBuffer[() => String]
     private var _unary   = List[String]()
     private var _binary  = List[String]()
     private var _expand  = Map[String, List[String]]()

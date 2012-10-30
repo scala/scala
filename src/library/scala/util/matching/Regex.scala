@@ -199,7 +199,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  Otherwise, this Regex is applied to the previously matched input,
    *  and the result of that match is used.
    */
-  def unapplySeq(m: Match): Option[Seq[String]] = 
+  def unapplySeq(m: Match): Option[Seq[String]] =
     if (m.matched == null) None
     else if (m.matcher.pattern == this.pattern) Some(1 to m.groupCount map m.group)
     else unapplySeq(m.matched)
@@ -650,7 +650,7 @@ object Regex {
   private[matching] trait Replacement {
     protected def matcher: Matcher
 
-    private var sb = new java.lang.StringBuffer
+    private val sb = new java.lang.StringBuffer
 
     def replaced = {
       val newsb = new java.lang.StringBuffer(sb)
