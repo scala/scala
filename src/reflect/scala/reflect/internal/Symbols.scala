@@ -3269,6 +3269,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   def mapParamss[T](sym: Symbol)(f: Symbol => T): List[List[T]] = mmap(sym.info.paramss)(f)
 
+  final def makeNotPrivateForInliner(sym: Symbol) {
+    sym.makeNotPrivate(sym.owner)
+  }
+
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {

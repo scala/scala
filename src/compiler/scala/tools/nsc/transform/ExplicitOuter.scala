@@ -517,7 +517,7 @@ abstract class ExplicitOuter extends InfoTransform
           // Inliners has tacit knowledge of this widening. See `IMethodInfo#assumedPublic`.
           if (currentClass != sym.owner ||
               (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
-            sym.makeNotPrivate(sym.owner)
+            makeNotPrivateForInliner(sym)
 
           val qsym = qual.tpe.widen.typeSymbol
           if (sym.isProtected && //(4)
