@@ -154,7 +154,6 @@ trait DiagramDirectiveParser {
   private val NodeSpecRegex = "\\\"[A-Za-z\\*][A-Za-z\\.\\*]*\\\""
   private val NodeSpecPattern = Pattern.compile(NodeSpecRegex)
   private val EdgeSpecRegex = "\\(" + NodeSpecRegex + "\\s*\\->\\s*" + NodeSpecRegex + "\\)"
-  private val EdgeSpecPattern = Pattern.compile(NodeSpecRegex)
   // And the composed regexes:
   private val HideNodesRegex = new Regex("^hideNodes(\\s*" + NodeSpecRegex + ")+$")
   private val HideEdgesRegex = new Regex("^hideEdges(\\s*" + EdgeSpecRegex + ")+$")

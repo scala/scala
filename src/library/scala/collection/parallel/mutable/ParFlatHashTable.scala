@@ -38,10 +38,6 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       }
     }
 
-    private def checkbounds() = if (idx >= itertable.length) {
-      throw new IndexOutOfBoundsException(idx.toString)
-    }
-
     def newIterator(index: Int, until: Int, totalsize: Int): IterableSplitter[T]
 
     def remaining = totalsize - traversed
@@ -102,11 +98,5 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       }
       count
     }
-
-    private def check() = if (table.slice(idx, until).count(_ != null) != remaining) {
-      println("Invariant broken: " + debugInformation)
-      assert(false)
-    }
   }
-
 }

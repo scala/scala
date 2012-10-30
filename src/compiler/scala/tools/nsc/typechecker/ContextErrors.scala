@@ -670,7 +670,7 @@ trait ContextErrors {
       // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
-      private def macroExpansionError(expandee: Tree, msg: String = null, pos: Position = NoPosition) = {
+      private def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
         val errorPos = if (pos != NoPosition) pos else (if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition)

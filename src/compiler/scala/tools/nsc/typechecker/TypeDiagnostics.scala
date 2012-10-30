@@ -58,7 +58,7 @@ trait TypeDiagnostics {
   /** A map of Positions to addendums - if an error involves a position in
    *  the map, the addendum should also be printed.
    */
-  private var addendums = perRunCaches.newMap[Position, () => String]()
+  private val addendums = perRunCaches.newMap[Position, () => String]()
   private var isTyperInPattern = false
 
   /** Devising new ways of communicating error info out of

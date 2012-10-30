@@ -206,8 +206,11 @@ trait Names extends api.Names with LowPriorityNames {
     /** @return the hash value of this name */
     final override def hashCode(): Int = index
 
-    // Presently disabled.
-    // override def equals(other: Any) = paranoidEquals(other)
+    /****
+     *  This has been quite useful to find places where people are comparing
+     *  a TermName and a TypeName, or a Name and a String.
+
+    override def equals(other: Any) = paranoidEquals(other)
     private def paranoidEquals(other: Any): Boolean = {
       val cmp = this eq other.asInstanceOf[AnyRef]
       if (cmp || !nameDebug)
@@ -215,7 +218,7 @@ trait Names extends api.Names with LowPriorityNames {
 
       other match {
         case x: String  =>
-          Console.println("Compared " + debugString + " and String '" + x + "'")
+          Console.println(s"Compared $debugString and String '$x'")
         case x: Name    =>
           if (this.isTermName != x.isTermName) {
             val panic = this.toTermName == x.toTermName
@@ -228,6 +231,7 @@ trait Names extends api.Names with LowPriorityNames {
       }
       false
     }
+    ****/
 
     /** @return the i'th Char of this name */
     final def charAt(i: Int): Char = chrs(index + i)

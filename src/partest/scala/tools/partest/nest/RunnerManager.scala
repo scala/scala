@@ -260,13 +260,12 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
       runCommand(cmd, logFile)
     }
 
-    private def getCheckFilePath(dir: File, suffix: String = "") = {
+    private def getCheckFilePath(dir: File, suffix: String) = {
       def chkFile(s: String) = (Directory(dir) / "%s%s.check".format(fileBase, s)).toFile
 
       if (chkFile("").isFile || suffix == "") chkFile("")
       else chkFile("-" + suffix)
     }
-    private def getCheckFile(dir: File) = Some(getCheckFilePath(dir, kind)) filter (_.canRead)
 
     private def compareOutput(dir: File, logFile: File): String = {
       val checkFile = getCheckFilePath(dir, kind)

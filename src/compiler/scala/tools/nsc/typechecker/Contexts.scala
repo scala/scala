@@ -511,20 +511,6 @@ trait Contexts { self: Analyzer =>
         } else (owner hasTransOwner ab)
       }
 
-/*
-        var c = this
-        while (c != NoContext && c.owner != owner) {
-          if (c.outer eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
-          if (c.outer.enclClass eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
-          c = c.outer.enclClass
-        }
-        c != NoContext
-      }
-*/
-      /** Is `clazz` a subclass of an enclosing class? */
-      def isSubClassOfEnclosing(clazz: Symbol): Boolean =
-        enclosingSuperClassContext(clazz) != NoContext
-
       def isSubThisType(pre: Type, clazz: Symbol): Boolean = pre match {
         case ThisType(pclazz) => pclazz isNonBottomSubClass clazz
         case _ => false

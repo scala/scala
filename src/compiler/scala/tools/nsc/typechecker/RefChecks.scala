@@ -834,7 +834,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   // Variance Checking --------------------------------------------------------
 
-    private val ContraVariance = -1
     private val NoVariance = 0
     private val CoVariance = 1
     private val AnyVariance = 2
@@ -1108,8 +1107,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
         // used to short-circuit unrelatedTypes check if both sides are special
         def isSpecial(s: Symbol) = isMaybeAnyValue(s) || isAnyNumber(s)
-        // unused
-        def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
         def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
