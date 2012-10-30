@@ -29,7 +29,7 @@ object Test extends App {
   def powers(x: Int) = if ((x&(x-1)) == 0) Some(x) else None
   println(s3.flatMap(powers).reverse.head)
 
-  // large enough to generate StackOverflows (on most systems) 
+  // large enough to generate StackOverflows (on most systems)
   // unless the following methods are tail call optimized.
   val size = 100000
 
@@ -43,4 +43,7 @@ object Test extends App {
   println(Stream.from(1).take(size).foldLeft(0)(_ + _))
   val arr = new Array[Int](size)
   Stream.from(1).take(size).copyToArray(arr, 0)
+
+  // dropRight terminates
+  println(Stream from 1 dropRight 1000 take 3 sum)
 }
