@@ -120,7 +120,7 @@ case class StringContext(parts: String*) {
     val bldr = new java.lang.StringBuilder(process(pi.next()))
     while (ai.hasNext) {
       bldr append ai.next
-      bldr append treatEscapes(pi.next())
+      bldr append process(pi.next())
     }
     bldr.toString
   }
