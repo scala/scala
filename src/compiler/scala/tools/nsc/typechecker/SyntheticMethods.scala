@@ -310,17 +310,19 @@ trait SyntheticMethods extends ast.TreeDSL {
        *  so they can appear in universal traits without breaking value semantics.
        */
       def impls = {
-        if (clazz.isDerivedValueClass)
-          for ((m, impl) <- methods) yield {
-            if (settings.lint.value)
-              (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
-                currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+        def shouldGenerate(m: Symbol) = {
+          !hasOverridingImplementation(m) || {
+            clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
+              if (settings.lint.value) {
+                (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
+                  currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+                }
               }
-
-            impl()
+              true
+            }
           }
-        else
-          for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
+        }
+        for ((m, impl) <- methods ; if shouldGenerate(m)) yield impl()
       }
       def extras = (
         if (needsReadResolve) {
