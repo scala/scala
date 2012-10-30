@@ -1,12 +1,12 @@
-package test
+import test._
 
 object Test {
 
   def main(args: Array[String]) {
 
-    A.actOnX(_ + 1)
+    B.actOnX(_ + 1)
 
-    val a = new A
+    val a = new B
 
     a.actOnX(_ + 1)
 
