@@ -1,0 +1,30 @@
+warn-unused-privates.scala:2: warning: private constructor in class Bippy is never used
+  private def this(c: Int) = this(c, c)           // warn
+              ^
+warn-unused-privates.scala:4: warning: private method in class Bippy is never used
+  private def boop(x: Int)            = x+a+b     // warn
+              ^
+warn-unused-privates.scala:6: warning: private getter in class Bippy is never used
+  final private val MILLIS2: Int      = 1000      // warn
+                    ^
+warn-unused-privates.scala:13: warning: private getter in object Bippy is never used
+  private val HEY_INSTANCE: Int = 1000    // warn
+              ^
+warn-unused-privates.scala:41: warning: private getter in trait Accessors is never used
+  private var v1: Int = 0 // warn
+              ^
+warn-unused-privates.scala:42: warning: private setter in trait Accessors is never used
+  private var v2: Int = 0 // warn, never set
+              ^
+warn-unused-privates.scala:43: warning: private getter in trait Accessors is never used
+  private var v3: Int = 0 // warn, never got
+              ^
+warn-unused-privates.scala:55: warning: private default argument in trait DefaultArgs is never used
+  private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
+                             ^
+warn-unused-privates.scala:55: warning: private default argument in trait DefaultArgs is never used
+  private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
+                                           ^
+error: No warnings can be incurred under -Xfatal-warnings.
+9 warnings found
+one error found
