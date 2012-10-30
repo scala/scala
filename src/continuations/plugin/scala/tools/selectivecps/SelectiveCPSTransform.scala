@@ -197,12 +197,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           val funDef = localTyper.typed(atPos(pos) {
             ValDef(funSym, fun)
           })
+          argSym.owner = fun.symbol
           val expr2 = localTyper.typed(atPos(pos) {
             Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
           })
 
-          val exSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
-          exSym.owner = fun.symbol
+          val exSym = fun.symbol.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
           rhs.changeOwner(currentOwner -> fun.symbol)
 
           import CODE._
