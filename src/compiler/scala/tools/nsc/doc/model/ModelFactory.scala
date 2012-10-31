@@ -1097,7 +1097,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
 
-  def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = {
+/*  def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = {
     val sym1 =
       if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
       else if (sym.isPackage) 
@@ -1122,6 +1122,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def externalSignature(sym: Symbol) = {
     sym.info // force it, otherwise we see lazy types
     (sym.nameString + sym.signatureString).replaceAll("\\s", "")
-  }
+  }*/
 }
 

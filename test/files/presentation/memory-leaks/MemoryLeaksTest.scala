@@ -24,6 +24,9 @@ import scala.tools.nsc.io._
 object Test extends InteractiveTest {
   final val mega = 1024 * 1024
 
+  // This test keep there are no memory leaks even when doc comments are expanded by the compiler.
+  override val keepDocComments = true
+
   override def execute(): Unit = memoryConsumptionTest()
 
   def batchSource(name: String) =

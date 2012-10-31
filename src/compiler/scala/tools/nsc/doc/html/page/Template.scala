@@ -548,71 +548,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       }
 
     val mainComment: Seq[scala.xml.Node] = mbr.comment match {
-      case Some(comment) if (! isReduced) =>
-        val example =
-          if(!comment.example.isEmpty)
-            <div class="block">Example{ if (comment.example.length > 1) "s" else ""}:
-                <ol>{
-                val exampleXml: List[scala.xml.NodeSeq] =
-                  for(example <- comment.example ) yield
-                    <li class="cmt">{ bodyToHtml(example) }</li>
-                exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
-              }</ol>
-              </div>
-          else NodeSeq.Empty
-
-        val version: Seq[scala.xml.Node] =
-          if(!comment.version.isEmpty) {
-            <dt>Version</dt>
-            <dd>{ for(body <- comment.version.toList) yield {bodyToHtml(body)} }</dd>
-          } else NodeSeq.Empty
-
-        val sinceVersion: Seq[scala.xml.Node] =
-          if(!comment.since.isEmpty) {
-            <dt>Since</dt>
-            <dd>{ for(body <- comment.since.toList) yield {bodyToHtml(body)} }</dd>
-          } else NodeSeq.Empty
-
-        val note: Seq[scala.xml.Node] =
-          if(!comment.note.isEmpty) {
-            <dt>Note</dt>
-            <dd>{
-              val noteXml: List[scala.xml.NodeSeq] = (for(note <- comment.note ) yield <span class="cmt">{bodyToHtml(note)}</span> )
-              noteXml.reduceLeft(_ ++ Text(", ") ++ _)
-            }</dd>
-          } else NodeSeq.Empty
-
-        val seeAlso: Seq[scala.xml.Node] =
-          if(!comment.see.isEmpty) {
-            <dt>See also</dt>
-            <dd>{
-              val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <span class="cmt">{bodyToHtml(see)}</span> )
-              seeXml.reduceLeft(_ ++ _)
-            }</dd>
-          } else NodeSeq.Empty
-
-        val exceptions: Seq[scala.xml.Node] =
-          if(!comment.throws.isEmpty) {
-            <dt>Exceptions thrown</dt>
-            <dd>{
-              val exceptionsXml: Iterable[scala.xml.NodeSeq] =
-                for(exception <- comment.throws.toList.sortBy(_._1) ) yield
-                  <span class="cmt">{Text(exception._1) ++ bodyToHtml(exception._2)}</span>
-              exceptionsXml.reduceLeft(_ ++ Text("") ++ _)
-            }</dd>
-          } else NodeSeq.Empty
-
-        val todo: Seq[scala.xml.Node] =
-          if(!comment.todo.isEmpty) {
-            <dt>To do</dt>
-            <dd>{
-              val todoXml: List[scala.xml.NodeSeq] = (for(todo <- comment.todo ) yield <span class="cmt">{bodyToHtml(todo)}</span> )
-              todoXml.reduceLeft(_ ++ Text(", ") ++ _)
-            }</dd>
-          } else NodeSeq.Empty
-
-        example ++ version ++ sinceVersion ++ exceptions ++ todo ++ note ++ seeAlso
-
+      case Some(comment) if (! isReduced) => tagsToHtml(comment)
       case _ => NodeSeq.Empty
     }
     // end attributes block vals ---
