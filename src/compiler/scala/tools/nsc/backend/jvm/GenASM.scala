@@ -46,6 +46,16 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   private def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
     getFile(outputDirectory(sym), clsName, suffix)
 
+  /** From the reference documentation of the Android SDK:
+   *  The `Parcelable` interface identifies classes whose instances can be written to and restored from a `Parcel`.
+   *  Classes implementing the `Parcelable` interface must also have a static field called `CREATOR`,
+   *  which is an object implementing the `Parcelable.Creator` interface.
+   */
+  private val androidFieldName = newTermName("CREATOR")
+
+  private lazy val AndroidParcelableInterface = rootMirror.getClassIfDefined("android.os.Parcelable")
+  private lazy val AndroidCreatorClass        = rootMirror.getClassIfDefined("android.os.Parcelable$Creator")
+
   /** JVM code generation phase
    */
   class AsmPhase(prev: Phase) extends ICodePhase(prev) {
@@ -1201,16 +1211,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
   trait JAndroidBuilder {
     self: JPlainBuilder =>
-
-    /** From the reference documentation of the Android SDK:
-     *  The `Parcelable` interface identifies classes whose instances can be written to and restored from a `Parcel`.
-     *  Classes implementing the `Parcelable` interface must also have a static field called `CREATOR`,
-     *  which is an object implementing the `Parcelable.Creator` interface.
-     */
-    private val androidFieldName = newTermName("CREATOR")
-
-    private lazy val AndroidParcelableInterface = rootMirror.getClassIfDefined("android.os.Parcelable")
-    private lazy val AndroidCreatorClass        = rootMirror.getClassIfDefined("android.os.Parcelable$Creator")
 
     def isAndroidParcelableClass(sym: Symbol) =
       (AndroidParcelableInterface != NoSymbol) &&

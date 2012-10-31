@@ -13,11 +13,12 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
 
   def picklerPhase = SomePhase
 
-  lazy val settings = new Settings
   def forInteractive = false
   def forScaladoc = false
+  lazy val settings = new Settings
+  private val isLogging = sys.props contains "scala.debug.reflect"
 
-  def log(msg: => AnyRef): Unit = println(" [] "+msg)
+  def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 
   type TreeCopier = InternalTreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
