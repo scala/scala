@@ -14,7 +14,10 @@ var title = $(document).attr('title');
 var lastHash = "";
 
 $(document).ready(function() {
-    $('body').layout({ west__size: '20%' });
+    $('body').layout({ 
+        west__size: '20%',
+        center__maskContents: true 
+    });
     $('#browser').layout({
         center__paneSelector: ".ui-west-center"
         //,center__initClosed:true

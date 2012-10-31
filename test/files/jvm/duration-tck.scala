@@ -170,11 +170,14 @@ object Test extends App {
   // test Deadline
   val dead = 2.seconds.fromNow
   val dead2 = 2 seconds fromNow
-  assert(dead.timeLeft > 1.second)
-  assert(dead2.timeLeft > 1.second)
+
+  { val l = dead.timeLeft; assert(l > 1.second, s"$l <= 1.second") }
+  { val l = dead2.timeLeft; assert(l > 1.second, s"$l <= 1.second") }
+
   Thread.sleep(1.second.toMillis)
-  assert(dead.timeLeft < 1.second)
-  assert(dead2.timeLeft < 1.second)
+
+  { val l = dead.timeLeft; assert(l <= 1.second, s"$l > 1.second") }
+  { val l = dead2.timeLeft; assert(l <= 1.second, s"$l > 1.second") }
 
 
   // test integer mul/div

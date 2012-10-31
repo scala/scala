@@ -1049,7 +1049,9 @@ trait Typers extends Modes with Adaptations with Tags {
           case other =>
             other
         }
-        typed(atPos(tree.pos)(Select(qual setPos tree.pos.makeTransparent, nme.apply)), mode, pt)
+        typedPos(tree.pos, mode, pt) {
+          Select(qual setPos tree.pos.makeTransparent, nme.apply)
+        }
       }
 
       // begin adapt
@@ -1147,11 +1149,15 @@ trait Typers extends Modes with Adaptations with Tags {
                       if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12)
                         if (settings.warnValueDiscard.value)
                           context.unit.warning(tree.pos, "discarded non-Unit value")
-                        return typed(atPos(tree.pos)(Block(List(tree), Literal(Constant()))), mode, pt)
+                        return typedPos(tree.pos, mode, pt) {
+                          Block(List(tree), Literal(Constant()))
+                        }
                       } else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
                         if (settings.warnNumericWiden.value)
                           context.unit.warning(tree.pos, "implicit numeric widening")
-                        return typed(atPos(tree.pos)(Select(tree, "to" + sym.name)), mode, pt)
+                        return typedPos(tree.pos, mode, pt) {
+                          Select(tree, "to" + sym.name)
+                        }
                       }
                     case AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (13)
                       return typed(adaptAnnotations(tree, mode, pt), mode, pt)
@@ -2593,7 +2599,17 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def translated =
         if (members.head eq EmptyTree) setError(tree)
-        else typed(atPos(tree.pos)(Block(List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus)), atPos(tree.pos.focus)(New(anonClass.tpe)))), mode, pt)
+        else {
+          val typedBlock = typedPos(tree.pos, mode, pt) {
+            Block(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, members, tree.pos.focus), atPos(tree.pos.focus)(New(anonClass.tpe)))
+          }
+          // Don't leak implementation details into the type, see SI-6575
+          if (isPartial && !typedBlock.isErrorTyped)
+            typedPos(tree.pos, mode, pt) {
+              Typed(typedBlock, TypeTree(typedBlock.tpe baseType PartialFunctionClass))
+            }
+          else typedBlock
+        }
     }
 
     // Function(params, Match(sel, cases)) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('sel match { cases }')` }
@@ -5497,6 +5513,7 @@ trait Typers extends Modes with Adaptations with Tags {
       ret
     }
 
+    def typedPos(pos: Position, mode: Int, pt: Type)(tree: Tree) = typed(atPos(pos)(tree), mode, pt)
     def typedPos(pos: Position)(tree: Tree) = typed(atPos(pos)(tree))
     // TODO: see if this formulation would impose any penalty, since
     // it makes for a lot less casting.
