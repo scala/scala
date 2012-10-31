@@ -17,8 +17,8 @@ trait ScalaNumericConversions extends Any {
   def isWhole(): Boolean
   def underlying(): Any
 
-  def byteValue(): Byte = intValue().toByte
-  def shortValue(): Short = intValue().toShort
+  def byteValue(): Byte
+  def shortValue(): Short
   def intValue(): Int
   def longValue(): Long
   def floatValue(): Float
