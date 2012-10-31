@@ -321,7 +321,9 @@ abstract class Duplicators extends Analyzer {
           // we use the symbol name instead of the tree name because the symbol may have been
           // name mangled, rendering the tree name obsolete
           // log(tree)
-          val t = super.typed(atPos(tree.pos)(Select(This(newClassOwner), tree.symbol.name)), mode, pt)
+          val t = super.typedPos(tree.pos, mode, pt) {
+            Select(This(newClassOwner), tree.symbol.name)
+          }
           // log("typed to: " + t + "; tpe = " + t.tpe + "; " + inspectTpe(t.tpe))
           t
 
@@ -331,7 +333,7 @@ abstract class Duplicators extends Analyzer {
           val tree1 = This(newClassOwner)
           // log("tree1: " + tree1)
           debuglog("mapped " + tree + " to " + tree1)
-          super.typed(atPos(tree.pos)(tree1), mode, pt)
+          super.typedPos(tree.pos, mode, pt)(tree1)
 
         case This(_) =>
           debuglog("selection on this, plain: " + tree)
@@ -368,7 +370,7 @@ abstract class Duplicators extends Analyzer {
               cases
           }
 
-          super.typed(atPos(tree.pos)(Match(scrut, cases1)), mode, pt)
+          super.typedPos(tree.pos, mode, pt)(Match(scrut, cases1))
 
         case EmptyTree =>
           // no need to do anything, in particular, don't set the type to null, EmptyTree.tpe_= asserts

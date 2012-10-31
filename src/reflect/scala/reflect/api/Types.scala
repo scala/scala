@@ -302,7 +302,7 @@ trait Types { self: Universe =>
    */
   trait ThisTypeApi extends TypeApi { this: ThisType =>
     /** The underlying class symbol. */
-    val sym: Symbol
+    def sym: Symbol
   }
 
   /** The `SingleType` type describes types of any of the forms on the left,
@@ -344,10 +344,10 @@ trait Types { self: Universe =>
    */
   trait SingleTypeApi extends TypeApi { this: SingleType =>
     /** The type of the qualifier. */
-    val pre: Type
+    def pre: Type
 
     /** The underlying symbol. */
-    val sym: Symbol
+    def sym: Symbol
   }
   /** The `SuperType` type is not directly written, but arises when `C.super` is used
    *  as a prefix in a `TypeRef` or `SingleType`. It's internal presentation is
@@ -389,12 +389,12 @@ trait Types { self: Universe =>
     /** The type of the qualifier.
      *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
      */
-    val thistpe: Type
+    def thistpe: Type
 
     /** The type of the selector.
      *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
      */
-    val supertpe: Type
+    def supertpe: Type
   }
   /** The `ConstantType` type is not directly written in user programs, but arises as the type of a constant.
    *  The REPL expresses constant types like `Int(11)`. Here are some constants with their types:
@@ -433,7 +433,7 @@ trait Types { self: Universe =>
    */
   trait ConstantTypeApi extends TypeApi { this: ConstantType =>
     /** The compile-time constant underlying this type. */
-    val value: Constant
+    def value: Constant
   }
 
   /** The `TypeRef` type describes types of any of the forms on the left,
@@ -481,15 +481,15 @@ trait Types { self: Universe =>
     /** The prefix of the type reference.
      *  Is equal to `NoPrefix` if the prefix is not applicable.
      */
-    val pre: Type
+    def pre: Type
 
     /** The underlying symbol of the type reference. */
-    val sym: Symbol
+    def sym: Symbol
 
     /** The arguments of the type reference.
      *  Is equal to `Nil` if the arguments are not provided.
      */
-    val args: List[Type]
+    def args: List[Type]
   }
 
   /** A subtype of Type representing refined types as well as `ClassInfo` signatures.
@@ -548,10 +548,10 @@ trait Types { self: Universe =>
    */
   trait RefinedTypeApi extends TypeApi { this: RefinedType =>
     /** The superclasses of the type. */
-    val parents: List[Type]
+    def parents: List[Type]
 
     /** The scope that holds the definitions comprising the type. */
-    val decls: Scope
+    def decls: Scope
   }
 
   /** The `ClassInfo` type signature is used to define parents and declarations
@@ -596,13 +596,13 @@ trait Types { self: Universe =>
    */
   trait ClassInfoTypeApi extends TypeApi { this: ClassInfoType =>
     /** The superclasses of the class type. */
-    val parents: List[Type]
+    def parents: List[Type]
 
     /** The scope that holds the definitions comprising the class type. */
-    val decls: Scope
+    def decls: Scope
 
     /** The symbol underlying the class type. */
-    val typeSymbol: Symbol
+    def typeSymbol: Symbol
   }
 
   /** The `MethodType` type signature is used to indicate parameters and result type of a method
@@ -648,10 +648,10 @@ trait Types { self: Universe =>
    */
   trait MethodTypeApi extends TypeApi { this: MethodType =>
     /** The symbols that correspond to the parameters of the method. */
-    val params: List[Symbol]
+    def params: List[Symbol]
 
     /** The result type of the method. */
-    val resultType: Type
+    def resultType: Type
   }
 
   /** The `NullaryMethodType` type signature is used for parameterless methods
@@ -687,7 +687,7 @@ trait Types { self: Universe =>
    */
   trait NullaryMethodTypeApi extends TypeApi { this: NullaryMethodType =>
     /** The result type of the method. */
-    val resultType: Type
+    def resultType: Type
   }
 
   /** The `PolyType` type signature is used for polymorphic methods
@@ -724,10 +724,10 @@ trait Types { self: Universe =>
    */
   trait PolyTypeApi extends TypeApi { this: PolyType =>
     /** The symbols corresponding to the type parameters. */
-    val typeParams: List[Symbol]
+    def typeParams: List[Symbol]
 
     /** The underlying type. */
-    val resultType: Type
+    def resultType: Type
   }
 
   /** The `ExistentialType` type signature is used for existential types and
@@ -765,10 +765,10 @@ trait Types { self: Universe =>
    */
   trait ExistentialTypeApi extends TypeApi { this: ExistentialType =>
     /** The symbols corresponding to the `forSome` clauses of the existential type. */
-    val quantified: List[Symbol]
+    def quantified: List[Symbol]
 
     /** The underlying type of the existential type. */
-    val underlying: Type
+    def underlying: Type
   }
 
   /** The `AnnotatedType` type signature is used for annotated types of the
@@ -806,13 +806,13 @@ trait Types { self: Universe =>
    */
   trait AnnotatedTypeApi extends TypeApi { this: AnnotatedType =>
     /** The annotations. */
-    val annotations: List[Annotation]
+    def annotations: List[Annotation]
 
     /** The annotee. */
-    val underlying: Type
+    def underlying: Type
 
     /** A symbol that represents the annotated type itself. */
-    val selfsym: Symbol
+    def selfsym: Symbol
   }
 
   /** The `TypeBounds` type signature is used to indicate lower and upper type bounds
@@ -858,12 +858,12 @@ trait Types { self: Universe =>
     /** The lower bound.
      *  Is equal to `definitions.NothingTpe` if not specified explicitly.
      */
-    val lo: Type
+    def lo: Type
 
     /** The upper bound.
      *  Is equal to `definitions.AnyTpe` if not specified explicitly.
      */
-    val hi: Type
+    def hi: Type
   }
 
   /** An object representing an unknown type, used during type inference.
@@ -912,7 +912,7 @@ trait Types { self: Universe =>
    */
   trait BoundedWildcardTypeApi extends TypeApi { this: BoundedWildcardType =>
     /** Type bounds for the wildcard type. */
-    val bounds: TypeBounds
+    def bounds: TypeBounds
   }
 
   /** The least upper bound of a list of types, as determined by `<:<`.
