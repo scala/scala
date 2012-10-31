@@ -79,7 +79,9 @@ trait Mirrors extends api.Mirrors {
 
     protected def universeMissingHook(owner: Symbol, name: Name): Symbol = thisUniverse.missingHook(owner, name)
 
-    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
+    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = logResult(s"missingHook($owner, $name)")(
+      mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
+    )
 
     // todo: get rid of most the methods here and keep just staticClass/Module/Package
 
