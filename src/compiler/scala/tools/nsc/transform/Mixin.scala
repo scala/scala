@@ -481,7 +481,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /** The typer */
     private var localTyper: erasure.Typer = _
-    private def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
+    private def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
     private def localTyped(pos: Position, tree: Tree, pt: Type) = localTyper.typed(atPos(pos)(tree), pt)
 
     /** Map lazy values to the fields they should null after initialization. */
