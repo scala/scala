@@ -53,7 +53,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     override def erasedTypes = true
     def apply(cls: IClass) = sys.error("no implementation")
 
-    val BeanInfoAttr = rootMirror.getRequiredClass("scala.beans.BeanInfo")
+    // Lazy val; can't have eager vals in Phase constructors which may
+    // cause cycles before Global has finished initialization.
+    lazy val BeanInfoAttr = rootMirror.getRequiredClass("scala.beans.BeanInfo")
 
     def isJavaEntryPoint(icls: IClass) = {
       val sym = icls.symbol

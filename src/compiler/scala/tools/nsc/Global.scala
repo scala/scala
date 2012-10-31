@@ -1046,9 +1046,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
 
+  def isGlobalInitialized = (
+       definitions.isDefinitionsInitialized
+    && rootMirror.isMirrorInitialized
+  )
   override def isPastTyper = (
        (curRun ne null)
-    && (currentRun.typerPhase ne null)
+    && isGlobalInitialized // defense against init order issues
     && (globalPhase.id > currentRun.typerPhase.id)
   )
 
@@ -1525,9 +1529,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
       catch { case ex: Throwable =>
-        val shown = if (settings.verbose.value) 
+        val shown = if (settings.verbose.value)
            stackTraceString(ex)
-         else 
+         else
            ex.getClass.getName
         // ex.printStackTrace(Console.out) // DEBUG for fsc, note that error stacktraces do not print in fsc
         globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
