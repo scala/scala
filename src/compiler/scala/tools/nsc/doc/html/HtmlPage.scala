@@ -18,7 +18,7 @@ import java.io.Writer
 /** An html page that is part of a Scaladoc site.
   * @author David Bernard
   * @author Gilles Dubochet */
-abstract class HtmlPage extends Page { thisPage =>
+abstract class HtmlPage extends Page with HtmlPageBase { thisPage =>
   /** The title of this page. */
   protected def title: String
 
@@ -68,70 +68,13 @@ abstract class HtmlPage extends Page { thisPage =>
     //XML.save(pageFile.getPath, html, site.encoding, xmlDecl = false, doctype = doctype)
   }
 
-  /** Transforms an optional comment into an styled HTML tree representing its body if it is defined, or into an empty
-    * node sequence if it is not. */
-  def commentToHtml(comment: Option[Comment]): NodeSeq =
-    (comment map (commentToHtml(_))) getOrElse NodeSeq.Empty
-
-  /** Transforms a comment into an styled HTML tree representing its body. */
-  def commentToHtml(comment: Comment): NodeSeq =
-    bodyToHtml(comment.body)
-
-  def bodyToHtml(body: Body): NodeSeq =
-    body.blocks flatMap (blockToHtml(_))
-
-  def blockToHtml(block: Block): NodeSeq = block match {
-    case Title(in, 1) => <h3>{ inlineToHtml(in) }</h3>
-    case Title(in, 2) => <h4>{ inlineToHtml(in) }</h4>
-    case Title(in, 3) => <h5>{ inlineToHtml(in) }</h5>
-    case Title(in, _) => <h6>{ inlineToHtml(in) }</h6>
-    case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
-    case Code(data) =>
-      <pre>{ SyntaxHigh(data) }</pre> //<pre>{ scala.xml.Text(data) }</pre>
-    case UnorderedList(items) =>
-      <ul>{ listItemsToHtml(items) }</ul>
-    case OrderedList(items, listStyle) =>
-      <ol class={ listStyle }>{ listItemsToHtml(items) }</ol>
-    case DefinitionList(items) =>
-      <dl>{items map { case (t, d) => <dt>{ inlineToHtml(t) }</dt><dd>{ blockToHtml(d) }</dd> } }</dl>
-    case HorizontalRule() =>
-      <hr/>
-  }
-
-  def listItemsToHtml(items: Seq[Block]) =
-    items.foldLeft(xml.NodeSeq.Empty){ (xmlList, item) =>
-      item match {
-        case OrderedList(_, _) | UnorderedList(_) =>  // html requires sub ULs to be put into the last LI
-          xmlList.init ++ <li>{ xmlList.last.child ++ blockToHtml(item) }</li>
-        case Paragraph(inline) =>
-          xmlList :+ <li>{ inlineToHtml(inline) }</li>  // LIs are blocks, no need to use Ps
-        case block =>
-          xmlList :+ <li>{ blockToHtml(block) }</li>
-      }
-  }
-
-  def inlineToHtml(inl: Inline): NodeSeq = inl match {
-    case Chain(items) => items flatMap (inlineToHtml(_))
-    case Italic(in) => <i>{ inlineToHtml(in) }</i>
-    case Bold(in) => <b>{ inlineToHtml(in) }</b>
-    case Underline(in) => <u>{ inlineToHtml(in) }</u>
-    case Superscript(in) => <sup>{ inlineToHtml(in) }</sup>
-    case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
-    case Link(raw, title) => <a href={ raw } target="_blank">{ inlineToHtml(title) }</a>
-    case Monospace(in) => <code>{ inlineToHtml(in) }</code>
-    case Text(text) => scala.xml.Text(text)
-    case Summary(in) => inlineToHtml(in)
-    case HtmlTag(tag) => scala.xml.Unparsed(tag)
-    case EntityLink(target, link) => linkToHtml(target, link, true)
-  }
-
-  def linkToHtml(text: Inline, link: LinkTo, hasLinks: Boolean) = link match {
-    case LinkToTpl(dtpl) =>
+  override def linkToHtml(text: Inline, link: LinkTo, hasLinks: Boolean) = link match {
+    case LinkToTpl(dtpl: DocTemplateEntity) =>
       if (hasLinks)
         <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</a>
       else
         <span class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</span>
-    case LinkToMember(mbr, inTpl) =>
+    case LinkToMember(mbr: MemberEntity, inTpl: DocTemplateEntity) =>
       if (hasLinks)
         <a href={ relativeLinkTo(inTpl) + "#" + mbr.signature } class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</a>
       else
@@ -140,7 +83,7 @@ abstract class HtmlPage extends Page { thisPage =>
       <span class="extype" name={ tooltip }>{ inlineToHtml(text) }</span>
     case LinkToExternal(name, url) =>
       <a href={ url } class="extype" target="_top">{ inlineToHtml(text) }</a>
-    case NoLink =>
+    case _ =>
       inlineToHtml(text)
   }
 
