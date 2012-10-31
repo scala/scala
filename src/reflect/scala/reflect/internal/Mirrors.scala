@@ -20,6 +20,8 @@ trait Mirrors extends api.Mirrors {
   trait RootSymbol extends Symbol { def mirror: Mirror }
 
   abstract class RootsBase(rootOwner: Symbol) extends scala.reflect.api.Mirror[Mirrors.this.type] { thisMirror =>
+    private[this] var initialized = false
+    def isMirrorInitialized = initialized
 
     protected[scala] def rootLoader: LazyType
 
@@ -229,6 +231,7 @@ trait Mirrors extends api.Mirrors {
     // }
 
     def init() {
+      if (initialized) return
       // Still fiddling with whether it's cleaner to do some of this setup here
       // or from constructors.  The latter approach tends to invite init order issues.
 
@@ -240,6 +243,8 @@ trait Mirrors extends api.Mirrors {
 
       RootClass.info.decls enter EmptyPackage
       RootClass.info.decls enter RootPackage
+
+      initialized = true
     }
   }
 
