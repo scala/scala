@@ -100,10 +100,10 @@ object DocStrings {
    * can override the parent symbol's sections
    */
   def mergeUsecaseSections(str: String, idxs: List[Int]): List[Int] = {
-    idxs.indexWhere(str.substring(_).startsWith("@usecase")) match {
+    idxs.indexWhere(str.startsWith("@usecase", _)) match {
       case firstUCIndex if firstUCIndex != -1 =>
         val commentSections = idxs.take(firstUCIndex)
-        val usecaseSections = idxs.drop(firstUCIndex).filter(str.substring(_).startsWith("@usecase"))
+        val usecaseSections = idxs.drop(firstUCIndex).filter(str.startsWith("@usecase", _))
         commentSections ::: usecaseSections
       case _ =>
         idxs
@@ -114,7 +114,7 @@ object DocStrings {
    * Merge the inheritdoc sections, as they never make sense on their own
    */
   def mergeInheritdocSections(str: String, idxs: List[Int]): List[Int] =
-    idxs.filterNot(str.substring(_).startsWith("@inheritdoc"))
+    idxs.filterNot(str.startsWith("@inheritdoc", _))
 
   /** Does interval `iv` start with given `tag`?
    */
@@ -190,11 +190,12 @@ object DocStrings {
 
   /** Extract the section parameter */
   def extractSectionParam(str: String, section: (Int, Int)): String = {
-    assert(str.substring(section._1).startsWith("@param") ||
-           str.substring(section._1).startsWith("@tparam") ||
-           str.substring(section._1).startsWith("@throws"))
+    val (beg, _) = section
+    assert(str.startsWith("@param", beg) ||
+           str.startsWith("@tparam", beg) ||
+           str.startsWith("@throws", beg))
 
-    val start = skipWhitespace(str, skipTag(str, section._1))
+    val start = skipWhitespace(str, skipTag(str, beg))
     val finish = skipIdent(str, start)
 
     str.substring(start, finish)
@@ -202,12 +203,13 @@ object DocStrings {
 
   /** Extract the section text, except for the tag and comment newlines */
   def extractSectionText(str: String, section: (Int, Int)): (Int, Int) = {
-    if (str.substring(section._1).startsWith("@param") ||
-        str.substring(section._1).startsWith("@tparam") ||
-        str.substring(section._1).startsWith("@throws"))
-      (skipWhitespace(str, skipIdent(str, skipWhitespace(str, skipTag(str, section._1)))), section._2)
+    val (beg, end) = section
+    if (str.startsWith("@param", beg) ||
+        str.startsWith("@tparam", beg) ||
+        str.startsWith("@throws", beg))
+      (skipWhitespace(str, skipIdent(str, skipWhitespace(str, skipTag(str, beg)))), end)
     else
-      (skipWhitespace(str, skipTag(str, section._1)), section._2)
+      (skipWhitespace(str, skipTag(str, beg)), end)
   }
 
   /** Cleanup section text */

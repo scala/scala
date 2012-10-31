@@ -8,8 +8,6 @@ case class CaseClass[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) 
   def productElement(x$1 : scala.Int) : scala.Any = { /* compiled code */ }
   override def productIterator : scala.collection.Iterator[scala.Any] = { /* compiled code */ }
   def canEqual(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }
-  def _1 : A = { /* compiled code */ }
-  def _2 : scala.Predef.String = { /* compiled code */ }
   override def hashCode() : scala.Int = { /* compiled code */ }
   override def toString() : java.lang.String = { /* compiled code */ }
   override def equals(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }

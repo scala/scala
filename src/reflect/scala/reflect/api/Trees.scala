@@ -367,10 +367,10 @@ trait Trees { self: Universe =>
    */
   trait PackageDefApi extends MemberDefApi { this: PackageDef =>
     /** The (possibly, fully-qualified) name of the package. */
-    val pid: RefTree
+    def pid: RefTree
 
     /** Body of the package definition. */
-    val stats: List[Tree]
+    def stats: List[Tree]
   }
 
   /** A common base class for class and object definitions.
@@ -390,7 +390,7 @@ trait Trees { self: Universe =>
    */
   trait ImplDefApi extends MemberDefApi { this: ImplDef =>
     /** The body of the definition. */
-    val impl: Template
+    def impl: Template
   }
 
   /** A class definition.
@@ -430,16 +430,16 @@ trait Trees { self: Universe =>
    */
   trait ClassDefApi extends ImplDefApi { this: ClassDef =>
     /** @inheritdoc */
-    val mods: Modifiers
+    def mods: Modifiers
 
     /** The name of the class. */
-    val name: TypeName
+    def name: TypeName
 
     /** The type parameters of the class. */
-    val tparams: List[TypeDef]
+    def tparams: List[TypeDef]
 
     /** @inheritdoc */
-    val impl: Template
+    def impl: Template
   }
 
   /** An object definition, e.g. `object Foo`.  Internally, objects are
@@ -481,13 +481,13 @@ trait Trees { self: Universe =>
    */
   trait ModuleDefApi extends ImplDefApi { this: ModuleDef =>
     /** @inheritdoc */
-    val mods: Modifiers
+    def mods: Modifiers
 
     /** The name of the module. */
-    val name: TermName
+    def name: TermName
 
     /** @inheritdoc */
-    val impl: Template
+    def impl: Template
   }
 
   /** A common base class for ValDefs and DefDefs.
@@ -569,16 +569,16 @@ trait Trees { self: Universe =>
    */
   trait ValDefApi extends ValOrDefDefApi { this: ValDef =>
     /** @inheritdoc */
-    val mods: Modifiers
+    def mods: Modifiers
 
     /** @inheritdoc */
-    val name: TermName
+    def name: TermName
 
     /** @inheritdoc */
-    val tpt: Tree
+    def tpt: Tree
 
     /** @inheritdoc */
-    val rhs: Tree
+    def rhs: Tree
   }
 
   /** A method or macro definition.
@@ -618,22 +618,22 @@ trait Trees { self: Universe =>
    */
   trait DefDefApi extends ValOrDefDefApi { this: DefDef =>
     /** @inheritdoc */
-    val mods: Modifiers
+    def mods: Modifiers
 
     /** @inheritdoc */
-    val name: Name
+    def name: Name
 
     /** The type parameters of the method. */
-    val tparams: List[TypeDef]
+    def tparams: List[TypeDef]
 
     /** The parameter lists of the method. */
-    val vparamss: List[List[ValDef]]
+    def vparamss: List[List[ValDef]]
 
     /** @inheritdoc */
-    val tpt: Tree
+    def tpt: Tree
 
     /** @inheritdoc */
-    val rhs: Tree
+    def rhs: Tree
   }
 
   /** An abstract type, a type parameter, or a type alias.
@@ -676,18 +676,18 @@ trait Trees { self: Universe =>
    */
   trait TypeDefApi extends MemberDefApi { this: TypeDef =>
     /** @inheritdoc */
-    val mods: Modifiers
+    def mods: Modifiers
 
     /** @inheritdoc */
-    val name: TypeName
+    def name: TypeName
 
     /** The type parameters of this type definition. */
-    val tparams: List[TypeDef]
+    def tparams: List[TypeDef]
 
     /** The body of the definition.
      *  The `EmptyTree` is the body is empty (e.g. for abstract type members).
      */
-    val rhs: Tree
+    def rhs: Tree
   }
 
   /** A labelled expression.  Not expressible in language syntax, but
@@ -742,17 +742,17 @@ trait Trees { self: Universe =>
    */
   trait LabelDefApi extends DefTreeApi with TermTreeApi { this: LabelDef =>
     /** @inheritdoc */
-    val name: TermName
+    def name: TermName
 
     /** Label's parameters - names that can be used in the body of the label.
      *  See the example for [[scala.reflect.api.Trees#LabelDefExtractor]].
      */
-    val params: List[Ident]
+    def params: List[Ident]
 
     /** The body of the label.
      *  See the example for [[scala.reflect.api.Trees#LabelDefExtractor]].
      */
-    val rhs: Tree
+    def rhs: Tree
   }
 
   /** Import selector
@@ -795,22 +795,22 @@ trait Trees { self: Universe =>
    */
   trait ImportSelectorApi { this: ImportSelector =>
     /** The imported name. */
-    val name: Name
+    def name: Name
 
     /** Offset of the position of the importing part of the selector in the source file.
      *  Is equal to -1 is the position is unknown.
      */
-    val namePos: Int
+    def namePos: Int
 
     /** The name the import is renamed to.
      *  Is equal to `name` if it's not a renaming import.
      */
-    val rename: Name
+    def rename: Name
 
     /** Offset of the position of the renaming part of the selector in the source file.
      *  Is equal to -1 is the position is unknown.
      */
-    val renamePos: Int
+    def renamePos: Int
   }
 
   /** Import clause
@@ -863,12 +863,12 @@ trait Trees { self: Universe =>
     /** The qualifier of the import.
      *  See the example for [[scala.reflect.api.Trees#ImportExtractor]].
      */
-    val expr: Tree
+    def expr: Tree
 
     /** The selectors of the import.
      *  See the example for [[scala.reflect.api.Trees#ImportExtractor]].
      */
-    val selectors: List[ImportSelector]
+    def selectors: List[ImportSelector]
   }
 
   /** Instantiation template of a class or trait
@@ -920,16 +920,16 @@ trait Trees { self: Universe =>
    */
   trait TemplateApi extends SymTreeApi { this: Template =>
     /** Superclasses of the template. */
-    val parents: List[Tree]
+    def parents: List[Tree]
 
     /** Self type of the template.
      *  Is equal to `emptyValDef` if the self type is not specified.
      */
-    val self: ValDef
+    def self: ValDef
 
     /** Body of the template.
      */
-    val body: List[Tree]
+    def body: List[Tree]
   }
 
   /** Block of expressions (semicolon separated expressions)
@@ -969,10 +969,10 @@ trait Trees { self: Universe =>
     /** All, but the last, expressions in the block.
      *  Can very well be an empty list.
      */
-    val stats: List[Tree]
+    def stats: List[Tree]
 
     /** The last expression in the block. */
-    val expr: Tree
+    def expr: Tree
   }
 
   /** Case clause in a pattern match.
@@ -1013,17 +1013,17 @@ trait Trees { self: Universe =>
    */
   trait CaseDefApi extends TreeApi { this: CaseDef =>
     /** The pattern of the pattern matching clause. */
-    val pat: Tree
+    def pat: Tree
 
     /** The guard of the pattern matching clause.
      *  Is equal to `EmptyTree` if the guard is not specified.
      */
-    val guard: Tree
+    def guard: Tree
 
     /** The body of the pattern matching clause.
      *  Is equal to `Literal(Constant())` if the body is not specified.
      */
-    val body: Tree
+    def body: Tree
   }
 
   /** Alternatives of patterns.
@@ -1063,7 +1063,7 @@ trait Trees { self: Universe =>
    */
   trait AlternativeApi extends TermTreeApi { this: Alternative =>
     /** Alternatives of the pattern matching clause. */
-    val trees: List[Tree]
+    def trees: List[Tree]
   }
 
   /** Repetition of pattern.
@@ -1101,7 +1101,7 @@ trait Trees { self: Universe =>
    */
   trait StarApi extends TermTreeApi { this: Star =>
     /** The quantified pattern. */
-    val elem: Tree
+    def elem: Tree
   }
 
   /** Bind a variable to a rhs pattern.
@@ -1144,13 +1144,13 @@ trait Trees { self: Universe =>
     /** The name that can be used to refer to this fragment of the matched expression.
      *  The `list` part of the `list @ List(x, y)`.
      */
-    val name: Name
+    def name: Name
 
     /** The pattern that represents this fragment of the matched expression.
      *  The `List(x, y)` part of the `list @ List(x, y)`.
      *  Is equal to `EmptyTree` if the pattern is not specified as in `case x => x`.
      */
-    val body: Tree
+    def body: Tree
   }
 
   /**
@@ -1212,12 +1212,12 @@ trait Trees { self: Universe =>
     /** A dummy node that carries the type of unapplication.
      *  See the example for [[scala.reflect.api.Trees#UnApplyExtractor]].
      */
-    val fun: Tree
+    def fun: Tree
 
     /** The arguments of the unapplication.
      *  See the example for [[scala.reflect.api.Trees#UnApplyExtractor]].
      */
-    val args: List[Tree]
+    def args: List[Tree]
   }
 
   /** Anonymous function, eliminated by compiler phase lambdalift
@@ -1257,11 +1257,11 @@ trait Trees { self: Universe =>
   trait FunctionApi extends TermTreeApi with SymTreeApi { this: Function =>
     /** The list of parameters of the function.
      */
-    val vparams: List[ValDef]
+    def vparams: List[ValDef]
 
     /** The body of the function.
      */
-    val body: Tree
+    def body: Tree
   }
 
   /** Assignment
@@ -1298,11 +1298,11 @@ trait Trees { self: Universe =>
   trait AssignApi extends TermTreeApi { this: Assign =>
     /** The left-hand side of the assignment.
      */
-    val lhs: Tree
+    def lhs: Tree
 
     /** The right-hand side of the assignment.
      */
-    val rhs: Tree
+    def rhs: Tree
   }
 
   /** Either an assignment or a named argument. Only appears in argument lists,
@@ -1346,11 +1346,11 @@ trait Trees { self: Universe =>
   trait AssignOrNamedArgApi extends TermTreeApi { this: AssignOrNamedArg =>
     /** The left-hand side of the expression.
      */
-    val lhs: Tree
+    def lhs: Tree
 
     /** The right-hand side of the expression.
      */
-    val rhs: Tree
+    def rhs: Tree
   }
 
   /** Conditional expression
@@ -1389,16 +1389,16 @@ trait Trees { self: Universe =>
   trait IfApi extends TermTreeApi { this: If =>
     /** The condition of the if.
      */
-    val cond: Tree
+    def cond: Tree
 
     /** The main branch of the if.
      */
-    val thenp: Tree
+    def thenp: Tree
 
     /** The alternative of the if.
      *  Is equal to `Literal(Constant(()))` if not specified.
      */
-    val elsep: Tree
+    def elsep: Tree
   }
 
   /** - Pattern matching expression  (before compiler phase explicitouter before 2.10 / patmat from 2.10)
@@ -1445,10 +1445,10 @@ trait Trees { self: Universe =>
    */
   trait MatchApi extends TermTreeApi { this: Match =>
     /** The scrutinee of the pattern match. */
-    val selector: Tree
+    def selector: Tree
 
     /** The arms of the pattern match. */
-    val cases: List[CaseDef]
+    def cases: List[CaseDef]
   }
 
   /** Return expression
@@ -1486,7 +1486,7 @@ trait Trees { self: Universe =>
    */
   trait ReturnApi extends TermTreeApi { this: Return =>
     /** The returned expression. */
-    val expr: Tree
+    def expr: Tree
   }
 
   /** Try catch node
@@ -1524,13 +1524,13 @@ trait Trees { self: Universe =>
    */
   trait TryApi extends TermTreeApi { this: Try =>
     /** The protected block. */
-    val block: Tree
+    def block: Tree
 
     /** The `catch` pattern-matching clauses of the try. */
-    val catches: List[CaseDef]
+    def catches: List[CaseDef]
 
     /** The `finally` part of the try. */
-    val finalizer: Tree
+    def finalizer: Tree
   }
 
   /** Throw expression
@@ -1566,7 +1566,7 @@ trait Trees { self: Universe =>
    */
   trait ThrowApi extends TermTreeApi { this: Throw =>
     /** The thrown expression. */
-    val expr: Tree
+    def expr: Tree
   }
 
   /** Object instantiation
@@ -1613,7 +1613,7 @@ trait Trees { self: Universe =>
     /** The tree that represents the type being instantiated.
      *  See the example for [[scala.reflect.api.Trees#NewExtractor]].
      */
-    val tpt: Tree
+    def tpt: Tree
   }
 
   /** Type annotation, eliminated by compiler phase cleanup
@@ -1649,10 +1649,10 @@ trait Trees { self: Universe =>
    */
   trait TypedApi extends TermTreeApi { this: Typed =>
     /** The expression being ascribed with the type. */
-    val expr: Tree
+    def expr: Tree
 
     /** The type being ascribed to the expression. */
-    val tpt: Tree
+    def tpt: Tree
   }
 
   /** Common base class for Apply and TypeApply.
@@ -1672,10 +1672,10 @@ trait Trees { self: Universe =>
    */
   trait GenericApplyApi extends TermTreeApi { this: GenericApply =>
     /** The target of the application. */
-    val fun: Tree
+    def fun: Tree
 
     /** The arguments of the application. */
-    val args: List[Tree]
+    def args: List[Tree]
   }
 
   /* @PP: All signs point toward it being a requirement that args.nonEmpty,
@@ -1803,12 +1803,12 @@ trait Trees { self: Universe =>
     /** The qualifier of the `super` expression.
      *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
      */
-    val qual: Tree
+    def qual: Tree
 
     /** The selector of the `super` expression.
      *  See the example for [[scala.reflect.api.Trees#SuperExtractor]].
      */
-    val mix: TypeName
+    def mix: TypeName
   }
 
   /** Self reference
@@ -1849,7 +1849,7 @@ trait Trees { self: Universe =>
     /** The qualifier of the `this` expression.
      *  For an unqualified `this` refers to the enclosing class.
      */
-    val qual: TypeName
+    def qual: TypeName
   }
 
   /** A member selection <qualifier> . <name>
@@ -1885,10 +1885,10 @@ trait Trees { self: Universe =>
    */
   trait SelectApi extends RefTreeApi { this: Select =>
     /** @inheritdoc */
-    val qualifier: Tree
+    def qualifier: Tree
 
     /** @inheritdoc */
-    val name: Name
+    def name: Name
   }
 
   /** A reference to identifier `name`.
@@ -1927,7 +1927,7 @@ trait Trees { self: Universe =>
    */
   trait IdentApi extends RefTreeApi { this: Ident =>
     /** @inheritdoc */
-    val name: Name
+    def name: Name
   }
 
   /** Marks underlying reference to id as boxed.
@@ -1983,7 +1983,7 @@ trait Trees { self: Universe =>
    */
   trait ReferenceToBoxedApi extends TermTreeApi { this: ReferenceToBoxed =>
     /** The underlying reference. */
-    val ident: Tree
+    def ident: Tree
   }
 
   /** Literal
@@ -2019,7 +2019,7 @@ trait Trees { self: Universe =>
    */
   trait LiteralApi extends TermTreeApi { this: Literal =>
     /** The compile-time constant underlying the literal. */
-    val value: Constant
+    def value: Constant
   }
 
   /** A tree that has an annotation attached to it. Only used for annotated types and
@@ -2059,10 +2059,10 @@ trait Trees { self: Universe =>
    */
   trait AnnotatedApi extends TreeApi { this: Annotated =>
     /** The annotation. */
-    val annot: Tree
+    def annot: Tree
 
     /** The annotee. */
-    val arg: Tree
+    def arg: Tree
   }
 
   /** Singleton type, eliminated by RefCheck
@@ -2098,7 +2098,7 @@ trait Trees { self: Universe =>
    */
   trait SingletonTypeTreeApi extends TypTreeApi { this: SingletonTypeTree =>
     /** The underlying reference. */
-    val ref: Tree
+    def ref: Tree
   }
 
   /** Type selection <qualifier> # <name>, eliminated by RefCheck
@@ -2137,10 +2137,10 @@ trait Trees { self: Universe =>
    */
   trait SelectFromTypeTreeApi extends TypTreeApi with RefTreeApi { this: SelectFromTypeTree =>
     /** @inheritdoc */
-    val qualifier: Tree
+    def qualifier: Tree
 
     /** @inheritdoc */
-    val name: TypeName
+    def name: TypeName
   }
 
   /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck
@@ -2176,7 +2176,7 @@ trait Trees { self: Universe =>
    */
   trait CompoundTypeTreeApi extends TypTreeApi { this: CompoundTypeTree =>
     /** The template of the compound type - represents the parents, the optional self-type and the optional definitions. */
-    val templ: Template
+    def templ: Template
   }
 
   /** Applied type <tpt> [ <args> ], eliminated by RefCheck
@@ -2212,10 +2212,10 @@ trait Trees { self: Universe =>
    */
   trait AppliedTypeTreeApi extends TypTreeApi { this: AppliedTypeTree =>
     /** The target of the application. */
-    val tpt: Tree
+    def tpt: Tree
 
     /** The arguments of the application. */
-    val args: List[Tree]
+    def args: List[Tree]
   }
 
   /** Type bounds tree node
@@ -2253,12 +2253,12 @@ trait Trees { self: Universe =>
     /** The lower bound.
      *  Is equal to `Ident(<scala.Nothing>)` if not specified explicitly.
      */
-    val lo: Tree
+    def lo: Tree
 
     /** The upper bound.
      *  Is equal to `Ident(<scala.Any>)` if not specified explicitly.
      */
-    val hi: Tree
+    def hi: Tree
   }
 
   /** Existential type tree node
@@ -2294,10 +2294,10 @@ trait Trees { self: Universe =>
    */
   trait ExistentialTypeTreeApi extends TypTreeApi { this: ExistentialTypeTree =>
     /** The underlying type of the existential type. */
-    val tpt: Tree
+    def tpt: Tree
 
     /** The clauses of the definition of the existential type. */
-    val whereClauses: List[Tree]
+    def whereClauses: List[Tree]
   }
 
   /** A synthetic tree holding an arbitrary type.  Not to be confused with
@@ -2522,7 +2522,7 @@ trait Trees { self: Universe =>
    */
   def newLazyTreeCopier: TreeCopier
 
-  /** The API of a tree copier
+  /** The API of a tree copier.
    *  @group API
    */
   abstract class TreeCopierOps {

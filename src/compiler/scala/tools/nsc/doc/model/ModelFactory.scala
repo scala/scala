@@ -28,7 +28,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
   import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
   // Defaults for member grouping, that may be overridden by the template
@@ -1082,12 +1082,27 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
 
-  def findExternalLink(name: String): Option[LinkTo] =
-    settings.extUrlMapping find {
-      case (pkg, _) => name startsWith pkg
-    } map {
-      case (_, url) => LinkToExternal(name, url + "#" + name)
+  def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = {
+    val sym1 =
+      if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
+      else if (sym.isPackage) 
+        /* Get package object which has associatedFile ne null */
+        sym.info.member(newTermName("package"))
+      else sym
+    Option(sym1.associatedFile) flatMap (_.underlyingSource) flatMap { src =>
+      val path = src.path
+      settings.extUrlMapping get path map { url =>
+        LinkToExternal(name, url + "#" + name)
+      }
+    } orElse {
+      // Deprecated option.
+      settings.extUrlPackageMapping find {
+        case (pkg, _) => name startsWith pkg
+      } map {
+        case (_, url) => LinkToExternal(name, url + "#" + name)
+      }
     }
+  }
 
   def externalSignature(sym: Symbol) = {
     sym.info // force it, otherwise we see lazy types
