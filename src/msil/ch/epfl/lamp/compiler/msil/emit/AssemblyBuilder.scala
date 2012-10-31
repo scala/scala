@@ -75,9 +75,6 @@ class AssemblyBuilder(name: AssemblyName)
     //##########################################################################
     // protected members
 
-    // the access properties -  Save, Run, RunAndSave
-    private var access : Int = _
-
     // all extern assemblies used in this assembly builder
     protected var externAssemblies = scala.collection.mutable.Set.empty[Assembly]
 

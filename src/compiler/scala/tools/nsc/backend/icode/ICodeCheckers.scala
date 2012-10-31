@@ -103,7 +103,6 @@ abstract class ICodeCheckers {
     private def posStr(p: Position) =
       if (p.isDefined) p.line.toString else "<??>"
 
-    private def indent(s: String, spaces: Int): String = indent(s, " " * spaces)
     private def indent(s: String, prefix: String): String = {
       val lines = s split "\\n"
       lines map (prefix + _) mkString "\n"
@@ -170,7 +169,6 @@ abstract class ICodeCheckers {
       val preds = bl.predecessors
 
       def hasNothingType(s: TypeStack) = s.nonEmpty && (s.head == NothingReference)
-      def hasNullType(s: TypeStack) = s.nonEmpty && (s.head == NullReference)
 
       /** XXX workaround #1: one stack empty, the other has BoxedUnit.
        *  One example where this arises is:
@@ -368,11 +366,6 @@ abstract class ICodeCheckers {
             false
         }
       }
-
-      /** Return true if k1 is a subtype of any of the following types,
-       *  according to the somewhat relaxed subtyping standards in effect here.
-       */
-      def isOneOf(k1: TypeKind, kinds: TypeKind*) = kinds exists (k => isSubtype(k1, k))
 
       def subtypeTest(k1: TypeKind, k2: TypeKind): Unit =
         if (isSubtype(k1, k2)) ()

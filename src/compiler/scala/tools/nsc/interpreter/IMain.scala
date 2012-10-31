@@ -446,18 +446,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     executingRequest
   }
 
-  // rewriting "5 // foo" to "val x = { 5 // foo }" creates broken code because
-  // the close brace is commented out.  Strip single-line comments.
-  // ... but for error message output reasons this is not used, and rather than
-  // enclosing in braces it is constructed like "val x =\n5 // foo".
-  private def removeComments(line: String): String = {
-    showCodeIfDebugging(line) // as we're about to lose our // show
-    line.lines map (s => s indexOf "//" match {
-      case -1   => s
-      case idx  => s take idx
-    }) mkString "\n"
-  }
-
   private def safePos(t: Tree, alt: Int): Int =
     try t.pos.startOrPoint
     catch { case _: UnsupportedOperationException => alt }
@@ -691,10 +679,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   class ReadEvalPrint(lineId: Int) {
     def this() = this(freshLineId())
 
-    private var lastRun: Run = _
-    private var evalCaught: Option[Throwable] = None
-    private var conditionalWarnings: List[ConditionalWarning] = Nil
-
     val packageName = sessionNames.line + lineId
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
@@ -751,10 +735,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     lazy val evalClass = load(evalPath)
-    lazy val evalValue = callEither(resultName) match {
-      case Left(ex)      => evalCaught = Some(ex) ; None
-      case Right(result) => Some(result)
-    }
+    lazy val evalValue = callOpt(resultName)
 
     def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
 
@@ -798,7 +779,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       showCodeIfDebugging(code)
       val (success, run) = compileSourcesKeepingRun(new BatchSourceFile(label, packaged(code)))
       updateRecentWarnings(run)
-      lastRun = run
       success
     }
   }
@@ -1159,13 +1139,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** Secret bookcase entrance for repl debuggers: end the line
      *  with "// show" and see what's going on.
      */
-    def isShow    = code.lines exists (_.trim endsWith "// show")
-    def isShowRaw = code.lines exists (_.trim endsWith "// raw")
-
-    // old style
-    beSilentDuring(parse(code)) foreach { ts =>
-      ts foreach { t =>
-        withoutUnwrapping(repldbg(asCompactString(t)))
+    def isShow = code.lines exists (_.trim endsWith "// show")
+    if (isReplDebug || isShow) {
+      beSilentDuring(parse(code)) foreach { ts =>
+        ts foreach { t =>
+          withoutUnwrapping(echo(asCompactString(t)))
+        }
       }
     }
   }

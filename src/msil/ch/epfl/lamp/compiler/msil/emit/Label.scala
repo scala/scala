@@ -107,16 +107,15 @@ object Label {
     //########################################################################
     // Special Labels
 
-    final class SpecialLabel(_kind: Label.Kind) extends Label {
-        private final var kind: Label.Kind = _kind
+    final class SpecialLabel(kind: Label.Kind) extends Label {
         def isInitialized() = true
-        def getAddress(): Int = { throw new RuntimeException("" + kind.toString()) }
-        def getStacksize(): Int = { throw new RuntimeException("" + kind.toString()) }
-        def setStacksize(stacksize: Int) { throw new RuntimeException(kind.toString()) }
-        def incStacksize() { throw new RuntimeException(kind.toString()) }
+        def getAddress(): Int = { throw new RuntimeException("" + kind) }
+        def getStacksize(): Int = { throw new RuntimeException("" + kind) }
+        def setStacksize(stacksize: Int) { throw new RuntimeException("" + kind) }
+        def incStacksize() { throw new RuntimeException("" + kind) }
         def getKind(): Kind = kind
-        def mergeWith(that: Label) { throw new RuntimeException(kind.toString()) }
-        override def toString(): String = "Label(" + kind.toString() + ")"
+        def mergeWith(that: Label) { throw new RuntimeException("" + kind) }
+        override def toString() = s"Label($kind)"
     }
 
     final val NewScope: Label = new SpecialLabel(Kind.NewScope)

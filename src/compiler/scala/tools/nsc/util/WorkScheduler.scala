@@ -7,9 +7,9 @@ class WorkScheduler {
 
   type Action = () => Unit
 
-  private var todo = new mutable.Queue[Action]
-  private var throwables = new mutable.Queue[Throwable]
-  private var interruptReqs = new mutable.Queue[InterruptReq]
+  private val todo = new mutable.Queue[Action]
+  private val throwables = new mutable.Queue[Throwable]
+  private val interruptReqs = new mutable.Queue[InterruptReq]
 
   /** Called from server: block until one of todo list, throwables or interruptReqs is nonempty */
   def waitForMoreWork() = synchronized {

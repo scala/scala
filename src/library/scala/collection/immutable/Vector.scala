@@ -630,14 +630,13 @@ override def companion: GenericCompanion[Vector] = Vector
 }
 
 
-class VectorIterator[+A](_startIndex: Int, _endIndex: Int)
+class VectorIterator[+A](_startIndex: Int, endIndex: Int)
 extends AbstractIterator[A]
    with Iterator[A]
    with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31
-  private var endIndex: Int = _endIndex
 
   private var endLo = math.min(endIndex - blockIndex, 32)
 
@@ -667,13 +666,13 @@ extends AbstractIterator[A]
     res
   }
 
-  private[collection] def remainingElementCount: Int = (_endIndex - (blockIndex + lo)) max 0
+  private[collection] def remainingElementCount: Int = (endIndex - (blockIndex + lo)) max 0
 
   /** Creates a new vector which consists of elements remaining in this iterator.
    *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
    */
   private[collection] def remainingVector: Vector[A] = {
-    val v = new Vector(blockIndex + lo, _endIndex, blockIndex + lo)
+    val v = new Vector(blockIndex + lo, endIndex, blockIndex + lo)
     v.initFrom(this)
     v
   }

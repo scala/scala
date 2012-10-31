@@ -67,17 +67,8 @@ trait Task[R, +Tp] {
   private[parallel] def tryMerge(t: Tp @uncheckedVariance) {
     val that = t.asInstanceOf[Task[R, Tp]]
     val local = result // ensure that any effects of modifying `result` are detected
-    // checkMerge(that)
     if (this.throwable == null && that.throwable == null) merge(t)
     mergeThrowables(that)
-  }
-
-  private def checkMerge(that: Task[R, Tp] @uncheckedVariance) {
-    if (this.throwable == null && that.throwable == null && (this.result == null || that.result == null)) {
-      println("This: " + this + ", thr=" + this.throwable + "; merged with " + that + ", thr=" + that.throwable)
-    } else if (this.throwable != null || that.throwable != null) {
-      println("merging this: " + this + " with thr: " + this.throwable + " with " + that + ", thr=" + that.throwable)
-    }
   }
 
   private[parallel] def mergeThrowables(that: Task[_, _]) {

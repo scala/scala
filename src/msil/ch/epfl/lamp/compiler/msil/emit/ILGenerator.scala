@@ -452,7 +452,7 @@ import ILGenerator._
     private var locals: Int = 0
 
     // stack of label for exception mechanism
-    private var excStack: ExceptionStack = new ExceptionStack()
+    private val excStack: ExceptionStack = new ExceptionStack()
 
     // the method info owner of this ILGenerator
     var owner: MethodBase = _owner

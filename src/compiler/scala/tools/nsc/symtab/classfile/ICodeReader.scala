@@ -901,7 +901,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       for (bb <- method.code.blocks ; (i, idx) <- bb.toList.zipWithIndex) i match {
         case cm @ CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
-          def loop(bb0: BasicBlock, idx0: Int, depth: Int = 0): Unit = {
+          def loop(bb0: BasicBlock, idx0: Int, depth: Int): Unit = {
             rdef.findDefs(bb0, idx0, 1, depth) match {
               case ((bb1, idx1)) :: _ =>
                 bb1(idx1) match {

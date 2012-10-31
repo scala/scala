@@ -182,7 +182,6 @@ class PartestTask extends Task with CompilationPathProperty {
   private var javaccmd: Option[File] = None
   private var showDiff: Boolean = false
   private var showLog: Boolean = false
-  private var runFailed: Boolean = false
   private var posFiles: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
@@ -355,7 +354,6 @@ class PartestTask extends Task with CompilationPathProperty {
 
     antFileManager.showDiff = showDiff
     antFileManager.showLog = showLog
-    antFileManager.failed = runFailed
     antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
     antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
     antFileManager.LATEST_REFLECT = scalaReflect.getAbsolutePath

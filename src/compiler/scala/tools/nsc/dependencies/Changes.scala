@@ -61,12 +61,7 @@ abstract class Changes {
     annotationsChecked.forall(a =>
       (sym1.hasAnnotation(a) == sym2.hasAnnotation(a)))
 
-  private def sameType(tp1: Type, tp2: Type)(implicit strict: Boolean) = {
-    def typeOf(tp: Type): String = tp.toString + "[" + tp.getClass + "]"
-    val res = sameType0(tp1, tp2)
-    //if (!res) println("\t different types: " + typeOf(tp1) + " : " + typeOf(tp2))
-    res
-  }
+  private def sameType(tp1: Type, tp2: Type)(implicit strict: Boolean) = sameType0(tp1, tp2)
 
   private def sameType0(tp1: Type, tp2: Type)(implicit strict: Boolean): Boolean = ((tp1, tp2) match {
     /*case (ErrorType, _) => false

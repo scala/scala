@@ -247,7 +247,7 @@ trait Matrix extends MatrixAdditions {
     private def newVar(
       pos: Position,
       tpe: Type,
-      flags: List[Long] = Nil,
+      flags: List[Long],
       name: TermName = null): Symbol =
     {
       val n = if (name == null) cunit.freshTermName("temp") else name

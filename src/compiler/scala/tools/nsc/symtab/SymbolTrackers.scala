@@ -17,9 +17,6 @@ trait SymbolTrackers {
   val global: Global
   import global._
 
-  private implicit lazy val TreeOrdering: Ordering[Tree] =
-    Ordering by (x => (x.shortClass, x.symbol))
-
   private implicit lazy val SymbolOrdering: Ordering[Symbol] =
     Ordering by (x => (x.kindString, x.name.toString))
 
@@ -76,7 +73,6 @@ trait SymbolTrackers {
     private def isFlagsChange(sym: Symbol) = changed.flags contains sym
 
     private implicit def NodeOrdering: Ordering[Node] = Ordering by (_.root)
-    private def ownersString(sym: Symbol, num: Int) = sym.ownerChain drop 1 take num mkString " -> "
 
     object Node {
       def nodes(syms: Set[Symbol]): List[Node] = {

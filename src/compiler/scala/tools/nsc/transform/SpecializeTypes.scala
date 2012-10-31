@@ -101,7 +101,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Concrete methods that use a specialized type, or override such methods. */
   private val concreteSpecMethods = perRunCaches.newWeakSet[Symbol]()
 
-  private def specializedTypes(tps: List[Symbol]) = tps filter (_.isSpecialized)
   private def specializedOn(sym: Symbol): List[Symbol] = {
     sym getAnnotation SpecializedClass match {
       case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
@@ -1120,10 +1119,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  /** Apply type bindings in the given environment `env` to all declarations.  */
-  private def subst(env: TypeEnv, decls: List[Symbol]): List[Symbol] =
-    decls map subst(env)
-
   /** Apply the type environment 'env' to the given type. All type
    *  bindings are supposed to be to primitive types. A type variable
    *  that is annotated with 'uncheckedVariance' is mapped to the corresponding
@@ -1153,29 +1148,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (decl.isConstructor) MethodType(subst(env, info).params, decl.owner.tpe_*)
       else subst(env, info)
     )
-
-  /** Checks if the type parameter symbol is not specialized
-   *  and is used as type parameters when extending a class with a specialized
-   *  type parameter.
-   *  At some point we may remove this restriction.
-   *
-   *  Example:
-   *
-   *    class Base[@specialized T]
-   *    class Derived[T] extends Base[T] // a non-specialized T is
-   *                                     // used as a type param for Base
-   *                                     // -> returning true
-   */
-  private def notSpecializedIn(tsym: Symbol, supertpe: Type) = supertpe match {
-    case TypeRef(_, supersym, supertargs) =>
-      val tspec = specializedOn(tsym).toSet
-      for (supt <- supersym.typeParams) {
-        val supspec = specializedOn(supt).toSet
-        if (tspec != supspec && tspec.subsetOf(supspec))
-          reporter.error(tsym.pos, "Type parameter has to be specialized at least for the same types as in the superclass. Missing types: " + (supspec.diff(tspec)).mkString(", "))
-      }
-    case _ => //log("nope")
-  }
 
   private def unspecializableClass(tp: Type) = (
        definitions.isRepeatedParamType(tp)  // ???

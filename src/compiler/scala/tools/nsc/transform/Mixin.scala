@@ -197,9 +197,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *    - lazy fields don't get a setter.
    */
   def addLateInterfaceMembers(clazz: Symbol) {
-    def makeConcrete(member: Symbol) =
-      member setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED)
-
     if (treatedClassInfos(clazz) != clazz.info) {
       treatedClassInfos(clazz) = clazz.info
       assert(phase == currentRun.mixinPhase, phase)
@@ -979,12 +976,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def addInitBits(clazz: Symbol, rhs: Tree): Tree =
         new AddInitBitsTransformer(clazz) transform rhs
-
-      def isCheckInitField(field: Symbol) =
-        needsInitFlag(field) && !field.isDeferred
-
-      def superClassesToCheck(clazz: Symbol) =
-        clazz.ancestors filterNot (_ hasFlag TRAIT | JAVA)
 
       // begin addNewDefs
 

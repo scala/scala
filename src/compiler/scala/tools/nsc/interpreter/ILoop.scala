@@ -276,21 +276,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("phase", "<phase>", "set the implicit phase for power commands", phaseCommand)
   )
 
-  private def dumpCommand(): Result = {
-    echo("" + power)
-    history.asStrings takeRight 30 foreach echo
-    in.redrawLine()
-  }
-  private def valsCommand(): Result = power.valsDescription
-
-  private val typeTransforms = List(
-    "scala.collection.immutable." -> "immutable.",
-    "scala.collection.mutable."   -> "mutable.",
-    "scala.collection.generic."   -> "generic.",
-    "java.lang."                  -> "jl.",
-    "scala.runtime."              -> "runtime."
-  )
-
   private def importsCommand(line: String): Result = {
     val tokens    = words(line)
     val handlers  = intp.languageWildcardHandlers ++ intp.importHandlers
@@ -456,36 +441,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         if (res.isError) return "Failed: " + res.value
         else res.show()
       }
-  }
-
-  private def wrapCommand(line: String): Result = {
-    def failMsg = "Argument to :wrap must be the name of a method with signature [T](=> T): T"
-    onIntp { intp =>
-      import intp._
-      import global._
-
-      words(line) match {
-        case Nil            =>
-          intp.executionWrapper match {
-            case ""   => "No execution wrapper is set."
-            case s    => "Current execution wrapper: " + s
-          }
-        case "clear" :: Nil =>
-          intp.executionWrapper match {
-            case ""   => "No execution wrapper is set."
-            case s    => intp.clearExecutionWrapper() ; "Cleared execution wrapper."
-          }
-        case wrapper :: Nil =>
-          intp.typeOfExpression(wrapper) match {
-            case PolyType(List(targ), MethodType(List(arg), restpe)) =>
-              intp setExecutionWrapper intp.pathToTerm(wrapper)
-              "Set wrapper to '" + wrapper + "'"
-            case tp =>
-              failMsg + "\nFound: <unknown>"
-          }
-        case _ => failMsg
-      }
-    }
   }
 
   private def pathToPhaseWrapper = intp.pathToTerm("$r") + ".phased.atCurrent"
@@ -891,7 +846,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): IMain = repl.intp
-  private def echo(msg: String) = Console println msg
 
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
