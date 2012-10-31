@@ -1172,7 +1172,7 @@ trait Implicits {
         }
 
         try {
-          val tree1 = typed(atPos(pos.focus)(arg))
+          val tree1 = typedPos(pos.focus)(arg)
           if (context.hasErrors) processMacroExpansionError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
           else new SearchResult(tree1, EmptyTreeTypeSubstituter)
         } catch {

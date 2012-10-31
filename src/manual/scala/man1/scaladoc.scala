@@ -75,7 +75,10 @@ object scaladoc extends Command {
           "Define the overall version number of the documentation, typically the version of the library being documented."),
         Definition(
           CmdOption("doc-source-url", Argument("url")),
-          "Define a URL to be concatenated with source locations for link to source files."))),
+          "Define a URL to be concatenated with source locations for link to source files."),
+        Definition(
+          CmdOption("doc-external-uris", Argument("external-doc")),
+          "Define comma-separated list of file://classpath_entry_path#doc_URL URIs for linking to external dependencies."))),
 
     Section("Compiler Options",
       DefinitionList(
