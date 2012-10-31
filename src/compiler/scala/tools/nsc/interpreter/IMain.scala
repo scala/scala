@@ -30,18 +30,6 @@ import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.tools.reflect.StdRuntimeTags._
 
-/** directory to save .class files to */
-private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("(memory)", None) {
-  private def pp(root: AbstractFile, indentLevel: Int) {
-    val spaces = "    " * indentLevel
-    out.println(spaces + root.name)
-    if (root.isDirectory)
-      root.toList sortBy (_.name) foreach (x => pp(x, indentLevel + 1))
-  }
-  // print the contents hierarchically
-  def show() = pp(this, 0)
-}
-
 /** An interpreter for Scala code.
  *
  *  The main public entry points are compile(), interpret(), and bind().
@@ -77,16 +65,19 @@ private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("
 class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports {
   imain =>
 
-  /** Leading with the eagerly evaluated.
-   */
-  val virtualDirectory: VirtualDirectory            = new ReplVirtualDirectory(out) // "directory" for classfiles
-  private var currentSettings: Settings             = initialSettings
-  private[nsc] var printResults                     = true      // whether to print result lines
-  private[nsc] var totalSilence                     = false     // whether to print anything
-  private var _initializeComplete                   = false     // compiler is initialized
-  private var _isInitialized: Future[Boolean]       = null      // set up initialization future
-  private var bindExceptions                        = true      // whether to bind the lastException variable
-  private var _executionWrapper                     = ""        // code to be wrapped around all lines
+  object replOutput extends ReplOutput(settings.Yreploutdir) { }
+
+  @deprecated("Use replOutput.dir instead", "2.11.0")
+  def virtualDirectory = replOutput.dir
+  def showDirectory = replOutput.show(out)
+
+  private var currentSettings: Settings       = initialSettings
+  private[nsc] var printResults               = true      // whether to print result lines
+  private[nsc] var totalSilence               = false     // whether to print anything
+  private var _initializeComplete             = false     // compiler is initialized
+  private var _isInitialized: Future[Boolean] = null      // set up initialization future
+  private var bindExceptions                  = true      // whether to bind the lastException variable
+  private var _executionWrapper               = ""        // code to be wrapped around all lines
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -258,7 +249,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
-    settings.outputDirs setSingleOutput virtualDirectory
+    settings.outputDirs setSingleOutput replOutput.dir
     settings.exposeEmptyPackage.value = true
     if (settings.Yrangepos.value)
       new Global(settings, reporter) with ReplGlobal with interactive.RangePositions
@@ -296,7 +287,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     ensureClassLoader()
     _classLoader
   }
-  private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(virtualDirectory, parent) {
+  private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     /** Overridden here to try translating a simple name to the generated
      *  class name if the original attempt fails.  This method is used by
      *  getResourceAsStream as well as findClass.
@@ -670,7 +661,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     prevRequests.clear()
     referencedNameMap.clear()
     definedNameMap.clear()
-    virtualDirectory.clear()
+    replOutput.dir.clear()
   }
 
   /** This instance is no longer needed, so release any resources
