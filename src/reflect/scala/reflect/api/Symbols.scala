@@ -73,17 +73,17 @@ trait Symbols { self: Universe =>
    */
   implicit val MethodSymbolTag: ClassTag[MethodSymbol]
 
-  /** The type of module symbols representing object declarations.
+  /** The type of object symbols representing object declarations.
    *  @group Symbols
    *  @template
    */
-  type ModuleSymbol >: Null <: TermSymbol with ModuleSymbolApi
+  type ObjectSymbol >: Null <: TermSymbol with ObjectSymbolApi
 
-  /** A tag that preserves the identity of the `ModuleSymbol` abstract type from erasure.
+  /** A tag that preserves the identity of the `ObjectSymbol` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
    *  @group Tags
    */
-  implicit val ModuleSymbolTag: ClassTag[ModuleSymbol]
+  implicit val ObjectSymbolTag: ClassTag[ObjectSymbol]
 
   /** The type of class symbols representing class and trait definitions.
    *  @group Symbols
@@ -156,8 +156,8 @@ trait Symbols { self: Universe =>
    *  @groupprio Class         -2
    *  @groupname Method        Method Symbol Members
    *  @groupprio Method        -2
-   *  @groupname Module        Module Symbol Members
-   *  @groupprio Module        -2
+   *  @groupname Object        Object Symbol Members
+   *  @groupprio Object        -2
    */
   trait SymbolApi { this: Symbol =>
 
@@ -253,20 +253,26 @@ trait Symbols { self: Universe =>
      */
     protected def isOverloadedMethod = false
 
-    /** Does this symbol represent the definition of a module (i.e. it
+    /** Does this symbol represent the definition of an object (i.e. it
      *  results from an object definition?).
      *  If yes, `isTerm` is also guaranteed to be true.
      *
      *  @group Tests
      */
-    def isModule: Boolean = false
+    def isObject: Boolean = false
+    
+    @deprecated("Use `isObject` instead.", "2.10.1")
+    def isModule: Boolean = isObject
 
-    /** This symbol cast to a ModuleSymbol defined by an object definition.
-     *  @throws ScalaReflectionException if `isModule` is false.
+    /** This symbol cast to a ObjectSymbol defined by an object definition.
+     *  @throws ScalaReflectionException if `isObject` is false.
      *
      *  @group Conversions
      */
-    def asModule: ModuleSymbol = throw new ScalaReflectionException(s"$this is not a module")
+    def asObject: ObjectSymbol = throw new ScalaReflectionException(s"$this is not an object")
+
+    @deprecated("Use `asObject` instead.", "2.10.1")
+    def asModule: ObjectSymbol = asObject
 
     /** Does this symbol represent the definition of a class or trait?
      *  If yes, `isType` is also guaranteed to be true.
@@ -276,12 +282,15 @@ trait Symbols { self: Universe =>
     def isClass: Boolean = false
 
     /** Does this symbol represent the definition of a class implicitly associated
-     *  with an object definition (module class in scala compiler parlance).
+     *  with an object definition?
      *  If yes, `isType` is also guaranteed to be true.
      *
      *  @group Tests
      */
-    def isModuleClass: Boolean = false
+    def isObjectClass: Boolean = false
+
+    @deprecated("Use `isObjectClass` instead.", "2.10.1")
+    def isModuleClass: Boolean = isObjectClass
 
     /** This symbol cast to a ClassSymbol representing a class or trait.
      *  @throws ScalaReflectionException if `isClass` is false.
@@ -321,7 +330,7 @@ trait Symbols { self: Universe =>
     /** @group Constructors */
     def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol
     /** @group Constructors */
-    def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol)
+    def newObjectAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ObjectSymbol, ClassSymbol)
     /** @group Constructors */
     def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol
     /** @group Constructors */
@@ -346,8 +355,8 @@ trait Symbols { self: Universe =>
      */
     def annotations: List[Annotation]
 
-    /** For a class: the module or case class factory with the same name in the same package.
-     *  For a module: the class with the same name in the same package.
+    /** For a class: the object or case class factory with the same name in the same package.
+     *  For an object: the class with the same name in the same package.
      *  For all others: NoSymbol
      *
      *  @group Basics
@@ -829,24 +838,27 @@ trait Symbols { self: Universe =>
     def returnType: Type
   }
 
-  /** The API of module symbols.
+  /** The API of object symbols.
    *  The main source of information about symbols is the [[Symbols]] page.
    *
    *  $SYMACCESSORS
    *  @group API
    */
-  trait ModuleSymbolApi extends TermSymbolApi { this: ModuleSymbol =>
+  trait ObjectSymbolApi extends TermSymbolApi { this: ObjectSymbol =>
     /** The class implicitly associated with the object definition.
-     *  One can go back from a module class to the associated module symbol
+     *  One can go back from an object class to the associated object symbol
      *  by inspecting its `selfType.termSymbol`.
      *
-     *  @group Module
+     *  @group Object
      */
-    def moduleClass: Symbol // needed for tree traversals
-    // when this becomes `moduleClass: ClassSymbol`, it will be the happiest day in my life
+    def objectClass: Symbol // needed for tree traversals
+    // when this becomes `objectClass: ClassSymbol`, it will be the happiest day in my life
 
-    final override def isModule = true
-    final override def asModule = this
+    @deprecated("Use `objectClass` instead.", "2.10.1")
+    def moduleClass: Symbol = objectClass
+
+    final override def isObject = true
+    final override def asObject = this
   }
 
   /** The API of class symbols.
@@ -921,11 +933,14 @@ trait Symbols { self: Universe =>
      */
     def baseClasses: List[Symbol]
 
-    /** The module corresponding to this module class,
-     *  or NoSymbol if this symbol is not a module class.
+    /** The object corresponding to this object class,
+     *  or NoSymbol if this symbol is not an object class.
      *
      *  @group Class
      */
+    def obj: Symbol
+
+    @deprecated("Use `obj` instead.", "2.10.1")
     def module: Symbol
 
     /** If this symbol is a class or trait, its self type, otherwise the type

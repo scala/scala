@@ -97,7 +97,7 @@ trait Picklers { self: Global =>
     def ownerNames(sym: Symbol, buf: ListBuffer[Name]): ListBuffer[Name] = {
       if (!sym.isRoot) {
         ownerNames(sym.owner, buf)
-        buf += (if (sym.isModuleClass) sym.sourceModule else sym).name
+        buf += (if (sym.isObjectClass) sym.sourceObject else sym).name
         if (!sym.isType && !sym.isStable) {
           val sym1 = sym.owner.info.decl(sym.name)
           if (sym1.isOverloaded) {

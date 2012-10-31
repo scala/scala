@@ -32,7 +32,7 @@ trait Contexts { self: Analyzer =>
     // Possible lists of root imports
     val javaList         = JavaLangPackage :: Nil
     val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
-    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
+    val completeList     = JavaLangPackage :: ScalaPackage :: PredefObject :: Nil
   }
 
   private val startContext = {
@@ -457,15 +457,15 @@ trait Contexts { self: Analyzer =>
      */
     def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
-      sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
+      sub.isObjectClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
 
     /** Return closest enclosing context that defines a superclass of `clazz`, or a
-     *  companion module of a superclass of `clazz`, or NoContext if none exists */
+     *  companion object of a superclass of `clazz`, or NoContext if none exists */
     def enclosingSuperClassContext(clazz: Symbol): Context = {
       var c = this.enclClass
       while (c != NoContext &&
              !clazz.isNonBottomSubClass(c.owner) &&
-             !(c.owner.isModuleClass && clazz.isNonBottomSubClass(c.owner.companionClass)))
+             !(c.owner.isObjectClass && clazz.isNonBottomSubClass(c.owner.companionClass)))
         c = c.outer.enclClass
       c
     }
@@ -540,7 +540,7 @@ trait Contexts { self: Analyzer =>
           target.isType || { // allow accesses to types from arbitrary subclasses fixes #4737
             val res =
               isSubClassOrCompanion(pre.widen.typeSymbol, c.owner) ||
-              c.owner.isModuleClass &&
+              c.owner.isObjectClass &&
               isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
             if (!res)
               lastAccessCheckDetails =
@@ -683,7 +683,7 @@ trait Contexts { self: Analyzer =>
      * Used to find symbols are owned by methods (or fields), they can't be
      * found in some scope.
      *
-     * Examples: companion module of classes owned by a method, default getter
+     * Examples: companion object of classes owned by a method, default getter
      * methods of nested methods. See NamesDefaults.scala
      */
     def lookup(name: Name, expectedOwner: Symbol) = {

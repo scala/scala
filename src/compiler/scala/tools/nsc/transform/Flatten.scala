@@ -75,10 +75,10 @@ abstract class Flatten extends InfoTransform {
             parents1 = parents mapConserve (this)
 
             for (sym <- decls) {
-              if (sym.isTerm && !sym.isStaticModule) {
+              if (sym.isTerm && !sym.isStaticObject) {
                 decls1 enter sym
-                if (sym.isModule)
-                  sym.moduleClass setFlag LIFTED
+                if (sym.isObject)
+                  sym.objectClass setFlag LIFTED
               } else if (sym.isClass)
                 liftSymbol(sym)
             }
@@ -108,7 +108,7 @@ abstract class Flatten extends InfoTransform {
     override def transform(tree: Tree): Tree = {
       tree match {
         case PackageDef(_, _) =>
-          liftedDefs(tree.symbol.moduleClass) = new ListBuffer
+          liftedDefs(tree.symbol.objectClass) = new ListBuffer
         case Template(_, _, _) if tree.symbol.isDefinedInPackage =>
           liftedDefs(tree.symbol.owner) = new ListBuffer
         case _ =>
@@ -122,7 +122,7 @@ abstract class Flatten extends InfoTransform {
         case ClassDef(_, _, _, _) if sym.isNestedClass =>
           liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
-        case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
+        case Select(qual, name) if (sym.isStaticObject && !sym.owner.isPackageClass) =>
           afterFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
         case _ =>
           tree

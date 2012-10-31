@@ -37,7 +37,7 @@ trait TypeDebugging {
     }
     def ptTree(t: Tree) = t match {
       case PackageDef(pid, _)            => "package " + pid
-      case ModuleDef(_, name, _)         => "object " + name
+      case ObjectDef(_, name, _)         => "object " + name
       case ClassDef(_, name, tparams, _) => "class " + name + str.brackets(tparams)
       case _                             => to_s(t)
     }

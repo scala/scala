@@ -63,7 +63,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         debuglog("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
         val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE) setAlias sym
         val tpe = clazz.thisType memberType sym match {
-          case t if sym.isModule && !sym.isMethod => NullaryMethodType(t)
+          case t if sym.isObject && !sym.isMethod => NullaryMethodType(t)
           case t                                  => t
         }
         acc setInfoAndEnter (tpe cloneInfo acc)
@@ -104,18 +104,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 
     /** Check that a class and its companion object to not both define
-     *  a class or module with same name
+     *  a class or object with same name
      */
     private def checkCompanionNameClashes(sym: Symbol) =
-      if (!sym.owner.isModuleClass) {
+      if (!sym.owner.isObjectClass) {
         val linked = sym.owner.linkedClassOfClass
         if (linked != NoSymbol) {
           var other = linked.info.decl(sym.name.toTypeName).filter(_.isClass)
           if (other == NoSymbol)
-            other = linked.info.decl(sym.name.toTermName).filter(_.isModule)
+            other = linked.info.decl(sym.name.toTermName).filter(_.isObject)
           if (other != NoSymbol)
             unit.error(sym.pos, "name clash: "+sym.owner+" defines "+sym+
-                       "\nand its companion "+sym.owner.companionModule+" also defines "+
+                       "\nand its companion "+sym.owner.companionObject+" also defines "+
                        other)
         }
       }
@@ -174,7 +174,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
           for (s <- decls) {
-            if (s.privateWithin.isClass && !s.isProtected && !s.privateWithin.isModuleClass &&
+            if (s.privateWithin.isClass && !s.isProtected && !s.privateWithin.isObjectClass &&
                 !s.hasFlag(EXPANDEDNAME) && !s.isConstructor) {
               val savedName = s.name
               decls.unlink(s)
@@ -199,7 +199,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
           transformClassDef
 
-        case ModuleDef(_, _, _) =>
+        case ObjectDef(_, _, _) =>
           checkCompanionNameClashes(sym)
           super.transform(tree)
 
@@ -369,7 +369,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       if (owner.isClass) validCurrentOwner = true
       val savedLocalTyper = localTyper
-      localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
+      localTyper = localTyper.atOwner(tree, if (owner.isObject) owner.objectClass else owner)
       typers = typers updated (owner, localTyper)
       val result = super.atOwner(tree, owner)(trans)
       localTyper = savedLocalTyper

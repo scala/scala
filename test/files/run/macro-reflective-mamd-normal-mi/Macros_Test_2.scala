@@ -11,10 +11,10 @@ object Test extends App {
   val macrobody = Select(Ident(newTermName("Impls")), newTermName("foo"))
   val macroparam = ValDef(NoMods, newTermName("x"), TypeTree(definitions.IntClass.toType), EmptyTree)
   val macrodef = DefDef(Modifiers(MACRO), newTermName("foo"), Nil, List(List(macroparam)), TypeTree(), macrobody)
-  val modulector = DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(List()), TypeTree(), Block(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())))
-  val module = ModuleDef(NoMods, newTermName("Macros"), Template(Nil, emptyValDef, List(modulector, macrodef)))
+  val objctor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(List()), TypeTree(), Block(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())))
+  val obj = ObjectDef(NoMods, newTermName("Macros"), Template(Nil, emptyValDef, List(objctor, macrodef)))
   val macroapp = Apply(Select(Ident("Macros"), newTermName("foo")), List(Literal(Constant(42))))
-  val tree = Block(macrodef, module, macroapp)
+  val tree = Block(macrodef, obj, macroapp)
   val toolbox = cm.mkToolBox(options = "-language:experimental.macros")
   println(toolbox.eval(tree))
 }

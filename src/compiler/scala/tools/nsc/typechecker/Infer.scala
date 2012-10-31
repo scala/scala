@@ -584,7 +584,7 @@ trait Infer extends Checkable {
             if (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
             else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
             // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
-            else if (targ.typeSymbol.isModuleClass || ((opt.experimental || opt.virtPatmat) && tvar.constr.avoidWiden)) targ
+            else if (targ.typeSymbol.isObjectClass || ((opt.experimental || opt.virtPatmat) && tvar.constr.avoidWiden)) targ
             else targ.widen
           )
         ))
@@ -909,14 +909,14 @@ trait Infer extends Checkable {
        !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
        phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
 */
-    /** Is sym1 (or its companion class in case it is a module) a subclass of
-     *  sym2 (or its companion class in case it is a module)?
+    /** Is sym1 (or its companion class in case it is an object) a subclass of
+     *  sym2 (or its companion class in case it is an object)?
      */
     def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean = (
       (sym1 != sym2) && (sym1 != NoSymbol) && (
            (sym1 isSubClass sym2)
-        || (sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
-        || (sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
+        || (sym1.isObjectClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
+        || (sym2.isObjectClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
       )
     )
 
@@ -1402,7 +1402,7 @@ trait Infer extends Checkable {
       else intersect(pt, pattp)
     }
 
-    def inferModulePattern(pat: Tree, pt: Type) =
+    def inferObjectPattern(pat: Tree, pt: Type) =
       if (!(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)

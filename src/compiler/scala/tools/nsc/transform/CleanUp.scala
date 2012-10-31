@@ -540,7 +540,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             if (tpe.typeSymbol == UnitClass)
               REF(BoxedUnit_TYPE)
             else
-              Select(REF(boxedModule(tpe.typeSymbol)), nme.TYPE_)
+              Select(REF(boxedObject(tpe.typeSymbol)), nme.TYPE_)
           }
 
           else tree
@@ -610,7 +610,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       // with just Array(...)
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(array)), _))
       if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&
-          appMeth.symbol == ArrayModule_overloadedApply.suchThat {
+          appMeth.symbol == ArrayObject_overloadedApply.suchThat {
             _.tpe.resultType.dealias.typeSymbol == ObjectClass
           }) =>
         super.transform(array)
@@ -683,7 +683,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         deriveTemplate(template)(newCtor :: _)
       }
     }
-
   } // CleanUpTransformer
 
 }

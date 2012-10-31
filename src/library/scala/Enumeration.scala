@@ -66,12 +66,12 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
   /* Note that `readResolve` cannot be private, since otherwise
      the JVM does not invoke it when deserializing subclasses. */
-  protected def readResolve(): AnyRef = thisenum.getClass.getField(MODULE_INSTANCE_NAME).get(null)
+  protected def readResolve(): AnyRef = thisenum.getClass.getField(OBJECT_INSTANCE_NAME).get(null)
 
   /** The name of this enumeration.
    */
   override def toString =
-    ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split 
+    ((getClass.getName stripSuffix OBJECT_SUFFIX_STRING split '.').last split 
        Pattern.quote(NAME_JOIN_STRING)).last
 
   /** The mapping from the integer used to identify values to the actual

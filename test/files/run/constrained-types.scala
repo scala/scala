@@ -24,7 +24,7 @@ val y2 = a2.y   // should drop the annotation
 
 object Stuff {
   val x = "hello"
-  val y : Int @Annot(x) = 10
+  val y: Int @Annot(x) = 10
 }
 
 val y = Stuff.y // should rewrite the annotation
@@ -51,12 +51,12 @@ class NPE[T <: NPE[T] @peer] // should not crash
 
 def m = {
   val x = "three"
-  val y : String @Annot(x) = x
+  val y: String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
 
 def n(y: String) = {
-  def m(x: String) : String @Annot(x) = {
+  def m(x: String): String @Annot(x) = {
     (if (x == "")
       m("default")
     else
@@ -67,15 +67,15 @@ def n(y: String) = {
 
 class rep extends annotation.Annotation { }
 
-object A { val x = "hello" : String @ rep }
+object A { val x = "hello": String @ rep }
 
 val y = a.x // should drop the annotation
 
-val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
+val x = 3: Int @Annot(e+f+g+h) // should have a graceful error message
 
 class Where(condition: Boolean) extends annotation.Annotation
 
-val x : Int @Where(self > 0 && self < 100) = 3
+val x: Int @Where(self > 0 && self < 100) = 3
 
 """
 

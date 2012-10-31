@@ -276,7 +276,7 @@ abstract class CopyPropagation {
             out.stack = v1 :: out.stack.drop(1)
           }
 
-        case LOAD_MODULE(module) =>
+        case LOAD_OBJECT(objct) =>
           out.stack = Unknown :: out.stack
 
         case STORE_ARRAY_ITEM(kind) =>

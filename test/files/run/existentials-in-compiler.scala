@@ -72,7 +72,7 @@ package extest {
   """
 
   def check(source: String, unit: global.CompilationUnit) = {
-    getRequiredPackage("extest").moduleClass.info.decls.toList.filter(_.isType).map(_.initialize).sortBy(_.name.toString) foreach { clazz =>
+    getRequiredPackage("extest").objectClass.info.decls.toList.filter(_.isType).map(_.initialize).sortBy(_.name.toString) foreach { clazz =>
       afterTyper {
         clazz.info
         println(clazz.defString)

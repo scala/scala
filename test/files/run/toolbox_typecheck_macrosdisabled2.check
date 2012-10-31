@@ -32,7 +32,7 @@
       def apply[U <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Type = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-        $u.TypeRef.apply($u.ThisType.apply($m.staticPackage("scala").asModule.moduleClass), $m.staticClass("scala.Array"), scala.collection.immutable.List.apply[$u.Type]($m.staticClass("scala.Int").asType.toTypeConstructor))
+        $u.TypeRef.apply($u.ThisType.apply($m.staticPackage("scala").asObject.objectClass), $m.staticClass("scala.Array"), scala.collection.immutable.List.apply[$u.Type]($m.staticClass("scala.Int").asType.toTypeConstructor))
       }
     };
     new $typecreator2()

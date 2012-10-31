@@ -40,19 +40,19 @@ object Test extends App {
   testInnerClass("B1")
   testInnerClass("B2")
 
-  def testInnerModule(name: String) = {
-    val sym = b.typeSignature.declaration(newTermName(name)).asModule
+  def testInnerObject(name: String) = {
+    val sym = b.typeSignature.declaration(newTermName(name)).asObject
     println(sym)
     val outer1 = new B
     val outer2 = new outer1.BB
-    val moduleMirror = cm.reflect(outer2).reflectModule(sym)
-    val instance = moduleMirror.instance
+    val objectMirror = cm.reflect(outer2).reflectObject(sym)
+    val instance = objectMirror.instance
     println(instance)
     testMethodInvocation(instance)
   }
 
-  testInnerModule("B3")
-  testInnerModule("B4")
-  testInnerModule("B5")
-  testInnerModule("B6")
+  testInnerObject("B3")
+  testInnerObject("B4")
+  testInnerObject("B5")
+  testInnerObject("B6")
 }

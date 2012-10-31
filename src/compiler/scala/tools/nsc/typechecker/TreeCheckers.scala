@@ -253,7 +253,7 @@ abstract class TreeCheckers extends Analyzer {
             checkSym(tree)
           case This(_) =>
             checkSym(tree)
-            if (sym.isStatic && sym.hasModuleFlag) ()
+            if (sym.isStatic && sym.hasObjectFlag) ()
             else if (currentOwner.ownerChain takeWhile (_ != sym) exists (_ == NoSymbol))
               return fail("tree symbol "+sym+" does not point to enclosing class; tree = ")
 

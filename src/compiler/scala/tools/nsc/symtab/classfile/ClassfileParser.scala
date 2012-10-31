@@ -29,7 +29,7 @@ abstract class ClassfileParser {
 
   protected var in: AbstractFileReader = _  // the class file reader
   protected var clazz: Symbol = _           // the class symbol containing dynamic members
-  protected var staticModule: Symbol = _    // the module symbol containing static members
+  protected var staticObject: Symbol = _    // the object symbol containing static members
   protected var instanceScope: Scope = _     // the scope of all instance definitions
   protected var staticScope: Scope = _       // the scope of all static definitions
   protected var pool: ConstantPool = _      // the classfile's constant pool
@@ -40,7 +40,7 @@ abstract class ClassfileParser {
   protected var currentClass: Name = _      // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
   protected var srcfile0 : Option[AbstractFile] = None
-  protected def moduleClass: Symbol = staticModule.moduleClass
+  protected def objectClass: Symbol = staticObject.objectClass
 
   def srcfile = srcfile0
 
@@ -93,8 +93,8 @@ abstract class ClassfileParser {
 
     pushBusy(root) {
       this.in           = new AbstractFileReader(file)
-      this.clazz        = if (root.isModule) root.companionClass else root
-      this.staticModule = clazz.companionModule
+      this.clazz        = if (root.isObject) root.companionClass else root
+      this.staticObject = clazz.companionObject
       this.isScala      = false
 
       parseHeader
@@ -182,8 +182,8 @@ abstract class ClassfileParser {
         val start = starts(index)
         if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
-        if (nme.isModuleName(name))
-          c = rootMirror.getModule(nme.stripModuleSuffix(name))
+        if (nme.isObjectName(name))
+          c = rootMirror.getObject(nme.stripObjectSuffix(name))
         else
           c = classNameToSymbol(name)
 
@@ -204,7 +204,7 @@ abstract class ClassfileParser {
     /** Return the symbol of the class member at `index`.
      *  The following special cases exist:
      *   - If the member refers to special `MODULE$` static field, return
-     *  the symbol of the corresponding module.
+     *  the symbol of the corresponding object.
      *   - If the member is a field, and is not found with the given name,
      *     another try is made by appending `nme.LOCAL_SUFFIX_STRING`
      *   - If no symbol is found in the right tpe, a new try is made in the
@@ -228,13 +228,13 @@ abstract class ClassfileParser {
         val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
 //        println("new tpe: " + tpe + " at phase: " + phase)
 
-        if (name == nme.MODULE_INSTANCE_FIELD) {
+        if (name == nme.OBJECT_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
-          //assert(name.endsWith("$"), "Not a module class: " + name)
+          //assert(name.endsWith("$"), "Not an object class: " + name)
           f = forceMangledName(name dropRight 1, true)
           if (f == NoSymbol)
-            f = rootMirror.getModule(name dropRight 1)
+            f = rootMirror.getObject(name dropRight 1)
         } else {
           val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
@@ -312,8 +312,8 @@ abstract class ClassfileParser {
           values(index) = c
         } else {
           val sym = classNameToSymbol(name)
-                  /*if (name.endsWith("$")) definitions.getModule(name.subName(0, name.length - 1))
-                    else if (name.endsWith("$class")) definitions.getModule(name)
+                  /*if (name.endsWith("$")) definitions.getObject(name.subName(0, name.length - 1))
+                    else if (name.endsWith("$class")) definitions.getObject(name)
                     else definitions.getClass(name)*/
           values(index) = sym
           c = sym.tpe
@@ -415,7 +415,7 @@ abstract class ClassfileParser {
   /** Try to force the chain of enclosing classes for the given name. Otherwise
    *  flatten would not lift classes that were not referenced in the source code.
    */
-  def forceMangledName(name: Name, module: Boolean): Symbol = {
+  def forceMangledName(name: Name, objct: Boolean): Symbol = {
     val parts = name.decode.toString.split(Array('.', '$'))
     var sym: Symbol = rootMirror.RootClass
 
@@ -425,7 +425,7 @@ abstract class ClassfileParser {
         val sym1 = beforeIcode {
           sym.linkedClassOfClass.info
           sym.info.decl(part.encode)
-        }//.suchThat(module == _.isModule)
+        }//.suchThat(objct == _.isObject)
 
         sym = sym1 orElse sym.info.decl(part.encode.toTypeName)
       }
@@ -456,10 +456,10 @@ abstract class ClassfileParser {
         sym = owner.info.decls lookup ss
         if (sym == NoSymbol) {
           sym = owner.newPackage(ss) setInfo completer
-          sym.moduleClass setInfo completer
+          sym.objectClass setInfo completer
           owner.info.decls enter sym
         }
-        owner = sym.moduleClass
+        owner = sym.objectClass
         start = end + 1
         end = name.indexOf('.', start)
       }
@@ -535,7 +535,7 @@ abstract class ClassfileParser {
     staticScope = newScope
 
     val classInfo = ClassInfoType(parseParents, instanceScope, clazz)
-    val staticInfo = ClassInfoType(List(), staticScope, moduleClass)
+    val staticInfo = ClassInfoType(List(), staticScope, objectClass)
 
     if (!isScala && !isScalaRaw)
       enterOwnInnerClasses
@@ -546,12 +546,12 @@ abstract class ClassfileParser {
     if (!isScala) {
       clazz setFlag sflags
       setPrivateWithin(clazz, jflags)
-      setPrivateWithin(staticModule, jflags)
+      setPrivateWithin(staticObject, jflags)
       clazz.setInfo(classInfo)
-      moduleClass setInfo staticInfo
-      staticModule.setInfo(moduleClass.tpe)
-      staticModule.setFlag(JAVA)
-      staticModule.moduleClass.setFlag(JAVA)
+      objectClass setInfo staticInfo
+      staticObject.setInfo(objectClass.tpe)
+      staticObject.setFlag(JAVA)
+      staticObject.objectClass.setFlag(JAVA)
       // attributes now depend on having infos set already
       parseAttributes(clazz, classInfo)
 
@@ -584,7 +584,7 @@ abstract class ClassfileParser {
   /** Add type parameters of enclosing classes */
   def addEnclosingTParams(clazz: Symbol) {
     var sym = clazz.owner
-    while (sym.isClass && !sym.isModuleClass) {
+    while (sym.isClass && !sym.isObjectClass) {
 //      println("adding tparams of " + sym)
       for (t <- sym.tpe.typeArgs) {
 //        println("\tadding " + (t.typeSymbol.name + "->" + t.typeSymbol))
@@ -886,7 +886,7 @@ abstract class ClassfileParser {
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
             debuglog("warning: symbol " + sym.fullName + " has pickled signature in attribute")
-            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.name)
+            unpickler.unpickle(in.buf, in.bp, clazz, staticObject, in.file.name)
           }
           in.skip(attrLen)
         case tpnme.ScalaATTR =>
@@ -904,7 +904,7 @@ abstract class ClassfileParser {
                 case Some(san: AnnotationInfo) =>
                   val bytes =
                     san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
-                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
+                  unpickler.unpickle(bytes, 0, clazz, staticObject, in.file.name)
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
@@ -949,7 +949,7 @@ abstract class ClassfileParser {
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
-          val s = t.typeSymbol.companionModule.info.decls.lookup(n)
+          val s = t.typeSymbol.companionObject.info.decls.lookup(n)
           assert(s != NoSymbol, t)
           Some(LiteralAnnotArg(Constant(s)))
         case ARRAY_TAG  =>
@@ -1073,20 +1073,20 @@ abstract class ClassfileParser {
     def className(name: Name): Name =
       name.subName(name.lastPos('.') + 1, name.length)
 
-    def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile, jflags: Int) {
+    def enterClassAndObject(entry: InnerClassEntry, file: AbstractFile, jflags: Int) {
       val completer   = new global.loaders.ClassfileLoader(file)
       val name        = entry.originalName
       var sflags      = toScalaClassFlags(jflags)
       val owner       = getOwner(jflags)
       val scope       = getScope(jflags)
       val innerClass  = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
-      val innerModule = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
+      val innerObject = owner.newObject(name.toTermName, NoPosition, sflags) setInfo completer
 
-      innerModule.moduleClass setInfo global.loaders.moduleClassLoader
-      List(innerClass, innerModule.moduleClass) foreach (_.associatedFile = file)
+      innerObject.objectClass setInfo global.loaders.objectClassLoader
+      List(innerClass, innerObject.objectClass) foreach (_.associatedFile = file)
 
       scope enter innerClass
-      scope enter innerModule
+      scope enter innerObject
 
       val decls = innerClass.enclosingPackage.info.decls
       def unlinkIfPresent(name: Name) = {
@@ -1106,7 +1106,7 @@ abstract class ClassfileParser {
         val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {
           throw new AssertionError(entry.externalName)
         }
-        enterClassAndModule(entry, file, entry.jflags)
+        enterClassAndObject(entry, file, entry.jflags)
       }
     }
   }
@@ -1190,14 +1190,14 @@ abstract class ClassfileParser {
         def getMember(sym: Symbol, name: Name): Symbol =
           if (static)
             if (sym == clazz) staticScope.lookup(name)
-            else sym.companionModule.info.member(name)
+            else sym.companionObject.info.member(name)
           else
             if (sym == clazz) instanceScope.lookup(name)
             else sym.info.member(name)
 
         innerClasses.get(externalName) match {
           case Some(entry) =>
-            val outerName = nme.stripModuleSuffix(entry.outerName)
+            val outerName = nme.stripObjectSuffix(entry.outerName)
             val sym = classSymbol(outerName)
             val s =
               // if loading during initialization of `definitions` typerPhase is not yet set.
@@ -1210,7 +1210,7 @@ abstract class ClassfileParser {
             assert(s ne NoSymbol,
               "" + ((externalName, outerName, innerName, sym.fullLocationString)) + " / " +
               " while parsing " + ((in.file, busy)) +
-              sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members
+              sym + "." + innerName + " linkedObject: " + sym.companionObject + sym.companionObject.info.members
             )
             s
 
@@ -1255,7 +1255,7 @@ abstract class ClassfileParser {
   }
 
   protected def getOwner(flags: Int): Symbol =
-    if (isStatic(flags)) moduleClass else clazz
+    if (isStatic(flags)) objectClass else clazz
 
   protected def getScope(flags: Int): Scope =
     if (isStatic(flags)) staticScope else instanceScope

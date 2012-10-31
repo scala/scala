@@ -77,8 +77,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
             val mysym = sym match {
               case x: from.MethodSymbol =>
                 linkReferenced(myowner.newMethod(myname, mypos, myflags), x, importSymbol)
-              case x: from.ModuleSymbol =>
-                linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
+              case x: from.ObjectSymbol =>
+                linkReferenced(myowner.newObjectSymbol(myname, mypos, myflags), x, importSymbol)
               case x: from.FreeTermSymbol =>
                 newFreeTermSymbol(importName(x.name).toTermName, x.value, x.flags, x.origin) setInfo importType(x.info)
               case x: from.FreeTypeSymbol =>
@@ -92,10 +92,10 @@ trait Importers extends api.Importers { self: SymbolTable =>
                   case y: from.Symbol => importSymbol(y)
                 }
                 myowner.newTypeSkolemSymbol(myname.toTypeName, origin, mypos, myflags)
-              case x: from.ModuleClassSymbol =>
-                val mysym = myowner.newModuleClass(myname.toTypeName, mypos, myflags)
+              case x: from.ObjectClassSymbol =>
+                val mysym = myowner.newObjectClass(myname.toTypeName, mypos, myflags)
                 symMap.weakUpdate(x, mysym)
-                mysym.sourceModule = importSymbol(x.sourceModule)
+                mysym.sourceObject = importSymbol(x.sourceObject)
                 mysym
               case x: from.ClassSymbol =>
                 val mysym = myowner.newClassSymbol(myname.toTypeName, mypos, myflags)
@@ -139,8 +139,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
           val owner = sym.owner
           var scope = if (owner.isClass && !owner.isRefinementClass) owner.info else from.NoType
           var existing = scope.decl(name)
-          if (sym.isModuleClass)
-            existing = existing.moduleClass
+          if (sym.isObjectClass)
+            existing = existing.objectClass
 
           if (!existing.exists) scope = from.NoType
 
@@ -148,8 +148,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
           val myowner = importSymbol(owner)
           val myscope = if (scope != from.NoType && !(myowner hasFlag Flags.LOCKED)) myowner.info else NoType
           var myexisting = if (myscope != NoType) myowner.info.decl(myname) else NoSymbol // cannot load myexisting in general case, because it creates cycles for methods
-          if (sym.isModuleClass)
-            myexisting = importSymbol(sym.sourceModule).moduleClass
+          if (sym.isObjectClass)
+            myexisting = importSymbol(sym.sourceObject).objectClass
 
           if (!sym.isOverloaded && myexisting.isOverloaded) {
             myexisting =
@@ -330,8 +330,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
           new ClassDef(importModifiers(mods), importName(name).toTypeName, tparams map importTypeDef, importTemplate(impl))
         case from.PackageDef(pid, stats) =>
           new PackageDef(importRefTree(pid), stats map importTree)
-        case from.ModuleDef(mods, name, impl) =>
-          new ModuleDef(importModifiers(mods), importName(name).toTermName, importTemplate(impl))
+        case from.ObjectDef(mods, name, impl) =>
+          new ObjectDef(importModifiers(mods), importName(name).toTermName, importTemplate(impl))
         case from.emptyValDef =>
           emptyValDef
         case from.ValDef(mods, name, tpt, rhs) =>

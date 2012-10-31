@@ -22,7 +22,7 @@ object Test extends App {
 //  println(cm)
 
   println(cm.reflectClass(cm.staticClass("C")))
-  println(cm.reflectModule(cm.staticModule("M")))
+  println(cm.reflectObject(cm.staticObject("M")))
   println(cm.reflect(new C))
 
   val im = cm.reflect(new C)
@@ -34,7 +34,7 @@ object Test extends App {
   println(im.reflectMethod(typeOf[C].member(newTermName("m4")).asMethod))
   println(im.reflectMethod(typeOf[C].member(newTermName("m5")).asMethod))
   println(im.reflectClass(typeOf[C].member(newTypeName("C")).asClass))
-  println(im.reflectModule(typeOf[C].member(newTermName("M")).asModule))
+  println(im.reflectObject(typeOf[C].member(newTermName("M")).asObject))
 
   val c = cm.staticClass("C")
   val cc = typeOf[C].member(newTypeName("C")).asClass

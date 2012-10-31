@@ -122,7 +122,7 @@ trait Patterns extends ast.TreeDSL {
   }
   // 8.1.4 (d)
   case class ObjectPattern(tree: Apply) extends ApplyPattern {  // NamePattern?
-    require(!fn.isType && isModule)
+    require(!fn.isType && isObject)
 
     override def covers(sym: Symbol) = newMatchesPattern(sym, sufficientType)
     override def sufficientType = tpe.narrow
@@ -318,7 +318,7 @@ trait Patterns extends ast.TreeDSL {
     }
 
     def apply(x: UnApply): Pattern = x match {
-      case UnapplySeq(ListModule, tpt, elems) =>
+      case UnapplySeq(ListObject, tpt, elems) =>
         ListExtractorPattern(x, tpt, elems)
       case _ =>
         ExtractorPattern(x)
@@ -342,14 +342,14 @@ trait Patterns extends ast.TreeDSL {
   object ApplyPattern {
     def apply(x: Apply): Pattern = {
       val Apply(fn, args) = x
-      def isModule  = x.symbol.isModule || x.tpe.termSymbol.isModule
+      def isObject  = x.symbol.isObject || x.tpe.termSymbol.isObject
 
       if (fn.isType) {
         if (isTupleType(fn.tpe)) TuplePattern(x)
         else ConstructorPattern(x)
       }
       else if (args.isEmpty) {
-        if (isModule) ObjectPattern(x)
+        if (isObject) ObjectPattern(x)
         else fn match {
           case _: Ident   => ApplyIdentPattern(x)
           case _: Select  => ApplySelectPattern(x)
@@ -447,7 +447,7 @@ trait Patterns extends ast.TreeDSL {
     def covers(sym: Symbol): Boolean = newMatchesPattern(sym, sufficientType)
     def newMatchesPattern(sym: Symbol, pattp: Type) = {
       debugging("[" + kindString + "] Does " + pattp + " cover " + sym + " ? ") {
-        (sym.isModuleClass && (sym.tpe.typeSymbol eq pattp.typeSymbol)) ||
+        (sym.isObjectClass && (sym.tpe.typeSymbol eq pattp.typeSymbol)) ||
         (sym.tpe.baseTypeSeq exists (_ matchesPattern pattp))
       }
     }
@@ -456,9 +456,9 @@ trait Patterns extends ast.TreeDSL {
     def    tpe  = tree.tpe
     def isEmpty = tree.isEmpty
 
-    def isModule    = sym.isModule || tpe.termSymbol.isModule
+    def isObject    = sym.isObject || tpe.termSymbol.isObject
     def isCaseClass = tpe.typeSymbol.isCase
-    def isObject    = (sym != null) && (sym != NoSymbol) && tpe.prefix.isStable  // XXX not entire logic
+    def isInstance  = (sym != null) && (sym != NoSymbol) && tpe.prefix.isStable  // XXX not entire logic
 
     def hasStar = false
 

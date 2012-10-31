@@ -23,7 +23,7 @@ digraph SQLTypes {
   
   ClassDef -> DefTree
   
-  ModuleDef -> DefTree
+  ObjectDef -> DefTree
   
   ValDef -> DefTree
   
