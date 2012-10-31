@@ -414,7 +414,7 @@ trait Namers extends MethodSynthesis {
      *  a module definition or a class definition.
      */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
-      var m: Symbol = context.scope.lookup(tree.name)
+      var m: Symbol = context.scope lookupAll tree.name find (_.isModule) getOrElse NoSymbol
       val moduleFlags = tree.mods.flags | MODULE
       if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
         updatePosFlags(m, tree.pos, moduleFlags)
