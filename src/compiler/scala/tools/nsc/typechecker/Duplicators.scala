@@ -357,7 +357,7 @@ abstract class Duplicators extends Analyzer {
           val tree1 = This(newClassOwner)
           // log("tree1: " + tree1)
           debuglog("mapped " + tree + " to " + tree1)
-          super.typed(atPos(tree.pos)(tree1), mode, pt)
+          super.typedPos(tree.pos, mode, pt)(tree1)
 
         case This(_) =>
           debuglog("selection on this, plain: " + tree)
@@ -394,7 +394,7 @@ abstract class Duplicators extends Analyzer {
               cases
           }
 
-          super.typed(atPos(tree.pos)(Match(scrut, cases1)), mode, pt)
+          super.typedPos(tree.pos, mode, pt)(Match(scrut, cases1))
 
         case EmptyTree =>
           // no need to do anything, in particular, don't set the type to null, EmptyTree.tpe_= asserts

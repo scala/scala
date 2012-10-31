@@ -193,12 +193,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
           val pos = catches.head.pos
           val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass, ThrowableClass.tpe, targettp))
-          val funDef = localTyper.typed(atPos(pos) {
+          val funDef = localTyper.typedPos(pos) {
             ValDef(funSym, Match(EmptyTree, catches1))
-          })
-          val expr2 = localTyper.typed(atPos(pos) {
+          }
+          val expr2 = localTyper.typedPos(pos) {
             Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
-          })
+          }
 
           val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
 
@@ -223,7 +223,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             val pos = finalizer.pos
             val finalizer2 = duplicateTree(finalizer1)
             val fun = Function(List(), finalizer2)
-            val expr3 = localTyper.typed(atPos(pos) { Apply(Select(expr2, expr2.tpe.member("mapFinally")), List(fun)) })
+            val expr3 = localTyper.typedPos(pos) { Apply(Select(expr2, expr2.tpe.member("mapFinally")), List(fun)) }
 
             val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
             chown.traverse(finalizer2)
@@ -290,7 +290,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
                 val body1 = (new TreeSymSubstituter(List(vd.symbol), List(ctxValSym)))(body)
 
-                val body2 = localTyper.typed(atPos(vd.symbol.pos) { body1 })
+                val body2 = localTyper.typedPos(vd.symbol.pos) { body1 }
 
                 // in theory it would be nicer to look for an @cps annotation instead
                 // of testing for Context
@@ -304,7 +304,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
               def applyCombinatorFun(ctxR: Tree, body: Tree) = {
                 val arg = currentOwner.newValueParameter(name, ctxR.pos).setInfo(tpe)
                 val body1 = (new TreeSymSubstituter(List(vd.symbol), List(arg)))(body)
-                val fun = localTyper.typed(atPos(vd.symbol.pos) { Function(List(ValDef(arg)), body1) }) // types body as well
+                val fun = localTyper.typedPos(vd.symbol.pos) { Function(List(ValDef(arg)), body1) } // types body as well
                 arg.owner = fun.symbol
                 body1.changeOwner(currentOwner -> fun.symbol)
 
@@ -328,9 +328,9 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
                 debuglog("will use method:"+methodName)
 
-                localTyper.typed(atPos(vd.symbol.pos) {
+                localTyper.typedPos(vd.symbol.pos) {
                   Apply(Select(ctxR, ctxR.tpe.member(methodName)), List(fun))
-                })
+                }
               }
 
               def mkBlock(stms: List[Tree], expr: Tree) = if (stms.nonEmpty) Block(stms, expr) else expr
@@ -352,12 +352,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   def ctxRef = localTyper.typed(Ident(ctxSym))
                   val argSym = currentOwner.newValue(vd.symbol.name).setInfo(tpe)
                   val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member(cpsNames.getTrivialValue))))
-                  val switchExpr = localTyper.typed(atPos(vd.symbol.pos) {
+                  val switchExpr = localTyper.typedPos(vd.symbol.pos) {
                     val body2 = mkBlock(bodyStms, bodyExpr).duplicate // dup before typing!
                     If(Select(ctxRef, ctxSym.tpe.member(cpsNames.isTrivial)),
                       applyTrivial(argSym, mkBlock(argDef::bodyStms, bodyExpr)),
                       applyCombinatorFun(ctxRef, body2))
-                  })
+                  }
                   (List(ctxDef), switchExpr)
                 } else {
                   // ctx.flatMap { <lhs> => ... }
