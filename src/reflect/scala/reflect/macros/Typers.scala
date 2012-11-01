@@ -1,7 +1,10 @@
 package scala.reflect
 package macros
 
-/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
  *  partially exposes the type checker to macro writers.
  */
 trait Typers {

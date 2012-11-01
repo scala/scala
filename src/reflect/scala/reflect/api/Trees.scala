@@ -5,9 +5,12 @@
 package scala.reflect
 package api
 
-/** This trait defines the node types used in Scala abstract syntax trees (AST) and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
-*  All tree node types are sub types of [[scala.reflect.api.Trees#Tree Tree]].
+ * This trait defines the node types used in Scala abstract syntax trees (AST) and operations on them.
+ *
+ *  All tree node types are sub types of [[scala.reflect.api.Trees#Tree Tree]].
  *
  *  Trees are immutable, except for three fields
  *  [[Trees#TreeApi.pos pos]], [[Trees#TreeApi.symbol symbol]], and [[Trees#TreeApi.tpe tpe]], which are assigned when a tree is typechecked

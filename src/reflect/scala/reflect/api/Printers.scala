@@ -3,14 +3,17 @@ package api
 
 import java.io.{ PrintWriter, StringWriter }
 
-/** Utilities for nicely printing [[scala.reflect.api.Trees]] and [[scala.reflect.api.Types]].
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  === Printing Trees ===
- *  The method `show` displays the "prettified" representation of reflection artifacts.
- *  This representation provides one with the desugared Java representation of Scala code. 
- *  For example:
+ * Utilities for nicely printing [[scala.reflect.api.Trees]] and [[scala.reflect.api.Types]].
  *
- *  {{{
+ * === Printing Trees ===
+ * The method `show` displays the "prettified" representation of reflection artifacts.
+ * This representation provides one with the desugared Java representation of Scala code.
+ * For example:
+ *
+ * {{{
  *  scala> import scala.reflect.runtime.universe._
  *  import scala.reflect.runtime.universe._
  *

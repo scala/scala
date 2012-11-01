@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** This trait defines Names (a Scala reflection concept) and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait defines Names (a Scala reflection concept) and operations on them.
  *
  *  Names are simple wrappers for strings. [[scala.reflect.api.Names#Name Name]] has two subtypes [[scala.reflect.api.Names#TermName TermName]] and [[scala.reflect.api.Names#TypeName TypeName]] which
  *  distinguish names of terms (like objects or members) and types. A term and a type of the

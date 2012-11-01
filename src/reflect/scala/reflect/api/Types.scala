@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** A trait that defines types and operations on them.
+/**
+ *  <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A trait that defines types and operations on them.
  *
  *  Type instances represent information about the type of a corresponding symbol. This includes its members
  *  (methods, fields, type parameters, nested classes, traits, etc) either declared directly or inherited, its base types,

@@ -2,7 +2,10 @@ package scala.reflect
 
 import scala.reflect.api.{Universe => ApiUniverse}
 
-/** The Scala Reflection API (located in scala-reflect.jar).
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * The Scala Reflection API (located in scala-reflect.jar).
  *
  * In Scala 2.10.0, the Scala Reflection API and its implementation have an "experimental" status.
  * This means that the API and the docs are not complete and can be changed in binary- and source-incompatible

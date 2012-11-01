@@ -1,11 +1,14 @@
 package scala.reflect
 package api
 
-/** This trait defines the concept of positions and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  @see [[scala.reflect.api.Position]]
+ * This trait defines the concept of positions and operations on them.
  *
- *  @contentDiagram hideNodes "*Api"
+ * @see [[scala.reflect.api.Position]]
+ *
+ * @contentDiagram hideNodes "*Api"
  */
 trait Positions {
   self: Universe =>

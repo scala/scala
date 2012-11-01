@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait provides support for importers, a facility to migrate reflection artifacts between universes.
  *
  *  Reflection artifacts, such as [[scala.reflect.api.Symbols Symbols]] and [[scala.reflect.api.Types Types]],
  *  are contained in [[scala.reflect.api.Universes Universe]]s. Typically all processing happens 

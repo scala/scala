@@ -1,7 +1,10 @@
 package scala.reflect
 package macros
 
-/** A helper available in [[scala.reflect.macros.Universe]] that defines shorthands for the
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A helper available in [[scala.reflect.macros.Universe]] that defines shorthands for the
  *  most common tree-creating functions.
  */
 abstract class TreeBuilder {

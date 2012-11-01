@@ -11,6 +11,8 @@ package api
 //    Otherwise you'd better not - reflection API should stay minimalistic.
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  *  Standard names are names that are essential to creating trees or to reflecting Scala artifacts.
  *  For example, `CONSTRUCTOR` (aka `<init>` on JVM) is necessary to create and invoke constructors.
  *

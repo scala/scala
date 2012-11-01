@@ -8,7 +8,10 @@ package api
 
 import scala.reflect.runtime.{universe => ru}
 
-/** A trait that defines strongly-typed tree wrappers and operations on them for use in Scala Reflection.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * A trait that defines strongly-typed tree wrappers and operations on them for use in Scala Reflection.
  *
  *  `Expr` wraps an abstract syntax tree ([[scala.reflect.api.Trees#Tree]]) and tags it with its type ([[scala.reflect.api.Types#Type]]).
  *

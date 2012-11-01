@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** This trait provides support for Mirrors in the Scala Reflection API.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait provides support for Mirrors in the Scala Reflection API.
  *
  * `Mirror`s are a central part of Scala Reflection. All information provided by
  * reflection is made accessible through `Mirror`s. Depending on the type of information

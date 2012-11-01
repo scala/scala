@@ -2,6 +2,8 @@ package scala.reflect
 package api
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  * `Universe` provides a complete set of reflection operations which make it possible for one
  * to reflectively inspect Scala type relations, such as membership or subtyping.
  *

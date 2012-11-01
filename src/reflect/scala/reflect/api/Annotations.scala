@@ -3,7 +3,10 @@ package api
 
 import scala.collection.immutable.ListMap
 
-/** This trait provides annotation support for the reflection API.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait provides annotation support for the reflection API.
  *
  *  The API distinguishes between two kinds of annotations:
  *

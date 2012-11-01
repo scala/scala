@@ -4,6 +4,8 @@ package api
 import scala.language.implicitConversions
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  * The trait that defines flag sets and operations on them.
  *
  * `Flag`s are used to provide modifiers for abstract syntax trees that represent definitions

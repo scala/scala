@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** This trait defines symbols and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  This trait defines symbols and operations on them.
  *
  *  Symbols are used to establish bindings between a name and the entity it refers to, such as a class or a method.
  *  Anything you define and can give a name to in Scala has an associated symbol.

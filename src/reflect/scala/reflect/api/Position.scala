@@ -3,15 +3,18 @@ package api
 
 import scala.reflect.macros.Attachments
 
-/** Position tracks the origin of [[Symbols#Symbol symbols]] and [[Trees#Tree tree nodes]]. They are commonly used when
- *  displaying warnings and errors, to indicate the incorrect point in the program.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A position indicates the [[source source file]] and a [[point offset]]. A position may be
- *  undefined, which means it's pointing to the [[Positions#NoPosition]] element.
+ * Position tracks the origin of [[Symbols#Symbol symbols]] and [[Trees#Tree tree nodes]]. They are commonly used when
+ * displaying warnings and errors, to indicate the incorrect point in the program.
  *
- *  <b>Please note that this trait may be refactored in future versions of the Scala reflection API.</b>
+ * A position indicates the [[source source file]] and a [[point offset]]. A position may be
+ * undefined, which means it's pointing to the [[Positions#NoPosition]] element.
  *
- *  @see [[http://docs.scala-lang.org/overviews/reflection/names-exprs-scopes-more.html]]
+ * <b>Please note that this trait may be refactored in future versions of the Scala reflection API.</b>
+ *
+ * For more information about `Position`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
  *
  *  @groupname Common   Commonly used methods
  */

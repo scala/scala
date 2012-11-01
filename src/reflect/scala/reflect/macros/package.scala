@@ -1,6 +1,9 @@
 package scala.reflect
 
-/** The base package for Scala macros.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  The base package for Scala macros.
  *
  *  Macros are functions that are called by the compiler during compilation.
  *  Within these functions the programmer has access to compiler APIs exposed in [[scala.reflect.macros.Context]].

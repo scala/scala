@@ -7,6 +7,8 @@ package scala.reflect
 package api
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  *  According to the section 6.24 "Constant Expressions" of the Scala language specification,
  *  certain expressions (dubbed ''constant expressions'') can be evaluated by the Scala compiler at compile-time.
  *

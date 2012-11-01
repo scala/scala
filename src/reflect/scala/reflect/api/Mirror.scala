@@ -2,6 +2,8 @@ package scala.reflect
 package api
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  * The base class for all mirrors.
  *
  * See [[scala.reflect.api.Mirrors]] or [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
