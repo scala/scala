@@ -1,0 +1,4 @@
+t6597.scala:3: error: illegal combination of modifiers: implicit and case for: class Quux
+  implicit case class Quux(value: Int) extends AnyVal with T
+                      ^
+one error found
