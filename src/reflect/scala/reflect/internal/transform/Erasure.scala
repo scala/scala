@@ -214,6 +214,9 @@ trait Erasure {
         specialConstructorErasure(clazz, restpe)
       case ExistentialType(tparams, restpe) =>
         specialConstructorErasure(clazz, restpe)
+      case RefinedType(parents, decls) =>
+        specialConstructorErasure(
+          clazz, specialScalaErasure.mergeParents(parents))
       case mt @ MethodType(params, restpe) =>
         MethodType(
           cloneSymbolsAndModify(params, specialScalaErasure),
@@ -221,7 +224,16 @@ trait Erasure {
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
       case tp =>
-        assert(clazz == ArrayClass || tp.isError, s"unexpected constructor erasure $tp for $clazz")
+        if (!(clazz == ArrayClass || tp.isError))
+          // See SI-6556. It seems in some cases the result constructor
+          // type of an anonymous class is a different version of the class.
+          // This has nothing to do with value classes per se.
+          // We simply used a less discriminating transform before, that
+          // did not look at the cases in detail.
+          // It seems there is a deeper problem here, which needs
+          // following up to. But we will not risk regressions
+          // in 2.10 because of it.
+          log(s"!!! unexpected constructor erasure $tp for $clazz")
         specialScalaErasure(tp)
     }
   }
