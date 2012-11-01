@@ -562,7 +562,7 @@ abstract class ClassfileParser {
         0 until in.nextChar foreach (_ => parseMethod())
         val needsConstructor = (
              !sawPrivateConstructor
-          && instanceScope.lookup(nme.CONSTRUCTOR) == NoSymbol
+          && !(instanceScope containsName nme.CONSTRUCTOR)
           && (sflags & INTERFACE) == 0
         )
         if (needsConstructor)

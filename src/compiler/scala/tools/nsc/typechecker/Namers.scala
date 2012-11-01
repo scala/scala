@@ -381,8 +381,8 @@ trait Namers extends MethodSynthesis {
       if (sym eq NoSymbol) return
 
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
-      val module = if (sym.isModule) sym else ctx.scope lookup tree.name.toTermName
-      val clazz  = if (sym.isClass) sym else ctx.scope lookup tree.name.toTypeName
+      val module = if (sym.isModule) sym else ctx.scope lookupModule tree.name
+      val clazz  = if (sym.isClass) sym else ctx.scope lookupClass tree.name
       val fails  = (
            module.isModule
         && clazz.isClass

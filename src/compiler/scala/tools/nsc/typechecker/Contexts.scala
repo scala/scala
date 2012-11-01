@@ -758,14 +758,11 @@ trait Contexts { self: Analyzer =>
     def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = {
       var lookupError: NameLookup  = null       // set to non-null if a definite error is encountered
       var inaccessible: NameLookup = null       // records inaccessible symbol for error reporting in case none is found
-      var defEntry: ScopeEntry     = null       // the scope entry of defSym, if defined in a local scope
       var defSym: Symbol           = NoSymbol   // the directly found symbol
+      var symbolDepth: Int         = -1         // the depth of the directly found symbol
       var pre: Type                = NoPrefix   // the prefix type of defSym, if a class member
       var cx: Context              = this
       var needsQualifier           = false      // working around package object overloading bug
-
-      def defEntrySymbol  = if (defEntry eq null) NoSymbol else defEntry.sym
-      def localScopeDepth = if (defEntry eq null) 0 else cx.scope.nestingLevel - defEntry.owner.nestingLevel
 
       def finish(qual: Tree, sym: Symbol): NameLookup = (
         if (lookupError ne null) lookupError
@@ -789,23 +786,6 @@ trait Contexts { self: Analyzer =>
       def lookupInPrefix(name: Name)    = pre member name filter qualifies
       def accessibleInPrefix(s: Symbol) = isAccessible(s, pre, superAccess = false)
 
-      def correctForPackageObject(sym: Symbol): Symbol = {
-        if (sym.isTerm && isInPackageObject(sym, pre.typeSymbol)) {
-          val sym1 = lookupInPrefix(sym.name)
-          if ((sym1 eq NoSymbol) || (sym eq sym1)) sym else {
-            needsQualifier = true
-            log(s"""
-              |  !!! Overloaded package object member resolved incorrectly.
-              |        prefix: $pre
-              |     Discarded: ${sym.defString}
-              |         Using: ${sym1.defString}
-              """.stripMargin)
-            sym1
-          }
-        }
-        else sym
-      }
-
       def searchPrefix = {
         cx = cx.enclClass
         val found0 = lookupInPrefix(name)
@@ -817,22 +797,24 @@ trait Contexts { self: Analyzer =>
       }
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
       while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
-        pre = cx.enclClass.prefix
-        // !!! FIXME.  This call to lookupEntry is at the root of all the
-        // bad behavior with overloading in package objects.  lookupEntry
-        // just takes the first symbol it finds in scope, ignoring the rest.
-        // When a selection on a package object arrives here, the first
-        // overload is always chosen.  "correctForPackageObject" exists to
-        // undo that decision.  Obviously it would be better not to do it in
-        // the first place; however other things seem to be tied to obtaining
-        // that ScopeEntry, specifically calculating the nesting depth.
-        defEntry = cx.scope lookupEntry name
-        defSym   = defEntrySymbol filter qualifies map correctForPackageObject orElse searchPrefix
-        if (!defSym.exists)
-          cx = cx.outer
+        val entries = (cx.scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
+
+        pre         = cx.enclClass.prefix
+        symbolDepth = if (entries.isEmpty) cx.depth else (cx.depth - cx.scope.nestingLevel) + entries.head.depth
+        defSym      = entries match {
+          case Nil       => searchPrefix
+          case hd :: Nil => hd.sym
+          case alts      => logResult(s"!!! lookup overloaded")(cx.owner.newOverloaded(pre, entries map (_.sym)))
+        }
+
+        if (defSym.exists)  // we have a winner: record the symbol depth
+          symbolDepth = (
+            if (entries.isEmpty) cx.depth
+            else (cx.depth - cx.scope.nestingLevel) + entries.head.depth
+          )
+        else cx = cx.outer // push further outward
       }
 
-      val symbolDepth    = cx.depth - localScopeDepth
       var impSym: Symbol = NoSymbol
       var imports        = Context.this.imports   // impSym != NoSymbol => it is imported from imports.head
       def imp1           = imports.head
