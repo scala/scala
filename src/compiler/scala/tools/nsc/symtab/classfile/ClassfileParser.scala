@@ -94,7 +94,10 @@ abstract class ClassfileParser {
     pushBusy(root) {
       this.in           = new AbstractFileReader(file)
       this.clazz        = if (root.isModule) root.companionClass else root
-      this.staticModule = clazz.companionModule
+      // WARNING! do no use clazz.companionModule to find staticModule.
+      // In a situation where root can be defined, but its companionClass not,
+      // this would give incorrect results (see SI-5031 in separate compilation scenario)
+      this.staticModule = if (root.isModule) root else root.companionModule
       this.isScala      = false
 
       parseHeader

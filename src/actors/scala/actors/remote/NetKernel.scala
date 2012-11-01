@@ -60,7 +60,7 @@ private[remote] class NetKernel(service: Service) {
     send(node, name, msg, 'nosession)
 
   def send(node: Node, name: Symbol, msg: AnyRef, session: Symbol) {
-    val senderLoc = Locator(service.node, getOrCreateName(Actor.self))
+    val senderLoc = Locator(service.node, getOrCreateName(Actor.self(Scheduler)))
     val receiverLoc = Locator(node, name)
     namedSend(senderLoc, receiverLoc, msg, session)
   }
