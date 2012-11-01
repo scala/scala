@@ -181,6 +181,7 @@ import scala.language.implicitConversions
  *  @define coll stream
  *  @define orderDependent
  *  @define orderDependentFold
+ *  @define willTerminateInf Note: lazily evaluated; will terminate for infinite-sized collections.
  */
 abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
@@ -286,9 +287,8 @@ self =>
     len
   }
 
-  /** It's an imperfect world, but at least we can bottle up the
-   *  imperfection in a capsule.
-   */
+  // It's an imperfect world, but at least we can bottle up the
+  // imperfection in a capsule.
   @inline private def asThat[That](x: AnyRef): That     = x.asInstanceOf[That]
   @inline private def asStream[B](x: AnyRef): Stream[B] = x.asInstanceOf[Stream[B]]
   @inline private def isStreamBuilder[B, That](bf: CanBuildFrom[Stream[A], B, That]) =
@@ -725,10 +725,15 @@ self =>
    * // produces: "5, 6, 7, 8, 9"
    * }}}
    */
-  override def take(n: Int): Stream[A] =
+  override def take(n: Int): Stream[A] = (
+    // Note that the n == 1 condition appears redundant but is not.
+    // It prevents "tail" from being referenced (and its head being evaluated)
+    // when obtaining the last element of the result. Such are the challenges
+    // of working with a lazy-but-not-really sequence.
     if (n <= 0 || isEmpty) Stream.empty
     else if (n == 1) cons(head, Stream.empty)
     else cons(head, tail take n-1)
+  )
 
   @tailrec final override def drop(n: Int): Stream[A] =
     if (n <= 0 || isEmpty) this
@@ -784,8 +789,23 @@ self =>
     these
   }
 
-  // there's nothing we can do about dropRight, so we just keep the definition
-  // in LinearSeq
+  /**
+   * @inheritdoc
+   * $willTerminateInf
+   */
+  override def dropRight(n: Int): Stream[A] = {
+    // We make dropRight work for possibly infinite streams by carrying
+    // a buffer of the dropped size. As long as the buffer is full and the
+    // rest is non-empty, we can feed elements off the buffer head.  When
+    // the rest becomes empty, the full buffer is the dropped elements.
+    def advance(stub0: List[A], stub1: List[A], rest: Stream[A]): Stream[A] = {
+      if (rest.isEmpty) Stream.empty
+      else if (stub0.isEmpty) advance(stub1.reverse, Nil, rest)
+      else cons(stub0.head, advance(stub0.tail, rest.head :: stub1, rest.tail))
+    }
+    if (n <= 0) this
+    else advance((this take n).toList, Nil, this drop n)
+  }
 
   /** Returns the longest prefix of this `Stream` whose elements satisfy the
    * predicate `p`.
@@ -841,9 +861,16 @@ self =>
    * // produces: "1, 2, 3, 4, 5, 6"
    * }}}
    */
-  override def distinct: Stream[A] =
-    if (isEmpty) this
-    else cons(head, tail.filter(head != _).distinct)
+  override def distinct: Stream[A] = {
+    // This should use max memory proportional to N, whereas
+    // recursively calling distinct on the tail is N^2.
+    def loop(seen: Set[A], rest: Stream[A]): Stream[A] = {
+      if (rest.isEmpty) rest
+      else if (seen(rest.head)) loop(seen, rest.tail)
+      else cons(rest.head, loop(seen + rest.head, rest.tail))
+    }
+    loop(Set(), this)
+  }
 
   /** Returns a new sequence of given length containing the elements of this
    * sequence followed by zero or more occurrences of given elements.
