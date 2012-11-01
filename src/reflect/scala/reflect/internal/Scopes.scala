@@ -25,8 +25,9 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     var next: ScopeEntry = null
 
+    def depth = owner.nestingLevel
     override def hashCode(): Int = sym.name.start
-    override def toString(): String = sym.toString()
+    override def toString() = s"$sym (depth=$depth)"
   }
 
   /**
@@ -216,14 +217,46 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
-    /** lookup a symbol
-     *
-     *  @param name ...
-     *  @return     ...
+    /** Lookup a module or a class, filtering out matching names in scope
+     *  which do not match that requirement.
+     */
+    def lookupModule(name: Name): Symbol = lookupAll(name.toTermName) find (_.isModule) getOrElse NoSymbol
+    def lookupClass(name: Name): Symbol  = lookupAll(name.toTypeName) find (_.isClass) getOrElse NoSymbol
+
+    /** True if the name exists in this scope, false otherwise. */
+    def containsName(name: Name) = lookupEntry(name) != null
+
+    /** Lookup a symbol.
      */
     def lookup(name: Name): Symbol = {
       val e = lookupEntry(name)
-      if (e eq null) NoSymbol else e.sym
+      if (e eq null) NoSymbol
+      else if (lookupNextEntry(e) eq null) e.sym
+      else {
+        // We shouldn't get here: until now this method was picking a random
+        // symbol when there was more than one with the name, so this should
+        // only be called knowing that there are 0-1 symbols of interest. So, we
+        // can safely return an overloaded symbol rather than throwing away the
+        // rest of them. Most likely we still break, but at least we will break
+        // in an understandable fashion (unexpectedly overloaded symbol) rather
+        // than a non-deterministic bizarre one (see any bug involving overloads
+        // in package objects.)
+        val alts = lookupAll(name).toList
+        log("!!! scope lookup of $name found multiple symbols: $alts")
+        // FIXME - how is one supposed to create an overloaded symbol without
+        // knowing the correct owner? Using the symbol owner is not correct;
+        // say for instance this is List's scope and the symbols are its three
+        // mkString members. Those symbols are owned by TraversableLike, which
+        // is no more meaningful an owner than NoSymbol given that we're in
+        // List. Maybe it makes no difference who owns the overloaded symbol, in
+        // which case let's establish that and have a canonical creation method.
+        //
+        // FIXME - a similar question for prefix, although there are more
+        // clues from the symbols on that one, as implemented here. In general
+        // the distinct list is one type and lub becomes the identity.
+        val prefix = lub(alts map (_.info.prefix) distinct)
+        NoSymbol.newOverloaded(prefix, alts)
+      }
     }
 
     /** Returns an iterator yielding every symbol with given name in this scope.
@@ -231,7 +264,20 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
       var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
-      def next(): Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
+      def next(): Symbol = try e.sym finally e = lookupNextEntry(e)
+    }
+
+    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
+      var e = lookupEntry(name)
+      def hasNext: Boolean = e ne null
+      def next(): ScopeEntry = try e finally e = lookupNextEntry(e)
+    }
+
+    def lookupUnshadowedEntries(name: Name): Iterator[ScopeEntry] = {
+      lookupEntry(name) match {
+        case null => Iterator.empty
+        case e    => lookupAllEntries(name) filter (e1 => (e eq e1) || (e.depth == e1.depth && e.sym != e1.sym))
+      }
     }
 
     /** lookup a symbol entry matching given name.
