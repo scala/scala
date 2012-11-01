@@ -45,6 +45,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     m
   }
 
+  /** The deepest symbol which appears in the owner chains of all
+   *  the given symbols.
+   */
+  def commonSymbolOwner(syms: List[Symbol]): Symbol = {
+    def loop(owner: Symbol, rest: List[Symbol]): Symbol = rest match {
+      case Nil                                    => owner
+      case x :: xs if x.ownerChain contains owner => loop(owner, xs)
+      case x :: xs if owner.ownerChain contains x => loop(x, xs)
+      case x :: xs                                =>
+        x.ownerChain find (owner.ownerChain contains _) match {
+          case Some(common) => loop(common, xs)
+          case _            => NoSymbol
+        }
+    }
+    if (syms.isEmpty || (syms contains NoSymbol)) NoSymbol
+    else loop(syms.head.owner, syms.tail)
+  }
+
   /** Create a new free term.  Its owner is NoSymbol.
    */
   def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String): FreeTermSymbol =
