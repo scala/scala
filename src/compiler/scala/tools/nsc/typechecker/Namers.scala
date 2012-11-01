@@ -222,7 +222,12 @@ trait Namers extends MethodSynthesis {
           case tree @ ValDef(_, _, _, _)                     => enterValDef(tree)
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
-          case DocDef(_, defn)                               => enterSym(defn)
+          case tree @ DocDef(_, defn)                        =>
+            enterSym(defn)
+            if (forScaladoc) {
+              val sym = defn.symbol
+              if (sym ne NoSymbol) docComments(sym) = tree.comment
+            }
           case tree @ Import(_, _)                           =>
             assignSymbol(tree)
             returnContext = context.makeNewImport(tree)
