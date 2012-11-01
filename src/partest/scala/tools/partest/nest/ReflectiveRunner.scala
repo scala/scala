@@ -48,9 +48,9 @@ class ReflectiveRunner {
         new ConsoleFileManager
 
     import fileManager.
-      { latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile, latestActMigFile }
+      { latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile }
     val files =
-      Array(latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile, latestActMigFile) map (x => io.File(x))
+      Array(latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile) map (x => io.File(x))
 
     val sepUrls   = files map (_.toURL)
     var sepLoader = new URLClassLoader(sepUrls, null)

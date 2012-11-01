@@ -24,9 +24,9 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   ) 
 
   // Collections of projects to run 'compile' on.
-  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, actorsMigration, swing, forkjoin, fjbg)
+  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, forkjoin, fjbg)
   // Collection of projects to 'package' and 'publish' together.
-  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, actors, actorsMigration, continuationsPlugin, jline, scalap)
+  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, actors, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
   
   private def epflPomExtra = (
@@ -205,7 +205,6 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency, addCheaterDependency("scala-library"))
   lazy val actors = Project("scala-actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
   lazy val swing = Project("scala-swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
-  lazy val actorsMigration = Project("scala-actors-migration", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
   // This project will generate man pages (in man1 and html) for scala.    
   lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings :+ externalDeps
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
