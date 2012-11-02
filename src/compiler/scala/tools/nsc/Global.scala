@@ -1194,9 +1194,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** Has any macro expansion used a fallback during this run? */
     var seenMacroExpansionsFallingBack = false
 
-    /** To be initialized from firstPhase. */
-    private var terminalPhase: Phase = NoPhase
-
     private val unitbuf = new mutable.ListBuffer[CompilationUnit]
     val compiledFiles   = new mutable.HashSet[String]
 

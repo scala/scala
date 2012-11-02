@@ -94,6 +94,5 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     }
   }
 
-  private def abort(msg: String) = throw new Error(msg)
   override def flush() { writer.flush() }
 }

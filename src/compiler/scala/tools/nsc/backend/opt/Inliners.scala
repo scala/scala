@@ -50,6 +50,7 @@ abstract class Inliners extends SubComponent {
   val phaseName = "inliner"
 
   /** Debug - for timing the inliner. */
+  /****
   private def timed[T](s: String, body: => T): T = {
     val t1 = System.currentTimeMillis()
     val res = body
@@ -60,6 +61,7 @@ abstract class Inliners extends SubComponent {
 
     res
   }
+  ****/
 
   /** Look up implementation of method 'sym in 'clazz'.
    */
@@ -1031,7 +1033,6 @@ abstract class Inliners extends SubComponent {
         case Public     => true
       }
       private def sameSymbols = caller.sym == inc.sym
-      private def sameOwner   = caller.owner == inc.owner
 
       /** Gives green light for inlining (which may still be vetoed later). Heuristics:
        *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE) if it was small

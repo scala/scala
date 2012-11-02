@@ -197,16 +197,12 @@ abstract class ClosureElimination extends SubComponent {
 
   /** Peephole optimization. */
   abstract class PeepholeOpt {
-
-    private var method: IMethod = NoIMethod
-
     /** Concrete implementations will perform their optimizations here */
     def peep(bb: BasicBlock, i1: Instruction, i2: Instruction): Option[List[Instruction]]
 
     var liveness: global.icodes.liveness.LivenessAnalysis = null
 
     def apply(m: IMethod): Unit = if (m.hasCode) {
-      method = m
       liveness = new global.icodes.liveness.LivenessAnalysis
       liveness.init(m)
       liveness.run

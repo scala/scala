@@ -19,12 +19,11 @@ import scala.reflect.ClassTag
  *  @since 2.8
  */
 object StringLike {
-
   // just statics for companion class.
-  private final val LF: Char = 0x0A
-  private final val FF: Char = 0x0C
-  private final val CR: Char = 0x0D
-  private final val SU: Char = 0x1A
+  private final val LF = 0x0A
+  private final val FF = 0x0C
+  private final val CR = 0x0D
+  private final val SU = 0x1A
 }
 
 import StringLike._

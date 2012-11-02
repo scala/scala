@@ -89,7 +89,7 @@ trait MarkupParsers {
 
     var xEmbeddedBlock = false
 
-    private var debugLastStartElement = new mutable.Stack[(Int, String)]
+    private val debugLastStartElement = new mutable.Stack[(Int, String)]
     private def debugLastPos = debugLastStartElement.top._1
     private def debugLastElem = debugLastStartElement.top._2
 

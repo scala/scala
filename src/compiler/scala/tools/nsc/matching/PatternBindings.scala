@@ -108,8 +108,6 @@ trait PatternBindings extends ast.TreeDSL
       case b @ Bind(_, pat) => b.symbol :: strip(pat)
       case _                => Nil
     }
-    private def deepstrip(t: Tree): List[Symbol] =
-      treeCollect(t, { case x: Bind => x.symbol })
   }
 
   case class Binding(pvar: Symbol, tvar: Symbol) {

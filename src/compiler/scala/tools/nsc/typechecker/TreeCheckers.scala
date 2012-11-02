@@ -186,10 +186,6 @@ abstract class TreeCheckers extends Analyzer {
       errorFn(t1.pos, "trees differ\n old: " + treestr(t1) + "\n new: " + treestr(t2))
     private def typesDiffer(tree: Tree, tp1: Type, tp2: Type) =
       errorFn(tree.pos, "types differ\n old: " + tp1 + "\n new: " + tp2 + "\n tree: " + tree)
-    private def ownersDiffer(tree: Tree, shouldBe: Symbol) = {
-      val sym = tree.symbol
-      errorFn(tree.pos, sym + " has wrong owner: " + ownerstr(sym.owner) + ", should be: " + ownerstr(shouldBe))
-    }
 
     /** XXX Disabled reporting of position errors until there is less noise. */
     private def noPos(t: Tree) =

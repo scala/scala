@@ -562,7 +562,6 @@ trait Iterator[+A] extends TraversableOnce[A] {
      * handling of structural calls. It's not what's intended here.
      */
     class Leading extends AbstractIterator[A] {
-      private var isDone = false
       val lookahead = new mutable.Queue[A]
       def advance() = {
         self.hasNext && p(self.head) && {
@@ -572,7 +571,6 @@ trait Iterator[+A] extends TraversableOnce[A] {
       }
       def finish() = {
         while (advance()) ()
-        isDone = true
       }
       def hasNext = lookahead.nonEmpty || advance()
       def next() = {

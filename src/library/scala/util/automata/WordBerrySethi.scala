@@ -152,7 +152,6 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         new NondetWordAutom[_labelT] {
           val nstates  = pos
           val labels   = WordBerrySethi.this.labels.toList
-          val initials = initialsArr
           val finals   = finalsArr
           val delta    = deltaArr
           val default  = defaultArr

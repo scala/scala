@@ -525,7 +525,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     private var depth = 0
     private var printTypesInFootnotes = true
     private var printingFootnotes = false
-    private var footnotes = footnoteIndex.mkFootnotes()
+    private val footnotes = footnoteIndex.mkFootnotes()
 
     def print(args: Any*): Unit = {
       // don't print type footnotes if the argument is a mere type

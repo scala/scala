@@ -744,7 +744,6 @@ abstract class Erasure extends AddInterfaces
             }
             if (noNullCheckNeeded) unbox(qual1, targ.tpe)
             else {
-              def nullConst = Literal(Constant(null)) setType NullClass.tpe
               val untyped =
 //                util.trace("new asinstanceof test") {
                   gen.evalOnce(qual1, context.owner, context.unit) { qual =>

@@ -5,7 +5,7 @@ import scala.reflect.macros.{Context, ReificationException, UnexpectedReificatio
 import scala.tools.nsc.Global
 
 package object reify {
-  private def mkReifier(global1: Global)(typer: global1.analyzer.Typer, universe: global1.Tree, mirror: global1.Tree, reifee: Any, concrete: Boolean = false): Reifier { val global: global1.type } = {
+  private def mkReifier(global1: Global)(typer: global1.analyzer.Typer, universe: global1.Tree, mirror: global1.Tree, reifee: Any, concrete: Boolean): Reifier { val global: global1.type } = {
     val typer1: typer.type = typer
     val universe1: universe.type = universe
     val mirror1: mirror.type = mirror

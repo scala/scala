@@ -89,11 +89,6 @@ trait SymbolTables {
       add(ValDef(NoMods, freshName(name0), TypeTree(), reification) updateAttachment bindingAttachment)
     }
 
-    private def add(sym: Symbol, name: TermName): SymbolTable = {
-      if (!(syms contains sym)) error("cannot add an alias to a symbol not in the symbol table")
-      add(sym, name, EmptyTree)
-    }
-
     private def remove(sym: Symbol): SymbolTable = {
       val newSymtab = symtab - sym
       val newAliases = aliases filter (_._1 != sym)
