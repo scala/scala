@@ -494,14 +494,30 @@ abstract class ExplicitOuter extends InfoTransform
 
         case This(qual) =>
           if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) tree
-          else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
+          else {
+            transform { // recurse to allow apply other transformations to the outer path, e.g. access widening for @inline. See run/inline-outer.
+              atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym))
+            }
+          } // (5)
 
         case Select(qual, name) =>
+          /** Return closest enclosing method, unless shadowed by an enclosing class. */
+          // no use of closures here in the interest of speed.
+          def closestEnclMethod(from: Symbol): Symbol =
+            if (from.isSourceMethod) from
+            else if (from.isClass) NoSymbol
+            else closestEnclMethod(from.owner)
+
           // make not private symbol acessed from inner classes, as well as
           // symbols accessed from @inline methods
+          //
+          // run/synchronized.scala breaks if we use
+          // `sym.owner.enclMethod hasAnnotation ScalaInlineClass` here
+          //
+          // Inliners has tacit knowledge of this widening. See `IMethodInfo#assumedPublic`.
           if (currentClass != sym.owner ||
-              (sym.owner.enclMethod hasAnnotation ScalaInlineClass))
-            sym.makeNotPrivate(sym.owner)
+              (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
+            makeNotPrivateForInliner(sym)
 
           val qsym = qual.tpe.widen.typeSymbol
           if (sym.isProtected && //(4)

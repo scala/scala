@@ -234,17 +234,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case sel @ Select(qual, name) =>
           def transformSelect = {
-          /** return closest enclosing method, unless shadowed by an enclosing class;
-           *  no use of closures here in the interest of speed.
-           */
-          def closestEnclMethod(from: Symbol): Symbol =
-            if (from.isSourceMethod) from
-            else if (from.isClass) NoSymbol
-            else closestEnclMethod(from.owner)
-
-          if (closestEnclMethod(currentOwner) hasAnnotation definitions.ScalaInlineClass)
-            sym.makeNotPrivate(sym.owner)
-
           qual match {
             case This(_) =>
               // warn if they are selecting a private[this] member which

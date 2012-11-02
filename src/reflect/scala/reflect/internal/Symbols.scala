@@ -2111,7 +2111,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // generate ACC_FINAL on "final" methods which are actually lateFINAL.
         if (isMethod && !isDeferred)
           setFlag(lateFINAL)
-        if (!isStaticModule && !isClassConstructor) {
+        if (!isStaticModule && !isClassConstructor && !nme.isLocalName(name)) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
         }
@@ -3268,6 +3268,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A deep map on a symbol's paramss.
    */
   def mapParamss[T](sym: Symbol)(f: Symbol => T): List[List[T]] = mmap(sym.info.paramss)(f)
+
+  final def makeNotPrivateForInliner(sym: Symbol) {
+    sym.makeNotPrivate(sym.owner)
+  }
 
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
