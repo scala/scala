@@ -27,6 +27,8 @@ import scala.reflect.runtime.{universe => ru}
  *  to classes/objects/packages in the expression are re-resolved within the new mirror
  *  (typically using that mirror's classloader). The default universe of an `Expr` is typically
  *  [[scala.reflect.runtime#universe]], the default mirror is typically [[scala.reflect.runtime#currentMirror]].
+ *
+ * @group ReflectionAPI
  */
 trait Exprs { self: Universe =>
 
@@ -106,16 +108,12 @@ trait Exprs { self: Universe =>
      */
     val value: T
 
-    /** TODO how do I doc this? */
     override def canEqual(x: Any) = x.isInstanceOf[Expr[_]]
 
-    /** TODO how do I doc this? */
     override def equals(x: Any) = x.isInstanceOf[Expr[_]] && this.mirror == x.asInstanceOf[Expr[_]].mirror && this.tree == x.asInstanceOf[Expr[_]].tree
 
-    /** TODO how do I doc this? */
     override def hashCode = mirror.hashCode * 31 + tree.hashCode
 
-    /** TODO how do I doc this? */
     override def toString = "Expr["+staticType+"]("+tree+")"
   }
 

@@ -13,6 +13,8 @@ package api
  * These standard definitions can accessed to using `definitions`.
  * They're typically imported with a wildcard import, `import definitions._`, and are
  * listed in [[scala.reflect.api.StandardDefinitions#DefinitionsApi]].
+ *
+ *  @group ReflectionAPI
  */
 trait StandardDefinitions {
   self: Universe =>

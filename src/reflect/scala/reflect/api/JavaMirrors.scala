@@ -15,6 +15,7 @@ package api
  *  [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
  *
  *  @groupname JavaMirrors Java Mirrors
+ *  @group ReflectionAPI
  */
 trait JavaMirrors { self: JavaUniverse =>
 

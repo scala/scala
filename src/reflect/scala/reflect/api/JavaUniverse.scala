@@ -10,7 +10,9 @@ package api
  *  to [[scala.reflect.api.JavaMirrors#JavaMirror]].
  *
  *  See the [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for details on how to use runtime reflection.
+ *
  *  @groupname JavaUniverse Java Mirrors
+ *  @group ReflectionAPI
  *
  *  @contentDiagram hideNodes "*Api"
  */

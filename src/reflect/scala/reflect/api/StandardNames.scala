@@ -22,6 +22,7 @@ package api
  *
  *  The API for names in Scala reflection.
  *  @groupname StandardNames Standard Names
+ *  @group ReflectionAPI
  */
 trait StandardNames {
   self: Universe =>

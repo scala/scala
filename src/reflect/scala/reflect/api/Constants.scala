@@ -84,6 +84,7 @@ package api
  *  }}}
  *
  *  @contentDiagram hideNodes "*Api"
+ *  @group ReflectionAPI
  */
 trait Constants {
   self: Universe =>
@@ -188,7 +189,7 @@ trait Constants {
    */
   implicit val ConstantTag: ClassTag[Constant]
 
-  /** The constructor/deconstructor for `Constant` instances.
+  /** The constructor/extractor for `Constant` instances.
    *  @group Extractors
    */
   val Constant: ConstantExtractor

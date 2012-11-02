@@ -9,6 +9,7 @@ package api
  * @see [[scala.reflect.api.Position]]
  *
  * @contentDiagram hideNodes "*Api"
+ * @group ReflectionAPI
  */
 trait Positions {
   self: Universe =>
