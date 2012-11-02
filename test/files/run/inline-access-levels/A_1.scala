@@ -9,5 +9,4 @@ trait A1 {
 }
 
 class A extends A1 {
-//  private[test] var packagePrivateClass: Int = -1
 }

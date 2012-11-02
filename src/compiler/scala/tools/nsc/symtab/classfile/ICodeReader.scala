@@ -87,28 +87,33 @@ abstract class ICodeReader extends ClassfileParser {
     val owner    = getOwner(jflags)
     val dummySym = owner.newMethod(name, owner.pos, toScalaMethodFlags(jflags))
 
-    try {
+    val sym = try {
       val ch  = in.nextChar
       val tpe = pool.getType(dummySym, ch)
 
       if ("<clinit>" == name.toString)
-        (jflags, NoSymbol)
+        NoSymbol
       else {
         val owner = getOwner(jflags)
-        var sym = owner.info.findMember(name, 0, 0, false).suchThat(old => sameType(old.tpe, tpe))
-        if (sym == NoSymbol)
-          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
-        if (sym == NoSymbol) {
-          sym = if (field) owner.newValue(name, owner.pos, toScalaFieldFlags(jflags)) else dummySym
-          sym setInfoAndEnter tpe
-          log(s"ICodeReader could not locate ${name.decode} in $owner.  Created ${sym.defString}.")
+        def findMember(memberName: Name)(f: (Type, Type) => Boolean) =
+          owner.info.memberBasedOnName(memberName).suchThat(s => f(s.tpe, tpe))
+        def symByType      = findMember(name)(sameType)
+        def localSymByType = findMember(name append nme.LOCAL_SUFFIX_STRING)(_ =:= _)
+        def lastResort     = {
+          val newSym0 =
+            if (field) owner.newValue(name, owner.pos, toScalaFieldFlags(jflags))
+            else dummySym
+          newSym0 setInfoAndEnter tpe
+          log(s"ICodeReader could not locate ${name.decode} in $owner.  Created ${newSym0.defString}.")
+          newSym0
         }
-        (jflags, sym)
+        symByType orElse localSymByType orElse lastResort
       }
     } catch {
       case e: MissingRequirementError =>
-        (jflags, NoSymbol)
+        NoSymbol
     }
+    (jflags, sym)
   }
 
   /** Checks if `tp1` is the same type as `tp2`, modulo implicit methods.

@@ -683,7 +683,7 @@ trait Types extends api.Types { self: SymbolTable =>
       findMembers(excludedFlags, requiredFlags)
 //      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
 
-    def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
+    def memberBasedOnName(name: Name, excludedFlags: Long = 0L): Symbol =
       findMember(name, excludedFlags, 0, false)
 
     /** The least type instance of given class which is a supertype
