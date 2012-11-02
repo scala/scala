@@ -2,10 +2,12 @@ package scala.reflect
 package api
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  * `Universe` provides a complete set of reflection operations which make it possible for one
  * to reflectively inspect Scala type relations, such as membership or subtyping.
  *
- * [[scala.reflect.api.Universe]] has two specialized sub-universes for different scenarios. 
+ * [[scala.reflect.api.Universe]] has two specialized sub-universes for different scenarios.
  * [[scala.reflect.api.JavaUniverse]] adds operations that link symbols and types to the underlying
  * classes and runtime values of a JVM instance-- this can be thought of as the `Universe` that
  * should be used for all typical use-cases of Scala reflection. [[scala.reflect.macros.Universe]]
@@ -24,16 +26,16 @@ package api
  *   - [[scala.reflect.api.FlagSets#FlagSet FlagSet]] represent sets of flags that apply to symbols and
  *     definition trees
  *   - [[scala.reflect.api.Constants#Constant Constants]] represent compile-time constants.
- * 
- * To obtain a `Universe` to use with Scala runtime reflection, simply make sure to use or import 
+ *
+ * To obtain a `Universe` to use with Scala runtime reflection, simply make sure to use or import
  * `scala.reflect.runtime.universe._`
  *   {{{
  *   scala> import scala.reflect.runtime.universe._
  *   import scala.reflect.runtime.universe._
- *   
+ *
  *   scala> typeOf[List[Int]]
  *   res0: reflect.runtime.universe.Type = scala.List[Int]
- *  
+ *
  *   scala> typeOf[Either[String, Int]]
  *   res1: reflect.runtime.universe.Type = scala.Either[String,Int]
  *   }}}
@@ -50,6 +52,7 @@ package api
  * For more information about `Universe`s, see the [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
  *
  *  @groupprio Universe -1
+ *  @group ReflectionAPI
  *
  *  @contentDiagram hideNodes "*Api"
  */

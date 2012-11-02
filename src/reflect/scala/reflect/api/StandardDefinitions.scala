@@ -5,11 +5,16 @@
 package scala.reflect
 package api
 
-/** All Scala standard symbols and types.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- * These standard definitions can accessed to using `definitions`. 
- * They're typically imported with a blanket import `import definitions`, and are
+ * All Scala standard symbols and types.
+ *
+ * These standard definitions can accessed to using `definitions`.
+ * They're typically imported with a wildcard import, `import definitions._`, and are
  * listed in [[scala.reflect.api.StandardDefinitions#DefinitionsApi]].
+ *
+ *  @group ReflectionAPI
  */
 trait StandardDefinitions {
   self: Universe =>

@@ -1,7 +1,10 @@
 package scala.reflect
 package macros
 
-/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that provides
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that provides
  *  a facility to evaluate trees.
  */
 trait Evals {
