@@ -21,6 +21,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.atOwner             // methods to type trees
+  import symtab.Flags
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "selectivecps"
@@ -191,13 +192,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
           val pos = catches.head.pos
           val funSym = currentOwner.newValueParameter(pos, cpsNames.catches).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
-          val argSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
-          val rhs = Match(Ident(argSym), catches1)
-          val fun = Function(List(ValDef(argSym)), rhs)
+          val rhs = Match(Ident(cpsNames.ex), catches1)
+          val param = ValDef(Modifiers(Flags.PARAM), cpsNames.ex, TypeTree(ThrowableClass.tpe), EmptyTree)
+          val fun = Function(List(param), rhs)
           val funDef = localTyper.typed(atPos(pos) {
             ValDef(funSym, fun)
           })
-          argSym.owner = fun.symbol
           val expr2 = localTyper.typed(atPos(pos) {
             Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
           })
