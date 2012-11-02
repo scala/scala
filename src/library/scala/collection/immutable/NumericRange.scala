@@ -81,17 +81,6 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   // to guard against any (most likely illusory) performance drop.  They should
   // be eliminated one way or another.
 
-  // Counts how many elements from the start meet the given test.
-  private def skipCount(p: T => Boolean): Int = {
-    var current = start
-    var counted = 0
-
-    while (counted < length && p(current)) {
-      counted += 1
-      current += step
-    }
-    counted
-  }
   // Tests whether a number is within the endpoints, without testing
   // whether it is a member of the sequence (i.e. when step > 1.)
   private def isWithinBoundaries(elem: T) = !isEmpty && (
@@ -124,21 +113,21 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     else locationAfterN(idx)
   }
-  
+
   import NumericRange.defaultOrdering
-  
+
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
     if (ord eq defaultOrdering(num)) {
       if (num.signum(step) > 0) start
       else last
     } else super.min(ord)
-  
-  override def max[T1 >: T](implicit ord: Ordering[T1]): T = 
+
+  override def max[T1 >: T](implicit ord: Ordering[T1]): T =
     if (ord eq defaultOrdering(num)) {
       if (num.signum(step) > 0) last
       else start
     } else super.max(ord)
-  
+
   // Motivated by the desire for Double ranges with BigDecimal precision,
   // we need some way to map a Range and get another Range.  This can't be
   // done in any fully general way because Ranges are not arbitrary
@@ -213,7 +202,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
 /** A companion object for numeric ranges.
  */
 object NumericRange {
-  
+
   /** Calculates the number of elements in a range given start, end, step, and
    *  whether or not it is inclusive.  Throws an exception if step == 0 or
    *  the number of elements exceeds the maximum Int.
@@ -272,7 +261,7 @@ object NumericRange {
     new Exclusive(start, end, step)
   def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]): Inclusive[T] =
     new Inclusive(start, end, step)
-  
+
   private[collection] val defaultOrdering = Map[Numeric[_], Ordering[_]](
     Numeric.BigIntIsIntegral -> Ordering.BigInt,
     Numeric.IntIsIntegral -> Ordering.Int,
@@ -284,6 +273,6 @@ object NumericRange {
     Numeric.DoubleAsIfIntegral -> Ordering.Double,
     Numeric.BigDecimalAsIfIntegral -> Ordering.BigDecimal
   )
-  
+
 }
 

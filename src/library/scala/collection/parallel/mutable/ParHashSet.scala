@@ -120,9 +120,8 @@ private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFacto
 extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
 with scala.collection.mutable.FlatHashTable.HashUtils[T] {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
-  private var mask = ParHashSetCombiner.discriminantmask
-  private var nonmasklen = ParHashSetCombiner.nonmasklength
-  private var seedvalue = 27
+  private val nonmasklen = ParHashSetCombiner.nonmasklength
+  private val seedvalue = 27
 
   def +=(elem: T) = {
     sz += 1

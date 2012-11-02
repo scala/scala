@@ -2454,7 +2454,6 @@ trait Typers extends Modes with Adaptations with Tags {
       assert(isPartial)
 
       private val anonClass = context.owner.newAnonymousFunctionClass(tree.pos)
-      private val funThis   = This(anonClass)
 
       anonClass addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
@@ -3933,15 +3932,10 @@ trait Typers extends Modes with Adaptations with Tags {
     }
 
     def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
-      def isPatternMode        = inPatternMode(mode)
+      def isPatternMode = inPatternMode(mode)
       def inPatternConstructor = inAllModes(mode, PATTERNmode | FUNmode)
       def isQualifierMode      = (mode & QUALmode) != 0
 
-      //@M! get the type of the qualifier in a Select tree, otherwise: NoType
-      def prefixType(fun: Tree): Type = fun match {
-        case Select(qualifier, _) => qualifier.tpe
-        case _                    => NoType
-      }
       // Lookup in the given class using the root mirror.
       def lookupInOwner(owner: Symbol, name: Name): Symbol =
         if (isQualifierMode) rootMirror.missingHook(owner, name) else NoSymbol

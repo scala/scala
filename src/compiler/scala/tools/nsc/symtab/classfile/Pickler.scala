@@ -26,8 +26,6 @@ import Flags._
 abstract class Pickler extends SubComponent {
   import global._
 
-  private final val showSig = false
-
   val phaseName = "pickler"
 
   currentRun

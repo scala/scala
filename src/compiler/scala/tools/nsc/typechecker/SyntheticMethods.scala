@@ -104,12 +104,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         (m0 ne meth) && !m0.isDeferred && !m0.isSynthetic && (m0.owner != AnyValClass) && (typeInClazz(m0) matches typeInClazz(meth))
       }
     }
-    def readConstantValue[T](name: String, default: T = null.asInstanceOf[T]): T = {
-      clazzMember(newTermName(name)).info match {
-        case NullaryMethodType(ConstantType(Constant(value))) => value.asInstanceOf[T]
-        case _                                                => default
-      }
-    }
     def productIteratorMethod = {
       createMethod(nme.productIterator, iteratorOfType(accessorLub))(_ =>
         gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(accessorLub), List(mkThis))

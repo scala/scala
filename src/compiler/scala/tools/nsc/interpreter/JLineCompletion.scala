@@ -326,8 +326,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
         Some(Candidates(newCursor, winners))
       }
 
-      def mkDotted      = Parsed.dotted(buf, cursor) withVerbosity verbosity
-      def mkUndelimited = Parsed.undelimited(buf, cursor) withVerbosity verbosity
+      def mkDotted = Parsed.dotted(buf, cursor) withVerbosity verbosity
 
       // a single dot is special cased to completion on the previous result
       def lastResultCompletion =

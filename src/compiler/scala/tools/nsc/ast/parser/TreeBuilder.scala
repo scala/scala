@@ -379,13 +379,6 @@ abstract class TreeBuilder {
     def makeCombination(pos: Position, meth: TermName, qual: Tree, pat: Tree, body: Tree): Tree =
       Apply(Select(qual, meth) setPos qual.pos, List(makeClosure(pos, pat, body))) setPos pos
 
-    /** Optionally, if pattern is a `Bind`, the bound name, otherwise None.
-     */
-    def patternVar(pat: Tree): Option[Name] = pat match {
-      case Bind(name, _) => Some(name)
-      case _ => None
-    }
-
     /** If `pat` is not yet a `Bind` wrap it in one with a fresh name
      */
     def makeBind(pat: Tree): Tree = pat match {

@@ -280,13 +280,6 @@ abstract class DeadCodeElimination extends SubComponent {
       compensations
     }
 
-    private def withClosed[a](bb: BasicBlock)(f: => a): a = {
-      if (bb.nonEmpty) bb.close
-      val res = f
-      if (bb.nonEmpty) bb.open
-      res
-    }
-
     private def findInstruction(bb: BasicBlock, i: Instruction): (BasicBlock, Int) = {
       for (b <- linearizer.linearizeAt(method, bb)) {
         val idx = b.toList indexWhere (_ eq i)

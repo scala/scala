@@ -579,8 +579,6 @@ self =>
 
   /* operations */
 
-  private def asTask[R, Tp](t: Any) = t.asInstanceOf[Task[R, Tp]]
-
   private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParArrayCombiner[_]]
 
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {

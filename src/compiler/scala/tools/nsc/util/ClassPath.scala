@@ -32,10 +32,6 @@ object ClassPath {
     def lsDir(dir: Directory, filt: String => Boolean = _ => true) =
       dir.list filter (x => filt(x.name) && (x.isDirectory || isJarOrZip(x))) map (_.path) toList
 
-    def basedir(s: String) =
-      if (s contains File.separator) s.substring(0, s.lastIndexOf(File.separator))
-      else "."
-
     if (pattern == "*") lsDir(Directory("."))
     else if (pattern endsWith wildSuffix) lsDir(Directory(pattern dropRight 2))
     else if (pattern contains '*') {

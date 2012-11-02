@@ -65,7 +65,7 @@ trait StashingActor extends InternalActor {
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  private def become(behavior: Receive, discardOld: Boolean = true) {
+  private def become(behavior: Receive, discardOld: Boolean) {
     if (discardOld) unbecome()
     behaviorStack = behaviorStack.push(wrapWithSystemMessageHandling(behavior))
   }

@@ -87,11 +87,6 @@ trait Commands extends Prop {
 
   private val bindings = new scala.collection.mutable.ListBuffer[(State,Any)]
 
-  private def initState() = {
-    bindings.clear()
-    initialState()
-  }
-
   private def genCmds: Gen[Cmds] = {
     def sizedCmds(s: State)(sz: Int): Gen[Cmds] =
       if(sz <= 0) value(Cmds(Nil, Nil)) else for {

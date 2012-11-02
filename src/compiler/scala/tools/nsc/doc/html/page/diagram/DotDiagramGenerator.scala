@@ -22,8 +22,6 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
   private var pathToLib: String = null
   // maps nodes to unique indices
   private var node2Index: Map[Node, Int] = null
-  // maps an index to its corresponding node
-  private var index2Node: Map[Int, Node] = null
   // true if the current diagram is a class diagram
   private var isInheritanceDiagram = false
   // incoming implicit nodes (needed for determining the CSS class of a node)
@@ -42,7 +40,6 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     // clean things up a bit, so we don't leave garbage on the heap
     this.page = null
     node2Index = null
-    index2Node = null
     incomingImplicitNodes = List()
     result
   }
@@ -116,7 +113,6 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         node2Index = d.nodes.zipWithIndex.toMap
         incomingImplicitNodes = List()
     }
-    index2Node = node2Index map {_.swap}
 
     val implicitsDot = {
       if (!isInheritanceDiagram) ""

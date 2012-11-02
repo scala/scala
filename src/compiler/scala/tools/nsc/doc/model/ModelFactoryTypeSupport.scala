@@ -34,8 +34,6 @@ trait ModelFactoryTypeSupport {
 
   /** */
   def makeType(aType: Type, inTpl: TemplateImpl): TypeEntity = {
-    def templatePackage = closestPackage(inTpl.sym)
-
     def createTypeEntity = new TypeEntity {
       private var nameBuffer = new StringBuilder
       private var refBuffer = new immutable.TreeMap[Int, (LinkTo, Int)]

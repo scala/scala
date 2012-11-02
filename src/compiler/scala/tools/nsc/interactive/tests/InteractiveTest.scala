@@ -110,6 +110,7 @@ abstract class InteractiveTest
   }
 
   /** Perform n random tests with random changes. */
+  /****
   private def randomTests(n: Int, files: Array[SourceFile]) {
     val tester = new Tester(n, files, settings) {
       override val compiler = self.compiler
@@ -117,6 +118,7 @@ abstract class InteractiveTest
     }
     tester.run()
   }
+  ****/
 
   /** shutdown the presentation compiler. */
   protected def shutdown() {

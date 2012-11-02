@@ -8,8 +8,6 @@ import java.lang.Runtime.getRuntime
 
 object PartestDefaults {
   import nsc.Properties._
-  private def wrapAccessControl[T](body: => Option[T]): Option[T] =
-    try body catch { case _: java.security.AccessControlException => None }
 
   def testRootName  = propOrNone("partest.root")
   def srcDirName    = propOrElse("partest.srcdir", "files")

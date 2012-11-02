@@ -41,10 +41,6 @@ object JavaConversions {
         exec.execute(task)
       }
 
-      def managedBlock(blocker: ManagedBlocker) {
-        blocker.block()
-      }
-
       def shutdown() {
         // do nothing
       }
