@@ -759,10 +759,9 @@ trait Contexts { self: Analyzer =>
       var lookupError: NameLookup  = null       // set to non-null if a definite error is encountered
       var inaccessible: NameLookup = null       // records inaccessible symbol for error reporting in case none is found
       var defSym: Symbol           = NoSymbol   // the directly found symbol
-      var symbolDepth: Int         = -1         // the depth of the directly found symbol
       var pre: Type                = NoPrefix   // the prefix type of defSym, if a class member
-      var cx: Context              = this
-      var needsQualifier           = false      // working around package object overloading bug
+      var cx: Context              = this       // the context under consideration
+      var symbolDepth: Int         = -1         // the depth of the directly found symbol
 
       def finish(qual: Tree, sym: Symbol): NameLookup = (
         if (lookupError ne null) lookupError
@@ -778,7 +777,7 @@ trait Contexts { self: Analyzer =>
           || unit.exists && s.sourceFile != unit.source.file
         )
       )
-      def requiresQualifier(s: Symbol) = needsQualifier || (
+      def requiresQualifier(s: Symbol) = (
            s.owner.isClass
         && !s.owner.isPackageClass
         && !s.isTypeParameterOrSkolem
@@ -797,33 +796,35 @@ trait Contexts { self: Analyzer =>
       }
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
       while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
-        val entries = (cx.scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
-
         pre         = cx.enclClass.prefix
-        symbolDepth = if (entries.isEmpty) cx.depth else (cx.depth - cx.scope.nestingLevel) + entries.head.depth
+        val entries = (cx.scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
         defSym      = entries match {
           case Nil       => searchPrefix
-          case hd :: Nil => hd.sym
-          case alts      => logResult(s"!!! lookup overloaded")(cx.owner.newOverloaded(pre, entries map (_.sym)))
+          case hd :: tl  =>
+            // we have a winner: record the symbol depth
+            symbolDepth = (cx.depth - cx.scope.nestingLevel) + hd.depth
+            if (tl.isEmpty) hd.sym
+            else logResult(s"!!! lookup overloaded")(cx.owner.newOverloaded(pre, entries map (_.sym)))
         }
-
-        if (defSym.exists)  // we have a winner: record the symbol depth
-          symbolDepth = (
-            if (entries.isEmpty) cx.depth
-            else (cx.depth - cx.scope.nestingLevel) + entries.head.depth
-          )
-        else cx = cx.outer // push further outward
+        if (!defSym.exists)
+          cx = cx.outer // push further outward
       }
+      if (symbolDepth < 0)
+        symbolDepth = cx.depth
 
       var impSym: Symbol = NoSymbol
-      var imports        = Context.this.imports   // impSym != NoSymbol => it is imported from imports.head
+      var imports        = Context.this.imports
       def imp1           = imports.head
+      def imp2           = imports.tail.head
+      def imp1Explicit   = imp1 isExplicitImport name
+      def imp2Explicit   = imp2 isExplicitImport name
 
       while (!qualifies(impSym) && imports.nonEmpty && imp1.depth > symbolDepth) {
         impSym = importedAccessibleSymbol(imp1, name)
         if (!impSym.exists)
           imports = imports.tail
       }
+
       if (defSym.exists && impSym.exists) {
         // imported symbols take precedence over package-owned symbols in different compilation units.
         if (isPackageOwnedInDifferentUnit(defSym))
@@ -844,40 +845,33 @@ trait Contexts { self: Analyzer =>
           finish(EmptyTree, defSym)
       }
       else if (impSym.exists) {
-        // Imports against which we will test impSym for any ambiguities
-        var importsTail  = imports.tail
-        val imp1Explicit = imp1 isExplicitImport name
-        def imp2         = importsTail.head
-        def sameDepth    = imp1.depth == imp2.depth
-        def isDone       = importsTail.isEmpty || imp1Explicit && !sameDepth
-
+        def sameDepth  = imp1.depth == imp2.depth
+        def needsCheck = if (sameDepth) imp1Explicit == imp2Explicit else imp1Explicit || imp2Explicit
+        def isDone     = imports.tail.isEmpty || (!sameDepth && imp1Explicit)
+        def ambiguous  = needsCheck && isAmbiguousImport(imp1, imp2, name) && {
+          lookupError = ambiguousImports(imp1, imp2)
+          true
+        }
+        // Ambiguity check between imports.
+        // The same name imported again is potentially ambiguous if the name is:
+        //  - after explicit import, explicitly imported again at the same or lower depth
+        //  - after explicit import, wildcard imported at lower depth
+        //  - after wildcard import, wildcard imported at the same depth
+        // Under all such conditions isAmbiguousImport is called, which will
+        // examine the imports in case they are importing the same thing; if that
+        // can't be established conclusively, an error is issued.
         while (lookupError == null && !isDone) {
           val other = importedAccessibleSymbol(imp2, name)
-          // Ambiguity check between imports.
-          // The same name imported again is potentially ambiguous if the name is:
-          //  - after explicit import, explicitly imported again at the same or lower depth
-          //  - after explicit import, wildcard imported at lower depth
-          //  - after wildcard import, wildcard imported at the same depth
-          // Under all such conditions isAmbiguousImport is called, which will
-          // examine the imports in case they are importing the same thing; if that
-          // can't be established conclusively, an error is issued.
-          if (qualifies(other)) {
-            val imp2Explicit = imp2 isExplicitImport name
-            val needsCheck = (
-              if (sameDepth) imp1Explicit == imp2Explicit
-              else imp1Explicit || imp2Explicit
-            )
-            log(s"Import ambiguity: imp1=$imp1, imp2=$imp2, sameDepth=$sameDepth, needsCheck=$needsCheck")
-            if (needsCheck && isAmbiguousImport(imp1, imp2, name))
-              lookupError = ambiguousImports(imp1, imp2)
-            else if (imp2Explicit) {
-              // if we weren't ambiguous and imp2 is explicit, imp2 replaces imp1
-              // as the current winner.
-              impSym  = other
-              imports = importsTail
-            }
+          // if the competing import is unambiguous and explicit, it is the new winner.
+          val isNewWinner = qualifies(other) && !ambiguous && imp2Explicit
+          // imports is imp1 :: imp2 :: rest.
+          // If there is a new winner, it is imp2, and imports drops imp1.
+          // If there is not, imp1 is still the winner, and it drops imp2.
+          if (isNewWinner) {
+            impSym = other
+            imports = imports.tail
           }
-          importsTail = importsTail.tail
+          else imports = imp1 :: imports.tail.tail
         }
         // optimization: don't write out package prefixes
         finish(resetPos(imp1.qual.duplicate), impSym)
