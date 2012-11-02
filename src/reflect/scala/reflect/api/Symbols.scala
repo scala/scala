@@ -1,25 +1,57 @@
 package scala.reflect
 package api
 
-/** This trait defines symbols and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  This trait defines symbols and operations on them.
  *
  *  Symbols are used to establish bindings between a name and the entity it refers to, such as a class or a method.
  *  Anything you define and can give a name to in Scala has an associated symbol.
+ *
+ *  Symbols contain all available information about the declaration of an entity (class/object/trait etc.) or a
+ *  member (vals/vars/defs etc.), and as such are an integral abstraction central to both runtime
+ *  reflection and macros.
+ *
+ *  A symbol can provide a wealth of information ranging from the basic `name` method available on all symbols to
+ *  other, more involved, concepts such as getting the `baseClasses` from `ClassSymbol`. Other common use cases of
+ *  symbols include inspecting members' signatures, getting type parameters of a class, getting the parameter type
+ *  of a method or finding out the type of a field.
+ *
+ *  Example usage of runtime reflection; getting a method's type signature:
+ *  {{{
+ *    scala> import scala.reflect.runtime.universe._
+ *    import scala.reflect.runtime.universe._
+ *
+ *    scala> class C[T] { def test[U](x: T)(y: U): Int = ??? }
+ *    defined class C
+ *
+ *    scala> val test = typeOf[C[Int]].member(newTermName("test")).asMethod
+ *    test: reflect.runtime.universe.MethodSymbol = method test
+ *
+ *    scala> test.typeSignature
+ *    res0: reflect.runtime.universe.Type = [U](x: T)(y: U)scala.Int
+ *  }}}
+ *
+ *  Symbols are organized in a hierarchy. For example, a symbol that represents a parameter of a method is owned by
+ *  the corresponding method symbol, a method symbol is owned by its enclosing class, a class is owned by a
+ *  containing package and so on.
  *
  *  Certain types of tree nodes, such as [[Trees#Ident Ident]] (references to identifiers) and
  *  [[Trees#Select Select]] (references to members) expose method [[Trees.SymTreeApi.symbol `symbol`]]
  *  to obtain the symbol that represents their declaration. During the typechecking phase, the compiler looks up the
  *  symbol based on the name and scope and sets the [[Trees.SymTreeApi.symbol `symbol` field]] of tree nodes.
  *
+ *  For more information about `Symbol` usage and attached intricacies, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols]]
+ *
+ *  @group ReflectionAPI
+ *
  *  @contentDiagram hideNodes "*Api"
- *
- *  @see [[http://docs.scala-lang.org/overviews/reflection/overview.html]]
- *
- *  The Reflection Guide provides more details on symbol usage and attached intricacies.
  *
  *  @define SYMACCESSORS Class [[Symbol]] defines `isXXX` test methods such as `isPublic` or `isFinal`, `params` and
  *  `returnType` methods for method symbols, `baseClasses` for class symbols and so on. Some of these methods don't
  *  make sense for certain subclasses of `Symbol` and return `NoSymbol`, `Nil` or other empty values.
+ *
  */
 trait Symbols { self: Universe =>
 

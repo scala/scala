@@ -1,17 +1,21 @@
 package scala.reflect
 package api
 
-/** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait provides support for importers, a facility to migrate reflection artifacts between universes.
+ * ''Note: this trait should typically be used only rarely.''
  *
  *  Reflection artifacts, such as [[scala.reflect.api.Symbols Symbols]] and [[scala.reflect.api.Types Types]],
- *  are contained in [[scala.reflect.api.Universes Universe]]s. Typically all processing happens 
- *  within a single `Universe` (e.g. a compile-time macro `Universe` or a runtime reflection `Universe`), but sometimes 
- *  there is a need to migrate artifacts from one `Universe` to another. For example, runtime compilation works by 
- *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the 
+ *  are contained in [[scala.reflect.api.Universes Universe]]s. Typically all processing happens
+ *  within a single `Universe` (e.g. a compile-time macro `Universe` or a runtime reflection `Universe`), but sometimes
+ *  there is a need to migrate artifacts from one `Universe` to another. For example, runtime compilation works by
+ *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the
  *  result back.
  *
- *  Reflection artifacts are firmly grounded in their `Universe`s, which is reflected by the fact that types of artifacts 
- *  from different universes are not compatible. By using `Importer`s, however, they be imported from one universe 
+ *  Reflection artifacts are firmly grounded in their `Universe`s, which is reflected by the fact that types of artifacts
+ *  from different universes are not compatible. By using `Importer`s, however, they be imported from one universe
  *  into another. For example, to import `foo.bar.Baz` from the source `Universe` to the target `Universe`,
  *  an importer will first check whether the entire owner chain exists in the target `Universe`.
  *  If it does, then nothing else will be done. Otherwise, the importer will recreate the entire owner chain
@@ -52,6 +56,8 @@ package api
  *    ...
  *  }
  *  }}}
+ *
+ * @group ReflectionAPI
  */
 trait Importers { self: Universe =>
 
