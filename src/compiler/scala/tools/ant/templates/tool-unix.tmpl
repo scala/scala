@@ -102,6 +102,9 @@ if [[ -n "$cygwin" ]]; then
         format=windows
     fi
     SCALA_HOME="$(cygpath --$format "$SCALA_HOME")"
+    if [[ -n "$JAVA_HOME" ]]; then
+        JAVA_HOME="$(cygpath --$format "$JAVA_HOME")"
+    fi
     TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
 elif [[ -n "$mingw" ]]; then
     SCALA_HOME="$(cmd //c echo "$SCALA_HOME")"

@@ -308,8 +308,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private def javapCommand(line: String): Result = {
     if (javap == null)
       ":javap unavailable, no tools.jar at %s.  Set JDK_HOME.".format(jdkHome)
-    else if (javaVersion startsWith "1.7")
-      ":javap not yet working with java 1.7"
     else if (line == "")
       ":javap [-lcsvp] [path1 path2 ...]"
     else
