@@ -47,7 +47,6 @@ class PrettyPrinter(width: Int, step: Int) {
     val tmp = width - cur
     if (s.length <= tmp)
       return List(Box(ind, s))
-    val sb = new StringBuilder()
     var i = s indexOf ' '
     if (i > tmp || i == -1) throw new BrokenException() // cannot break
 

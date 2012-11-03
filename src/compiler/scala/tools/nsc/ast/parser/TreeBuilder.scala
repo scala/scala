@@ -450,7 +450,7 @@ abstract class TreeBuilder {
     def combine(gs: List[ValFrom]): ValFrom = (gs: @unchecked) match {
       case g :: Nil => g
       case ValFrom(pos1, pat1, rhs1) :: gs2 =>
-        val ValFrom(pos2, pat2, rhs2) = combine(gs2)
+        val ValFrom(_, pat2, rhs2) = combine(gs2)
         ValFrom(pos1, makeTuple(List(pat1, pat2), false), Apply(Select(rhs1, nme.zip), List(rhs2)))
     }
     makeForYield(List(combine(gs)), body)

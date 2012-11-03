@@ -71,7 +71,6 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   }
 
   private def updatePluginPath(options: String): String = {
-    val dir = fileManager.testRootDir
     def absolutize(path: String) = Path(path) match {
       case x if x.isAbsolute  => x.path
       case x                  => (fileManager.testRootDir / x).toAbsolute.path

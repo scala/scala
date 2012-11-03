@@ -74,7 +74,6 @@ trait GenTypes {
       if (reifyDebug) println("splicing " + tpe)
 
       val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.WeakTypeTag.toString
-      val key = (tagFlavor, tpe.typeSymbol)
       // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
       // to find out the whereabouts of the error run scalac with -Ydebug
       if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(universe, tagFlavor, tpe))

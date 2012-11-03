@@ -69,7 +69,7 @@ class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
 
   override def toString(): String = {
     var res = "Script("
-    var it = this.iterator
+    val it = this.iterator
     var i = 1
     while (it.hasNext) {
       if (i > 1)

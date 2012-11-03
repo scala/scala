@@ -379,7 +379,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val varargMatch = args.length >= params.length - 1 && isVarArgsList(params)
         if (!perfectMatch && !varargMatch) {
           val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
-          var s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
+          val s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
           throw new ScalaReflectionException(s"${showMethodSig(symbol)} takes $n_arguments $s_arguments")
         }
 
@@ -1042,7 +1042,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private def jclassAsScala(jclazz: jClass[_], owner: Symbol): ClassSymbol = {
       val name = scalaSimpleName(jclazz)
       val completer = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
-      val (clazz, module) = createClassModule(owner, name, completer)
+      val (clazz, _) = createClassModule(owner, name, completer)
       classCache enter (jclazz, clazz)
       clazz
     }

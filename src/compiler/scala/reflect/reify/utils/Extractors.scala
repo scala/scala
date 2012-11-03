@@ -187,7 +187,7 @@ trait Extractors {
             Literal(Constant(origin: String)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeTerm == nme.newFreeTerm &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, reifyBinding(tree), flags, origin)
+        Some((uref1, name, reifyBinding(tree), flags, origin))
       case _ =>
         None
     }
@@ -204,7 +204,7 @@ trait Extractors {
             Literal(Constant(origin: String)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeType == nme.newFreeType &&
          uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, reifyBinding(tree), flags, origin)
+        Some((uref1, name, reifyBinding(tree), flags, origin))
       case _ =>
         None
     }

@@ -102,7 +102,7 @@ trait BytecodeWriters {
       super.writeClass(label, jclassName, jclassBytes, sym)
 
       val pathName = jclassName
-      var dumpFile = pathName.split("[./]").foldLeft(baseDir: Path) (_ / _) changeExtension "class" toFile;
+      val dumpFile = pathName.split("[./]").foldLeft(baseDir: Path) (_ / _) changeExtension "class" toFile;
       dumpFile.parent.createDirectory()
       val outstream = new DataOutputStream(new FileOutputStream(dumpFile.path))
 

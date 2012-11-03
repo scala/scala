@@ -432,7 +432,7 @@ abstract class GenICode extends SubComponent  {
 
     private def genPrimitiveOp(tree: Apply, ctx: Context, expectedType: TypeKind): (Context, TypeKind) = {
       val sym = tree.symbol
-      val Apply(fun @ Select(receiver, _), args) = tree
+      val Apply(fun @ Select(receiver, _), _) = tree
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       if (scalaPrimitives.isArithmeticOp(code))
@@ -543,9 +543,8 @@ abstract class GenICode extends SubComponent  {
         // emits CIL_LOAD_ARRAY_ITEM_ADDRESS
         case Apply(fun, args) =>
           if (isPrimitive(fun.symbol)) {
-
             val sym = tree.symbol
-            val Apply(fun @ Select(receiver, _), args) = tree
+            val Select(receiver, _) = fun
             val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
             if (isArrayOp(code)) {
@@ -858,7 +857,7 @@ abstract class GenICode extends SubComponent  {
               // we store this boxed value to a local, even if not really needed.
               // boxing optimization might use it, and dead code elimination will
               // take care of unnecessary stores
-              var loc1 = ctx.makeLocal(tree.pos, expr.tpe, "boxed")
+              val loc1 = ctx.makeLocal(tree.pos, expr.tpe, "boxed")
               ctx1.bb.emit(STORE_LOCAL(loc1))
               ctx1.bb.emit(LOAD_LOCAL(loc1))
             }
@@ -1104,7 +1103,7 @@ abstract class GenICode extends SubComponent  {
         case Match(selector, cases) =>
           def genLoadMatch = {
             debuglog("Generating SWITCH statement.");
-            var ctx1 = genLoad(selector, ctx, INT) // TODO: Java 7 allows strings in switches (so, don't assume INT and don't convert the literals using intValue)
+            val ctx1 = genLoad(selector, ctx, INT) // TODO: Java 7 allows strings in switches (so, don't assume INT and don't convert the literals using intValue)
             val afterCtx = ctx1.newBlock
             var caseCtx: Context  = null
             generatedType = toTypeKind(tree.tpe)
@@ -2116,7 +2115,7 @@ abstract class GenICode extends SubComponent  {
         } else ctx
 
 
-        val finalizerExh = if (finalizer != EmptyTree) Some({
+        if (finalizer != EmptyTree) {
           val exh = outerCtx.newExceptionHandler(NoSymbol, toTypeKind(finalizer.tpe), finalizer.pos) // finalizer covers exception handlers
           this.addActiveHandler(exh)  // .. and body aswell
           val ctx = finalizerCtx.enterExceptionHandler(exh)
@@ -2129,21 +2128,20 @@ abstract class GenICode extends SubComponent  {
           ctx1.bb.enterIgnoreMode;
           ctx1.bb.close
           finalizerCtx.endHandler()
-          exh
-        }) else None
+        }
 
-        val exhs = handlers.map { case (sym, kind, handler) =>  // def genWildcardHandler(sym: Symbol): (Symbol, TypeKind, Context => Context) =
-            val exh = this.newExceptionHandler(sym, kind, tree.pos)
-            var ctx1 = outerCtx.enterExceptionHandler(exh)
-            ctx1.addFinalizer(finalizer, finalizerCtx)
-            loadException(ctx1, exh, tree.pos)
-            ctx1 = handler(ctx1)
-            // emit finalizer
-            val ctx2 = emitFinalizer(ctx1)
-            ctx2.bb.closeWith(JUMP(afterCtx.bb))
-            outerCtx.endHandler()
-            exh
-          }
+        for ((sym, kind, handler) <- handlers) {
+          val exh = this.newExceptionHandler(sym, kind, tree.pos)
+          var ctx1 = outerCtx.enterExceptionHandler(exh)
+          ctx1.addFinalizer(finalizer, finalizerCtx)
+          loadException(ctx1, exh, tree.pos)
+          ctx1 = handler(ctx1)
+          // emit finalizer
+          val ctx2 = emitFinalizer(ctx1)
+          ctx2.bb.closeWith(JUMP(afterCtx.bb))
+          outerCtx.endHandler()
+        }
+
         val bodyCtx = this.newBlock
         if (finalizer != EmptyTree)
           bodyCtx.addFinalizer(finalizer, finalizerCtx)

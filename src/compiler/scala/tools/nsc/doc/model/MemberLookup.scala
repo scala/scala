@@ -19,7 +19,7 @@ trait MemberLookup {
   def memberLookup(pos: Position, query: String, inTplOpt: Option[DocTemplateImpl]): LinkTo = {
     assert(modelFinished)
 
-    var members = breakMembers(query)
+    val members = breakMembers(query)
     //println(query + " => " + members)
 
     // (1) First look in the root package, as most of the links are qualified

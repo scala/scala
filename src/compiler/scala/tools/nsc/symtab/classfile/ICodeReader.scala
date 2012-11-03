@@ -33,7 +33,6 @@ abstract class ICodeReader extends ClassfileParser {
    *  for non-static members.
    */
   def readClass(cls: Symbol): (IClass, IClass) = {
-    var classFile: io.AbstractFile = null;
     cls.info // ensure accurate type information
 
     isScalaModule = cls.isModule && !cls.isJavaDefined
@@ -58,11 +57,9 @@ abstract class ICodeReader extends ClassfileParser {
   override def parseClass() {
     this.instanceCode = new IClass(clazz)
     this.staticCode   = new IClass(staticModule)
-    val jflags = in.nextChar
-    val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
-    val sflags = toScalaClassFlags(jflags)  // what, this is never used??
-    val c = pool getClassSymbol in.nextChar
 
+    in.nextChar
+    pool getClassSymbol in.nextChar
     parseInnerClasses()
 
     in.skip(2)               // super class
@@ -125,7 +122,7 @@ abstract class ICodeReader extends ClassfileParser {
 
   override def parseMethod() {
     val (jflags, sym) = parseMember(false)
-    var beginning = in.bp
+    val beginning = in.bp
     try {
       if (sym != NoSymbol) {
         this.method = new IMethod(sym)
@@ -669,7 +666,6 @@ abstract class ICodeReader extends ClassfileParser {
 
       val blocks = makeBasicBlocks
       var otherBlock: BasicBlock = NoBasicBlock
-      var disableJmpTarget = false
 
       for ((pc, instr) <- instrs.iterator) {
 //        Console.println("> " + pc + ": " + instr);
@@ -724,7 +720,6 @@ abstract class ICodeReader extends ClassfileParser {
 
         /** Abstract interpretation for one instruction. */
         override def mutatingInterpret(out: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
-          val bindings = out.vars
           val stack = out.stack
           import stack.push
           i match {

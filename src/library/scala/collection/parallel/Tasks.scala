@@ -66,7 +66,6 @@ trait Task[R, +Tp] {
 
   private[parallel] def tryMerge(t: Tp @uncheckedVariance) {
     val that = t.asInstanceOf[Task[R, Tp]]
-    val local = result // ensure that any effects of modifying `result` are detected
     if (this.throwable == null && that.throwable == null) merge(t)
     mergeThrowables(that)
   }
@@ -167,7 +166,6 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
       while (last.next != null) {
         // val lastresult = Option(last.body.result)
-        val beforelast = last
         last = last.next
         if (last.tryCancel()) {
           // println("Done with " + beforelast.body + ", next direct is " + last.body)

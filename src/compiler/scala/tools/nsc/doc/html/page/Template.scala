@@ -527,7 +527,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
     val sourceLink: Seq[scala.xml.Node] = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined && !isReduced) =>
-        val (absFile, line) = dtpl.inSource.get
+        val (absFile, _) = dtpl.inSource.get
         <dt>Source</dt>
         <dd>{ <a href={ dtpl.sourceUrl.get.toString } target="_blank">{ Text(absFile.file.getName) }</a> }</dd>
       case _ => NodeSeq.Empty
@@ -651,7 +651,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         case dtpl: DocTemplateEntity if isSelf && !isReduced =>
           val diagram = f(dtpl)
           if (diagram.isDefined) {
-            val s = universe.settings
             val diagramSvg = generator.generate(diagram.get, tpl, this)
             if (diagramSvg != NodeSeq.Empty) {
               <div class="toggleContainer block diagram-container" id={ id + "-container"}>

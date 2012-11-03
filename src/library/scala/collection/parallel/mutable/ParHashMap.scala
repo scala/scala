@@ -231,7 +231,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
     def setSize(sz: Int) = tableSize = sz
     def insertEntry(/*block: Int, */e: DefaultEntry[K, V]) = {
       var h = index(elemHashCode(e.key))
-      var olde = table(h).asInstanceOf[DefaultEntry[K, V]]
+      val olde = table(h).asInstanceOf[DefaultEntry[K, V]]
 
       // check if key already exists
       var ce = olde

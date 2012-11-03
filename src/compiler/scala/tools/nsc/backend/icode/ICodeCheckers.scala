@@ -294,7 +294,7 @@ abstract class ICodeCheckers {
         else prefix + " with initial stack " + initial.types.mkString("[", ", ", "]")
       })
 
-      var stack = new TypeStack(initial)
+      val stack = new TypeStack(initial)
       def checkStack(len: Int) {
         if (stack.length < len)
           ICodeChecker.this.icodeError("Expected at least " + len + " elements on the stack", stack)

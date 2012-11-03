@@ -229,7 +229,6 @@ trait ModelFactoryTypeSupport {
           def appendClauses = {
             nameBuffer append " forSome {"
             var first = true
-            val qset = quantified.toSet
             for (sym <- quantified) {
               if (!first) { nameBuffer append ", " } else first = false
               if (sym.isSingletonExistential) {

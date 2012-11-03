@@ -61,7 +61,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
    */
   def check(md: MetaData): Boolean = {
     val len: Int = exc.length
-    var ok = new mutable.BitSet(adecls.length)
+    val ok = new mutable.BitSet(adecls.length)
 
     for (attr <- md) {
       def attrStr = attr.value.toString

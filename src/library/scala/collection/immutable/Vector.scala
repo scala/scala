@@ -242,8 +242,8 @@ override def companion: GenericCompanion[Vector] = Vector
 
   private[immutable] def appendFront[B>:A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
-      var blockIndex = (startIndex - 1) & ~31
-      var lo = (startIndex - 1) & 31
+      val blockIndex = (startIndex - 1) & ~31
+      val lo = (startIndex - 1) & 31
 
       if (startIndex != blockIndex + 32) {
         val s = new Vector(startIndex - 1, endIndex, blockIndex)
@@ -339,8 +339,8 @@ override def companion: GenericCompanion[Vector] = Vector
 //    //println("------- append " + value)
 //    debug()
     if (endIndex != startIndex) {
-      var blockIndex = endIndex & ~31
-      var lo = endIndex & 31
+      val blockIndex = endIndex & ~31
+      val lo = endIndex & 31
 
       if (endIndex != blockIndex) {
         //println("will make writable block (from "+focus+") at: " + blockIndex)
@@ -574,9 +574,7 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   private def dropFront0(cutIndex: Int): Vector[A] = {
-    var blockIndex = cutIndex & ~31
-    var lo = cutIndex & 31
-
+    val blockIndex = cutIndex & ~31
     val xor = cutIndex ^ (endIndex - 1)
     val d = requiredDepth(xor)
     val shift = (cutIndex & ~((1 << (5*d))-1))
@@ -606,9 +604,7 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   private def dropBack0(cutIndex: Int): Vector[A] = {
-    var blockIndex = (cutIndex - 1) & ~31
-    var lo = ((cutIndex - 1) & 31) + 1
-
+    val blockIndex = (cutIndex - 1) & ~31
     val xor = startIndex ^ (cutIndex - 1)
     val d = requiredDepth(xor)
     val shift = (startIndex & ~((1 << (5*d))-1))

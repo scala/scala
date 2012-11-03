@@ -269,7 +269,6 @@ final class ListBuffer[A]
     if (exported) copy()
     val n1 = n max 0
     val count1 = count min (len - n1)
-    var old = start.head
     if (n1 == 0) {
       var c = count1
       while (c > 0) {

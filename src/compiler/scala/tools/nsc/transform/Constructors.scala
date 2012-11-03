@@ -422,7 +422,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       def ensureAccessor(sym: Symbol)(acc: => Symbol) =
         if (sym.owner == clazz && !sym.isMethod && sym.isPrivate) { // there's an access to a naked field of the enclosing class
-          var getr = acc
+          val getr = acc
           getr makeNotPrivate clazz
           getr
         } else {
@@ -529,7 +529,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         (pre ::: supercalls, rest)
       }
 
-      var (uptoSuperStats, remainingConstrStats) = splitAtSuper(constrStatBuf.toList)
+      val (uptoSuperStats, remainingConstrStats0) = splitAtSuper(constrStatBuf.toList)
+      var remainingConstrStats = remainingConstrStats0
 
       /** XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
        *  but excluding it includes too much.  The constructor sequence being mimicked

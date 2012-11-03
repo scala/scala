@@ -96,7 +96,7 @@ trait ModelFactoryImplicitSupport {
     // But we don't want that, so we'll simply refuse to find implicit conversions on for Nothing and Null
     if (!(sym.isClass || sym.isTrait || sym == AnyRefClass) || sym == NothingClass || sym == NullClass) Nil
     else {
-      var context: global.analyzer.Context = global.analyzer.rootContext(NoCompilationUnit)
+      val context: global.analyzer.Context = global.analyzer.rootContext(NoCompilationUnit)
 
       val results = global.analyzer.allViewsFrom(sym.tpe_*, context, sym.typeParams)
       var conversions = results.flatMap(result => makeImplicitConversion(sym, result._1, result._2, context, inTpl))
@@ -387,7 +387,6 @@ trait ModelFactoryImplicitSupport {
     lazy val memberImpls: List[MemberImpl] = {
       // Obtain the members inherited by the implicit conversion
       val memberSyms = toType.members.filter(implicitShouldDocument(_)).toList
-      val existingSyms = sym.info.members
 
       // Debugging part :)
       debug(sym.nameString + "\n" + "=" * sym.nameString.length())

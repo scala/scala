@@ -339,7 +339,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
         case TYPEREFtpe =>
           val pre = readTypeRef()
           val sym = readSymbolRef()
-          var args = until(end, readTypeRef)
+          val args = until(end, readTypeRef)
           TypeRef(pre, sym, args)
         case TYPEBOUNDStpe =>
           TypeBounds(readTypeRef(), readTypeRef())
@@ -759,7 +759,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
       val tag = readNat()
       if (tag != MODIFIERS)
         errorBadSignature("expected a modifiers tag (" + tag + ")")
-      val end = readNat() + readIndex
+      val _ = readNat() + readIndex
       val pflagsHi = readNat()
       val pflagsLo = readNat()
       val pflags = (pflagsHi.toLong << 32) + pflagsLo

@@ -497,8 +497,8 @@ abstract class ClassfileParser {
   def parseClass() {
     val jflags       = in.nextChar
     val isAnnotation = hasAnnotation(jflags)
-    var sflags       = toScalaClassFlags(jflags)
-    var nameIdx      = in.nextChar
+    val sflags       = toScalaClassFlags(jflags)
+    val nameIdx      = in.nextChar
     currentClass     = pool.getClassName(nameIdx)
 
     /** Parse parents for Java classes. For Scala, return AnyRef, since the real type will be unpickled.
@@ -596,7 +596,7 @@ abstract class ClassfileParser {
 
   def parseField() {
     val jflags = in.nextChar
-    var sflags = toScalaFieldFlags(jflags)
+    val sflags = toScalaFieldFlags(jflags)
     if ((sflags & PRIVATE) != 0L && !global.settings.optimise.value) {
       in.skip(4); skipAttributes()
     } else {
@@ -626,7 +626,7 @@ abstract class ClassfileParser {
 
   def parseMethod() {
     val jflags = in.nextChar.toInt
-    var sflags = toScalaMethodFlags(jflags)
+    val sflags = toScalaMethodFlags(jflags)
     if (isPrivate(jflags) && !global.settings.optimise.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
@@ -1078,7 +1078,7 @@ abstract class ClassfileParser {
     def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile, jflags: Int) {
       val completer   = new global.loaders.ClassfileLoader(file)
       val name        = entry.originalName
-      var sflags      = toScalaClassFlags(jflags)
+      val sflags      = toScalaClassFlags(jflags)
       val owner       = getOwner(jflags)
       val scope       = getScope(jflags)
       val innerClass  = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer

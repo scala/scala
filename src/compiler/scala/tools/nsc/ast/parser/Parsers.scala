@@ -919,7 +919,7 @@ self =>
       )
 
       def compoundTypeRest(t: Tree): Tree = {
-        var ts = new ListBuffer[Tree] += t
+        val ts = new ListBuffer[Tree] += t
         while (in.token == WITH) {
           in.nextToken()
           ts += annotType()
@@ -1270,7 +1270,7 @@ self =>
     def expr(): Tree = expr(Local)
 
     def expr(location: Int): Tree = {
-      var savedPlaceholderParams = placeholderParams
+      val savedPlaceholderParams = placeholderParams
       placeholderParams = List()
       var res = expr0(location)
       if (!placeholderParams.isEmpty && !isWildcard(res)) {
@@ -1320,7 +1320,6 @@ self =>
         parseTry
       case WHILE =>
         def parseWhile = {
-          val start = in.offset
           atPos(in.skipToken()) {
             val lname: Name = freshTermName(nme.WHILE_PREFIX)
             val cond = condExpr()
@@ -1332,7 +1331,6 @@ self =>
         parseWhile
       case DO =>
         def parseDo = {
-          val start = in.offset
           atPos(in.skipToken()) {
             val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
             val body = expr()
@@ -1796,7 +1794,6 @@ self =>
        *  }}}
        */
       def pattern2(): Tree = {
-        val nameOffset = in.offset
         val p = pattern3()
 
         if (in.token != AT) p
@@ -1909,7 +1906,7 @@ self =>
         val start = in.offset
         in.token match {
           case IDENTIFIER | BACKQUOTED_IDENT | THIS =>
-            var t = stableId()
+            val t = stableId()
             in.token match {
               case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
                 t match {
@@ -2616,7 +2613,6 @@ self =>
       in.nextToken()
       newLinesOpt()
       atPos(start, in.offset) {
-        val nameOffset = in.offset
         val name = identForType()
         // @M! a type alias as well as an abstract type may declare type parameters
         val tparams = typeParamClauseOpt(name, null)
@@ -2893,7 +2889,6 @@ self =>
      *  }}}
      */
     def packaging(start: Int): Tree = {
-      val nameOffset = in.offset
       val pkg = pkgQualId()
       val stats = inBracesOrNil(topStatSeq())
       makePackaging(start, pkg, stats)
@@ -3103,7 +3098,6 @@ self =>
               ts ++= topStatSeq()
             }
           } else {
-            val nameOffset = in.offset
             in.flushDoc
             val pkg = pkgQualId()
 

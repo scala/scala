@@ -335,7 +335,7 @@ abstract class ExplicitOuter extends InfoTransform
      */
     def outerAccessorDef: Tree = {
       val outerAcc = outerAccessor(currentClass)
-      var rhs: Tree =
+      val rhs: Tree =
         if (outerAcc.isDeferred) EmptyTree
         else This(currentClass) DOT outerField(currentClass)
 

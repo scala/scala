@@ -99,8 +99,8 @@ class Pack200Task extends ScalaMatchingTask {
   private def getFileList: List[File] = {
     var files: List[File] = Nil
     val fs = getImplicitFileSet
-    var ds = fs.getDirectoryScanner(getProject())
-    var dir = fs.getDir(getProject())
+    val ds = fs.getDirectoryScanner(getProject())
+    val dir = fs.getDir(getProject())
     for (filename <- ds.getIncludedFiles()
          if filename.toLowerCase.endsWith(".jar")) {
       val file = new File(dir, filename)

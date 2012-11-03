@@ -1197,9 +1197,9 @@ trait Typers extends Modes with Adaptations with Tags {
                 val found = tree.tpe
                 if (!found.isErroneous && !pt.isErroneous) {
                   if ((!context.reportErrors && isPastTyper) || tree.attachments.get[MacroExpansionAttachment].isDefined) {
-                    val (bound, req) = pt match {
-                      case ExistentialType(qs, tpe) => (qs, tpe)
-                      case _ => (Nil, pt)
+                    val bound = pt match {
+                      case ExistentialType(qs, _) => qs
+                      case _ => Nil
                     }
                     val boundOrSkolems = bound ++ pt.skolemsExceptMethodTypeParams
                     if (boundOrSkolems.nonEmpty) {
@@ -1519,7 +1519,6 @@ trait Typers extends Modes with Adaptations with Tags {
               val (stats, rest) = cstats span (x => !treeInfo.isSuperConstrCall(x))
               (stats map (_.duplicate), if (rest.isEmpty) EmptyTree else rest.head.duplicate)
             }
-            val cstats1 = if (superCall == EmptyTree) preSuperStats else preSuperStats :+ superCall
             val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall match {
               case Apply(_, _) if supertparams.nonEmpty => transformSuperCall(superCall)
               case _                                    => cunit.duplicate
@@ -1805,7 +1804,7 @@ trait Typers extends Modes with Adaptations with Tags {
     def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
       val clazz = context.owner
       // complete lazy annotations
-      val annots = clazz.annotations
+      clazz.annotations
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
       val self1 = templ.self match {
@@ -1886,8 +1885,8 @@ trait Typers extends Modes with Adaptations with Tags {
       val typedMods = typedModifiers(vdef.mods)
 
       // complete lazy annotations
-      val annots = sym.annotations
-      var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
+      sym.annotations
+      val tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
       if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.isMutable)
@@ -2123,13 +2122,13 @@ trait Typers extends Modes with Adaptations with Tags {
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
       // complete lazy annotations
-      val annots = meth.annotations
+      meth.annotations
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe))
           StarParamNotLastError(vparam1)
 
-      var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
+      val tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
       val typedMods = typedModifiers(ddef.mods)
@@ -2199,7 +2198,7 @@ trait Typers extends Modes with Adaptations with Tags {
       val tparams1 = tdef.tparams mapConserve typedTypeDef
       val typedMods = typedModifiers(tdef.mods)
       // complete lazy annotations
-      val annots = tdef.symbol.annotations
+      tdef.symbol.annotations
 
       // @specialized should not be pickled when compiling with -no-specialize
       if (settings.nospecialization.value && currentRun.compiles(tdef.symbol)) {
@@ -3744,11 +3743,11 @@ trait Typers extends Modes with Adaptations with Tags {
         if (wc.symbol == NoSymbol) { namer.enterSym(wc); wc.symbol setFlag EXISTENTIAL }
         else context.scope enter wc.symbol
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
-      for (vd @ ValDef(_, _, _, _) <- tree.whereClauses)
+      for (vd @ ValDef(_, _, _, _) <- whereClauses1)
         if (vd.symbol.tpe.isVolatile)
           AbstractionFromVolatileTypeError(vd)
       val tpt1 = typedType(tree.tpt, mode)
-      existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)((tparams, tp) =>
+      existentialTransform(whereClauses1 map (_.symbol), tpt1.tpe)((tparams, tp) =>
         TypeTree(newExistentialType(tparams, tp)) setOriginal tree
       )
     }
@@ -4775,7 +4774,8 @@ trait Typers extends Modes with Adaptations with Tags {
        *                   (2) Change imported symbols to selections
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
-        def emptyPackageOk = settings.exposeEmptyPackage.value // setting to enable unqualified idents in empty package
+        // setting to enable unqualified idents in empty package
+        def inEmptyPackage = if (settings.exposeEmptyPackage.value) lookupInEmpty(name) else NoSymbol
 
         def issue(err: AbsTypeError) = {
           // Avoiding some spurious error messages: see SI-2388.
@@ -4791,17 +4791,15 @@ trait Typers extends Modes with Adaptations with Tags {
           case NoSymbol   => startContext.lookupSymbol(name, qualifies)
           case sym        => LookupSucceeded(EmptyTree, sym)
         }
-        val defSym = (
-          nameLookup.symbol
-            orElse ( if (emptyPackageOk) lookupInEmpty(name) else NoSymbol )
-            orElse (lookupInRoot(name) andAlso (sym => return typed1(tree setSymbol sym, mode, pt)))
-            orElse (context.owner newErrorSymbol name)
-        )
         import InferErrorGen._
         nameLookup match {
           case LookupAmbiguous(msg)         => issue(AmbiguousIdentError(tree, name, msg))
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
-          case LookupNotFound               => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+          case LookupNotFound               =>
+            inEmptyPackage orElse lookupInRoot(name) match {
+              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+              case sym      => typed1(tree setSymbol sym, mode, pt)
+            }
           case LookupSucceeded(qual, sym)   =>
             // this -> Foo.this
             if (sym.isThisSym)
@@ -4905,7 +4903,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
         // complete lazy annotations
-        val annots = sym.annotations
+        sym.annotations
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
           .typedStats(pdef.stats, NoSymbol)
         treeCopy.PackageDef(tree, pid1, stats1) setType NoType
@@ -5225,7 +5223,7 @@ trait Typers extends Modes with Adaptations with Tags {
         }
 
         alreadyTyped = tree.tpe ne null
-        var tree1: Tree = if (alreadyTyped) tree else {
+        val tree1: Tree = if (alreadyTyped) tree else {
           printTyping(
             ptLine("typing %s: pt = %s".format(ptTree(tree), pt),
               "undetparams"      -> context.undetparams,

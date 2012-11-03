@@ -183,7 +183,7 @@ class DotProcess(settings: doc.Settings) {
 
   private[this] def outputFn(stdOut: InputStream): Unit = {
     val reader = new BufferedReader(new InputStreamReader(stdOut))
-    var buffer: StringBuilder = new StringBuilder()
+    val buffer: StringBuilder = new StringBuilder()
     try {
       var line = reader.readLine
       while (!error && line != null) {
@@ -209,7 +209,6 @@ class DotProcess(settings: doc.Settings) {
 
   private[this] def errorFn(stdErr: InputStream): Unit = {
     val reader = new BufferedReader(new InputStreamReader(stdErr))
-    var buffer: StringBuilder = new StringBuilder()
     try {
       var line = reader.readLine
       while (line != null) {
