@@ -15,6 +15,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
   import global._
   import definitions._
   import CODE._
+  import treeInfo.StripCast
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "cleanup"
@@ -618,14 +619,16 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         }
         transformApply
 
-      // This transform replaces Array(Predef.wrapArray(Array(...)), <tag>)
-      // with just Array(...)
-      case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(array)), _))
+      // Replaces `Array(Predef.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
+      // with just `ArrayValue(...).$asInstanceOf[...]`
+      //
+      // See SI-6611; we must *only* do this for literal vararg arrays.
+      case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
       if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&
           appMeth.symbol == ArrayModule_overloadedApply.suchThat {
-            _.tpe.resultType.dealias.typeSymbol == ObjectClass
+            _.tpe.resultType.dealias.typeSymbol == ObjectClass  // [T: ClassTag](xs: T*): Array[T] post erasure
           }) =>
-        super.transform(array)
+        super.transform(arg)
 
       case _ =>
         super.transform(tree)

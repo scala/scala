@@ -265,6 +265,20 @@ abstract class TreeInfo {
       tree
   }
 
+  /** Strips layers of `.asInstanceOf[T]` / `_.$asInstanceOf[T]()` from an expression */
+  def stripCast(tree: Tree): Tree = tree match {
+    case TypeApply(sel @ Select(inner, _), _) if isCastSymbol(sel.symbol) =>
+      stripCast(inner)
+    case Apply(TypeApply(sel @ Select(inner, _), _), Nil) if isCastSymbol(sel.symbol) =>
+      stripCast(inner)
+    case t =>
+      t
+  }
+
+  object StripCast {
+    def unapply(tree: Tree): Some[Tree] = Some(stripCast(tree))
+  }
+
   /** Is tree a self or super constructor call? */
   def isSelfOrSuperConstrCall(tree: Tree) = {
     // stripNamedApply for SI-3584: adaptToImplicitMethod in Typers creates a special context
