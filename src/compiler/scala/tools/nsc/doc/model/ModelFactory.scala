@@ -853,6 +853,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def findMember(aSym: Symbol, inTpl: DocTemplateImpl): Option[MemberImpl] = {
+    normalizeTemplate(aSym.owner)
     inTpl.members.find(_.sym == aSym)
   }
 
