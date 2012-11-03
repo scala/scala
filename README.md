@@ -31,6 +31,8 @@ Conversion from LaTeX - Guidelines
 #. Convert all `\example`
 #. Convert all `\code`
 #. Convert all `\footnote`
+#. Convert all `\paragraph`
+#. Delete all `\comment{...}`
 #. Convert all single quote pairs
 #. Convert all double quote pairs
 #. Look for manually defined enumerated lists (1. 2. 3. etc)
@@ -81,6 +83,18 @@ the pandoc equivalent of
 where `<type>` is one of the classes representing the language of the
 code fragment.
 
+### Definitions
+
+Pandoc supports definition lists, however these do not seem to be a good
+semantic match for the numbered definitions in the reference. The only
+compromise came up with here was to treat definitions like quotations:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> **Definition**
+> Let $C$ be a class with template ...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 ### Macro replacements:
 
 - While MathJAX just support LaTeX style command definition, it is recommended
@@ -103,6 +117,8 @@ code fragment.
   use underscore emphasis and capitalise the text manually, `_LIKE THIS_`.
 - `\code{...}` can be replaced with standard in-line verbatim markdown,
   `` `like this` ``.
+- `\paragraph` (typically used for a non-numbered header) can be replaced by 
+  a hard line break, which is a `\` followed immediately by a newline.
 
 
 ### Unicode Character replacements

@@ -6,9 +6,10 @@ cat 01-title.md \
     04-identifiers-names-and-scopes.md \
     05-types.md \
     06-basic-declarations-and-definitions.md \
+    07-classes-and-objects.md \
     15-scala-syntax-summary.md \
     16-references.md > build/ScalaReference.md
-#    07-classes-and-objects.md \
+
 #    08-expressions.md \
 #    09-implicit-parameters-and-views.md \
 #    10-pattern-matching.md \

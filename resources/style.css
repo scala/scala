@@ -24,6 +24,13 @@ pre {
 	border: 1px solid #333;
 }
 
+pre.math {
+	margin: 0;
+	padding: 0;
+	background-color: transparent;
+	border: 0;
+}
+
 code > span {
 	font-weight: normal !important;
 }
