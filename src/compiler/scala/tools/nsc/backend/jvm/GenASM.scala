@@ -130,13 +130,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           new DirectToJarfileWriter(f.file)
 
         case _                               =>
+          import scala.tools.util.Javap
           if (settings.Ygenjavap.isDefault) {
             if(settings.Ydumpclasses.isDefault)
               new ClassBytecodeWriter { }
             else
               new ClassBytecodeWriter with DumpBytecodeWriter { }
           }
-          else new ClassBytecodeWriter with JavapBytecodeWriter { }
+          else if (Javap.isAvailable()) new ClassBytecodeWriter with JavapBytecodeWriter { }
+          else {
+            warning("No javap on classpath, skipping javap output.")
+            new ClassBytecodeWriter { }
+          }
 
           // TODO A ScalapBytecodeWriter could take asm.util.Textifier as starting point.
           //      Three areas where javap ouput is less than ideal (e.g. when comparing versions of the same classfile) are:
