@@ -582,6 +582,8 @@ trait Typers extends Modes with Adaptations with Tags {
           // short cut some aliases. It seems pattern matching needs this
           // to notice exhaustiveness and to generate good code when
           // List extractors are mixed with :: patterns. See Test5 in lists.scala.
+          //
+          // TODO SI-6609 Eliminate this special case once the old pattern matcher is removed.
           def dealias(sym: Symbol) =
             (atPos(tree.pos.makeTransparent) {gen.mkAttributedRef(sym)} setPos tree.pos, sym.owner.thisType)
           sym.name match {
