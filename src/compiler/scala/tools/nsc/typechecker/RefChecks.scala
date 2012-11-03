@@ -1051,6 +1051,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       def apply(tp: Type) = mapOver(tp).normalize
     }
 
+    def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.lint.value) (fn, args) match {
+      case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == Option_apply =>
+        unit.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // SI-6567
+      case _ =>
+    }
+
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 =>
         def isReferenceOp = name == nme.eq || name == nme.ne
@@ -1535,7 +1541,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
       case Apply(fn, args) =>
         // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability analyses in the pattern matcher
-        if (!inPattern) checkSensible(tree.pos, fn, args)
+        if (!inPattern) {
+          checkImplicitViewOptionApply(tree.pos, fn, args)
+          checkSensible(tree.pos, fn, args)
+        }
         currentApplication = tree
         tree
     }
