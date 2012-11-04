@@ -2663,7 +2663,8 @@ DISTRIBUTION
       <attribute name="name" />
       <sequential>
         <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar"
-          tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"/>
+          tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"
+          overwrite="yes"/>
       </sequential>
     </macrodef>
   </target>
