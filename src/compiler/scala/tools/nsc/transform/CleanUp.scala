@@ -624,17 +624,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       //
       // See SI-6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
-      if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&
-          appMeth.symbol == ArrayModule_overloadedApply.suchThat {
-            _.tpe.resultType.dealias.typeSymbol == ObjectClass  // [T: ClassTag](xs: T*): Array[T] post erasure
-          }) =>
+      if wrapRefArrayMeth.symbol == Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
         super.transform(arg)
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
-      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) &&
-         appMeth.symbol == ArrayModule_overloadedApply.suchThat {
-           tp => tp.tpe.paramss.flatten.lift.apply(1).exists(_.tpe.typeSymbol == SeqClass) &&
-             tp.tpe.resultType =:= arrayType(elemtpt.tpe) // (p1: AnyVal1, ps: AnyVal1*): Array[AnyVal1] post erasure
-         } =>
+      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         super.transform(rest.copy(elems = elem0 :: rest.elems))
 
       case _ =>
