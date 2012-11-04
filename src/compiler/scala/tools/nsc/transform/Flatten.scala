@@ -18,18 +18,14 @@ abstract class Flatten extends InfoTransform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
 
-  /** Updates the owning scope with the given symbol; returns the old symbol.
+  /** Updates the owning scope with the given symbol, unlinking any others.
    */
-  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = exitingFlatten {
+  private def replaceSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     val scope = sym.owner.info.decls
-    val old   = scope lookup sym.name andAlso scope.unlink
+    val old   = (scope lookupUnshadowedEntries sym.name).toList
+    old foreach (scope unlink _)
     scope enter sym
-
-    if (old eq NoSymbol)
-      log(s"lifted ${sym.fullLocationString}")
-    else
-      log(s"lifted ${sym.fullLocationString} after unlinking existing $old from scope.")
-
+    log(s"lifted ${sym.fullLocationString}" + ( if (old.isEmpty) "" else " after unlinking $old from scope." ))
     old
   }
 

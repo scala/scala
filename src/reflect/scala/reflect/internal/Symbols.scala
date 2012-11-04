@@ -1672,12 +1672,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def filter(cond: Symbol => Boolean): Symbol =
       if (isOverloaded) {
-        val alts = alternatives
-        val alts1 = alts filter cond
-        if (alts1 eq alts) this
+        var changed = false
+        var alts0: List[Symbol] = alternatives
+        var alts1: List[Symbol] = Nil
+
+        while (alts0.nonEmpty) {
+          if (cond(alts0.head))
+            alts1 ::= alts0.head
+          else
+            changed = true
+
+          alts0 = alts0.tail
+        }
+
+        if (!changed) this
         else if (alts1.isEmpty) NoSymbol
         else if (alts1.tail.isEmpty) alts1.head
-        else owner.newOverloaded(info.prefix, alts1)
+        else owner.newOverloaded(info.prefix, alts1.reverse)
       }
       else if (cond(this)) this
       else NoSymbol
