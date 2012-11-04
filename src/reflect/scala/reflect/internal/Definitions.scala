@@ -540,10 +540,12 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
     // Option classes
-    lazy val OptionClass: ClassSymbol = requiredClass[Option[_]]
-    lazy val SomeClass: ClassSymbol   = requiredClass[Some[_]]
-    lazy val NoneModule: ModuleSymbol = requiredModule[scala.None.type]
-    lazy val SomeModule: ModuleSymbol = requiredModule[scala.Some.type]
+    lazy val OptionClass: ClassSymbol   = requiredClass[Option[_]]
+    lazy val OptionModule: ModuleSymbol = requiredModule[scala.Option.type]
+      lazy val Option_apply             = getMemberMethod(OptionModule, nme.apply)
+    lazy val SomeClass: ClassSymbol     = requiredClass[Some[_]]
+    lazy val NoneModule: ModuleSymbol   = requiredModule[scala.None.type]
+    lazy val SomeModule: ModuleSymbol   = requiredModule[scala.Some.type]
 
     def compilerTypeFromTag(tt: ApiUniverse # WeakTypeTag[_]): Type = tt.in(rootMirror).tpe
     def compilerSymbolFromTag(tt: ApiUniverse # WeakTypeTag[_]): Symbol = tt.in(rootMirror).tpe.typeSymbol
