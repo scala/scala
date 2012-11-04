@@ -171,10 +171,26 @@ trait Types { self: Universe =>
      *
      *  Example:
      *  {{{
-     *    class D[T] { def m: T }
-     *    class C extends p.D[Int]
-     *    T.asSeenFrom(ThisType(C), D)  // (where D is the owner of m)
-     *      = Int
+     *    scala> import scala.reflect.runtime.universe._
+     *    import scala.reflect.runtime.universe._
+     *
+     *    scala> class D[T] { def m: T = ??? }
+     *    defined class D
+     *
+     *    scala> class C extends D[Int]
+     *    defined class C
+     *
+     *    scala> val D = typeOf[D[_]].typeSymbol.asClass
+     *    D: reflect.runtime.universe.ClassSymbol = class D
+     *
+     *    scala> val C = typeOf[C].typeSymbol.asClass
+     *    C: reflect.runtime.universe.ClassSymbol = class C
+     *
+     *    scala> val T = D.typeParams(0).asType.toType
+     *    T: reflect.runtime.universe.Type = T
+     *
+     *    scala> T.asSeenFrom(ThisType(C), D)
+     *    res0: reflect.runtime.universe.Type = scala.Int
      *  }}}
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type
