@@ -1818,9 +1818,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def toString(x: AnyRef) = if (x eq null) "" else x.toString
       if (cols.isEmpty || cols.tails.isEmpty) cols map toString
       else {
-        val (colStrs, colLens) = cols map {c => val s = toString(c); (s, s.length)} unzip
-        val maxLen = max(colLens)
-        val avgLen = colLens.sum/colLens.length
+        val colLens = cols map (c => toString(c).length)
+        val maxLen  = max(colLens)
+        val avgLen  = colLens.sum/colLens.length
         val goalLen = maxLen min avgLen*2
         def pad(s: String) = {
           val toAdd = ((goalLen - s.length) max 0) + 2
@@ -2263,9 +2263,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private[this] val id: Int = Var.nextId
 
       // private[this] var canModify: Option[Array[StackTraceElement]] = None
-      private[this] def ensureCanModify = {} //if (canModify.nonEmpty) patmatDebug("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
+      private[this] def ensureCanModify() = {} //if (canModify.nonEmpty) patmatDebug("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
 
-      private[this] def observed = {} //canModify = Some(Thread.currentThread.getStackTrace)
+      private[this] def observed() = {} //canModify = Some(Thread.currentThread.getStackTrace)
 
       // don't access until all potential equalities have been registered using registerEquality
       private[this] val symForEqualsTo = new scala.collection.mutable.HashMap[Const, Sym]
@@ -2418,7 +2418,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       private lazy val equalitySyms = {observed; symForEqualsTo.values.toList}
 
       // don't call until all equalities have been registered and registerNull has been called (if needed)
-      def describe = toString + ": " + staticTp + domain.map(_.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)).getOrElse(symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")) + " // = " + path
+      def describe = {
+        def domain_s = domain match {
+          case Some(d) => d mkString (" ::= ", " | ", "// "+ symForEqualsTo.keys)
+          case _       => symForEqualsTo.keys mkString (" ::= ", " | ", " | ...")
+        }
+        s"$this: ${staticTp}${domain_s} // = $path"
+      }
       override def toString = "V"+ id
     }
 
@@ -2504,7 +2510,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // corresponds to a type test that does not imply any value-equality (well, except for outer checks, which we don't model yet)
     sealed class TypeConst(val tp: Type) extends Const {
       assert(!(tp =:= NullTp))
-      private[this] val id: Int = Const.nextTypeId
+      /*private[this] val id: Int = */ Const.nextTypeId
 
       val wideTp = widenToClass(tp)
       def isValue = false
@@ -2552,7 +2558,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     sealed class ValueConst(val tp: Type, val wideTp: Type, override val toString: String) extends Const {
       // patmatDebug("VC"+(tp, wideTp, toString))
       assert(!(tp =:= NullTp)) // TODO: assert(!tp.isStable)
-      private[this] val id: Int = Const.nextValueId
+      /*private[this] val id: Int = */Const.nextValueId
       def isValue = true
     }
 
@@ -2778,7 +2784,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         // when does the match fail?
         val matchFails = Not(\/(symbolicCases))
-        val vars = gatherVariables(matchFails)
 
   // debug output:
         patmatDebug("analysing:")

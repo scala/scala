@@ -724,15 +724,7 @@ abstract class Erasure extends AddInterfaces
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
-          val qualClass = qual1.tpe.typeSymbol
-/*
-          val targClass = targ.tpe.typeSymbol
 
-          if (isNumericValueClass(qualClass) && isNumericValueClass(targClass))
-            // convert numeric type casts
-            atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
-          else
-*/
           if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
             val noNullCheckNeeded = targ.tpe match {
               case ErasedValueType(tref) =>

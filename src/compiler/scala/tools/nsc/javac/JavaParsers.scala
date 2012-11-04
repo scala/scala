@@ -348,8 +348,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     /** Annotation ::= TypeName [`(` AnnotationArgument {`,` AnnotationArgument} `)`]
      */
     def annotation() {
-      val pos = in.currentPos
-      var t = qualId()
+      qualId()
       if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
       else if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
     }

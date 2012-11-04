@@ -853,7 +853,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def findMember(aSym: Symbol, inTpl: DocTemplateImpl): Option[MemberImpl] = {
-    val tplSym = normalizeTemplate(aSym.owner)
+    normalizeTemplate(aSym.owner)
     inTpl.members.find(_.sym == aSym)
   }
 
@@ -1007,7 +1007,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def makeQualifiedName(sym: Symbol, relativeTo: Option[Symbol] = None): String = {
     val stop = relativeTo map (_.ownerChain.toSet) getOrElse Set[Symbol]()
     var sym1 = sym
-    var path = new StringBuilder()
+    val path = new StringBuilder()
     // var path = List[Symbol]()
 
     while ((sym1 != NoSymbol) && (path.isEmpty || !stop(sym1))) {
@@ -1076,7 +1076,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def findExternalLink(sym: Symbol, name: String): Option[LinkTo] = {
     val sym1 =
       if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
-      else if (sym.isPackage) 
+      else if (sym.isPackage)
         /* Get package object which has associatedFile ne null */
         sym.info.member(newTermName("package"))
       else sym

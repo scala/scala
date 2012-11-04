@@ -211,7 +211,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     def escape(name: String) = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
 
     // assemble node attribues in a map
-    var attr = scala.collection.mutable.Map[String, String]()
+    val attr = scala.collection.mutable.Map[String, String]()
 
     // link
     node.doctpl match {

@@ -165,7 +165,6 @@ abstract class Changes {
   /** Return the list of changes between 'from' and 'toSym.info'.
    */
   def changeSet(from: Type, toSym: Symbol): List[Change] = {
-    implicit val defaultReason = "types"
     implicit val defaultStrictTypeRefTest = true
 
     val to = toSym.info

@@ -148,11 +148,6 @@ class ConsoleFileManager extends FileManager {
         latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       }
 
-      val dists = testParent / "dists"
-      val build = testParent / "build"
-      // in case of an installed dist, testRootDir is one level deeper
-      val bin = testParent.parent / "bin"
-
       def mostRecentOf(base: String, names: String*) =
         names map (x => prefixFile(base + "/" + x).lastModified) reduceLeft (_ max _)
 

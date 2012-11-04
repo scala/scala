@@ -69,9 +69,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   @deprecated("Use replOutput.dir instead", "2.11.0")
   def virtualDirectory = replOutput.dir
-  def showDirectory = replOutput.show(out)
+  def showDirectory() = replOutput.show(out)
 
-  private var currentSettings: Settings       = initialSettings
   private[nsc] var printResults               = true      // whether to print result lines
   private[nsc] var totalSilence               = false     // whether to print anything
   private var _initializeComplete             = false     // compiler is initialized
@@ -98,7 +97,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     if (isInitializeComplete) global.classPath.asURLs
     else new PathResolver(settings).result.asURLs  // the compiler's classpath
   )
-  def settings = currentSettings
+  def settings = initialSettings
   def mostRecentLine = prevRequestList match {
     case Nil      => ""
     case req :: _ => req.originalLine
@@ -592,7 +591,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    */
   def bind(name: String, boundType: String, value: Any, modifiers: List[String] = Nil): IR.Result = {
     val bindRep = new ReadEvalPrint()
-    val run = bindRep.compile("""
+    bindRep.compile("""
         |object %s {
         |  var value: %s = _
         |  def set(x: Any) = value = x.asInstanceOf[%s]
@@ -622,7 +621,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def rebind(p: NamedParam): IR.Result = {
     val name     = p.name
-    val oldType  = typeOfTerm(name) orElse { return IR.Error }
     val newType  = p.tpe
     val tempName = freshInternalVarName()
 

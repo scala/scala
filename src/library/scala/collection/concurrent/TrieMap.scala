@@ -545,7 +545,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
   //   removed (those existing when the op began)
   // - if there are only null-i-nodes below, returns null
   def toCompressed(ct: TrieMap[K, V], lev: Int, gen: Gen) = {
-    var bmp = bitmap
+    val bmp = bitmap
     var i = 0
     val arr = array
     val tmparray = new Array[BasicNode](arr.length)

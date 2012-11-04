@@ -45,7 +45,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       result
     }
     private def transformTemplate(tree: Tree) = {
-      val Template(parents, self, body) = tree
+      val Template(_, _, body) = tree
       clearStatics()
       val newBody = transformTrees(body)
       val templ   = deriveTemplate(tree)(_ => transformTrees(newStaticMembers.toList) ::: newBody)

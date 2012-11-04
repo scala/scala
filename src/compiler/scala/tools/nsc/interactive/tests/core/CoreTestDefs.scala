@@ -77,7 +77,8 @@ private[tests] trait CoreTestDefs
           // askHyperlinkPos for `Int` at (73,19) pi.scala --> class Int in package scala has null sourceFile!
           val treePath = if (tree.symbol.sourceFile ne null) tree.symbol.sourceFile.path else null
           val treeName = if (tree.symbol.sourceFile ne null) tree.symbol.sourceFile.name else null
-          val sourceFile = sourceFiles.find(_.path == treePath) match {
+
+          sourceFiles.find(_.path == treePath) match {
             case Some(source) =>
               compiler.askLinkPos(tree.symbol, source, r)
               r.get match {

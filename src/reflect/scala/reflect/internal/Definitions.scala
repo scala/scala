@@ -1068,7 +1068,6 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
     def getMemberClass(owner: Symbol, name: Name): ClassSymbol = {
-      val y = getMember(owner, name.toTypeName)
       getMember(owner, name.toTypeName) match {
         case x: ClassSymbol => x
         case _              => fatalMissingSymbol(owner, name, "member class")
@@ -1235,7 +1234,7 @@ trait Definitions extends api.StandardDefinitions {
     def init() {
       if (isInitialized) return
       // force initialization of every symbol that is synthesized or hijacked by the compiler
-      val forced = symbolsNotPresentInBytecode
+      val _ = symbolsNotPresentInBytecode
       isInitialized = true
     } //init
 

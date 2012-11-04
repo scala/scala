@@ -136,7 +136,7 @@ abstract class TypeFlowAnalysis {
       timer.start
       // icodes.lubs0 = 0
       forwardAnalysis(blockTransfer)
-      val t = timer.stop
+      timer.stop
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(visited.contains(b),
@@ -326,7 +326,6 @@ abstract class TypeFlowAnalysis {
 	class TransferFunction(consumed: Int, gens: List[Gen]) extends (lattice.Elem => lattice.Elem) {
 	  def apply(in: lattice.Elem): lattice.Elem = {
         val out = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
-        val bindings = out.vars
         val stack = out.stack
 
         out.stack.pop(consumed)
@@ -389,7 +388,7 @@ abstract class TypeFlowAnalysis {
 
       timer.start
       forwardAnalysis(blockTransfer)
-      val t = timer.stop
+      timer.stop
 
       /* Now that `forwardAnalysis(blockTransfer)` has finished, all inlining candidates can be found in `remainingCALLs`,
          whose keys are callsites and whose values are pieces of information about the typestack just before the callsite in question.

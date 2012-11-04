@@ -21,7 +21,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
 
   def makeTree(rhs: Tree): Option[TreeEntity] = {
 
-    var expr = new StringBuilder
+    val expr = new StringBuilder
     var refs = new immutable.TreeMap[Int, (Entity, Int)] // start, (Entity to be linked to , end)
 
     rhs.pos match {
@@ -39,7 +39,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
            * stores it in tree.refs with its position
            */
           def makeLink(rhs: Tree){
-            var start = pos.startOrPoint - firstIndex
+            val start = pos.startOrPoint - firstIndex
             val end = pos.endOrPoint - firstIndex
             if(start != end) {
               var asym = rhs.symbol

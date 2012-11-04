@@ -48,7 +48,7 @@ final class SingleFileILPrinterVisitor(_fileName: String) extends ILPrinterVisit
 	printAssemblyBoilerplate()
 
 	// print each module
-        var m: Array[Module] = assemblyBuilder.GetModules()
+        val m: Array[Module] = assemblyBuilder.GetModules()
         nomembers = true
         for(i <- 0 until m.length) {
 	    print(m(i).asInstanceOf[ModuleBuilder])
@@ -78,12 +78,12 @@ final class SingleFileILPrinterVisitor(_fileName: String) extends ILPrinterVisit
 	if (!module.globalsCreated)
 	    module.CreateGlobalFunctions()
 
-	var m: Array[MethodInfo] = module.GetMethods()
+        val m: Array[MethodInfo] = module.GetMethods()
         for(i <- 0 until m.length) {
 	    print(m(i).asInstanceOf[MethodBuilder])
 	}
 
-	var t: Array[Type] = module.GetTypes()
+        val t: Array[Type] = module.GetTypes()
         for(i <- 0 until t.length) {
 	    print(t(i).asInstanceOf[TypeBuilder])
 	}

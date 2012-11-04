@@ -221,7 +221,7 @@ class TypeBuilder (module: Module, attributes: Int, fullName: String, baseType: 
 
 object TypeBuilder {
     def types2String(types: Array[Type]): String = {
-    var s = new StringBuffer("(")
+    val s = new StringBuffer("(")
     for(i <- 0 until types.length) {
         if (i > 0) s.append(", ")
         s.append(types(i))

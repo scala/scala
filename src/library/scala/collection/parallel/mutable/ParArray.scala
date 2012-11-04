@@ -184,7 +184,7 @@ self =>
     override def aggregate[S](z: =>S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
 
     override def sum[U >: T](implicit num: Numeric[U]): U = {
-      var s = sum_quick(num, arr, until, i, num.zero)
+      val s = sum_quick(num, arr, until, i, num.zero)
       i = until
       s
     }
@@ -200,7 +200,7 @@ self =>
     }
 
     override def product[U >: T](implicit num: Numeric[U]): U = {
-        var p = product_quick(num, arr, until, i, num.one)
+        val p = product_quick(num, arr, until, i, num.one)
         i = until
         p
     }
@@ -432,7 +432,7 @@ self =>
     private def filter2combiner_quick[U >: T, This](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
-        var curr = a(j).asInstanceOf[T]
+        val curr = a(j).asInstanceOf[T]
         if (pred(curr)) cb += curr
         j += 1
       }
@@ -447,7 +447,7 @@ self =>
     private def filterNot2combiner_quick[U >: T, This](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
-        var curr = a(j).asInstanceOf[T]
+        val curr = a(j).asInstanceOf[T]
         if (!pred(curr)) cb += curr
         j += 1
       }

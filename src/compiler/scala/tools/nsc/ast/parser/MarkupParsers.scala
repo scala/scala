@@ -124,7 +124,6 @@ trait MarkupParsers {
         val start = curOffset
         val key = xName
         xEQ
-        val delim = ch
         val mid = curOffset
         val value: Tree = ch match {
           case '"' | '\'' =>
@@ -410,7 +409,7 @@ trait MarkupParsers {
      *                  | Name [S] '/' '>'
      */
     def xPattern: Tree = {
-      var start = curOffset
+      val start = curOffset
       val qname = xName
       debugLastStartElement.push((start, qname))
       xSpaceOpt

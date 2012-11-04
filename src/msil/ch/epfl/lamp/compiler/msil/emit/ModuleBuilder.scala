@@ -73,7 +73,7 @@ class ModuleBuilder(name: String, fullname: String, scopeName: String, assembly:
 				  baseType: Type,
 				  interfaces: Array[Type]): TypeBuilder =
     {
-	var t: Type = GetType(typeName) // Module.GetType(String)
+        val t: Type = GetType(typeName) // Module.GetType(String)
 	if (t != null)
 	    throw new RuntimeException
 		("Type [" + Assembly + "]" + typeName + "' already exists!")

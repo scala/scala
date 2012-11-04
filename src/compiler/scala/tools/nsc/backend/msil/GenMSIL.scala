@@ -258,9 +258,9 @@ abstract class GenMSIL extends SubComponent {
      * and thus shouldn't be added by this method.
      */
     def addAttributes(member: ICustomAttributeSetter, annotations: List[AnnotationInfo]) {
-      val attributes = annotations.map(_.atp.typeSymbol).collect {
-        case definitions.TransientAttr => null // TODO this is just an example
-      }
+      // val attributes = annotations.map(_.atp.typeSymbol).collect {
+      //   case definitions.TransientAttr => null // TODO this is just an example
+      // }
       return // TODO: implement at some point
     }
 
@@ -823,7 +823,7 @@ abstract class GenMSIL extends SubComponent {
       def loadFieldOrAddress(field: Symbol, isStatic: Boolean, msg: String, loadAddr : Boolean) {
         debuglog(msg + " with owner: " + field.owner +
               " flags: " + Flags.flagsToString(field.owner.flags))
-        var fieldInfo = fields.get(field) match {
+        val fieldInfo = fields.get(field) match {
           case Some(fInfo) => fInfo
           case None =>
             val fInfo = getType(field.owner).GetField(msilName(field))
@@ -1254,7 +1254,7 @@ abstract class GenMSIL extends SubComponent {
             mcode.Emit(OpCodes.Stloc, switchLocal)
             var i = 0
             for (l <- tags) {
-              var targetLabel = labels(branches(i))
+              val targetLabel = labels(branches(i))
               for (i <- l) {
                 mcode.Emit(OpCodes.Ldloc, switchLocal)
                 loadI4(i, mcode)
@@ -1871,7 +1871,7 @@ abstract class GenMSIL extends SubComponent {
         val sym = ifield.symbol
         debuglog("Adding field: " + sym.fullName)
 
-        var attributes = msilFieldFlags(sym)
+        val attributes = msilFieldFlags(sym)
         val fieldTypeWithCustomMods =
           new PECustomMod(msilType(sym.tpe),
                           customModifiers(sym.annotations))
@@ -1905,7 +1905,7 @@ abstract class GenMSIL extends SubComponent {
 
         val ownerType = getType(sym.enclClass).asInstanceOf[TypeBuilder]
         assert(mtype == ownerType, "mtype = " + mtype + "; ownerType = " + ownerType)
-        var paramTypes = msilParamTypes(sym)
+        val paramTypes = msilParamTypes(sym)
         val attr = msilMethodFlags(sym)
 
         if (m.symbol.isClassConstructor) {
@@ -1917,7 +1917,7 @@ abstract class GenMSIL extends SubComponent {
           mapConstructor(sym, constr)
           addAttributes(constr, sym.annotations)
         } else {
-          var resType = msilType(m.returnType)
+          val resType = msilType(m.returnType)
           val method =
             ownerType.DefineMethod(msilName(sym), attr, resType, paramTypes)
           for (i <- 0.until(paramTypes.length)) {
@@ -2037,7 +2037,6 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def generateMirrorClass(sym: Symbol) {
-      val tBuilder = getType(sym)
       assert(sym.isModuleClass, "Can't generate Mirror-Class for the Non-Module class " + sym)
       debuglog("Dumping mirror class for object: " + sym)
       val moduleName = msilName(sym)

@@ -279,7 +279,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private def importsCommand(line: String): Result = {
     val tokens    = words(line)
     val handlers  = intp.languageWildcardHandlers ++ intp.importHandlers
-    val isVerbose = tokens contains "-v"
 
     handlers.filterNot(_.importedSymbols.isEmpty).zipWithIndex foreach {
       case (handler, idx) =>

@@ -664,10 +664,6 @@ trait Implicits {
             // duplicating the code here, but this is probably a
             // hotspot (and you can't just call typed, need to force
             // re-typecheck)
-            // TODO: the return tree is ignored.  This seems to make
-            // no difference, but it's bad practice regardless.
-
-
             val checked = itree2 match {
               case TypeApply(fun, args)           => typedTypeApply(itree2, EXPRmode, fun, args)
               case Apply(TypeApply(fun, args), _) => typedTypeApply(itree2, EXPRmode, fun, args) // t2421c
@@ -677,7 +673,7 @@ trait Implicits {
             if (context.hasErrors)
               fail("typing TypeApply reported errors for the implicit tree: " + context.errBuffer.head.errMsg)
             else {
-              val result = new SearchResult(itree2, subst)
+              val result = new SearchResult(checked, subst)
               if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
               printInference("[success] found %s for pt %s".format(result, ptInstantiated))
               result
@@ -1205,7 +1201,7 @@ trait Implicits {
         }
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
-      var materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
+      val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
       if (settings.XlogImplicits.value) println("materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently

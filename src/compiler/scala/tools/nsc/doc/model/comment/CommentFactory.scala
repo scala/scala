@@ -759,8 +759,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     def link(): Inline = {
       val SchemeUri = """([a-z]+:.*)""".r
       jump("[[")
-      var parens = 2 + repeatJump('[')
-      val start = "[" * parens
+      val parens = 2 + repeatJump('[')
       val stop  = "]" * parens
       //println("link with " + parens + " matching parens")
       val target = readUntil { check(stop) || check(" ") }
@@ -805,7 +804,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
      */
     def normalizeIndentation(_code: String): String = {
 
-      var code = _code.trim
+      val code = _code.trim
       var maxSkip = Integer.MAX_VALUE
       var crtSkip = 0
       var wsArea = true

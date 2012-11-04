@@ -43,7 +43,7 @@ trait Mirrors extends api.Mirrors {
         if (point > 0) getModuleOrClass(path.toTermName, point)
         else RootClass
       val name = path subName (point + 1, len)
-      var sym = owner.info member name
+      val sym = owner.info member name
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {

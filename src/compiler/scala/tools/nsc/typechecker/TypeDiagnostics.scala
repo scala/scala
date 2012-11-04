@@ -432,34 +432,84 @@ trait TypeDiagnostics {
       class UnusedPrivates extends Traverser {
         val defnTrees = ListBuffer[MemberDef]()
         val targets   = mutable.Set[Symbol]()
+        val setVars   = mutable.Set[Symbol]()
+        val treeTypes = mutable.Set[Type]()
+
+        def defnSymbols = defnTrees.toList map (_.symbol)
+        def localVars   = defnSymbols filter (t => t.isLocal && t.isVar)
+
+        def qualifiesTerm(sym: Symbol) = (
+             (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocal)
+          && !nme.isLocalName(sym.name)
+          && !sym.isParameter
+          && !sym.isParamAccessor       // could improve this, but it's a pain
+          && !sym.isEarlyInitialized    // lots of false positives in the way these are encoded
+          && !(sym.isGetter && sym.accessed.isEarlyInitialized)
+        )
+        def qualifiesType(sym: Symbol) = !sym.isDefinedInPackage
         def qualifies(sym: Symbol) = (
              (sym ne null)
-          && (sym.isMethod || sym.isPrivateLocal && !nme.isLocalName(sym.name))
-          && !sym.isParameter
-          && !sym.isParamAccessor  // could improve this, but it's a pain
+          && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
         )
 
         override def traverse(t: Tree): Unit = {
           t match {
-            case t: ValOrDefDef if qualifies(t.symbol) => defnTrees += t
+            case t: MemberDef if qualifies(t.symbol)   => defnTrees += t
             case t: RefTree if t.symbol ne null        => targets += t.symbol
+            case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
             case _                                     =>
+          }
+          // Only record type references which don't originate within the
+          // definition of the class being referenced.
+          if (t.tpe ne null) {
+            for (tp <- t.tpe ; if !treeTypes(tp) && !currentOwner.ownerChain.contains(tp.typeSymbol)) {
+              tp match {
+                case NoType | NoPrefix    =>
+                case NullaryMethodType(_) =>
+                case MethodType(_, _)     =>
+                case _                    =>
+                  log(s"$tp referenced from $currentOwner")
+                  treeTypes += tp
+              }
+            }
+            // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
+            t.tpe.prefix foreach {
+              case SingleType(_, sym) => targets += sym
+              case _                 =>
+            }
           }
           super.traverse(t)
         }
-        def isUnused(m: Symbol): Boolean = (
-             m.isPrivate
-          && !targets(m)
-          && !ignoreNames(m.name)               // serialization methods
-          && !isConstantType(m.info.resultType) // subject to constant inlining
+        def isUnused(t: Tree): Boolean = (
+          if (t.symbol.isTerm) isUnusedTerm(t.symbol)
+          else isUnusedType(t.symbol)
         )
-        def unused = defnTrees.toList filter (t => isUnused(t.symbol))
+        def isUnusedType(m: Symbol): Boolean = (
+              m.isType
+          && !m.isTypeParameterOrSkolem // would be nice to improve this
+          && (m.isPrivate || m.isLocal)
+          && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
+        )
+        def isUnusedTerm(m: Symbol): Boolean = (
+             (m.isTerm)
+          && (m.isPrivate || m.isLocal)
+          && !targets(m)
+          && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
+          && !ignoreNames(m.name)                   // serialization methods
+          && !isConstantType(m.info.resultType)     // subject to constant inlining
+          && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
+        )
+        def unusedTypes = defnTrees.toList filter (t => isUnusedType(t.symbol))
+        def unusedTerms = defnTrees.toList filter (v => isUnusedTerm(v.symbol))
+        // local vars which are never set, except those already returned in unused
+        def unsetVars = localVars filter (v => !setVars(v) && !isUnusedTerm(v))
       }
 
       def apply(unit: CompilationUnit) = {
         val p = new UnusedPrivates
         p traverse unit.body
-        p.unused foreach { defn: DefTree =>
+        val unused = p.unusedTerms
+        unused foreach { defn: DefTree =>
           val sym             = defn.symbol
           val isDefaultGetter = sym.name containsName nme.DEFAULT_GETTER_STRING
           val pos = (
@@ -470,15 +520,26 @@ trait TypeDiagnostics {
               case _               => NoPosition
             }
           )
+          val why = if (sym.isPrivate) "private" else "local"
           val what = (
             if (isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
+            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) "var"
+            else if (sym.isVal || sym.isGetter && sym.accessed.isVal) "val"
             else if (sym.isSetter) "setter"
-            else if (sym.isGetter) "getter"
             else if (sym.isMethod) "method"
-            else "member"
+            else if (sym.isModule) "object"
+            else "term"
           )
-          unit.warning(pos, s"private $what in ${sym.owner} is never used")
+          unit.warning(pos, s"$why $what in ${sym.owner} is never used")
+        }
+        p.unsetVars foreach { v =>
+          unit.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set - it could be a val")
+        }
+        p.unusedTypes foreach { t =>
+          val sym = t.symbol
+          val why = if (sym.isPrivate) "private" else "local"
+          unit.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
         }
       }
     }

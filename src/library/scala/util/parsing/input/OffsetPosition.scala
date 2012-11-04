@@ -22,7 +22,7 @@ case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends P
 
   /** An index that contains all line starts, including first line, and eof. */
   private lazy val index: Array[Int] = {
-    var lineStarts = new ArrayBuffer[Int]
+    val lineStarts = new ArrayBuffer[Int]
     lineStarts += 0
     for (i <- 0 until source.length)
       if (source.charAt(i) == '\n') lineStarts += (i + 1)

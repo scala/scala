@@ -355,7 +355,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
             }
 
             // don't forget to service interrupt requests
-            val iqs = scheduler.dequeueAllInterrupts(_.execute())
+            scheduler.dequeueAllInterrupts(_.execute())
 
             debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
             debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
