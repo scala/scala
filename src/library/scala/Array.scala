@@ -115,6 +115,8 @@ object Array extends FallbackArrayBuilding {
    *  @param xs the elements to put in the array
    *  @return an array containing all elements from xs.
    */
+  // Subject to a compiler optimization in Cleanup.
+  // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
   def apply[T: ClassTag](xs: T*): Array[T] = {
     val array = new Array[T](xs.length)
     var i = 0
@@ -123,6 +125,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Boolean` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Boolean, xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length + 1)
     array(0) = x
@@ -132,6 +135,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Byte` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Byte, xs: Byte*): Array[Byte] = {
     val array = new Array[Byte](xs.length + 1)
     array(0) = x
@@ -141,6 +145,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Short` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Short, xs: Short*): Array[Short] = {
     val array = new Array[Short](xs.length + 1)
     array(0) = x
@@ -150,6 +155,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Char` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Char, xs: Char*): Array[Char] = {
     val array = new Array[Char](xs.length + 1)
     array(0) = x
@@ -159,6 +165,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Int` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Int, xs: Int*): Array[Int] = {
     val array = new Array[Int](xs.length + 1)
     array(0) = x
@@ -168,6 +175,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Long` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Long, xs: Long*): Array[Long] = {
     val array = new Array[Long](xs.length + 1)
     array(0) = x
@@ -177,6 +185,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Float` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Float, xs: Float*): Array[Float] = {
     val array = new Array[Float](xs.length + 1)
     array(0) = x
@@ -186,6 +195,7 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Creates an array of `Double` objects */
+  // Subject to a compiler optimization in Cleanup, see above.
   def apply(x: Double, xs: Double*): Array[Double] = {
     val array = new Array[Double](xs.length + 1)
     array(0) = x

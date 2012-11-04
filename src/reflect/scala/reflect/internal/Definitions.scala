@@ -340,12 +340,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val PredefModule      = requiredModule[scala.Predef.type]
     lazy val PredefModuleClass = PredefModule.moduleClass
 
-      def Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
-      def Predef_identity     = getMemberMethod(PredefModule, nme.identity)
-      def Predef_conforms     = getMemberMethod(PredefModule, nme.conforms)
-      def Predef_wrapRefArray = getMemberMethod(PredefModule, nme.wrapRefArray)
-      def Predef_???          = getMemberMethod(PredefModule, nme.???)
-      def Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
+      def Predef_classOf             = getMemberMethod(PredefModule, nme.classOf)
+      def Predef_identity            = getMemberMethod(PredefModule, nme.identity)
+      def Predef_conforms            = getMemberMethod(PredefModule, nme.conforms)
+    def Predef_wrapRefArray        = getMemberMethod(PredefModule, nme.wrapRefArray)
+    def Predef_wrapArray(tp: Type) = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
+    def Predef_???                 = getMemberMethod(PredefModule, nme.???)
+    def Predef_implicitly          = getMemberMethod(PredefModule, nme.implicitly)
 
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
