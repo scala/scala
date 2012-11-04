@@ -87,7 +87,7 @@ object Arguments {
               i += 2
             }
           } else {
-            var iter = prefixes.iterator
+            val iter = prefixes.iterator
             val j = i
             while ((i == j) && iter.hasNext) {
               val prefix = iter.next

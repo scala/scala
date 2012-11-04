@@ -275,7 +275,7 @@ class XIncludeFilter extends XMLFilterImpl {
     try {
       val uc = source.openConnection()
       val in = new BufferedInputStream(uc.getInputStream())
-      var encodingFromHeader = uc.getContentEncoding()
+      val encodingFromHeader = uc.getContentEncoding()
       var contentType = uc.getContentType()
       if (encodingFromHeader != null)
         encoding = encodingFromHeader

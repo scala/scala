@@ -390,7 +390,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *  typed.
      */
     private def makeAccessor(tree: Select, targs: List[Tree]): Tree = {
-      val Select(qual, name) = tree
+      val Select(qual, _) = tree
       val sym = tree.symbol
       val clazz = hostForAccessorOf(sym, currentClass)
 

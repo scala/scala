@@ -471,9 +471,6 @@ time { mNew.iterator.foreach( p => ()) }
             // condition below is due to 2 things:
             // 1) no unsigned int compare on JVM
             // 2) 0 (no lsb) should always be greater in comparison
-            val a = thislsb - 1
-            val b = thatlsb - 1
-
             if (unsignedCompare(thislsb - 1, thatlsb - 1)) {
               val m = thiselems(thisi)
               totalelems += m.size

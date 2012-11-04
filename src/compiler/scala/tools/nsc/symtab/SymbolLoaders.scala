@@ -226,7 +226,6 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(newScope, root))
 
-      val sourcepaths = classpath.sourcepaths
       if (!root.isRoot) {
         for (classRep <- classpath.classes if platform.doLoad(classRep)) {
           initializeFromClassPath(root, classRep)

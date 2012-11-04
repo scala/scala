@@ -322,8 +322,8 @@ abstract class Inliners extends SubComponent {
       if (settings.debug.value)
         inlineLog("caller", ownedName(m.symbol), "in " + m.symbol.owner.fullName)
 
-      var sizeBeforeInlining  = m.code.blockCount
-      var instrBeforeInlining = m.code.instructionCount
+      val sizeBeforeInlining  = m.code.blockCount
+      val instrBeforeInlining = m.code.instructionCount
       var retry = false
       var count = 0
 
@@ -479,7 +479,7 @@ abstract class Inliners extends SubComponent {
        * As a whole, both `preInline()` invocations amount to priming the inlining process,
        * so that the first TFA that is run afterwards is able to gain more information as compared to a cold-start.
        */
-      val totalPreInlines = {
+      /*val totalPreInlines = */ { // Val name commented out to emphasize it is never used
         val firstRound = preInline(true)
         if(firstRound == 0) 0 else (firstRound + preInline(false))
       }
@@ -571,7 +571,6 @@ abstract class Inliners extends SubComponent {
       m.normalize
       if (sizeBeforeInlining > 0) {
         val instrAfterInlining = m.code.instructionCount
-        val prefix = if ((instrAfterInlining > 2 * instrBeforeInlining) && (instrAfterInlining > 200)) "!!" else ""
         val inlinings = caller.inlinedCalls
         if (inlinings > 0) {
           val s1      = s"instructions $instrBeforeInlining -> $instrAfterInlining"

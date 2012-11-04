@@ -55,7 +55,7 @@ trait PhaseAssembly {
      * node object does not exist, then create it.
      */
     def getNodeByPhase(phs: SubComponent): Node = {
-      var node: Node = getNodeByPhase(phs.phaseName)
+      val node: Node = getNodeByPhase(phs.phaseName)
       node.phaseobj match {
         case None =>
           node.phaseobj = Some(List[SubComponent](phs))
@@ -75,7 +75,7 @@ trait PhaseAssembly {
      * list of the nodes
      */
     def softConnectNodes(frm: Node, to: Node) {
-      var e = new Edge(frm, to, false)
+      val e = new Edge(frm, to, false)
       this.edges += e
 
       frm.after += e
@@ -87,7 +87,7 @@ trait PhaseAssembly {
      * list of the nodes
      */
     def hardConnectNodes(frm: Node, to: Node) {
-      var e = new Edge(frm, to, true)
+      val e = new Edge(frm, to, true)
       this.edges += e
 
       frm.after += e
@@ -164,7 +164,7 @@ trait PhaseAssembly {
 
           } else {
 
-            var promote = hl.to.before.filter(e => (!e.hard))
+            val promote = hl.to.before.filter(e => (!e.hard))
             hl.to.before.clear
             sanity foreach (edge => hl.to.before += edge)
             for (edge <- promote) {
@@ -245,7 +245,7 @@ trait PhaseAssembly {
 
     for (phs <- phsSet) {
 
-      var fromnode = graph.getNodeByPhase(phs)
+      val fromnode = graph.getNodeByPhase(phs)
 
       phs.runsRightAfter match {
         case None =>
@@ -306,7 +306,7 @@ trait PhaseAssembly {
       sbuf.append("\"" + node.allPhaseNames + "(" + node.level + ")" + "\" [color=\"#0000ff\"]\n")
     }
     sbuf.append("}\n")
-    var out = new BufferedWriter(new FileWriter(filename))
+    val out = new BufferedWriter(new FileWriter(filename))
     out.write(sbuf.toString)
     out.flush()
     out.close()

@@ -529,7 +529,6 @@ abstract class TreeBrowsers {
      * attributes */
     def symbolAttributes(t: Tree): String = {
       val s = t.symbol
-      var att = ""
 
       if ((s ne null) && (s != NoSymbol)) {
         var str = flagsToString(s.flags)

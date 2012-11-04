@@ -96,7 +96,7 @@ abstract class ILPrinterVisitor extends Visitor {
     protected def println(s: String){ print(s); println() }
     protected def println(o: Object){ print(o); println() }
     protected def printName(name: String) {
-	var ch = name.charAt(0)
+        val ch = name.charAt(0)
 	//if (Character.isLetter(ch) && Character.isLowerCase(ch)) {
 	if ((ch != '.') && (ch != '!')) {
 	    print('\''); print(name); print('\'')
@@ -174,7 +174,6 @@ abstract class ILPrinterVisitor extends Visitor {
       print(constraintFlags(tVar))
       if(tVar.Constraints.length > 0) {
         print('(')
-        val lastCnstrtIdx = tVar.Constraints.length - 1
         for (ic <- 0 until tVar.Constraints.length) {
           val cnstrt = tVar.Constraints(ic)
           printReference(cnstrt)
@@ -211,7 +210,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	    print("       extends    ")
 	    printReference(`type`.BaseType())
 	}
-	var ifaces: Array[Type] = `type`.getInterfaces()
+        val ifaces: Array[Type] = `type`.getInterfaces()
 	if (ifaces.length > 0) {
 	    println()
 	    print("       implements ")
@@ -331,7 +330,7 @@ abstract class ILPrinterVisitor extends Visitor {
 
   def msilSyntaxDouble(valDou: java.lang.Double) : String = {
     // !!! check if encoding is correct
-    var bits = java.lang.Double.doubleToRawLongBits(valDou.doubleValue())
+    val bits = java.lang.Double.doubleToRawLongBits(valDou.doubleValue())
     /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
     /* Note: no value is equal to Nan, including NaN. Thus, x == Double.NaN always evaluates to false. */
     val res = if (valDou.isNaN) "0xffffffffffffffff /* NaN */ " /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
@@ -452,7 +451,7 @@ abstract class ILPrinterVisitor extends Visitor {
      */
     @throws(classOf[IOException])
     def caseOpCode(opCode: OpCode) {
-	var opString = opCode.toString()
+        val opString = opCode.toString()
 	print(opString)
 	pad(14 - opString.length())
 
@@ -661,7 +660,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	print(' '); printReference(method.DeclaringType)
 	print("::"); printName(method.Name)
 
-	var params = method.GetParameters()
+        val params = method.GetParameters()
 	print("(")
 	for (i <- 0 until params.length) {
 	    if (i > 0) print(", ")
@@ -744,7 +743,7 @@ abstract class ILPrinterVisitor extends Visitor {
     }
 
     def printAttributes(icap: ICustomAttributeProvider) {
-        var attrs = icap.GetCustomAttributes(false)
+        val attrs = icap.GetCustomAttributes(false)
         for (i <- 0 until attrs.length) {
             print(".custom ")
             printSignature((attrs(i).asInstanceOf[Attribute]).getConstructor())
@@ -767,7 +766,7 @@ object ILPrinterVisitor {
 
     def hasControlChars(str: String): Boolean = {
     for(i <- 0 until str.length()) {
-        var ch = str.charAt(i)
+        val ch = str.charAt(i)
         ch match {
           case '\b' =>
           case '\t' =>
@@ -789,7 +788,7 @@ object ILPrinterVisitor {
           case e : java.io.UnsupportedEncodingException => throw new RuntimeException(e)
         }
     }
-    var str = new StringBuffer(s)
+    val str = new StringBuffer(s)
     var ss = EMPTY
     var i = 0
     while(i < str.length()) {
@@ -834,7 +833,7 @@ object ILPrinterVisitor {
 
     final var primitive = scala.collection.mutable.Map.empty[Type, String]
     def addPrimitive(name: String, sig: String) {
-      var `type` =
+      val `type` =
       Type.GetType(name)
       assert(`type` != null, "Cannot lookup primitive type " + `type`)
       primitive.put(`type`, sig)

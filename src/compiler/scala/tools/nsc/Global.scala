@@ -298,7 +298,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   private val reader: SourceReader = {
     val defaultEncoding = Properties.sourceEncoding
-    val defaultReader   = Properties.sourceReader
 
     def loadCharset(name: String) =
       try Some(Charset.forName(name))
@@ -1726,7 +1725,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
       val suffix = if (cls.symbol.hasModuleFlag) "$.icode" else ".icode"
-      var file = getFile(cls.symbol, suffix)
+      val file = getFile(cls.symbol, suffix)
 //      if (file.exists())
 //        file = new File(file.getParentFile(), file.getName() + "1")
       try {

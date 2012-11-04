@@ -312,7 +312,6 @@ trait Infer extends Checkable {
       if (sym.isError) {
         tree setSymbol sym setType ErrorType
       } else {
-        val topClass = context.owner.enclosingTopLevelClass
         if (context.unit.exists)
           context.unit.depends += sym.enclosingTopLevelClass
 

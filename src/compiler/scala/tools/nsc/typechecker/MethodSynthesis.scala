@@ -556,7 +556,7 @@ trait MethodSynthesis {
 
     // No Symbols available.
     private def beanAccessorsFromNames(tree: ValDef) = {
-      val ValDef(mods, name, tpt, _) = tree
+      val ValDef(mods, _, _, _) = tree
       val hasBP     = mods hasAnnotationNamed tpnme.BeanPropertyAnnot
       val hasBoolBP = mods hasAnnotationNamed tpnme.BooleanBeanPropertyAnnot
 

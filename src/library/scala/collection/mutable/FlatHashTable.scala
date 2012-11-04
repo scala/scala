@@ -266,7 +266,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     val totalbuckets = totalSizeMapBuckets
     var bucketidx = 0
     var tableidx = 0
-    var tbl = table
+    val tbl = table
     var tableuntil = sizeMapBucketSize min tbl.length
     while (bucketidx < totalbuckets) {
       var currbucketsz = 0

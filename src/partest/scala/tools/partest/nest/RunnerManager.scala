@@ -855,9 +855,8 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
     if (fileManager.failed && !runner.logFile.canRead)
       return TestState.Ok
 
-    // sys addShutdownHook cleanup()
-    val ((success, ctx), elapsed) = timed(runner.run())
-    val state                     = if (success) TestState.Ok else TestState.Fail
+    val (success, ctx) = runner.run()
+    val state          = if (success) TestState.Ok else TestState.Fail
 
     runner.reportResult(ctx.writers)
     state

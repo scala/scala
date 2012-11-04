@@ -26,8 +26,6 @@ class ConsoleRunner extends DirectRunner {
   private def antFilter(p: Path) = p.isFile && (p endsWith "build.xml")
 
   val testSets = {
-    val pathFilter: Path => Boolean = x => x.isDirectory || (x hasExtension "scala")
-
     List(
       TestSet("pos", stdFilter, "Testing compiler (on files whose compilation should succeed)"),
       TestSet("neg", stdFilter, "Testing compiler (on files whose compilation should fail)"),

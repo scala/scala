@@ -110,7 +110,6 @@ trait SymbolTrackers {
         case Some(oldFlags) =>
           val added   = masked & ~oldFlags
           val removed = oldFlags & ~masked
-          val steady  = masked & ~(added | removed)
           val all     = masked | oldFlags
           val strs    = 0 to 63 map { bit =>
             val flag = 1L << bit
@@ -177,7 +176,7 @@ trait SymbolTrackers {
     }
     def show(label: String): String = {
       val hierarchy = Node(current)
-      val Change(added, removed, symMap, owners, flags) = history.head
+      val Change(_, removed, symMap, _, _) = history.head
       def detailString(sym: Symbol) = {
         val ownerString = sym.ownerChain splitAt 3 match {
           case (front, back) =>

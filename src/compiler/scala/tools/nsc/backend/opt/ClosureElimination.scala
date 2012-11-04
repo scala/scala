@@ -120,7 +120,7 @@ abstract class ClosureElimination extends SubComponent {
 
             case LOAD_FIELD(f, false) /* if accessible(f, m.symbol) */ =>
               def replaceFieldAccess(r: Record) {
-                val Record(cls, bindings) = r
+                val Record(cls, _) = r
                 info.getFieldNonRecordValue(r, f) foreach { v =>
                         bb.replaceInstruction(i, DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil)
                         debuglog(s"replaced $i with $v")

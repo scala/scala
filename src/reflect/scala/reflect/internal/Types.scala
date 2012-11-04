@@ -1725,8 +1725,8 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   protected def defineBaseClassesOfCompoundType(tpe: CompoundType) {
-    def define = defineBaseClassesOfCompoundType(tpe, force = false)
-    if (!breakCycles || isPastTyper) define
+    def define() = defineBaseClassesOfCompoundType(tpe, force = false)
+    if (!breakCycles || isPastTyper) define()
     else tpe match {
       // non-empty parents helpfully excludes all package classes
       case tpe @ ClassInfoType(_ :: _, _, clazz) if !clazz.isAnonOrRefinementClass =>
@@ -1735,11 +1735,11 @@ trait Types extends api.Types { self: SymbolTable =>
           defineBaseClassesOfCompoundType(tpe, force = true)
         else {
           baseClassesCycleMonitor push clazz
-          try define
+          try define()
           finally baseClassesCycleMonitor pop clazz
         }
       case _ =>
-        define
+        define()
     }
   }
   private def defineBaseClassesOfCompoundType(tpe: CompoundType, force: Boolean) {
@@ -1999,7 +1999,7 @@ trait Types extends api.Types { self: SymbolTable =>
       var change = false
       for ((from, targets) <- refs(NonExpansive).iterator)
         for (target <- targets) {
-          var thatInfo = classInfo(target)
+          val thatInfo = classInfo(target)
           if (thatInfo.state != Initialized)
             change = change | thatInfo.propagate()
           addRefs(NonExpansive, from, thatInfo.getRefs(NonExpansive, target))
@@ -2007,7 +2007,7 @@ trait Types extends api.Types { self: SymbolTable =>
         }
       for ((from, targets) <- refs(Expansive).iterator)
         for (target <- targets) {
-          var thatInfo = classInfo(target)
+          val thatInfo = classInfo(target)
           if (thatInfo.state != Initialized)
             change = change | thatInfo.propagate()
           addRefs(Expansive, from, thatInfo.getRefs(NonExpansive, target))
@@ -4071,7 +4071,7 @@ trait Types extends api.Types { self: SymbolTable =>
         variance = -variance
         val tparams1 = mapOver(tparams)
         variance = -variance
-        var result1 = this(result)
+        val result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
       case TypeBounds(lo, hi) =>
@@ -4133,7 +4133,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
         val tparams1 = mapOver(tparams)
-        var result1 = this(result)
+        val result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
       case NullaryMethodType(result) =>
@@ -4163,7 +4163,7 @@ trait Types extends api.Types { self: SymbolTable =>
         copyRefinedType(rtp, parents1, decls1)
       case ExistentialType(tparams, result) =>
         val tparams1 = mapOver(tparams)
-        var result1 = this(result)
+        val result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else newExistentialType(tparams1, result1.substSym(tparams, tparams1))
       case OverloadedType(pre, alts) =>

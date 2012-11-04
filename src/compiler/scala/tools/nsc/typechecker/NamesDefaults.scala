@@ -171,7 +171,7 @@ trait NamesDefaults { self: Analyzer =>
         qual changeOwner (blockTyper.context.owner -> sym)
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
-        var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
+        val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
           // setSymbol below is important because the 'selected' function might be overloaded. by
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, SI-5259.
@@ -319,7 +319,7 @@ trait NamesDefaults { self: Analyzer =>
           assert(isNamedApplyBlock(transformedFun), transformedFun)
           val NamedApplyInfo(qual, targs, vargss, blockTyper) =
             context.namedApplyBlockInfo.get._2
-          val existingBlock @ Block(stats, funOnly) = transformedFun
+          val Block(stats, funOnly) = transformedFun
 
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)

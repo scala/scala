@@ -188,11 +188,12 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
     }
     protected def readTermName(): TermName = readName().toTermName
     protected def readTypeName(): TypeName = readName().toTypeName
+    private def readEnd() = readNat() + readIndex
 
     /** Read a symbol */
     protected def readSymbol(): Symbol = {
       val tag   = readByte()
-      val end   = readNat() + readIndex
+      val end   = readEnd()
       def atEnd = readIndex == end
 
       def readExtSymbol(): Symbol = {
@@ -320,7 +321,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
      */
     protected def readType(forceProperType: Boolean = false): Type = {
       val tag = readByte()
-      val end = readNat() + readIndex
+      val end = readEnd()
       (tag: @switch) match {
         case NOtpe =>
           NoType
@@ -339,7 +340,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
         case TYPEREFtpe =>
           val pre = readTypeRef()
           val sym = readSymbolRef()
-          var args = until(end, readTypeRef)
+          val args = until(end, readTypeRef)
           TypeRef(pre, sym, args)
         case TYPEBOUNDStpe =>
           TypeBounds(readTypeRef(), readTypeRef())
@@ -426,7 +427,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
     protected def readChildren() {
       val tag = readByte()
       assert(tag == CHILDREN)
-      val end = readNat() + readIndex
+      val end = readEnd()
       val target = readSymbolRef()
       while (readIndex != end) target addChild readSymbolRef()
     }
@@ -445,7 +446,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
      */
     private def readArrayAnnot() = {
       readByte() // skip the `annotargarray` tag
-      val end = readNat() + readIndex
+      val end = readEnd()
       until(end, () => readClassfileAnnotArg(readNat())).toArray(JavaArgumentTag)
     }
     protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
@@ -481,7 +482,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
       val tag = readByte()
       if (tag != SYMANNOT)
         errorBadSignature("symbol annotation expected ("+ tag +")")
-      val end = readNat() + readIndex
+      val end = readEnd()
       val target = readSymbolRef()
       target.addAnnotation(readAnnotationInfo(end))
     }
@@ -492,7 +493,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
       val tag = readByte()
       if (tag != ANNOTINFO)
         errorBadSignature("annotation expected (" + tag + ")")
-      val end = readNat() + readIndex
+      val end = readEnd()
       readAnnotationInfo(end)
     }
 
@@ -501,7 +502,7 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
       val outerTag = readByte()
       if (outerTag != TREE)
         errorBadSignature("tree expected (" + outerTag + ")")
-      val end = readNat() + readIndex
+      val end = readEnd()
       val tag = readByte()
       val tpe = if (tag == EMPTYtree) NoType else readTypeRef()
 
@@ -759,7 +760,8 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
       val tag = readNat()
       if (tag != MODIFIERS)
         errorBadSignature("expected a modifiers tag (" + tag + ")")
-      val end = readNat() + readIndex
+
+      readEnd()
       val pflagsHi = readNat()
       val pflagsLo = readNat()
       val pflags = (pflagsHi.toLong << 32) + pflagsLo
