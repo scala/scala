@@ -859,7 +859,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
        isTerm && // type members are not affected
        owner.isRefinementClass && // owner must be a refinement class
        (owner.info decl name) == this && // symbol must be explicitly declared in the refinement (not synthesized from glb)
-       allOverriddenSymbols.isEmpty && // symbol must not override a symbol in a base class
+       !isOverridingSymbol && // symbol must not override a symbol in a base class
        !isConstant // symbol must not be a constant. Question: Can we exclude @inline methods as well?
 
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
@@ -2073,13 +2073,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!owner.isClass) Nil
       else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
-    /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
-    // !!! When if ever will this answer differ from .isOverride?
-    // How/where is the OVERRIDE flag managed, as compared to how checks
-    // based on type membership will evaluate?
-    def isOverridingSymbol = owner.isClass && (
-      owner.ancestors exists (cls => matchingSymbol(cls, owner.thisType) != NoSymbol)
+    /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient.
+     *  This caches positive results by setting the OVERRIDE flag so
+     *  successive calls will succeed immediately.
+     */
+    def isOverridingSymbol = this.isOverride || (
+         !this.isClass
+      && owner.isClass
+      && (owner.ancestors exists (cls => matchingSymbol(cls, owner.thisType) != NoSymbol))
+      && { this setFlag OVERRIDE ; true }
     )
+
     /** Equivalent to allOverriddenSymbols.head (or NoSymbol if no overrides) but more efficient. */
     def nextOverriddenSymbol: Symbol = {
       if (owner.isClass) owner.ancestors foreach { base =>
