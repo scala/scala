@@ -1,7 +1,10 @@
 package scala.reflect
 package macros
 
-/** Attachments provide a way to associate custom metadata with symbols and trees.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  Attachments provide a way to associate custom metadata with symbols and trees.
  *
  *  Along with `symbol` and `tpe`, which represent core metadata of trees, each tree
  *  carries the `attachments` field that can store other metadata: compiler-defined (e.g. positions) or user-defined.

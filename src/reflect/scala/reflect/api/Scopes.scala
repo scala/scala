@@ -1,19 +1,24 @@
 package scala.reflect
 package api
 
-/** This trait provides support for scopes in the reflection API.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A scope object generally maps names to symbols available in a corresponding lexical scope.
- *  Scopes can be nested. The base type exposed to the reflection API, however,
- *  only exposes a minimal interface, representing a scope as an iterable of symbols.
+ * This trait provides support for scopes in the reflection API.
  *
- *  For rare occasions when it is necessary to create a scope manually,
- *  e.g., to populate members of [[scala.reflect.api.Types#RefinedType]],
- *  there is the `newScopeWith` function.
+ * A scope object generally maps names to symbols available in a corresponding lexical scope.
+ * Scopes can be nested. The base type exposed to the reflection API, however,
+ * only exposes a minimal interface, representing a scope as an iterable of symbols.
  *
- *  Additional functionality is exposed in member scopes that are returned by
- *  `members` and `declarations` defined in [[scala.reflect.api.Types#TypeApi]].
- *  Such scopes support the `sorted` method, which sorts members in declaration order.
+ * For rare occasions when it is necessary to create a scope manually,
+ * e.g., to populate members of [[scala.reflect.api.Types#RefinedType]],
+ * there is the `newScopeWith` function.
+ *
+ * Additional functionality is exposed in member scopes that are returned by
+ * `members` and `declarations` defined in [[scala.reflect.api.Types#TypeApi]].
+ * Such scopes support the `sorted` method, which sorts members in declaration order.
+ *
+ * @group ReflectionAPI
  */
 trait Scopes { self: Universe =>
 

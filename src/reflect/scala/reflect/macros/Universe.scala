@@ -1,7 +1,10 @@
 package scala.reflect
 package macros
 
-/** The refinement of [[scala.reflect.api.Universe]] for the use by macro writers.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  The refinement of [[scala.reflect.api.Universe]] for the use by macro writers.
  *
  *  This universe provides mutability for reflection artifacts (e.g. macros can change types of compiler trees,
  *  add annotation to symbols representing definitions, etc) and exposes some internal compiler functionality

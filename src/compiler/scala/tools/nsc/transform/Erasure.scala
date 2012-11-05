@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -469,7 +469,7 @@ abstract class Erasure extends AddInterfaces
     }
 
     def checkPair(member: Symbol, other: Symbol) {
-      val otpe = erasure(root)(other.tpe)
+      val otpe = specialErasure(root)(other.tpe)
       val bridgeNeeded = exitingErasure (
         !(other.tpe =:= member.tpe) &&
         !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
@@ -488,7 +488,7 @@ abstract class Erasure extends AddInterfaces
       debuglog("generating bridge from %s (%s): %s to %s: %s".format(
         other, flagsToString(newFlags),
         otpe + other.locationString, member,
-        erasure(root)(member.tpe) + member.locationString)
+        specialErasure(root)(member.tpe) + member.locationString)
       )
 
       // the parameter symbols need to have the new owner
@@ -1111,6 +1111,8 @@ abstract class Erasure extends AddInterfaces
               } else {
                 // store exact array erasure in map to be retrieved later when we might
                 // need to do the cast in adaptMember
+                // Note: No specialErasure needed here because we simply cast, on
+                // elimination of SelectFromArray, no boxing or unboxing is done there.
                 treeCopy.Apply(
                   tree,
                   SelectFromArray(qual, name, erasure(tree.symbol)(qual.tpe)).copyAttrs(fn),

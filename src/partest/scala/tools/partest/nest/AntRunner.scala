@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Parallel Testing               **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -24,7 +24,6 @@ class AntRunner extends DirectRunner {
     var LATEST_COMP: String = _
     var LATEST_PARTEST: String = _
     var LATEST_ACTORS: String = _
-    var LATEST_ACTORS_MIGRATION: String = _
     val testRootPath: String = "test"
     val testRootDir: Directory = Directory(testRootPath)
   }
