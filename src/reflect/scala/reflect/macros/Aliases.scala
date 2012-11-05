@@ -1,7 +1,10 @@
 package scala.reflect
 package macros
 
-/** A slice of [[scala.reflect.macros.Context the Scala macros context]] that defines shorthands for the
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that defines shorthands for the
  *  most frequently used types and functions of the underlying compiler universe.
  */
 trait Aliases {

@@ -17,7 +17,6 @@ object SBTRunner extends DirectRunner {
     var LATEST_COMP: String     = _
     var LATEST_PARTEST: String     = _
     var LATEST_ACTORS: String     = _
-    var LATEST_ACTORS_MIGRATION: String     = _
     val testRootPath: String   = "test"
     val testRootDir: Directory = Directory(testRootPath)
   }
@@ -61,7 +60,6 @@ object SBTRunner extends DirectRunner {
     fileManager.LATEST_COMP = findClasspath("scala-compiler", "scala-compiler") getOrElse sys.error("No scala-compiler found! Classpath = " + fileManager.CLASSPATH)
     fileManager.LATEST_PARTEST = findClasspath("scala-partest", "partest") getOrElse sys.error("No scala-partest found! Classpath = " + fileManager.CLASSPATH)
     fileManager.LATEST_ACTORS = findClasspath("scala-actors", "actors") getOrElse sys.error("No scala-actors found! Classpath = " + fileManager.CLASSPATH)
-    fileManager.LATEST_ACTORS_MIGRATION = findClasspath("scala-actors-migration", "actors-migration") getOrElse sys.error("No scala-actors-migration found! Classpath = " + fileManager.CLASSPATH)
 
     // TODO - Do something useful here!!!
     fileManager.JAVAC_CMD = "javac"

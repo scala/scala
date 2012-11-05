@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** This trait provides support for Mirrors in the Scala Reflection API.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait provides support for Mirrors in the Scala Reflection API.
  *
  * `Mirror`s are a central part of Scala Reflection. All information provided by
  * reflection is made accessible through `Mirror`s. Depending on the type of information
@@ -14,13 +17,13 @@ package api
  * The two flavors of mirrors:
  *
  * <ul>
- * <li>```“Classloader” mirrors```. These mirrors translate names to symbols
+ * <li>'''“Classloader” mirrors'''. These mirrors translate names to symbols
  * (via methods `staticClass`/`staticModule`/`staticPackage`).</li>
- * <li>```"Invoker” mirrors```. These mirrors implement reflective invocations
+ * <li>'''"Invoker” mirrors'''. These mirrors implement reflective invocations
  * (via methods `MethodMirror.apply`, `FieldMirror.get`, etc). These "invoker"
  * mirrors are the types of mirrors that are most commonly used.</li>
  * </ul>
- * 
+ *
  * === Compile-time Mirrors ===
  * Compile-time `Mirror`s make use of only classloader `Mirror`s to load `Symbol`s
  * by name.
@@ -50,7 +53,7 @@ package api
  * lookup symbols. For example, `typeOf[Location.type].termSymbol` (or `typeOf[Location].typeSymbol`
  * if we needed a `ClassSymbol`), which are type safe since we don’t have to use `String`s to lookup
  * the `Symbol`.
- * 
+ *
  * === Runtime Mirrors ===
  *
  * Runtime `Mirror`s make use of both classloader and invoker `Mirror`s.
@@ -59,7 +62,7 @@ package api
  * `ru` is [[scala.reflect.runtime.universe]].
  *
  * The result of a [[scala.reflect.api.JavaMirrors#runtimeMirror]] call is a classloader mirror,
- * of type [[scala.reflect.api.Mirrors#ReflectiveMirror]], which can load symbols by names as 
+ * of type [[scala.reflect.api.Mirrors#ReflectiveMirror]], which can load symbols by names as
  * discussed above (in the “Compile-time” section).
  *
  * A classloader mirror can create invoker mirrors, which include: [[scala.reflect.api.Mirrors#InstanceMirror]],
@@ -202,6 +205,7 @@ package api
  * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
  *
  *  @contentDiagram hideNodes "*Api"
+ *  @group ReflectionAPI
  */
 trait Mirrors { self: Universe =>
 

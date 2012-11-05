@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -58,7 +58,7 @@ import scala.reflect.ClassTag
  *  Instead, the future is completed with a ExecutionException with one of the exceptions above
  *  as the cause.
  *  If a future is failed with a `scala.runtime.NonLocalReturnControl`,
- *  it is completed with a value instead from that throwable instead instead.
+ *  it is completed with a value from that throwable instead.
  *
  *  @define nonDeterministic
  *  Note: using this method yields nondeterministic dataflow programs.

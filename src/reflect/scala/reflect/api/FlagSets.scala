@@ -4,6 +4,8 @@ package api
 import scala.language.implicitConversions
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  * The trait that defines flag sets and operations on them.
  *
  * `Flag`s are used to provide modifiers for abstract syntax trees that represent definitions
@@ -19,8 +21,8 @@ import scala.language.implicitConversions
  * {{{
  *  ClassDef(Modifiers(NoFlags), newTypeName("C"), Nil, ...)
  * }}}
- * 
- * Here, the flag set is empty. 
+ *
+ * Here, the flag set is empty.
  *
  * To make `C` private, one would write something like:
  * {{{
@@ -34,7 +36,7 @@ import scala.language.implicitConversions
  * }}}
  *
  * The list of all available flags is defined in [[scala.reflect.api.FlagSets#FlagValues]], available via
- * [[scala.reflect.api.FlagSets#Flag]]. (Typically one writes a blanket import for this, e.g.
+ * [[scala.reflect.api.FlagSets#Flag]]. (Typically one writes a wildcard import for this, e.g.
  * `import scala.reflect.runtime.universe.Flag._`).
  *
  * Definition trees are compiled down to symbols, so flags on modifiers of these trees are transformed into flags
@@ -45,8 +47,10 @@ import scala.language.implicitConversions
  * ''Of Note:'' This part of the Reflection API is being considered as a candidate for redesign. It is
  * quite possible that in future releases of the reflection API, flag sets could be replaced with something else.
  *
- * For more details about `FlagSet`s and other aspects of Scala reflection, see the 
+ * For more details about `FlagSet`s and other aspects of Scala reflection, see the
  * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ *
+ * @group ReflectionAPI
  *
  */
 trait FlagSets { self: Universe =>

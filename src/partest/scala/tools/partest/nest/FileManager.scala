@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -64,7 +64,6 @@ trait FileManager extends FileUtil {
   var LATEST_COMP: String
   var LATEST_PARTEST: String
   var LATEST_ACTORS: String
-  var LATEST_ACTORS_MIGRATION: String
 
   var showDiff = false
   var updateCheck = false

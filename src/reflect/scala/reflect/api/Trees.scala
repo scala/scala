@@ -1,32 +1,48 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.reflect
 package api
 
-/** This trait defines the node types used in Scala abstract syntax trees (AST) and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
-*  All tree node types are sub types of [[scala.reflect.api.Trees#Tree Tree]].
+ * This trait defines the node types used in Scala abstract syntax trees (AST) and operations on them.
+ *
+ * Trees are the basis for Scala's abstract syntax that is used to represent programs. They are also called
+ * abstract syntax trees and commonly abbreviated as ASTs.
+ *
+ * In Scala reflection, APIs that produce or use `Tree`s are:
+ *
+ *   - '''Annotations''' which use trees to represent their arguments, exposed in [[scala.reflect.api.Annotations#scalaArgs Annotation.scalaArgs]].
+ *   - '''[[scala.reflect.api.Universe#reify reify]]''', a special method on [[scala.reflect.api.Universe]] that takes an expression and returns an AST which represents the expression.
+ *   - '''Macros and runtime compilation with toolboxes''' which both use trees as their program representation medium.
  *
  *  Trees are immutable, except for three fields
  *  [[Trees#TreeApi.pos pos]], [[Trees#TreeApi.symbol symbol]], and [[Trees#TreeApi.tpe tpe]], which are assigned when a tree is typechecked
  *  to attribute it with the information gathered by the typechecker.
  *
- *  [[scala.reflect.api.Universe#reify reify]] can be used to get the tree for a given Scala expression.
- *
- *  [[scala.reflect.api.Universe#showRaw showRaw]] can be used to get a readable representation of a tree.
- *
  *  === Examples ===
- * `Literal(Constant(5))` creates an AST representing a literal 5 in Scala source code.
  *
- * `Apply(Select(Select(This(newTypeName("scala")), newTermName("Predef")), newTermName("print")), List(Literal(Constant("Hello World"))))`
- * creates an AST representing `print("Hello World")`.
+ *  The following creates an AST representing a literal 5 in Scala source code:
+ *  {{{
+ *    Literal(Constant(5))
+ *  }}}
  *
- * `import scala.reflect.runtime.universe.{reify,showRaw}`
- * `print( showRaw( reify{5}.tree ) )` // prints Literal(Constant(5))
+ *  The following creates an AST representing `print("Hello World")`:
+ *  {{{
+ *    Apply(Select(Select(This(newTypeName("scala")), newTermName("Predef")), newTermName("print")), List(Literal(Constant("Hello World"))))
+ *  }}}
  *
- *  @see [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html#trees]].
+ *  The following creates an AST from a literal 5, and then uses `showRaw` to print it in a readable format.
+ *  {{{
+ *    import scala.reflect.runtime.universe.{ reify, showRaw }
+ *    print( showRaw( reify{5}.tree ) )` // prints Literal(Constant(5))
+ *  }}}
+ *
+ *  For more information about `Tree`s, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols, Trees, Types]].
+ *
  *  @groupname Traversal Tree Traversal and Transformation
  *  @groupprio Traversal 1
  *  @groupprio Factories 1
@@ -34,6 +50,7 @@ package api
  *  @groupprio Copying   1
  *
  *  @contentDiagram hideNodes "*Api"
+ *  @group ReflectionAPI
  */
 trait Trees { self: Universe =>
 
@@ -346,7 +363,7 @@ trait Trees { self: Universe =>
    */
   implicit val PackageDefTag: ClassTag[PackageDef]
 
-  /** The constructor/deconstructor for `PackageDef` instances.
+  /** The constructor/extractor for `PackageDef` instances.
    *  @group Extractors
    */
   val PackageDef: PackageDefExtractor
@@ -405,7 +422,7 @@ trait Trees { self: Universe =>
    */
   implicit val ClassDefTag: ClassTag[ClassDef]
 
-  /** The constructor/deconstructor for `ClassDef` instances.
+  /** The constructor/extractor for `ClassDef` instances.
    *  @group Extractors
    */
   val ClassDef: ClassDefExtractor
@@ -456,7 +473,7 @@ trait Trees { self: Universe =>
    */
   implicit val ModuleDefTag: ClassTag[ModuleDef]
 
-  /** The constructor/deconstructor for `ModuleDef` instances.
+  /** The constructor/extractor for `ModuleDef` instances.
    *  @group Extractors
    */
   val ModuleDef: ModuleDefExtractor
@@ -539,7 +556,7 @@ trait Trees { self: Universe =>
    */
   implicit val ValDefTag: ClassTag[ValDef]
 
-  /** The constructor/deconstructor for `ValDef` instances.
+  /** The constructor/extractor for `ValDef` instances.
    *  @group Extractors
    */
   val ValDef: ValDefExtractor
@@ -594,7 +611,7 @@ trait Trees { self: Universe =>
    */
   implicit val DefDefTag: ClassTag[DefDef]
 
-  /** The constructor/deconstructor for `DefDef` instances.
+  /** The constructor/extractor for `DefDef` instances.
    *  @group Extractors
    */
   val DefDef: DefDefExtractor
@@ -649,7 +666,7 @@ trait Trees { self: Universe =>
    */
   implicit val TypeDefTag: ClassTag[TypeDef]
 
-  /** The constructor/deconstructor for `TypeDef` instances.
+  /** The constructor/extractor for `TypeDef` instances.
    *  @group Extractors
    */
   val TypeDef: TypeDefExtractor
@@ -714,7 +731,7 @@ trait Trees { self: Universe =>
    */
   implicit val LabelDefTag: ClassTag[LabelDef]
 
-  /** The constructor/deconstructor for `LabelDef` instances.
+  /** The constructor/extractor for `LabelDef` instances.
    *  @group Extractors
    */
   val LabelDef: LabelDefExtractor
@@ -776,7 +793,7 @@ trait Trees { self: Universe =>
    */
   implicit val ImportSelectorTag: ClassTag[ImportSelector]
 
-  /** The constructor/deconstructor for `ImportSelector` instances.
+  /** The constructor/extractor for `ImportSelector` instances.
    *  @group Extractors
    */
   val ImportSelector: ImportSelectorExtractor
@@ -828,7 +845,7 @@ trait Trees { self: Universe =>
    */
   implicit val ImportTag: ClassTag[Import]
 
-  /** The constructor/deconstructor for `Import` instances.
+  /** The constructor/extractor for `Import` instances.
    *  @group Extractors
    */
   val Import: ImportExtractor
@@ -886,7 +903,7 @@ trait Trees { self: Universe =>
    */
   implicit val TemplateTag: ClassTag[Template]
 
-  /** The constructor/deconstructor for `Template` instances.
+  /** The constructor/extractor for `Template` instances.
    *  @group Extractors
    */
   val Template: TemplateExtractor
@@ -944,7 +961,7 @@ trait Trees { self: Universe =>
    */
   implicit val BlockTag: ClassTag[Block]
 
-  /** The constructor/deconstructor for `Block` instances.
+  /** The constructor/extractor for `Block` instances.
    *  @group Extractors
    */
   val Block: BlockExtractor
@@ -989,7 +1006,7 @@ trait Trees { self: Universe =>
    */
   implicit val CaseDefTag: ClassTag[CaseDef]
 
-  /** The constructor/deconstructor for `CaseDef` instances.
+  /** The constructor/extractor for `CaseDef` instances.
    *  @group Extractors
    */
   val CaseDef: CaseDefExtractor
@@ -1042,7 +1059,7 @@ trait Trees { self: Universe =>
    */
   implicit val AlternativeTag: ClassTag[Alternative]
 
-  /** The constructor/deconstructor for `Alternative` instances.
+  /** The constructor/extractor for `Alternative` instances.
    *  @group Extractors
    */
   val Alternative: AlternativeExtractor
@@ -1080,7 +1097,7 @@ trait Trees { self: Universe =>
    */
   implicit val StarTag: ClassTag[Star]
 
-  /** The constructor/deconstructor for `Star` instances.
+  /** The constructor/extractor for `Star` instances.
    *  @group Extractors
    */
   val Star: StarExtractor
@@ -1121,7 +1138,7 @@ trait Trees { self: Universe =>
    */
   implicit val BindTag: ClassTag[Bind]
 
-  /** The constructor/deconstructor for `Bind` instances.
+  /** The constructor/extractor for `Bind` instances.
    *  @group Extractors
    */
   val Bind: BindExtractor
@@ -1190,7 +1207,7 @@ trait Trees { self: Universe =>
    */
   implicit val UnApplyTag: ClassTag[UnApply]
 
-  /** The constructor/deconstructor for `UnApply` instances.
+  /** The constructor/extractor for `UnApply` instances.
    *  @group Extractors
    */
   val UnApply: UnApplyExtractor
@@ -1232,7 +1249,7 @@ trait Trees { self: Universe =>
    */
   implicit val FunctionTag: ClassTag[Function]
 
-  /** The constructor/deconstructor for `Function` instances.
+  /** The constructor/extractor for `Function` instances.
    *  @group Extractors
    */
   val Function: FunctionExtractor
@@ -1276,7 +1293,7 @@ trait Trees { self: Universe =>
    */
   implicit val AssignTag: ClassTag[Assign]
 
-  /** The constructor/deconstructor for `Assign` instances.
+  /** The constructor/extractor for `Assign` instances.
    *  @group Extractors
    */
   val Assign: AssignExtractor
@@ -1318,7 +1335,7 @@ trait Trees { self: Universe =>
    */
   implicit val AssignOrNamedArgTag: ClassTag[AssignOrNamedArg]
 
-  /** The constructor/deconstructor for `AssignOrNamedArg` instances.
+  /** The constructor/extractor for `AssignOrNamedArg` instances.
    *  @group Extractors
    */
   val AssignOrNamedArg: AssignOrNamedArgExtractor
@@ -1365,7 +1382,7 @@ trait Trees { self: Universe =>
    */
   implicit val IfTag: ClassTag[If]
 
-  /** The constructor/deconstructor for `If` instances.
+  /** The constructor/extractor for `If` instances.
    *  @group Extractors
    */
   val If: IfExtractor
@@ -1422,7 +1439,7 @@ trait Trees { self: Universe =>
    */
   implicit val MatchTag: ClassTag[Match]
 
-  /** The constructor/deconstructor for `Match` instances.
+  /** The constructor/extractor for `Match` instances.
    *  @group Extractors
    */
   val Match: MatchExtractor
@@ -1463,7 +1480,7 @@ trait Trees { self: Universe =>
    */
   implicit val ReturnTag: ClassTag[Return]
 
-  /** The constructor/deconstructor for `Return` instances.
+  /** The constructor/extractor for `Return` instances.
    *  @group Extractors
    */
   val Return: ReturnExtractor
@@ -1501,7 +1518,7 @@ trait Trees { self: Universe =>
    */
   implicit val TryTag: ClassTag[Try]
 
-  /** The constructor/deconstructor for `Try` instances.
+  /** The constructor/extractor for `Try` instances.
    *  @group Extractors
    */
   val Try: TryExtractor
@@ -1545,7 +1562,7 @@ trait Trees { self: Universe =>
    */
   implicit val ThrowTag: ClassTag[Throw]
 
-  /** The constructor/deconstructor for `Throw` instances.
+  /** The constructor/extractor for `Throw` instances.
    *  @group Extractors
    */
   val Throw: ThrowExtractor
@@ -1581,7 +1598,7 @@ trait Trees { self: Universe =>
    */
   implicit val NewTag: ClassTag[New]
 
-  /** The constructor/deconstructor for `New` instances.
+  /** The constructor/extractor for `New` instances.
    *  @group Extractors
    */
   val New: NewExtractor
@@ -1628,7 +1645,7 @@ trait Trees { self: Universe =>
    */
   implicit val TypedTag: ClassTag[Typed]
 
-  /** The constructor/deconstructor for `Typed` instances.
+  /** The constructor/extractor for `Typed` instances.
    *  @group Extractors
    */
   val Typed: TypedExtractor
@@ -1694,7 +1711,7 @@ trait Trees { self: Universe =>
    */
   implicit val TypeApplyTag: ClassTag[TypeApply]
 
-  /** The constructor/deconstructor for `TypeApply` instances.
+  /** The constructor/extractor for `TypeApply` instances.
    *  @group Extractors
    */
   val TypeApply: TypeApplyExtractor
@@ -1728,7 +1745,7 @@ trait Trees { self: Universe =>
    */
   implicit val ApplyTag: ClassTag[Apply]
 
-  /** The constructor/deconstructor for `Apply` instances.
+  /** The constructor/extractor for `Apply` instances.
    *  @group Extractors
    */
   val Apply: ApplyExtractor
@@ -1771,7 +1788,7 @@ trait Trees { self: Universe =>
    */
   implicit val SuperTag: ClassTag[Super]
 
-  /** The constructor/deconstructor for `Super` instances.
+  /** The constructor/extractor for `Super` instances.
    *  @group Extractors
    */
   val Super: SuperExtractor
@@ -1823,7 +1840,7 @@ trait Trees { self: Universe =>
    */
   implicit val ThisTag: ClassTag[This]
 
-  /** The constructor/deconstructor for `This` instances.
+  /** The constructor/extractor for `This` instances.
    *  @group Extractors
    */
   val This: ThisExtractor
@@ -1864,7 +1881,7 @@ trait Trees { self: Universe =>
    */
   implicit val SelectTag: ClassTag[Select]
 
-  /** The constructor/deconstructor for `Select` instances.
+  /** The constructor/extractor for `Select` instances.
    *  @group Extractors
    */
   val Select: SelectExtractor
@@ -1903,7 +1920,7 @@ trait Trees { self: Universe =>
    */
   implicit val IdentTag: ClassTag[Ident]
 
-  /** The constructor/deconstructor for `Ident` instances.
+  /** The constructor/extractor for `Ident` instances.
    *  @group Extractors
    */
   val Ident: IdentExtractor
@@ -1948,7 +1965,7 @@ trait Trees { self: Universe =>
    */
   implicit val ReferenceToBoxedTag: ClassTag[ReferenceToBoxed]
 
-  /** The constructor/deconstructor for `ReferenceToBoxed` instances.
+  /** The constructor/extractor for `ReferenceToBoxed` instances.
    *  @group Extractors
    */
   val ReferenceToBoxed: ReferenceToBoxedExtractor
@@ -1998,7 +2015,7 @@ trait Trees { self: Universe =>
    */
   implicit val LiteralTag: ClassTag[Literal]
 
-  /** The constructor/deconstructor for `Literal` instances.
+  /** The constructor/extractor for `Literal` instances.
    *  @group Extractors
    */
   val Literal: LiteralExtractor
@@ -2037,7 +2054,7 @@ trait Trees { self: Universe =>
    */
   implicit val AnnotatedTag: ClassTag[Annotated]
 
-  /** The constructor/deconstructor for `Annotated` instances.
+  /** The constructor/extractor for `Annotated` instances.
    *  @group Extractors
    */
   val Annotated: AnnotatedExtractor
@@ -2077,7 +2094,7 @@ trait Trees { self: Universe =>
    */
   implicit val SingletonTypeTreeTag: ClassTag[SingletonTypeTree]
 
-  /** The constructor/deconstructor for `SingletonTypeTree` instances.
+  /** The constructor/extractor for `SingletonTypeTree` instances.
    *  @group Extractors
    */
   val SingletonTypeTree: SingletonTypeTreeExtractor
@@ -2114,7 +2131,7 @@ trait Trees { self: Universe =>
    */
   implicit val SelectFromTypeTreeTag: ClassTag[SelectFromTypeTree]
 
-  /** The constructor/deconstructor for `SelectFromTypeTree` instances.
+  /** The constructor/extractor for `SelectFromTypeTree` instances.
    *  @group Extractors
    */
   val SelectFromTypeTree: SelectFromTypeTreeExtractor
@@ -2155,7 +2172,7 @@ trait Trees { self: Universe =>
    */
   implicit val CompoundTypeTreeTag: ClassTag[CompoundTypeTree]
 
-  /** The constructor/deconstructor for `CompoundTypeTree` instances.
+  /** The constructor/extractor for `CompoundTypeTree` instances.
    *  @group Extractors
    */
   val CompoundTypeTree: CompoundTypeTreeExtractor
@@ -2191,7 +2208,7 @@ trait Trees { self: Universe =>
    */
   implicit val AppliedTypeTreeTag: ClassTag[AppliedTypeTree]
 
-  /** The constructor/deconstructor for `AppliedTypeTree` instances.
+  /** The constructor/extractor for `AppliedTypeTree` instances.
    *  @group Extractors
    */
   val AppliedTypeTree: AppliedTypeTreeExtractor
@@ -2230,7 +2247,7 @@ trait Trees { self: Universe =>
    */
   implicit val TypeBoundsTreeTag: ClassTag[TypeBoundsTree]
 
-  /** The constructor/deconstructor for `TypeBoundsTree` instances.
+  /** The constructor/extractor for `TypeBoundsTree` instances.
    *  @group Extractors
    */
   val TypeBoundsTree: TypeBoundsTreeExtractor
@@ -2273,7 +2290,7 @@ trait Trees { self: Universe =>
    */
   implicit val ExistentialTypeTreeTag: ClassTag[ExistentialTypeTree]
 
-  /** The constructor/deconstructor for `ExistentialTypeTree` instances.
+  /** The constructor/extractor for `ExistentialTypeTree` instances.
    *  @group Extractors
    */
   val ExistentialTypeTree: ExistentialTypeTreeExtractor
@@ -2316,7 +2333,7 @@ trait Trees { self: Universe =>
    */
   implicit val TypeTreeTag: ClassTag[TypeTree]
 
-  /** The constructor/deconstructor for `TypeTree` instances.
+  /** The constructor/extractor for `TypeTree` instances.
    *  @group Extractors
    */
   val TypeTree: TypeTreeExtractor
@@ -2909,7 +2926,7 @@ trait Trees { self: Universe =>
       Modifiers(flags, privateWithin, f(annotations))
   }
 
-  /** The constructor/deconstructor for `Modifiers` instances.
+  /** The constructor/extractor for `Modifiers` instances.
    *  @group Traversal
    */
   val Modifiers: ModifiersCreator
