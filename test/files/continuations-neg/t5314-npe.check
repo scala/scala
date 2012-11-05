@@ -1,0 +1,4 @@
+t5314-npe.scala:2: error: method bar has return statement; needs result type
+  def bar(x:Int) = { return x; x }  // NPE
+                     ^
+one error found
