@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -10,13 +10,6 @@ package api
 import java.lang.{ Class => jClass }
 import scala.language.implicitConversions
 
-/*
- * TODO
- * add @see to docs about universes
- * [Eugene++] also mention sensitivity to prefixes, i.e. that rb.TypeTag is different from ru.TypeTag
- * [Chris++] tag.in(some mirror) or expr.in(some mirror)  (does not work for tag and exprs in macros)
- * Backwards compat item1: [Eugene++] it might be useful, though, to guard against abstractness of the incoming type.
- */
 /**
  * A `TypeTag[T]` encapsulates the runtime type representation of some type `T`.
  * Like [[scala.reflect.Manifest]], the prime use case of `TypeTag`s is to give access
@@ -95,7 +88,7 @@ import scala.language.implicitConversions
  *   scala> paramInfo(List(1, 2))
  *   type of List(1, 2) has type arguments List(Int)
  * }}}
- * 
+ *
  * === `WeakTypeTag`s ===
  *
  *`WeakTypeTag[T]` generalizes `TypeTag[T]`. Unlike a regular `TypeTag`, components of
@@ -154,7 +147,7 @@ import scala.language.implicitConversions
  * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
  *
  * @see [[scala.reflect.ClassTag]], [[scala.reflect.api.TypeTags#TypeTag]], [[scala.reflect.api.TypeTags#WeakTypeTag]]
- * @group TypeTags Type Tags
+ * @group ReflectionAPI
  */
 trait TypeTags { self: Universe =>
 
@@ -196,16 +189,12 @@ trait TypeTags { self: Universe =>
      */
     def tpe: Type
 
-    // TODO how do I doc this?
     override def canEqual(x: Any) = x.isInstanceOf[WeakTypeTag[_]]
 
-    // TODO how do I doc this?
     override def equals(x: Any) = x.isInstanceOf[WeakTypeTag[_]] && this.mirror == x.asInstanceOf[WeakTypeTag[_]].mirror && this.tpe == x.asInstanceOf[WeakTypeTag[_]].tpe
 
-    // TODO how do I doc this?
     override def hashCode = mirror.hashCode * 31 + tpe.hashCode
 
-    // TODO how do I doc this?
     override def toString = "WeakTypeTag[" + tpe + "]"
   }
 
@@ -279,16 +268,12 @@ trait TypeTags { self: Universe =>
      */
     override def in[U <: Universe with Singleton](otherMirror: scala.reflect.api.Mirror[U]): U # TypeTag[T]
 
-    /** TODO how do I doc this? */
     override def canEqual(x: Any) = x.isInstanceOf[TypeTag[_]]
 
-    /** TODO how do I doc this? */
     override def equals(x: Any) = x.isInstanceOf[TypeTag[_]] && this.mirror == x.asInstanceOf[TypeTag[_]].mirror && this.tpe == x.asInstanceOf[TypeTag[_]].tpe
 
-    /** TODO how do I doc this? */
     override def hashCode = mirror.hashCode * 31 + tpe.hashCode
 
-    /** TODO how do I doc this? */
     override def toString = "TypeTag[" + tpe + "]"
   }
 
