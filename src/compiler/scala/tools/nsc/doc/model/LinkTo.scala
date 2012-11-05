@@ -8,17 +8,16 @@ package model
 
 import scala.collection._
 
-abstract sealed class LinkTo
-final case class LinkToTpl(tpl: DocTemplateEntity) extends LinkTo
-final case class LinkToMember(mbr: MemberEntity, inTpl: DocTemplateEntity) extends LinkTo
-final case class Tooltip(name: String) extends LinkTo { def this(tpl: TemplateEntity) = this(tpl.qualifiedName) }
+sealed trait LinkTo
+final case class LinkToMember[Mbr, Tpl](mbr: Mbr, tpl: Tpl) extends LinkTo
+final case class LinkToTpl[Tpl](tpl: Tpl) extends LinkTo
 final case class LinkToExternal(name: String, url: String) extends LinkTo
-case object NoLink extends LinkTo // you should use Tooltip if you have a name from the user, this is only in case all fails
+final case class Tooltip(name: String) extends LinkTo
 
 object LinkToTpl {
   // this makes it easier to create links
-  def apply(tpl: TemplateEntity) = tpl match {
+  def apply(tpl: TemplateEntity): LinkTo = tpl match {
     case dtpl: DocTemplateEntity => new LinkToTpl(dtpl)
-    case ntpl: TemplateEntity => new Tooltip(ntpl.qualifiedName)
+    case _ => new Tooltip(tpl.qualifiedName)
   }
 }
