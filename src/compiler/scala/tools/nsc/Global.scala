@@ -1525,8 +1525,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         val shown = if (settings.verbose.value)
            stackTraceString(ex)
          else
-           ex.getClass.getName
-        // ex.printStackTrace(Console.out) // DEBUG for fsc, note that error stacktraces do not print in fsc
+           stackTraceHeadString(ex) // note that error stacktraces do not print in fsc
+
         globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
         throw ex
       }
