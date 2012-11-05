@@ -1,4 +1,4 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2012 LAMP/EPFL */
+/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL */
 
 package scala.tools.nsc
 package doc

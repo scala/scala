@@ -1,13 +1,18 @@
 package scala.reflect
 package api
 
-/** A refinement of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * A refinement of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *
  *  The refinement consists of an upgrade to the mirror API, which gets extended from [[scala.reflect.api.Mirror]]
  *  to [[scala.reflect.api.JavaMirrors#JavaMirror]].
  *
  *  See the [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for details on how to use runtime reflection.
+ *
  *  @groupname JavaUniverse Java Mirrors
+ *  @group ReflectionAPI
  *
  *  @contentDiagram hideNodes "*Api"
  */

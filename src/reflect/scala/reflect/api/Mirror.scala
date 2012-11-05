@@ -2,16 +2,19 @@ package scala.reflect
 package api
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  * The base class for all mirrors.
  *
  * See [[scala.reflect.api.Mirrors]] or [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  * for a complete overview of `Mirror`s.
  *
  * @tparam U the type of the universe this mirror belongs to.
+ *  @group ReflectionAPI
  */
 // Note: Unlike most Scala reflection artifact classes, `Mirror` is not defined as an inner class,
 // so that it can be referenced from outside. For example, [[scala.reflect.api.TypeCreator]] and [[scala.reflect.api.TreeCreator]]
-// reference `Mirror` and also need to be defined outside the cake as they are used by type tags, which can be migrated between 
+// reference `Mirror` and also need to be defined outside the cake as they are used by type tags, which can be migrated between
 // different universes and consequently cannot be bound to a fixed one.
 abstract class Mirror[U <: Universe with Singleton] {
   /** The universe this mirror belongs to.

@@ -3,14 +3,17 @@ package api
 
 import java.io.{ PrintWriter, StringWriter }
 
-/** Utilities for nicely printing [[scala.reflect.api.Trees]] and [[scala.reflect.api.Types]].
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  === Printing Trees ===
- *  The method `show` displays the "prettified" representation of reflection artifacts.
- *  This representation provides one with the desugared Java representation of Scala code. 
- *  For example:
+ * Utilities for nicely printing [[scala.reflect.api.Trees]] and [[scala.reflect.api.Types]].
  *
- *  {{{
+ * === Printing Trees ===
+ * The method `show` displays the "prettified" representation of reflection artifacts.
+ * This representation provides one with the desugared Java representation of Scala code.
+ * For example:
+ *
+ * {{{
  *  scala> import scala.reflect.runtime.universe._
  *  import scala.reflect.runtime.universe._
  *
@@ -30,7 +33,7 @@ import java.io.{ PrintWriter, StringWriter }
  *    ()
  *  }
  * }}}
- * 
+ *
  * The method `showRaw` displays internal structure of a given reflection object
  * as a Scala abstract syntax tree (AST), the representation that the Scala typechecker
  * operates on.
@@ -54,7 +57,7 @@ import java.io.{ PrintWriter, StringWriter }
  *          Literal(Constant(2))))))),
  *    Literal(Constant(())))
  * }}}
- * 
+ *
  * The method `showRaw` can also print [[scala.reflect.api.Types]] next to the artifacts
  * being inspected
  * {{{
@@ -89,7 +92,7 @@ import java.io.{ PrintWriter, StringWriter }
  *
  *  === Printing Types ===
  *
- * The method `show` 
+ * The method `show`
  *  {{{
  *  scala> import scala.reflect.runtime.universe._
  *  import scala.reflect.runtime.universe._
@@ -116,17 +119,20 @@ import java.io.{ PrintWriter, StringWriter }
  *
  * `printIds` and/or `printKinds` can additionally be supplied as arguments in a call to
  * `showRaw` which additionally shows the unique identifiers of symbols.
+ *
+ * {{{
  *  scala> showRaw(tpe, printIds = true, printKinds = true)
  *  res2: String = RefinedType(
  *    List(TypeRef(ThisType(scala#2043#PK), newTypeName("AnyRef")#691#TPE, List())),
  *    Scope(
  *      newTermName("x")#2540#METH,
  *      newTermName("y")#2541#GET))
- *  }}}
+ * }}}
  *
- * For more details about `Printer`s and other aspects of Scala reflection, see the 
+ * For more details about `Printer`s and other aspects of Scala reflection, see the
  * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
+ *  @group ReflectionAPI
  */
 trait Printers { self: Universe =>
 

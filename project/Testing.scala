@@ -29,12 +29,12 @@ trait Testing { self: ScalaBuild.type =>
   val testsuite = (
     Project("testsuite", file(".")) 
     settings (testsuiteSettings:_*)
-    dependsOn (scalaLibrary, scalaCompiler, fjbg, partest, scalacheck, actorsMigration)
+    dependsOn (scalaLibrary, scalaCompiler, fjbg, partest, scalacheck)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
     settings (continuationsTestsuiteSettings:_*) 
-    dependsOn (partest, scalaLibrary, scalaCompiler, fjbg, actorsMigration)
+    dependsOn (partest, scalaLibrary, scalaCompiler, fjbg)
   )
 
 }
