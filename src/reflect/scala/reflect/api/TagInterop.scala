@@ -1,7 +1,12 @@
 package scala.reflect
 package api
 
-/** This trait provides type tag <-> manifest interoperability.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  This trait provides type tag <-> manifest interoperability.
+ *  @group ReflectionAPI
+ *
  *  @groupname TagInterop TypeTag and Manifest Interoperability
  */
 trait TagInterop { self: Universe =>

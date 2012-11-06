@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -555,7 +555,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     def innerClassSymbolFor(s: Symbol): Symbol =
       if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
 
-    /** Return the a name of this symbol that can be used on the Java platform.  It removes spaces from names.
+    /** Return the name of this symbol that can be used on the Java platform.  It removes spaces from names.
      *
      *  Special handling:
      *    scala.Nothing erases to scala.runtime.Nothing$
@@ -604,7 +604,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           case Some(oldsym) if oldsym.exists && trackedSym.exists =>
             assert(
               // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-              (oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass),
+              (oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass) || (oldsym.isModuleClass && (oldsym.sourceModule == trackedSym.sourceModule)),
               s"""|Different class symbols have the same bytecode-level internal name:
                   |     name: $internalName
                   |   oldsym: ${oldsym.fullNameString}

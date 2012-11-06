@@ -3,7 +3,10 @@ package api
 
 import scala.collection.immutable.ListMap
 
-/** This trait provides annotation support for the reflection API.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * This trait provides annotation support for the reflection API.
  *
  *  The API distinguishes between two kinds of annotations:
  *
@@ -13,9 +16,9 @@ import scala.collection.immutable.ListMap
  *  is automatically added as a subclass to every Java annotation.</li>
  *  <li>''Scala annotations'': annotations on definitions or types produced by the Scala compiler.</li>
  *  </ul>
- *    
- *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] or [[scala.annotation.ClassfileAnnotation]] is compiled, 
- *  it is stored as special attributes in the corresponding classfile, and not as a Java annotation. Note that subclassing 
+ *
+ *  When a Scala annotation that inherits from [[scala.annotation.StaticAnnotation]] or [[scala.annotation.ClassfileAnnotation]] is compiled,
+ *  it is stored as special attributes in the corresponding classfile, and not as a Java annotation. Note that subclassing
  *  just [[scala.annotation.Annotation]] is not enough to have the corresponding metadata persisted for runtime reflection.
  *
  *  The distinction between Java and Scala annotations is manifested in the contract of [[scala.reflect.api.Annotations#Annotation]], which exposes
@@ -29,7 +32,10 @@ import scala.collection.immutable.ListMap
  *    - arrays and
  *    - nested annotations.
  *
+ *  For more information about `Annotation`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
+ *
  *  @contentDiagram hideNodes "*Api"
+ *  @group ReflectionAPI
  */
 trait Annotations { self: Universe =>
 
@@ -45,7 +51,7 @@ trait Annotations { self: Universe =>
    */
   implicit val AnnotationTag: ClassTag[Annotation]
 
-   /** The constructor/deconstructor for `Annotation` instances.
+   /** The constructor/extractor for `Annotation` instances.
     *  @group Extractors
     */
    val Annotation: AnnotationExtractor
@@ -102,7 +108,7 @@ trait Annotations { self: Universe =>
    */
   implicit val LiteralArgumentTag: ClassTag[LiteralArgument]
 
-  /** The constructor/deconstructor for `LiteralArgument` instances.
+  /** The constructor/extractor for `LiteralArgument` instances.
    *  @group Extractors
    */
   val LiteralArgument: LiteralArgumentExtractor
@@ -137,7 +143,7 @@ trait Annotations { self: Universe =>
    */
   implicit val ArrayArgumentTag: ClassTag[ArrayArgument]
 
-  /** The constructor/deconstructor for `ArrayArgument` instances.
+  /** The constructor/extractor for `ArrayArgument` instances.
    *  @group Extractors
    */
   val ArrayArgument: ArrayArgumentExtractor
@@ -172,7 +178,7 @@ trait Annotations { self: Universe =>
    */
   implicit val NestedArgumentTag: ClassTag[NestedArgument]
 
-  /** The constructor/deconstructor for `NestedArgument` instances.
+  /** The constructor/extractor for `NestedArgument` instances.
    *  @group Extractors
    */
   val NestedArgument: NestedArgumentExtractor

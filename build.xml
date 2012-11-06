@@ -1024,7 +1024,6 @@ QUICK BUILD (QUICK)
         <include name="continuations/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
-        <include name="actors-migration/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -1283,33 +1282,7 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.plugins.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-actors-migration" depends="quick.plugins">
-    <uptodate property="quick.actors-migration.available" targetfile="${build-quick.dir}/actors-migration.complete">
-      <srcfiles dir="${src.dir}/actors-migration"/>
-    </uptodate>
-  </target>
-
-  <target name="quick.actors-migration" depends="quick.pre-actors-migration" unless="quick.actors-migration.available">
-    <stopwatch name="quick.actors-migration.timer"/>
-    <mkdir dir="${build-quick.dir}/classes/actors-migration"/>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/actors-migration"
-      compilerpathref="quick.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/actors-migration"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-quick.dir}/classes/library"/>
-        <pathelement location="${build-quick.dir}/classes/actors-migration"/>
-        <path refid="forkjoin.classpath"/>
-      </compilationpath>
-    </scalacfork>
-    <touch file="${build-quick.dir}/actors-migration.complete" verbose="no"/>
-    <stopwatch name="quick.actors-migration.timer" action="total"/>
-  </target>
-
-  <target name="quick.pre-scalacheck" depends="quick.actors-migration">
+  <target name="quick.pre-scalacheck" depends="quick.plugins">
     <uptodate property="quick.scalacheck.available" targetfile="${build-quick.dir}/scalacheck.complete">
       <srcfiles dir="${src.dir}/scalacheck"/>
     </uptodate>
@@ -1514,14 +1487,11 @@ PACKED QUICK BUILD (PACK)
       </fileset>
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
-  <jar destfile="${build-pack.dir}/lib/scala-actors.jar">
+    <jar destfile="${build-pack.dir}/lib/scala-actors.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <include name="scala/actors/**"/>
       </fileset>
-  </jar>
-  <jar destfile="${build-pack.dir}/lib/scala-actors-migration.jar">
-      <fileset dir="${build-quick.dir}/classes/actors-migration"/>
-  </jar>
+    </jar>
   </target>
 
   <target name="pack.swing" depends="pack.lib" if="has.java6">
@@ -1682,7 +1652,6 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-actors-migration.jar"/>
       <pathelement location="${ant.jar}"/>
       <pathelement location="${jline.jar}"/>
       <path refid="lib.extra"/>
@@ -1752,7 +1721,6 @@ OSGi Artifacts
     <stopwatch name="osgi.bundle.timer"/>
     <make-bundle name="scala-library" version="${osgi.version.number}" />
     <make-bundle name="scala-actors" version="${osgi.version.number}" />
-    <make-bundle name="scala-actors-migration" version="${osgi.version.number}" />
     <make-bundle name="scala-reflect" version="${osgi.version.number}" />
     <make-bundle name="scala-compiler" version="${osgi.version.number}" />
     <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
@@ -1773,7 +1741,6 @@ OSGi Artifacts
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-reflect.jar"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-compiler.jar"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors.jar"/>
-      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors-migration.jar"/>
     </path>
 
     <uptodate property="osgi.test.available" targetfile="${build-osgi.dir}/test-compile.complete">
@@ -2321,7 +2288,6 @@ DOCUMENTATION
         <include name="library/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
-        <include name="actors-migration/**"/>
         <include name="reflect/**"/>
       </source-includes>
     </doc-uptodate-check>
@@ -2348,7 +2314,6 @@ DOCUMENTATION
       rawOutput="${scaladoc.raw.output}"
       noPrefixes="${scaladoc.no.prefixes}">
       <src>
-        <files includes="${src.dir}/actors-migration"/>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library"/>
         <files includes="${src.dir}/reflect"/>
@@ -2547,35 +2512,9 @@ DOCUMENTATION
     <stopwatch name="docs.continuations-plugin.timer" action="total"/>
   </target>
 
-  <target name="docs.pre-actors-migration" depends="docs.continuations-plugin">
-    <doc-uptodate-check name="actors-migration" srcdir="${src.dir}/actors-migration" />
-  </target>
-
-  <target name="docs.actors-migration" depends="docs.pre-actors-migration" unless="docs.actors-migration.available">
-    <stopwatch name="docs.actors-migration.timer"/>
-    <mkdir dir="${build-docs.dir}/actors-migration"/>
-    <scaladoc
-      destdir="${build-docs.dir}/actors-migration"
-      doctitle="Actors Migration Kit"
-      docversion="${version.number}"
-      sourcepath="${src.dir}"
-      classpathref="pack.classpath"
-      srcdir="${src.dir}/actors-migration"
-      addparams="${scalac.args.all}"
-      implicits="on"
-      diagrams="on"
-      groups="on"
-      rawOutput="${scaladoc.raw.output}"
-      noPrefixes="${scaladoc.no.prefixes}">
-      <include name="**/*.scala"/>
-    </scaladoc>
-    <touch file="${build-docs.dir}/actors-migration.complete" verbose="no"/>
-    <stopwatch name="docs.actors-migration.timer" action="total"/>
-  </target>
-
   <target name="docs.done" depends="docs.man"/>
 
-  <target name="docs.all" depends="docs.jline, docs.comp, docs.man, docs.lib, docs.scalap, docs.partest, docs.continuations-plugin, docs.actors-migration"/>
+  <target name="docs.all" depends="docs.jline, docs.comp, docs.man, docs.lib, docs.scalap, docs.partest, docs.continuations-plugin"/>
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -2592,7 +2531,6 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="bin/**"/>
       <exclude name="*.complete"/>
       <exclude name="misc/scala-devel/plugins/*.jar"/>
-      <exclude name="classes/actors-migration/**"/>
     </same>
   </target>
 
@@ -2725,7 +2663,8 @@ DISTRIBUTION
       <attribute name="name" />
       <sequential>
         <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar"
-          tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"/>
+          tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"
+          overwrite="yes"/>
       </sequential>
     </macrodef>
   </target>
@@ -2741,7 +2680,6 @@ DISTRIBUTION
     <copy-bundle name="scala-reflect"/>
     <copy-bundle name="scala-swing"/>
     <copy-bundle name="scala-actors"/>
-    <copy-bundle name="scala-actors-migration"/>
     <copy-bundle name="scala-compiler"/>
     <copy toDir="${dist.dir}/bin">
       <fileset dir="${build-pack.dir}/bin"/>
@@ -2801,9 +2739,6 @@ DISTRIBUTION
     </jar>
     <jar destfile="${dist.dir}/src/scala-actors-src.jar">
       <fileset dir="${src.dir}/actors"/>
-    </jar>
-    <jar destfile="${dist.dir}/src/scala-actors-migration-src.jar">
-      <fileset dir="${src.dir}/actors-migration"/>
     </jar>
     <jar destfile="${dist.dir}/src/scalap-src.jar">
       <fileset dir="${src.dir}/scalap"/>
@@ -2981,9 +2916,6 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/actors"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/actors-migration"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/dbc"/>

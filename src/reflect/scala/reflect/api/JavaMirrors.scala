@@ -1,7 +1,10 @@
 package scala.reflect
 package api
 
-/** A refinement of [[scala.reflect.api.Mirror]] for runtime reflection using JVM classloaders.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ * A refinement of [[scala.reflect.api.Mirror]] for runtime reflection using JVM classloaders.
  *
  *  This refinement equips mirrors with reflection capabilities for the JVM. `JavaMirror` can
  *  convert Scala reflection artifacts (symbols and types) into Java reflection artifacts (classes)
@@ -12,6 +15,7 @@ package api
  *  [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
  *
  *  @groupname JavaMirrors Java Mirrors
+ *  @group ReflectionAPI
  */
 trait JavaMirrors { self: JavaUniverse =>
 

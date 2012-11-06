@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -493,8 +493,11 @@ abstract class ExplicitOuter extends InfoTransform
         case Select(qual, name) =>
           // make not private symbol acessed from inner classes, as well as
           // symbols accessed from @inline methods
+          //
+          // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
+          // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
           if (currentClass != sym.owner ||
-              (sym.owner.enclMethod hasAnnotation ScalaInlineClass))
+              (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
             sym.makeNotPrivate(sym.owner)
 
           val qsym = qual.tpe.widen.typeSymbol
