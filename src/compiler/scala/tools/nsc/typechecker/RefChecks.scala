@@ -1376,6 +1376,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         )
     }
 
+    private def checkCompileTimeOnly(sym: Symbol, pos: Position) = {
+      if (sym.isCompileTimeOnly)
+        unit.error(pos, s"reference to ${sym.fullLocationString} should not survive typechecking: ${sym.compileTimeOnlyMessage.get}")
+    }
+
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
          (otherSym != NoSymbol)
       && !otherSym.isProtected
@@ -1562,6 +1567,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       checkDeprecated(sym, tree.pos)
       if (settings.Xmigration28.value)
         checkMigration(sym, tree.pos)
+      checkCompileTimeOnly(sym, tree.pos)
 
       if (sym eq NoSymbol) {
         unit.warning(tree.pos, "Select node has NoSymbol! " + tree + " / " + tree.tpe)

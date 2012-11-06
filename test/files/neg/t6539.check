@@ -1,0 +1,10 @@
+Test_2.scala:2: error: reference to method cto in object M should not survive typechecking: cto may only be used as an argument to m
+	M.cto // error
+          ^
+Test_2.scala:3: error: reference to method cto in object M should not survive typechecking: cto may only be used as an argument to m
+	M.m(M.cto, ()) // error
+              ^
+Test_2.scala:5: error: reference to method cto in object M should not survive typechecking: cto may only be used as an argument to m
+	M.cto // error
+          ^
+three errors found

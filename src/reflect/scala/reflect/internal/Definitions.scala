@@ -944,6 +944,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BeanPropertyAttr           = requiredClass[scala.beans.BeanProperty]
     lazy val BooleanBeanPropertyAttr    = requiredClass[scala.beans.BooleanBeanProperty]
     lazy val CloneableAttr              = requiredClass[scala.annotation.cloneable]
+    lazy val CompileTimeOnlyAttr        = requiredClass[scala.reflect.macros.compileTimeOnly]
     lazy val DeprecatedAttr             = requiredClass[scala.deprecated]
     lazy val DeprecatedNameAttr         = requiredClass[scala.deprecatedName]
     lazy val DeprecatedInheritanceAttr  = requiredClass[scala.deprecatedInheritance]

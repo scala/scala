@@ -743,6 +743,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
+    def isCompileTimeOnly       = hasAnnotation(CompileTimeOnlyAttr)
+    def compileTimeOnlyMessage  = getAnnotation(CompileTimeOnlyAttr) flatMap (_ stringArg 0)
+
     /** Is this symbol an accessor method for outer? */
     final def isOuterAccessor = {
       hasFlag(STABLE | ARTIFACT) &&
