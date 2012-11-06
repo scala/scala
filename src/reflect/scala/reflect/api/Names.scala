@@ -1,21 +1,29 @@
 package scala.reflect
 package api
 
-/** This trait defines Names (a Scala reflection concept) and operations on them.
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  Names are simple wrappers for strings. [[scala.reflect.api.Names#Name Name]] has two subtypes [[scala.reflect.api.Names#TermName TermName]] and [[scala.reflect.api.Names#TypeName TypeName]] which
- *  distinguish names of terms (like objects or members) and types. A term and a type of the
- *  same name can co-exist in an object. 
+ * This trait defines `Name`s in Scala Reflection, and operations on them.
  *
- *  === Examples ===
+ *  Names are simple wrappers for strings. [[scala.reflect.api.Names#Name Name]] has two subtypes
+ *  [[scala.reflect.api.Names#TermName TermName]] and [[scala.reflect.api.Names#TypeName TypeName]]
+ *  which distinguish names of terms (like objects or members) and types. A term and a type of the
+ *  same name can co-exist in an object.
  *
- *  To search for the `map` method (which is a term) declared in the `List` class,
- *  use `typeOf[List[_]].member(newTermName("map"))`. To search for a type member, use
- *  newTypeName instead.
+ *  To search for the `map` method (which is a term) declared in the `List` class, one can do:
  *
- *  See the [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for more about Scala Reflection.
+ * {{{
+ *   scala> typeOf[List[_]].member(newTermName("map"))
+ *   res0: reflect.runtime.universe.Symbol = method map
+ * }}}
+ *
+ *  To search for a type member, one can follow the same procedure, using `newTypeName` instead.
+ *
+ *  For more information about creating and using `Name`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
  *
  *  @contentDiagram hideNodes "*Api"
+ *  @group ReflectionAPI
  */
 trait Names {
   /** An implicit conversion from String to TermName.
