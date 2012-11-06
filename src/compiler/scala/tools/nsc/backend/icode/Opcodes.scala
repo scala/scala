@@ -9,7 +9,6 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.tools.nsc.ast._
 import scala.reflect.internal.util.{Position,NoPosition}
 
 /*

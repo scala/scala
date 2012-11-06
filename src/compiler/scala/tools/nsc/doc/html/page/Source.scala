@@ -8,8 +8,6 @@ package doc
 package html
 package page
 
-import model._
-import comment._
 import scala.xml.{NodeSeq, Unparsed}
 import java.io.File
 

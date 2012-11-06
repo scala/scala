@@ -9,9 +9,7 @@ package classfile
 
 import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
-import backend.icode._
 import ClassfileConstants._
-import scala.reflect.internal.Flags._
 
 /** ICode reader from Java bytecode.
  *
@@ -716,7 +714,6 @@ abstract class ICodeReader extends ClassfileParser {
 
       val tfa = new analysis.MethodTFA() {
         import analysis._
-        import analysis.typeFlowLattice.IState
 
         /** Abstract interpretation for one instruction. */
         override def mutatingInterpret(out: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {

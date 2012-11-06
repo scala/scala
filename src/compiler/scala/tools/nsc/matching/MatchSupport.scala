@@ -6,9 +6,6 @@
 package scala.tools.nsc
 package matching
 
-import transform.ExplicitOuter
-import ast.{ Printers, Trees }
-import java.io.{ StringWriter, PrintWriter }
 import scala.annotation.elidable
 import scala.language.postfixOps
 

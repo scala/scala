@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.language.implicitConversions
-
 /** A generic means of breaking down types into their subcomponents.
  *  Types are decomposed top down, and recognizable substructure is
  *  dispatched via self-apparently named methods.  Those methods can

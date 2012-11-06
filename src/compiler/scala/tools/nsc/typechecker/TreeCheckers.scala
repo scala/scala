@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.tools.nsc.symtab.Flags._
 import scala.collection.mutable
 import mutable.ListBuffer
 import util.returning

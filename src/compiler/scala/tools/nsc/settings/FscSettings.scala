@@ -8,7 +8,7 @@ package nsc
 package settings
 
 import util.ClassPath
-import io.{ Directory, Path, AbstractFile }
+import io.{ Path, AbstractFile }
 
 class FscSettings(error: String => Unit) extends Settings(error) {
   outer =>

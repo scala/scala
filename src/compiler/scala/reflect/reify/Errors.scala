@@ -7,7 +7,6 @@ trait Errors {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   def defaultErrorPosition = {
     val stack = currents collect { case t: Tree if t.pos != NoPosition => t.pos }

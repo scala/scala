@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package backend
 
-import scala.tools.nsc.ast._
 import scala.collection.{ mutable, immutable }
 
 /**

@@ -68,7 +68,6 @@ abstract class TypeFlowAnalysis {
    *  names to types and a type stack.
    */
   object typeFlowLattice extends SemiLattice {
-    import icodes._
     type Elem = IState[VarBinding, icodes.TypeStack]
 
     val top    = new Elem(new VarBinding, typeStackLattice.top)

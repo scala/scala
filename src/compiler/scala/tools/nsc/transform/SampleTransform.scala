@@ -12,7 +12,6 @@ abstract class SampleTransform extends Transform {
   // inherits abstract value `global` and class `Phase` from Transform
 
   import global._                  // the global environment
-  import definitions._             // standard classes and methods
   import typer.{typed, atOwner}    // methods to type trees
 
   /** the following two members override abstract members in Transform */

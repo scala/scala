@@ -10,7 +10,7 @@ package html
 import model._
 import comment._
 
-import scala.xml.{XML, NodeSeq}
+import scala.xml.NodeSeq
 import scala.xml.dtd.{DocType, PublicID}
 import scala.collection._
 import java.io.Writer

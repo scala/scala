@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags._
 import scala.collection.mutable.{LinkedHashSet, Set}
 import scala.annotation.tailrec
 
@@ -69,7 +68,6 @@ trait Contexts { self: Analyzer =>
   def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, false)
   def rootContext(unit: CompilationUnit, tree: Tree): Context = rootContext(unit, tree, false)
   def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: Boolean): Context = {
-    import definitions._
     var sc = startContext
     for (sym <- rootImports(unit)) {
       sc = sc.makeNewImport(sym)

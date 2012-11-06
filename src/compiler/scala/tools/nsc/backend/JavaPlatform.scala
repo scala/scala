@@ -8,7 +8,6 @@ package backend
 
 import io.AbstractFile
 import util.{ClassPath,JavaClassPath,MergedClassPath,DeltaClassPath}
-import util.ClassPath.{ JavaContext, DefaultJavaContext }
 import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform {

@@ -2,7 +2,6 @@ package scala.reflect.reify
 package phases
 
 import scala.runtime.ScalaRunTime.isAnyVal
-import scala.runtime.ScalaRunTime.isTuple
 import scala.reflect.reify.codegen._
 
 trait Reify extends GenSymbols
@@ -16,7 +15,6 @@ trait Reify extends GenSymbols
   self: Reifier =>
 
   import global._
-  import definitions._
 
   private object reifyStack {
     def currents: List[Any] = state.reifyStack

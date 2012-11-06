@@ -7,9 +7,6 @@ import comment.CommentFactory
 import java.util.regex.{Pattern, Matcher}
 import scala.util.matching.Regex
 
-// statistics
-import  html.page.diagram.DiagramStats
-
 /**
  *  This trait takes care of parsing @{inheritance, content}Diagram annotations
  *

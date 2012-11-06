@@ -7,7 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import java.lang.reflect
-import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader
 import ScalaClassLoader.appLoader
 import scala.reflect.NameTransformer._

@@ -37,13 +37,11 @@ import scala.reflect.internal.Types
   *  - recover exhaustivity/unreachability of user-defined extractors by partitioning the types they match on using an HList or similar type-level structure
   */
 trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL {   // self: Analyzer =>
-  import Statistics._
   import PatternMatchingStats._
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
   import global._                  // the global environment
-  import definitions._             // standard classes and methods
 
   val phaseName: String = "patmat"
 

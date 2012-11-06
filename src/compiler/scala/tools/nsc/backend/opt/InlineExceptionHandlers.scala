@@ -4,7 +4,6 @@
 
 package scala.tools.nsc
 package backend.opt
-import scala.util.control.Breaks._
 
 /**
   * This optimization phase inlines the exception handlers so that further phases can optimize the code better

@@ -8,7 +8,6 @@ package scala.tools.nsc
 package backend.msil
 
 import java.io.{File, IOException}
-import java.nio.{ByteBuffer, ByteOrder}
 import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.symtab._
 
@@ -312,7 +311,7 @@ abstract class GenMSIL extends SubComponent {
 
 /*    def getAttributeArgs(consts: List[Constant], nvPairs: List[(Name, Constant)]): Array[Byte] = {
       val buf = ByteBuffer.allocate(2048) // FIXME: this may be not enough!
-      buf.order(ByteOrder.LITTLE_ENDIAN)
+      buf.order(java.nio.ByteOrder.LITTLE_ENDIAN)
       buf.putShort(1.toShort) // signature
 
       def emitSerString(str: String) = {

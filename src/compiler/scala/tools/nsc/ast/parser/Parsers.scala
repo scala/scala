@@ -376,7 +376,6 @@ self =>
        *  }
        *  }}}
        */
-      import definitions._
 
       def emptyPkg    = atPos(0, 0, 0) { Ident(nme.EMPTY_PACKAGE_NAME) }
       def emptyInit   = DefDef(

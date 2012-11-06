@@ -8,9 +8,7 @@ package doc
 
 import scala.util.control.ControlThrowable
 import reporters.Reporter
-import scala.reflect.internal.util.{ NoPosition, BatchSourceFile}
-import io.{ File, Directory }
-import DocParser.Parsed
+import scala.reflect.internal.util.BatchSourceFile
 
 /** A documentation processor controls the process of generating Scala
   * documentation, which is as follows.

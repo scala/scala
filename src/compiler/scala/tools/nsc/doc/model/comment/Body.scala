@@ -10,8 +10,6 @@ package comment
 
 import scala.collection._
 
-import java.net.URL
-
 /** A body of text. A comment has a single body, which is composed of
   * at least one block. Inside every body is exactly one summary (see
   * [[scala.tools.nsc.doc.model.comment.Summary]]). */

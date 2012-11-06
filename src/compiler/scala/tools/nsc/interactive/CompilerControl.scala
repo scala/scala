@@ -7,8 +7,6 @@ package interactive
 
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.symtab._
-import scala.tools.nsc.ast._
 import scala.tools.nsc.util.FailedInterrupt
 import scala.tools.nsc.util.EmptyAction
 import scala.tools.nsc.util.WorkScheduler

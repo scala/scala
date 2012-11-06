@@ -8,7 +8,6 @@ package ast
 
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
-import symtab.SymbolTable
 import scala.language.postfixOps
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but

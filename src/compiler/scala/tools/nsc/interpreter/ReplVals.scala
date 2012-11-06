@@ -57,7 +57,6 @@ object ReplVals {
    */
   def mkCompilerTypeFromTag[T <: Global](global: T) = {
     import global._
-    import definitions._
 
     /** We can't use definitions.compilerTypeFromTag directly because we're passing
      *  it to map and the compiler refuses to perform eta expansion on a method

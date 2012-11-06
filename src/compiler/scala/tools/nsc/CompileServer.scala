@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream }
+import java.io.PrintStream
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.reflect.internal.util.FakePos //Position
 import scala.tools.util.SocketServer

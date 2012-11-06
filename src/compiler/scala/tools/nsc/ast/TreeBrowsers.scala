@@ -17,7 +17,6 @@ import javax.swing.tree._
 import scala.concurrent.Lock
 import scala.text._
 import symtab.Flags._
-import symtab.SymbolTable
 import scala.language.implicitConversions
 
 /**

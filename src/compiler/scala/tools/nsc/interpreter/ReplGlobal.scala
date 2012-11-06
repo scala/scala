@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package interpreter
 
-import reporters._
 import typechecker.Analyzer
 
 /** A layer on top of Global so I can guarantee some extra

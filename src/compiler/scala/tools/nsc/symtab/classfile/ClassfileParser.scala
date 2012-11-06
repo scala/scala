@@ -23,7 +23,6 @@ import scala.tools.nsc.io.AbstractFile
 abstract class ClassfileParser {
   val global: Global
   import global._
-  import definitions.{ AnnotationClass, ClassfileAnnotationClass }
   import scala.reflect.internal.ClassfileConstants._
   import Flags._
 
@@ -1169,7 +1168,7 @@ abstract class ClassfileParser {
       originalName + " in " + outerName + "(" + externalName +")"
   }
 
-  object innerClasses extends scala.collection.mutable.HashMap[Name, InnerClassEntry] {
+  object innerClasses extends mutable.HashMap[Name, InnerClassEntry] {
     /** Return the Symbol of the top level class enclosing `name`,
      *  or 'name's symbol if no entry found for `name`.
      */

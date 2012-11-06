@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.internal.util.Position
-import scala.util.control.Exception.ignoring
 import scala.tools.nsc.util.stackTraceString
 
 /**

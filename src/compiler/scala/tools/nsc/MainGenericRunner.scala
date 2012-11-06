@@ -5,8 +5,6 @@
 
 package scala.tools.nsc
 
-import java.net.URL
-import scala.tools.util.PathResolver
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }

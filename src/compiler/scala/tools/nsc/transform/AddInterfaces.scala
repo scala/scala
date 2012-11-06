@@ -8,8 +8,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
 
 abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment

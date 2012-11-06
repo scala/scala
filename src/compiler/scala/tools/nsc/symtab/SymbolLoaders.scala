@@ -10,7 +10,6 @@ import java.io.IOException
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
-import scala.reflect.internal.Flags._
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.tools.nsc.io.{ AbstractFile, MsilFile }

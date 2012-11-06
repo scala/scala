@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.immutable
 
 /**
  * Exception handlers are pieces of code that `handle` exceptions on

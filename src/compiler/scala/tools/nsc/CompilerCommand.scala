@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import scala.collection.mutable.ListBuffer
 import io.File
 
 /** A class representing command line info for scalac */

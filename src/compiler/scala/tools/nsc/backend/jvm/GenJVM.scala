@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.{ByteArrayOutputStream, DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
@@ -16,8 +15,6 @@ import scala.reflect.internal.ClassfileConstants._
 import ch.epfl.lamp.fjbg._
 import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
-import java.util.jar.{ JarEntry, JarOutputStream }
-import scala.tools.nsc.io.AbstractFile
 import scala.language.postfixOps
 
 /** This class ...

@@ -6,12 +6,9 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.io.AbstractFile
-
 import scala.tools.asm
 import asm.Label
 

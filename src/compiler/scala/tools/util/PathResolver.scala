@@ -6,7 +6,6 @@
 package scala.tools
 package util
 
-import java.net.{ URL, MalformedURLException }
 import scala.tools.reflect.WrappedProperties.AccessControl
 import nsc.{ Settings, GenericRunnerSettings }
 import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }

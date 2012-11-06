@@ -5,15 +5,11 @@
 package scala.tools.nsc
 package interactive
 
-import scala.concurrent.SyncVar
 import scala.reflect.internal.util._
-import scala.tools.nsc.symtab._
-import scala.tools.nsc.ast._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
 import scala.tools.nsc.scratchpad.SourceInserter
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
-import java.io.{File, FileWriter}
+import java.io.FileWriter
 
 /** Interface of interactive compiler to a client such as an IDE
  */

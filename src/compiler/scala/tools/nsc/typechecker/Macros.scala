@@ -3,15 +3,10 @@ package typechecker
 
 import symtab.Flags._
 import scala.tools.nsc.util._
-import scala.tools.nsc.util.ClassPath._
 import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
-import scala.compat.Platform.EOL
 import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
-import java.lang.{Class => jClass}
-import java.lang.reflect.{Array => jArray, Method => jMethod}
-import scala.reflect.internal.util.Collections._
 import scala.util.control.ControlThrowable
 import scala.reflect.macros.runtime.AbortMacroException
 
