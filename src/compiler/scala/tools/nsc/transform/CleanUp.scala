@@ -629,13 +629,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             _.tpe.resultType.dealias.typeSymbol == ObjectClass  // [T: ClassTag](xs: T*): Array[T] post erasure
           }) =>
         super.transform(arg)
-      case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
-      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) &&
-         appMeth.symbol == ArrayModule_overloadedApply.suchThat {
-           tp => tp.tpe.paramss.flatten.lift.apply(1).exists(_.tpe.typeSymbol == SeqClass) &&
-             tp.tpe.resultType =:= arrayType(elemtpt.tpe) // (p1: AnyVal1, ps: AnyVal1*): Array[AnyVal1] post erasure
-         } =>
-        super.transform(rest.copy(elems = elem0 :: rest.elems))
 
       case _ =>
         super.transform(tree)
