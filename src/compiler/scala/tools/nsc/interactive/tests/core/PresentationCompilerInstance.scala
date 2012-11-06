@@ -11,10 +11,11 @@ private[tests] trait PresentationCompilerInstance extends TestSettings {
   protected val compilerReporter: CompilerReporter = new InteractiveReporter {
     override def compiler = PresentationCompilerInstance.this.compiler
   }
+  protected val projectName = ""
 
   protected lazy val compiler: Global = {
     prepareSettings(settings)
-    new Global(settings, compilerReporter)
+    new Global(settings, compilerReporter, projectName)
   }
 
   /**
