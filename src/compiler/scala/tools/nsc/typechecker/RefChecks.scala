@@ -1377,8 +1377,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
 
     private def checkCompileTimeOnly(sym: Symbol, pos: Position) = {
-      if (sym.isCompileTimeOnly)
-        unit.error(pos, s"reference to ${sym.fullLocationString} should not survive typechecking: ${sym.compileTimeOnlyMessage.get}")
+      if (sym.isCompileTimeOnly) {
+        def defaultMsg =
+          s"""|Reference to ${sym.fullLocationString} should not have survived past type checking,
+              |it should have been processed and eliminated during expansion of an enclosing macro.""".stripMargin
+        // The getOrElse part should never happen, it's just here as a backstop.
+        unit.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
+      }
     }
 
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (

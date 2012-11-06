@@ -10,7 +10,7 @@ import scala.annotation.meta._
  *
  * @param  message the error message to print during compilation if a reference remains
  *                 after type checking
- * @since  2.10.0
+ * @since  2.10.1
  */
 @getter @setter @beanGetter @beanSetter
-final class compileTimeOnly(message: String = "") extends scala.annotation.StaticAnnotation
+final class compileTimeOnly(message: String) extends scala.annotation.StaticAnnotation
