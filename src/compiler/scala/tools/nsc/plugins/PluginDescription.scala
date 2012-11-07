@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package plugins
 
-import scala.xml.{Node,NodeSeq}
+import scala.xml.Node
 
 /** A description of a compiler plugin, suitable for serialization
  *  to XML for inclusion in the plugin's .jar file.

@@ -14,7 +14,7 @@ trait ExprTyper {
   import repl._
   import global.{ reporter => _, Import => _, _ }
   import definitions._
-  import syntaxAnalyzer.{ UnitParser, UnitScanner }
+  import syntaxAnalyzer.UnitParser
   import naming.freshInternalVarName
 
   object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {
