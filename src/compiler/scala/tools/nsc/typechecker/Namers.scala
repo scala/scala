@@ -338,7 +338,7 @@ trait Namers extends MethodSynthesis {
       if (clazz.sourceFile != null && clazz.sourceFile != contextFile)
         debugwarn("!!! Source mismatch in " + clazz + ": " + clazz.sourceFile + " vs. " + contextFile)
 
-      clazz.sourceFile = contextFile
+      clazz.associatedFile = contextFile
       if (clazz.sourceFile != null) {
         assert(currentRun.canRedefine(clazz) || clazz.sourceFile == currentRun.symSource(clazz), clazz.sourceFile)
         currentRun.symSource(clazz) = clazz.sourceFile
@@ -426,7 +426,7 @@ trait Namers extends MethodSynthesis {
         setPrivateWithin(tree, m.moduleClass)
       }
       if (m.owner.isPackageClass && !m.isPackage) {
-        m.moduleClass.sourceFile = contextFile
+        m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
       }

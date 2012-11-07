@@ -1430,7 +1430,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def flatMap(prev: Tree, b: Symbol, next: Tree): Tree
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree
       def flatMapGuard(cond: Tree, next: Tree): Tree
-      def ifThenElseZero(c: Tree, then: Tree): Tree = IF (c) THEN then ELSE zero
+      def ifThenElseZero(c: Tree, thenp: Tree): Tree = IF (c) THEN thenp ELSE zero
       protected def zero: Tree
     }
 
@@ -1523,7 +1523,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // __match.zero
       protected def zero: Tree = _match(vpmName.zero)
       // __match.guard(`c`, `then`)
-      def guard(c: Tree, then: Tree): Tree = _match(vpmName.guard) APPLY (c, then)
+      def guard(c: Tree, thenp: Tree): Tree = _match(vpmName.guard) APPLY (c, thenp)
 
       //// methods in the monad instance -- used directly in translation
       // `prev`.flatMap(`b` => `next`)

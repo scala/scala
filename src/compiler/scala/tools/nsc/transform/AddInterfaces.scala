@@ -92,7 +92,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         impl.typeOfThis = iface.typeOfThis
         impl.thisSym setName iface.thisSym.name
       }
-      impl.sourceFile = iface.sourceFile
+      impl.associatedFile = iface.sourceFile
       if (inClass)
         iface.owner.info.decls enter impl
 

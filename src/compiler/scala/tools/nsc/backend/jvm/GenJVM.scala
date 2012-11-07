@@ -1333,7 +1333,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             case lf @ LOAD_FIELD(field, isStatic) =>
               val owner = javaName(lf.hostClass)
               debuglog("LOAD_FIELD with owner: " + owner +
-                    " flags: " + Flags.flagsToString(field.owner.flags))
+                    " flags: " + field.owner.flagString)
               val fieldJName = javaName(field)
               val fieldJType = javaType(field)
               if (isStatic) jcode.emitGETSTATIC(owner, fieldJName, fieldJType)
@@ -1341,7 +1341,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
-              debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
+              debuglog("generating LOAD_MODULE for: " + module + " flags: " + module.flagString);
               if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
                 jcode.emitALOAD_0()
               else

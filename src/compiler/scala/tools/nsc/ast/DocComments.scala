@@ -461,7 +461,7 @@ trait DocComments { self: Global =>
         //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
         //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
         //findIn(sites)
-        findIn(site.ownerChain ::: List(definitions.EmptyPackage))
+        findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
       }
 
       def getType(str: String, variable: String): Type = {

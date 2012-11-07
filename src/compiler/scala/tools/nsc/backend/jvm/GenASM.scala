@@ -2429,7 +2429,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
-              debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
+              debuglog("generating LOAD_MODULE for: " + module + " flags: " + module.flagString);
               if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
                 jmethod.visitVarInsn(Opcodes.ALOAD, 0)
               } else {
@@ -2506,7 +2506,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
             case lf @ LOAD_FIELD(field, isStatic) =>
               val owner = javaName(lf.hostClass)
-              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
+              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + field.owner.flagString)
               val fieldJName = javaName(field)
               val fieldDescr = descriptor(field)
               val opc = if (isStatic) Opcodes.GETSTATIC else Opcodes.GETFIELD

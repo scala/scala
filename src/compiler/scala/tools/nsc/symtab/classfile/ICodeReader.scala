@@ -165,7 +165,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
     else if (nme.isModuleName(name)) {
       val strippedName = nme.stripModuleSuffix(name)
-      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModule(strippedName)
+      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModuleByName(strippedName)
     }
     else {
       forceMangledName(name, false)
