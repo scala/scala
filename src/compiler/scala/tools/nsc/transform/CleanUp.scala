@@ -628,7 +628,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         super.transform(arg)
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
-        super.transform(rest.copy(elems = elem0 :: rest.elems).copyAttrs(rest))
+        super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
 
       case _ =>
         super.transform(tree)
