@@ -11,8 +11,6 @@ trait NodePrinters {
   self: Utils =>
 
   import global._
-  import definitions._
-  import Flag._
 
   object reifiedNodeToString extends (Tree => String) {
     def apply(tree: Tree): String = {

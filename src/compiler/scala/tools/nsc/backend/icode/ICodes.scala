@@ -8,8 +8,6 @@ package backend
 package icode
 
 import java.io.PrintWriter
-import scala.collection.mutable
-import scala.tools.nsc.symtab._
 import analysis.{ Liveness, ReachingDefinitions }
 import scala.tools.nsc.symtab.classfile.ICodeReader
 

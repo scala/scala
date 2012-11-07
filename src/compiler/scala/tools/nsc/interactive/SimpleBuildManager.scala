@@ -8,9 +8,6 @@ package interactive
 import scala.collection._
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import dependencies._
-
-import scala.reflect.internal.util.FakePos
 import io.AbstractFile
 
 /** A simple build manager, using the default scalac dependency tracker.

@@ -8,7 +8,6 @@ abstract class Taggers {
 
   import c.universe._
   import definitions._
-  import treeBuild._
 
   val coreTags = Map(
     ByteTpe -> nme.Byte,

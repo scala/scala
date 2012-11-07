@@ -8,7 +8,6 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.mutable
-import scala.ref.WeakReference
 import scala.reflect.ClassTag
 
 /**

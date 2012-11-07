@@ -6,12 +6,8 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
-import scala.util.control.ControlThrowable
-import symtab.Flags._
-import scala.annotation.tailrec
 import Checkability._
+import scala.language.postfixOps
 
 /** On pattern matcher checkability:
  *

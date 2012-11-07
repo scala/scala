@@ -8,7 +8,6 @@ package interactive
 import ast.Trees
 import ast.Positions
 import scala.reflect.internal.util.{SourceFile, Position, RangePosition, NoPosition}
-import scala.tools.nsc.util.WorkScheduler
 import scala.collection.mutable.ListBuffer
 
 /** Handling range positions
@@ -60,7 +59,7 @@ self: scala.tools.nsc.Global =>
   }
 
   // -------------- ensuring no overlaps -------------------------------
-  
+
   /** Ensure that given tree has no positions that overlap with
    *  any of the positions of `others`. This is done by
    *  shortening the range, assigning TransparentPositions

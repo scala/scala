@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package backend
 
-import scala.tools.nsc.backend.icode._
 import scala.collection.{ mutable, immutable }
 
 /** Scala primitive operations are represented as methods in `Any` and

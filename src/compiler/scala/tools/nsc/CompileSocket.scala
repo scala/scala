@@ -5,13 +5,9 @@
 
 package scala.tools.nsc
 
-import java.io.{ IOException, FileNotFoundException, PrintWriter, FileOutputStream }
-import java.io.{ BufferedReader, FileReader }
-import java.util.regex.Pattern
-import java.net._
+import java.io.{ FileNotFoundException, PrintWriter, FileOutputStream }
 import java.security.SecureRandom
 import io.{ File, Path, Directory, Socket }
-import scala.util.control.Exception.catching
 import scala.tools.util.CompileOutputCommon
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.sys.process._

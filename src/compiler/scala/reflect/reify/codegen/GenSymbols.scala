@@ -5,7 +5,6 @@ trait GenSymbols {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   /** Symbol table of the reifee.
    *

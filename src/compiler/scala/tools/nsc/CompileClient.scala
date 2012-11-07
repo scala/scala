@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import java.io.{ BufferedReader, File, InputStreamReader, PrintWriter }
 import settings.FscSettings
 import scala.tools.util.CompileOutputCommon
 import sys.SystemProperties.preferIPv4Stack

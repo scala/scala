@@ -9,7 +9,7 @@ package io
 
 import java.io.{ FileInputStream, InputStream, IOException }
 import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.channels.{FileChannel, ReadableByteChannel, Channels}
+import java.nio.channels.{ ReadableByteChannel, Channels }
 import java.nio.charset.{CharsetDecoder, CoderResult}
 import scala.tools.nsc.reporters._
 

@@ -7,8 +7,6 @@ package scala.tools.nsc
 package ast
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
-import symtab.Flags._
-import symtab.SymbolTable
 
 trait Printers extends scala.reflect.internal.Printers { this: Global =>
 

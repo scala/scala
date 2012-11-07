@@ -7,11 +7,6 @@ package scala.tools.nsc
 package interactive
 
 import scala.collection._
-
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.reflect.internal.util.FakePos
-
-import dependencies._
 import io.AbstractFile
 import scala.language.implicitConversions
 

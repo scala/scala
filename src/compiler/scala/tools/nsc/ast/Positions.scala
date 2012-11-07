@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package ast
 
-import scala.reflect.internal.util.{ SourceFile, Position, OffsetPosition, NoPosition }
+import scala.reflect.internal.util.{ SourceFile, OffsetPosition }
 
 trait Positions extends scala.reflect.internal.Positions {
   self: Global =>

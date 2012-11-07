@@ -17,7 +17,7 @@ import Flags.SYNTHETIC
 abstract class TailCalls extends Transform {
   import global._                     // the global environment
   import definitions._                // standard classes and methods
-  import typer.{ typed, typedPos }    // methods to type trees
+  import typer.typedPos               // methods to type trees
 
   val phaseName: String = "tailcalls"
 

@@ -7,7 +7,6 @@ package scala.tools.nsc
 
 import java.util.concurrent.{ Future, Callable }
 import java.util.{ Timer, TimerTask }
-import java.util.jar.{ Attributes }
 import scala.language.implicitConversions
 
 package object io {
@@ -27,7 +26,7 @@ package object io {
   type VirtualFile = scala.reflect.io.VirtualFile
   val ZipArchive = scala.reflect.io.ZipArchive
   type ZipArchive = scala.reflect.io.ZipArchive
-  
+
   implicit def postfixOps = scala.language.postfixOps // make all postfix ops in this package compile without warning
 
   type JManifest = java.util.jar.Manifest

@@ -7,7 +7,6 @@ package scala.tools.nsc
 package backend.opt
 
 import scala.tools.nsc.backend.icode.analysis.LubException
-import scala.tools.nsc.symtab._
 
 /**
  *  @author Iulian Dragos

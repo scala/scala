@@ -1,7 +1,6 @@
 package scala.reflect
 
-import scala.language.implicitConversions
-import scala.reflect.macros.{Context, ReificationException, UnexpectedReificationException}
+import scala.reflect.macros.ReificationException
 import scala.tools.nsc.Global
 
 package object reify {
@@ -24,7 +23,8 @@ package object reify {
 
   private[reify] def mkDefaultMirrorRef(global: Global)(universe: global.Tree, typer0: global.analyzer.Typer): global.Tree = {
     import global._
-    import definitions._
+    import definitions.JavaUniverseClass
+
     val enclosingErasure = {
       val rClassTree = reifyEnclosingRuntimeClass(global)(typer0)
       // HACK around SI-6259
@@ -71,7 +71,6 @@ package object reify {
   // a class/object body, this will return an EmptyTree.
   def reifyEnclosingRuntimeClass(global: Global)(typer0: global.analyzer.Typer): global.Tree = {
     import global._
-    import definitions._
     def isThisInScope = typer0.context.enclosingContextChain exists (_.tree.isInstanceOf[ImplDef])
     if (isThisInScope) {
       val enclosingClasses = typer0.context.enclosingContextChain map (_.tree) collect { case classDef: ClassDef => classDef }

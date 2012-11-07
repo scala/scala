@@ -6,8 +6,6 @@ package scala.tools.nsc
 package doc
 package model
 
-import scala.collection._
-
 abstract sealed class LinkTo
 final case class LinkToTpl(tpl: DocTemplateEntity) extends LinkTo
 final case class LinkToMember(mbr: MemberEntity, inTpl: DocTemplateEntity) extends LinkTo

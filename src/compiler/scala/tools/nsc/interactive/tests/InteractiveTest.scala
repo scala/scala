@@ -7,14 +7,6 @@ package interactive
 package tests
 
 import core._
-
-import java.io.File.pathSeparatorChar
-import java.io.File.separatorChar
-
-import scala.annotation.migration
-import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.SourceFile
-
 import scala.collection.mutable.ListBuffer
 
 /** A base class for writing interactive compiler tests.

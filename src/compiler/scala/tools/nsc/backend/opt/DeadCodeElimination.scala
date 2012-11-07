@@ -8,7 +8,6 @@ package scala.tools.nsc
 package backend.opt
 
 import scala.collection.{ mutable, immutable }
-import symtab._
 
 /**
  */

@@ -9,11 +9,8 @@ package matching
 
 import PartialFunction._
 import scala.collection.{ mutable }
-import scala.reflect.internal.util.Position
 import transform.ExplicitOuter
-import symtab.Flags
 import mutable.ListBuffer
-import scala.annotation.elidable
 import scala.language.postfixOps
 
 trait ParallelMatching extends ast.TreeDSL
@@ -26,7 +23,7 @@ trait ParallelMatching extends ast.TreeDSL
 
   import global.{ typer => _, _ }
   import definitions.{
-    AnyRefClass, IntClass, BooleanClass, SomeClass, OptionClass,
+    IntClass, BooleanClass, SomeClass, OptionClass,
     getProductArgs, productProj, Object_eq, Any_asInstanceOf
   }
   import CODE._

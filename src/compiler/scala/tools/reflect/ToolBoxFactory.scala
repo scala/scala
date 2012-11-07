@@ -3,12 +3,8 @@ package reflect
 
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
-import scala.tools.nsc.Global
-import scala.tools.nsc.typechecker.Modes
 import scala.tools.nsc.io.VirtualDirectory
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
-import scala.tools.nsc.util.FreshNameCreator
-import scala.reflect.internal.Flags
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
 import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL
@@ -313,11 +309,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       // reporter doesn't accumulate errors, but the front-end does
       def throwIfErrors() = {
-        if (frontEnd.hasErrors) {
-          var msg = "reflective compilation has failed: " + EOL + EOL
-          msg += frontEnd.infos map (_.msg) mkString EOL
-          throw ToolBoxError(msg)
-        }
+        if (frontEnd.hasErrors) throw ToolBoxError(
+          "reflective compilation has failed: " + EOL + EOL + (frontEnd.infos map (_.msg) mkString EOL)
+        )
       }
     }
 
@@ -337,15 +331,15 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         command.settings.outputDirs setSingleOutput virtualDirectory
         val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
         if (frontEnd.hasErrors) {
-          var msg = "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL
-          msg += frontEnd.infos map (_.msg) mkString EOL
-          throw ToolBoxError(msg)
+          throw ToolBoxError(
+            "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL +
+            (frontEnd.infos map (_.msg) mkString EOL)
+          )
         }
         instance
       } catch {
         case ex: Throwable =>
-          var msg = "reflective compilation has failed: cannot initialize the compiler due to %s".format(ex.toString)
-          throw ToolBoxError(msg, ex)
+          throw ToolBoxError(s"reflective compilation has failed: cannot initialize the compiler due to $ex", ex)
       }
     }
 

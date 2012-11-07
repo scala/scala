@@ -7,7 +7,6 @@ package scala.tools.nsc
 package reporters
 
 import scala.reflect.internal.util._
-import scala.reflect.internal.util.StringOps._
 
 /**
  * This interface provides methods to issue information, warning and

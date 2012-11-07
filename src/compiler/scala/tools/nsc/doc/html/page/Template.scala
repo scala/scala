@@ -8,10 +8,6 @@ package doc
 package html
 package page
 
-import model._
-import model.diagram._
-import diagram._
-
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 import scala.language.postfixOps
 

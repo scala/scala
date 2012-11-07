@@ -1,11 +1,11 @@
 package scala.tools.nsc
 
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.reporters.ConsoleReporter
 import Properties.{ versionString, copyrightString, residentPromptString }
-import scala.reflect.internal.util.{ BatchSourceFile, FakePos }
+import scala.reflect.internal.util.FakePos
 
 abstract class Driver {
-  
+
   val prompt = residentPromptString
 
   val versionMsg = "Scala compiler " +
