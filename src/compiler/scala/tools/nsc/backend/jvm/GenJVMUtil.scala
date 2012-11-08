@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -14,7 +14,6 @@ trait GenJVMUtil {
 
   import global._
   import icodes._
-  import icodes.opcodes._
   import definitions._
 
   /** Map from type kinds to the Java reference types. It is used for

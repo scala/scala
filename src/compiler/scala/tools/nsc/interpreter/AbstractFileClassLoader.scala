@@ -1,11 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.nsc.io.{ File, AbstractFile }
+import scala.tools.nsc.io.AbstractFile
 import util.ScalaClassLoader
 import java.net.URL
 import scala.collection.{ mutable, immutable }

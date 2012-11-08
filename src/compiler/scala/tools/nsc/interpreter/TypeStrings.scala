@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -13,15 +13,12 @@ import NameTransformer._
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 import typechecker.DestructureTypes
-import scala.reflect.internal.util.StringOps.ojoin
-import scala.language.implicitConversions
 
 /** A more principled system for turning types into strings.
  */
 trait StructuredTypeStrings extends DestructureTypes {
   val global: Global
   import global._
-  import definitions._
 
   case class LabelAndType(label: String, typeName: String) { }
   object LabelAndType {
@@ -48,7 +45,6 @@ trait StructuredTypeStrings extends DestructureTypes {
     l1 +: l2 :+ l3 mkString "\n"
   }
   private def maybeBlock(level: Int, grouping: Grouping)(name: String, nodes: List[TypeNode]): String = {
-    import grouping._
     val threshold = 70
 
     val try1 = str(level)(name + grouping.join(nodes map (_.show(0, grouping.labels)): _*))

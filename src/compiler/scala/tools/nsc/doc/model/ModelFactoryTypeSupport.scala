@@ -1,4 +1,4 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2012 LAMP/EPFL */
+/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL */
 
 package scala.tools.nsc
 package doc
@@ -9,13 +9,6 @@ import comment._
 import diagram._
 
 import scala.collection._
-import scala.util.matching.Regex
-
-import symtab.Flags
-
-import io._
-
-import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
 trait ModelFactoryTypeSupport {
@@ -28,7 +21,6 @@ trait ModelFactoryTypeSupport {
 
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
-  import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
   protected val typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
 

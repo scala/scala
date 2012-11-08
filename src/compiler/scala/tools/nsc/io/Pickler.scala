@@ -1,6 +1,5 @@
 package scala.tools.nsc.io
 
-import scala.annotation.unchecked
 import Lexer._
 import java.io.Writer
 import scala.language.implicitConversions

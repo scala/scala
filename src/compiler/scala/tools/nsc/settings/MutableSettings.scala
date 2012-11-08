@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -10,7 +10,6 @@ package settings
 
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
 import scala.reflect.internal.util.StringOps
-import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.reflect.{ ClassTag, classTag }
 

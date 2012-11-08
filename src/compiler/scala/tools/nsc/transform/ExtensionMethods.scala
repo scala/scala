@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -8,9 +8,6 @@ package transform
 import symtab._
 import Flags._
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable
-import scala.tools.nsc.util.FreshNameCreator
-import scala.runtime.ScalaRunTime.{ isAnyVal, isTuple }
 
 /**
  * Perform Step 1 in the inline classes SIP: Creates extension methods for all
@@ -23,7 +20,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   import global._ // the global environment
   import definitions._ // standard classes and methods
-  import typer.{ typed, atOwner } // methods to type trees
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "extmethods"

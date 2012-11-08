@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -8,17 +8,13 @@ package interactive
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
-import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
-import scala.tools.nsc.util.{ WorkScheduler, MultiHashMap }
+import scala.tools.nsc.util.MultiHashMap
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, RangePosition, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.ast._
-import scala.tools.nsc.io.Pickler._
 import scala.tools.nsc.typechecker.DivergentImplicit
-import scala.annotation.tailrec
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.language.implicitConversions
 

@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
 package scala.tools.nsc
 package transform
-
-import scala.collection.{ mutable, immutable }
 
 /** A base class for transforms.
  *  A transform contains a compiler phase which applies a tree transformer.

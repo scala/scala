@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -57,7 +57,6 @@ object ReplVals {
    */
   def mkCompilerTypeFromTag[T <: Global](global: T) = {
     import global._
-    import definitions._
 
     /** We can't use definitions.compilerTypeFromTag directly because we're passing
      *  it to map and the compiler refuses to perform eta expansion on a method

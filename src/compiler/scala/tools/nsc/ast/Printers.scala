@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,8 +7,6 @@ package scala.tools.nsc
 package ast
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
-import symtab.Flags._
-import symtab.SymbolTable
 
 trait Printers extends scala.reflect.internal.Printers { this: Global =>
 

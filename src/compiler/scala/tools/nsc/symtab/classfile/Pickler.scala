@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -28,11 +28,21 @@ abstract class Pickler extends SubComponent {
 
   val phaseName = "pickler"
 
-  currentRun
-
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
+    override def run() {
+      super.run()
+      // This is run here rather than after typer because I found
+      // some symbols - usually annotations, possibly others - had not
+      // yet performed the necessary symbol lookup, leading to
+      // spurious claims of unusedness.
+      if (settings.lint.value) {
+        log("Clearing recorded import selectors.")
+        analyzer.clearUnusedImports()
+      }
+    }
+
     def apply(unit: CompilationUnit) {
       def pickle(tree: Tree) {
         def add(sym: Symbol, pickle: Pickle) = {
@@ -77,6 +87,8 @@ abstract class Pickler extends SubComponent {
       }
 
       pickle(unit.body)
+      if (settings.lint.value)
+        analyzer.warnUnusedImports(unit)
     }
   }
 

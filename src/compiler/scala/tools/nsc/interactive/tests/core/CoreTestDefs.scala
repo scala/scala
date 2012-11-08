@@ -3,7 +3,6 @@ package interactive
 package tests.core
 
 import scala.reflect.internal.util.Position
-import scala.tools.nsc.interactive.tests.core._
 
 /** Set of core test definitions that are executed for each test run. */
 private[tests] trait CoreTestDefs

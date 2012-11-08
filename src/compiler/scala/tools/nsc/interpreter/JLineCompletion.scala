@@ -1,13 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.jline._
-import scala.tools.jline.console.completer._
 import Completion._
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.StringOps.longestCommonPrefix

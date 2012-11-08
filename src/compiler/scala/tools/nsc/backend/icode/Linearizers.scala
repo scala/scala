@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,6 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.tools.nsc.ast._
 import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
 

@@ -1,69 +1,52 @@
 package scala.reflect
 package api
 
-/** A trait that defines types and operations on them.
+/**
+ *  <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A trait that defines types and operations on them.
  *
  *  Type instances represent information about the type of a corresponding symbol. This includes its members
- *  (methods, fields, type parameters, nested classes, traits, etc) either declared directly or inherited, its base types,
- *  its erasure and so on. Types also provide operation to test for type conformance or euqivalence or for widening.
+ *  (methods, fields, type parameters, nested classes, traits, etc.) either declared directly or inherited, its base types,
+ *  its erasure and so on. Types also provide operations to test for type conformance or equivalence or for widening.
  *
- *  === Instantiating types ===
- *
- *  There are three ways to instantiate types. The simplest one involves the [[scala.reflect.api.TypeTags#typeOf]] method,
- *  which takes a type argument and produces a `Type` instance that represents that argument. For example, `typeOf[List[Int]]`
- *  produces a [[scala.reflect.api.Types#TypeRef]], which corresponds to a type `List` applied to a type argument `Int`.
- *  Method `typeOf` does not work for types with type parameters, such as `typeOf[List[A]]` where `A` is a type variable.
- *  In this case, use [[scala.reflect.api.TypeTags#weakTypeOf]] instead. Refer to [[scala.reflect.api.TypeTags the type tags page]] to find out
- *  more about this distinction.
- *
- *  `typeOf` requires spelling out a type explicitly, but there's also a way to capture types implicitly with the [[scala.reflect.api.TypeTags#TypeTag]]
- *  context bound. See [[scala.reflect.api.TypeTags the type tags page]] for details.
- *
- *  Finally, types can be instantiated manually using factory methods such as `typeRef` or `polyType`.
- *  This is necessary only in cases when `typeOf` or `typeTag` cannot be applied because the type cannot be spelt out
- *  in a Scala snippet, usually when writing macros. Manual construction requires deep knowledge of Scala compiler internals
- *  and should be avoided if possible.
- *
- *  === Using types ===
- *
- *  Common operations on types are querying them for inner declarations or type conformance tests.
- *
- *  Every type has `members` and `declarations` methods (along with their singular counterparts `member` and `declaration`),
- *  which provide the list of definitions associated with that type. For example, to look up the `map` method of `List`, one can
- *  write `typeOf[List[_]].member("map": TermName)`, getting a `MethodSymbol`
- *
- *  Types expose `<:<` and `weak_<:<` methods to test for subtype relationships. The latter is an extension of the former - it also works
- *  with numeric types (for example, `Int <:< Long` is false, but `Int weak_<:< Long` is true). Unlike the subtype tests implemented by
- *  type tags, tests provided by `Type`s are aware of all the intricacies of the Scala type system and work correctly even for involved types.
- *
- *  The vanilla `==` method should not be used to compare types for equality. Instead, one should always use the `=:=` method.
- *  Operator `=:=` knows about type aliases, e.g., `typeOf[scala.List[_]] =:= typeOf[scala.collection.immutable.List[_]]`.
- *
- *  === Exploring types ===
+ *  To instantiate a type, most of the time, the [[scala.reflect.api.TypeTags#typeOf]] method can be used. It takes
+ *  a type argument and produces a `Type` instance which represents that argument. For example:
  *
  *  {{{
- *  scala> import scala.reflect.runtime.universe._
- *  import scala.reflect.runtime.universe._
- *
- *  scala> typeOf[List[_]].members.sorted take 5 foreach println
- *  constructor List
- *  method companion
- *  method ::
- *  method :::
- *  method reverse_:::
- *
- *  scala> def test[T: TypeTag](x: T) = s"I've been called for an x typed as \${typeOf[T]}"
- *  test: [T](x: T)(implicit evidence\$1: reflect.runtime.universe.TypeTag[T])String
- *
- *  scala> test(2)
- *  res0 @ 3fc80fae: String = I've been called for an x typed as Int
- *
- *  scala> test(List(2, "x"))
- *  res1 @ 10139edf: String = I've been called for an x typed as List[Any]
+ *    scala> typeOf[List[Int]]
+ *    res0: reflect.runtime.universe.Type = scala.List[Int]
  *  }}}
+ *
+ *  In this example, a [[scala.reflect.api.Types#TypeRef]] is returned, which corresponds to the type constructor `List`
+ *  applied to the type argument `Int`.
+ *
+ *  ''Note:'' Method `typeOf` does not work for types with type parameters, such as `typeOf[List[A]]` where `A` is
+ *  a type parameter. In this case, use [[scala.reflect.api.TypeTags#weakTypeOf]] instead.
+ *
+ *  For other ways to instantiate types, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html corresponding section of the Reflection Guide]].
+ *
+ *  === Common Operations on Types ===
+ *
+ *  Types are typically used for type conformance tests or are queried for declarations of members or inner types.
+ *
+ *   - '''Subtyping Relationships''' can be tested using `<:<` and `weak_<:<`.
+ *   - '''Type Equality''' can be checked with `=:=`. It's important to note that `==` should not be used to compare types for equality-- `==` can't check for type equality in the presence of type aliases, while `=:=` can.
+ *
+ *  Types can be queried for members and declarations by using the `members` and `declarations` methods (along with
+ *  their singular counterparts `member` and `declaration`), which provide the list of definitions associated with that type.
+ *  For example, to look up the `map` method of `List`, one can do:
+ *
+ *  {{{
+ *     scala> typeOf[List[_]].member("map": TermName)
+ *     res1: reflect.runtime.universe.Symbol = method map
+ *  }}}
+ *
+ * For more information about `Type`s, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols, Trees, and Types]]
  *
  *  @groupname TypeCreators Types - Creation
  *  @groupname TypeOps      Types - Operations
+ *  @group ReflectionAPI
  *
  *  @contentDiagram hideNodes "*Api"
  */
@@ -171,7 +154,7 @@ trait Types { self: Universe =>
      */
     def baseClasses: List[Symbol]
 
-    /** The least type instance of given class which is a supertype
+    /** The least type instance of given class which is a super-type
      *  of this type.  Example:
      *  {{{
      *    class D[T]
@@ -182,16 +165,32 @@ trait Types { self: Universe =>
     def baseType(clazz: Symbol): Type
 
     /** This type as seen from prefix `pre` and class `clazz`. This means:
-     *  Replace all thistypes of `clazz` or one of its subclasses
+     *  Replace all `ThisType`s of `clazz` or one of its subclasses
      *  by `pre` and instantiate all parameters by arguments of `pre`.
-     *  Proceed analogously for thistypes referring to outer classes.
+     *  Proceed analogously for `ThisType`s referring to outer classes.
      *
      *  Example:
      *  {{{
-     *    class D[T] { def m: T }
-     *    class C extends p.D[Int]
-     *    T.asSeenFrom(ThisType(C), D)  (where D is owner of m)
-     *      = Int
+     *    scala> import scala.reflect.runtime.universe._
+     *    import scala.reflect.runtime.universe._
+     *
+     *    scala> class D[T] { def m: T = ??? }
+     *    defined class D
+     *
+     *    scala> class C extends D[Int]
+     *    defined class C
+     *
+     *    scala> val D = typeOf[D[_]].typeSymbol.asClass
+     *    D: reflect.runtime.universe.ClassSymbol = class D
+     *
+     *    scala> val C = typeOf[C].typeSymbol.asClass
+     *    C: reflect.runtime.universe.ClassSymbol = class C
+     *
+     *    scala> val T = D.typeParams(0).asType.toType
+     *    T: reflect.runtime.universe.Type = T
+     *
+     *    scala> T.asSeenFrom(ThisType(C), D)
+     *    res0: reflect.runtime.universe.Type = scala.Int
      *  }}}
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type
@@ -279,7 +278,7 @@ trait Types { self: Universe =>
    */
   implicit val ThisTypeTag: ClassTag[ThisType]
 
-  /** The constructor/deconstructor for `ThisType` instances.
+  /** The constructor/extractor for `ThisType` instances.
    *  @group Extractors
    */
   val ThisType: ThisTypeExtractor
@@ -323,7 +322,7 @@ trait Types { self: Universe =>
    */
   implicit val SingleTypeTag: ClassTag[SingleType]
 
-  /** The constructor/deconstructor for `SingleType` instances.
+  /** The constructor/extractor for `SingleType` instances.
    *  @group Extractors
    */
   val SingleType: SingleTypeExtractor
@@ -368,7 +367,7 @@ trait Types { self: Universe =>
    */
   implicit val SuperTypeTag: ClassTag[SuperType]
 
-  /** The constructor/deconstructor for `SuperType` instances.
+  /** The constructor/extractor for `SuperType` instances.
    *  @group Extractors
    */
   val SuperType: SuperTypeExtractor
@@ -413,7 +412,7 @@ trait Types { self: Universe =>
    */
   implicit val ConstantTypeTag: ClassTag[ConstantType]
 
-  /** The constructor/deconstructor for `ConstantType` instances.
+  /** The constructor/extractor for `ConstantType` instances.
    *  @group Extractors
    */
   val ConstantType: ConstantTypeExtractor
@@ -457,7 +456,7 @@ trait Types { self: Universe =>
    */
   implicit val TypeRefTag: ClassTag[TypeRef]
 
-  /** The constructor/deconstructor for `TypeRef` instances.
+  /** The constructor/extractor for `TypeRef` instances.
    *  @group Extractors
    */
   val TypeRef: TypeRefExtractor
@@ -522,7 +521,7 @@ trait Types { self: Universe =>
    */
   implicit val RefinedTypeTag: ClassTag[RefinedType]
 
-  /** The constructor/deconstructor for `RefinedType` instances.
+  /** The constructor/extractor for `RefinedType` instances.
    *  @group Extractors
    */
   val RefinedType: RefinedTypeExtractor
@@ -574,7 +573,7 @@ trait Types { self: Universe =>
    */
   implicit val ClassInfoTypeTag: ClassTag[ClassInfoType]
 
-  /** The constructor/deconstructor for `ClassInfoType` instances.
+  /** The constructor/extractor for `ClassInfoType` instances.
    *  @group Extractors
    */
   val ClassInfoType: ClassInfoTypeExtractor
@@ -617,7 +616,7 @@ trait Types { self: Universe =>
    */
   implicit val MethodTypeTag: ClassTag[MethodType]
 
-  /** The constructor/deconstructor for `MethodType` instances.
+  /** The constructor/extractor for `MethodType` instances.
    *  @group Extractors
    */
   val MethodType: MethodTypeExtractor
@@ -667,7 +666,7 @@ trait Types { self: Universe =>
    */
   implicit val NullaryMethodTypeTag: ClassTag[NullaryMethodType]
 
-  /** The constructor/deconstructor for `NullaryMethodType` instances.
+  /** The constructor/extractor for `NullaryMethodType` instances.
    *  @group Extractors
    */
   val NullaryMethodType: NullaryMethodTypeExtractor
@@ -703,7 +702,7 @@ trait Types { self: Universe =>
    */
   implicit val PolyTypeTag: ClassTag[PolyType]
 
-  /** The constructor/deconstructor for `PolyType` instances.
+  /** The constructor/extractor for `PolyType` instances.
    *  @group Extractors
    */
   val PolyType: PolyTypeExtractor
@@ -743,7 +742,7 @@ trait Types { self: Universe =>
    */
   implicit val ExistentialTypeTag: ClassTag[ExistentialType]
 
-  /** The constructor/deconstructor for `ExistentialType` instances.
+  /** The constructor/extractor for `ExistentialType` instances.
    *  @group Extractors
    */
   val ExistentialType: ExistentialTypeExtractor
@@ -784,7 +783,7 @@ trait Types { self: Universe =>
    */
   implicit val AnnotatedTypeTag: ClassTag[AnnotatedType]
 
-  /** The constructor/deconstructor for `AnnotatedType` instances.
+  /** The constructor/extractor for `AnnotatedType` instances.
    *  @group Extractors
    */
   val AnnotatedType: AnnotatedTypeExtractor
@@ -835,7 +834,7 @@ trait Types { self: Universe =>
    */
   implicit val TypeBoundsTag: ClassTag[TypeBounds]
 
-  /** The constructor/deconstructor for `TypeBounds` instances.
+  /** The constructor/extractor for `TypeBounds` instances.
    *  @group Extractors
    */
   val TypeBounds: TypeBoundsExtractor
@@ -892,7 +891,7 @@ trait Types { self: Universe =>
    */
   implicit val BoundedWildcardTypeTag: ClassTag[BoundedWildcardType]
 
-  /** The constructor/deconstructor for `BoundedWildcardType` instances.
+  /** The constructor/extractor for `BoundedWildcardType` instances.
    *  @group Extractors
    */
   val BoundedWildcardType: BoundedWildcardTypeExtractor

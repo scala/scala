@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -14,8 +14,6 @@ package icode
  */
 trait TypeStacks {
   self: ICodes =>
-
-  import opcodes._
 
   /* This class simulates the type of the operand
    * stack of the ICode.

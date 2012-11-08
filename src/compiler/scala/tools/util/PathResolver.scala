@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2012 LAMP/EPFL
+ * Copyright 2006-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools
 package util
 
-import java.net.{ URL, MalformedURLException }
 import scala.tools.reflect.WrappedProperties.AccessControl
 import nsc.{ Settings, GenericRunnerSettings }
 import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }

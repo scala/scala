@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -8,8 +8,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
 
 abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment
@@ -94,7 +92,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         impl.typeOfThis = iface.typeOfThis
         impl.thisSym setName iface.thisSym.name
       }
-      impl.sourceFile = iface.sourceFile
+      impl.associatedFile = iface.sourceFile
       if (inClass)
         iface.owner.info.decls enter impl
 

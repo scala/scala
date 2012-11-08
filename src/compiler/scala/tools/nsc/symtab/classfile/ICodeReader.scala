@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Iulian Dragos
  */
 
@@ -9,9 +9,7 @@ package classfile
 
 import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
-import backend.icode._
 import ClassfileConstants._
-import scala.reflect.internal.Flags._
 
 /** ICode reader from Java bytecode.
  *
@@ -167,7 +165,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
     else if (nme.isModuleName(name)) {
       val strippedName = nme.stripModuleSuffix(name)
-      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModule(strippedName)
+      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModuleByName(strippedName)
     }
     else {
       forceMangledName(name, false)
@@ -716,7 +714,6 @@ abstract class ICodeReader extends ClassfileParser {
 
       val tfa = new analysis.MethodTFA() {
         import analysis._
-        import analysis.typeFlowLattice.IState
 
         /** Abstract interpretation for one instruction. */
         override def mutatingInterpret(out: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {

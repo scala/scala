@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -8,7 +8,6 @@ package typechecker
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.control.ControlThrowable
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction._
@@ -37,7 +36,6 @@ trait TypeDiagnostics {
 
   import global._
   import definitions._
-  import global.typer.{ infer, context }
 
   /** The common situation of making sure nothing is erroneous could be
    *  nicer if Symbols, Types, and Trees all implemented some common interface

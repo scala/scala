@@ -1,12 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.immutable
 import scala.language.implicitConversions
 
 /** Mix this into an object and use it as a phasing

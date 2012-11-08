@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * Copyright 2007 Google Inc. All Rights Reserved.
  * Author: bqe@google.com (Burak Emir)
  */
@@ -9,11 +9,8 @@ package matching
 
 import PartialFunction._
 import scala.collection.{ mutable }
-import scala.reflect.internal.util.Position
 import transform.ExplicitOuter
-import symtab.Flags
 import mutable.ListBuffer
-import scala.annotation.elidable
 import scala.language.postfixOps
 
 trait ParallelMatching extends ast.TreeDSL
@@ -26,7 +23,7 @@ trait ParallelMatching extends ast.TreeDSL
 
   import global.{ typer => _, _ }
   import definitions.{
-    AnyRefClass, IntClass, BooleanClass, SomeClass, OptionClass,
+    IntClass, BooleanClass, SomeClass, OptionClass,
     getProductArgs, productProj, Object_eq, Any_asInstanceOf
   }
   import CODE._

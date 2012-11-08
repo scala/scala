@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package symtab
 
-import scala.collection.{ mutable, immutable }
 import scala.language.implicitConversions
 import scala.language.postfixOps
 

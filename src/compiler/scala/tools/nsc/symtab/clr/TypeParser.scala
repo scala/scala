@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2004-2012 LAMP/EPFL
+ * Copyright 2004-2013 LAMP/EPFL
  */
 
 package scala.tools.nsc
@@ -12,7 +12,6 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute,
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.UnPickler
 import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
-import scala.language.implicitConversions
 
 /**
  *  @author Nikolay Mihaylov

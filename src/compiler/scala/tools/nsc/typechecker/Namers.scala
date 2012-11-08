@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,9 +8,7 @@ package typechecker
 
 import scala.collection.mutable
 import scala.annotation.tailrec
-import scala.ref.WeakReference
 import symtab.Flags._
-import scala.tools.nsc.io.AbstractFile
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -340,7 +338,7 @@ trait Namers extends MethodSynthesis {
       if (clazz.sourceFile != null && clazz.sourceFile != contextFile)
         debugwarn("!!! Source mismatch in " + clazz + ": " + clazz.sourceFile + " vs. " + contextFile)
 
-      clazz.sourceFile = contextFile
+      clazz.associatedFile = contextFile
       if (clazz.sourceFile != null) {
         assert(currentRun.canRedefine(clazz) || clazz.sourceFile == currentRun.symSource(clazz), clazz.sourceFile)
         currentRun.symSource(clazz) = clazz.sourceFile
@@ -428,7 +426,7 @@ trait Namers extends MethodSynthesis {
         setPrivateWithin(tree, m.moduleClass)
       }
       if (m.owner.isPackageClass && !m.isPackage) {
-        m.moduleClass.sourceFile = contextFile
+        m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
       }

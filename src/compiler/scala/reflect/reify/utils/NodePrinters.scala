@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.reflect.reify
@@ -11,8 +11,6 @@ trait NodePrinters {
   self: Utils =>
 
   import global._
-  import definitions._
-  import Flag._
 
   object reifiedNodeToString extends (Tree => String) {
     def apply(tree: Tree): String = {

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,10 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
-import reporters._
-import scala.reflect.internal.util.{Position, NoPosition}
 import util.DocStrings._
-import scala.reflect.internal.Chars._
 import scala.collection.mutable
 
 /*
@@ -464,7 +461,7 @@ trait DocComments { self: Global =>
         //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
         //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
         //findIn(sites)
-        findIn(site.ownerChain ::: List(definitions.EmptyPackage))
+        findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
       }
 
       def getType(str: String, variable: String): Type = {

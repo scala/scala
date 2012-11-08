@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
-
-import scala.reflect.NameTransformer
 
 /** An interface for objects which are aware of tab completion and
  *  will supply their own candidates and resolve their own paths.

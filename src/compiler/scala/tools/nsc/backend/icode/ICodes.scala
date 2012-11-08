@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,8 +8,6 @@ package backend
 package icode
 
 import java.io.PrintWriter
-import scala.collection.mutable
-import scala.tools.nsc.symtab._
 import analysis.{ Liveness, ReachingDefinitions }
 import scala.tools.nsc.symtab.classfile.ICodeReader
 

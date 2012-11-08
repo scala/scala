@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,6 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.mutable
-import scala.ref.WeakReference
 import scala.reflect.ClassTag
 
 /**

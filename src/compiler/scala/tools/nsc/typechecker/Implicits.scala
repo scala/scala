@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -30,7 +30,7 @@ trait Implicits {
   import global._
   import definitions._
   import ImplicitsStats._
-  import typeDebug.{ ptTree, ptBlock, ptLine }
+  import typeDebug.{ ptBlock, ptLine }
   import global.typer.{ printTyping, deindentTyping, indentTyping, printInference }
 
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
@@ -1468,7 +1468,6 @@ trait Implicits {
         interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 
       def validate: Option[String] = {
-        import scala.util.matching.Regex; import scala.collection.breakOut
         // is there a shorter way to avoid the intermediate toList?
         val refs = """\$\{([^}]+)\}""".r.findAllIn(msg).matchData.map(_ group 1).toSet
         val decls = typeParamNames.toSet

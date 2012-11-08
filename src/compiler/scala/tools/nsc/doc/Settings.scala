@@ -1,14 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package doc
 
-import java.io.File
 import java.net.URI
-import java.lang.System
 import scala.language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.

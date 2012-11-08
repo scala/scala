@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Alexander Spoon
  */
 
@@ -8,23 +8,17 @@ package interpreter
 
 import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader }
-import java.util.concurrent.locks.ReentrantLock
-import scala.sys.process.Process
 import session._
 import scala.util.Properties.{ jdkHome, javaVersion }
 import scala.tools.util.{ Javap }
-import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.ops
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
-import interpreter._
 import io.{ File, Directory }
 import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
 import scala.tools.util._
 import scala.language.{implicitConversions, existentials}
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.classTag
 import scala.tools.reflect.StdRuntimeTags._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
@@ -791,9 +785,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // we can get at it in generated code.
     addThunk(intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain])))
     addThunk({
-      import scala.tools.nsc.io._
-      import Properties.userHome
-      import scala.compat.Platform.EOL
       val autorun = replProps.replAutorunCode.option flatMap (f => io.File(f).safeSlurp())
       if (autorun.isDefined) intp.quietRun(autorun.get)
     })

@@ -1,14 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags
 import symtab.Flags._
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /** Synthetic method implementations for case classes and case objects.
@@ -36,11 +34,31 @@ trait SyntheticMethods extends ast.TreeDSL {
   import definitions._
   import CODE._
 
+  private lazy val productSymbols    = List(Product_productPrefix, Product_productArity, Product_productElement, Product_iterator, Product_canEqual)
+  private lazy val valueSymbols      = List(Any_hashCode, Any_equals)
+  private lazy val caseSymbols       = List(Object_hashCode, Object_toString) ::: productSymbols
+  private lazy val caseValueSymbols  = Any_toString :: valueSymbols ::: productSymbols
+  private lazy val caseObjectSymbols = Object_equals :: caseSymbols
+  private def symbolsToSynthesize(clazz: Symbol): List[Symbol] = {
+    if (clazz.isCase) {
+      if (clazz.isDerivedValueClass) caseValueSymbols
+      else if (clazz.isModuleClass) caseSymbols
+      else caseObjectSymbols
+    }
+    else if (clazz.isDerivedValueClass) valueSymbols
+    else Nil
+  }
+
   /** Add the synthetic methods to case classes.
    */
   def addSyntheticMethods(templ: Template, clazz0: Symbol, context: Context): Template = {
-
-    if (phase.erasedTypes)
+    val syntheticsOk = (phase.id <= currentRun.typerPhase.id) && {
+      symbolsToSynthesize(clazz0) filter (_ matchingSymbol clazz0.info isSynthetic) match {
+        case Nil  => true
+        case syms => log("Not adding synthetic methods: already has " + syms.mkString(", ")) ; false
+      }
+    }
+    if (!syntheticsOk)
       return templ
 
     val synthesizer = new ClassMethodSynthesis(
@@ -94,9 +112,9 @@ trait SyntheticMethods extends ast.TreeDSL {
       Apply(gen.mkAttributedRef(method), args.toList)
     }
 
-    // Any member, including private
+    // Any concrete member, including private
     def hasConcreteImpl(name: Name) =
-      clazz.info.member(name).alternatives exists (m => !m.isDeferred && !m.isSynthetic)
+      clazz.info.member(name).alternatives exists (m => !m.isDeferred)
 
     def hasOverridingImplementation(meth: Symbol) = {
       val sym = clazz.info nonPrivateMember meth.name
@@ -302,7 +320,24 @@ trait SyntheticMethods extends ast.TreeDSL {
         else Nil
       )
 
-      def impls = for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
+      /** Always generate overrides for equals and hashCode in value classes,
+       *  so they can appear in universal traits without breaking value semantics.
+       */
+      def impls = {
+        def shouldGenerate(m: Symbol) = {
+          !hasOverridingImplementation(m) || {
+            clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
+              if (settings.lint.value) {
+                (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
+                  currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+                }
+              }
+              true
+            }
+          }
+        }
+        for ((m, impl) <- methods ; if shouldGenerate(m)) yield impl()
+      }
       def extras = (
         if (needsReadResolve) {
           // Aha, I finally decoded the original comment.
@@ -342,8 +377,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       (lb ++= templ.body ++= synthesize()).toList
     }
 
-    if (phase.id > currentRun.typerPhase.id) templ
-    else deriveTemplate(templ)(body =>
+    deriveTemplate(templ)(body =>
       if (clazz.isCase) caseTemplateBody()
       else synthesize() match {
         case Nil  => body // avoiding unnecessary copy

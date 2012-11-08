@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
-import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ ojoin }
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{ universe => ru }
@@ -456,7 +455,7 @@ trait MethodSynthesis {
     case class LazyValGetter(tree: ValDef) extends BaseGetter(tree) {
       class ChangeOwnerAndModuleClassTraverser(oldowner: Symbol, newowner: Symbol)
         extends ChangeOwnerTraverser(oldowner, newowner) {
-        
+
         override def traverse(tree: Tree) {
           tree match {
             case _: DefTree => change(tree.symbol.moduleClass)

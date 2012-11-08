@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,8 +7,6 @@ package scala.tools.nsc
 package ast
 
 import scala.reflect.internal.HasFlags
-import scala.reflect.internal.Flags._
-import symtab._
 
 /** This class ...
  *
@@ -18,8 +16,6 @@ import symtab._
 abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
   val global: Global
   import global._
-
-  import definitions.ThrowableClass
 
   /** Is tree legal as a member definition of an interface?
    */

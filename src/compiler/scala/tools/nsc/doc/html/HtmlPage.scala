@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
@@ -10,7 +10,7 @@ package html
 import model._
 import comment._
 
-import scala.xml.{XML, NodeSeq}
+import scala.xml.NodeSeq
 import scala.xml.dtd.{DocType, PublicID}
 import scala.collection._
 import java.io.Writer

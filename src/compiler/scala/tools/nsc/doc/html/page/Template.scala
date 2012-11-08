@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
@@ -7,10 +7,6 @@ package scala.tools.nsc
 package doc
 package html
 package page
-
-import model._
-import model.diagram._
-import diagram._
 
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 import scala.language.postfixOps
@@ -273,7 +269,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
       {
         if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-          <div id="footer">Scala programming documentation. Copyright (c) 2003-2012 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
+          <div id="footer">Scala programming documentation. Copyright (c) 2003-2013 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
         else
           <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }

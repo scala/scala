@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -8,7 +8,6 @@ package backend
 
 import io.AbstractFile
 import util.{ClassPath,JavaClassPath,MergedClassPath,DeltaClassPath}
-import util.ClassPath.{ JavaContext, DefaultJavaContext }
 import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform {

@@ -1,13 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.internal.util.Position
-import scala.util.control.Exception.ignoring
 import scala.tools.nsc.util.stackTraceString
 
 /**

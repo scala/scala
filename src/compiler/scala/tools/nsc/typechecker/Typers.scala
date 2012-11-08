@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -2424,7 +2424,7 @@ trait Typers extends Modes with Adaptations with Tags {
     // (virtualized matches are expanded during type checking so they have the full context available)
     // otherwise, do nothing: matches are translated during phase `patmat` (unless -Xoldpatmat)
     def virtualizedMatch(match_ : Match, mode: Int, pt: Type) = {
-      import patmat.{vpmName, PureMatchTranslator, OptimizingMatchTranslator}
+      import patmat.{ vpmName, PureMatchTranslator }
 
       // TODO: add fallback __match sentinel to predef
       val matchStrategy: Tree =

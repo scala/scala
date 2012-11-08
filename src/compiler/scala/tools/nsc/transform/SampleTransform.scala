@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -11,9 +11,8 @@ package transform
 abstract class SampleTransform extends Transform {
   // inherits abstract value `global` and class `Phase` from Transform
 
-  import global._                  // the global environment
-  import definitions._             // standard classes and methods
-  import typer.{typed, atOwner}    // methods to type trees
+  import global._       // the global environment
+  import typer.typed    // method to type trees
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "sample-phase"

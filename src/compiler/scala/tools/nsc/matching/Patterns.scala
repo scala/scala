@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * Author: Paul Phillips
  */
 
 package scala.tools.nsc
 package matching
 
-import symtab.Flags
 import PartialFunction._
 
 /** Patterns are wrappers for Trees with enhanced semantics.

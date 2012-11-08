@@ -1,6 +1,5 @@
 package scala.tools.nsc.interactive.tests.core
 
-import scala.tools.nsc.interactive.Global
 import scala.reflect.internal.util.Position
 
 trait PresentationCompilerTestDef {

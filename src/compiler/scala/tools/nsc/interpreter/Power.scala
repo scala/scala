@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -8,8 +8,6 @@ package interpreter
 
 import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
-import scala.reflect.internal.util.{ BatchSourceFile }
-import session.{ History }
 import scala.io.Codec
 import java.net.{ URL, MalformedURLException }
 import io.{ Path }
@@ -48,7 +46,6 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
   import intp.{ beQuietDuring, typeOfExpression, interpret, parse }
   import intp.global._
   import definitions.{ compilerTypeFromTag, compilerSymbolFromTag}
-  import rootMirror.{ getClassIfDefined, getModuleIfDefined }
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -283,8 +280,6 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   abstract class PrettifierClass[T: Prettifier]() {
     val pretty = implicitly[Prettifier[T]]
-    import pretty._
-
     def value: Seq[T]
 
     def pp(f: Seq[T] => Seq[T]): Unit =

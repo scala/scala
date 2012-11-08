@@ -1,13 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags._
-import scala.collection.mutable.{LinkedHashSet, Set}
+import scala.collection.mutable
 import scala.annotation.tailrec
 
 /**
@@ -16,6 +15,7 @@ import scala.annotation.tailrec
  */
 trait Contexts { self: Analyzer =>
   import global._
+  import definitions.{ JavaLangPackage, ScalaPackage, PredefModule }
 
   object NoContext extends Context {
     outer      = this
@@ -28,7 +28,6 @@ trait Contexts { self: Analyzer =>
     override def toString = "NoContext"
   }
   private object RootImports {
-    import definitions._
     // Possible lists of root imports
     val javaList         = JavaLangPackage :: Nil
     val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
@@ -45,6 +44,28 @@ trait Contexts { self: Analyzer =>
     Template(List(), emptyValDef, List()) setSymbol global.NoSymbol setType global.NoType,
     rootMirror.RootClass,
     rootMirror.RootClass.info.decls)
+  }
+
+  private lazy val allUsedSelectors =
+    mutable.Map[ImportInfo, Set[ImportSelector]]() withDefaultValue Set()
+  private lazy val allImportInfos =
+    mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
+
+  def clearUnusedImports() {
+    allUsedSelectors.clear()
+    allImportInfos.clear()
+  }
+  def warnUnusedImports(unit: CompilationUnit) = {
+    val imps = allImportInfos(unit).reverse.distinct
+
+    for (imp <- imps) {
+      val used = allUsedSelectors(imp)
+      def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
+
+      imp.tree.selectors filterNot (s => isMask(s) || used(s)) foreach { sel =>
+        unit.warning(imp posOf sel, "Unused import")
+      }
+    }
   }
 
   var lastAccessCheckDetails: String = ""
@@ -69,7 +90,6 @@ trait Contexts { self: Analyzer =>
   def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, false)
   def rootContext(unit: CompilationUnit, tree: Tree): Context = rootContext(unit, tree, false)
   def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: Boolean): Context = {
-    import definitions._
     var sc = startContext
     for (sym <- rootImports(unit)) {
       sc = sc.makeNewImport(sym)
@@ -148,7 +168,7 @@ trait Contexts { self: Analyzer =>
     var typingIndentLevel: Int = 0
     def typingIndent = "  " * typingIndentLevel
 
-    var buffer: Set[AbsTypeError] = _
+    var buffer: mutable.Set[AbsTypeError] = _
 
     def enclClassOrMethod: Context =
       if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
@@ -187,13 +207,13 @@ trait Contexts { self: Analyzer =>
     def setThrowErrors()     = mode &= (~AllMask)
     def setAmbiguousErrors(report: Boolean) = if (report) mode |= AmbiguousErrors else mode &= notThrowMask
 
-    def updateBuffer(errors: Set[AbsTypeError]) = buffer ++= errors
+    def updateBuffer(errors: mutable.Set[AbsTypeError]) = buffer ++= errors
     def condBufferFlush(removeP: AbsTypeError => Boolean) {
       val elems = buffer.filter(removeP)
       buffer --= elems
     }
     def flushBuffer() { buffer.clear() }
-    def flushAndReturnBuffer(): Set[AbsTypeError] = {
+    def flushAndReturnBuffer(): mutable.Set[AbsTypeError] = {
       val current = buffer.clone()
       buffer.clear()
       current
@@ -286,7 +306,7 @@ trait Contexts { self: Analyzer =>
       c.checking = this.checking
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
-      c.buffer = if (this.buffer == null) LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
+      c.buffer = if (this.buffer == null) mutable.LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
@@ -304,8 +324,13 @@ trait Contexts { self: Analyzer =>
     def makeNewImport(sym: Symbol): Context =
       makeNewImport(gen.mkWildcardImport(sym))
 
-    def makeNewImport(imp: Import): Context =
-      make(unit, imp, owner, scope, new ImportInfo(imp, depth) :: imports)
+    def makeNewImport(imp: Import): Context = {
+      val impInfo = new ImportInfo(imp, depth)
+      if (settings.lint.value && imp.pos.isDefined) // pos.isDefined excludes java.lang/scala/Predef imports
+        allImportInfos(unit) ::= impInfo
+
+      make(unit, imp, owner, scope, impInfo :: imports)
+    }
 
     def make(tree: Tree, owner: Symbol, scope: Scope): Context =
       if (tree == this.tree && owner == this.owner && scope == this.scope) this
@@ -328,7 +353,7 @@ trait Contexts { self: Analyzer =>
       val c = make(newtree)
       c.setBufferErrors()
       c.setAmbiguousErrors(reportAmbiguousErrors)
-      c.buffer = new LinkedHashSet[AbsTypeError]()
+      c.buffer = mutable.LinkedHashSet[AbsTypeError]()
       c
     }
 
@@ -674,10 +699,13 @@ trait Contexts { self: Analyzer =>
      *    package object foo { type InputStream = java.io.InputStream }
      *    import foo._, java.io._
      */
-    def isAmbiguousImport(imp1: ImportInfo, imp2: ImportInfo, name: Name): Boolean = {
-      // The imported symbols from each import.
-      def imp1Symbol = importedAccessibleSymbol(imp1, name)
-      def imp2Symbol = importedAccessibleSymbol(imp2, name)
+    private def resolveAmbiguousImport(name: Name, imp1: ImportInfo, imp2: ImportInfo): Option[ImportInfo] = {
+      val imp1Explicit = imp1 isExplicitImport name
+      val imp2Explicit = imp2 isExplicitImport name
+      val ambiguous    = if (imp1.depth == imp2.depth) imp1Explicit == imp2Explicit else !imp1Explicit && imp2Explicit
+      val imp1Symbol   = (imp1 importedSymbol name).initialize filter (s => isAccessible(s, imp1.qual.tpe, superAccess = false))
+      val imp2Symbol   = (imp2 importedSymbol name).initialize filter (s => isAccessible(s, imp2.qual.tpe, superAccess = false))
+
       // The types of the qualifiers from which the ambiguous imports come.
       // If the ambiguous name is a value, these must be the same.
       def t1 = imp1.qual.tpe
@@ -693,25 +721,27 @@ trait Contexts { self: Analyzer =>
         s"member type 2: $mt2"
       ).mkString("\n  ")
 
-      imp1Symbol.exists && imp2Symbol.exists && (
+      if (!ambiguous || !imp2Symbol.exists) Some(imp1)
+      else if (!imp1Symbol.exists) Some(imp2)
+      else (
         // The symbol names are checked rather than the symbols themselves because
         // each time an overloaded member is looked up it receives a new symbol.
         // So foo.member("x") != foo.member("x") if x is overloaded.  This seems
         // likely to be the cause of other bugs too...
         if (t1 =:= t2 && imp1Symbol.name == imp2Symbol.name) {
           log(s"Suppressing ambiguous import: $t1 =:= $t2 && $imp1Symbol == $imp2Symbol")
-          false
+          Some(imp1)
         }
         // Monomorphism restriction on types is in part because type aliases could have the
         // same target type but attach different variance to the parameters. Maybe it can be
         // relaxed, but doesn't seem worth it at present.
         else if (mt1 =:= mt2 && name.isTypeName && imp1Symbol.isMonomorphicType && imp2Symbol.isMonomorphicType) {
           log(s"Suppressing ambiguous import: $mt1 =:= $mt2 && $imp1Symbol and $imp2Symbol are equivalent")
-          false
+          Some(imp1)
         }
         else {
           log(s"Import is genuinely ambiguous:\n  " + characterize)
-          true
+          None
         }
       )
     }
@@ -719,9 +749,11 @@ trait Contexts { self: Analyzer =>
     /** The symbol with name `name` imported via the import in `imp`,
      *  if any such symbol is accessible from this context.
      */
-    def importedAccessibleSymbol(imp: ImportInfo, name: Name) = {
-      imp importedSymbol name filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
-    }
+    def importedAccessibleSymbol(imp: ImportInfo, name: Name): Symbol =
+      importedAccessibleSymbol(imp, name, requireExplicit = false)
+
+    private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean): Symbol =
+      imp.importedSymbol(name, requireExplicit) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
     /** Is `sym` defined in package object of package `pkg`?
      *  Since sym may be defined in some parent of the package object,
@@ -816,11 +848,15 @@ trait Contexts { self: Analyzer =>
       var imports        = Context.this.imports
       def imp1           = imports.head
       def imp2           = imports.tail.head
+      def sameDepth      = imp1.depth == imp2.depth
       def imp1Explicit   = imp1 isExplicitImport name
       def imp2Explicit   = imp2 isExplicitImport name
 
-      while (!qualifies(impSym) && imports.nonEmpty && imp1.depth > symbolDepth) {
-        impSym = importedAccessibleSymbol(imp1, name)
+      def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
+        importedAccessibleSymbol(imp, name, requireExplicit) filter qualifies
+
+      while (!impSym.exists && imports.nonEmpty && imp1.depth > symbolDepth) {
+        impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           imports = imports.tail
       }
@@ -845,33 +881,45 @@ trait Contexts { self: Analyzer =>
           finish(EmptyTree, defSym)
       }
       else if (impSym.exists) {
-        def sameDepth  = imp1.depth == imp2.depth
-        def needsCheck = if (sameDepth) imp1Explicit == imp2Explicit else imp1Explicit || imp2Explicit
-        def isDone     = imports.tail.isEmpty || (!sameDepth && imp1Explicit)
-        def ambiguous  = needsCheck && isAmbiguousImport(imp1, imp2, name) && {
-          lookupError = ambiguousImports(imp1, imp2)
-          true
-        }
-        // Ambiguity check between imports.
-        // The same name imported again is potentially ambiguous if the name is:
-        //  - after explicit import, explicitly imported again at the same or lower depth
-        //  - after explicit import, wildcard imported at lower depth
-        //  - after wildcard import, wildcard imported at the same depth
-        // Under all such conditions isAmbiguousImport is called, which will
-        // examine the imports in case they are importing the same thing; if that
-        // can't be established conclusively, an error is issued.
-        while (lookupError == null && !isDone) {
-          val other = importedAccessibleSymbol(imp2, name)
-          // if the competing import is unambiguous and explicit, it is the new winner.
-          val isNewWinner = qualifies(other) && !ambiguous && imp2Explicit
-          // imports is imp1 :: imp2 :: rest.
-          // If there is a new winner, it is imp2, and imports drops imp1.
-          // If there is not, imp1 is still the winner, and it drops imp2.
-          if (isNewWinner) {
-            impSym = other
-            imports = imports.tail
+        // We continue walking down the imports as long as the tail is non-empty, which gives us:
+        //   imports  ==  imp1 :: imp2 :: _
+        // And at least one of the following is true:
+        //   - imp1 and imp2 are at the same depth
+        //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
+        def keepLooking = (
+             lookupError == null
+          && imports.tail.nonEmpty
+          && (sameDepth || !imp1Explicit)
+        )
+        // If we find a competitor imp2 which imports the same name, possible outcomes are:
+        //
+        //  - same depth, imp1 wild, imp2 explicit:        imp2 wins, drop imp1
+        //  - same depth, imp1 wild, imp2 wild:            ambiguity check
+        //  - same depth, imp1 explicit, imp2 explicit:    ambiguity check
+        //  - differing depth, imp1 wild, imp2 explicit:   ambiguity check
+        //  - all others:                                  imp1 wins, drop imp2
+        //
+        // The ambiguity check is: if we can verify that both imports refer to the same
+        // symbol (e.g. import foo.X followed by import foo._) then we discard imp2
+        // and proceed. If we cannot, issue an ambiguity error.
+        while (keepLooking) {
+          // If not at the same depth, limit the lookup to explicit imports.
+          // This is desirable from a performance standpoint (compare to
+          // filtering after the fact) but also necessary to keep the unused
+          // import check from being misled by symbol lookups which are not
+          // actually used.
+          val other = lookupImport(imp2, requireExplicit = !sameDepth)
+          def imp1wins = { imports = imp1 :: imports.tail.tail }
+          def imp2wins = { impSym = other ; imports = imports.tail }
+
+          if (!other.exists) // imp1 wins; drop imp2 and continue.
+            imp1wins
+          else if (sameDepth && !imp1Explicit && imp2Explicit) // imp2 wins; drop imp1 and continue.
+            imp2wins
+          else resolveAmbiguousImport(name, imp1, imp2) match {
+            case Some(imp) => if (imp eq imp1) imp1wins else imp2wins
+            case _         => lookupError = ambiguousImports(imp1, imp2)
           }
-          else imports = imp1 :: imports.tail.tail
         }
         // optimization: don't write out package prefixes
         finish(resetPos(imp1.qual.duplicate), impSym)
@@ -903,6 +951,9 @@ trait Contexts { self: Analyzer =>
   } //class Context
 
   class ImportInfo(val tree: Import, val depth: Int) {
+    def pos = tree.pos
+    def posOf(sel: ImportSelector) = tree.pos withPoint sel.namePos
+
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
@@ -916,21 +967,42 @@ trait Contexts { self: Analyzer =>
 
     /** The symbol with name `name` imported from import clause `tree`.
      */
-    def importedSymbol(name: Name): Symbol = {
+    def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false)
+
+    private def recordUsage(sel: ImportSelector, result: Symbol) {
+      def posstr = pos.source.file.name + ":" + posOf(sel).safeLine
+      def resstr = if (tree.symbol.hasCompleteInfo) s"(qual=$qual, $result)" else s"(expr=${tree.expr}, ${result.fullLocationString})"
+      debuglog(s"In $this at $posstr, selector '${selectorString(sel)}' resolved to $resstr")
+      allUsedSelectors(this) += sel
+    }
+
+    /** If requireExplicit is true, wildcard imports are not considered. */
+    def importedSymbol(name: Name, requireExplicit: Boolean): Symbol = {
       var result: Symbol = NoSymbol
       var renamed = false
       var selectors = tree.selectors
-      while (selectors != Nil && result == NoSymbol) {
-        if (selectors.head.rename == name.toTermName)
+      def current = selectors.head
+      while (selectors.nonEmpty && result == NoSymbol) {
+        if (current.rename == name.toTermName)
           result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
-            if (name.isTypeName) selectors.head.name.toTypeName else selectors.head.name)
-        else if (selectors.head.name == name.toTermName)
+            if (name.isTypeName) current.name.toTypeName else current.name)
+        else if (current.name == name.toTermName)
           renamed = true
-        else if (selectors.head.name == nme.WILDCARD && !renamed)
+        else if (current.name == nme.WILDCARD && !renamed && !requireExplicit)
           result = qual.tpe.nonLocalMember(name)
-        selectors = selectors.tail
+
+        if (result == NoSymbol)
+          selectors = selectors.tail
       }
+      if (settings.lint.value && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
+        recordUsage(current, result)
+
       result
+    }
+    private def selectorString(s: ImportSelector): String = {
+      if (s.name == nme.WILDCARD && s.rename == null) "_"
+      else if (s.name == s.rename) "" + s.name
+      else s.name + " => " + s.rename
     }
 
     def allImportedSymbols: Iterable[Symbol] =
@@ -945,7 +1017,12 @@ trait Contexts { self: Analyzer =>
       case _ :: rest => transformImport(rest, sym)
     }
 
-    override def toString() = tree.toString()
+    override def hashCode = tree.##
+    override def equals(other: Any) = other match {
+      case that: ImportInfo => (tree == that.tree)
+      case _                => false
+    }
+    override def toString = tree.toString
   }
 
   case class ImportType(expr: Tree) extends Type {

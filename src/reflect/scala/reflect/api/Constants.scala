@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,6 +7,8 @@ package scala.reflect
 package api
 
 /**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
  *  According to the section 6.24 "Constant Expressions" of the Scala language specification,
  *  certain expressions (dubbed ''constant expressions'') can be evaluated by the Scala compiler at compile-time.
  *
@@ -82,6 +84,7 @@ package api
  *  }}}
  *
  *  @contentDiagram hideNodes "*Api"
+ *  @group ReflectionAPI
  */
 trait Constants {
   self: Universe =>
@@ -186,7 +189,7 @@ trait Constants {
    */
   implicit val ConstantTag: ClassTag[Constant]
 
-  /** The constructor/deconstructor for `Constant` instances.
+  /** The constructor/extractor for `Constant` instances.
    *  @group Extractors
    */
   val Constant: ConstantExtractor

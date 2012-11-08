@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
  *
- * Copyright 2011-2012 LAMP/EPFL
+ * Copyright 2011-2013 LAMP/EPFL
  * @author Adriaan Moors
  */
 
@@ -37,13 +37,11 @@ import scala.reflect.internal.Types
   *  - recover exhaustivity/unreachability of user-defined extractors by partitioning the types they match on using an HList or similar type-level structure
   */
 trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL {   // self: Analyzer =>
-  import Statistics._
   import PatternMatchingStats._
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
   import global._                  // the global environment
-  import definitions._             // standard classes and methods
 
   val phaseName: String = "patmat"
 
@@ -1432,7 +1430,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def flatMap(prev: Tree, b: Symbol, next: Tree): Tree
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree
       def flatMapGuard(cond: Tree, next: Tree): Tree
-      def ifThenElseZero(c: Tree, then: Tree): Tree = IF (c) THEN then ELSE zero
+      def ifThenElseZero(c: Tree, thenp: Tree): Tree = IF (c) THEN thenp ELSE zero
       protected def zero: Tree
     }
 
@@ -1525,7 +1523,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // __match.zero
       protected def zero: Tree = _match(vpmName.zero)
       // __match.guard(`c`, `then`)
-      def guard(c: Tree, then: Tree): Tree = _match(vpmName.guard) APPLY (c, then)
+      def guard(c: Tree, thenp: Tree): Tree = _match(vpmName.guard) APPLY (c, thenp)
 
       //// methods in the monad instance -- used directly in translation
       // `prev`.flatMap(`b` => `next`)

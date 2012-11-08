@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * Author: Paul Phillips
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package matching
 
 import transform.ExplicitOuter
-import PartialFunction._
 import scala.language.postfixOps
 
 trait PatternBindings extends ast.TreeDSL
@@ -17,7 +16,6 @@ trait PatternBindings extends ast.TreeDSL
   import global.{ typer => _, _ }
   import definitions.{ EqualsPatternClass }
   import CODE._
-  import Debug._
 
   /** EqualsPattern **/
   def isEquals(tpe: Type)             = tpe.typeSymbol == EqualsPatternClass

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * Author: Paul Phillips
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package matching
 
 import transform.ExplicitOuter
-import PartialFunction._
 
 /** Traits which are mixed into MatchMatrix, but separated out as
  *  (somewhat) independent components to keep them on the sidelines.
@@ -17,7 +16,6 @@ trait MatrixAdditions extends ast.TreeDSL {
 
   import global.{ typer => _, _ }
   import symtab.Flags
-  import CODE._
   import Debug._
   import treeInfo._
   import definitions.{ isPrimitiveValueClass }

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2012 LAMP/EPFL
+ * Copyright 2006-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -11,7 +11,6 @@ import java.net.URL
 import scala.collection.{ mutable, immutable }
 import io.{ File, Directory, Path, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
-import scala.reflect.ClassTag
 import Jar.isJarOrZip
 import File.pathSeparator
 import java.net.MalformedURLException

@@ -5,7 +5,6 @@ trait Enclosures {
   self: Context =>
 
   import universe._
-  import mirror._
 
   private def site       = callsiteTyper.context
   private def enclTrees  = site.enclosingContextChain map (_.tree)

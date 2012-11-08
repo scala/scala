@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -384,7 +384,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           if (sourceModule != NoSymbol) {
             sourceModule setPos sym.pos
             if (sourceModule.flags != MODULE) {
-              log("!!! Directly setting sourceModule flags from %s to MODULE".format(flagsToString(sourceModule.flags)))
+              log("!!! Directly setting sourceModule flags from %s to MODULE".format(sourceModule.flagString))
               sourceModule.flags = MODULE
             }
           }
@@ -1204,7 +1204,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           tree
 
         case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) =>
-          assert(!sym.isMethod, "no method allowed here: %s%s %s".format(sym, sym.isImplOnly, flagsToString(sym.flags)))
+          assert(!sym.isMethod, "no method allowed here: %s%s %s".format(sym, sym.isImplOnly, sym.flagString))
           // refer to fields in some implementation class via an abstract
           // getter in the interface.
           val iface  = toInterface(sym.owner.tpe).typeSymbol

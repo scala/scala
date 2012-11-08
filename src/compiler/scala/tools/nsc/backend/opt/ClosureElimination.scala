@@ -1,5 +1,5 @@
  /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package backend.opt
 
 import scala.tools.nsc.backend.icode.analysis.LubException
-import scala.tools.nsc.symtab._
 
 /**
  *  @author Iulian Dragos

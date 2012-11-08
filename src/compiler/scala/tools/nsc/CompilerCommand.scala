@@ -1,11 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
-import scala.collection.mutable.ListBuffer
 import io.File
 
 /** A class representing command line info for scalac */

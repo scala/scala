@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
-* Copyright 2005-2012 LAMP/EPFL
+* Copyright 2005-2013 LAMP/EPFL
 * @author  Paul Phillips
 */
 
 package scala.tools.nsc
 package typechecker
-
-import scala.language.implicitConversions
 
 /** A generic means of breaking down types into their subcomponents.
  *  Types are decomposed top down, and recognizable substructure is

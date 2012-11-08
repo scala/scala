@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,12 +8,11 @@ package scala.tools.nsc
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import scala.compat.Platform.currentTime
-import scala.tools.util.PathResolver
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ Exceptional, ClassPath, MergedClassPath, StatisticsInfo, ScalaClassLoader, returning, stackTraceString }
-import scala.reflect.internal.util.{ NoPosition, OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
@@ -29,8 +28,6 @@ import backend.jvm.{GenJVM, GenASM}
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
-import scala.reflect.internal.StdAttachments
-import scala.reflect.ClassTag
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable

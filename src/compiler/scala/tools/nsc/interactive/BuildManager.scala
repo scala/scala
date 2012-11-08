@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Iulian Dragos
  * @author Hubert Plocinicak
  */
@@ -7,11 +7,6 @@ package scala.tools.nsc
 package interactive
 
 import scala.collection._
-
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.reflect.internal.util.FakePos
-
-import dependencies._
 import io.AbstractFile
 import scala.language.implicitConversions
 

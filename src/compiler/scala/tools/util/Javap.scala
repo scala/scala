@@ -1,15 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools
 package util
 
-import java.lang.reflect.{ GenericSignatureFormatError, Method, Constructor }
-import java.lang.{ ClassLoader => JavaClassLoader }
 import scala.tools.nsc.util.ScalaClassLoader
-import java.io.{ InputStream, PrintWriter, ByteArrayInputStream, FileNotFoundException }
+import java.io.{ InputStream, PrintWriter, ByteArrayInputStream }
 import scala.tools.nsc.io.File
 import Javap._
 import scala.language.reflectiveCalls

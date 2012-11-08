@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -17,7 +17,7 @@ trait BasicBlocks {
   self: ICodes =>
 
   import opcodes._
-  import global.{ ifDebug, settings, log, nme }
+  import global.{ settings, log, nme }
   import nme.isExceptionResultName
 
   /** Override Array creation for efficiency (to not go through reflection). */

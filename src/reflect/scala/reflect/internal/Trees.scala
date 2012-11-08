@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -1312,7 +1312,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     final def change(sym: Symbol) = {
-      if (sym != NoSymbol && sym.owner == oldowner) 
+      if (sym != NoSymbol && sym.owner == oldowner)
         sym.owner = newowner
     }
     override def traverse(tree: Tree) {

@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Nikolay Mihaylov
  */
 
@@ -8,7 +8,6 @@ package scala.tools.nsc
 package backend.msil
 
 import java.io.{File, IOException}
-import java.nio.{ByteBuffer, ByteOrder}
 import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.symtab._
 
@@ -312,7 +311,7 @@ abstract class GenMSIL extends SubComponent {
 
 /*    def getAttributeArgs(consts: List[Constant], nvPairs: List[(Name, Constant)]): Array[Byte] = {
       val buf = ByteBuffer.allocate(2048) // FIXME: this may be not enough!
-      buf.order(ByteOrder.LITTLE_ENDIAN)
+      buf.order(java.nio.ByteOrder.LITTLE_ENDIAN)
       buf.putShort(1.toShort) // signature
 
       def emitSerString(str: String) = {
@@ -465,7 +464,7 @@ abstract class GenMSIL extends SubComponent {
 
     private[GenMSIL] def genClass(iclass: IClass) {
       val sym = iclass.symbol
-      debuglog("Generating class " + sym + " flags: " + Flags.flagsToString(sym.flags))
+      debuglog("Generating class " + sym + " flags: " + sym.flagString)
       clasz = iclass
 
       val tBuilder = getType(sym).asInstanceOf[TypeBuilder]
@@ -510,7 +509,7 @@ abstract class GenMSIL extends SubComponent {
 
 
     private def genMethod(m: IMethod) {
-      debuglog("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
+      debuglog("Generating method " + m.symbol + " flags: " + m.symbol.flagString +
             " owner: " + m.symbol.owner)
       method = m
       localBuilders.clear
@@ -525,8 +524,8 @@ abstract class GenMSIL extends SubComponent {
             mcode = mBuilder.GetILGenerator()
           } catch {
             case e: Exception =>
-              java.lang.System.out.println("m.symbol       = " + Flags.flagsToString(m.symbol.flags) + " " + m.symbol)
-              java.lang.System.out.println("m.symbol.owner = " + Flags.flagsToString(m.symbol.owner.flags) + " " + m.symbol.owner)
+              java.lang.System.out.println("m.symbol       = " + m.symbol.flagString + " " + m.symbol)
+              java.lang.System.out.println("m.symbol.owner = " + m.symbol.owner.flagString + " " + m.symbol.owner)
               java.lang.System.out.println("mBuilder       = " + mBuilder)
               java.lang.System.out.println("mBuilder.DeclaringType = " +
                                  TypeAttributes.toString(mBuilder.DeclaringType.Attributes) +
@@ -822,7 +821,7 @@ abstract class GenMSIL extends SubComponent {
 
       def loadFieldOrAddress(field: Symbol, isStatic: Boolean, msg: String, loadAddr : Boolean) {
         debuglog(msg + " with owner: " + field.owner +
-              " flags: " + Flags.flagsToString(field.owner.flags))
+              " flags: " + field.owner.flagString)
         val fieldInfo = fields.get(field) match {
           case Some(fInfo) => fInfo
           case None =>
@@ -1900,7 +1899,7 @@ abstract class GenMSIL extends SubComponent {
       if (iclass.symbol != definitions.ArrayClass) {
       for (m: IMethod <- iclass.methods) {
         val sym = m.symbol
-        debuglog("Creating MethodBuilder for " + Flags.flagsToString(sym.flags) + " " +
+        debuglog("Creating MethodBuilder for " + sym.flagString + " " +
               sym.owner.fullName + "::" + sym.name)
 
         val ownerType = getType(sym.enclClass).asInstanceOf[TypeBuilder]
@@ -2244,8 +2243,8 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def showsym(sym: Symbol): String = (sym.toString +
-      "\n  symbol = " + Flags.flagsToString(sym.flags) + " " + sym +
-      "\n  owner  = " + Flags.flagsToString(sym.owner.flags) + " " + sym.owner
+      "\n  symbol = " + sym.flagString + " " + sym +
+      "\n  owner  = " + sym.owner.flagString + " " + sym.owner
     )
 
   } // class BytecodeGenerator

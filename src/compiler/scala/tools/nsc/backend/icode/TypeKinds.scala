@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -140,7 +140,6 @@ trait TypeKinds { self: ICodes =>
      *  sifting through the parents for a class type.
      */
     def lub0(tk1: TypeKind, tk2: TypeKind): Type = enteringUncurry {
-      import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.isTrait)
 

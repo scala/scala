@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  */
 
 package scala.tools.nsc
 package doc
 package model
-
-import scala.collection._
 
 abstract sealed class LinkTo
 final case class LinkToTpl(tpl: DocTemplateEntity) extends LinkTo

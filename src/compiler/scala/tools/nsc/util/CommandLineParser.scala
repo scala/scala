@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package util
 
 import scala.util.parsing.combinator._
-import scala.util.parsing.input.{ Reader }
 import scala.util.parsing.input.CharArrayReader.EofCh
 import scala.collection.mutable.ListBuffer
 

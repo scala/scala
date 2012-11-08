@@ -1,4 +1,4 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2012 LAMP/EPFL
+/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL
  *
  * This trait finds implicit conversions for a class in the default scope and creates scaladoc entries for each of them.
  *
@@ -13,12 +13,7 @@ package model
 import comment._
 
 import scala.collection._
-import scala.util.matching.Regex
-
 import symtab.Flags
-import io._
-
-import model.{ RootPackage => RootPackageEntity }
 
 /**
  * This trait finds implicit conversions for a class in the default scope and creates scaladoc entries for each of them.
@@ -58,7 +53,6 @@ trait ModelFactoryImplicitSupport {
   import global._
   import global.analyzer._
   import global.definitions._
-  import rootMirror.{RootPackage, RootClass, EmptyPackage, EmptyPackageClass}
   import settings.hardcoded
 
   // debugging:

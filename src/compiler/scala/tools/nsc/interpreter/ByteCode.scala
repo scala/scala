@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import java.lang.reflect
-import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader
 import ScalaClassLoader.appLoader
 import scala.reflect.NameTransformer._

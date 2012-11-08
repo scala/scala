@@ -1,12 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
 import util.FreshNameCreator
-import scala.reflect.internal.util.{ Position, NoPosition, BatchSourceFile, SourceFile, NoSourceFile }
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
 

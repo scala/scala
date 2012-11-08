@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -8,7 +8,7 @@ package nsc
 package settings
 
 import util.ClassPath
-import io.{ Directory, Path, AbstractFile }
+import io.{ Path, AbstractFile }
 
 class FscSettings(error: String => Unit) extends Settings(error) {
   outer =>

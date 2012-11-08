@@ -1,12 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools
 package cmd
 
-import nsc.io.{ Path, File, Directory }
+import scala.tools.nsc.io.{ File, Directory }
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.reflect.StdRuntimeTags._
 

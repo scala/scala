@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Iulian Dragos
  * @author Hubert Plocinicak
  */
@@ -12,7 +12,6 @@ import scala.util.control.Breaks._
 import scala.tools.nsc.symtab.Flags
 
 import dependencies._
-import scala.reflect.internal.util.FakePos
 import util.ClassPath
 import io.AbstractFile
 import scala.tools.util.PathResolver

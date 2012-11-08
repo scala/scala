@@ -1,14 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
-import symtab.Flags.{ PRIVATE, PROTECTED, IS_ERROR }
+import symtab.Flags.IS_ERROR
 import scala.compat.Platform.EOL
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException

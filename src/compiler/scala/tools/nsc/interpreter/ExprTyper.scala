@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.ast.parser.Tokens.EOF
 
 trait ExprTyper {
@@ -15,7 +14,7 @@ trait ExprTyper {
   import repl._
   import global.{ reporter => _, Import => _, _ }
   import definitions._
-  import syntaxAnalyzer.{ UnitParser, UnitScanner, token2name }
+  import syntaxAnalyzer.UnitParser
   import naming.freshInternalVarName
 
   object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {

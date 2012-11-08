@@ -1,17 +1,14 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package backend.jvm
 
-import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.io.AbstractFile
-
 import scala.tools.asm
 import asm.Label
 
@@ -555,7 +552,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     def innerClassSymbolFor(s: Symbol): Symbol =
       if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
 
-    /** Return the a name of this symbol that can be used on the Java platform.  It removes spaces from names.
+    /** Return the name of this symbol that can be used on the Java platform.  It removes spaces from names.
      *
      *  Special handling:
      *    scala.Nothing erases to scala.runtime.Nothing$
@@ -604,7 +601,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
           case Some(oldsym) if oldsym.exists && trackedSym.exists =>
             assert(
               // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-              (oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass),
+              (oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass) || (oldsym.isModuleClass && (oldsym.sourceModule == trackedSym.sourceModule)),
               s"""|Different class symbols have the same bytecode-level internal name:
                   |     name: $internalName
                   |   oldsym: ${oldsym.fullNameString}
@@ -2432,7 +2429,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
-              debuglog("generating LOAD_MODULE for: " + module + " flags: " + Flags.flagsToString(module.flags));
+              debuglog("generating LOAD_MODULE for: " + module + " flags: " + module.flagString);
               if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
                 jmethod.visitVarInsn(Opcodes.ALOAD, 0)
               } else {
@@ -2509,7 +2506,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
             case lf @ LOAD_FIELD(field, isStatic) =>
               val owner = javaName(lf.hostClass)
-              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + Flags.flagsToString(field.owner.flags))
+              debuglog("LOAD_FIELD with owner: " + owner + " flags: " + field.owner.flagString)
               val fieldJName = javaName(field)
               val fieldDescr = descriptor(field)
               val opc = if (isStatic) Opcodes.GETSTATIC else Opcodes.GETFIELD

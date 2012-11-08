@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  Manohar Jonnalagedda
  */
 
@@ -9,8 +9,6 @@ package model
 package comment
 
 import scala.collection._
-
-import java.net.URL
 
 /** A body of text. A comment has a single body, which is composed of
   * at least one block. Inside every body is exactly one summary (see

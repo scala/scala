@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -624,11 +624,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       //
       // See SI-6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
-      if wrapRefArrayMeth.symbol == Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
+      if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&
+          appMeth.symbol == ArrayModule_overloadedApply.suchThat {
+            _.tpe.resultType.dealias.typeSymbol == ObjectClass  // [T: ClassTag](xs: T*): Array[T] post erasure
+          }) =>
         super.transform(arg)
-      case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
-      if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
-        super.transform(rest.copy(elems = elem0 :: rest.elems))
 
       case _ =>
         super.transform(tree)

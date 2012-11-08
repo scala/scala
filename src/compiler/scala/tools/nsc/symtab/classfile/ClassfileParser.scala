@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -23,7 +23,6 @@ import scala.tools.nsc.io.AbstractFile
 abstract class ClassfileParser {
   val global: Global
   import global._
-  import definitions.{ AnnotationClass, ClassfileAnnotationClass }
   import scala.reflect.internal.ClassfileConstants._
   import Flags._
 
@@ -94,7 +93,10 @@ abstract class ClassfileParser {
     pushBusy(root) {
       this.in           = new AbstractFileReader(file)
       this.clazz        = if (root.isModule) root.companionClass else root
-      this.staticModule = clazz.companionModule
+      // WARNING! do no use clazz.companionModule to find staticModule.
+      // In a situation where root can be defined, but its companionClass not,
+      // this would give incorrect results (see SI-5031 in separate compilation scenario)
+      this.staticModule = if (root.isModule) root else root.companionModule
       this.isScala      = false
 
       parseHeader
@@ -183,7 +185,7 @@ abstract class ClassfileParser {
         if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
         if (nme.isModuleName(name))
-          c = rootMirror.getModule(nme.stripModuleSuffix(name))
+          c = rootMirror.getModuleByName(nme.stripModuleSuffix(name))
         else
           c = classNameToSymbol(name)
 
@@ -234,7 +236,7 @@ abstract class ClassfileParser {
           //assert(name.endsWith("$"), "Not a module class: " + name)
           f = forceMangledName(name dropRight 1, true)
           if (f == NoSymbol)
-            f = rootMirror.getModule(name dropRight 1)
+            f = rootMirror.getModuleByName(name dropRight 1)
         } else {
           val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
@@ -475,7 +477,7 @@ abstract class ClassfileParser {
       if (name.pos('.') == name.length)
         definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
       else
-        rootMirror.getClass(name) // see tickets #2464, #3756
+        rootMirror.getClassByName(name) // see tickets #2464, #3756
     } catch {
       case _: FatalError => loadClassSymbol(name)
     }
@@ -1166,7 +1168,7 @@ abstract class ClassfileParser {
       originalName + " in " + outerName + "(" + externalName +")"
   }
 
-  object innerClasses extends scala.collection.mutable.HashMap[Name, InnerClassEntry] {
+  object innerClasses extends mutable.HashMap[Name, InnerClassEntry] {
     /** Return the Symbol of the top level class enclosing `name`,
      *  or 'name's symbol if no entry found for `name`.
      */

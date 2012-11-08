@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  *
  * @author  Paul Phillips
  */
@@ -21,7 +21,6 @@ trait TreeDSL {
 
   import global._
   import definitions._
-  import gen.{ scalaDot }
 
   object CODE {
     // Add a null check to a Tree => Tree function

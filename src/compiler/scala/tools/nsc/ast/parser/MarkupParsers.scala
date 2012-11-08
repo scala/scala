@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Burak Emir
  */
 
@@ -10,10 +10,8 @@ import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
-import scala.reflect.internal.util.SourceFile
-import scala.xml.{ Text, TextBuffer }
+import scala.xml.TextBuffer
 import scala.xml.parsing.MarkupParserCommon
-import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
 import scala.reflect.internal.Chars.{ SU, LF }
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
@@ -51,7 +49,7 @@ trait MarkupParsers {
 
   class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends MarkupParserCommon {
 
-    import Tokens.{ EMPTY, LBRACE, RBRACE }
+    import Tokens.{ LBRACE, RBRACE }
 
     type PositionType = Position
     type InputType    = CharArrayReader

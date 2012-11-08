@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -16,8 +16,6 @@ import javax.swing.tree._
 
 import scala.concurrent.Lock
 import scala.text._
-import symtab.Flags._
-import symtab.SymbolTable
 import scala.language.implicitConversions
 
 /**
@@ -531,7 +529,7 @@ abstract class TreeBrowsers {
       val s = t.symbol
 
       if ((s ne null) && (s != NoSymbol)) {
-        var str = flagsToString(s.flags)
+        var str = s.flagString
         if (s.isStaticMember) str = str + " isStatic ";
         (str + " annotations: " + s.annotations.mkString("", " ", "")
           + (if (s.isTypeSkolem) "\ndeSkolemized annotations: " + s.deSkolemize.annotations.mkString("", " ", "") else ""))

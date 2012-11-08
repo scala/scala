@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -8,7 +8,6 @@ package scala.tools.nsc
 
 import java.net.URL
 import util.ScalaClassLoader
-import java.lang.reflect.InvocationTargetException
 import util.Exceptional.unwrap
 
 trait CommonRunner {

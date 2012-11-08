@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Stepan Koltsov
  */
 
@@ -9,9 +9,7 @@ package interpreter
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer._
 import session._
-import scala.collection.JavaConverters._
 import Completion._
-import io.Streamable.slurp
 
 /**
  *  Reads from the console using JLine.

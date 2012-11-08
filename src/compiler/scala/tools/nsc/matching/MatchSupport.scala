@@ -1,14 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * Author: Paul Phillips
  */
 
 package scala.tools.nsc
 package matching
 
-import transform.ExplicitOuter
-import ast.{ Printers, Trees }
-import java.io.{ StringWriter, PrintWriter }
 import scala.annotation.elidable
 import scala.language.postfixOps
 

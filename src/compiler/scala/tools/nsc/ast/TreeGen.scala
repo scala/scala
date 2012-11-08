@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,6 @@ package ast
 
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
-import symtab.SymbolTable
 import scala.language.postfixOps
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but

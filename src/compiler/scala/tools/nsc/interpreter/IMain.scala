@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -11,21 +11,15 @@ import util.stringFromWriter
 import scala.reflect.internal.util._
 import java.net.URL
 import scala.sys.BooleanProp
-import io.VirtualDirectory
 import scala.tools.nsc.io.AbstractFile
 import reporters._
-import symtab.Flags
-import scala.reflect.internal.Names
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.ScalaClassLoader
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
-import scala.util.control.Exception.{ ultimately }
 import IMain._
 import java.util.concurrent.Future
-import typechecker.Analyzer
-import scala.language.implicitConversions
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.tools.reflect.StdRuntimeTags._
@@ -179,7 +173,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   import global._
-  import definitions.{ScalaPackage, JavaLangPackage, termMember, typeMember}
+  import definitions.{ termMember, typeMember }
   import rootMirror.{RootClass, getClassIfDefined, getModuleIfDefined, getRequiredModule, getRequiredClass}
 
   implicit class ReplTypeOps(tp: Type) {
