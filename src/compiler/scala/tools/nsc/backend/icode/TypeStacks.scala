@@ -15,8 +15,6 @@ package icode
 trait TypeStacks {
   self: ICodes =>
 
-  import opcodes._
-
   /* This class simulates the type of the operand
    * stack of the ICode.
    */

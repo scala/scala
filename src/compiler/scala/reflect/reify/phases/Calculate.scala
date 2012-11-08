@@ -5,7 +5,6 @@ trait Calculate {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   implicit class RichCalculateSymbol(sym: Symbol) {
     def metalevel: Int = { assert(sym != null && sym != NoSymbol); localSymbols.getOrElse(sym, 0) }

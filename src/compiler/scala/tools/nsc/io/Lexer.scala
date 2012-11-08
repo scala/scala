@@ -1,8 +1,6 @@
 package scala.tools.nsc.io
 
-import java.io.{Reader, Writer, StringReader, StringWriter}
-import scala.collection.mutable.{Buffer, ArrayBuffer}
-import scala.math.BigInt
+import java.io.Reader
 
 /** Companion object of class `Lexer` which defines tokens and some utility concepts
  *  used for tokens and lexers

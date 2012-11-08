@@ -8,11 +8,9 @@ package doc
 package model
 package comment
 
-import reporters.Reporter
 import scala.collection._
 import scala.util.matching.Regex
-import scala.annotation.switch
-import scala.reflect.internal.util.{NoPosition, Position}
+import scala.reflect.internal.util.Position
 import scala.language.postfixOps
 
 /** The comment parser transforms raw comment strings into `Comment` objects.

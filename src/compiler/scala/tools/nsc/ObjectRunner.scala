@@ -8,7 +8,6 @@ package scala.tools.nsc
 
 import java.net.URL
 import util.ScalaClassLoader
-import java.lang.reflect.InvocationTargetException
 import util.Exceptional.unwrap
 
 trait CommonRunner {

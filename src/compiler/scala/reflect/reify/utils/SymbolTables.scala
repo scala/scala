@@ -8,8 +8,6 @@ trait SymbolTables {
   self: Utils =>
 
   import global._
-  import definitions._
-  import Flag._
 
   class SymbolTable private[SymbolTable] (
     private[SymbolTable] val symtab: immutable.ListMap[Symbol, Tree] = immutable.ListMap[Symbol, Tree](),

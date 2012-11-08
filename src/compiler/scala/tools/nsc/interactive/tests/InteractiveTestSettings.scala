@@ -25,7 +25,6 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
    *        test.
    */
   override protected def prepareSettings(settings: Settings) {
-    import java.io.File._
     def adjustPaths(paths: settings.PathSetting*) {
       for (p <- paths if argsString.contains(p.name)) p.value = p.value.map {
         case '/' => separatorChar
@@ -45,10 +44,10 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
       case _ => ()
     }
 
-    // Make the --sourcepath path provided in the .flags file (if any) relative to the test's base directory 
+    // Make the --sourcepath path provided in the .flags file (if any) relative to the test's base directory
     if(settings.sourcepath.isSetByUser)
       settings.sourcepath.value = (baseDir / Path(settings.sourcepath.value)).path
-    
+
     adjustPaths(settings.bootclasspath, settings.classpath, settings.javabootclasspath, settings.sourcepath)
   }
 

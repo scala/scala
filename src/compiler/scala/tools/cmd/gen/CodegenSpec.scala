@@ -12,8 +12,6 @@ trait CodegenSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = CodegenSpec
   def programInfo         = Spec.Info("codegen", "", "scala.tools.cmd.gen.Codegen")
 
-  import FromString.ExistingDir
-
   help("Usage: codegen [<options>]")
 
   // val inDir    = "in" / "directory containing templates" --^ ExistingDir

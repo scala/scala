@@ -76,7 +76,6 @@ package object reflect {
   private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): Reporter = new AbstractReporter {
     val settings = settings0
 
-    import frontEnd.{Severity => ApiSeverity}
     val API_INFO = frontEnd.INFO
     val API_WARNING = frontEnd.WARNING
     val API_ERROR = frontEnd.ERROR

@@ -7,8 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.cond
-import scala.reflect.internal.Chars
 import scala.reflect.internal.Flags._
 import scala.language.implicitConversions
 

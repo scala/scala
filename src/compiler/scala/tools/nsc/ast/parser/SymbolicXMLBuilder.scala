@@ -11,7 +11,6 @@ import scala.xml.{ EntityRef, Text }
 import scala.xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.StringOps.splitWhere
-import scala.language.implicitConversions
 
 /** This class builds instance of `Tree` that represent XML.
  *

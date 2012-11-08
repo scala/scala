@@ -9,7 +9,6 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.tools.nsc.ast._
 import scala.reflect.internal.util.{Position,NoPosition}
 
 /*
@@ -67,7 +66,7 @@ import scala.reflect.internal.util.{Position,NoPosition}
  * in the source files.
  */
 trait Opcodes { self: ICodes =>
-  import global.{Symbol, NoSymbol, Type, Name, Constant};
+  import global.{Symbol, NoSymbol, Name, Constant};
 
   // categories of ICode instructions
   final val localsCat =  1

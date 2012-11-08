@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import symtab.Flags
 import scala.reflect.internal.util.TableDef
 import scala.language.postfixOps
 

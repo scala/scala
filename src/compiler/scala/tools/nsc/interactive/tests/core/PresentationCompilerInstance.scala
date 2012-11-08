@@ -3,7 +3,6 @@ package interactive
 package tests.core
 
 import reporters.{Reporter => CompilerReporter}
-import scala.reflect.internal.util.Position
 
 /** Trait encapsulating the creation of a presentation compiler's instance.*/
 private[tests] trait PresentationCompilerInstance extends TestSettings {

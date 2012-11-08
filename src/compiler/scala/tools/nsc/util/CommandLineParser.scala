@@ -7,7 +7,6 @@ package scala.tools.nsc
 package util
 
 import scala.util.parsing.combinator._
-import scala.util.parsing.input.{ Reader }
 import scala.util.parsing.input.CharArrayReader.EofCh
 import scala.collection.mutable.ListBuffer
 

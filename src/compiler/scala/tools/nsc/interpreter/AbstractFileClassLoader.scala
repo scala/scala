@@ -5,7 +5,7 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.nsc.io.{ File, AbstractFile }
+import scala.tools.nsc.io.AbstractFile
 import util.ScalaClassLoader
 import java.net.URL
 import scala.collection.{ mutable, immutable }

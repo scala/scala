@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package symtab
 
-import scala.collection.{ mutable, immutable }
 import scala.language.implicitConversions
 import scala.language.postfixOps
 

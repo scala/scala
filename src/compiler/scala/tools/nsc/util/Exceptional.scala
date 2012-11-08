@@ -3,8 +3,6 @@ package util
 
 import java.util.concurrent.ExecutionException
 import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
-import scala.reflect.internal.util.StringOps._
-import scala.language.implicitConversions
 
 object Exceptional {
   def unwrap(x: Throwable): Throwable = x match {

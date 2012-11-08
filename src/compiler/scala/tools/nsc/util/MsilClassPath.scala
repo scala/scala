@@ -8,9 +8,6 @@
 package scala.tools.nsc
 package util
 
-import java.io.File
-import java.net.URL
-import java.util.StringTokenizer
 import scala.util.Sorting
 import scala.collection.mutable
 import scala.tools.nsc.io.{ AbstractFile, MsilFile }

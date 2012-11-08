@@ -14,7 +14,6 @@ trait GenJVMUtil {
 
   import global._
   import icodes._
-  import icodes.opcodes._
   import definitions._
 
   /** Map from type kinds to the Java reference types. It is used for

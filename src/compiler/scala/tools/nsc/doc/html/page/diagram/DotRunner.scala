@@ -10,12 +10,10 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
-import java.io.IOException
 import scala.sys.process._
 import scala.concurrent.SyncVar
 
 import model._
-import model.diagram._
 
 /** This class takes care of running the graphviz dot utility */
 class DotRunner(settings: doc.Settings) {

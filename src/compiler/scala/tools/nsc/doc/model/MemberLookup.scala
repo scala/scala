@@ -4,8 +4,6 @@ package model
 
 import comment._
 
-import scala.reflect.internal.util.FakePos //Position
-
 /** This trait extracts all required information for documentation from compilation units */
 trait MemberLookup {
   thisFactory: ModelFactory =>

@@ -9,7 +9,6 @@ package icode
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.symtab._
 
 abstract class ICodeCheckers {
   val global: Global
@@ -487,7 +486,7 @@ abstract class ICodeCheckers {
 
          case LOAD_MODULE(module) =>
            checkBool((module.isModule || module.isModuleClass),
-                     "Expected module: " + module + " flags: " + Flags.flagsToString(module.flags));
+                     "Expected module: " + module + " flags: " + module.flagString);
            pushStack(toTypeKind(module.tpe));
 
          case STORE_THIS(kind) =>

@@ -17,7 +17,7 @@ trait BasicBlocks {
   self: ICodes =>
 
   import opcodes._
-  import global.{ ifDebug, settings, log, nme }
+  import global.{ settings, log, nme }
   import nme.isExceptionResultName
 
   /** Override Array creation for efficiency (to not go through reflection). */

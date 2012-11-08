@@ -5,7 +5,6 @@ trait Metalevels {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   /**
    *  Makes sense of cross-stage bindings.

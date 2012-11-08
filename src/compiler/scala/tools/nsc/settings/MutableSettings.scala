@@ -10,7 +10,6 @@ package settings
 
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
 import scala.reflect.internal.util.StringOps
-import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.reflect.{ ClassTag, classTag }
 

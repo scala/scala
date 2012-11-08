@@ -10,7 +10,6 @@ trait Phases extends Reshape
   self: Reifier =>
 
   import global._
-  import definitions._
 
   private var alreadyRun = false
 

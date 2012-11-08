@@ -6,7 +6,6 @@ package scala.tools.nsc
 package interactive
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.internal.util.Position
 
 trait ContextTrees { self: Global =>
 

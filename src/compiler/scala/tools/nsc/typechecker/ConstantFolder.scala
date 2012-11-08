@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-
 import java.lang.ArithmeticException
 
 /** This class ...
@@ -18,7 +17,6 @@ abstract class ConstantFolder {
 
   val global: Global
   import global._
-  import definitions._
 
   /** If tree is a constant operation, replace with result. */
   def apply(tree: Tree): Tree = fold(tree, tree match {

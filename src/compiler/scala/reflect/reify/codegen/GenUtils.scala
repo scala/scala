@@ -5,7 +5,6 @@ trait GenUtils {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   def reifyList(xs: List[Any]): Tree =
     mkList(xs map reify)

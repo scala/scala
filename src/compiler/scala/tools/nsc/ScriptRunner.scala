@@ -7,7 +7,6 @@ package scala.tools.nsc
 
 import io.{ Directory, File, Path }
 import java.io.IOException
-import java.net.URL
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import util.Exceptional.unwrap
 

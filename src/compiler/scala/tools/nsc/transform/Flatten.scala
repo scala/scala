@@ -8,12 +8,10 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
-  import definitions._
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"

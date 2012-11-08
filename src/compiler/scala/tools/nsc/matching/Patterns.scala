@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package matching
 
-import symtab.Flags
 import PartialFunction._
 
 /** Patterns are wrappers for Trees with enhanced semantics.

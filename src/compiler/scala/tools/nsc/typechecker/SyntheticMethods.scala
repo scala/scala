@@ -6,9 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags
 import symtab.Flags._
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /** Synthetic method implementations for case classes and case objects.

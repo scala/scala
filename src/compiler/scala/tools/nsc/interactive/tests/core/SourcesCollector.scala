@@ -4,7 +4,6 @@ import scala.reflect.internal.util.{SourceFile,BatchSourceFile}
 import scala.tools.nsc.io.{AbstractFile,Path}
 
 private[tests] object SourcesCollector {
-  import Path._
   type SourceFilter =  Path => Boolean
 
   /**

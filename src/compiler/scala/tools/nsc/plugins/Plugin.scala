@@ -6,13 +6,10 @@
 package scala.tools.nsc
 package plugins
 
-import io.{ File, Path, Jar }
+import io.{ Path, Jar }
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 import java.util.zip.ZipException
-
-import scala.collection.mutable
-import mutable.ListBuffer
 import scala.xml.XML
 
 /** Information about a plugin loaded from a jar file.

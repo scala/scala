@@ -7,10 +7,8 @@ package scala.tools.nsc
 package backend
 package icode
 
-import java.io.PrintWriter
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
-import symtab.Flags.{ DEFERRED }
 
 trait ReferenceEquality {
   override def hashCode = System.identityHashCode(this)
