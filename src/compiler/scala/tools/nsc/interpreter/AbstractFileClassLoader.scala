@@ -25,7 +25,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
 
   protected def findAbstractFile(name: String): AbstractFile = {
     var file: AbstractFile = root
-    val pathParts          = classNameToPath(name) split '/'
+    val pathParts          = name split '/'
 
     for (dirPart <- pathParts.init) {
       file = file.lookupName(dirPart, true)
@@ -59,7 +59,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     case null => super.getResourceAsStream(name)
     case file => file.input
   }
-  override def classBytes(name: String): Array[Byte] = findAbstractFile(name) match {
+  override def classBytes(name: String): Array[Byte] = findAbstractFile(classNameToPath(name)) match {
     case null => super.classBytes(name)
     case file => file.toByteArray
   }
