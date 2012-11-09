@@ -2037,9 +2037,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // CNF: a formula is a conjunction of clauses
     type Formula = Array[Clause]
     /** Override Array creation for efficiency (to not go through reflection). */
-    private implicit val formulaTag: scala.reflect.ClassTag[Formula] = new scala.reflect.ClassTag[Formula] {
-      def runtimeClass: java.lang.Class[Formula] = classOf[Formula]
-      final override def newArray(len: Int): Array[Formula] = new Array[Formula](len)
+    private implicit val clauseTag: scala.reflect.ClassTag[Clause] = new scala.reflect.ClassTag[Clause] {
+      def runtimeClass: java.lang.Class[Clause] = classOf[Clause]
+      final override def newArray(len: Int): Array[Clause] = new Array[Clause](len)
     }
     def formula(c: Clause*): Formula = c.toArray
     def andFormula(a: Formula, b: Formula): Formula = a ++ b
