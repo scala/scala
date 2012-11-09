@@ -24,7 +24,7 @@ if [[ -z $publish_to ]]; then
 else
   echo "Publishing nightly build to $publish_to"
   # Archive Scala nightly distribution
-  rsync -az dists/archives/ "$publish_to/distributions"
+  rsync -az --exclude scala-latest-sources.tgz dists/archives/ "$publish_to/distributions"
   # only publish scaladoc nightly for trunk
   [[ $version == "master" ]] && rsync -az build/scaladoc/ "$publish_to/docs"
   # sbaz
