@@ -7,7 +7,8 @@ object Test {
     override def checkPermission(perm: Permission) = perm match {
       case _: java.lang.RuntimePermission                                                   => ()
       case _: java.io.FilePermission                                                        => ()
-      case x: java.security.AccessControlException if x.getName contains ".networkaddress." => () // generality ftw
+      case x: java.security.SecurityPermission if x.getName contains ".networkaddress."     => () // generality ftw
+      case x: java.util.PropertyPermission if x.getName == "sun.net.inetaddr.ttl"           => ()
       case _                                                                                => super.checkPermission(perm)
     }
   }
