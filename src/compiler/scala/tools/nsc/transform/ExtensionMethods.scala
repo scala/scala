@@ -173,9 +173,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               List(This(currentOwner)))
           val extensionCall = atOwner(origMeth) {
             localTyper.typedPos(rhs.pos) {
-              (extensionCallPrefix /: vparamss) {
-                case (fn, params) => Apply(fn, params map (param => Ident(param.symbol)))
-              }
+              gen.mkForwarder(extensionCallPrefix, mmap(vparamss)(_.symbol))
             }
           }
           deriveDefDef(tree)(_ => extensionCall)
