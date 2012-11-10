@@ -6,13 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import java.awt.{Window => AWTWindow}
 import event._
-import javax.swing._
 
 /**
  * A window with decoration such as a title, border, and action buttons.
