@@ -13,7 +13,6 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
 import scala.tools.nsc.io.{ Path, Directory, File => SFile }
-import scala.sys.process._
 import scala.collection.mutable
 
 trait FileUtil {
