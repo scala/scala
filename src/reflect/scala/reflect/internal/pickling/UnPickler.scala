@@ -233,7 +233,8 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
               // (4) Call the mirror's "missing" hook.
               adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
                 // (5) Create a stub symbol to defer hard failure a little longer.
-                owner.newStubSymbol(name)
+                val missingMessage = s"A signature in $filename refers to ${name.longString} in ${owner.fullLocationString} which is missing from the classpath."
+                owner.newStubSymbol(name, missingMessage)
               }
             }
           }
@@ -826,11 +827,6 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
 
     protected def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
-
-    protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
-      mirrorThatLoaded(owner).missingHook(owner, name) orElse MissingRequirementError.signal(
-        s"bad reference while unpickling $filename: ${name.longString} not found in ${owner.tpe.widen}"
-      )
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
