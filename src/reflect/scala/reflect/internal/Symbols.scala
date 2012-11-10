@@ -1344,6 +1344,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
+    /** Raises a `MissingRequirementError` if this symbol is a `StubSymbol` */
+    def failIfStub() {}
+
     /** Initialize the symbol */
     final def initialize: this.type = {
       if (!isInitialized) info
@@ -3100,6 +3103,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
   trait StubSymbol extends Symbol {
+    override final def failIfStub() = fail(())
     protected def missingMessage: String
     private def fail[T](alt: T): T = {
       // Avoid issuing lots of redundant errors
