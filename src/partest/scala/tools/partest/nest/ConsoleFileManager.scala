@@ -18,8 +18,6 @@ import io.{ Path, Directory }
 import File.pathSeparator
 import ClassPath.{ join }
 import PathResolver.{ Environment, Defaults }
-import RunnerUtils._
-
 
 class ConsoleFileManager extends FileManager {
   var testBuild: Option[String] = PartestDefaults.testBuild

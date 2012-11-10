@@ -14,7 +14,6 @@ import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.io.Path
 import scala.collection.{ mutable, immutable }
 import java.util.concurrent._
-import scala.collection.convert.decorateAll._
 
 case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
 
