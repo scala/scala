@@ -8,9 +8,7 @@
 
 package scala.swing
 
-import event._
-import javax.swing.{AbstractButton => JAbstractButton,Icon}
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /**
  * A button mutex. At most one of its associated buttons is selected
