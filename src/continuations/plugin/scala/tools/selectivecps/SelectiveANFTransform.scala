@@ -2,12 +2,9 @@
 
 package scala.tools.selectivecps
 
-import scala.tools.nsc._
 import scala.tools.nsc.transform._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.plugins._
-
-import scala.tools.nsc.ast._
 
 /**
  * In methods marked @cps, explicitly name results of calls to other @cps methods
