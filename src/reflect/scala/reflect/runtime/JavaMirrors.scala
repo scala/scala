@@ -496,13 +496,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       Class.forName(path, true, classLoader)
 
     /** Does `path` correspond to a Java class with that fully qualified name in the current class loader? */
-    def tryJavaClass(path: String): Option[jClass[_]] =
-      try {
-        Some(javaClass(path))
-      } catch {
-        case (_: ClassNotFoundException) | (_: NoClassDefFoundError) | (_: IncompatibleClassChangeError) =>
-          None
-      }
+    def tryJavaClass(path: String): Option[jClass[_]] = (
+      try Some(javaClass(path))
+      catch { case ex @ (_: LinkageError | _: ClassNotFoundException) => None } // TODO - log
+    )
 
     /** The mirror that corresponds to the classloader that original defined the given Java class */
     def mirrorDefining(jclazz: jClass[_]): JavaMirror = {

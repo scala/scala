@@ -137,6 +137,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     catch AbstractOrMissingHandler()
   }
   private def tquoted(s: String) = "\"\"\"" + s + "\"\"\""
+  private val logScope = scala.sys.props contains "scala.repl.scope"
+  private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
 
   // argument is a thunk to execute after init is done
   def initialize(postInitSignal: => Unit) {
@@ -173,8 +175,24 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   import global._
-  import definitions.{ termMember, typeMember }
-  import rootMirror.{RootClass, getClassIfDefined, getModuleIfDefined, getRequiredModule, getRequiredClass}
+  import definitions.{ ObjectClass, termMember, typeMember, dropNullaryMethod}
+
+  lazy val runtimeMirror = ru.runtimeMirror(classLoader)
+
+  private def noFatal(body: => Symbol): Symbol = try body catch { case _: FatalError => NoSymbol }
+
+  def getClassIfDefined(path: String)  = (
+           noFatal(runtimeMirror staticClass path)
+    orElse noFatal(rootMirror staticClass path)
+  )
+  def getModuleIfDefined(path: String) = (
+           noFatal(runtimeMirror staticModule path)
+    orElse noFatal(rootMirror staticModule path)
+  )
+  def getPathIfDefined(path: String) = (
+    if (path endsWith "$") getModuleIfDefined(path.init)
+    else getClassIfDefined(path)
+  )
 
   implicit class ReplTypeOps(tp: Type) {
     def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
@@ -190,7 +208,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     // make sure we don't overwrite their unwisely named res3 etc.
     def freshUserTermName(): TermName = {
       val name = newTermName(freshUserVarName())
-      if (definedNameMap contains name) freshUserTermName()
+      if (replScope containsName name) freshUserTermName()
       else name
     }
     def isUserTermName(name: Name) = isUserVarName("" + name)
@@ -280,20 +298,55 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     ensureClassLoader()
     _classLoader
   }
+
+  def backticked(s: String): String = (
+    (s split '.').toList map {
+      case "_"                               => "_"
+      case s if nme.keywords(newTermName(s)) => s"`$s`"
+      case s                                 => s
+    } mkString "."
+  )
+
+  abstract class PhaseDependentOps {
+    def shift[T](op: => T): T
+
+    def lookup(name: Name): Symbol = shift(replScope lookup name)
+    def path(name: => Name): String = shift(path(symbolOfName(name)))
+    def path(sym: Symbol): String = backticked(shift(sym.fullName))
+    def name(sym: Symbol): Name   = shift(sym.name)
+    def info(sym: Symbol): Type   = shift(sym.info)
+    def sig(sym: Symbol): String  = shift(sym.defString)
+  }
+  object typerOp extends PhaseDependentOps {
+    def shift[T](op: => T): T = exitingTyper(op)
+  }
+  object flatOp extends PhaseDependentOps {
+    def shift[T](op: => T): T = exitingFlatten(op)
+  }
+
+  def originalPath(name: String): String = originalPath(name: TermName)
+  def originalPath(name: Name): String   = typerOp path name
+  def originalPath(sym: Symbol): String  = typerOp path sym
+  def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
+  // def translatePath(path: String) = symbolOfPath(path).fold(Option.empty[String])(flatPath)
+  def translatePath(path: String) = {
+    val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
+    sym match {
+      case NoSymbol => None
+      case _        => Some(flatPath(sym))
+    }
+  }
+
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     /** Overridden here to try translating a simple name to the generated
      *  class name if the original attempt fails.  This method is used by
      *  getResourceAsStream as well as findClass.
      */
-    override protected def findAbstractFile(name: String): AbstractFile = {
+    override protected def findAbstractFile(name: String): AbstractFile =
       super.findAbstractFile(name) match {
-        // deadlocks on startup if we try to translate names too early
-        case null if isInitializeComplete =>
-          generatedName(name) map (x => super.findAbstractFile(x)) orNull
-        case file                         =>
-          file
+        case null => translatePath(name) map (super.findAbstractFile(_)) orNull
+        case file => file
       }
-    }
   }
   private def makeClassLoader(): AbstractFileClassLoader =
     new TranslatingClassLoader(parentClassLoader match {
@@ -306,27 +359,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   // Set the current Java "context" class loader to this interpreter's class loader
   def setContextClassLoader() = classLoader.setAsContext()
 
-  /** Given a simple repl-defined name, returns the real name of
-   *  the class representing it, e.g. for "Bippy" it may return
-   *  {{{
-   *    $line19.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$Bippy
-   *  }}}
-   */
-  def generatedName(simpleName: String): Option[String] = {
-    if (simpleName endsWith nme.MODULE_SUFFIX_STRING) optFlatName(simpleName.init) map (_ + nme.MODULE_SUFFIX_STRING)
-    else optFlatName(simpleName)
-  }
-  def flatName(id: String)    = optFlatName(id) getOrElse id
-  def optFlatName(id: String) = requestForIdent(id) map (_ fullFlatName id)
-
-  def allDefinedNames = definedNameMap.keys.toList.sorted
-  def pathToType(id: String): String = pathToName(newTypeName(id))
-  def pathToTerm(id: String): String = pathToName(newTermName(id))
-  def pathToName(name: Name): String = {
-    if (definedNameMap contains name)
-      definedNameMap(name) fullPath name
-    else name.toString
-  }
+  def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
+  def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted
 
   /** Most recent tree handled which wasn't wholly synthetic. */
   private def mostRecentlyHandledTree: Option[Tree] = {
@@ -339,50 +373,48 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     None
   }
 
-  /** Stubs for work in progress. */
-  def handleTypeRedefinition(name: TypeName, old: Request, req: Request) = {
-    for (t1 <- old.simpleNameOfType(name) ; t2 <- req.simpleNameOfType(name)) {
-      repldbg("Redefining type '%s'\n  %s -> %s".format(name, t1, t2))
-    }
-  }
+  private def updateReplScope(sym: Symbol, isDefined: Boolean) {
+    def log(what: String) {
+      val mark = if (sym.isType) "t " else "v "
+      val name = exitingTyper(sym.nameString)
+      val info = cleanTypeAfterTyper(sym)
+      val defn = sym defStringSeenAs info
 
-  def handleTermRedefinition(name: TermName, old: Request, req: Request) = {
-    for (t1 <- old.compilerTypeOf get name ; t2 <- req.compilerTypeOf get name) {
-      // Printing the types here has a tendency to cause assertion errors, like
-      //   assertion failed: fatal: <refinement> has owner value x, but a class owner is required
-      // so DBG is by-name now to keep it in the family.  (It also traps the assertion error,
-      // but we don't want to unnecessarily risk hosing the compiler's internal state.)
-      repldbg("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
+      scopelog(f"[$mark$what%6s] $name%-25s $defn%s")
     }
+    if (ObjectClass isSubClass sym.owner) return
+    // unlink previous
+    replScope lookupAll sym.name foreach { sym =>
+      log("unlink")
+      replScope unlink sym
+    }
+    val what = if (isDefined) "define" else "import"
+    log(what)
+    replScope enter sym
   }
 
   def recordRequest(req: Request) {
-    if (req == null || referencedNameMap == null)
+    if (req == null)
       return
 
     prevRequests += req
-    req.referencedNames foreach (x => referencedNameMap(x) = req)
 
     // warning about serially defining companions.  It'd be easy
     // enough to just redefine them together but that may not always
     // be what people want so I'm waiting until I can do it better.
-    for {
-      name   <- req.definedNames filterNot (x => req.definedNames contains x.companionName)
-      oldReq <- definedNameMap get name.companionName
-      newSym <- req.definedSymbols get name
-      oldSym <- oldReq.definedSymbols get name.companionName
-    } {
-      exitingTyper(replwarn(s"warning: previously defined $oldSym is not a companion to $newSym."))
-      replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
-    }
-
-    // Updating the defined name map
-    req.definedNames foreach { name =>
-      if (definedNameMap contains name) {
-        if (name.isTypeName) handleTypeRedefinition(name.toTypeName, definedNameMap(name), req)
-        else handleTermRedefinition(name.toTermName, definedNameMap(name), req)
+    exitingTyper {
+      req.defines filterNot (s => req.defines contains s.companionSymbol) foreach { newSym =>
+        val companion = newSym.name.companionName
+        val found = replScope lookup companion
+        replScope lookup companion andAlso { oldSym =>
+          replwarn(s"warning: previously defined $oldSym is not a companion to $newSym.")
+          replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
+        }
       }
-      definedNameMap(name) = req
+    }
+    exitingTyper {
+      req.imports foreach (sym => updateReplScope(sym, isDefined = false))
+      req.defines foreach (sym => updateReplScope(sym, isDefined = true))
     }
   }
 
@@ -639,8 +671,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     resetClassLoader()
     resetAllCreators()
     prevRequests.clear()
-    referencedNameMap.clear()
-    definedNameMap.clear()
+    resetReplScope()
     replOutput.dir.clear()
   }
 
@@ -726,7 +757,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = getRequiredModule(readPath)   // the outermost wrapper
+      val readRoot  = getModuleIfDefined(readPath)   // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => exitingTyper(termMember(sym, name))
@@ -769,6 +800,11 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   /** One line of code submitted by the user for interpretation */
   // private
   class Request(val line: String, val trees: List[Tree]) {
+    def defines    = defHandlers flatMap (_.definedSymbols)
+    def imports    = importedSymbols
+    def references = referencedNames map symbolOfName
+    def value      = Some(handlers.last) filter (h => h.definesValue) map (h => definedSymbols(h.definesTerm.get)) getOrElse NoSymbol
+
     val reqId = nextReqId()
     val lineRep = new ReadEvalPrint()
 
@@ -789,52 +825,40 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** def and val names */
     def termNames = handlers flatMap (_.definesTerm)
     def typeNames = handlers flatMap (_.definesType)
-    def definedOrImported = handlers flatMap (_.definedOrImported)
-    def definedSymbolList = defHandlers flatMap (_.definedSymbols)
-
-    def definedTypeSymbol(name: String) = definedSymbols(newTypeName(name))
-    def definedTermSymbol(name: String) = definedSymbols(newTermName(name))
+    def importedSymbols = handlers flatMap {
+      case x: ImportHandler => x.importedSymbols
+      case _                => Nil
+    }
 
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
       */
     val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      importsCode(referencedNames.toSet)
-
-    /** Code to access a variable with the specified name */
-    def fullPath(vname: String) = (
-      lineRep.readPath + accessPath + ".`%s`".format(vname)
-    )
-    /** Same as fullpath, but after it has been flattened, so:
-     *  $line5.$iw.$iw.$iw.Bippy      // fullPath
-     *  $line5.$iw$$iw$$iw$Bippy      // fullFlatName
-     */
-    def fullFlatName(name: String) =
-      lineRep.readPath + accessPath.replace('.', '$') + nme.NAME_JOIN_STRING + name
+      exitingTyper(importsCode(referencedNames.toSet))
 
     /** The unmangled symbol name, but supplemented with line info. */
     def disambiguated(name: Name): String = name + " (in " + lineRep + ")"
 
-    /** Code to access a variable with the specified name */
-    def fullPath(vname: Name): String = fullPath(vname.toString)
-
     /** the line of code to compute */
     def toCompute = line
 
+    def fullPath(vname: String) = s"${lineRep.readPath}$accessPath.`$vname`"
+
     /** generate the source code for the object that computes this request */
     private object ObjectSourceCode extends CodeAssembler[MemberHandler] {
-      def path = pathToTerm("$intp")
+      def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
         // $intp is not bound; punt, but include the line.
         else if (path == "$intp") List(
           "def $line = " + tquoted(originalLine),
+          // "def $req = %s.requestForReqId(%s).orNull".format(path, reqId),
           "def $trees = Nil"
         )
         else List(
           "def $line  = " + tquoted(originalLine),
-          "def $req = %s.requestForReqId(%s).orNull".format(path, reqId),
-          "def $trees = if ($req eq null) Nil else $req.trees".format(lineRep.readName, path, reqId)
+          "def $trees = Nil"
+          // "def $trees = if ($req eq null) Nil else $req.trees".format(lineRep.readName, path, reqId)
         )
       }
 
@@ -850,13 +874,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
-      val evalResult =
-        if (!handlers.last.definesValue) ""
-        else handlers.last.definesTerm match {
-          case Some(vname) if typeOf contains vname =>
-            "lazy val %s = %s".format(lineRep.resultName, fullPath(vname))
-          case _  => ""
-        }
+      val evalResult = Request.this.value match {
+        case NoSymbol => ""
+        case sym      => "lazy val %s = %s".format(lineRep.resultName, originalPath(sym))
+      }
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
       val preamble = """
@@ -878,15 +899,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
-    // get it
-    def getEvalTyped[T] : Option[T] = getEval map (_.asInstanceOf[T])
-    def getEval: Option[AnyRef] = {
-      // ensure it has been compiled
-      compile
-      // try to load it and call the value method
-      lineRep.evalValue filterNot (_ == null)
-    }
-
     /** Compile the object file.  Returns whether the compilation succeeded.
      *  If all goes well, the "types" map is computed. */
     lazy val compile: Boolean = {
@@ -905,7 +917,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           val name = dh.member.name
           definedSymbols get name foreach { sym =>
             dh.member setSymbol sym
-            repldbg("Set symbol of " + name + " to " + sym.defString)
+            repldbg("Set symbol of " + name + " to " + symbolDefString(sym))
           }
         }
 
@@ -919,7 +931,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     /* typeOf lookup with encoding */
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))
-    def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbol.simpleName)
+    def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbolDirect.simpleName)
 
     private def typeMap[T](f: Type => T) =
       mapFrom[Name, Name, T](termNames ++ typeNames)(x => f(cleanMemberDecl(resultSymbol, x)))
@@ -929,12 +941,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** String representations of same. */
     lazy val typeOf         = typeMap[String](tp => exitingTyper(tp.toString))
 
-    // lazy val definedTypes: Map[Name, Type] = {
-    //   typeNames map (x => x -> exitingTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
-    // }
     lazy val definedSymbols = (
       termNames.map(x => x -> applyToResultMember(x, x => x)) ++
-      typeNames.map(x => x -> compilerTypeOf(x).typeSymbol)
+      typeNames.map(x => x -> compilerTypeOf(x).typeSymbolDirect)
     ).toMap[Name, Symbol] withDefaultValue NoSymbol
 
     lazy val typesOfDefinedTerms = mapFrom[Name, Name, Type](termNames)(x => applyToResultMember(x, _.tpe))
@@ -964,45 +973,50 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   private var mostRecentWarnings: List[(global.Position, String)] = Nil
   def lastWarnings = mostRecentWarnings
 
-  def treesForRequestId(id: Int): List[Tree] =
-    requestForReqId(id).toList flatMap (_.trees)
+  private lazy val importToGlobal  = global mkImporter ru
+  private lazy val importToRuntime = ru mkImporter global
+  private lazy val javaMirror = ru.rootMirror match {
+    case x: ru.JavaMirror => x
+    case _                => null
+  }
+  private implicit def importFromRu(sym: ru.Symbol): Symbol = importToGlobal importSymbol sym
+  private implicit def importToRu(sym: Symbol): ru.Symbol   = importToRuntime importSymbol sym
 
-  def requestForReqId(id: Int): Option[Request] =
-    if (executingRequest != null && executingRequest.reqId == id) Some(executingRequest)
-    else prevRequests find (_.reqId == id)
-
-  def requestForName(name: Name): Option[Request] = {
-    assert(definedNameMap != null, "definedNameMap is null")
-    definedNameMap get name
+  def classOfTerm(id: String): Option[JClass] = symbolOfTerm(id) match {
+    case NoSymbol => None
+    case sym      => Some(javaMirror runtimeClass importToRu(sym).asClass)
   }
 
-  def requestForIdent(line: String): Option[Request] =
-    requestForName(newTermName(line)) orElse requestForName(newTypeName(line))
+  def typeOfTerm(id: String): Type = symbolOfTerm(id).tpe
 
-  def requestHistoryForName(name: Name): List[Request] =
-    prevRequests.toList.reverse filter (_.definedNames contains name)
+  def valueOfTerm(id: String): Option[Any] = exitingTyper {
+    def value() = {
+      val sym0    = symbolOfTerm(id)
+      val sym     = (importToRuntime importSymbol sym0).asTerm
+      val module  = runtimeMirror.reflectModule(sym.owner.companionSymbol.asModule).instance
+      val module1 = runtimeMirror.reflect(module)
+      val invoker = module1.reflectField(sym)
 
-  def definitionForName(name: Name): Option[MemberHandler] =
-    requestForName(name) flatMap { req =>
-      req.handlers find (_.definedNames contains name)
+      invoker.get
     }
 
-  def valueOfTerm(id: String): Option[AnyRef] =
-    requestForName(newTermName(id)) flatMap (_.getEval)
-
-  def classOfTerm(id: String): Option[JClass] =
-    valueOfTerm(id) map (_.getClass)
-
-  def typeOfTerm(id: String): Type = newTermName(id) match {
-    case nme.ROOTPKG  => RootClass.tpe
-    case name         => requestForName(name).fold(NoType: Type)(_ compilerTypeOf name)
+    try Some(value()) catch { case _: Exception => None }
   }
 
-  def symbolOfType(id: String): Symbol =
-    requestForName(newTypeName(id)).fold(NoSymbol: Symbol)(_ definedTypeSymbol id)
+  /** It's a bit of a shotgun approach, but for now we will gain in
+   *  robustness. Try a symbol-producing operation at phase typer, and
+   *  if that is NoSymbol, try again at phase flatten. I'll be able to
+   *  lose this and run only from exitingTyper as soon as I figure out
+   *  exactly where a flat name is sneaking in when calculating imports.
+   */
+  def tryTwice(op: => Symbol): Symbol = exitingTyper(op) orElse exitingFlatten(op)
 
-  def symbolOfTerm(id: String): Symbol =
-    requestForIdent(newTermName(id)).fold(NoSymbol: Symbol)(_ definedTermSymbol id)
+  def signatureOf(sym: Symbol)           = typerOp sig sym
+  def symbolOfPath(path: String): Symbol = exitingTyper(getPathIfDefined(path))
+  def symbolOfIdent(id: String): Symbol  = symbolOfTerm(id) orElse symbolOfType(id)
+  def symbolOfType(id: String): Symbol   = tryTwice(replScope lookup (id: TypeName))
+  def symbolOfTerm(id: String): Symbol   = tryTwice(replScope lookup (id: TermName))
+  def symbolOfName(id: Name): Symbol     = replScope lookup id
 
   def runtimeClassAndTypeOfTerm(id: String): Option[(JClass, Type)] = {
     classOfTerm(id) flatMap { clazz =>
@@ -1023,14 +1037,18 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       else NoType
     }
   }
-  def cleanMemberDecl(owner: Symbol, member: Name): Type = exitingTyper {
-    normalizeNonPublic {
-      owner.info.nonPrivateDecl(member).tpe_* match {
-        case NullaryMethodType(tp) => tp
-        case tp                    => tp
-      }
-    }
+
+  def cleanTypeAfterTyper(sym: => Symbol): Type = {
+    exitingTyper(
+      normalizeNonPublic(
+        dropNullaryMethod(
+          sym.tpe_*
+        )
+      )
+    )
   }
+  def cleanMemberDecl(owner: Symbol, member: Name): Type =
+    cleanTypeAfterTyper(owner.info nonPrivateDecl member)
 
   object exprTyper extends {
     val repl: IMain.this.type = imain
@@ -1044,45 +1062,70 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def typeOfExpression(expr: String, silent: Boolean = true): Type =
     exprTyper.typeOfExpression(expr, silent)
 
-  protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
-  protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
+  protected def onlyTerms(xs: List[Name]): List[TermName] = xs collect { case x: TermName => x }
+  protected def onlyTypes(xs: List[Name]): List[TypeName] = xs collect { case x: TypeName => x }
 
   def definedTerms      = onlyTerms(allDefinedNames) filterNot isInternalTermName
   def definedTypes      = onlyTypes(allDefinedNames)
-  def definedSymbols    = prevRequestList.flatMap(_.definedSymbols.values).toSet[Symbol]
-  def definedSymbolList = prevRequestList flatMap (_.definedSymbolList) filterNot (s => isInternalTermName(s.name))
+  def definedSymbols    = prevRequestList flatMap (_.defines) toSet
+  def definedSymbolList = prevRequestList flatMap (_.defines) filterNot (s => isInternalTermName(s.name))
 
   // Terms with user-given names (i.e. not res0 and not synthetic)
   def namedDefinedTerms = definedTerms filterNot (x => isUserVarName("" + x) || directlyBoundNames(x))
 
-  private def findName(name: Name) = definedSymbols find (_.name == name) getOrElse NoSymbol
-
   /** Translate a repl-defined identifier into a Symbol.
    */
-  def apply(name: String): Symbol =
-    types(name) orElse terms(name)
+  def apply(name: String): Symbol = types(name) orElse terms(name)
+  def types(name: String): Symbol = replScope lookup (name: TypeName) orElse getClassIfDefined(name)
+  def terms(name: String): Symbol = replScope lookup (name: TermName) orElse getModuleIfDefined(name)
 
-  def types(name: String): Symbol = {
-    val tpname = newTypeName(name)
-    findName(tpname) orElse getClassIfDefined(tpname)
+  def types[T: global.TypeTag] : Symbol = typeOf[T].typeSymbol
+  def terms[T: global.TypeTag] : Symbol = typeOf[T].termSymbol
+  def apply[T: global.TypeTag] : Symbol = typeOf[T].typeSymbol
+
+  lazy val DummyInfoSymbol = NoSymbol.newValue("replScopeDummy")
+  private lazy val DummyInfo = TypeRef(NoPrefix, DummyInfoSymbol, Nil)
+  private def enterDummySymbol(name: Name) = name match {
+    case x: TermName => replScope enter (NoSymbol.newValue(x) setInfo DummyInfo)
+    case x: TypeName => replScope enter (NoSymbol.newClass(x) setInfo DummyInfo)
   }
-  def terms(name: String): Symbol = {
-    val termname = newTypeName(name)
-    findName(termname) orElse getModuleIfDefined(termname)
+
+  private var _replScope: Scope = _
+  private def resetReplScope() {
+    _replScope = newScope
   }
-  // [Eugene to Paul] possibly you could make use of TypeTags here
-  def types[T: ClassTag] : Symbol = types(classTag[T].runtimeClass.getName)
-  def terms[T: ClassTag] : Symbol = terms(classTag[T].runtimeClass.getName)
-  def apply[T: ClassTag] : Symbol = apply(classTag[T].runtimeClass.getName)
+  def initReplScope() {
+    languageWildcardSyms foreach { clazz =>
+      importableMembers(clazz) foreach { sym =>
+        updateReplScope(sym, isDefined = false)
+      }
+    }
+  }
+  def replScope = {
+    if (_replScope eq null)
+      _replScope = newScope
 
-  def classSymbols  = allDefSymbols collect { case x: ClassSymbol => x }
-  def methodSymbols = allDefSymbols collect { case x: MethodSymbol => x }
+    _replScope
+  }
+  def lookupAll(name: String) = (replScope.lookupAll(name: TermName) ++ replScope.lookupAll(name: TypeName)).toList
+  def unlinkAll(name: String) = {
+    val syms = lookupAll(name)
+    syms foreach { sym =>
+      replScope unlink sym
+    }
+    enterDummySymbol(name: TermName)
+    enterDummySymbol(name: TypeName)
+    syms
+  }
+  def isUnlinked(name: Name) = {
+    symbolOfName(name) match {
+      case NoSymbol => false
+      case sym      => sym.info.typeSymbolDirect == DummyInfoSymbol
+    }
+  }
 
-  /** the previous requests this interpreter has processed */
   private var executingRequest: Request = _
   private val prevRequests       = mutable.ListBuffer[Request]()
-  private val referencedNameMap  = mutable.Map[Name, Request]()
-  private val definedNameMap     = mutable.Map[Name, Request]()
   private val directlyBoundNames = mutable.Set[Name]()
 
   def allHandlers    = prevRequestList flatMap (_.handlers)
@@ -1094,14 +1137,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def allSeenTypes        = prevRequestList flatMap (_.typeOf.values.toList) distinct
   def allImplicits        = allHandlers filter (_.definesImplicit) flatMap (_.definedNames)
   def importHandlers      = allHandlers collect { case x: ImportHandler => x }
-
-  def visibleTermNames: List[Name] = definedTerms ++ importedTerms distinct
-
-  /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds = visibleTermNames map (_.toString) filterNot (_ contains "$") sorted
-
-  /** Parse the ScalaSig to find type aliases */
-  def aliasForType(path: String) = ByteCode.aliasForType(path)
 
   def withoutUnwrapping(op: => Unit): Unit = {
     val saved = isettings.unwrapStrings

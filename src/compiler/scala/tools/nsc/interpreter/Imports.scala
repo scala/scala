@@ -12,7 +12,7 @@ trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
   def isNoImports = settings.noimports.value
@@ -104,7 +104,9 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name]): ComputedImports = {
+  protected def importsCode(wanted0: Set[Name]): ComputedImports = {
+    val wanted = wanted0 filterNot isUnlinked
+
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -146,44 +148,42 @@ trait Imports {
       code append "object %s {\n".format(impname)
       trailingBraces append "}\n"
       accessPath append ("." + impname)
-
-      currentImps.clear
+      currentImps.clear()
     }
-
-    addWrapper()
+    def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
+    def wrapBeforeAndAfter[T](op: => T): T = {
+      addWrapper()
+      try op finally addWrapper()
+    }
 
     // loop through previous requests, adding imports for each one
-    for (ReqAndHandler(req, handler) <- reqsToUse) {
-      handler match {
-        // If the user entered an import, then just use it; add an import wrapping
-        // level if the import might conflict with some other import
-        case x: ImportHandler =>
-          if (x.importsWildcard || currentImps.exists(x.importedNames contains _))
-            addWrapper()
+    wrapBeforeAndAfter {
+      for (ReqAndHandler(req, handler) <- reqsToUse) {
+        handler match {
+          // If the user entered an import, then just use it; add an import wrapping
+          // level if the import might conflict with some other import
+          case x: ImportHandler if x.importsWildcard =>
+            wrapBeforeAndAfter(code append (x.member + "\n"))
+          case x: ImportHandler =>
+            maybeWrap(x.importedNames: _*)
+            code append (x.member + "\n")
+            currentImps ++= x.importedNames
 
-          code append (x.member + "\n")
-
-          // give wildcard imports a import wrapper all to their own
-          if (x.importsWildcard) addWrapper()
-          else currentImps ++= x.importedNames
-
-        // For other requests, import each defined name.
-        // import them explicitly instead of with _, so that
-        // ambiguity errors will not be generated. Also, quote
-        // the name of the variable, so that we don't need to
-        // handle quoting keywords separately.
-        case x =>
-          for (imv <- x.definedNames) {
-            if (currentImps contains imv) addWrapper()
-
-            code append ("import " + (req fullPath imv) + "\n")
-            currentImps += imv
-          }
+          // For other requests, import each defined name.
+          // import them explicitly instead of with _, so that
+          // ambiguity errors will not be generated. Also, quote
+          // the name of the variable, so that we don't need to
+          // handle quoting keywords separately.
+          case x =>
+            for (sym <- x.definedSymbols) {
+              maybeWrap(sym.name)
+              code append s"import ${x.path}\n"
+              currentImps += sym.name
+            }
+        }
       }
     }
-    // add one extra wrapper, to prevent warnings in the common case of
-    // redefining the value bound in the last interpreter request.
-    addWrapper()
+
     ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
   }
 
