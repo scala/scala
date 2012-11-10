@@ -28,33 +28,33 @@ public class ASMTransformer implements ClassFileTransformer {
 	
 	public byte[] transform(final ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
 	  if (shouldTransform(className)) {
-  		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
-                        // this is copied verbatim from the superclass,
-                        // except that we use the outer class loader
-                        @Override protected String getCommonSuperClass(final String type1, final String type2) {
-                            Class<?> c, d;
-                            try {
-                                c = Class.forName(type1.replace('/', '.'), false, classLoader);
-                                d = Class.forName(type2.replace('/', '.'), false, classLoader);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e.toString());
-                            }
-                            if (c.isAssignableFrom(d)) {
-                                return type1;
-                            }
-                            if (d.isAssignableFrom(c)) {
-                                return type2;
-                            }
-                            if (c.isInterface() || d.isInterface()) {
-                                return "java/lang/Object";
-                            } else {
-                                do {
-                                    c = c.getSuperclass();
-                                } while (!c.isAssignableFrom(d));
-                                return c.getName().replace('.', '/');
-                            }
-                        }
-                    };
+	    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
+	      // this is copied verbatim from the superclass,
+	      // except that we use the outer class loader
+	      @Override protected String getCommonSuperClass(final String type1, final String type2) {
+	        Class<?> c, d;
+	        try {
+	          c = Class.forName(type1.replace('/', '.'), false, classLoader);
+	          d = Class.forName(type2.replace('/', '.'), false, classLoader);
+	        } catch (Exception e) {
+	          throw new RuntimeException(e.toString());
+	        }
+	        if (c.isAssignableFrom(d)) {
+	          return type1;
+	        }
+	        if (d.isAssignableFrom(c)) {
+	          return type2;
+	        }
+	        if (c.isInterface() || d.isInterface()) {
+	          return "java/lang/Object";
+	        } else {
+	          do {
+	            c = c.getSuperclass();
+	          } while (!c.isAssignableFrom(d));
+	          return c.getName().replace('.', '/');
+	        }
+	      }
+	    };
   		ProfilerVisitor visitor = new ProfilerVisitor(writer);
   		ClassReader reader = new ClassReader(classfileBuffer);
   		reader.accept(visitor, 0);
