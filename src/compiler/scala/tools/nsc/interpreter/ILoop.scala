@@ -9,6 +9,7 @@ package interpreter
 import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader }
 import session._
+import scala.annotation.tailrec
 import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
 import scala.tools.util.{ Javap }
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
