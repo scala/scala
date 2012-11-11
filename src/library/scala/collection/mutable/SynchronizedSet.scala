@@ -24,8 +24,6 @@ import script._
  *  @define coll synchronized set
  */
 trait SynchronizedSet[A] extends Set[A] {
-  import scala.collection.Traversable
-
   abstract override def size: Int = synchronized {
     super.size
   }

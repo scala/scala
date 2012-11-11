@@ -386,9 +386,6 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
  *  @define Coll `List`
  */
 object List extends SeqFactory[List] {
-
-  import scala.collection.{Iterable, Seq, IndexedSeq}
-
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

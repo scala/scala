@@ -21,7 +21,7 @@ import scala.util.regexp.WordExp
 abstract class WordBerrySethi extends BaseBerrySethi {
   override val lang: WordExp
 
-  import lang.{ Alt, Eps, Letter, Meta, RegExp, Sequ, Star, _labelT }
+  import lang.{ Alt, Eps, Letter, RegExp, Sequ, Star, _labelT }
 
   protected var labels: mutable.HashSet[_labelT]                   = _
   // don't let this fool you, only labelAt is a real, surjective mapping

@@ -6,11 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
-import generic._
 
 /** A common supertrait of `ArrayOps` and `WrappedArray` that factors out most
  *  operations on arrays and wrapped arrays.

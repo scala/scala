@@ -6,11 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
-
-import generic._
 
 /** A default map which implements the `+` and `-` methods of maps.
  *
@@ -27,7 +23,7 @@ import generic._
  *  @since 2.8
  */
 trait DefaultMap[A, +B] extends Map[A, B] { self =>
-  
+
   /** A default implementation which creates a new immutable map.
    */
   override def +[B1 >: B](kv: (A, B1)): Map[A, B1] = {
