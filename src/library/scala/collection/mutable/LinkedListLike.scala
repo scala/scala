@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
-import generic._
 import scala.annotation.tailrec
 
 /** This extensible class may be used as a basis for implementing linked

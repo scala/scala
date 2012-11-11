@@ -25,8 +25,6 @@ package mutable
  *  @define coll synchronized queue
  */
 class SynchronizedQueue[A] extends Queue[A] {
-  import scala.collection.Traversable
-
   /** Checks if the queue is empty.
    *
    *  @return true, iff there is no element in the queue.

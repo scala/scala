@@ -12,12 +12,9 @@ package mutable
 
 
 import scala.collection.generic._
-import scala.collection.mutable.Builder
 import scala.collection.mutable.Cloneable
 import scala.collection.generic.Growable
 import scala.collection.generic.Shrinkable
-
-
 
 /** A template trait for mutable parallel maps. This trait is to be mixed in
  *  with concrete parallel maps to override the representation type.

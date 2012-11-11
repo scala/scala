@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package immutable
 
 import mutable.{ Builder, ListBuffer }
-import generic._
 
 /** `NumericRange` is a more generic version of the
  *  `Range` class which works with arbitrary types.
@@ -176,7 +174,6 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
     catch { case _: ClassCastException => false }
 
   final override def sum[B >: T](implicit num: Numeric[B]): B = {
-    import num.Ops
     if (isEmpty) this.num fromInt 0
     else if (numRangeElements == 1) head
     else ((this.num fromInt numRangeElements) * (head + last) / (this.num fromInt 2))

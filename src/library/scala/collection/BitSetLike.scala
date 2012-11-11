@@ -11,7 +11,6 @@
 package scala.collection
 
 import BitSetLike._
-import generic._
 import mutable.StringBuilder
 
 /** A template trait for bitsets.

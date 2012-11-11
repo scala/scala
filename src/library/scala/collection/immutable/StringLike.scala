@@ -9,7 +9,6 @@
 package scala.collection
 package immutable
 
-import generic._
 import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber

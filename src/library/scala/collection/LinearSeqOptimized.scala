@@ -8,10 +8,8 @@
 
 package scala.collection
 
-import generic._
 import mutable.ListBuffer
 import immutable.List
-import scala.util.control.Breaks._
 
 /** A template trait for linear sequences of type `LinearSeq[A]`  which optimizes
  *  the implementation of several methods under the assumption of fast linear access.
@@ -91,7 +89,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     false
   }
-  
+
   override /*IterableLike*/
   def find(p: A => Boolean): Option[A] = {
     var these = this
@@ -112,7 +110,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     acc
   }
-  
+
   override /*IterableLike*/
   def foldRight[B](z: B)(f: (A, B) => B): B =
     if (this.isEmpty) z

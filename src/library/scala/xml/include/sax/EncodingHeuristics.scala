@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package include.sax
-import scala.xml.include._
 
 import java.io.InputStream
 import scala.util.matching.Regex

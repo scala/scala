@@ -8,13 +8,6 @@
 
 package scala.collection
 
-
-
-import generic._
-import TraversableView.NoBuilder
-
-
-
 trait GenIterableViewLike[+A,
                           +Coll,
                           +This <: GenIterableView[A, Coll] with GenIterableViewLike[A, Coll, This]]
