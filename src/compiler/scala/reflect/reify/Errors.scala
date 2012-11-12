@@ -28,7 +28,7 @@ trait Errors {
   }
 
   def CannotReifyWeakType(details: Any) = {
-    val msg = "cannot create a TypeTag" + details
+    val msg = "cannot create a TypeTag" + details + ": use WeakTypeTag instead"
     throw new ReificationException(defaultErrorPosition, msg)
   }
 
