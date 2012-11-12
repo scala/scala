@@ -20,18 +20,23 @@ import scala.tools.nsc.io.Pickler._
 import scala.tools.nsc.typechecker.DivergentImplicit
 import scala.annotation.tailrec
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
+import scala.annotation.elidable
 import scala.language.implicitConversions
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
-  extends scala.tools.nsc.Global(settings, _reporter)
-     with CompilerControl
-     with RangePositions
-     with ContextTrees
-     with RichCompilationUnits
-     with ScratchPadMaker
-     with Picklers {
+class Global(settings: Settings, _reporter: Reporter, projectName: String = "")  extends {
+  /* Is the compiler initializing? Early def, so that the field is true during the
+   *  execution of the super constructor.
+   */
+  private var initializing = true
+} with scala.tools.nsc.Global(settings, _reporter)
+  with CompilerControl
+  with RangePositions
+  with ContextTrees
+  with RichCompilationUnits
+  with ScratchPadMaker
+  with Picklers {
 
   import definitions._
 
@@ -51,6 +56,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
   import log.logreplay
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
   debugLog("classpath: "+classPath)
+  Console.err.println("\n ======= CHECK THREAD ACCESS compiler build ========\n")
 
   private var curTime = System.nanoTime
   private def timeStep = {
@@ -433,7 +439,18 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
   private var threadId = 0
 
   /** The current presentation compiler runner */
-  @volatile private[interactive] var compileRunner = newRunnerThread()
+  @volatile private[interactive] var compileRunner: Thread = newRunnerThread()
+
+  /** Check that the currenyly executing thread is the presentation compiler thread.
+   *
+   *  Compiler initialization may happen on a different thread (signalled by globalPhase being NoPhase)
+   */
+  @elidable(elidable.WARNING)
+  override def assertCorrectThread() {
+    assert(initializing || (Thread.currentThread() eq compileRunner),
+        "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
+        " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
+  }
 
   /** Create a new presentation compiler runner.
    */
@@ -1110,6 +1127,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
         alt
     }
   }
+
+  /** The compiler has been initialized. Constructors are evaluated in textual order,
+   *  so this is set to true only after all super constructors and the primary constructor
+   *  have been executed.
+   */
+  initializing = false
 }
 
 object CancelException extends Exception
