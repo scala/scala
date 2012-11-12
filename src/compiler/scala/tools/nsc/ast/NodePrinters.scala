@@ -102,7 +102,7 @@ abstract class NodePrinters {
       buf.clear()
       if (settings.XshowtreesStringified.value) buf.append(tree.toString + EOL)
       if (settings.XshowtreesCompact.value) {
-        buf.append(showRaw(tree))
+        buf.append(showRaw(tree, printIds = settings.uniqid.value, printTypes = settings.printtypes.value))
       } else {
         level = 0
         traverse(tree)
