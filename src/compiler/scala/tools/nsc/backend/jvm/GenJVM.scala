@@ -182,15 +182,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val StringBuilderType = new JObjectType(StringBuilderClassName)               // TODO use ASMType.getObjectType
     val toStringType      = new JMethodType(JAVA_LANG_STRING, JType.EMPTY_ARRAY)  // TODO use ASMType.getMethodType
     val arrayCloneType    = new JMethodType(JAVA_LANG_OBJECT, JType.EMPTY_ARRAY)
-    val MethodTypeType    = new JObjectType("java.dyn.MethodType")
-    val JavaLangClassType = new JObjectType("java.lang.Class")
-    val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
     val BeanInfoAttr        = rootMirror.getRequiredClass("scala.beans.BeanInfo")
-    val BeanInfoSkipAttr    = rootMirror.getRequiredClass("scala.beans.BeanInfoSkip")
-    val BeanDisplayNameAttr = rootMirror.getRequiredClass("scala.beans.BeanDisplayName")
-    val BeanDescriptionAttr = rootMirror.getRequiredClass("scala.beans.BeanDescription")
 
     final val ExcludedForwarderFlags = {
       import Flags._
@@ -254,7 +248,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     var method: IMethod = _
     var jclass: JClass = _
     var jmethod: JMethod = _
-    // var jcode: JExtendedCode = _
 
     def isParcelableClass = isAndroidParcelableClass(clasz.symbol)
     def isRemoteClass = clasz.symbol hasAnnotation RemoteAttr
@@ -263,9 +256,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     val fjbgContext = new FJBGContext(49, 0)
-
-    val emitSource = debugLevel >= 1
-    val emitLines  = debugLevel >= 2
     val emitVars   = debugLevel >= 3
 
     // bug had phase with wrong name; leaving enabled for brief pseudo deprecation
@@ -1835,14 +1825,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     ////////////////////// local vars ///////////////////////
 
-    def sizeOf(sym: Symbol): Int = sizeOf(toTypeKind(sym.tpe))
-
     def sizeOf(k: TypeKind): Int = if(k.isWideType) 2 else 1
-
-    def indexOf(m: IMethod, sym: Symbol): Int = {
-      val Some(local) = m lookupLocal sym
-      indexOf(local)
-    }
 
     def indexOf(local: Local): Int = {
       assert(local.index >= 0, "Invalid index for: " + local + "{" + local.## + "}: ")

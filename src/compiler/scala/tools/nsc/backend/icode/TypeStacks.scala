@@ -20,8 +20,6 @@ trait TypeStacks {
    */
   type Rep = List[TypeKind]
 
-  object NoTypeStack extends TypeStack(Nil) { }
-
   class TypeStack(var types: Rep) {
     if (types.nonEmpty)
       checkerDebug("Created " + this)
@@ -68,14 +66,6 @@ trait TypeStacks {
     }
 
     def apply(n: Int): TypeKind = types(n)
-
-    /**
-     * A TypeStack agrees with another one if they have the same
-     * length and each type kind agrees position-wise. Two
-     * types agree if one is a subtype of the other.
-     */
-    def agreesWith(other: TypeStack): Boolean =
-      (types corresponds other.types)((t1, t2) => t1 <:< t2 || t2 <:< t1)
 
     /* This method returns a String representation of the stack */
     override def toString() =
