@@ -26,7 +26,7 @@ trait Reference extends Spec {
   def isUnaryOption(s: String)  = unary contains toOpt(s)
   def isBinaryOption(s: String) = binary contains toOpt(s)
   def isExpandOption(s: String) = expansionMap contains toOpt(s)
-  // def isAnyOption(s: String)    = isUnaryOption(s) || isBinaryOption(s) || isExpandOption(s)
+  def isAnyOption(s: String)    = isUnaryOption(s) || isBinaryOption(s) || isExpandOption(s)
 
   def expandArg(arg: String)      = expansionMap.getOrElse(fromOpt(arg), List(arg))
 

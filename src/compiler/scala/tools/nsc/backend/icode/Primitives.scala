@@ -84,17 +84,17 @@ trait Primitives { self: ICodes =>
 
     def print(o: AnyRef): PrimitivePrinter = print(o.toString())
 
-    // def printPrimitive(prim: Primitive) = prim match {
-    //   case Negation(kind) =>
-    //     print("!")
+    def printPrimitive(prim: Primitive) = prim match {
+      case Negation(kind) =>
+        print("!")
 
-    //   case Test(op, kind, zero) =>
-    //     print(op).print(kind)
+      case Test(op, kind, zero) =>
+        print(op).print(kind)
 
-    //   case Comparison(op, kind) =>
-    //     print(op).print("(").print(kind)
+      case Comparison(op, kind) =>
+        print(op).print("(").print(kind)
 
-    // }
+    }
   }
 
   /** This class represents a comparison operation. */

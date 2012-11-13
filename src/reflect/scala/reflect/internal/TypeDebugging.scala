@@ -9,6 +9,8 @@ package internal
 trait TypeDebugging {
   self: SymbolTable =>
 
+  import definitions._
+
   // @M toString that is safe during debugging (does not normalize, ...)
   object typeDebug {
     private def to_s(x: Any): String = x match {
@@ -18,7 +20,7 @@ trait TypeDebugging {
       case x: Product            => x.productIterator mkString ("(", ", ", ")")
       case _                     => "" + x
     }
-    // def ptIndent(x: Any) = ("" + x).replaceAll("\\n", "  ")
+    def ptIndent(x: Any) = ("" + x).replaceAll("\\n", "  ")
     def ptBlock(label: String, pairs: (String, Any)*): String = {
       if (pairs.isEmpty) label + "{ }"
       else {

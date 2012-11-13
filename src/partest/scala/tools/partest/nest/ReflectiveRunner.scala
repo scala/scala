@@ -3,6 +3,8 @@
  * @author Philipp Haller
  */
 
+// $Id$
+
 package scala.tools.partest
 package nest
 
@@ -10,6 +12,7 @@ import scala.tools.nsc.Properties.{ setProp, propOrEmpty }
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io
 import io.Path
+import RunnerUtils._
 import java.net.URLClassLoader
 
 /* This class is used to load an instance of DirectRunner using
@@ -24,12 +27,6 @@ class ReflectiveRunner {
   // to use the same classes as used by `scala` that
   // was used to start the runner.
   val sepRunnerClassName = "scala.tools.partest.nest.ConsoleRunner"
-
-  private def searchPath(option: String, as: List[String]): Option[String] = as match {
-    case `option` :: r :: _ => Some(r)
-    case _ :: rest          => searchPath(option, rest)
-    case Nil                => None
-  }
 
   def main(args: String) {
     val argList = (args.split("\\s")).toList

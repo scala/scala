@@ -27,10 +27,10 @@ abstract class CopyPropagation {
 
   /** Values that can be on the stack. */
   abstract class Value {
-    // def isRecord = false
+    def isRecord = false
   }
   case class Record(cls: Symbol, bindings: mutable.Map[Symbol, Value]) extends Value {
-    // override def isRecord = true
+    override def isRecord = true
   }
   /** The value of some location in memory. */
   case class Deref(l: Location) extends Value
@@ -92,14 +92,14 @@ abstract class CopyPropagation {
       }
 
       /* Return the binding for the given field of the given record */
-      // def getBinding(r: Record, f: Symbol): Value = {
-      //   assert(r.bindings contains f, "Record " + r + " does not contain a field " + f)
+      def getBinding(r: Record, f: Symbol): Value = {
+        assert(r.bindings contains f, "Record " + r + " does not contain a field " + f)
 
-      //   r.bindings(f) match {
-      //     case Deref(LocalVar(l)) => getBinding(l)
-      //     case target             => target
-      //   }
-      // }
+        r.bindings(f) match {
+          case Deref(LocalVar(l)) => getBinding(l)
+          case target             => target
+        }
+      }
 
       /** Return a local which contains the same value as this field, if any.
        * If the field holds a reference to a local, the returned value is the

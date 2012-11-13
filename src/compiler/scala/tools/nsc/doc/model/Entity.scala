@@ -25,7 +25,7 @@ import diagram._
 trait Entity {
 
   /** Similar to symbols, so we can track entities */
-  // def id: Int
+  def id: Int
 
   /** The name of the entity. Note that the name does not qualify this entity uniquely; use its `qualifiedName`
     * instead. */
@@ -61,7 +61,7 @@ trait Entity {
   def isType: Boolean
 
   /** Indicates whether this entity lives in the terms namespace (objects, packages, methods, values) */
-  // def isTerm: Boolean
+  def isTerm: Boolean
 }
 
 object Entity {
@@ -98,7 +98,7 @@ trait TemplateEntity extends Entity {
   def isDocTemplate: Boolean
 
   /** Whether documentation is available for this template. */
-  // def isNoDocMemberTemplate: Boolean
+  def isNoDocMemberTemplate: Boolean
 
   /** Whether this template is a case class. */
   def isCaseClass: Boolean
@@ -175,10 +175,10 @@ trait MemberEntity extends Entity {
   def isAbstractType: Boolean
 
   /** Whether this member is a template. */
-  // def isTemplate: Boolean
+  def isTemplate: Boolean
 
   /** Whether this member is implicit.  */
-  // def isImplicit: Boolean
+  def isImplicit: Boolean
 
   /** Whether this member is abstract. */
   def isAbstract: Boolean
@@ -388,7 +388,7 @@ trait NonTemplateMemberEntity extends MemberEntity {
 
   /** Whether this member is a bridge member. A bridge member does only exist for binary compatibility reasons
     * and should not appear in ScalaDoc. */
-  // def isBridge: Boolean
+  def isBridge: Boolean
 }
 
 
@@ -507,7 +507,7 @@ trait ImplicitConversion {
    *  Note: not all targetTypes have a corresponding template. Examples include conversions resulting in refinement
    *  types. Need to check it's not option!
    */
-  // def targetTemplate: Option[TemplateEntity]
+  def targetTemplate: Option[TemplateEntity]
 
   /** The components of the implicit conversion type parents */
   def targetTypeComponents: List[(TemplateEntity, TypeEntity)]

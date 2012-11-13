@@ -11,6 +11,7 @@ abstract class TreeBuilder {
   val global: Universe
 
   import global._
+  import definitions._
 
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it

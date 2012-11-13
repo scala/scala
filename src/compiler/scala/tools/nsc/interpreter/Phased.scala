@@ -24,7 +24,7 @@ trait Phased {
     case NoPhaseName  => false
     case name         => active = name ; true
   }
-  // def getMulti = multi
+  def getMulti = multi
   def setMulti(phases: Seq[PhaseName]): Boolean = {
     if (phases contains NoPhaseName) false
     else {
@@ -66,16 +66,16 @@ trait Phased {
     try parseInternal(str)
     catch { case _: Exception => NoPhaseName }
 
-  // def apply[T](body: => T) = immutable.SortedMap[PhaseName, T](atMap(PhaseName.all)(body): _*)
+  def apply[T](body: => T) = immutable.SortedMap[PhaseName, T](atMap(PhaseName.all)(body): _*)
 
   def atCurrent[T](body: => T): T = enteringPhase(get)(body)
   def multi[T](body: => T): Seq[T] = multi map (ph => at(ph)(body))
-  // def all[T](body: => T): Seq[T] = atMulti(PhaseName.all)(body)
-  // def show[T](body: => T): Seq[T] = {
-  //   val pairs = atMap(PhaseName.all)(body)
-  //   pairs foreach { case (ph, op) => Console.println("%15s -> %s".format(ph, op.toString take 240)) }
-  //   pairs map (_._2)
-  // }
+  def all[T](body: => T): Seq[T] = atMulti(PhaseName.all)(body)
+  def show[T](body: => T): Seq[T] = {
+    val pairs = atMap(PhaseName.all)(body)
+    pairs foreach { case (ph, op) => Console.println("%15s -> %s".format(ph, op.toString take 240)) }
+    pairs map (_._2)
+  }
 
   def at[T](ph: PhaseName)(body: => T): T = {
     val saved = get
@@ -90,10 +90,10 @@ trait Phased {
     finally setMulti(saved)
   }
 
-  // def showAt[T](phs: Seq[PhaseName])(body: => T): Unit =
-  //   atMap[T](phs)(body) foreach {
-  //     case (ph, op) => Console.println("%15s -> %s".format(ph, op.toString take 240))
-  //   }
+  def showAt[T](phs: Seq[PhaseName])(body: => T): Unit =
+    atMap[T](phs)(body) foreach {
+      case (ph, op) => Console.println("%15s -> %s".format(ph, op.toString take 240))
+    }
 
   def atMap[T](phs: Seq[PhaseName])(body: => T): Seq[(PhaseName, T)] =
     phs zip atMulti(phs)(body)
@@ -112,7 +112,7 @@ trait Phased {
 
     def apply(id: Int): PhaseName = all find (_.id == id) getOrElse NoPhaseName
     implicit def apply(s: String): PhaseName = nameMap(s)
-    // implicit def defaultPhaseName: PhaseName = active
+    implicit def defaultPhaseName: PhaseName = active
   }
   sealed abstract class PhaseName {
     lazy val id   = phase.id
@@ -121,7 +121,7 @@ trait Phased {
     def isEmpty   = this eq NoPhaseName
 
     // Execute some code during this phase.
-    // def apply[T](body: => T): T = enteringPhase(phase)(body)
+    def apply[T](body: => T): T = enteringPhase(phase)(body)
   }
 
   case object Parser extends PhaseName
@@ -158,5 +158,5 @@ trait Phased {
   }
 
   implicit def phaseEnumToPhase(name: PhaseName): Phase = name.phase
-  // implicit def phaseNameToPhase(name: String): Phase = currentRun.phaseNamed(name)
+  implicit def phaseNameToPhase(name: String): Phase = currentRun.phaseNamed(name)
 }

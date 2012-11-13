@@ -19,13 +19,13 @@ class ProcessResult(val line: String) {
   val exitCode = builder ! logger
   def lines    = buffer.toList
 
-  // def show() = lines foreach println
+  def show() = lines foreach println
   override def toString = "`%s` (%d lines, exit %d)".format(line, buffer.size, exitCode)
 }
-// object ProcessResult {
-//   implicit def processResultToOutputLines(pr: ProcessResult): List[String] = pr.lines
-//   def apply(line: String): ProcessResult = new ProcessResult(line)
-// }
+object ProcessResult {
+  implicit def processResultToOutputLines(pr: ProcessResult): List[String] = pr.lines
+  def apply(line: String): ProcessResult = new ProcessResult(line)
+}
 
 trait LoopCommands {
   protected def out: JPrintWriter
@@ -35,14 +35,14 @@ trait LoopCommands {
 
   // a single interpreter command
   abstract class LoopCommand(val name: String, val help: String) extends (String => Result) {
-    // private var _longHelp: String = null
-    // final def defaultHelp = usageMsg + " (no extended help available.)"
-    // def hasLongHelp = _longHelp != null || longHelp != defaultHelp
-    // def withLongHelp(text: String): this.type = { _longHelp = text ; this }
-    // def longHelp = _longHelp match {
-    //   case null   => defaultHelp
-    //   case text   => text
-    // }
+    private var _longHelp: String = null
+    final def defaultHelp = usageMsg + " (no extended help available.)"
+    def hasLongHelp = _longHelp != null || longHelp != defaultHelp
+    def withLongHelp(text: String): this.type = { _longHelp = text ; this }
+    def longHelp = _longHelp match {
+      case null   => defaultHelp
+      case text   => text
+    }
     def usage: String = ""
     def usageMsg: String = ":" + name + (
       if (usage == "") "" else " " + usage
@@ -55,10 +55,10 @@ trait LoopCommands {
       Result(true, None)
     }
 
-    // def onError(msg: String) = {
-    //   out.println("error: " + msg)
-    //   showUsage()
-    // }
+    def onError(msg: String) = {
+      out.println("error: " + msg)
+      showUsage()
+    }
   }
   object LoopCommand {
     def nullary(name: String, help: String, f: () => Result): LoopCommand =
@@ -68,8 +68,8 @@ trait LoopCommands {
       if (usage == "") new NullaryCmd(name, help, f)
       else new LineCmd(name, usage, help, f)
 
-    // def varargs(name: String, usage: String, help: String, f: List[String] => Result): LoopCommand =
-    //   new VarArgsCmd(name, usage, help, f)
+    def varargs(name: String, usage: String, help: String, f: List[String] => Result): LoopCommand =
+      new VarArgsCmd(name, usage, help, f)
   }
 
   class NullaryCmd(name: String, help: String, f: String => Result) extends LoopCommand(name, help) {

@@ -21,5 +21,5 @@ object Properties extends scala.util.PropertiesTrait {
 
   // derived values
   def isEmacsShell         = propOrEmpty("env.emacs") != ""
-  // def fileEndings          = fileEndingString.split("""\|""").toList
+  def fileEndings          = fileEndingString.split("""\|""").toList
 }

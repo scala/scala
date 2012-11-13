@@ -389,40 +389,40 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     if (typerRun != currentTyperRun) demandNewCompilerRun()
   }
 
-  // def debugInfo(source : SourceFile, start : Int, length : Int): String = {
-  //   println("DEBUG INFO "+source+"/"+start+"/"+length)
-  //   val end = start+length
-  //   val pos = rangePos(source, start, start, end)
+  def debugInfo(source : SourceFile, start : Int, length : Int): String = {
+    println("DEBUG INFO "+source+"/"+start+"/"+length)
+    val end = start+length
+    val pos = rangePos(source, start, start, end)
 
-  //   val tree = locateTree(pos)
-  //   val sw = new StringWriter
-  //   val pw = new PrintWriter(sw)
-  //   newTreePrinter(pw).print(tree)
-  //   pw.flush
+    val tree = locateTree(pos)
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    newTreePrinter(pw).print(tree)
+    pw.flush
 
-  //   val typed = new Response[Tree]
-  //   askTypeAt(pos, typed)
-  //   val typ = typed.get.left.toOption match {
-  //     case Some(tree) =>
-  //       val sw = new StringWriter
-  //       val pw = new PrintWriter(sw)
-  //       newTreePrinter(pw).print(tree)
-  //       pw.flush
-  //       sw.toString
-  //     case None => "<None>"
-  //   }
+    val typed = new Response[Tree]
+    askTypeAt(pos, typed)
+    val typ = typed.get.left.toOption match {
+      case Some(tree) =>
+        val sw = new StringWriter
+        val pw = new PrintWriter(sw)
+        newTreePrinter(pw).print(tree)
+        pw.flush
+        sw.toString
+      case None => "<None>"
+    }
 
-  //   val completionResponse = new Response[List[Member]]
-  //   askTypeCompletion(pos, completionResponse)
-  //   val completion = completionResponse.get.left.toOption match {
-  //     case Some(members) =>
-  //       members mkString "\n"
-  //     case None => "<None>"
-  //   }
+    val completionResponse = new Response[List[Member]]
+    askTypeCompletion(pos, completionResponse)
+    val completion = completionResponse.get.left.toOption match {
+      case Some(members) =>
+        members mkString "\n"
+      case None => "<None>"
+    }
 
-  //   source.content.view.drop(start).take(length).mkString+" : "+source.path+" ("+start+", "+end+
-  //   ")\n\nlocateTree:\n"+sw.toString+"\n\naskTypeAt:\n"+typ+"\n\ncompletion:\n"+completion
-  // }
+    source.content.view.drop(start).take(length).mkString+" : "+source.path+" ("+start+", "+end+
+    ")\n\nlocateTree:\n"+sw.toString+"\n\naskTypeAt:\n"+typ+"\n\ncompletion:\n"+completion
+  }
 
   // ----------------- The Background Runner Thread -----------------------
 

@@ -51,11 +51,11 @@ trait Unapplies extends ast.TreeDSL
    *  for n == 1, Some[T0]
    *  else Some[Product[Ti]]
    */
-  // def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
-  //   case 0 => BooleanClass.tpe
-  //   case 1 => optionType(WildcardType)
-  //   case n => optionType(productType((List fill n)(WildcardType)))
-  // }
+  def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
+    case 0 => BooleanClass.tpe
+    case 1 => optionType(WildcardType)
+    case n => optionType(productType((List fill n)(WildcardType)))
+  }
 
   /** returns unapply or unapplySeq if available */
   def unapplyMember(tp: Type): Symbol = (tp member nme.unapply) match {

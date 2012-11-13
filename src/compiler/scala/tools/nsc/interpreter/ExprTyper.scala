@@ -17,8 +17,7 @@ trait ExprTyper {
   import syntaxAnalyzer.UnitParser
   import naming.freshInternalVarName
 
-  object codeParser {
-    val global: repl.global.type = repl.global
+  object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {
     def applyRule[T](code: String, rule: UnitParser => T): T = {
       reporter.reset()
       val scanner = newUnitParser(code)
@@ -30,10 +29,10 @@ trait ExprTyper {
       result
     }
 
-    // def defns(code: String) = stmts(code) collect { case x: DefTree => x }
-    // def expr(code: String)  = applyRule(code, _.expr())
+    def defns(code: String) = stmts(code) collect { case x: DefTree => x }
+    def expr(code: String)  = applyRule(code, _.expr())
     def stmts(code: String) = applyRule(code, _.templateStats())
-    // def stmt(code: String)  = stmts(code).last  // guaranteed nonempty
+    def stmt(code: String)  = stmts(code).last  // guaranteed nonempty
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */

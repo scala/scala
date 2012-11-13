@@ -35,7 +35,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
 
-    // protected def posToReport: Int = in.currentPos
+    protected def posToReport: Int = in.currentPos
     def freshName(prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
     private implicit def p2i(pos : Position): Int = if (pos.isDefined) pos.point else -1
@@ -94,11 +94,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       if (skipIt)
         skip()
     }
-    // def warning(msg: String) : Unit = warning(in.currentPos, msg)
+    def warning(msg: String) : Unit = warning(in.currentPos, msg)
 
     def errorTypeTree = TypeTree().setType(ErrorType) setPos in.currentPos
-    // def errorTermTree = Literal(Constant(null)) setPos in.currentPos
-    // def errorPatternTree = blankExpr setPos in.currentPos
+    def errorTermTree = Literal(Constant(null)) setPos in.currentPos
+    def errorPatternTree = blankExpr setPos in.currentPos
 
     // --------- tree building -----------------------------
 

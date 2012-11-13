@@ -15,8 +15,8 @@ trait Imports {
   import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
-  // def isNoImports = settings.noimports.value
-  // def isNoPredef  = settings.nopredef.value
+  def isNoImports = settings.noimports.value
+  def isNoPredef  = settings.nopredef.value
 
   /** Synthetic import handlers for the language defined imports. */
   private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
@@ -31,12 +31,12 @@ trait Imports {
 
   /** Symbols whose contents are language-defined to be imported. */
   def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
-  // def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
+  def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
   def allImportedNames = importHandlers flatMap (_.importedNames)
-  // def importedTerms    = onlyTerms(allImportedNames)
-  // def importedTypes    = onlyTypes(allImportedNames)
+  def importedTerms    = onlyTerms(allImportedNames)
+  def importedTypes    = onlyTypes(allImportedNames)
 
   /** Types which have been wildcard imported, such as:
    *    val x = "abc" ; import x._  // type java.lang.String
@@ -52,17 +52,17 @@ trait Imports {
   def sessionWildcards: List[Type] = {
     importHandlers filter (_.importsWildcard) map (_.targetType) distinct
   }
-  // def wildcardTypes = languageWildcards ++ sessionWildcards
+  def wildcardTypes = languageWildcards ++ sessionWildcards
 
   def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
   def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
   def importedSymbols        = languageSymbols ++ sessionImportedSymbols
   def importedTermSymbols    = importedSymbols collect { case x: TermSymbol => x }
-  // def importedTypeSymbols    = importedSymbols collect { case x: TypeSymbol => x }
-  // def implicitSymbols        = importedSymbols filter (_.isImplicit)
+  def importedTypeSymbols    = importedSymbols collect { case x: TypeSymbol => x }
+  def implicitSymbols        = importedSymbols filter (_.isImplicit)
 
-  // def importedTermNamed(name: String): Symbol =
-  //   importedTermSymbols find (_.name.toString == name) getOrElse NoSymbol
+  def importedTermNamed(name: String): Symbol =
+    importedTermSymbols find (_.name.toString == name) getOrElse NoSymbol
 
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
@@ -105,7 +105,7 @@ trait Imports {
    */
   case class ComputedImports(prepend: String, append: String, access: String)
   protected def importsCode(wanted0: Set[Name]): ComputedImports = {
-    val wanted = wanted0 // filterNot isUnlinked
+    val wanted = wanted0 filterNot isUnlinked
 
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute

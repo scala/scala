@@ -22,6 +22,7 @@ import internal.Flags._
 import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
+import scala.reflect.internal.util.Collections._
 
 private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
 
@@ -840,13 +841,13 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      *  @return A Scala field object that corresponds to `jfield`.
      *  // ??? should we return the getter instead?
      */
-    // def fieldToScala(jfield: jField): TermSymbol =
-    //   toScala(fieldCache, jfield)(_ fieldToScala1 _)
+    def fieldToScala(jfield: jField): TermSymbol =
+      toScala(fieldCache, jfield)(_ fieldToScala1 _)
 
-    // private def fieldToScala1(jfield: jField): TermSymbol = {
-    //   val owner = followStatic(classToScala(jfield.getDeclaringClass), jfield.getModifiers)
-    //   (lookup(owner, jfield.getName) suchThat (!_.isMethod) orElse jfieldAsScala(jfield)).asTerm
-    // }
+    private def fieldToScala1(jfield: jField): TermSymbol = {
+      val owner = followStatic(classToScala(jfield.getDeclaringClass), jfield.getModifiers)
+      (lookup(owner, jfield.getName) suchThat (!_.isMethod) orElse jfieldAsScala(jfield)).asTerm
+    }
 
     /**
      * The Scala package corresponding to given Java package
@@ -1114,9 +1115,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     /** Optionally, the Java package corresponding to a given Scala package, or None if no such Java package exists.
      *  @param   pkg The Scala package
      */
-    // def packageToJavaOption(pkg: ModuleSymbol): Option[jPackage] = packageCache.toJavaOption(pkg) {
-    //   Option(jPackage.getPackage(pkg.fullName.toString))
-    // }
+    def packageToJavaOption(pkg: ModuleSymbol): Option[jPackage] = packageCache.toJavaOption(pkg) {
+      Option(jPackage.getPackage(pkg.fullName.toString))
+    }
 
     /** The Java class corresponding to given Scala class.
      *  Note: This only works for

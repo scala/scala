@@ -52,5 +52,5 @@ trait StandardScalaSettings {
   /** These are @<file> and -Dkey=val style settings, which don't
    *  nicely map to identifiers.
    */
-  // val argfiles: BooleanSetting  // exists only to echo help message, should be done differently
+  val argfiles: BooleanSetting  // exists only to echo help message, should be done differently
 }

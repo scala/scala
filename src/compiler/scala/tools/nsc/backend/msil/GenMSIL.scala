@@ -23,7 +23,7 @@ abstract class GenMSIL extends SubComponent {
   import icodes._
   import icodes.opcodes._
 
-  // val x = loaders
+  val x = loaders
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new MsilPhase(p)
@@ -83,9 +83,9 @@ abstract class GenMSIL extends SubComponent {
                    SYMTAB_DEFAULT_CONSTR => SYMTAB_ATTRIBUTE_EMPTY_CONSTRUCTOR}
 
     val EXCEPTION = clrTypes.getType("System.Exception")
-    // val MBYTE_ARRAY = clrTypes.mkArrayType(MBYTE)
+    val MBYTE_ARRAY = clrTypes.mkArrayType(MBYTE)
 
-    // val ICLONEABLE = clrTypes.getType("System.ICloneable")
+    val ICLONEABLE = clrTypes.getType("System.ICloneable")
     val MEMBERWISE_CLONE = MOBJECT.GetMethod("MemberwiseClone", MsilType.EmptyTypes)
 
     val MMONITOR       = clrTypes.getType("System.Threading.Monitor")
@@ -102,8 +102,8 @@ abstract class GenMSIL extends SubComponent {
 
     val INT_PTR = clrTypes.getType("System.IntPtr")
 
-    // val JOBJECT = definitions.ObjectClass
-    // val JSTRING = definitions.StringClass
+    val JOBJECT = definitions.ObjectClass
+    val JSTRING = definitions.StringClass
 
     val SystemConvert = clrTypes.getType("System.Convert")
 
@@ -622,7 +622,7 @@ abstract class GenMSIL extends SubComponent {
      *   - emit `Leave handlerReturnLabel` instead of the Return
      *   - emit code at the end: load the local and return its value
      */
-    val currentHandlers = new mutable.Stack[ExceptionHandler]
+    var currentHandlers = new mutable.Stack[ExceptionHandler]
     // The IMethod the Local/Label/Kind below belong to
     var handlerReturnMethod: IMethod = _
     // Stores the result when returning inside an exception block

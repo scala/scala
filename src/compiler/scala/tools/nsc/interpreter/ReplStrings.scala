@@ -29,5 +29,5 @@ trait ReplStrings {
     "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
   def words(s: String) = s.trim split "\\s+" filterNot (_ == "") toList
-  // def isQuoted(s: String) = (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
+  def isQuoted(s: String) = (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
 }
