@@ -3103,12 +3103,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
   trait StubSymbol extends Symbol {
-    override final def failIfStub() = fail(())
     protected def missingMessage: String
+
+    /** Fail the stub by throwing a [[scala.reflect.internal.MissingRequirementError]]. */
+    override final def failIfStub() = {MissingRequirementError.signal(missingMessage)} //
+
+    /** Fail the stub by reporting an error to the reporter, setting the IS_ERROR flag
+      * on this symbol, and returning the dummy value `alt`.
+      */
     private def fail[T](alt: T): T = {
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
-        MissingRequirementError.signal(missingMessage)
+        globalError(missingMessage)
         if (settings.debug.value)
           (new Throwable).printStackTrace
 

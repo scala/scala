@@ -234,10 +234,10 @@ abstract class UnPickler {
               adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
                 // (5) Create a stub symbol to defer hard failure a little longer.
                 val missingMessage =
-                  s"""|A signature in $filename refers to ${name.longString} in ${owner.fullLocationString}
-                      |which is not available. It may be completely missing from the current classpath,
-                      |or the version on the classpath might be incompatible with the version used when
-                      |compiling $filename.""".stripMargin
+                  s"""|bad symbolic reference. A signature in $filename refers to ${name.longString}
+                      |in ${owner.kindString} ${owner.fullName} which is not available.
+                      |It may be completely missing from the current classpath, or the version on
+                      |the classpath might be incompatible with the version used when compiling $filename.""".stripMargin
                 owner.newStubSymbol(name, missingMessage)
               }
             }
