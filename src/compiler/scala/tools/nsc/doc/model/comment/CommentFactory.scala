@@ -28,11 +28,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
 
   protected val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
 
-  def addCommentBody(sym: global.Symbol, inTpl: TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
-    commentCache += (sym, inTpl) -> parse(docStr, docStr, docPos, None)
-    sym
-  }
-
   def comment(sym: global.Symbol, currentTpl: Option[DocTemplateImpl], inTpl: DocTemplateImpl): Option[Comment] = {
     val key = (sym, inTpl)
     if (commentCache isDefinedAt key)
@@ -132,7 +127,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
     val note           = note0
     val example        = example0
     val constructor    = constructor0
-    val source         = source0
     val inheritDiagram = inheritDiagram0
     val contentDiagram = contentDiagram0
     val groupDesc      = groupDesc0
@@ -953,20 +947,6 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory with Member
       while (char != ch && char != endOfText) {
         nextChar()
         count += 1
-      }
-      count
-    }
-
-    final def jumpUntil(chars: String): Int = {
-      assert(chars.length > 0)
-      var count = 0
-      val c = chars.charAt(0)
-      while (!check(chars) && char != endOfText) {
-        nextChar()
-        while (char != c && char != endOfText) {
-          nextChar()
-          count += 1
-        }
       }
       count
     }
