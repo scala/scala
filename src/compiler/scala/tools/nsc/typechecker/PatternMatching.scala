@@ -291,8 +291,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // pt is the skolemized version
       val pt = repeatedToSeq(ptUnCPS)
 
-      // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
-
       // the alternative to attaching the default case override would be to simply
       // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
       val matchFailGenOverride = match_.attachments.get[DefaultOverrideMatchAttachment].map{case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
@@ -547,54 +545,55 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def fromCaseClass(fun: Tree, args: List[Tree]): Option[ExtractorCall] =  Some(new ExtractorCallProd(fun, args))
 
       // THE PRINCIPLED SLOW PATH -- NOT USED
+      // !!! Use it, test it, or delete it, else it is unlikely to be an asset.
       // generate a call to the (synthetically generated) extractor of a case class
       // NOTE: it's an apply, not a select, since in general an extractor call may have multiple argument lists (including an implicit one)
       // that we need to preserve, so we supply the scrutinee as Ident(nme.SELECTOR_DUMMY),
       // and replace that dummy by a reference to the actual binder in translateExtractorPattern
-      def fromCaseClassUnapply(fun: Tree, args: List[Tree]): Option[ExtractorCall] = {
-        // TODO: can we rework the typer so we don't have to do all this twice?
-        // undo rewrite performed in (5) of adapt
-        val orig      = fun match {case tpt: TypeTree => tpt.original case _ => fun}
-        val origSym   = orig.symbol
-        val extractor = unapplyMember(origSym.filter(sym => reallyExists(unapplyMember(sym.tpe))).tpe)
+      // def fromCaseClassUnapply(fun: Tree, args: List[Tree]): Option[ExtractorCall] = {
+      //   // TODO: can we rework the typer so we don't have to do all this twice?
+      //   // undo rewrite performed in (5) of adapt
+      //   val orig      = fun match {case tpt: TypeTree => tpt.original case _ => fun}
+      //   val origSym   = orig.symbol
+      //   val extractor = unapplyMember(origSym.filter(sym => reallyExists(unapplyMember(sym.tpe))).tpe)
 
-        if((fun.tpe eq null) || fun.tpe.isError || (extractor eq NoSymbol)) {
-          None
-        } else {
-          // this is a tricky balance: pos/t602.scala, pos/sudoku.scala, run/virtpatmat_alts.scala must all be happy
-          // bypass typing at own risk: val extractorCall = Select(orig, extractor) setType caseClassApplyToUnapplyTp(fun.tpe)
-          // can't always infer type arguments (pos/t602):
-          /*  case class Span[K <: Ordered[K]](low: Option[K]) {
-                override def equals(x: Any): Boolean = x match {
-                  case Span((low0 @ _)) if low0 equals low => true
-                }
-              }*/
-          // so... leave undetermined type params floating around if we have to
-          // (if we don't infer types, uninstantiated type params show up later: pos/sudoku.scala)
-          // (see also run/virtpatmat_alts.scala)
-          val savedUndets = context.undetparams
-          val extractorCall = try {
-            context.undetparams = Nil
-            silent(_.typed(Apply(Select(orig, extractor), List(Ident(nme.SELECTOR_DUMMY) setType fun.tpe.finalResultType)), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
-              case SilentResultValue(extractorCall) => extractorCall // if !extractorCall.containsError()
-              case _ =>
-                // this fails to resolve overloading properly...
-                // Apply(typedOperator(Select(orig, extractor)), List(Ident(nme.SELECTOR_DUMMY))) // no need to set the type of the dummy arg, it will be replaced anyway
+      //   if((fun.tpe eq null) || fun.tpe.isError || (extractor eq NoSymbol)) {
+      //     None
+      //   } else {
+      //     // this is a tricky balance: pos/t602.scala, pos/sudoku.scala, run/virtpatmat_alts.scala must all be happy
+      //     // bypass typing at own risk: val extractorCall = Select(orig, extractor) setType caseClassApplyToUnapplyTp(fun.tpe)
+      //     // can't always infer type arguments (pos/t602):
+      //     /*  case class Span[K <: Ordered[K]](low: Option[K]) {
+      //           override def equals(x: Any): Boolean = x match {
+      //             case Span((low0 @ _)) if low0 equals low => true
+      //           }
+      //         }*/
+      //     // so... leave undetermined type params floating around if we have to
+      //     // (if we don't infer types, uninstantiated type params show up later: pos/sudoku.scala)
+      //     // (see also run/virtpatmat_alts.scala)
+      //     val savedUndets = context.undetparams
+      //     val extractorCall = try {
+      //       context.undetparams = Nil
+      //       silent(_.typed(Apply(Select(orig, extractor), List(Ident(nme.SELECTOR_DUMMY) setType fun.tpe.finalResultType)), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+      //         case SilentResultValue(extractorCall) => extractorCall // if !extractorCall.containsError()
+      //         case _ =>
+      //           // this fails to resolve overloading properly...
+      //           // Apply(typedOperator(Select(orig, extractor)), List(Ident(nme.SELECTOR_DUMMY))) // no need to set the type of the dummy arg, it will be replaced anyway
 
-                // patmatDebug("funtpe after = "+ fun.tpe.finalResultType)
-                // patmatDebug("orig: "+(orig, orig.tpe))
-                val tgt = typed(orig, EXPRmode | QUALmode | POLYmode, HasMember(extractor.name)) // can't specify fun.tpe.finalResultType as the type for the extractor's arg,
-                // as it may have been inferred incorrectly (see t602, where it's  com.mosol.sl.Span[Any], instead of  com.mosol.sl.Span[?K])
-                // patmatDebug("tgt = "+ (tgt, tgt.tpe))
-                val oper = typed(Select(tgt, extractor.name), EXPRmode | FUNmode | POLYmode | TAPPmode, WildcardType)
-                // patmatDebug("oper: "+ (oper, oper.tpe))
-                Apply(oper, List(Ident(nme.SELECTOR_DUMMY))) // no need to set the type of the dummy arg, it will be replaced anyway
-            }
-          } finally context.undetparams = savedUndets
+      //           // patmatDebug("funtpe after = "+ fun.tpe.finalResultType)
+      //           // patmatDebug("orig: "+(orig, orig.tpe))
+      //           val tgt = typed(orig, EXPRmode | QUALmode | POLYmode, HasMember(extractor.name)) // can't specify fun.tpe.finalResultType as the type for the extractor's arg,
+      //           // as it may have been inferred incorrectly (see t602, where it's  com.mosol.sl.Span[Any], instead of  com.mosol.sl.Span[?K])
+      //           // patmatDebug("tgt = "+ (tgt, tgt.tpe))
+      //           val oper = typed(Select(tgt, extractor.name), EXPRmode | FUNmode | POLYmode | TAPPmode, WildcardType)
+      //           // patmatDebug("oper: "+ (oper, oper.tpe))
+      //           Apply(oper, List(Ident(nme.SELECTOR_DUMMY))) // no need to set the type of the dummy arg, it will be replaced anyway
+      //       }
+      //     } finally context.undetparams = savedUndets
 
-          Some(this(extractorCall, args)) // TODO: simplify spliceApply?
-        }
-      }
+      //     Some(this(extractorCall, args)) // TODO: simplify spliceApply?
+      //   }
+      // }
     }
 
     abstract class ExtractorCall(val args: List[Tree]) {
@@ -1413,10 +1412,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
-      def _asInstanceOf(t: Tree, tp: Type): Tree
       def _equals(checker: Tree, binder: Symbol): Tree
       def _isInstanceOf(b: Symbol, tp: Type): Tree
-      def and(a: Tree, b: Tree): Tree
       def drop(tgt: Tree)(n: Int): Tree
       def index(tgt: Tree)(i: Int): Tree
       def mkZero(tp: Type): Tree
@@ -1458,12 +1455,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     abstract class CommonCodegen extends AbsCodegen { import CODE._
       def fun(arg: Symbol, body: Tree): Tree           = Function(List(ValDef(arg)), body)
-      def genTypeApply(tfun: Tree, args: Type*): Tree  = if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree)
       def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
       def index(tgt: Tree)(i: Int): Tree               = tgt APPLY (LIT(i))
       def drop(tgt: Tree)(n: Int): Tree                = (tgt DOT vpmName.drop) (LIT(n))
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
-      def and(a: Tree, b: Tree): Tree                  = a AND b
 
       // drop annotations generated by CPS plugin etc, since its annotationchecker rejects T @cps[U] <: Any
       // let's assume for now annotations don't affect casts, drop them there, and bring them back using the outer Typed tree
@@ -1471,10 +1466,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         Typed(gen.mkAsInstanceOf(t, tp.withoutAnnotations, true, false), TypeTree() setType tp)
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
-      def _asInstanceOf(t: Tree, tp: Type): Tree = if (t.tpe != NoType && t.isTyped && typesConform(t.tpe, tp)) t else mkCast(t, tp)
       def _asInstanceOf(b: Symbol, tp: Type): Tree = if (typesConform(b.info, tp)) REF(b) else mkCast(REF(b), tp)
       def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, true, false)
-      //   if (typesConform(b.info, tpX)) { patmatDebug("warning: emitted spurious isInstanceOf: "+(b, tp)); TRUE }
 
       // duplicated out of frustration with cast generation
       def mkZero(tp: Type): Tree = {
@@ -2879,8 +2872,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
          v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
        }.mkString("\n")
 
-    def modelString(model: Model) = varAssignmentString(modelToVarAssignment(model))
-
     // return constructor call when the model is a true counter example
     // (the variables don't take into account type information derived from other variables,
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
@@ -3538,7 +3529,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // for the catch-cases in a try/catch
     private object typeSwitchMaker extends SwitchMaker {
       val unchecked = false
-      def switchableTpe(tp: Type) = true
       val alternativesSupported = false // TODO: needs either back-end support of flattening of alternatives during typers
       val canJump = false
 
@@ -3583,11 +3573,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
   trait OptimizedCodegen extends CodegenCore with TypedSubstitution with OptimizedMatchMonadInterface {
     override def codegen: AbsCodegen = optimizedCodegen
-
-    // trait AbsOptimizedCodegen extends AbsCodegen {
-    //   def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree
-    // }
-    // def optimizedCodegen: AbsOptimizedCodegen
 
     // when we know we're targetting Option, do some inlining the optimizer won't do
     // for example, `o.flatMap(f)` becomes `if(o == None) None else f(o.get)`, similarly for orElse and guard

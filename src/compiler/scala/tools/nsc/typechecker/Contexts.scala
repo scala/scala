@@ -219,8 +219,6 @@ trait Contexts { self: Analyzer =>
       current
     }
 
-    def logError(err: AbsTypeError) = buffer += err
-
     def withImplicitsEnabled[T](op: => T): T = {
       val saved = implicitsEnabled
       implicitsEnabled = true
@@ -309,15 +307,6 @@ trait Contexts { self: Analyzer =>
       c.buffer = if (this.buffer == null) mutable.LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
-      c
-    }
-
-    // TODO: remove? Doesn't seem to be used
-    def make(unit: CompilationUnit): Context = {
-      val c = make(unit, EmptyTree, owner, scope, imports)
-      c.setReportErrors()
-      c.implicitsEnabled = true
-      c.macrosEnabled = true
       c
     }
 
@@ -488,17 +477,6 @@ trait Contexts { self: Analyzer =>
     def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
       sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
-
-    /** Return closest enclosing context that defines a superclass of `clazz`, or a
-     *  companion module of a superclass of `clazz`, or NoContext if none exists */
-    def enclosingSuperClassContext(clazz: Symbol): Context = {
-      var c = this.enclClass
-      while (c != NoContext &&
-             !clazz.isNonBottomSubClass(c.owner) &&
-             !(c.owner.isModuleClass && clazz.isNonBottomSubClass(c.owner.companionClass)))
-        c = c.outer.enclClass
-      c
-    }
 
     /** Return the closest enclosing context that defines a subclass of `clazz`
      *  or a companion object thereof, or `NoContext` if no such context exists.
