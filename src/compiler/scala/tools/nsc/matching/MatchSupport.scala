@@ -22,9 +22,6 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
   def impossible:           Nothing = abort("this never happens")
 
-  def treeCollect[T](tree: Tree, pf: PartialFunction[Tree, T]): List[T] =
-    tree filter (pf isDefinedAt _) map (x => pf(x))
-
   object Types {
     import definitions._
 
@@ -36,24 +33,12 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
       // These tests for final classes can inspect the typeSymbol
       private def is(s: Symbol) = tpe.typeSymbol eq s
-      def      isByte = is(ByteClass)
-      def     isShort = is(ShortClass)
       def       isInt = is(IntClass)
-      def      isChar = is(CharClass)
-      def   isBoolean = is(BooleanClass)
       def   isNothing = is(NothingClass)
-      def     isArray = is(ArrayClass)
     }
   }
 
   object Debug {
-    def typeToString(t: Type): String = t match {
-      case NoType => "x"
-      case x      => x.toString
-    }
-    def symbolToString(s: Symbol): String = s match {
-      case x  => x.toString
-    }
     def treeToString(t: Tree): String = treeInfo.unbind(t) match {
       case EmptyTree            => "?"
       case WILD()               => "_"
@@ -66,10 +51,6 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
     // Formatting for some error messages
     private val NPAD = 15
     def pad(s: String): String = "%%%ds" format (NPAD-1) format s
-    def pad(s: Any): String = pad(s match {
-      case x: Tree    => treeToString(x)
-      case x          => x.toString
-    })
 
     // pretty print for debugging
     def pp(x: Any): String = pp(x, false)
@@ -117,7 +98,6 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
       else x
     }
 
-    def indent(s: Any) = s.toString() split "\n" map ("  " + _) mkString "\n"
     def indentAll(s: Seq[Any]) = s map ("  " + _.toString() + "\n") mkString
   }
 

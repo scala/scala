@@ -59,10 +59,6 @@ trait PatternBindings extends ast.TreeDSL
   trait PatternBindingLogic {
     self: Pattern =>
 
-    // This is for traversing the pattern tree - pattern types which might have
-    // bound variables beneath them return a list of said patterns for flatMapping.
-    def subpatternsForVars: List[Pattern] = Nil
-
     // The outermost Bind(x1, Bind(x2, ...)) surrounding the tree.
     private var _boundTree: Tree = tree
     def boundTree = _boundTree
@@ -113,9 +109,6 @@ trait PatternBindings extends ast.TreeDSL
   }
 
   class Bindings(private val vlist: List[Binding]) {
-    // if (!vlist.isEmpty)
-    //   traceCategory("Bindings", this.toString)
-
     def get() = vlist
     def toMap = vlist map (x => (x.pvar, x.tvar)) toMap
 

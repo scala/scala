@@ -147,7 +147,6 @@ abstract class TailCalls extends Transform {
       }
 
       def enclosingType    = method.enclClass.typeOfThis
-      def methodTypeParams = method.tpe.typeParams
       def isEligible       = method.isEffectivelyFinal
       // @tailrec annotation indicates mandatory transformation
       def isMandatory      = method.hasAnnotation(TailrecClass) && !forMSIL

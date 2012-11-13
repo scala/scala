@@ -183,7 +183,7 @@ trait Names extends api.Names with LowPriorityNames {
       scala.compat.Platform.arraycopy(chrs, index, cs, offset, len)
 
     /** @return the ascii representation of this name */
-    final def toChars: Array[Char] = {
+    final def toChars: Array[Char] = {  // used by ide
       val cs = new Array[Char](len)
       copyChars(cs, 0)
       cs
@@ -394,7 +394,7 @@ trait Names extends api.Names with LowPriorityNames {
     def prepend(prefix: String) = newName("" + prefix + this)
 
     def decodedName: ThisNameType = newName(decode)
-    def isOperatorName: Boolean = decode != toString
+    def isOperatorName: Boolean = decode != toString  // used by ide
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
   }
