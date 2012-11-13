@@ -62,30 +62,23 @@ class MutableSettings(val errorFn: String => Unit)
         (checkDependencies, residualArgs)
       case "--" :: xs =>
         (checkDependencies, xs)
+      // discard empties, sometimes they appear because of ant or etc.
+      // but discard carefully, because an empty string is valid as an argument
+      // to an option, e.g. -cp "" .  So we discard them only when they appear
+      // where an option should be, not where an argument to an option should be.
+      case "" :: xs =>
+        loop(xs, residualArgs)
       case x :: xs  =>
-        val isOpt = x startsWith "-"
-        if (isOpt) {
-          val newArgs = parseParams(args)
-          if (args eq newArgs) {
-            errorFn(s"bad option: '$x'")
-            (false, args)
-          }
-          // discard empties, sometimes they appear because of ant or etc.
-          // but discard carefully, because an empty string is valid as an argument
-          // to an option, e.g. -cp "" .  So we discard them only when they appear
-          // in option position.
-          else if (x == "") {
-            loop(xs, residualArgs)
-          }
-          else lookupSetting(x) match {
-            case Some(s) if s.shouldStopProcessing  => (checkDependencies, newArgs)
-            case _                                  => loop(newArgs, residualArgs)
+        if (x startsWith "-") {
+          parseParams(args) match {
+            case newArgs if newArgs eq args => errorFn(s"bad option: '$x'") ; (false, args)
+            case newArgs                    => loop(newArgs, residualArgs)
           }
         }
-        else {
-          if (processAll) loop(xs, residualArgs :+ x)
-          else (checkDependencies, args)
-        }
+        else if (processAll)
+          loop(xs, residualArgs :+ x)
+        else
+          (checkDependencies, args)
     }
     loop(arguments, Nil)
   }
