@@ -12,12 +12,9 @@ trait TraceSymbolActivity {
   if (enabled && global.isCompilerUniverse)
     scala.sys addShutdownHook showAllSymbols()
 
-  private type Set[T] = scala.collection.immutable.Set[T]
-
   val allSymbols  = mutable.Map[Int, Symbol]()
   val allChildren = mutable.Map[Int, List[Int]]() withDefaultValue Nil
   val prevOwners  = mutable.Map[Int, List[(Int, Phase)]]() withDefaultValue Nil
-  val symsCaused  = mutable.Map[Int, Int]() withDefaultValue 0
   val allTrees    = mutable.Set[Tree]()
 
   def recordSymbolsInTree(tree: Tree) {

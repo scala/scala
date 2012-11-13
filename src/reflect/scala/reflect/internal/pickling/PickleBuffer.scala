@@ -91,9 +91,6 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
 
   // -- Basic input routines --------------------------------------------
 
-  /** Peek at the current byte without moving the read index */
-  def peekByte(): Int = bytes(readIndex)
-
   /** Read a byte */
   def readByte(): Int = {
     val x = bytes(readIndex); readIndex += 1; x

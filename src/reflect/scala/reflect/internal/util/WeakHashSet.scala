@@ -1,9 +1,6 @@
 package scala.reflect.internal.util
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.Builder
-import scala.collection.mutable.SetBuilder
 import scala.collection.generic.Clearable
 import scala.runtime.AbstractFunction1
 

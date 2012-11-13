@@ -128,7 +128,7 @@ abstract class Position extends scala.reflect.api.Position { self =>
   def endOrPoint: Int = point
 
   @deprecated("use point instead", "2.9.0")
-  def offset: Option[Int] = if (isDefined) Some(point) else None
+  def offset: Option[Int] = if (isDefined) Some(point) else None // used by sbt
 
   /** The same position with a different start value (if a range) */
   def withStart(off: Int): Position = this

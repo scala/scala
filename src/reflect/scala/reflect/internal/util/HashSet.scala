@@ -6,8 +6,6 @@
 package scala.reflect.internal.util
 
 object HashSet {
-  def apply[T >: Null <: AnyRef](): HashSet[T] = this(16)
-  def apply[T >: Null <: AnyRef](label: String): HashSet[T] = this(label, 16)
   def apply[T >: Null <: AnyRef](initialCapacity: Int): HashSet[T] = this("No Label", initialCapacity)
   def apply[T >: Null <: AnyRef](label: String, initialCapacity: Int): HashSet[T] =
     new HashSet[T](label, initialCapacity)
