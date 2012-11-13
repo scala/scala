@@ -269,34 +269,34 @@ abstract class TypeFlowAnalysis {
     } // interpret
 
 
-    // class SimulatedStack {
-    //   private var types: List[InferredType] = Nil
-    //   private var depth = 0
+    class SimulatedStack {
+      private var types: List[InferredType] = Nil
+      private var depth = 0
 
-    //   /** Remove and return the topmost element on the stack. If the
-    //    *  stack is empty, return a reference to a negative index on the
-    //    *  stack, meaning it refers to elements pushed by a predecessor block.
-    //    */
-    //   def pop: InferredType = types match {
-    //     case head :: rest =>
-    //       types = rest
-    //       head
-    //     case _ =>
-    //       depth -= 1
-    //       TypeOfStackPos(depth)
-    //   }
+      /** Remove and return the topmost element on the stack. If the
+       *  stack is empty, return a reference to a negative index on the
+       *  stack, meaning it refers to elements pushed by a predecessor block.
+       */
+      def pop: InferredType = types match {
+        case head :: rest =>
+          types = rest
+          head
+        case _ =>
+          depth -= 1
+          TypeOfStackPos(depth)
+      }
 
-    //   def pop2: (InferredType, InferredType) = {
-    //     (pop, pop)
-    //   }
+      def pop2: (InferredType, InferredType) = {
+        (pop, pop)
+      }
 
-    //   def push(t: InferredType) {
-    //     depth += 1
-    //     types = types ::: List(t)
-    //   }
+      def push(t: InferredType) {
+        depth += 1
+        types = types ::: List(t)
+      }
 
-    //   def push(k: TypeKind) { push(Const(k)) }
-    // }
+      def push(k: TypeKind) { push(Const(k)) }
+    }
 
 	abstract class InferredType {
       /** Return the type kind pointed by this inferred type. */
@@ -737,9 +737,9 @@ abstract class TypeFlowAnalysis {
 
     private var lastStart = 0L
 
-    // def reset() {
-    //   millis = 0L
-    // }
+    def reset() {
+      millis = 0L
+    }
 
     def start() {
       lastStart = System.currentTimeMillis

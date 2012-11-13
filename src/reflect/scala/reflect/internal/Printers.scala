@@ -475,8 +475,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
   }
 
   def newRawTreePrinter(writer: PrintWriter): RawTreePrinter = new RawTreePrinter(writer)
-  // def newRawTreePrinter(stream: OutputStream): RawTreePrinter = newRawTreePrinter(new PrintWriter(stream))
-  // def newRawTreePrinter(): RawTreePrinter = newRawTreePrinter(new PrintWriter(ConsoleWriter))
+  def newRawTreePrinter(stream: OutputStream): RawTreePrinter = newRawTreePrinter(new PrintWriter(stream))
+  def newRawTreePrinter(): RawTreePrinter = newRawTreePrinter(new PrintWriter(ConsoleWriter))
 
   // provides footnotes for types and mirrors
   import scala.collection.mutable.{Map, WeakHashMap, SortedSet}

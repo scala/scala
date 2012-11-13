@@ -57,14 +57,14 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   /** ...
    */
   abstract class AbstractJavaScanner extends AbstractJavaTokenData {
-    // implicit def p2g(pos: Position): ScanPosition
+    implicit def p2g(pos: Position): ScanPosition
     implicit def g2p(pos: ScanPosition): Position
 
     /** the last error position
      */
-    // var errpos: ScanPosition
-    // var lastPos: ScanPosition
-    // def skipToken: ScanPosition
+    var errpos: ScanPosition
+    var lastPos: ScanPosition
+    def skipToken: ScanPosition
     def nextToken(): Unit
     def next: AbstractJavaTokenData
     def intVal(negated: Boolean): Long
@@ -73,7 +73,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     def floatVal: Double = floatVal(false)
     //def token2string(token : Int) : String = configuration.token2string(token)
     /** return recent scala doc, if any */
-    // def flushDoc: DocComment
+    def flushDoc: DocComment
     def currentPos: Position
   }
 
@@ -227,16 +227,16 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable with ScannerCommon {
     override def intVal = super.intVal// todo: needed?
     override def floatVal = super.floatVal
-    // override var errpos: Int = NoPos
+    override var errpos: Int = NoPos
     def currentPos: Position = g2p(pos - 1)
 
     var in: JavaCharArrayReader = _
 
-    // def dup: JavaScanner = {
-    //   val dup = clone().asInstanceOf[JavaScanner]
-    //   dup.in = in.dup
-    //   dup
-    // }
+    def dup: JavaScanner = {
+      val dup = clone().asInstanceOf[JavaScanner]
+      dup.in = in.dup
+      dup
+    }
 
     /** character buffer for literals
      */
@@ -256,11 +256,11 @@ trait JavaScanners extends ast.parser.ScannersCommon {
      */
     var docBuffer: StringBuilder = null
 
-    // def flushDoc: DocComment = {
-    //   val ret = if (docBuffer != null) DocComment(docBuffer.toString, NoPosition) else null
-    //   docBuffer = null
-    //   ret
-    // }
+    def flushDoc: DocComment = {
+      val ret = if (docBuffer != null) DocComment(docBuffer.toString, NoPosition) else null
+      docBuffer = null
+      ret
+    }
 
     /** add the given character to the documentation buffer
      */
@@ -279,10 +279,10 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** read next token and return last position
      */
-    // def skipToken: Int = {
-    //   val p = pos; nextToken
-    //   p - 1
-    // }
+    def skipToken: Int = {
+      val p = pos; nextToken
+      p - 1
+    }
 
     def nextToken() {
       if (next.token == EMPTY) {
@@ -868,7 +868,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     def syntaxError(pos: Int, msg: String) {
       error(pos, msg)
       token = ERROR
-      // errpos = pos
+      errpos = pos
     }
 
     /** generate an error at the current token position
@@ -879,7 +879,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     def incompleteInputError(msg: String) {
       incompleteInputError(pos, msg)
       token = EOF
-      // errpos = pos
+      errpos = pos
     }
 
     override def toString() = token match {
@@ -918,11 +918,11 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
     in = new JavaCharArrayReader(unit.source.content, !settings.nouescape.value, syntaxError)
     init
-    // def warning(pos: Int, msg: String) = unit.warning(pos, msg)
+    def warning(pos: Int, msg: String) = unit.warning(pos, msg)
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
     def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
-    // implicit def p2g(pos: Position): Int = if (pos.isDefined) pos.point else -1
+    implicit def p2g(pos: Position): Int = if (pos.isDefined) pos.point else -1
     implicit def g2p(pos: Int): Position = new OffsetPosition(unit.source, pos)
   }
 }

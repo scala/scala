@@ -33,7 +33,7 @@ trait Patterns extends ast.TreeDSL {
   def NoPattern = WildcardPattern()
 
   // The constant null pattern
-  // def NullPattern = LiteralPattern(NULL)
+  def NullPattern = LiteralPattern(NULL)
 
   // The Nil pattern
   def NilPattern = Pattern(gen.mkNil)
@@ -60,7 +60,7 @@ trait Patterns extends ast.TreeDSL {
 
     override def covers(sym: Symbol) = newMatchesPattern(sym, tpt.tpe)
     override def sufficientType = tpt.tpe
-    // override def subpatternsForVars: List[Pattern] = List(Pattern(expr))
+    override def subpatternsForVars: List[Pattern] = List(Pattern(expr))
     override def simplify(pv: PatternVar) = Pattern(expr) match {
       case ExtractorPattern(ua) if pv.sym.tpe <:< tpt.tpe => this rebindTo expr
       case _                                              => this
@@ -140,10 +140,10 @@ trait Patterns extends ast.TreeDSL {
     require(fn.isType && this.isCaseClass, "tree: " + tree + " fn: " + fn)
     def name = tpe.typeSymbol.name
     def cleanName = tpe.typeSymbol.decodedName
-    // def hasPrefix = tpe.prefix.prefixString != ""
-    // def prefixedName =
-    //   if (hasPrefix) "%s.%s".format(tpe.prefix.prefixString, cleanName)
-    //   else cleanName
+    def hasPrefix = tpe.prefix.prefixString != ""
+    def prefixedName =
+      if (hasPrefix) "%s.%s".format(tpe.prefix.prefixString, cleanName)
+      else cleanName
 
     private def isColonColon = cleanName == "::"
 
@@ -222,15 +222,15 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.8 (b) (literal ArrayValues)
   case class SequencePattern(tree: ArrayValue) extends Pattern with SequenceLikePattern {
-    lazy val ArrayValue(_, elems) = tree
+    lazy val ArrayValue(elemtpt, elems) = tree
 
-    // override def subpatternsForVars: List[Pattern] = elemPatterns
+    override def subpatternsForVars: List[Pattern] = elemPatterns
     override def description = "Seq(%s)".format(elemPatterns mkString ", ")
   }
 
   // 8.1.8 (c)
   case class StarPattern(tree: Star) extends Pattern {
-    // lazy val Star(_) = tree
+    lazy val Star(elem) = tree
     override def description = "_*"
   }
   // XXX temporary?
@@ -389,10 +389,10 @@ trait Patterns extends ast.TreeDSL {
     //   fn.tpe.finalResultType.typeSymbol == SomeClass
 
     override def necessaryType = arg.tpe
-    // override def subpatternsForVars = args match {
-    //   case List(ArrayValue(elemtpe, elems)) => toPats(elems)
-    //   case _                                => toPats(args)
-    // }
+    override def subpatternsForVars = args match {
+      case List(ArrayValue(elemtpe, elems)) => toPats(elems)
+      case _                                => toPats(args)
+    }
 
     def resTypes = analyzer.unapplyTypeList(unfn.symbol, unfn.tpe, args.length)
     def resTypesString = resTypes match {
@@ -403,13 +403,13 @@ trait Patterns extends ast.TreeDSL {
 
   sealed trait ApplyPattern extends Pattern {
     lazy val Apply(fn, args) = tree
-    // override def subpatternsForVars: List[Pattern] = toPats(args)
+    override def subpatternsForVars: List[Pattern] = toPats(args)
 
-    // override def dummies =
-    //   if (!this.isCaseClass) Nil
-    //   else emptyPatterns(sufficientType.typeSymbol.caseFieldAccessors.size)
+    override def dummies =
+      if (!this.isCaseClass) Nil
+      else emptyPatterns(sufficientType.typeSymbol.caseFieldAccessors.size)
 
-    // def isConstructorPattern = fn.isType
+    def isConstructorPattern = fn.isType
     override def covers(sym: Symbol) = newMatchesPattern(sym, fn.tpe)
   }
 
@@ -420,7 +420,7 @@ trait Patterns extends ast.TreeDSL {
     def simplify(pv: PatternVar): Pattern = this
 
     // the right number of dummies for this pattern
-    // def dummies: List[Pattern] = Nil
+    def dummies: List[Pattern] = Nil
 
     // Is this a default pattern (untyped "_" or an EmptyTree inserted by the matcher)
     def isDefault = false
@@ -454,10 +454,10 @@ trait Patterns extends ast.TreeDSL {
 
     def hasStar = false
 
-    // def setType(tpe: Type): this.type = {
-    //   tree setType tpe
-    //   this
-    // }
+    def setType(tpe: Type): this.type = {
+      tree setType tpe
+      this
+    }
 
     def equalsCheck =
       tracing("equalsCheck")(
@@ -475,7 +475,7 @@ trait Patterns extends ast.TreeDSL {
 
     final override def toString = description
 
-    // def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
+    def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
     def kindString = ""
   }
 

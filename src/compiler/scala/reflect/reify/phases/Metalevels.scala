@@ -1,8 +1,6 @@
 package scala.reflect.reify
 package phases
 
-import scala.collection.{ mutable }
-
 trait Metalevels {
   self: Reifier =>
 
@@ -103,7 +101,7 @@ trait Metalevels {
    */
   val metalevels = new Transformer {
     var insideSplice = false
-    val inlineableBindings = mutable.Map[TermName, Tree]()
+    var inlineableBindings = scala.collection.mutable.Map[TermName, Tree]()
 
     def withinSplice[T](op: => T) = {
       val old = insideSplice

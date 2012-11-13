@@ -15,22 +15,22 @@ import Properties.isMac
 trait InteractiveReader {
   val interactive: Boolean
 
-  // def init(): Unit
+  def init(): Unit
   def reset(): Unit
 
   def history: History
   def completion: Completion
-  // def eraseLine(): Unit
+  def eraseLine(): Unit
   def redrawLine(): Unit
-  // def currentLine: String
+  def currentLine: String
 
   def readYesOrNo(prompt: String, alt: => Boolean): Boolean = readOneKey(prompt) match {
     case 'y'  => true
     case 'n'  => false
     case _    => alt
   }
-  // def readAssumingNo(prompt: String)  = readYesOrNo(prompt, false)
-  // def readAssumingYes(prompt: String) = readYesOrNo(prompt, true)
+  def readAssumingNo(prompt: String)  = readYesOrNo(prompt, false)
+  def readAssumingYes(prompt: String) = readYesOrNo(prompt, true)
 
   protected def readOneLine(prompt: String): String
   protected def readOneKey(prompt: String): Int
@@ -50,6 +50,6 @@ object InteractiveReader {
 
   def apply(): InteractiveReader = SimpleReader()
   @deprecated("Use `apply` instead.", "2.9.0")
-  def createDefault(): InteractiveReader = apply() // used by sbt
+  def createDefault(): InteractiveReader = apply()
 }
 

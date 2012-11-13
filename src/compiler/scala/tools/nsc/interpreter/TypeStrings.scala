@@ -33,7 +33,7 @@ trait StructuredTypeStrings extends DestructureTypes {
   val NoGrouping      = Grouping("", "", "", false)
   val ListGrouping    = Grouping("(", ", ", ")", false)
   val ProductGrouping = Grouping("(", ", ", ")", true)
-  // val ParamGrouping   = Grouping("(", ", ", ")", true)
+  val ParamGrouping   = Grouping("(", ", ", ")", true)
   val BlockGrouping   = Grouping(" { ", "; ", "}", false)
 
   private def str(level: Int)(body: => String): String = "  " * level + body
@@ -189,7 +189,7 @@ trait TypeStrings {
       else enclClass.getName + "." + (name stripPrefix enclPre)
     )
   }
-  // def scalaName(ct: ClassTag[_]): String = scalaName(ct.runtimeClass)
+  def scalaName(ct: ClassTag[_]): String = scalaName(ct.runtimeClass)
   def anyClass(x: Any): JClass          = if (x == null) null else x.getClass
 
   private def brackets(tps: String*): String =
@@ -220,7 +220,7 @@ trait TypeStrings {
    *  practice to rely on toString for correctness) generated the VALID string
    *  representation of the type.
    */
-  // def fromTypedValue[T: ru.TypeTag : ClassTag](x: T): String = fromTag[T]
+  def fromTypedValue[T: ru.TypeTag : ClassTag](x: T): String = fromTag[T]
   def fromValue(value: Any): String                          = if (value == null) "Null" else fromClazz(anyClass(value))
   def fromClazz(clazz: JClass): String                       = scalaName(clazz) + tparamString(clazz)
   def fromTag[T: ru.TypeTag : ClassTag] : String             = scalaName(classTag[T].runtimeClass) + tparamString[T]
@@ -241,12 +241,12 @@ trait TypeStrings {
     }
   }
 
-  // val typeTransforms = List(
-  //   "java.lang." -> "",
-  //   "scala.collection.immutable." -> "immutable.",
-  //   "scala.collection.mutable." -> "mutable.",
-  //   "scala.collection.generic." -> "generic."
-  // )
+  val typeTransforms = List(
+    "java.lang." -> "",
+    "scala.collection.immutable." -> "immutable.",
+    "scala.collection.mutable." -> "mutable.",
+    "scala.collection.generic." -> "generic."
+  )
 }
 
 object TypeStrings extends TypeStrings { }

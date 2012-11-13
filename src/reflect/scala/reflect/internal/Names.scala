@@ -135,8 +135,8 @@ trait Names extends api.Names with LowPriorityNames {
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
-  // def nameChars: Array[Char] = chrs
-  // @deprecated("", "2.9.0") def view(s: String): TermName = newTermName(s)
+  def nameChars: Array[Char] = chrs
+  @deprecated("", "2.9.0") def view(s: String): TermName = newTermName(s)
 
 // Classes ----------------------------------------------------------------------
 
@@ -186,22 +186,22 @@ trait Names extends api.Names with LowPriorityNames {
       scala.compat.Platform.arraycopy(chrs, index, cs, offset, len)
 
     /** @return the ascii representation of this name */
-    // final def toChars: Array[Char] = {
-    //   val cs = new Array[Char](len)
-    //   copyChars(cs, 0)
-    //   cs
-    // }
+    final def toChars: Array[Char] = {
+      val cs = new Array[Char](len)
+      copyChars(cs, 0)
+      cs
+    }
 
     /** Write to UTF8 representation of this name to given character array.
      *  Start copying to index `to`. Return index of next free byte in array.
      *  Array must have enough remaining space for all bytes
      *  (i.e. maximally 3*length bytes).
      */
-    // final def copyUTF8(bs: Array[Byte], offset: Int): Int = {
-    //   val bytes = Codec.toUTF8(chrs, index, len)
-    //   scala.compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
-    //   offset + bytes.length
-    // }
+    final def copyUTF8(bs: Array[Byte], offset: Int): Int = {
+      val bytes = Codec.toUTF8(chrs, index, len)
+      scala.compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
+      offset + bytes.length
+    }
 
     /** @return the hash value of this name */
     final override def hashCode(): Int = index
@@ -283,7 +283,7 @@ trait Names extends api.Names with LowPriorityNames {
      */
     final def lastPos(c: Char): Int = lastPos(c, len - 1)
 
-    // final def lastPos(s: String): Int = lastPos(s, len - s.length)
+    final def lastPos(s: String): Int = lastPos(s, len - s.length)
 
     /** Returns the index of the last occurrence of char c in this
      *  name from start, -1 if not found.
@@ -305,18 +305,18 @@ trait Names extends api.Names with LowPriorityNames {
      *  @param start ...
      *  @return      the index of the last occurrence of s
      */
-    // final def lastPos(s: String, start: Int): Int = {
-    //   var i = lastPos(s.charAt(0), start)
-    //   while (i >= 0) {
-    //     var j = 1;
-    //     while (s.charAt(j) == chrs(index + i + j)) {
-    //       j += 1
-    //       if (j == s.length()) return i;
-    //     }
-    //     i = lastPos(s.charAt(0), i - 1)
-    //   }
-    //   -s.length()
-    // }
+    final def lastPos(s: String, start: Int): Int = {
+      var i = lastPos(s.charAt(0), start)
+      while (i >= 0) {
+        var j = 1;
+        while (s.charAt(j) == chrs(index + i + j)) {
+          j += 1
+          if (j == s.length()) return i;
+        }
+        i = lastPos(s.charAt(0), i - 1)
+      }
+      -s.length()
+    }
 
     /** Does this name start with prefix? */
     final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
@@ -379,7 +379,7 @@ trait Names extends api.Names with LowPriorityNames {
       if (idx == length) -1 else idx
     }
     def lastIndexOf(ch: Char) = lastPos(ch)
-    // def lastIndexOf(ch: Char, fromIndex: Int) = lastPos(ch, fromIndex)
+    def lastIndexOf(ch: Char, fromIndex: Int) = lastPos(ch, fromIndex)
 
     /** Replace all occurrences of `from` by `to` in
      *  name; result is always a term name.
@@ -428,12 +428,12 @@ trait Names extends api.Names with LowPriorityNames {
     def append(ch: Char)        = newName("" + this + ch)
     def append(suffix: String)  = newName("" + this + suffix)
     def append(suffix: Name)    = newName("" + this + suffix)
-    // def prepend(ch: Char)       = newName("" + ch + this)
+    def prepend(ch: Char)       = newName("" + ch + this)
     def prepend(prefix: String) = newName("" + prefix + this)
-    // def prepend(prefix: Name)   = newName("" + prefix + this)
+    def prepend(prefix: Name)   = newName("" + prefix + this)
 
     def decodedName: ThisNameType = newName(decode)
-    // def isOperatorName: Boolean = decode != toString
+    def isOperatorName: Boolean = decode != toString
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
   }
@@ -445,7 +445,7 @@ trait Names extends api.Names with LowPriorityNames {
     def stripSuffix(suffix: Name): T = if (name endsWith suffix) dropRight(suffix.length) else name
     def dropRight(n: Int): T         = name.subName(0, name.length - n).asInstanceOf[T]
     def drop(n: Int): T              = name.subName(n, name.length).asInstanceOf[T]
-    // def nonEmpty: Boolean            = name.length > 0
+    def nonEmpty: Boolean            = name.length > 0
   }
 
   implicit val NameTag = ClassTag[Name](classOf[Name])
@@ -489,7 +489,7 @@ trait Names extends api.Names with LowPriorityNames {
     type ThisNameType = TermName
     protected[this] def thisName: TermName = this
 
-    val next: TermName = termHashtable(hash)
+    var next: TermName = termHashtable(hash)
     termHashtable(hash) = this
     def isTermName: Boolean = true
     def isTypeName: Boolean = false
@@ -518,7 +518,7 @@ trait Names extends api.Names with LowPriorityNames {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
 
-    val next: TypeName = typeHashtable(hash)
+    var next: TypeName = typeHashtable(hash)
     typeHashtable(hash) = this
     def isTermName: Boolean = false
     def isTypeName: Boolean = true

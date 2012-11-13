@@ -17,43 +17,46 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
   /** produce a duplicate of this char array reader which starts reading
     *  at current position, independent of what happens to original reader
 	*/
-  // def dup: JavaCharArrayReader = clone().asInstanceOf[JavaCharArrayReader]
+  def dup: JavaCharArrayReader = clone().asInstanceOf[JavaCharArrayReader]
 
   /** layout constant
    */
-  // val tabinc = 8
+  val tabinc = 8
 
   /** the line and column position of the current character
   */
   var ch: Char = _
   var bp = start
-  // var oldBp = -1
-  // var oldCh: Char = _
+  var oldBp = -1
+  var oldCh: Char = _
 
   //private var cline: Int = _
   //private var ccol: Int = _
   def cpos = bp
   var isUnicode: Boolean = _
-  // var lastLineStartPos: Int = 0
-  // var lineStartPos: Int = 0
-  // var lastBlankLinePos: Int = 0
+  var lastLineStartPos: Int = 0
+  var lineStartPos: Int = 0
+  var lastBlankLinePos: Int = 0
 
-  // private var onlyBlankChars = false
+  private var onlyBlankChars = false
   //private var nextline = startline
   //private var nextcol = startcol
 
   private def markNewLine() {
-    // lastLineStartPos = lineStartPos
-    // if (onlyBlankChars) lastBlankLinePos = lineStartPos
-    // lineStartPos = bp
-    // onlyBlankChars = true
+    lastLineStartPos = lineStartPos
+    if (onlyBlankChars) lastBlankLinePos = lineStartPos
+    lineStartPos = bp
+    onlyBlankChars = true
     //nextline += 1
     //nextcol = 1
   }
 
-  def hasNext = bp < buf.length
+  def hasNext: Boolean = if (bp < buf.length) true
+  else {
+    false
+  }
 
-  // def last: Char = if (bp > start + 2) buf(bp - 2) else ' ' // XML literals
+  def last: Char = if (bp > start + 2) buf(bp - 2) else ' ' // XML literals
 
   def next(): Char = {
     //cline = nextline
@@ -63,8 +66,8 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
       ch = SU
       return SU  // there is an endless stream of SU's at the end
     }
-    // oldBp = bp
-    // oldCh = ch
+    oldBp = bp
+    oldCh = ch
     ch = buf(bp)
     isUnicode = false
     bp = bp + 1
@@ -101,19 +104,19 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
           isUnicode = true
         }
       case _ =>
-        // if (ch > ' ') onlyBlankChars = false
+        if (ch > ' ') onlyBlankChars = false
         // nextcol += 1
     }
     ch
   }
 
-  // def rewind() {
-  //   if (oldBp == -1) throw new IllegalArgumentException
-  //   bp = oldBp
-  //   ch = oldCh
-  //   oldBp = -1
-  //   oldCh = 'x'
-  // }
+  def rewind() {
+    if (oldBp == -1) throw new IllegalArgumentException
+    bp = oldBp
+    ch = oldCh
+    oldBp = -1
+    oldCh = 'x'
+  }
 
   def copy: JavaCharArrayReader =
     new JavaCharArrayReader(buf, bp, /* nextcol, nextline, */ decodeUni, error)

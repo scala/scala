@@ -107,8 +107,8 @@ object Javap {
   type FakeEnvironment = AnyRef
   type FakePrinter = AnyRef
 
-  // def apply(path: String): Unit      = apply(Seq(path))
-  // def apply(args: Seq[String]): Unit = new JavapClass() apply args foreach (_.show())
+  def apply(path: String): Unit      = apply(Seq(path))
+  def apply(args: Seq[String]): Unit = new JavapClass() apply args foreach (_.show())
 
   sealed trait JpResult {
     type ResultType

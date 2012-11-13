@@ -26,7 +26,7 @@ trait CompilationUnits { self: Global =>
   class CompilationUnit(val source: SourceFile) extends CompilationUnitContextApi {
 
     /** the fresh name creator */
-    val fresh: FreshNameCreator = new FreshNameCreator.Default
+    var fresh: FreshNameCreator = new FreshNameCreator.Default
 
     def freshTermName(prefix: String): TermName = newTermName(fresh.newName(prefix))
     def freshTypeName(prefix: String): TypeName = newTypeName(fresh.newName(prefix))
@@ -108,16 +108,16 @@ trait CompilationUnits { self: Global =>
 
     override def toString() = source.toString()
 
-    // def clear() {
-    //   fresh = new FreshNameCreator.Default
-    //   body = EmptyTree
-    //   depends.clear()
-    //   defined.clear()
-    //   synthetics.clear()
-    //   toCheck.clear()
-    //   checkedFeatures = Set()
-    //   icode.clear()
-    // }
+    def clear() {
+      fresh = new FreshNameCreator.Default
+      body = EmptyTree
+      depends.clear()
+      defined.clear()
+      synthetics.clear()
+      toCheck.clear()
+      checkedFeatures = Set()
+      icode.clear()
+    }
   }
 }
 

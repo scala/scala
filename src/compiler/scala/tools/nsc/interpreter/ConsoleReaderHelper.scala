@@ -9,15 +9,15 @@ package interpreter
 import scala.tools.jline.console.{ ConsoleReader, CursorBuffer }
 
 trait ConsoleReaderHelper extends ConsoleReader {
-  // def currentLine = "" + getCursorBuffer.buffer
-  // def currentPos  = getCursorBuffer.cursor
+  def currentLine = "" + getCursorBuffer.buffer
+  def currentPos  = getCursorBuffer.cursor
   def terminal    = getTerminal()
   def width       = terminal.getWidth()
   def height      = terminal.getHeight()
-  // def paginate    = isPaginationEnabled()
-  // def paginate_=(value: Boolean) = setPaginationEnabled(value)
+  def paginate    = isPaginationEnabled()
+  def paginate_=(value: Boolean) = setPaginationEnabled(value)
 
-  // def goBack(num: Int): Unit
+  def goBack(num: Int): Unit
   def readOneKey(prompt: String): Int
   def eraseLine(): Unit
 

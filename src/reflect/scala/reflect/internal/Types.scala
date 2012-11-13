@@ -167,10 +167,10 @@ trait Types extends api.Types { self: SymbolTable =>
         log = Nil
       } finally unlock()
     }
-    // def size = {
-    //   lock()
-    //   try log.size finally unlock()
-    // }
+    def size = {
+      lock()
+      try log.size finally unlock()
+    }
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
@@ -184,18 +184,18 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     // if `block` evaluates to false, it should not affect constraints on typevars
-    // def undoUnless(block: => Boolean): Boolean = {
-    //   lock()
-    //   try {
-    //     val before = log
-    //     var result = false
+    def undoUnless(block: => Boolean): Boolean = {
+      lock()
+      try {
+        val before = log
+        var result = false
 
-    //     try result = block
-    //     finally if (!result) undoTo(before)
+        try result = block
+        finally if (!result) undoTo(before)
 
-    //     result
-    //   } finally unlock()
-    // }
+        result
+      } finally unlock()
+    }
   }
 
   /** A map from lists to compound types that have the given list as parents.
@@ -292,7 +292,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   abstract class TypeApiImpl extends TypeApi { this: Type =>
     def declaration(name: Name): Symbol = decl(name)
-    // def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
+    def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
     def declarations = decls
     def typeArguments = typeArgs
     def erasure = this match {
@@ -522,7 +522,7 @@ trait Types extends api.Types { self: SymbolTable =>
     /** If this is a TypeRef `clazz`[`T`], return the argument `T`
      *  otherwise return this type
      */
-    // def remove(clazz: Symbol): Type = this
+    def remove(clazz: Symbol): Type = this
 
     /** For a curried/nullary method or poly type its non-method result type,
      *  the type itself for all other types */
@@ -663,13 +663,13 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** All members with the given flags, excluding bridges.
      */
-    // def membersWithFlags(requiredFlags: Long): Scope =
-    //   membersBasedOnFlags(BridgeFlags, requiredFlags)
+    def membersWithFlags(requiredFlags: Long): Scope =
+      membersBasedOnFlags(BridgeFlags, requiredFlags)
 
     /** All non-private members with the given flags, excluding bridges.
      */
-    // def nonPrivateMembersWithFlags(requiredFlags: Long): Scope =
-    //   membersBasedOnFlags(BridgeAndPrivateFlags, requiredFlags)
+    def nonPrivateMembersWithFlags(requiredFlags: Long): Scope =
+      membersBasedOnFlags(BridgeAndPrivateFlags, requiredFlags)
 
     /** The non-private member with given name, admitting members with given flags `admit`.
      *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE
@@ -806,7 +806,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else substThis(from, to).substSym(symsFrom, symsTo)
 
     /** Returns all parts of this type which satisfy predicate `p` */
-    // def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
+    def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
     def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
 
     class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
@@ -837,7 +837,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def contains(sym: Symbol): Boolean = new ContainsCollector(sym).collect(this)
 
     /** Does this type contain a reference to this type */
-    // def containsTp(tp: Type): Boolean = new ContainsTypeCollector(tp).collect(this)
+    def containsTp(tp: Type): Boolean = new ContainsTypeCollector(tp).collect(this)
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
@@ -900,9 +900,9 @@ trait Types extends api.Types { self: SymbolTable =>
     );
 
     /** Does this type implement symbol `sym` with same or stronger type? */
-    // def specializes(sym: Symbol): Boolean =
-    //   if (explainSwitch) explain("specializes", specializesSym, this, sym)
-    //   else specializesSym(this, sym)
+    def specializes(sym: Symbol): Boolean =
+      if (explainSwitch) explain("specializes", specializesSym, this, sym)
+      else specializesSym(this, sym)
 
     /** Is this type close enough to that type so that members
      *  with the two type would override each other?
@@ -1243,7 +1243,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Remove any annotations from this type and from any
      *  types embedded in this type. */
-    // def stripAnnotations = StripAnnotationsMap(this)
+    def stripAnnotations = StripAnnotationsMap(this)
 
     /** Set the self symbol of an annotated type, or do nothing
      *  otherwise.  */
@@ -2917,14 +2917,14 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   // Not used yet.
-  // object HasTypeParams {
-  //   def unapply(tp: Type): Option[(List[Symbol], Type)] = tp match {
-  //     case AnnotatedType(_, tp, _)        => unapply(tp)
-  //     case ExistentialType(tparams, qtpe) => Some((tparams, qtpe))
-  //     case PolyType(tparams, restpe)      => Some((tparams, restpe))
-  //     case _                              => None
-  //   }
-  // }
+  object HasTypeParams {
+    def unapply(tp: Type): Option[(List[Symbol], Type)] = tp match {
+      case AnnotatedType(_, tp, _)        => unapply(tp)
+      case ExistentialType(tparams, qtpe) => Some((tparams, qtpe))
+      case PolyType(tparams, restpe)      => Some((tparams, restpe))
+      case _                              => None
+    }
+  }
 
   //@M
   // a TypeVar used to be a case class with only an origin and a constr
@@ -3019,7 +3019,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     require(params.nonEmpty, this)
     override def isHigherKinded          = true
-    // override protected def typeVarString = params.map(_.name).mkString("[", ", ", "]=>" + originName)
+    override protected def typeVarString = params.map(_.name).mkString("[", ", ", "]=>" + originName)
   }
 
   /** Precondition: zipped params/args nonEmpty.  (Size equivalence enforced structurally.)
@@ -3035,9 +3035,9 @@ trait Types extends api.Types { self: SymbolTable =>
     override def params: List[Symbol] = zippedArgs map (_._1)
     override def typeArgs: List[Type] = zippedArgs map (_._2)
 
-    // override protected def typeVarString = (
-    //   zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
-    // )
+    override protected def typeVarString = (
+      zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
+    )
   }
 
   trait UntouchableTypeVar extends TypeVar {
@@ -3357,7 +3357,7 @@ trait Types extends api.Types { self: SymbolTable =>
       ).flatten map (s => s.decodedName + tparamsOfSym(s)) mkString "#"
     }
     private def levelString = if (settings.explaintypes.value) level else ""
-    // protected def typeVarString = originName
+    protected def typeVarString = originName
     override def safeToString = (
       if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
       else if (constr.inst ne NoType) "=?" + constr.inst
@@ -3714,18 +3714,18 @@ trait Types extends api.Types { self: SymbolTable =>
    *  list given is List(AnyRefClass), the resulting type would be
    *  e.g. Set[_ <: AnyRef] rather than Set[AnyRef] .
    */
-  // def appliedTypeAsUpperBounds(tycon: Type, args: List[Type]): Type = {
-  //   tycon match {
-  //     case TypeRef(pre, sym, _) if sameLength(sym.typeParams, args) =>
-  //       val eparams  = typeParamsToExistentials(sym)
-  //       val bounds   = args map (TypeBounds upper _)
-  //       foreach2(eparams, bounds)(_ setInfo _)
+  def appliedTypeAsUpperBounds(tycon: Type, args: List[Type]): Type = {
+    tycon match {
+      case TypeRef(pre, sym, _) if sameLength(sym.typeParams, args) =>
+        val eparams  = typeParamsToExistentials(sym)
+        val bounds   = args map (TypeBounds upper _)
+        foreach2(eparams, bounds)(_ setInfo _)
 
-  //       newExistentialType(eparams, typeRef(pre, sym, eparams map (_.tpe)))
-  //     case _ =>
-  //       appliedType(tycon, args)
-  //   }
-  // }
+        newExistentialType(eparams, typeRef(pre, sym, eparams map (_.tpe)))
+      case _ =>
+        appliedType(tycon, args)
+    }
+  }
 
   /** A creator and extractor for type parameterizations that strips empty type parameter lists.
    *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
@@ -3829,16 +3829,16 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** Substitutes the empty scope for any non-empty decls in the type. */
-  // object dropAllRefinements extends TypeMap {
-  //   def apply(tp: Type): Type = tp match {
-  //     case rt @ RefinedType(parents, decls) if !decls.isEmpty =>
-  //       mapOver(copyRefinedType(rt, parents, EmptyScope))
-  //     case ClassInfoType(parents, decls, clazz) if !decls.isEmpty =>
-  //       mapOver(ClassInfoType(parents, EmptyScope, clazz))
-  //     case _ =>
-  //       mapOver(tp)
-  //   }
-  // }
+  object dropAllRefinements extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case rt @ RefinedType(parents, decls) if !decls.isEmpty =>
+        mapOver(copyRefinedType(rt, parents, EmptyScope))
+      case ClassInfoType(parents, decls, clazz) if !decls.isEmpty =>
+        mapOver(ClassInfoType(parents, EmptyScope, clazz))
+      case _ =>
+        mapOver(tp)
+    }
+  }
 
   /** Type with all top-level occurrences of abstract types replaced by their bounds */
   def abstractTypesToBounds(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
@@ -4855,14 +4855,14 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  // object StripAnnotationsMap extends TypeMap {
-  //   def apply(tp: Type): Type = tp match {
-  //     case AnnotatedType(_, atp, _) =>
-  //       mapOver(atp)
-  //     case tp =>
-  //       mapOver(tp)
-  //   }
-  // }
+  object StripAnnotationsMap extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case AnnotatedType(_, atp, _) =>
+        mapOver(atp)
+      case tp =>
+        mapOver(tp)
+    }
+  }
 
   /** A map to convert every occurrence of a wildcard type to a fresh
    *  type variable */
@@ -4925,7 +4925,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** A map to implement the `filter` method. */
   class FilterTypeCollector(p: Type => Boolean) extends TypeCollector[List[Type]](Nil) {
-    // def withFilter(q: Type => Boolean) = new FilterTypeCollector(tp => p(tp) && q(tp))
+    def withFilter(q: Type => Boolean) = new FilterTypeCollector(tp => p(tp) && q(tp))
 
     override def collect(tp: Type) = super.collect(tp).reverse
 
@@ -5868,7 +5868,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  useful as documentation; it is likely that !isNonValueType(tp)
    *  will serve better than isValueType(tp).
    */
-  // def isValueType(tp: Type) = isValueElseNonValue(tp)
+  def isValueType(tp: Type) = isValueElseNonValue(tp)
 
   /** SLS 3.3, Non-Value Types
    *  Is the given type definitely a non-value type, as defined in SLS 3.3?
@@ -5879,7 +5879,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  not designated non-value types because there is code which depends on using
    *  them as type arguments, but their precise status is unclear.
    */
-  // def isNonValueType(tp: Type) = !isValueElseNonValue(tp)
+  def isNonValueType(tp: Type) = !isValueElseNonValue(tp)
 
   def isNonRefinementClassType(tpe: Type) = tpe match {
     case SingleType(_, sym) => sym.isModuleClass
@@ -5928,7 +5928,7 @@ trait Types extends api.Types { self: SymbolTable =>
     corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
   }
 
-  // def differentOrNone(tp1: Type, tp2: Type) = if (tp1 eq tp2) NoType else tp1
+  def differentOrNone(tp1: Type, tp2: Type) = if (tp1 eq tp2) NoType else tp1
 
   /** Does type `tp1` conform to `tp2`? */
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
@@ -6136,14 +6136,14 @@ trait Types extends api.Types { self: SymbolTable =>
   /** Are `tps1` and `tps2` lists of equal length such that all elements
    *  of `tps1` conform to corresponding elements of `tps2`?
    */
-  // def isSubTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ <:< _)
+  def isSubTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ <:< _)
 
   /** Does type `tp` implement symbol `sym` with same or
    *  stronger type? Exact only if `sym` is a member of some
    *  refinement type, otherwise we might return false negatives.
    */
-  // def specializesSym(tp: Type, sym: Symbol): Boolean =
-  //   specializesSym(tp, sym, AnyDepth)
+  def specializesSym(tp: Type, sym: Symbol): Boolean =
+    specializesSym(tp, sym, AnyDepth)
 
   def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean =
     tp.typeSymbol == NothingClass ||
@@ -6586,10 +6586,10 @@ trait Types extends api.Types { self: SymbolTable =>
     case _ =>
       t
   }
-  // def elimRefinement(t: Type) = t match {
-  //   case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
-  //   case _                                             => t
-  // }
+  def elimRefinement(t: Type) = t match {
+    case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
+    case _                                             => t
+  }
 
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
@@ -6634,15 +6634,15 @@ trait Types extends api.Types { self: SymbolTable =>
       (annotationsLub(lub(ts map (_.withoutAnnotations)), ts), true)
     else (lub(ts), false)
 
-  // def weakGlb(ts: List[Type]) = {
-  //   if (ts.nonEmpty && (ts forall isNumericValueType)) {
-  //     val nglb = numericGlb(ts)
-  //     if (nglb != NoType) (nglb, true)
-  //     else (glb(ts), false)
-  //   } else if (ts exists typeHasAnnotations) {
-  //     (annotationsGlb(glb(ts map (_.withoutAnnotations)), ts), true)
-  //   } else (glb(ts), false)
-  // }
+  def weakGlb(ts: List[Type]) = {
+    if (ts.nonEmpty && (ts forall isNumericValueType)) {
+      val nglb = numericGlb(ts)
+      if (nglb != NoType) (nglb, true)
+      else (glb(ts), false)
+    } else if (ts exists typeHasAnnotations) {
+      (annotationsGlb(glb(ts map (_.withoutAnnotations)), ts), true)
+    } else (glb(ts), false)
+  }
 
   def numericLub(ts: List[Type]) =
     ts reduceLeft ((t1, t2) =>
@@ -6650,11 +6650,11 @@ trait Types extends api.Types { self: SymbolTable =>
       else if (isNumericSubType(t2, t1)) t1
       else IntClass.tpe)
 
-  // def numericGlb(ts: List[Type]) =
-  //   ts reduceLeft ((t1, t2) =>
-  //     if (isNumericSubType(t1, t2)) t1
-  //     else if (isNumericSubType(t2, t1)) t2
-  //     else NoType)
+  def numericGlb(ts: List[Type]) =
+    ts reduceLeft ((t1, t2) =>
+      if (isNumericSubType(t1, t2)) t1
+      else if (isNumericSubType(t2, t1)) t2
+      else NoType)
 
   def isWeakSubType(tp1: Type, tp2: Type) =
     tp1.deconst.normalize match {
@@ -7017,8 +7017,8 @@ trait Types extends api.Types { self: SymbolTable =>
   // Without this, the matchesType call would lead to type variables on both
   // sides of a subtyping/equality judgement, which can lead to recursive types
   // being constructed. See pos/t0851 for a situation where this happens.
-  // def suspendingTypeVarsInType[T](tp: Type)(op: => T): T =
-  //   suspendingTypeVars(typeVarsInType(tp))(op)
+  def suspendingTypeVarsInType[T](tp: Type)(op: => T): T =
+    suspendingTypeVars(typeVarsInType(tp))(op)
 
   @inline final def suspendingTypeVars[T](tvs: List[TypeVar])(op: => T): T = {
     val saved = tvs map (_.suspended)
@@ -7257,7 +7257,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** Members which can be imported into other scopes.
    */
-  // def importableMembers(clazz: Symbol): Scope = importableMembers(clazz.info)
+  def importableMembers(clazz: Symbol): Scope = importableMembers(clazz.info)
   def importableMembers(pre: Type): Scope     = pre.members filter isImportable
 
   def objToAny(tp: Type): Type =
@@ -7353,7 +7353,7 @@ trait Types extends api.Types { self: SymbolTable =>
 object TypesStats {
   import BaseTypeSeqsStats._
   val rawTypeCount        = Statistics.newCounter   ("#raw type creations")
-  // val asSeenFromCount     = Statistics.newCounter   ("#asSeenFrom ops")
+  val asSeenFromCount     = Statistics.newCounter   ("#asSeenFrom ops")
   val subtypeCount        = Statistics.newCounter   ("#subtype ops")
   val sametypeCount       = Statistics.newCounter   ("#sametype ops")
   val lubCount            = Statistics.newCounter   ("#toplevel lubs/glbs")

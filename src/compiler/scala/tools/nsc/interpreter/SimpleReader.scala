@@ -19,11 +19,11 @@ extends InteractiveReader
   val history = NoHistory
   val completion = NoCompletion
 
-  // def init() = ()
+  def init() = ()
   def reset() = ()
-  // def eraseLine() = ()
+  def eraseLine() = ()
   def redrawLine() = ()
-  // def currentLine = ""
+  def currentLine = ""
   def readOneLine(prompt: String): String = {
     if (interactive) {
       out.print(prompt)

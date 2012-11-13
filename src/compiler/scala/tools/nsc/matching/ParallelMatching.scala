@@ -126,7 +126,7 @@ trait ParallelMatching extends ast.TreeDSL
 
       // for propagating "unchecked" to synthetic vars
       def isChecked = !(sym hasFlag NO_EXHAUSTIVE)
-      // def flags: List[Long] = List(NO_EXHAUSTIVE) filter (sym hasFlag _)
+      def flags: List[Long] = List(NO_EXHAUSTIVE) filter (sym hasFlag _)
 
       // this is probably where this actually belongs
       def createVar(tpe: Type, f: Symbol => Tree) = context.createVar(tpe, f, isChecked)
@@ -170,7 +170,7 @@ trait ParallelMatching extends ast.TreeDSL
     case class PatternMatch(scrut: Scrutinee, ps: List[Pattern]) {
       def head = ps.head
       def tail = ps.tail
-      // def size = ps.length
+      def size = ps.length
 
       def headType = head.necessaryType
       private val dummyCount = if (head.isCaseClass) headType.typeSymbol.caseFieldAccessors.length else 0
@@ -576,7 +576,7 @@ trait ParallelMatching extends ast.TreeDSL
         (_ys.toList, _ns.toList)
       }
 
-      // val moreSpecific = yeses map (_.moreSpecific)
+      val moreSpecific = yeses map (_.moreSpecific)
       val subsumed = yeses map (x => (x.bx, x.subsumed))
       val remaining = noes map (x => (x.bx, x.remaining))
 

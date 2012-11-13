@@ -29,13 +29,13 @@ trait Repository {
   /** The icode of the given class. If not available, it loads
    *  its bytecode.
    */
-  // def icode(sym: Symbol, force: Boolean): IClass =
-  //   icode(sym) getOrElse {
-  //     log("loading " + sym)
-  //     load(sym)
-  //     assert(available(sym))
-  //     loaded(sym)
-  //   }
+  def icode(sym: Symbol, force: Boolean): IClass =
+    icode(sym) getOrElse {
+      log("loading " + sym)
+      load(sym)
+      assert(available(sym))
+      loaded(sym)
+    }
 
   /** Load bytecode for given symbol. */
   def load(sym: Symbol): Boolean = {

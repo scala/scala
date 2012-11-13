@@ -11,7 +11,7 @@ import scala.collection.mutable
  * An in-memory directory.
  *
  * @author Lex Spoon
- *
+ * 
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualDirectory(val name: String, maybeContainer: Option[VirtualDirectory])
@@ -26,8 +26,7 @@ extends AbstractFile {
 
   def container = maybeContainer.get
   def isDirectory = true
-  val lastModified: Long = System.currentTimeMillis
-  // var lastModified: Long = System.currentTimeMillis
+  var lastModified: Long = System.currentTimeMillis
 
   override def file = null
   override def input = sys.error("directories cannot be read")

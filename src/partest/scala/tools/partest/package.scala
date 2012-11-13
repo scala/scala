@@ -13,9 +13,9 @@ import java.util.concurrent.Callable
 
 package partest {
   class TestState {
-    // def isOk      = this eq TestState.Ok
-    // def isFail    = this eq TestState.Fail
-    // def isTimeout = this eq TestState.Timeout
+    def isOk      = this eq TestState.Ok
+    def isFail    = this eq TestState.Fail
+    def isTimeout = this eq TestState.Timeout
   }
   object TestState {
     val Ok      = new TestState
@@ -43,7 +43,7 @@ package object partest {
 
   def callable[T](body: => T): Callable[T] = new Callable[T] { override def call() = body }
 
-  // def path2String(path: String) = file2String(new JFile(path))
+  def path2String(path: String) = file2String(new JFile(path))
   def file2String(f: JFile) =
     try SFile(f).slurp(scala.io.Codec.UTF8)
     catch { case _: FileNotFoundException => "" }

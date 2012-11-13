@@ -15,7 +15,7 @@ trait SymbolTables {
     private[SymbolTable] val original: Option[List[Tree]] = None) {
 
     def syms: List[Symbol] = symtab.keys.toList
-    // def isConcrete: Boolean = symtab.values forall (sym => !FreeTypeDef.unapply(sym).isDefined)
+    def isConcrete: Boolean = symtab.values forall (sym => !FreeTypeDef.unapply(sym).isDefined)
 
 //    def aliases: Map[Symbol, List[TermName]] = aliases.distinct groupBy (_._1) mapValues (_ map (_._2))
 

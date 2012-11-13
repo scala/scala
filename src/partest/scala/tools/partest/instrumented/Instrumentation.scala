@@ -78,7 +78,6 @@ object Instrumentation {
     !t.className.startsWith("scala/util/DynamicVariable")
   }
 
-  // Used in tests.
   def printStatistics(stats: Statistics = getStatistics, filter: MethodCallTrace => Boolean = standardFilter): Unit = {
     val stats = getStatistics
     println("Method call statistics:")

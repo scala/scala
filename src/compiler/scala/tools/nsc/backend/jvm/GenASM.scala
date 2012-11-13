@@ -455,7 +455,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
   /** basic functionality for class file building */
   abstract class JBuilder(bytecodeWriter: BytecodeWriter) {
 
-    // val EMPTY_JTYPE_ARRAY  = Array.empty[asm.Type]
+    val EMPTY_JTYPE_ARRAY  = Array.empty[asm.Type]
     val EMPTY_STRING_ARRAY = Array.empty[String]
 
     val mdesc_arglessvoid = "()V"
@@ -523,7 +523,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     /** Specialized array conversion to prevent calling
      *  java.lang.reflect.Array.newInstance via TraversableOnce.toArray
      */
-    // def mkArray(xs: Traversable[asm.Type]):  Array[asm.Type]  = { val a = new Array[asm.Type](xs.size); xs.copyToArray(a); a }
+    def mkArray(xs: Traversable[asm.Type]):  Array[asm.Type]  = { val a = new Array[asm.Type](xs.size); xs.copyToArray(a); a }
     def mkArray(xs: Traversable[String]):    Array[String]    = { val a = new Array[String](xs.size);   xs.copyToArray(a); a }
 
     // -----------------------------------------------------------------------------------------
@@ -1757,10 +1757,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       import asm.Opcodes;
 
-      // def aconst(cst: AnyRef) {
-      //   if (cst == null) { jmethod.visitInsn(Opcodes.ACONST_NULL) }
-      //   else             { jmethod.visitLdcInsn(cst) }
-      // }
+      def aconst(cst: AnyRef) {
+        if (cst == null) { jmethod.visitInsn(Opcodes.ACONST_NULL) }
+        else             { jmethod.visitLdcInsn(cst) }
+      }
 
       final def boolconst(b: Boolean) { iconst(if(b) 1 else 0) }
 

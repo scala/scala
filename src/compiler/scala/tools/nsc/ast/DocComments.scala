@@ -22,9 +22,9 @@ trait DocComments { self: Global =>
   val docComments = mutable.HashMap[Symbol, DocComment]()
 
   /** Associate comment with symbol `sym` at position `pos`. */
-  // def docComment(sym: Symbol, docStr: String, pos: Position = NoPosition) =
-  //   if ((sym ne null) && (sym ne NoSymbol))
-  //     docComments += (sym -> DocComment(docStr, pos))
+  def docComment(sym: Symbol, docStr: String, pos: Position = NoPosition) =
+    if ((sym ne null) && (sym ne NoSymbol))
+      docComments += (sym -> DocComment(docStr, pos))
 
   /** The raw doc comment of symbol `sym`, as it appears in the source text, "" if missing.
    */
@@ -120,7 +120,7 @@ trait DocComments { self: Global =>
     getDocComment(sym) map getUseCases getOrElse List()
   }
 
-  // def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym.enclClass)
+  def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym.enclClass)
 
   /** Returns the javadoc format of doc comment string `s`, including wiki expansion
    */
