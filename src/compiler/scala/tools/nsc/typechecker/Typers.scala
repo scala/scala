@@ -3885,6 +3885,7 @@ trait Typers extends Modes with Adaptations with Tags {
           val (outer, explicitTargs) = cxTree1 match {
             case TypeApply(fun, targs)              => (fun, targs)
             case Apply(TypeApply(fun, targs), args) => (Apply(fun, args), targs)
+            case Select(TypeApply(fun, targs), nme) => (Select(fun, nme), targs)
             case t                                  => (t, Nil)
           }
           def hasNamedArg(as: List[Tree]) = as.collectFirst{case AssignOrNamedArg(lhs, rhs) =>}.nonEmpty
