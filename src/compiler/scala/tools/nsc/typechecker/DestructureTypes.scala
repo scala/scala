@@ -64,15 +64,15 @@ trait DestructureTypes {
       },
       tree.productPrefix
     )
-    def wrapSymbol(label: String, sym: Symbol): Node = {
-      if (sym eq NoSymbol) wrapEmpty
-      else atom(label, sym)
-    }
-    def wrapInfo(sym: Symbol) = sym.info match {
-      case TypeBounds(lo, hi)        => typeBounds(lo, hi)
-      case PolyType(tparams, restpe) => polyFunction(tparams, restpe)
-      case _                         => wrapEmpty
-    }
+    // def wrapSymbol(label: String, sym: Symbol): Node = {
+    //   if (sym eq NoSymbol) wrapEmpty
+    //   else atom(label, sym)
+    // }
+    // def wrapInfo(sym: Symbol) = sym.info match {
+    //   case TypeBounds(lo, hi)        => typeBounds(lo, hi)
+    //   case PolyType(tparams, restpe) => polyFunction(tparams, restpe)
+    //   case _                         => wrapEmpty
+    // }
     def wrapSymbolInfo(sym: Symbol): Node = {
       if ((sym eq NoSymbol) || openSymbols(sym)) wrapEmpty
       else {
@@ -95,7 +95,7 @@ trait DestructureTypes {
     def constant(label: String, const: Constant): Node = atom(label, const)
 
     def scope(decls: Scope): Node          = node("decls", scopeMemberList(decls.toList))
-    def const[T](named: (String, T)): Node = constant(named._1, Constant(named._2))
+    // def const[T](named: (String, T)): Node = constant(named._1, Constant(named._2))
 
     def resultType(restpe: Type): Node          = this("resultType", restpe)
     def typeParams(tps: List[Symbol]): Node     = node("typeParams", symbolList(tps))

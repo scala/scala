@@ -29,43 +29,43 @@ trait MethodSynthesis {
       if (sym.isLazy) ValDef(sym, body)
       else DefDef(sym, body)
 
-    def applyTypeInternal(tags: List[TT[_]]): Type = {
-      val symbols = tags map compilerSymbolFromTag
-      val container :: args = symbols
-      val tparams = container.typeConstructor.typeParams
+    // def applyTypeInternal(tags: List[TT[_]]): Type = {
+    //   val symbols = tags map compilerSymbolFromTag
+    //   val container :: args = symbols
+    //   val tparams = container.typeConstructor.typeParams
 
-      // Conservative at present - if manifests were more usable this could do a lot more.
-      // [Eugene to Paul] all right, they are now. what do you have in mind?
-      require(symbols forall (_ ne NoSymbol), "Must find all tags: " + symbols)
-      require(container.owner.isPackageClass, "Container must be a top-level class in a package: " + container)
-      require(tparams.size == args.size, "Arguments must match type constructor arity: " + tparams + ", " + args)
+    //   // Conservative at present - if manifests were more usable this could do a lot more.
+    //   // [Eugene to Paul] all right, they are now. what do you have in mind?
+    //   require(symbols forall (_ ne NoSymbol), "Must find all tags: " + symbols)
+    //   require(container.owner.isPackageClass, "Container must be a top-level class in a package: " + container)
+    //   require(tparams.size == args.size, "Arguments must match type constructor arity: " + tparams + ", " + args)
 
-      appliedType(container, args map (_.tpe): _*)
-    }
+    //   appliedType(container, args map (_.tpe): _*)
+    // }
 
-    def companionType[T](implicit ct: CT[T]) =
-      rootMirror.getRequiredModule(ct.runtimeClass.getName).tpe
+    // def companionType[T](implicit ct: CT[T]) =
+    //   rootMirror.getRequiredModule(ct.runtimeClass.getName).tpe
 
     // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
-    def applyType[CC](implicit t1: TT[CC]): Type =
-      applyTypeInternal(List(t1))
+    // def applyType[CC](implicit t1: TT[CC]): Type =
+    //   applyTypeInternal(List(t1))
 
-    def applyType[CC[X1], X1](implicit t1: TT[CC[_]], t2: TT[X1]): Type =
-      applyTypeInternal(List(t1, t2))
+    // def applyType[CC[X1], X1](implicit t1: TT[CC[_]], t2: TT[X1]): Type =
+    //   applyTypeInternal(List(t1, t2))
 
-    def applyType[CC[X1, X2], X1, X2](implicit t1: TT[CC[_,_]], t2: TT[X1], t3: TT[X2]): Type =
-      applyTypeInternal(List(t1, t2, t3))
+    // def applyType[CC[X1, X2], X1, X2](implicit t1: TT[CC[_,_]], t2: TT[X1], t3: TT[X2]): Type =
+    //   applyTypeInternal(List(t1, t2, t3))
 
-    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: TT[CC[_,_,_]], t2: TT[X1], t3: TT[X2], t4: TT[X3]): Type =
-      applyTypeInternal(List(t1, t2, t3, t4))
+    // def applyType[CC[X1, X2, X3], X1, X2, X3](implicit t1: TT[CC[_,_,_]], t2: TT[X1], t3: TT[X2], t4: TT[X3]): Type =
+    //   applyTypeInternal(List(t1, t2, t3, t4))
 
-    def newMethodType[F](owner: Symbol)(implicit t: TT[F]): Type = {
-      val fnSymbol = compilerSymbolFromTag(t)
-      val formals = compilerTypeFromTag(t).typeArguments
-      assert(fnSymbol isSubClass FunctionClass(formals.size - 1), (owner, t))
-      val params  = owner newSyntheticValueParams formals
-      MethodType(params, formals.last)
-    }
+    // def newMethodType[F](owner: Symbol)(implicit t: TT[F]): Type = {
+    //   val fnSymbol = compilerSymbolFromTag(t)
+    //   val formals = compilerTypeFromTag(t).typeArguments
+    //   assert(fnSymbol isSubClass FunctionClass(formals.size - 1), (owner, t))
+    //   val params  = owner newSyntheticValueParams formals
+    //   MethodType(params, formals.last)
+    // }
 
       /** The annotations amongst those found on the original symbol which
        *  should be propagated to this kind of accessor.
@@ -118,8 +118,8 @@ trait MethodSynthesis {
       finishMethod(clazz.info.decls enter m, f)
     }
 
-    private def cloneInternal(original: Symbol, f: Symbol => Tree): Tree =
-      cloneInternal(original, f, original.name)
+    // private def cloneInternal(original: Symbol, f: Symbol => Tree): Tree =
+    //   cloneInternal(original, f, original.name)
 
     def clazzMember(name: Name)  = clazz.info nonPrivateMember name
     def typeInClazz(sym: Symbol) = clazz.thisType memberType sym
@@ -128,11 +128,11 @@ trait MethodSynthesis {
      *  the same type as `name` in clazz, and returns the tree to be
      *  added to the template.
      */
-    def overrideMethod(name: Name)(f: Symbol => Tree): Tree =
-      overrideMethod(clazzMember(name))(f)
+    // def overrideMethod(name: Name)(f: Symbol => Tree): Tree =
+    //   overrideMethod(clazzMember(name))(f)
 
-    def overrideMethod(original: Symbol)(f: Symbol => Tree): Tree =
-      cloneInternal(original, sym => f(sym setFlag OVERRIDE))
+    // def overrideMethod(original: Symbol)(f: Symbol => Tree): Tree =
+    //   cloneInternal(original, sym => f(sym setFlag OVERRIDE))
 
     def deriveMethod(original: Symbol, nameFn: Name => Name)(f: Symbol => Tree): Tree =
       cloneInternal(original, f, nameFn(original.name))
@@ -311,7 +311,7 @@ trait MethodSynthesis {
       // Final methods to make the rest easier to reason about.
       final def mods               = tree.mods
       final def basisSym           = tree.symbol
-      final def derivedFlags: Long = basisSym.flags & flagsMask | flagsExtra
+      // final def derivedFlags: Long = basisSym.flags & flagsMask | flagsExtra
     }
 
     trait DerivedFromClassDef extends DerivedFromMemberDef {

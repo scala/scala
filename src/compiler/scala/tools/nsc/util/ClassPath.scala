@@ -50,20 +50,20 @@ object ClassPath {
   def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
 
   /** Split the classpath, filter according to predicate, and reassemble. */
-  def filter(cp: String, p: String => Boolean): String = join(split(cp) filter p: _*)
+  // def filter(cp: String, p: String => Boolean): String = join(split(cp) filter p: _*)
 
   /** Split the classpath and map them into Paths */
-  def toPaths(cp: String): List[Path] = split(cp) map (x => Path(x).toAbsolute)
+  // def toPaths(cp: String): List[Path] = split(cp) map (x => Path(x).toAbsolute)
 
   /** Make all classpath components absolute. */
-  def makeAbsolute(cp: String): String = fromPaths(toPaths(cp): _*)
+  // def makeAbsolute(cp: String): String = fromPaths(toPaths(cp): _*)
 
   /** Join the paths as a classpath */
-  def fromPaths(paths: Path*): String = join(paths map (_.path): _*)
-  def fromURLs(urls: URL*): String = fromPaths(urls map (x => Path(x.getPath)) : _*)
+  // def fromPaths(paths: Path*): String = join(paths map (_.path): _*)
+  // def fromURLs(urls: URL*): String = fromPaths(urls map (x => Path(x.getPath)) : _*)
 
   /** Split the classpath and map them into URLs */
-  def toURLs(cp: String): List[URL] = toPaths(cp) map (_.toURL)
+  // def toURLs(cp: String): List[URL] = toPaths(cp) map (_.toURL)
 
   /** Expand path and possibly expanding stars */
   def expandPath(path: String, expandStar: Boolean = true): List[String] =
@@ -124,12 +124,12 @@ object ClassPath {
       for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
         newClassPath(entry)
 
-    def classesAtAllURLS(path: String): List[ClassPath[T]] =
-      (path split " ").toList flatMap classesAtURL
+    // def classesAtAllURLS(path: String): List[ClassPath[T]] =
+    //   (path split " ").toList flatMap classesAtURL
 
-    def classesAtURL(spec: String) =
-      for (url <- specToURL(spec).toList ; location <- Option(AbstractFile getURL url)) yield
-        newClassPath(location)
+    // def classesAtURL(spec: String) =
+    //   for (url <- specToURL(spec).toList ; location <- Option(AbstractFile getURL url)) yield
+    //     newClassPath(location)
 
     def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
       classesInPathImpl(path, true).toIndexedSeq
@@ -400,14 +400,14 @@ class JavaClassPath(
   context: JavaContext)
 extends MergedClassPath[AbstractFile](containers, context) { }
 
-object JavaClassPath {
-  def fromURLs(urls: Seq[URL], context: JavaContext): JavaClassPath = {
-    val containers = {
-      for (url <- urls ; f = AbstractFile getURL url ; if f != null) yield
-        new DirectoryClassPath(f, context)
-    }
-    new JavaClassPath(containers.toIndexedSeq, context)
-  }
-  def fromURLs(urls: Seq[URL]): JavaClassPath =
-    fromURLs(urls, ClassPath.DefaultJavaContext)
-}
+// object JavaClassPath {
+//   def fromURLs(urls: Seq[URL], context: JavaContext): JavaClassPath = {
+//     val containers = {
+//       for (url <- urls ; f = AbstractFile getURL url ; if f != null) yield
+//         new DirectoryClassPath(f, context)
+//     }
+//     new JavaClassPath(containers.toIndexedSeq, context)
+//   }
+//   def fromURLs(urls: Seq[URL]): JavaClassPath =
+//     fromURLs(urls, ClassPath.DefaultJavaContext)
+// }

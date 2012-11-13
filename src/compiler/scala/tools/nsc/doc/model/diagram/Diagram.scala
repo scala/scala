@@ -36,12 +36,12 @@ case class InheritanceDiagram(thisNode: ThisNode,
   override def isInheritanceDiagram = true
   lazy val depthInfo = new DepthInfo {
     def maxDepth = 3
-    def nodeDepth(node: Node) =
-      if (node == thisNode) 1
-      else if (superClasses.contains(node)) 0
-      else if (subClasses.contains(node)) 2
-      else if (incomingImplicits.contains(node) || outgoingImplicits.contains(node)) 1
-      else -1
+    // def nodeDepth(node: Node) =
+    //   if (node == thisNode) 1
+    //   else if (superClasses.contains(node)) 0
+    //   else if (subClasses.contains(node)) 2
+    //   else if (incomingImplicits.contains(node) || outgoingImplicits.contains(node)) 1
+    //   else -1
   }
 }
 
@@ -49,7 +49,7 @@ trait DepthInfo {
   /** Gives the maximum depth */
   def maxDepth: Int
   /** Gives the depth of any node in the diagram or -1 if the node is not in the diagram */
-  def nodeDepth(node: Node): Int
+  // def nodeDepth(node: Node): Int
 }
 
 abstract class Node {
@@ -142,5 +142,5 @@ class ContentDiagramDepth(pack: ContentDiagram) extends DepthInfo {
   }
 
   val maxDepth = _maxDepth
-  def nodeDepth(node: Node) = _nodeDepth.getOrElse(node, -1)
+  // def nodeDepth(node: Node) = _nodeDepth.getOrElse(node, -1)
 }

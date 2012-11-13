@@ -28,9 +28,9 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     if (isModule) getModuleIfDefined(name)
     else getModuleIfDefined(name)
   )
-  def getType(name: String, isModule: Boolean) = getSymbol(name, isModule).tpe
-  def typeOf(name: String)                     = getType(name, false)
-  def moduleOf(name: String)                   = getType(name, true)
+  // def getType(name: String, isModule: Boolean) = getSymbol(name, isModule).tpe
+  // def typeOf(name: String)                     = getType(name, false)
+  // def moduleOf(name: String)                   = getType(name, true)
 
   trait CompilerCompletion {
     def tp: Type
@@ -47,7 +47,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
     def tos(sym: Symbol): String = sym.decodedName
     def memberNamed(s: String) = exitingTyper(effectiveTp member newTermName(s))
-    def hasMethod(s: String) = memberNamed(s).isMethod
+    // def hasMethod(s: String) = memberNamed(s).isMethod
 
     // XXX we'd like to say "filterNot (_.isDeprecated)" but this causes the
     // compiler to crash for reasons not yet known.
@@ -280,8 +280,8 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   }
 
   // generic interface for querying (e.g. interpreter loop, testing)
-  def completions(buf: String): List[String] =
-    topLevelFor(Parsed.dotted(buf + ".", buf.length + 1))
+  // def completions(buf: String): List[String] =
+  //   topLevelFor(Parsed.dotted(buf + ".", buf.length + 1))
 
   def completer(): ScalaCompleter = new JLineTabCompletion
 

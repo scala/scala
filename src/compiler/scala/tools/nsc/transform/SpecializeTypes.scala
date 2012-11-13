@@ -187,9 +187,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Returns the generic class that was specialized to 'sClass', or
    *  'sClass' itself if sClass is not a specialized subclass.
    */
-  def genericClass(sClass: Symbol): Symbol =
-    if (sClass.isSpecialized) sClass.superClass
-    else sClass
+  // def genericClass(sClass: Symbol): Symbol =
+  //   if (sClass.isSpecialized) sClass.superClass
+  //   else sClass
 
   case class Overload(sym: Symbol, env: TypeEnv) {
     override def toString = "specialized overload " + sym + " in " + env
@@ -223,7 +223,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      */
     def degenerate = false
 
-    def isAccessor = false
+    // def isAccessor = false
   }
 
   /** Symbol is a special overloaded method of 'original', in the environment env. */
@@ -248,7 +248,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   /** Symbol is a specialized accessor for the `target` field. */
   case class SpecializedAccessor(target: Symbol) extends SpecializedInfo {
-    override def isAccessor = true
+    // override def isAccessor = true
   }
 
   /** Symbol is a specialized method whose body should be the target's method body. */
@@ -288,8 +288,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   def specializedParams(sym: Symbol): List[Symbol] =
     sym.info.typeParams filter (_.isSpecialized)
 
-  def splitParams(tps: List[Symbol]) =
-    tps partition (_.isSpecialized)
+  // def splitParams(tps: List[Symbol]) =
+  //   tps partition (_.isSpecialized)
 
   /** Given an original class symbol and a list of types its type parameters are instantiated at
    *  returns a list of type parameters that should remain in the TypeRef when instantiating a
@@ -1185,7 +1185,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *
    *  A conflicting type environment could still be satisfiable.
    */
-  def conflicting(env: TypeEnv) = !nonConflicting(env)
+  // def conflicting(env: TypeEnv) = !nonConflicting(env)
   def nonConflicting(env: TypeEnv) = env forall { case (tvar, tpe) =>
     (subst(env, tvar.info.bounds.lo) <:< tpe) && (tpe <:< subst(env, tvar.info.bounds.hi))
   }
@@ -1866,10 +1866,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  def printSpecStats() {
-    println("    concreteSpecMembers: %7d".format(concreteSpecMethods.size))
-    println("    overloads:           %7d".format(overloads.size))
-    println("    typeEnv:             %7d".format(typeEnv.size))
-    println("    info:                %7d".format(info.size))
-  }
+  // def printSpecStats() {
+  //   println("    concreteSpecMembers: %7d".format(concreteSpecMethods.size))
+  //   println("    overloads:           %7d".format(overloads.size))
+  //   println("    typeEnv:             %7d".format(typeEnv.size))
+  //   println("    info:                %7d".format(info.size))
+  // }
 }

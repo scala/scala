@@ -72,9 +72,9 @@ trait ExceptionHandlers {
     override def dup: Finalizer = new Finalizer(method, label, pos)
   }
 
-  object NoFinalizer extends Finalizer(null, newTermNameCached("<no finalizer>"), NoPosition) {
-    override def startBlock: BasicBlock             = sys.error("NoFinalizer cannot have a start block.");
-    override def setStartBlock(b: BasicBlock): Unit = sys.error("NoFinalizer cannot have a start block.");
-    override def dup = this
-  }
+  // object NoFinalizer extends Finalizer(null, newTermNameCached("<no finalizer>"), NoPosition) {
+  //   override def startBlock: BasicBlock             = sys.error("NoFinalizer cannot have a start block.");
+  //   override def setStartBlock(b: BasicBlock): Unit = sys.error("NoFinalizer cannot have a start block.");
+  //   override def dup = this
+  // }
 }

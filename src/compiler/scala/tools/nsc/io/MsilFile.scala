@@ -15,4 +15,4 @@ import ch.epfl.lamp.compiler.msil.{ Type => MsilType }
 class MsilFile(val msilType: MsilType) extends VirtualFile(msilType.FullName, msilType.Namespace) {
 }
 
-object NoMsilFile extends MsilFile(null) { }
+// object NoMsilFile extends MsilFile(null) { }

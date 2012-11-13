@@ -189,8 +189,8 @@ abstract class ClosureElimination extends SubComponent {
     }
 
     /** is field 'f' accessible from method 'm'? */
-    def accessible(f: Symbol, m: Symbol): Boolean =
-      f.isPublic || (f.isProtected && (f.enclosingPackageClass == m.enclosingPackageClass))
+    // def accessible(f: Symbol, m: Symbol): Boolean =
+    //   f.isPublic || (f.isProtected && (f.enclosingPackageClass == m.enclosingPackageClass))
   } /* class ClosureElim */
 
 

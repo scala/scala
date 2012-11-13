@@ -9,7 +9,8 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.mutable.{ListBuffer, StringBuilder}
+import scala.collection.{ mutable, immutable }
+import mutable.{ ListBuffer, StringBuilder }
 import scala.reflect.internal.{ ModifierFlags => Flags }
 import scala.reflect.internal.Chars.{ isScalaLetter }
 import scala.reflect.internal.util.{ SourceFile, OffsetPosition }
@@ -167,7 +168,7 @@ self =>
 
     object symbXMLBuilder extends SymbolicXMLBuilder(this, preserveWS = true) { // DEBUG choices
       val global: self.global.type = self.global
-      def freshName(prefix: String): Name = SourceFileParser.this.freshName(prefix)
+      // def freshName(prefix: String): Name = SourceFileParser.this.freshName(prefix)
     }
 
     def xmlLiteral : Tree = xmlp.xLiteral
@@ -463,7 +464,7 @@ self =>
 
 /* ------------- ERROR HANDLING ------------------------------------------- */
 
-    var assumedClosingParens = scala.collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+    val assumedClosingParens = mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
     private var inFunReturnType = false
     @inline private def fromWithinReturnType[T](body: => T): T = {
@@ -640,7 +641,7 @@ self =>
       case _ => false
     }
 
-    def isTypeIntro: Boolean = isTypeIntroToken(in.token)
+    // def isTypeIntro: Boolean = isTypeIntroToken(in.token)
 
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
 
@@ -765,9 +766,9 @@ self =>
         }
       }
 
-    def checkSize(kind: String, size: Int, max: Int) {
-      if (size > max) syntaxError("too many "+kind+", maximum = "+max, false)
-    }
+    // def checkSize(kind: String, size: Int, max: Int) {
+    //   if (size > max) syntaxError("too many "+kind+", maximum = "+max, false)
+    // }
 
     def checkAssoc(offset: Int, op: Name, leftAssoc: Boolean) =
       if (treeInfo.isLeftAssoc(op) != leftAssoc)
@@ -1218,10 +1219,10 @@ self =>
      *  EqualsExpr ::= `=' Expr
      *  }}}
      */
-    def equalsExpr(): Tree = {
-      accept(EQUALS)
-      expr()
-    }
+    // def equalsExpr(): Tree = {
+    //   accept(EQUALS)
+    //   expr()
+    // }
 
     def condExpr(): Tree = {
       if (in.token == LPAREN) {
@@ -1964,7 +1965,7 @@ self =>
 
     /** Default entry points into some pattern contexts. */
     def pattern(): Tree = noSeq.pattern()
-    def patterns(): List[Tree] = noSeq.patterns()
+    // def patterns(): List[Tree] = noSeq.patterns()
     def seqPatterns(): List[Tree] = seqOK.patterns()
     def xmlSeqPatterns(): List[Tree] = xmlSeqOK.patterns() // Called from xml parser
     def argumentPatterns(): List[Tree] = inParens {

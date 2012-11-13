@@ -47,7 +47,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
         }
     })
 
-  implicit lazy val SettingOrdering: Ordering[Setting] = Ordering.ordered
+  // implicit lazy val SettingOrdering: Ordering[Setting] = Ordering.ordered
 
   trait AbsSetting extends Ordered[Setting] with AbsSettingValue {
     def name: String
@@ -84,12 +84,12 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     }
 
     /** If the appearance of the setting should halt argument processing. */
-    private var isTerminatorSetting = false
-    def shouldStopProcessing = isTerminatorSetting
-    def stopProcessing(): this.type = {
-      isTerminatorSetting = true
-      this
-    }
+    // private var isTerminatorSetting = false
+    // def shouldStopProcessing = isTerminatorSetting
+    // def stopProcessing(): this.type = {
+    //   isTerminatorSetting = true
+    //   this
+    // }
 
     /** Issue error and return */
     def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }
@@ -111,7 +111,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     /** Attempt to set from a properties file style property value.
      *  Currently used by Eclipse SDT only.
      */
-    def tryToSetFromPropertyValue(s: String): Unit = tryToSet(s :: Nil)
+    def tryToSetFromPropertyValue(s: String): Unit = tryToSet(s :: Nil) // used in ide?
 
     /** These categorizations are so the help output shows -X and -P among
      *  the standard options and -Y among the advanced options.

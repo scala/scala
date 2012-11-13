@@ -48,7 +48,7 @@ package object interpreter extends ReplConfig with ReplStrings {
 
   private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
   private[nsc] implicit def enrichAnyRefWithTap[T](x: T) = new TapMaker(x)
-  private[nsc] def tracing[T](msg: String)(x: T): T = x.tapTrace(msg)
+  // private[nsc] def tracing[T](msg: String)(x: T): T = x.tapTrace(msg)
   private[nsc] def debugging[T](msg: String)(x: T) = x.tapDebug(msg)
 
   private val ourClassloader = getClass.getClassLoader
@@ -68,38 +68,38 @@ package object interpreter extends ReplConfig with ReplStrings {
     import global.{ reporter => _, _ }
     import definitions._
 
-    lazy val tagOfStdReplVals = staticTypeTag[scala.tools.nsc.interpreter.StdReplVals]
+    // lazy val tagOfStdReplVals = staticTypeTag[scala.tools.nsc.interpreter.StdReplVals]
 
     protected def echo(msg: String) = {
       Console.out println msg
       Console.out.flush()
     }
 
-    def wrapCommand(line: String): String = {
-      def failMsg = "Argument to :wrap must be the name of a method with signature [T](=> T): T"
+    // def wrapCommand(line: String): String = {
+    //   def failMsg = "Argument to :wrap must be the name of a method with signature [T](=> T): T"
 
-      words(line) match {
-        case Nil            =>
-          intp.executionWrapper match {
-            case ""   => "No execution wrapper is set."
-            case s    => "Current execution wrapper: " + s
-          }
-        case "clear" :: Nil =>
-          intp.executionWrapper match {
-            case ""   => "No execution wrapper is set."
-            case s    => intp.clearExecutionWrapper() ; "Cleared execution wrapper."
-          }
-        case wrapper :: Nil =>
-          intp.typeOfExpression(wrapper) match {
-            case PolyType(List(targ), MethodType(List(arg), restpe)) =>
-              setExecutionWrapper(originalPath(wrapper))
-              "Set wrapper to '" + wrapper + "'"
-            case tp =>
-              failMsg + "\nFound: <unknown>"
-          }
-        case _ => failMsg
-      }
-    }
+    //   words(line) match {
+    //     case Nil            =>
+    //       intp.executionWrapper match {
+    //         case ""   => "No execution wrapper is set."
+    //         case s    => "Current execution wrapper: " + s
+    //       }
+    //     case "clear" :: Nil =>
+    //       intp.executionWrapper match {
+    //         case ""   => "No execution wrapper is set."
+    //         case s    => intp.clearExecutionWrapper() ; "Cleared execution wrapper."
+    //       }
+    //     case wrapper :: Nil =>
+    //       intp.typeOfExpression(wrapper) match {
+    //         case PolyType(List(targ), MethodType(List(arg), restpe)) =>
+    //           setExecutionWrapper(originalPath(wrapper))
+    //           "Set wrapper to '" + wrapper + "'"
+    //         case tp =>
+    //           failMsg + "\nFound: <unknown>"
+    //       }
+    //     case _ => failMsg
+    //   }
+    // }
 
     def implicitsCommand(line: String): String = {
       def p(x: Any) = intp.reporter.printMessage("" + x)

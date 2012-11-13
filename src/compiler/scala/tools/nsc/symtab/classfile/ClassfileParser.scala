@@ -1172,16 +1172,16 @@ abstract class ClassfileParser {
     /** Return the Symbol of the top level class enclosing `name`,
      *  or 'name's symbol if no entry found for `name`.
      */
-    def topLevelClass(name: Name): Symbol = {
-      val tlName = if (isDefinedAt(name)) {
-        var entry = this(name)
-        while (isDefinedAt(entry.outerName))
-          entry = this(entry.outerName)
-        entry.outerName
-      } else
-        name
-      classNameToSymbol(tlName)
-    }
+    // def topLevelClass(name: Name): Symbol = {
+    //   val tlName = if (isDefinedAt(name)) {
+    //     var entry = this(name)
+    //     while (isDefinedAt(entry.outerName))
+    //       entry = this(entry.outerName)
+    //     entry.outerName
+    //   } else
+    //     name
+    //   classNameToSymbol(tlName)
+    // }
 
     /** Return the class symbol for `externalName`. It looks it up in its outer class.
      *  Forces all outer class symbols to be completed.

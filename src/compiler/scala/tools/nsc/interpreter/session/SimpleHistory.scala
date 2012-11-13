@@ -55,8 +55,8 @@ class SimpleHistory extends JLineHistory {
   def moveToEnd(): Unit = setTo(size)
 
   // scala legacy interface
-  def asList: List[JEntry] = toEntries().toList
-  def asJavaList           = entries()
+  // def asList: List[JEntry] = toEntries().toList
+  // def asJavaList           = entries()
   def asStrings            = buf.toList
-  def grep(s: String)      = buf.toList filter (_ contains s)
+  // def grep(s: String)      = buf.toList filter (_ contains s)
 }

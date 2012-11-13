@@ -1388,11 +1388,11 @@ trait Namers extends MethodSynthesis {
         tpe
     }
 
-    def ensureParent(clazz: Symbol, parent: Symbol) = {
-      val info0 = clazz.info
-      val info1 = includeParent(info0, parent)
-      if (info0 ne info1) clazz setInfo info1
-    }
+    // def ensureParent(clazz: Symbol, parent: Symbol) = {
+    //   val info0 = clazz.info
+    //   val info1 = includeParent(info0, parent)
+    //   if (info0 ne info1) clazz setInfo info1
+    // }
 
     class LogTransitions[S](onEnter: S => String, onExit: S => String) {
       val enabled = settings.debug.value
@@ -1585,12 +1585,12 @@ trait Namers extends MethodSynthesis {
     }
   }
 
-  @deprecated("Use underlyingSymbol instead", "2.10.0")
-  def underlying(member: Symbol): Symbol = underlyingSymbol(member)
-  @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionClassOf(module: Symbol, ctx: Context): Symbol = companionSymbolOf(module, ctx)
-  @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionModuleOf(clazz: Symbol, ctx: Context): Symbol = companionSymbolOf(clazz, ctx)
+  // @deprecated("Use underlyingSymbol instead", "2.10.0")
+  // def underlying(member: Symbol): Symbol = underlyingSymbol(member)
+  // @deprecated("Use `companionSymbolOf` instead", "2.10.0")
+  // def companionClassOf(module: Symbol, ctx: Context): Symbol = companionSymbolOf(module, ctx)
+  // @deprecated("Use `companionSymbolOf` instead", "2.10.0")
+  // def companionModuleOf(clazz: Symbol, ctx: Context): Symbol = companionSymbolOf(clazz, ctx)
 
   /** The companion class or companion module of `original`.
    *  Calling .companionModule does not work for classes defined inside methods.

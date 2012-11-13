@@ -126,9 +126,9 @@ trait Members {
 
     override def toString() = symbol.fullName
 
-    def lookupField(s: Symbol)  = fields find (_.symbol == s)
+    // def lookupField(s: Symbol)  = fields find (_.symbol == s)
     def lookupMethod(s: Symbol) = methods find (_.symbol == s)
-    def lookupMethod(s: Name)   = methods find (_.symbol.name == s)
+    // def lookupMethod(s: Name)   = methods find (_.symbol.name == s)
 
     /* returns this methods static ctor if it has one. */
     def lookupStaticCtor: Option[IMethod] = methods find (_.symbol.isStaticConstructor)
@@ -159,7 +159,7 @@ trait Members {
     def linearizedBlocks(lin: Linearizer = self.linearizer): List[BasicBlock] = lin linearize this
 
     def foreachBlock[U](f: BasicBlock  => U): Unit = blocks foreach f
-    def foreachInstr[U](f: Instruction => U): Unit = foreachBlock(_.toList foreach f)
+    // def foreachInstr[U](f: Instruction => U): Unit = foreachBlock(_.toList foreach f)
 
     var native = false
 
@@ -192,7 +192,7 @@ trait Members {
       }
 
     def addLocals(ls: List[Local]) = ls foreach addLocal
-    def addParams(as: List[Local]) = as foreach addParam
+    // def addParams(as: List[Local]) = as foreach addParam
 
     def lookupLocal(n: Name): Option[Local]     = locals find (_.sym.name == n)
     def lookupLocal(sym: Symbol): Option[Local] = locals find (_.sym == sym)
@@ -207,28 +207,28 @@ trait Members {
 
     override def toString() = symbol.fullName
 
-    def matchesSignature(other: IMethod) = {
-      (symbol.name == other.symbol.name) &&
-      (params corresponds other.params)(_.kind == _.kind) &&
-      (returnType == other.returnType)
-    }
+    // def matchesSignature(other: IMethod) = {
+    //   (symbol.name == other.symbol.name) &&
+    //   (params corresponds other.params)(_.kind == _.kind) &&
+    //   (returnType == other.returnType)
+    // }
 
     import opcodes._
-    def checkLocals(): Unit = {
-      def localsSet = (code.blocks flatMap { bb =>
-        bb.iterator collect {
-          case LOAD_LOCAL(l)  => l
-          case STORE_LOCAL(l) => l
-        }
-      }).toSet
+    // def checkLocals(): Unit = {
+    //   def localsSet = (code.blocks flatMap { bb =>
+    //     bb.iterator collect {
+    //       case LOAD_LOCAL(l)  => l
+    //       case STORE_LOCAL(l) => l
+    //     }
+    //   }).toSet
 
-      if (hasCode) {
-        log("[checking locals of " + this + "]")
-        locals filterNot localsSet foreach { l =>
-          log("Local " + l + " is not declared in " + this)
-        }
-      }
-    }
+    //   if (hasCode) {
+    //     log("[checking locals of " + this + "]")
+    //     locals filterNot localsSet foreach { l =>
+    //       log("Local " + l + " is not declared in " + this)
+    //     }
+    //   }
+    // }
 
     /** Merge together blocks that have a single successor which has a
      * single predecessor. Exception handlers are taken into account (they
@@ -295,7 +295,7 @@ trait Members {
     var start: Int = _
 
     /** Ending PC for this local's visibility range. */
-    var end: Int = _
+    // var end: Int = _
 
     /** PC-based ranges for this local variable's visibility */
     var ranges: List[(Int, Int)] = Nil

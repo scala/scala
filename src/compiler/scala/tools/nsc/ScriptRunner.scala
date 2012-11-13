@@ -48,7 +48,7 @@ class ScriptRunner extends HasCompileSocket {
     case x  => x
   }
 
-  def isScript(settings: Settings) = settings.script.value != ""
+  // def isScript(settings: Settings) = settings.script.value != ""
 
   /** Choose a jar filename to hold the compiled version of a script. */
   private def jarFileFor(scriptFile: String)= File(

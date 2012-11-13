@@ -21,7 +21,7 @@ trait TypingTransformers {
       else
         analyzer.newTyper(analyzer.rootContext(unit, EmptyTree, true))
     protected var curTree: Tree = _
-    protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
+    // protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
     override final def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 

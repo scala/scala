@@ -142,13 +142,13 @@ abstract class TreeCheckers extends Analyzer {
     currentRun.units foreach (x => wrap(x)(check(x)))
   }
 
-  def printingTypings[T](body: => T): T = {
-    val saved = global.printTypings
-    global.printTypings = true
-    val result = body
-    global.printTypings = saved
-    result
-  }
+  // def printingTypings[T](body: => T): T = {
+  //   val saved = global.printTypings
+  //   global.printTypings = true
+  //   val result = body
+  //   global.printTypings = saved
+  //   result
+  // }
   def runWithUnit[T](unit: CompilationUnit)(body: => Unit): Unit = {
     val unit0 = currentUnit
     currentRun.currentUnit = unit

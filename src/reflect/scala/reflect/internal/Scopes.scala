@@ -341,7 +341,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def iterator: Iterator[Symbol] = toList.iterator
 
-    def containsSymbol(s: Symbol) = lookupAll(s.name) contains s
+    // def containsSymbol(s: Symbol) = lookupAll(s.name) contains s
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 

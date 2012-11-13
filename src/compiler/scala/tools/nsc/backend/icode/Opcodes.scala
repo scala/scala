@@ -111,7 +111,7 @@ trait Opcodes { self: ICodes =>
     def producedTypes: List[TypeKind] = Nil
 
     /** This method returns the difference of size of the stack when the instruction is used */
-    def difference = produced-consumed
+    // def difference = produced-consumed
 
     /** The corresponding position in the source file */
     private var _pos: Position = NoPosition
@@ -119,7 +119,7 @@ trait Opcodes { self: ICodes =>
     def pos: Position = _pos
 
     /** Used by dead code elimination. */
-    var useful: Boolean = false
+    // var useful: Boolean = false
 
     def setPos(p: Position): this.type = {
       _pos = p
@@ -133,11 +133,11 @@ trait Opcodes { self: ICodes =>
 
   object opcodes {
 
-    def mayThrow(i: Instruction): Boolean = i match {
-      case LOAD_LOCAL(_) | STORE_LOCAL(_) | CONSTANT(_) | THIS(_) | CZJUMP(_, _, _, _)
-              | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION(_) | JUMP(_) | CJUMP(_, _, _, _) => false
-      case _ => true
-    }
+    // def mayThrow(i: Instruction): Boolean = i match {
+    //   case LOAD_LOCAL(_) | STORE_LOCAL(_) | CONSTANT(_) | THIS(_) | CZJUMP(_, _, _, _)
+    //           | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION(_) | JUMP(_) | CJUMP(_, _, _, _) => false
+    //   case _ => true
+    // }
 
     /** Loads "this" on top of the stack.
      * Stack: ...
@@ -714,7 +714,7 @@ trait Opcodes { self: ICodes =>
       /** Is this a static method call? */
       def isStatic: Boolean = false
 
-      def isSuper: Boolean = false
+      // def isSuper: Boolean = false
 
       /** Is this an instance method call? */
       def hasInstance: Boolean = true
@@ -749,7 +749,7 @@ trait Opcodes { self: ICodes =>
      *  On JVM, translated to `invokespecial`.
      */
     case class SuperCall(mix: Name) extends InvokeStyle {
-      override def isSuper = true
+      // override def isSuper = true
       override def toString(): String = { "super(" + mix + ")" }
     }
 
@@ -814,7 +814,7 @@ trait Opcodes { self: ICodes =>
 
     case class CIL_NEWOBJ(method: Symbol) extends Instruction {
       override def toString(): String = "CIL_NEWOBJ " + hostClass.fullName + method.fullName
-      var hostClass: Symbol = method.owner;
+      val hostClass: Symbol = method.owner;
       override def consumed = method.tpe.paramTypes.length
       override def consumedTypes = method.tpe.paramTypes map toTypeKind
       override def produced = 1

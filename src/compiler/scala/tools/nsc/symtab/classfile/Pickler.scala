@@ -1002,110 +1002,110 @@ abstract class Pickler extends SubComponent {
     }
 
     /** Print entry for diagnostics */
-    def printEntryAtIndex(idx: Int) = printEntry(entries(idx))
-    def printEntry(entry: AnyRef) {
-      def printRef(ref: AnyRef) {
-        print(index(ref)+
-              (if (ref.isInstanceOf[Name]) "("+ref+") " else " "))
-      }
-      def printRefs(refs: List[AnyRef]) { refs foreach printRef }
-      def printSymInfo(sym: Symbol) {
-        printRef(sym.name)
-        printRef(localizedOwner(sym))
-        print(flagsToString(sym.flags & PickledFlags)+" ")
-        if (sym.hasAccessBoundary) printRef(sym.privateWithin)
-        printRef(sym.info)
-      }
-      def printBody(entry: AnyRef) = entry match {
-        case name: Name =>
-          print((if (name.isTermName) "TERMname " else "TYPEname ")+name)
-        case NoSymbol =>
-          print("NONEsym")
-        case sym: Symbol if !isLocal(sym) =>
-          if (sym.isModuleClass) {
-            print("EXTMODCLASSref "); printRef(sym.name.toTermName)
-          } else {
-            print("EXTref "); printRef(sym.name)
-          }
-          if (!sym.owner.isRoot) printRef(sym.owner)
-        case sym: ClassSymbol =>
-          print("CLASSsym ")
-          printSymInfo(sym)
-          if (sym.thisSym.tpe != sym.tpe) printRef(sym.typeOfThis)
-        case sym: TypeSymbol =>
-          print(if (sym.isAbstractType) "TYPEsym " else "ALIASsym ")
-          printSymInfo(sym)
-        case sym: TermSymbol =>
-          print(if (sym.isModule) "MODULEsym " else "VALsym ")
-          printSymInfo(sym)
-          if (sym.alias != NoSymbol) printRef(sym.alias)
-        case NoType =>
-          print("NOtpe")
-        case NoPrefix =>
-          print("NOPREFIXtpe")
-        case ThisType(sym) =>
-          print("THIStpe "); printRef(sym)
-        case SingleType(pre, sym) =>
-          print("SINGLEtpe "); printRef(pre); printRef(sym);
-        case ConstantType(value) =>
-          print("CONSTANTtpe "); printRef(value);
-        case TypeRef(pre, sym, args) =>
-          print("TYPEREFtpe "); printRef(pre); printRef(sym); printRefs(args);
-        case TypeBounds(lo, hi) =>
-          print("TYPEBOUNDStpe "); printRef(lo); printRef(hi);
-        case tp @ RefinedType(parents, decls) =>
-          print("REFINEDtpe "); printRef(tp.typeSymbol); printRefs(parents);
-        case ClassInfoType(parents, decls, clazz) =>
-          print("CLASSINFOtpe "); printRef(clazz); printRefs(parents);
-        case mt @ MethodType(formals, restpe) =>
-          print("METHODtpe"); printRef(restpe); printRefs(formals)
-        case PolyType(tparams, restpe) =>
-          print("POLYtpe "); printRef(restpe); printRefs(tparams);
-        case ExistentialType(tparams, restpe) =>
-          print("EXISTENTIALtpe "); printRef(restpe); printRefs(tparams);
-          print("||| "+entry)
-        case c @ Constant(_) =>
-          print("LITERAL ")
-          if (c.tag == BooleanTag) print("Boolean "+(if (c.booleanValue) 1 else 0))
-          else if (c.tag == ByteTag) print("Byte "+c.longValue)
-          else if (c.tag == ShortTag) print("Short "+c.longValue)
-          else if (c.tag == CharTag) print("Char "+c.longValue)
-          else if (c.tag == IntTag) print("Int "+c.longValue)
-          else if (c.tag == LongTag) print("Long "+c.longValue)
-          else if (c.tag == FloatTag) print("Float "+c.floatValue)
-          else if (c.tag == DoubleTag) print("Double "+c.doubleValue)
-          else if (c.tag == StringTag) { print("String "); printRef(newTermName(c.stringValue)) }
-          else if (c.tag == ClazzTag) { print("Class "); printRef(c.typeValue) }
-          else if (c.tag == EnumTag) { print("Enum "); printRef(c.symbolValue) }
-        case AnnotatedType(annots, tp, selfsym) =>
-          if (settings.selfInAnnots.value) {
-            print("ANNOTATEDWSELFtpe ")
-            printRef(tp)
-            printRef(selfsym)
-            printRefs(annots)
-          } else {
-            print("ANNOTATEDtpe ")
-            printRef(tp)
-            printRefs(annots)
-          }
-        case (target: Symbol, AnnotationInfo(atp, args, Nil)) =>
-          print("SYMANNOT ")
-          printRef(target)
-          printRef(atp)
-          for (c <- args) printRef(c)
-        case (target: Symbol, children: List[_]) =>
-          print("CHILDREN ")
-          printRef(target)
-          for (c <- children) printRef(c.asInstanceOf[Symbol])
-        case AnnotationInfo(atp, args, Nil) =>
-          print("ANNOTINFO")
-          printRef(atp)
-          for (c <- args) printRef(c)
-        case _ =>
-          throw new FatalError("bad entry: " + entry + " " + entry.getClass)
-      }
-      printBody(entry); println()
-    }
+    // def printEntryAtIndex(idx: Int) = printEntry(entries(idx))
+    // def printEntry(entry: AnyRef) {
+    //   def printRef(ref: AnyRef) {
+    //     print(index(ref)+
+    //           (if (ref.isInstanceOf[Name]) "("+ref+") " else " "))
+    //   }
+    //   def printRefs(refs: List[AnyRef]) { refs foreach printRef }
+    //   def printSymInfo(sym: Symbol) {
+    //     printRef(sym.name)
+    //     printRef(localizedOwner(sym))
+    //     print(flagsToString(sym.flags & PickledFlags)+" ")
+    //     if (sym.hasAccessBoundary) printRef(sym.privateWithin)
+    //     printRef(sym.info)
+    //   }
+    //   def printBody(entry: AnyRef) = entry match {
+    //     case name: Name =>
+    //       print((if (name.isTermName) "TERMname " else "TYPEname ")+name)
+    //     case NoSymbol =>
+    //       print("NONEsym")
+    //     case sym: Symbol if !isLocal(sym) =>
+    //       if (sym.isModuleClass) {
+    //         print("EXTMODCLASSref "); printRef(sym.name.toTermName)
+    //       } else {
+    //         print("EXTref "); printRef(sym.name)
+    //       }
+    //       if (!sym.owner.isRoot) printRef(sym.owner)
+    //     case sym: ClassSymbol =>
+    //       print("CLASSsym ")
+    //       printSymInfo(sym)
+    //       if (sym.thisSym.tpe != sym.tpe) printRef(sym.typeOfThis)
+    //     case sym: TypeSymbol =>
+    //       print(if (sym.isAbstractType) "TYPEsym " else "ALIASsym ")
+    //       printSymInfo(sym)
+    //     case sym: TermSymbol =>
+    //       print(if (sym.isModule) "MODULEsym " else "VALsym ")
+    //       printSymInfo(sym)
+    //       if (sym.alias != NoSymbol) printRef(sym.alias)
+    //     case NoType =>
+    //       print("NOtpe")
+    //     case NoPrefix =>
+    //       print("NOPREFIXtpe")
+    //     case ThisType(sym) =>
+    //       print("THIStpe "); printRef(sym)
+    //     case SingleType(pre, sym) =>
+    //       print("SINGLEtpe "); printRef(pre); printRef(sym);
+    //     case ConstantType(value) =>
+    //       print("CONSTANTtpe "); printRef(value);
+    //     case TypeRef(pre, sym, args) =>
+    //       print("TYPEREFtpe "); printRef(pre); printRef(sym); printRefs(args);
+    //     case TypeBounds(lo, hi) =>
+    //       print("TYPEBOUNDStpe "); printRef(lo); printRef(hi);
+    //     case tp @ RefinedType(parents, decls) =>
+    //       print("REFINEDtpe "); printRef(tp.typeSymbol); printRefs(parents);
+    //     case ClassInfoType(parents, decls, clazz) =>
+    //       print("CLASSINFOtpe "); printRef(clazz); printRefs(parents);
+    //     case mt @ MethodType(formals, restpe) =>
+    //       print("METHODtpe"); printRef(restpe); printRefs(formals)
+    //     case PolyType(tparams, restpe) =>
+    //       print("POLYtpe "); printRef(restpe); printRefs(tparams);
+    //     case ExistentialType(tparams, restpe) =>
+    //       print("EXISTENTIALtpe "); printRef(restpe); printRefs(tparams);
+    //       print("||| "+entry)
+    //     case c @ Constant(_) =>
+    //       print("LITERAL ")
+    //       if (c.tag == BooleanTag) print("Boolean "+(if (c.booleanValue) 1 else 0))
+    //       else if (c.tag == ByteTag) print("Byte "+c.longValue)
+    //       else if (c.tag == ShortTag) print("Short "+c.longValue)
+    //       else if (c.tag == CharTag) print("Char "+c.longValue)
+    //       else if (c.tag == IntTag) print("Int "+c.longValue)
+    //       else if (c.tag == LongTag) print("Long "+c.longValue)
+    //       else if (c.tag == FloatTag) print("Float "+c.floatValue)
+    //       else if (c.tag == DoubleTag) print("Double "+c.doubleValue)
+    //       else if (c.tag == StringTag) { print("String "); printRef(newTermName(c.stringValue)) }
+    //       else if (c.tag == ClazzTag) { print("Class "); printRef(c.typeValue) }
+    //       else if (c.tag == EnumTag) { print("Enum "); printRef(c.symbolValue) }
+    //     case AnnotatedType(annots, tp, selfsym) =>
+    //       if (settings.selfInAnnots.value) {
+    //         print("ANNOTATEDWSELFtpe ")
+    //         printRef(tp)
+    //         printRef(selfsym)
+    //         printRefs(annots)
+    //       } else {
+    //         print("ANNOTATEDtpe ")
+    //         printRef(tp)
+    //         printRefs(annots)
+    //       }
+    //     case (target: Symbol, AnnotationInfo(atp, args, Nil)) =>
+    //       print("SYMANNOT ")
+    //       printRef(target)
+    //       printRef(atp)
+    //       for (c <- args) printRef(c)
+    //     case (target: Symbol, children: List[_]) =>
+    //       print("CHILDREN ")
+    //       printRef(target)
+    //       for (c <- children) printRef(c.asInstanceOf[Symbol])
+    //     case AnnotationInfo(atp, args, Nil) =>
+    //       print("ANNOTINFO")
+    //       printRef(atp)
+    //       for (c <- args) printRef(c)
+    //     case _ =>
+    //       throw new FatalError("bad entry: " + entry + " " + entry.getClass)
+    //   }
+    //   printBody(entry); println()
+    // }
 
     /** Write byte array */
     def writeArray() {

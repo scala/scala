@@ -16,7 +16,7 @@ trait BuildManager {
   def addSourceFiles(files: Set[AbstractFile])
 
   /** Remove the given files from the managed build process. */
-  def removeFiles(files: Set[AbstractFile])
+  // def removeFiles(files: Set[AbstractFile])
 
   /** The given files have been modified by the user. Recompile
    *  them and their dependent files.

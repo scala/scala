@@ -34,7 +34,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   }
 
   /** Reads the file with the specified name. */
-  def read(filename: String): Array[Char]= read(new JFile(filename))
+  // def read(filename: String): Array[Char]= read(new JFile(filename))
 
   /** Reads the specified file. */
   def read(file: JFile): Array[Char] = {
