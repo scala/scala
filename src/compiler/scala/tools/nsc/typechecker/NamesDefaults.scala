@@ -41,8 +41,6 @@ trait NamesDefaults { self: Analyzer =>
     blockTyper: Typer
   ) { }
 
-  val noApplyInfo = NamedApplyInfo(None, Nil, Nil, null)
-
   def nameOf(arg: Tree) = arg match {
     case AssignOrNamedArg(Ident(name), rhs) => Some(name)
     case _ => None

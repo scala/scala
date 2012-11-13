@@ -23,7 +23,6 @@ trait Unapplies extends ast.TreeDSL
 
   private val unapplyParamName = nme.x_0
 
-
   // In the typeCompleter (templateSig) of a case class (resp it's module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed. During naming (in
@@ -44,17 +43,6 @@ trait Unapplies extends ast.TreeDSL
         else formals
       case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
     }
-  }
-
-  /** returns type of the unapply method returning T_0...T_n
-   *  for n == 0, boolean
-   *  for n == 1, Some[T0]
-   *  else Some[Product[Ti]]
-   */
-  def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
-    case 0 => BooleanClass.tpe
-    case 1 => optionType(WildcardType)
-    case n => optionType(productType((List fill n)(WildcardType)))
   }
 
   /** returns unapply or unapplySeq if available */

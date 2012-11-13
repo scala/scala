@@ -359,17 +359,6 @@ trait Typers extends Modes with Adaptations with Tags {
       def privates[T <: Tree](owner: Symbol, tree: T): T =
         check(owner, EmptyScope, WildcardType, tree)
 
-      /** Check that type <code>tree</code> does not refer to entities
-       *  defined in scope <code>scope</code>.
-       *
-       *  @param scope ...
-       *  @param pt    ...
-       *  @param tree  ...
-       *  @return      ...
-       */
-      def locals[T <: Tree](scope: Scope, pt: Type, tree: T): T =
-        check(NoSymbol, scope, pt, tree)
-
       private def check[T <: Tree](owner: Symbol, scope: Scope, pt: Type, tree: T): T = {
         this.owner = owner
         this.scope = scope
@@ -5221,8 +5210,6 @@ trait Typers extends Modes with Adaptations with Tags {
     def typedHigherKindedType(tree: Tree, mode: Int): Tree =
       typed(tree, HKmode, WildcardType)
 
-    def typedHigherKindedType(tree: Tree): Tree = typedHigherKindedType(tree, NOmode)
-
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree, mode: Int): Tree = {
       val result = typed(tree, forTypeMode(mode) | FUNmode, WildcardType)
@@ -5297,28 +5284,17 @@ trait Typers extends Modes with Adaptations with Tags {
       case Some(tree1) => transformed -= tree; tree1
       case None => typed(tree, mode, pt)
     }
-
-/*
-    def convertToTypeTree(tree: Tree): Tree = tree match {
-      case TypeTree() => tree
-      case _ => TypeTree(tree.tpe)
-    }
-*/
   }
 }
 
 object TypersStats {
   import scala.reflect.internal.TypesStats._
-  import scala.reflect.internal.BaseTypeSeqsStats._
   val typedIdentCount     = Statistics.newCounter("#typechecked identifiers")
   val typedSelectCount    = Statistics.newCounter("#typechecked selections")
   val typedApplyCount     = Statistics.newCounter("#typechecked applications")
   val rawTypeFailed       = Statistics.newSubCounter ("  of which in failed", rawTypeCount)
   val subtypeFailed       = Statistics.newSubCounter("  of which in failed", subtypeCount)
   val findMemberFailed    = Statistics.newSubCounter("  of which in failed", findMemberCount)
-  val compoundBaseTypeSeqCount = Statistics.newSubCounter("  of which for compound types", baseTypeSeqCount)
-  val typerefBaseTypeSeqCount = Statistics.newSubCounter("  of which for typerefs", baseTypeSeqCount)
-  val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val failedSilentNanos   = Statistics.newSubTimer("time spent in failed", typerNanos)
   val failedApplyNanos    = Statistics.newSubTimer("  failed apply", typerNanos)
   val failedOpEqNanos     = Statistics.newSubTimer("  failed op=", typerNanos)
