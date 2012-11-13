@@ -14,7 +14,7 @@ import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
 import scala.tools.util.{ Javap }
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import io.{ File, Directory }
-import scala.reflect.NameTransformer._
+// import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
 import scala.tools.util._
@@ -71,12 +71,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     intp.reporter printUntruncatedMessage msg
   }
 
-  def isAsync = !settings.Yreplsync.value
+  // def isAsync = !settings.Yreplsync.value
   lazy val power = new Power(intp, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
   def history = in.history
 
   /** The context class loader at the time this object was created */
-  protected val originalClassLoader = Thread.currentThread.getContextClassLoader
+  // protected val originalClassLoader = Thread.currentThread.getContextClassLoader
 
   // classpath entries added via :cp
   var addedClasspath: String = ""
@@ -131,20 +131,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def helpCommand(line: String): Result = {
     if (line == "") helpSummary()
     else uniqueCommand(line) match {
-      case Some(lc) => echo("\n" + lc.longHelp)
+      case Some(lc) => echo("\n" + lc.help)
       case _        => ambiguousError(line)
     }
   }
   private def helpSummary() = {
     val usageWidth  = commands map (_.usageMsg.length) max
-    val formatStr   = "%-" + usageWidth + "s %s %s"
+    val formatStr   = "%-" + usageWidth + "s %s"
 
     echo("All commands can be abbreviated, e.g. :he instead of :help.")
-    echo("Those marked with a * have more detailed help, e.g. :help imports.\n")
+    // echo("Those marked with a * have more detailed help, e.g. :help imports.\n")
 
     commands foreach { cmd =>
-      val star = if (cmd.hasLongHelp) "*" else " "
-      echo(formatStr.format(cmd.usageMsg, star, cmd.help))
+      echo(formatStr.format(cmd.usageMsg, cmd.help))
     }
   }
   private def ambiguousError(cmd: String): Result = {
@@ -194,10 +193,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     out println msg
     out.flush()
   }
-  protected def echoNoNL(msg: String) = {
-    out print msg
-    out.flush()
-  }
+  // protected def echoNoNL(msg: String) = {
+  //   out print msg
+  //   out.flush()
+  // }
 
   /** Search the history */
   def searchHistory(_cmdline: String) {
@@ -208,8 +207,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("%d %s".format(index + offset, line))
   }
 
-  private var currentPrompt = Properties.shellPromptString
-  def setPrompt(prompt: String) = currentPrompt = prompt
+  private val currentPrompt = Properties.shellPromptString
+  // def setPrompt(prompt: String) = currentPrompt = prompt
   /** Prompt to print when awaiting input */
   def prompt = currentPrompt
 
@@ -684,7 +683,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def process(settings: Settings): Boolean = savingContextLoader {
     this.settings = settings
     createInterpreter()
-    var thunks: List[() => Unit] = Nil
+    // var thunks: List[() => Unit] = Nil
 
     // sets in to some kind of reader depending on environmental cues
     in = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, true))
@@ -704,21 +703,21 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   /** process command-line arguments and do as they request */
-  def process(args: Array[String]): Boolean = {
-    val command = new CommandLine(args.toList, echo)
-    def neededHelp(): String =
-      (if (command.settings.help.value) command.usageMsg + "\n" else "") +
-      (if (command.settings.Xhelp.value) command.xusageMsg + "\n" else "")
+  // def process(args: Array[String]): Boolean = {
+  //   val command = new CommandLine(args.toList, echo)
+  //   def neededHelp(): String =
+  //     (if (command.settings.help.value) command.usageMsg + "\n" else "") +
+  //     (if (command.settings.Xhelp.value) command.xusageMsg + "\n" else "")
 
-    // if they asked for no help and command is valid, we call the real main
-    neededHelp() match {
-      case ""     => command.ok && process(command.settings)
-      case help   => echoNoNL(help) ; true
-    }
-  }
+  //   // if they asked for no help and command is valid, we call the real main
+  //   neededHelp() match {
+  //     case ""     => command.ok && process(command.settings)
+  //     case help   => echoNoNL(help) ; true
+  //   }
+  // }
 
   @deprecated("Use `process` instead", "2.9.0")
-  def main(settings: Settings): Unit = process(settings)
+  def main(settings: Settings): Unit = process(settings) //used by sbt
 }
 
 object ILoop {

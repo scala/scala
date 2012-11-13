@@ -67,11 +67,11 @@ class TableDef[T](_cols: Column[T]*) {
     override def toString = allToSeq mkString "\n"
   }
 
-  def formatterFor(rows: Seq[T]): T => String = {
-    val formatStr = new Table(rows).rowFormat
+  // def formatterFor(rows: Seq[T]): T => String = {
+  //   val formatStr = new Table(rows).rowFormat
 
-    x => formatStr.format(colApply(x) : _*)
-  }
+  //   x => formatStr.format(colApply(x) : _*)
+  // }
 
   def table(rows: Seq[T]) = new Table(rows)
 

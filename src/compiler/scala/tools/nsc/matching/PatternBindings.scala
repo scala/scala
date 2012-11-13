@@ -61,7 +61,7 @@ trait PatternBindings extends ast.TreeDSL
 
     // This is for traversing the pattern tree - pattern types which might have
     // bound variables beneath them return a list of said patterns for flatMapping.
-    def subpatternsForVars: List[Pattern] = Nil
+    // def subpatternsForVars: List[Pattern] = Nil
 
     // The outermost Bind(x1, Bind(x2, ...)) surrounding the tree.
     private var _boundTree: Tree = tree

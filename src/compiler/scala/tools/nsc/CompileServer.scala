@@ -29,7 +29,7 @@ class StandardCompileServer extends SocketServer {
   var shutdown = false
   var verbose = false
 
-  val versionMsg = "Fast " + Properties.versionMsg
+  // val versionMsg = "Fast " + Properties.versionMsg
 
   val MaxCharge = 0.8
 

@@ -41,9 +41,9 @@ trait TypeDiagnostics {
    *  nicer if Symbols, Types, and Trees all implemented some common interface
    *  in which isErroneous and similar would be placed.
    */
-  def noErroneousTypes(tps: Type*)    = tps forall (x => !x.isErroneous)
-  def noErroneousSyms(syms: Symbol*)  = syms forall (x => !x.isErroneous)
-  def noErroneousTrees(trees: Tree*)  = trees forall (x => !x.isErroneous)
+  // def noErroneousTypes(tps: Type*)    = tps forall (x => !x.isErroneous)
+  // def noErroneousSyms(syms: Symbol*)  = syms forall (x => !x.isErroneous)
+  // def noErroneousTrees(trees: Tree*)  = trees forall (x => !x.isErroneous)
 
   /** For errors which are artifacts of the implementation: such messages
    *  indicate that the restriction may be lifted in the future.
@@ -294,7 +294,7 @@ trait TypeDiagnostics {
     // distinguished from the other types in the same error message
     private val savedName = sym.name
     def restoreName()     = sym.name = savedName
-    def isAltered         = sym.name != savedName
+    // def isAltered         = sym.name != savedName
     def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
 
     /** Prepend java.lang, scala., or Predef. if this type originated
@@ -478,10 +478,10 @@ trait TypeDiagnostics {
           }
           super.traverse(t)
         }
-        def isUnused(t: Tree): Boolean = (
-          if (t.symbol.isTerm) isUnusedTerm(t.symbol)
-          else isUnusedType(t.symbol)
-        )
+        // def isUnused(t: Tree): Boolean = (
+        //   if (t.symbol.isTerm) isUnusedTerm(t.symbol)
+        //   else isUnusedType(t.symbol)
+        // )
         def isUnusedType(m: Symbol): Boolean = (
               m.isType
           && !m.isTypeParameterOrSkolem // would be nice to improve this

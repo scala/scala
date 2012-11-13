@@ -91,20 +91,20 @@ trait GenUtils {
   def termPath(fullname: String): Tree = path(fullname, newTermName)
 
   /** An (unreified) path that refers to type definition with given fully qualified name */
-  def typePath(fullname: String): Tree = path(fullname, newTypeName)
+  // def typePath(fullname: String): Tree = path(fullname, newTypeName)
 
-  def isTough(tpe: Type) = {
-    def isTough(tpe: Type) = tpe match {
-      case _: RefinedType => true
-      case _: ExistentialType => true
-      case _: ClassInfoType => true
-      case _: MethodType => true
-      case _: PolyType => true
-      case _ => false
-    }
+  // def isTough(tpe: Type) = {
+  //   def isTough(tpe: Type) = tpe match {
+  //     case _: RefinedType => true
+  //     case _: ExistentialType => true
+  //     case _: ClassInfoType => true
+  //     case _: MethodType => true
+  //     case _: PolyType => true
+  //     case _ => false
+  //   }
 
-    tpe != null && (tpe exists isTough)
-  }
+  //   tpe != null && (tpe exists isTough)
+  // }
 
   object TypedOrAnnotated {
     def unapply(tree: Tree): Option[Tree] = tree match {
@@ -117,14 +117,14 @@ trait GenUtils {
     }
   }
 
-  def isAnnotated(tpe: Type) = {
-    def isAnnotated(tpe: Type) = tpe match {
-      case _: AnnotatedType => true
-      case _ => false
-    }
+  // def isAnnotated(tpe: Type) = {
+  //   def isAnnotated(tpe: Type) = tpe match {
+  //     case _: AnnotatedType => true
+  //     case _ => false
+  //   }
 
-    tpe != null && (tpe exists isAnnotated)
-  }
+  //   tpe != null && (tpe exists isAnnotated)
+  // }
 
   def isSemiConcreteTypeMember(tpe: Type) = tpe match {
     case TypeRef(SingleType(_, _), sym, _) if sym.isAbstractType && !sym.isExistential => true

@@ -847,7 +847,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
    */
   def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
-  def isReferenceToAnyVal(t: Tree) = isReferenceToScalaMember(t, tpnme.AnyVal)
+  // def isReferenceToAnyVal(t: Tree) = isReferenceToScalaMember(t, tpnme.AnyVal)
 
   // --- modifiers implementation ---------------------------------------
 

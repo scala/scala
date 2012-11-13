@@ -31,8 +31,8 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** return byte at offset 'pos'
    */
-  @throws(classOf[IndexOutOfBoundsException])
-  def byteAt(pos: Int): Byte = buf(pos)
+  // @throws(classOf[IndexOutOfBoundsException])
+  // def byteAt(pos: Int): Byte = buf(pos)
 
   /** read a byte
    */
@@ -45,10 +45,10 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** read some bytes
    */
-  def nextBytes(len: Int): Array[Byte] = {
-    bp += len
-    buf.slice(bp - len, bp)
-  }
+  // def nextBytes(len: Int): Array[Byte] = {
+  //   bp += len
+  //   buf.slice(bp - len, bp)
+  // }
 
   /** read a character
    */

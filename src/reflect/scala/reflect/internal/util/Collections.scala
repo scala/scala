@@ -40,8 +40,8 @@ trait Collections {
     mforeach(xss)(x => if ((res eq null) && p(x)) res = Some(x))
     if (res eq null) None else res
   }
-  final def mfilter[A](xss: List[List[A]])(p: A => Boolean) =
-    for (xs <- xss; x <- xs; if p(x)) yield x
+  // final def mfilter[A](xss: List[List[A]])(p: A => Boolean) =
+  //   for (xs <- xss; x <- xs; if p(x)) yield x
 
   final def map2[A, B, C](xs1: List[A], xs2: List[B])(f: (A, B) => C): List[C] = {
     val lb = new ListBuffer[C]
@@ -78,18 +78,18 @@ trait Collections {
     lb.toList
   }
 
-  final def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
-    val buf = new ListBuffer[A]
-    val seen = mutable.Set[B]()
-    xs foreach { x =>
-      val y = f(x)
-      if (!seen(y)) {
-        buf += x
-        seen += y
-      }
-    }
-    buf.toList
-  }
+  // final def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
+  //   val buf = new ListBuffer[A]
+  //   val seen = mutable.Set[B]()
+  //   xs foreach { x =>
+  //     val y = f(x)
+  //     if (!seen(y)) {
+  //       buf += x
+  //       seen += y
+  //     }
+  //   }
+  //   buf.toList
+  // }
 
   @tailrec final def flattensToEmpty(xss: Seq[Seq[_]]): Boolean = {
     xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
@@ -189,18 +189,18 @@ trait Collections {
     }
     false
   }
-  final def forall2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Boolean): Boolean = {
-    var ys1 = xs1
-    var ys2 = xs2
-    while (!ys1.isEmpty && !ys2.isEmpty) {
-      if (!f(ys1.head, ys2.head))
-        return false
+  // final def forall2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Boolean): Boolean = {
+  //   var ys1 = xs1
+  //   var ys2 = xs2
+  //   while (!ys1.isEmpty && !ys2.isEmpty) {
+  //     if (!f(ys1.head, ys2.head))
+  //       return false
 
-      ys1 = ys1.tail
-      ys2 = ys2.tail
-    }
-    true
-  }
+  //     ys1 = ys1.tail
+  //     ys2 = ys2.tail
+  //   }
+  //   true
+  // }
   final def forall3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => Boolean): Boolean = {
     var ys1 = xs1
     var ys2 = xs2
@@ -223,5 +223,5 @@ trait Collections {
   }
 }
 
-object Collections extends Collections { }
+// object Collections extends Collections { }
 

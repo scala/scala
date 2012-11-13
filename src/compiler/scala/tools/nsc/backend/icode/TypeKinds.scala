@@ -66,7 +66,7 @@ trait TypeKinds { self: ICodes =>
     def isValueType               = false
     def isBoxedType               = false
     final def isRefOrArrayType    = isReferenceType || isArrayType
-    final def isRefArrayOrBoxType = isRefOrArrayType || isBoxedType
+    // final def isRefArrayOrBoxType = isRefOrArrayType || isBoxedType
     final def isNothingType       = this == NothingReference
     final def isNullType          = this == NullReference
     final def isInterfaceType     = this match {
@@ -114,7 +114,7 @@ trait TypeKinds { self: ICodes =>
     }
   }
 
-  var lubs0 = 0
+  // var lubs0 = 0
 
   /**
    * The least upper bound of two typekinds. They have to be either

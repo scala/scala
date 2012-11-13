@@ -22,11 +22,11 @@ object PathResolver {
   // security exceptions.
   import AccessControl._
 
-  def firstNonEmpty(xs: String*)            = xs find (_ != "") getOrElse ""
+  // def firstNonEmpty(xs: String*)            = xs find (_ != "") getOrElse ""
 
   /** Map all classpath elements to absolute paths and reconstruct the classpath.
     */
-  def makeAbsolute(cp: String) = ClassPath.map(cp, x => Path(x).toAbsolute.path)
+  // def makeAbsolute(cp: String) = ClassPath.map(cp, x => Path(x).toAbsolute.path)
 
   /** pretty print class path */
   def ppcp(s: String) = split(s) match {
@@ -45,7 +45,7 @@ object PathResolver {
     /** Environment variables which java pays attention to so it
      *  seems we do as well.
      */
-    def classPathEnv        =  envOrElse("CLASSPATH", "")
+    // def classPathEnv        =  envOrElse("CLASSPATH", "")
     def sourcePathEnv       =  envOrElse("SOURCEPATH", "")
 
     def javaBootClassPath   = propOrElse("sun.boot.class.path", searchForBootClasspath)
@@ -85,7 +85,7 @@ object PathResolver {
 
     def scalaHome         = Environment.scalaHome
     def scalaHomeDir      = Directory(scalaHome)
-    def scalaHomeExists   = scalaHomeDir.isDirectory
+    // def scalaHomeExists   = scalaHomeDir.isDirectory
     def scalaLibDir       = Directory(scalaHomeDir / "lib")
     def scalaClassesDir   = Directory(scalaHomeDir / "classes")
 
@@ -135,7 +135,7 @@ object PathResolver {
       )
   }
 
-  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
+  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = { // called from scalap
     val s = new Settings()
     s.classpath.value = path
     new PathResolver(s, context) result
@@ -160,7 +160,7 @@ object PathResolver {
     }
   }
 }
-import PathResolver.{ Defaults, Environment, firstNonEmpty, ppcp }
+import PathResolver.{ Defaults, Environment, ppcp }
 
 class PathResolver(settings: Settings, context: JavaContext) {
   def this(settings: Settings) = this(settings, if (settings.inline.value) new JavaContext else DefaultJavaContext)

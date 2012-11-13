@@ -19,10 +19,10 @@ abstract class Duplicators extends Analyzer {
   import global._
   import definitions.{ AnyRefClass, AnyValClass }
 
-  def retyped(context: Context, tree: Tree): Tree = {
-    resetClassOwners
-    (newBodyDuplicator(context)).typed(tree)
-  }
+  // def retyped(context: Context, tree: Tree): Tree = {
+  //   resetClassOwners
+  //   (newBodyDuplicator(context)).typed(tree)
+  // }
 
   /** Retype the given tree in the given context. Use this method when retyping
    *  a method in a different class. The typer will replace references to the this of
@@ -42,8 +42,8 @@ abstract class Duplicators extends Analyzer {
 
   protected def newBodyDuplicator(context: Context) = new BodyDuplicator(context)
 
-  def retypedMethod(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol): Tree =
-    (newBodyDuplicator(context)).retypedMethod(tree.asInstanceOf[DefDef], oldThis, newThis)
+  // def retypedMethod(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol): Tree =
+  //   (newBodyDuplicator(context)).retypedMethod(tree.asInstanceOf[DefDef], oldThis, newThis)
 
   /** Return the special typer for duplicate method bodies. */
   override def newTyper(context: Context): Typer =
@@ -186,19 +186,19 @@ abstract class Duplicators extends Analyzer {
       stats.foreach(invalidate(_, owner))
     }
 
-    def retypedMethod(ddef: DefDef, oldThis: Symbol, newThis: Symbol): Tree = {
-      oldClassOwner = oldThis
-      newClassOwner = newThis
-      invalidateAll(ddef.tparams)
-      mforeach(ddef.vparamss) { vdef =>
-        invalidate(vdef)
-        vdef.tpe = null
-      }
-      ddef.symbol = NoSymbol
-      enterSym(context, ddef)
-      debuglog("remapping this of " + oldClassOwner + " to " + newClassOwner)
-      typed(ddef)
-    }
+    // def retypedMethod(ddef: DefDef, oldThis: Symbol, newThis: Symbol): Tree = {
+    //   oldClassOwner = oldThis
+    //   newClassOwner = newThis
+    //   invalidateAll(ddef.tparams)
+    //   mforeach(ddef.vparamss) { vdef =>
+    //     invalidate(vdef)
+    //     vdef.tpe = null
+    //   }
+    //   ddef.symbol = NoSymbol
+    //   enterSym(context, ddef)
+    //   debuglog("remapping this of " + oldClassOwner + " to " + newClassOwner)
+    //   typed(ddef)
+    // }
 
     /** Optionally cast this tree into some other type, if required.
      *  Unless overridden, just returns the tree.

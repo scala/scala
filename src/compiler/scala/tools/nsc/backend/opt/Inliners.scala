@@ -602,7 +602,7 @@ abstract class Inliners extends SubComponent {
       override def toString = m.toString
 
       val sym           = m.symbol
-      val name          = sym.name
+      // val name          = sym.name
       def owner         = sym.owner
       def paramTypes    = sym.info.paramTypes
       def minimumStack  = paramTypes.length + 1
@@ -624,7 +624,7 @@ abstract class Inliners extends SubComponent {
       def isLarge         = length > MAX_INLINE_SIZE
       def isRecursive     = m.recursive
       def hasHandlers     = handlers.nonEmpty || m.bytecodeHasEHs
-      def hasClosureParam = paramTypes exists (tp => isByNameParamType(tp) || isFunctionType(tp))
+      // def hasClosureParam = paramTypes exists (tp => isByNameParamType(tp) || isFunctionType(tp))
 
       def isSynchronized         = sym.hasFlag(Flags.SYNCHRONIZED)
       def hasNonFinalizerHandler = handlers exists {
@@ -732,7 +732,7 @@ abstract class Inliners extends SubComponent {
      */
     sealed abstract class InlineSafetyInfo {
       def isSafe   = false
-      def isUnsafe = !isSafe
+      // def isUnsafe = !isSafe
     }
     case object NeverSafeToInline           extends InlineSafetyInfo
     case object InlineableAtThisCaller      extends InlineSafetyInfo { override def isSafe = true }

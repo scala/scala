@@ -40,23 +40,23 @@ object ByteCode {
 
   /** Attempts to retrieve case parameter names for given class name.
    */
-  def caseParamNamesForPath(path: String) =
-    for {
-      module <- DECODER
-      method <- decoderMethod("caseParamNames", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[List[String]]]
-    }
-    yield names
+  // def caseParamNamesForPath(path: String) =
+  //   for {
+  //     module <- DECODER
+  //     method <- decoderMethod("caseParamNames", classOf[String])
+  //     names <- method.invoke(module, path).asInstanceOf[Option[List[String]]]
+  //   }
+  //   yield names
 
   def aliasesForPackage(pkg: String) = aliasMap flatMap (_(pkg))
 
   /** Attempts to find type aliases in package objects.
    */
-  def aliasForType(path: String): Option[String] = {
-    val (pkg, name) = (path lastIndexOf '.') match {
-      case -1   => return None
-      case idx  => (path take idx, path drop (idx + 1))
-    }
-    aliasesForPackage(pkg) flatMap (_ get name)
-  }
+  // def aliasForType(path: String): Option[String] = {
+  //   val (pkg, name) = (path lastIndexOf '.') match {
+  //     case -1   => return None
+  //     case idx  => (path take idx, path drop (idx + 1))
+  //   }
+  //   aliasesForPackage(pkg) flatMap (_ get name)
+  // }
 }

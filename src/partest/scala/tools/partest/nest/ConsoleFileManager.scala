@@ -79,7 +79,7 @@ class ConsoleFileManager extends FileManager {
       testClassesDir = Path(testClasses.get).toCanonical.toDirectory
       NestUI.verbose("Running with classes in "+testClassesDir)
 
-      latestFile        = testClassesDir.parent / "bin"
+      // latestFile        = testClassesDir.parent / "bin"
       latestLibFile     = testClassesDir / "library"
       latestActorsFile  = testClassesDir / "library" / "actors"
       latestReflectFile = testClassesDir / "reflect"
@@ -90,7 +90,7 @@ class ConsoleFileManager extends FileManager {
     else if (testBuild.isDefined) {
       val dir = Path(testBuild.get)
       NestUI.verbose("Running on "+dir)
-      latestFile        = dir / "bin"
+      // latestFile        = dir / "bin"
       latestLibFile     = dir / "lib/scala-library.jar"
       latestActorsFile  = dir / "lib/scala-actors.jar"
       latestReflectFile = dir / "lib/scala-reflect.jar"
@@ -101,7 +101,7 @@ class ConsoleFileManager extends FileManager {
     else {
       def setupQuick() {
         NestUI.verbose("Running build/quick")
-        latestFile        = prefixFile("build/quick/bin")
+        // latestFile        = prefixFile("build/quick/bin")
         latestLibFile     = prefixFile("build/quick/classes/library")
         latestActorsFile  = prefixFile("build/quick/classes/library/actors")
         latestReflectFile = prefixFile("build/quick/classes/reflect")
@@ -112,7 +112,7 @@ class ConsoleFileManager extends FileManager {
       def setupInst() {
         NestUI.verbose("Running dist (installed)")
         val p = testParent.getParentFile
-        latestFile        = prefixFileWith(p, "bin")
+        // latestFile        = prefixFileWith(p, "bin")
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
         latestActorsFile  = prefixFileWith(p, "lib/scala-actors.jar")
         latestReflectFile = prefixFileWith(p, "lib/scala-reflect.jar")
@@ -122,7 +122,7 @@ class ConsoleFileManager extends FileManager {
 
       def setupDist() {
         NestUI.verbose("Running dists/latest")
-        latestFile        = prefixFile("dists/latest/bin")
+        // latestFile        = prefixFile("dists/latest/bin")
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
         latestActorsFile  = prefixFile("dists/latest/lib/scala-actors.jar")
         latestReflectFile = prefixFile("dists/latest/lib/scala-reflect.jar")
@@ -132,7 +132,7 @@ class ConsoleFileManager extends FileManager {
 
       def setupPack() {
         NestUI.verbose("Running build/pack")
-        latestFile        = prefixFile("build/pack/bin")
+        // latestFile        = prefixFile("build/pack/bin")
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
         latestActorsFile  = prefixFile("build/pack/lib/scala-actors.jar")
         latestReflectFile = prefixFile("build/pack/lib/scala-reflect.jar")
@@ -175,7 +175,7 @@ class ConsoleFileManager extends FileManager {
   var LATEST_PARTEST: String = ""
   var LATEST_ACTORS: String = ""
 
-  var latestFile: File = _
+  // var latestFile: File = _
   var latestLibFile: File = _
   var latestActorsFile: File = _
   var latestReflectFile: File = _
@@ -187,7 +187,7 @@ class ConsoleFileManager extends FileManager {
   // initialize above fields
   findLatest()
 
-  var testFiles: List[io.Path] = Nil
+  // var testFiles: List[io.Path] = Nil
 
   def getFiles(kind: String, cond: Path => Boolean): List[File] = {
     def ignoreDir(p: Path) = List("svn", "obj") exists (p hasExtension _)
@@ -197,9 +197,7 @@ class ConsoleFileManager extends FileManager {
     if (dir.isDirectory) NestUI.verbose("look in %s for tests" format dir)
     else NestUI.failure("Directory '%s' not found" format dir)
 
-    val files =
-      if (testFiles.nonEmpty) testFiles filter (_.parent isSame dir)
-      else dir.list filterNot ignoreDir filter cond toList
+    val files = dir.list filterNot ignoreDir filter cond toList
 
     ( if (failed) files filter (x => logFileExists(x, kind)) else files ) map (_.jfile)
   }

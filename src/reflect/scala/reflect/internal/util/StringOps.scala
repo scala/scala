@@ -16,24 +16,24 @@ package scala.reflect.internal.util
  *  @version 1.0
  */
 trait StringOps {
-  def onull(s: String)                            = if (s == null) "" else s
-  def oempty(xs: String*)                         = xs filterNot (x => x == null || x == "")
-  def ojoin(xs: String*): String                  = oempty(xs: _*) mkString " "
-  def ojoin(xs: Seq[String], sep: String): String = oempty(xs: _*) mkString sep
-  def ojoinOr(xs: Seq[String], sep: String, orElse: String) = {
-    val ys = oempty(xs: _*)
-    if (ys.isEmpty) orElse else ys mkString sep
-  }
-  def trimTrailingSpace(s: String) = {
-    if (s.length == 0 || !s.charAt(s.length - 1).isWhitespace) s
-    else {
-      var idx = s.length - 1
-      while (idx >= 0 && s.charAt(idx).isWhitespace)
-        idx -= 1
+  // def onull(s: String)           = if (s == null) "" else s
+  def oempty(xs: String*)        = xs filterNot (x => x == null || x == "")
+  def ojoin(xs: String*): String = oempty(xs: _*) mkString " "
+  // def ojoin(xs: Seq[String], sep: String): String = oempty(xs: _*) mkString sep
+  // def ojoinOr(xs: Seq[String], sep: String, orElse: String) = {
+  //   val ys = oempty(xs: _*)
+  //   if (ys.isEmpty) orElse else ys mkString sep
+  // }
+  // def trimTrailingSpace(s: String) = {
+  //   if (s.length == 0 || !s.charAt(s.length - 1).isWhitespace) s
+  //   else {
+  //     var idx = s.length - 1
+  //     while (idx >= 0 && s.charAt(idx).isWhitespace)
+  //       idx -= 1
 
-      s.substring(0, idx + 1)
-    }
-  }
+  //     s.substring(0, idx + 1)
+  //   }
+  // }
   def longestCommonPrefix(xs: List[String]): String = {
     if (xs.isEmpty || xs.contains("")) ""
     else xs.head.head match {
@@ -57,13 +57,13 @@ trait StringOps {
 
   def words(str: String): List[String] = decompose(str, ' ')
 
-  def stripPrefixOpt(str: String, prefix: String): Option[String] =
-    if (str startsWith prefix) Some(str drop prefix.length)
-    else None
+  // def stripPrefixOpt(str: String, prefix: String): Option[String] =
+  //   if (str startsWith prefix) Some(str drop prefix.length)
+  //   else None
 
-  def stripSuffixOpt(str: String, suffix: String): Option[String] =
-    if (str endsWith suffix) Some(str dropRight suffix.length)
-    else None
+  // def stripSuffixOpt(str: String, suffix: String): Option[String] =
+  //   if (str endsWith suffix) Some(str dropRight suffix.length)
+  //   else None
 
   def splitWhere(str: String, f: Char => Boolean, doDropIndex: Boolean = false): Option[(String, String)] =
     splitAt(str, str indexWhere f, doDropIndex)

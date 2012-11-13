@@ -14,7 +14,7 @@ import java.io.{ File => JFile }
  *
  *  @author  Philippe Altherr
  *  @version 1.0, 23/03/2004
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualFile(val name: String, override val path: String) extends AbstractFile {
@@ -65,7 +65,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Returns the time that this abstract file was last modified. */
   private var _lastModified: Long = 0
   def lastModified: Long = _lastModified
-  def lastModified_=(x: Long) = _lastModified = x
+  // def lastModified_=(x: Long) = _lastModified = x
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {

@@ -81,7 +81,7 @@ trait MemberHandlers {
     def symbol          = if (member.symbol eq null) NoSymbol else member.symbol
     def definesImplicit = false
     def definesValue    = false
-    def isLegalTopLevel = false
+    // def isLegalTopLevel = false
 
     def definesTerm     = Option.empty[TermName]
     def definesType     = Option.empty[TypeName]
@@ -152,7 +152,7 @@ trait MemberHandlers {
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
     override def definesTerm = Some(name)
     override def definesValue = true
-    override def isLegalTopLevel = true
+    // override def isLegalTopLevel = true
 
     override def resultExtractionCode(req: Request) = codegenln("defined module ", name)
   }
@@ -161,7 +161,7 @@ trait MemberHandlers {
     override def definedSymbols = List(symbol, symbol.companionSymbol) filterNot (_ == NoSymbol)
     override def definesType = Some(name.toTypeName)
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
-    override def isLegalTopLevel = true
+    // override def isLegalTopLevel = true
 
     override def resultExtractionCode(req: Request) =
       codegenln("defined %s %s".format(keyword, name))
@@ -182,19 +182,19 @@ trait MemberHandlers {
       case sym      => sym.thisType
     }
     private def importableTargetMembers = importableMembers(targetType).toList
-    override def isLegalTopLevel = true
+    // override def isLegalTopLevel = true
 
-    def createImportForName(name: Name): String = {
-      selectors foreach {
-        case sel @ ImportSelector(old, _, `name`, _)  => return "import %s.{ %s }".format(expr, sel)
-        case _ => ()
-      }
-      "import %s.%s".format(expr, name)
-    }
+    // def createImportForName(name: Name): String = {
+    //   selectors foreach {
+    //     case sel @ ImportSelector(old, _, `name`, _)  => return "import %s.{ %s }".format(expr, sel)
+    //     case _ => ()
+    //   }
+    //   "import %s.%s".format(expr, name)
+    // }
     // TODO: Need to track these specially to honor Predef masking attempts,
     // because they must be the leading imports in the code generated for each
     // line.  We can use the same machinery as Contexts now, anyway.
-    def isPredefImport = isReferenceToPredef(expr)
+    // def isPredefImport = isReferenceToPredef(expr)
 
     // wildcard imports, e.g. import foo._
     private def selectorWild    = selectors filter (_.name == nme.USCOREkw)

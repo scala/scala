@@ -291,10 +291,10 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
       ((swr, wr))
     }
 
-    def fail(what: Any) = {
-      NestUI.verbose("scalac: compilation of "+what+" failed\n")
-      false
-    }
+    // def fail(what: Any) = {
+    //   NestUI.verbose("scalac: compilation of "+what+" failed\n")
+    //   false
+    // }
     def diffCheck(testFile: File, diff: String) = {
       testDiff = diff
       testDiff == ""

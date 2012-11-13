@@ -37,11 +37,11 @@ trait DataFlowAnalysis[L <: SemiLattice] {
   /** Reinitialize, but keep the old solutions. Should be used when reanalyzing the
    *  same method, after some code transformation.
    */
-  def reinit(f: => Unit): Unit = {
-    iterations = 0
-    worklist.clear; visited.clear;
-    f
-  }
+  // def reinit(f: => Unit): Unit = {
+  //   iterations = 0
+  //   worklist.clear; visited.clear;
+  //   f
+  // }
 
   def run(): Unit
 

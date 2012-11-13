@@ -18,7 +18,7 @@ object IndexModelFactory {
       object result extends mutable.HashMap[Char,SymbolMap] {
 
         /* Owner template ordering */
-        implicit def orderingSet = math.Ordering.String.on { x: MemberEntity => x.name.toLowerCase }
+        // implicit def orderingSet = math.Ordering.String.on { x: MemberEntity => x.name.toLowerCase }
         /* symbol name ordering */
         implicit def orderingMap = math.Ordering.String.on { x: String => x.toLowerCase }
 
