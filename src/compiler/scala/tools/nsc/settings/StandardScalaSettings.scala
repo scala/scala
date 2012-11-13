@@ -48,9 +48,4 @@ trait StandardScalaSettings {
   val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")
   val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing.")
   val version =        BooleanSetting ("-version", "Print product version and exit.")
-
-  /** These are @<file> and -Dkey=val style settings, which don't
-   *  nicely map to identifiers.
-   */
-  val argfiles: BooleanSetting  // exists only to echo help message, should be done differently
 }

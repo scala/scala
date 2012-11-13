@@ -26,15 +26,11 @@ abstract class TreeBuilder {
   def o2p(offset: Int): Position
   def r2p(start: Int, point: Int, end: Int): Position
 
-  def rootId(name: Name)       = gen.rootId(name)
   def rootScalaDot(name: Name) = gen.rootScalaDot(name)
   def scalaDot(name: Name)     = gen.scalaDot(name)
   def scalaAnyRefConstr        = scalaDot(tpnme.AnyRef)
-  def scalaAnyValConstr        = scalaDot(tpnme.AnyVal)
-  def scalaAnyConstr           = scalaDot(tpnme.Any)
   def scalaUnitConstr          = scalaDot(tpnme.Unit)
   def productConstr            = scalaDot(tpnme.Product)
-  def productConstrN(n: Int)   = scalaDot(newTypeName("Product" + n))
   def serializableConstr       = scalaDot(tpnme.Serializable)
 
   def convertToTypeName(t: Tree) = gen.convertToTypeName(t)
@@ -443,18 +439,6 @@ abstract class TreeBuilder {
   /** Create tree for for-yield comprehension <for (enums) yield body> */
   def makeForYield(enums: List[Enumerator], body: Tree): Tree =
     makeFor(nme.map, nme.flatMap, enums, body)
-
-  /** Create tree for a lifted expression XX-LIFTING
-   */
-  def makeLifted(gs: List[ValFrom], body: Tree): Tree = {
-    def combine(gs: List[ValFrom]): ValFrom = (gs: @unchecked) match {
-      case g :: Nil => g
-      case ValFrom(pos1, pat1, rhs1) :: gs2 =>
-        val ValFrom(_, pat2, rhs2) = combine(gs2)
-        ValFrom(pos1, makeTuple(List(pat1, pat2), false), Apply(Select(rhs1, nme.zip), List(rhs2)))
-    }
-    makeForYield(List(combine(gs)), body)
-  }
 
   /** Create tree for a pattern alternative */
   def makeAlternative(ts: List[Tree]): Tree = {

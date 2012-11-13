@@ -26,7 +26,6 @@ trait Warnings {
   // These warnings should be pretty quiet unless you're doing
   // something inadvisable.
   protected def lintWarnings = List(
-    // warnDeadCode,
     warnInaccessible,
     warnNullaryOverride,
     warnNullaryUnit,
@@ -39,9 +38,13 @@ trait Warnings {
     BooleanSetting("-Xlint", "Enable recommended additional warnings.")
     withPostSetHook (_ => lintWarnings foreach (_.value = true))
   )
-  val warnEverything = (
+
+  /*val warnEverything = */ (
     BooleanSetting("-Ywarn-all", "Enable all -Y warnings.")
-    withPostSetHook (_ => lintWarnings foreach (_.value = true))
+    withPostSetHook { _ =>
+      lint.value = true
+      allWarnings foreach (_.value = true)
+    }
   )
 
   // Individual warnings.
@@ -57,7 +60,5 @@ trait Warnings {
   val warnInferAny         = BooleanSetting   ("-Ywarn-infer-any", "Warn when a type argument is inferred to be `Any`.")
 
   // Backward compatibility.
-  def Xwarnfatal    = fatalWarnings
-  def Xchecknull    = warnSelectNullable
-  def Ywarndeadcode = warnDeadCode
+  def Xwarnfatal    = fatalWarnings // used by sbt
 }
