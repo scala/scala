@@ -51,8 +51,6 @@ class ConsoleRunner extends DirectRunner {
   private val testSetArgs   = testSets map ("--" + _.kind)
   private val testSetArgMap = testSetArgs zip testSets toMap
 
-  def denotesTestSet(arg: String)  = testSetArgs contains arg
-
   private def printVersion() { NestUI outline (versionMsg + "\n") }
 
   private val unaryArgs = List(

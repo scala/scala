@@ -3,8 +3,6 @@
  * @author Philipp Haller
  */
 
-// $Id$
-
 package scala.tools.partest
 package nest
 
