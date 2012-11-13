@@ -23,7 +23,6 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
 
   private def term = consoleReader.getTerminal()
   def reset() = term.reset()
-  def init()  = term.init()
 
   def scalaToJline(tc: ScalaCompleter): Completer = new Completer {
     def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
@@ -35,8 +34,6 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
   }
 
   class JLineConsoleReader extends ConsoleReader with ConsoleReaderHelper {
-    // working around protected/trait/java insufficiencies.
-    def goBack(num: Int): Unit = back(num)
     def readOneKey(prompt: String) = {
       this.print(prompt)
       this.flush()
@@ -44,7 +41,6 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
     }
     def eraseLine() = consoleReader.resetPromptLine("", "", 0)
     def redrawLineAndFlush(): Unit = { flush() ; drawLine() ; flush() }
-    // override def readLine(prompt: String): String
 
     // A hook for running code after the repl is done initializing.
     lazy val postInit: Unit = {
@@ -63,11 +59,7 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
     }
   }
 
-  def currentLine = consoleReader.getCursorBuffer.buffer.toString
   def redrawLine() = consoleReader.redrawLineAndFlush()
-  def eraseLine() = consoleReader.eraseLine()
-  // Alternate implementation, not sure if/when I need this.
-  // def eraseLine() = while (consoleReader.delete()) { }
   def readOneLine(prompt: String) = consoleReader readLine prompt
   def readOneKey(prompt: String)  = consoleReader readOneKey prompt
 }

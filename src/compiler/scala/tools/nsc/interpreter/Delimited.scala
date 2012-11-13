@@ -26,7 +26,6 @@ trait Delimited {
 
   def delimited: Char => Boolean
   def escapeChars: List[Char] = List('\\')
-  def quoteChars: List[(Char, Char)] = List(('\'', '\''), ('"', '"'))
 
   /** Break String into args based on delimiting function.
    */
@@ -39,6 +38,4 @@ trait Delimited {
 
   def isDelimiterChar(ch: Char) = delimited(ch)
   def isEscapeChar(ch: Char): Boolean = escapeChars contains ch
-  def isQuoteStart(ch: Char): Boolean = quoteChars map (_._1) contains ch
-  def isQuoteEnd(ch: Char): Boolean = quoteChars map (_._2) contains ch
 }
