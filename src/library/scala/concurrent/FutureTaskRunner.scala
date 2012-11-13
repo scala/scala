@@ -10,7 +10,7 @@ package scala.concurrent
 
 import scala.language.{implicitConversions, higherKinds}
 
-/** The `FutureTaskRunner</code> trait is a base trait of task runners
+/** The `FutureTaskRunner` trait is a base trait of task runners
  *  that provide some sort of future abstraction.
  *
  *  @author Philipp Haller

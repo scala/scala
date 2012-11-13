@@ -40,7 +40,7 @@ trait Variances {
     (VARIANCES /: tps) ((v, tp) => v & varianceInType(tp)(tparam))
 
   /** Compute variance of type parameter `tparam` in all type arguments
-   *  <code>tps</code> which correspond to formal type parameters `tparams1`.
+   *  `tps` which correspond to formal type parameters `tparams1`.
    */
   def varianceInArgs(tps: List[Type], tparams1: List[Symbol])(tparam: Symbol): Int = {
     var v: Int = VARIANCES;
@@ -63,7 +63,7 @@ trait Variances {
     varianceInType(annot.atp)(tparam)
   }
 
-  /** Compute variance of type parameter <code>tparam</code> in type <code>tp</code>. */
+  /** Compute variance of type parameter `tparam` in type `tp`. */
   def varianceInType(tp: Type)(tparam: Symbol): Int = tp match {
     case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
       VARIANCES

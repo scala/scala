@@ -463,14 +463,9 @@ abstract class CopyPropagation {
       }
     }
 
-    /** Update the state <code>s</code> after the call to <code>method</code>.
+    /** Update the state `s` after the call to `method`.
      *  The stack elements are dropped and replaced by the result of the call.
      *  If the method is impure, all bindings to record fields are cleared.
-     *
-     *  @param state  ...
-     *  @param method ...
-     *  @param static ...
-     *  @return       ...
      */
     final def simulateCall(state: copyLattice.State, method: Symbol, static: Boolean): copyLattice.State = {
       val out = new copyLattice.State(state.bindings, state.stack);
@@ -554,10 +549,7 @@ abstract class CopyPropagation {
       bindings
     }
 
-    /** Is symbol <code>m</code> a pure method?
-     *
-     *  @param m ...
-     *  @return  ...
+    /** Is symbol `m` a pure method?
      */
     final def isPureMethod(m: Symbol): Boolean =
       m.isGetter // abstract getters are still pure, as we 'know'

@@ -17,7 +17,7 @@ package scala.xml
  *  @author Burak Emir <bqe@google.com>
  */
 object Elem {
-  /** Build an Elem, setting its minimizeEmpty property to <code>true</code> if it has no children.  Note that this
+  /** Build an Elem, setting its minimizeEmpty property to `true` if it has no children.  Note that this
    *  default may not be exactly what you want, as some XML dialects don't permit some elements to be minimized.
    *
    * @deprecated This factory method is retained for backward compatibility; please use the other one, with which you

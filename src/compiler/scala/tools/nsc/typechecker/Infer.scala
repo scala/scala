@@ -130,9 +130,6 @@ trait Infer extends Checkable {
   }
 
   /** A fresh type variable with given type parameter as origin.
-   *
-   *  @param tparam ...
-   *  @return       ...
    */
   def freshVar(tparam: Symbol): TypeVar = TypeVar(tparam)
 
@@ -169,9 +166,6 @@ trait Infer extends Checkable {
   }
 
   /** Is type fully defined, i.e. no embedded anytypes or wildcards in it?
-   *
-   *  @param tp ...
-   *  @return   ...
    */
   private[typechecker] def isFullyDefined(tp: Type): Boolean = tp match {
     case WildcardType | BoundedWildcardType(_) | NoType =>
@@ -457,11 +451,6 @@ trait Infer extends Checkable {
      *  its type parameters and result type and a prototype `pt`.
      *  If no minimal type variables exist that make the
      *  instantiated type a subtype of `pt`, return null.
-     *
-     *  @param tparams ...
-     *  @param restpe  ...
-     *  @param pt      ...
-     *  @return        ...
      */
     private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean = false): (List[Type], List[TypeVar]) = {
       val tvars = tparams map freshVar
@@ -494,12 +483,6 @@ trait Infer extends Checkable {
     *  in the value parameter list.
     *  If instantiation of a type parameter fails,
     *  take WildcardType for the proto-type argument.
-    *
-    *  @param tparams ...
-    *  @param formals ...
-    *  @param restype ...
-    *  @param pt      ...
-    *  @return        ...
     */
     def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                       pt: Type): List[Type] = {
@@ -927,10 +910,6 @@ trait Infer extends Checkable {
     /** Is type `ftpe1` strictly more specific than type `ftpe2`
      *  when both are alternatives in an overloaded function?
      *  @see SLS (sec:overloading-resolution)
-     *
-     *  @param ftpe1 ...
-     *  @param ftpe2 ...
-     *  @return      ...
      */
     def isAsSpecific(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
       case OverloadedType(pre, alts) =>
@@ -1173,11 +1152,6 @@ trait Infer extends Checkable {
 
     /** Substitute free type variables `undetparams` of polymorphic argument
      *  expression `tree` to `targs`, Error if `targs` is null.
-     *
-     *  @param tree ...
-     *  @param undetparams ...
-     *  @param targs ...
-     *  @param pt ...
      */
     private def substExpr(tree: Tree, undetparams: List[Symbol], targs: List[Type], pt: Type) {
       if (targs eq null) {
@@ -1640,8 +1614,6 @@ trait Infer extends Checkable {
 
     /** Try inference twice, once without views and once with views,
      *  unless views are already disabled.
-     *
-     *  @param infer ...
      */
     def tryTwice(infer: Boolean => Unit): Unit = {
       if (context.implicitsEnabled) {
@@ -1679,9 +1651,6 @@ trait Infer extends Checkable {
     /** Assign `tree` the type of all polymorphic alternatives
      *  with `nparams` as the number of type parameters, if it exists.
      *  If no such polymorphic alternative exist, error.
-     *
-     *  @param tree ...
-     *  @param nparams ...
      */
     def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): Unit = {
       val OverloadedType(pre, alts) = tree.tpe
