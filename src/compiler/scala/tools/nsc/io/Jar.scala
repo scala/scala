@@ -63,12 +63,6 @@ class Jar(file: File) extends Iterable[JarEntry] {
     Iterator continually in.getNextJarEntry() takeWhile (_ != null) foreach f
   }
   override def iterator: Iterator[JarEntry] = this.toList.iterator
-  def fileishIterator: Iterator[Fileish] = jarFile.entries.asScala map (x => Fileish(x, () => getEntryStream(x)))
-
-  private def getEntryStream(entry: JarEntry) = jarFile getInputStream entry match {
-    case null   => errorFn("No such entry: " + entry) ; null
-    case x      => x
-  }
   override def toString = "" + file
 }
 
