@@ -249,7 +249,8 @@ abstract class TreeInfo {
    * Does this tree represent an irrefutable pattern match
    * in the position `for { <tree> <- expr }` based only
    * on information at the `parser` phase? To qualify, there
-   * may be no Stable Identifier Patterns.
+   * may be no subtree that will be interpreted as a
+   * Stable Identifier Pattern.
    *
    * For instance:
    *
