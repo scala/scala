@@ -245,6 +245,68 @@ abstract class TreeInfo {
     isSelfConstrCall(tree1) || isSuperConstrCall(tree1)
   }
 
+  /**
+   * Does this tree represent an irrefutable pattern match
+   * in the position `for { <tree> <- expr }` based only
+   * on information at the `parser` phase? To qualify, there
+   * may be no subtree that will be interpreted as a
+   * Stable Identifier Pattern.
+   *
+   * For instance:
+   *
+   * {{{
+   * foo @ (bar, (baz, quux))
+   * }}}
+   *
+   * is a variable pattern; if the structure matches,
+   * then the remainder is inevitable.
+   *
+   * The following are not variable patterns.
+   *
+   * {{{
+   *   foo @ (bar, (`baz`, quux)) // back quoted ident, not at top level
+   *   foo @ (bar, Quux)          // UpperCase ident, not at top level
+   * }}}
+   *
+   * If the pattern is a simple identifier, it is always
+   * a variable pattern. For example, the following
+   * introduce new bindings:
+   *
+   * {{{
+   * for { X <- xs } yield X
+   * for { `backquoted` <- xs } yield `backquoted`
+   * }}}
+   *
+   * Note that this differs from a case clause:
+   *
+   * {{{
+   *   object X
+   *   scrut match {
+   *      case X =>  // case _ if scrut == X
+   *   }
+   * }}}
+   *
+   * Background: [[https://groups.google.com/d/msg/scala-internals/qwa_XOw_7Ks/IktkeTBYqg0J]]
+   *
+   */
+  def isVarPatternDeep(tree: Tree): Boolean = {
+    def isVarPatternDeep0(tree: Tree): Boolean = {
+      tree match {
+        case Bind(name, pat)  => isVarPatternDeep0(pat)
+        case Ident(name)      => isVarPattern(tree)
+        case Apply(sel, args) =>
+          (    isReferenceToScalaMember(sel, TupleClass(args.size).name.toTermName)
+            && (args forall isVarPatternDeep0)
+            )
+        case _                => false
+      }
+    }
+    tree match {
+      case Ident(name) => true
+      case _           => isVarPatternDeep0(tree)
+    }
+  }
+
   /** Is tree a variable pattern? */
   def isVarPattern(pat: Tree): Boolean = pat match {
     case x: Ident           => !x.isBackquoted && nme.isVariableName(x.name)
@@ -328,24 +390,6 @@ abstract class TreeInfo {
     case AppliedTypeTree(constr, args)           => mayBeTypePat(constr) || args.exists(_.isInstanceOf[Bind])
     case SelectFromTypeTree(tp, _)               => mayBeTypePat(tp)
     case _                                       => false
-  }
-
-  /** Is this tree comprised of nothing but identifiers,
-   *  but possibly in bindings or tuples? For instance
-   *
-   *    foo @ (bar, (baz, quux))
-   *
-   *  is a variable pattern; if the structure matches,
-   *  then the remainder is inevitable.
-   */
-  def isVariablePattern(tree: Tree): Boolean = tree match {
-    case Bind(name, pat)  => isVariablePattern(pat)
-    case Ident(name)      => true
-    case Apply(sel, args) =>
-      (    isReferenceToScalaMember(sel, TupleClass(args.size).name.toTermName)
-        && (args forall isVariablePattern)
-      )
-    case _ => false
   }
 
   /** Is this argument node of the form <expr> : _* ?
