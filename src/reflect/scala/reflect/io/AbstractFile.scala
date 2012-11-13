@@ -14,9 +14,9 @@ import scala.collection.mutable.ArrayBuffer
 
 /**
  * An abstraction over files for use in the reflection/compiler libraries.
- * 
+ *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
- *  
+ *
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
@@ -79,7 +79,7 @@ object AbstractFile {
  *   all other cases, the class `SourceFile` is used, which honors
  *   `global.settings.encoding.value`.
  * </p>
- * 
+ *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 abstract class AbstractFile extends Iterable[AbstractFile] {
@@ -179,19 +179,6 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
    *  check that it exists.
    */
   def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile
-
-  /** Returns the abstract file in this abstract directory with the specified
-   *  path relative to it, If there is no such file, returns null. The argument
-   *  <code>directory</code> tells whether to look for a directory or a regular
-   *  file.
-   *
-   *  @param path      ...
-   *  @param directory ...
-   *  @return          ...
-   */
-  def lookupPath(path: String, directory: Boolean): AbstractFile = {
-    lookup((f, p, dir) => f.lookupName(p, dir), path, directory)
-  }
 
   /** Return an abstract file that does not check that `path` denotes
    *  an existing file.
