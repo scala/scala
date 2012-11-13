@@ -42,10 +42,6 @@ trait ExprTyper {
       else Some(trees)
     }
   }
-  // def parsesAsExpr(line: String) = {
-  //   import codeParser._
-  //   (opt expr line).isDefined
-  // }
 
   def symbolOfLine(code: String): Symbol = {
     def asExpr(): Symbol = {

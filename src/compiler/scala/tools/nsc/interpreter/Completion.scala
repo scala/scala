@@ -23,8 +23,6 @@ object NoCompletion extends Completion {
 }
 
 object Completion {
-  def empty: Completion = NoCompletion
-
   case class Candidates(cursor: Int, candidates: List[String]) { }
   val NoCandidates = Candidates(-1, Nil)
 
