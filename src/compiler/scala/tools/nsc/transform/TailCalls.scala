@@ -82,7 +82,7 @@ abstract class TailCalls extends Transform {
    *   that label.
    * </p>
    * <p>
-   *   Assumes: <code>Uncurry</code> has been run already, and no multiple
+   *   Assumes: `Uncurry` has been run already, and no multiple
    *            parameter lists exit.
    * </p>
    */

@@ -122,7 +122,7 @@ trait BasicBlocks {
     def closed: Boolean = hasFlag(CLOSED)
     def closed_=(b: Boolean) = if (b) setFlag(CLOSED) else resetFlag(CLOSED)
 
-    /** When set, the <code>emit</code> methods will be ignored. */
+    /** When set, the `emit` methods will be ignored. */
     def ignore: Boolean = hasFlag(IGNORING)
     def ignore_=(b: Boolean) = if (b) setFlag(IGNORING) else resetFlag(IGNORING)
 
@@ -260,7 +260,7 @@ trait BasicBlocks {
       }
     }
 
-    /** Replaces <code>oldInstr</code> with <code>is</code>. It does not update
+    /** Replaces `oldInstr` with `is`. It does not update
      *  the position field in the newly inserted instructions, so it behaves
      *  differently than the one-instruction versions of this function.
      *
@@ -289,8 +289,6 @@ trait BasicBlocks {
     }
 
     /** Removes instructions found at the given positions.
-     *
-     *  @param positions ...
      */
     def removeInstructionsAt(positions: Int*) {
       assert(closed, this)
@@ -311,8 +309,6 @@ trait BasicBlocks {
     }
 
     /** Replaces all instructions found in the map.
-     *
-     *  @param map ...
      */
     def subst(map: Map[Instruction, Instruction]): Unit =
       if (!closed)

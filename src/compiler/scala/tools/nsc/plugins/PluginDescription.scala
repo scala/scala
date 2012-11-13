@@ -26,7 +26,7 @@ abstract class PluginDescription {
   val classname: String
 
   /** An XML representation of this description.  It can be
-   *  read back using <code>PluginDescription.fromXML</code>.
+   *  read back using `PluginDescription.fromXML`.
    *  It should be stored inside the jar archive file.
    */
   def toXML: Node = {

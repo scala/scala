@@ -2047,8 +2047,6 @@ trait Types extends api.Types { self: SymbolTable =>
   extends ClassInfoType(List(), decls, clazz)
 
   /** A class representing a constant type.
-   *
-   *  @param value ...
    */
   abstract case class ConstantType(value: Constant) extends SingletonType with ConstantTypeApi {
     override def underlying: Type = value.tpe
@@ -3554,10 +3552,6 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** The canonical creator for a refined type with an initially empty scope.
-   *
-   *  @param parents ...
-   *  @param owner   ...
-   *  @return        ...
    */
   def refinedType(parents: List[Type], owner: Symbol): Type =
     refinedType(parents, owner, newScope, owner.pos)

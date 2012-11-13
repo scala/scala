@@ -1153,9 +1153,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     var linearization: List[BasicBlock] = Nil
     var isModuleInitialized = false
 
-    /**
-     *  @param m ...
-     */
     def genCode(m: IMethod) {
       val jcode = jmethod.getCode.asInstanceOf[JExtendedCode]
 
@@ -1605,11 +1602,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
       }
 
-
-      /**
-       *  @param primitive ...
-       *  @param pos       ...
-       */
       def genPrimitive(primitive: Primitive, pos: Position) {
         primitive match {
           case Negation(kind) =>

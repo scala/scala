@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala.reflect
 package io
 
@@ -33,12 +32,8 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
     case _              => false
   }
 
-  //########################################################################
-  // Private data
   private var content = Array.emptyByteArray
 
-  //########################################################################
-  // Public Methods
   def absolute = this
 
   /** Returns null. */
@@ -84,10 +79,6 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
    * specified name. If there is no such file, returns null. The
    * argument "directory" tells whether to look for a directory or
    * or a regular file.
-   *
-   * @param name      ...
-   * @param directory ...
-   * @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile = {
     assert(isDirectory, "not a directory '" + this + "'")
@@ -98,6 +89,4 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
    *  check that it exists.
    */
   def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
-
-  //########################################################################
 }

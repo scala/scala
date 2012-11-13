@@ -149,8 +149,6 @@ abstract class Pickler extends SubComponent {
     }
 
     /** Store symbol in index. If symbol is local, also store everything it references.
-     *
-     *  @param sym ...
      */
     def putSymbol(sym: Symbol) {
       if (putEntry(sym)) {

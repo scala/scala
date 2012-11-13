@@ -873,9 +873,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base` is
      *      nonexistent or incomplete.
-     *
-     *  @param base ...
-     *  @return     ...
      */
     final def isIncompleteIn(base: Symbol): Boolean =
       this.isDeferred ||
@@ -1769,8 +1766,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The type of `this` in a class, or else the type of the symbol itself. */
     def typeOfThis = thisSym.tpe_*
 
-    /** If symbol is a class, the type <code>this.type</code> in this class,
-     * otherwise <code>NoPrefix</code>.
+    /** If symbol is a class, the type `this.type` in this class,
+     * otherwise `NoPrefix`.
      * We always have: thisType <:< typeOfThis
      */
     def thisType: Type = NoPrefix

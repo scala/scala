@@ -30,11 +30,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     override def toString() = s"$sym (depth=$depth)"
   }
 
-  /**
-   *  @param sym   ...
-   *  @param owner ...
-   *  @return      ...
-   */
   private def newScopeEntry(sym: Symbol, owner: Scope): ScopeEntry = {
     val e = new ScopeEntry(sym, owner)
     e.next = owner.elems
@@ -101,8 +96,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** enter a scope entry
-     *
-     *  @param e ...
      */
     protected def enterEntry(e: ScopeEntry) {
       elemsCache = null
@@ -119,8 +112,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** enter a symbol
-     *
-     *  @param sym ...
      */
     def enter[T <: Symbol](sym: T): T = {
       enterEntry(newScopeEntry(sym, this))
@@ -128,8 +119,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
-     *
-     *  @param sym ...
      */
     def enterUnique(sym: Symbol) {
       assert(lookup(sym.name) == NoSymbol, (sym.fullLocationString, lookup(sym.name).fullLocationString))
@@ -184,8 +173,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** remove entry
-     *
-     *  @param e ...
      */
     def unlink(e: ScopeEntry) {
       if (elems == e) {

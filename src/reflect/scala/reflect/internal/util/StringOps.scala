@@ -73,10 +73,6 @@ trait StringOps {
     else Some((str take idx, str drop (if (doDropIndex) idx + 1 else idx)))
 
   /** Returns a string meaning "n elements".
-   *
-   *  @param n        ...
-   *  @param elements ...
-   *  @return         ...
    */
   def countElementsAsString(n: Int, elements: String): String =
     n match {
@@ -89,9 +85,6 @@ trait StringOps {
     }
 
   /** Turns a count into a friendly English description if n<=4.
-   *
-   *  @param n        ...
-   *  @return         ...
    */
   def countAsString(n: Int): String =
     n match {

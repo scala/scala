@@ -94,7 +94,7 @@ trait ParsersCommon extends ScannersCommon {
  *  <ol>
  *    <li>
  *      Places all pattern variables in Bind nodes. In a pattern, for
- *      identifiers <code>x</code>:<pre>
+ *      identifiers `x`:<pre>
  *                 x  => x @ _
  *               x:T  => x @ (_ : T)</pre>
  *    </li>
