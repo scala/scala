@@ -177,9 +177,6 @@ abstract class SymbolTable extends macros.Universe
   /** The phase identifier of the given period. */
   final def phaseId(period: Period): Phase#Id = period & 0xFF
 
-  /** The period at the start of run that includes `period`. */
-  final def startRun(period: Period): Period = period & 0xFFFFFF00
-
   /** The current period. */
   final def currentPeriod: Period = {
     //assert(per == (currentRunId << 8) + phase.id)
@@ -292,7 +289,6 @@ abstract class SymbolTable extends macros.Universe
 
   object perRunCaches {
     import java.lang.ref.WeakReference
-    import scala.runtime.ScalaRunTime.stringOf
     import scala.collection.generic.Clearable
 
     // Weak references so the garbage collector will take care of

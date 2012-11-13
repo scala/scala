@@ -11,10 +11,6 @@ abstract class TreeGen extends macros.TreeBuilder {
   def rootScalaDot(name: Name)       = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
   def scalaDot(name: Name)           = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
   def scalaAnnotationDot(name: Name) = Select(scalaDot(nme.annotation), name)
-  def scalaAnyRefConstr              = scalaDot(tpnme.AnyRef) setSymbol AnyRefClass
-  def scalaUnitConstr                = scalaDot(tpnme.Unit) setSymbol UnitClass
-  def productConstr                  = scalaDot(tpnme.Product) setSymbol ProductRootClass
-  def serializableConstr             = scalaDot(tpnme.Serializable) setSymbol SerializableClass
 
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
     val cls = if (abstractFun)
@@ -246,10 +242,6 @@ abstract class TreeGen extends macros.TreeBuilder {
    */
   def mkClassOf(tp: Type): Tree =
     Literal(Constant(tp)) setType ConstantType(Constant(tp))
-
-  /** Builds a list with given head and tail. */
-  def mkNewCons(head: Tree, tail: Tree): Tree =
-    New(Apply(mkAttributedRef(ConsClass), List(head, tail)))
 
   /** Builds a list with given head and tail. */
   def mkNil: Tree = mkAttributedRef(NilModule)

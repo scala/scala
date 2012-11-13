@@ -186,8 +186,6 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
         case _ => errorBadSignature("bad name tag: " + tag)
       }
     }
-    protected def readTermName(): TermName = readName().toTermName
-    protected def readTypeName(): TypeName = readName().toTypeName
     private def readEnd() = readNat() + readIndex
 
     /** Read a symbol */
@@ -793,7 +791,6 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
     protected def readTreeRef(): Tree                 = at(readNat(), readTree)
 
     protected def readTypeNameRef(): TypeName         = readNameRef().toTypeName
-    protected def readTermNameRef(): TermName         = readNameRef().toTermName
 
     protected def readTemplateRef(): Template =
       readTreeRef() match {
@@ -829,11 +826,6 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
     protected def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
-    protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
-      mirrorThatLoaded(owner).missingHook(owner, name) orElse MissingRequirementError.signal(
-        s"bad reference while unpickling $filename: ${name.longString} not found in ${owner.tpe.widen}"
-      )
-
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
     def newLazyTypeRef(i: Int): LazyType = new LazyTypeRef(i)
@@ -845,7 +837,6 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
      *  error reporting, so we rely on the typechecker to report the error).
      */
     def toTypeError(e: MissingRequirementError) = {
-      // e.printStackTrace()
       new TypeError(e.msg)
     }
 

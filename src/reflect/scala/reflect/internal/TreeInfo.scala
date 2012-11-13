@@ -131,13 +131,6 @@ abstract class TreeInfo {
       )
   }
 
-
-  @deprecated("Use isExprSafeToInline instead", "2.10.0")
-  def isPureExpr(tree: Tree) = isExprSafeToInline(tree)
-
-  def zipMethodParamsAndArgs(params: List[Symbol], args: List[Tree]): List[(Symbol, Tree)] =
-    mapMethodParamsAndArgs(params, args)((param, arg) => ((param, arg)))
-
   def mapMethodParamsAndArgs[R](params: List[Symbol], args: List[Tree])(f: (Symbol, Tree) => R): List[R] = {
     val b = List.newBuilder[R]
     foreachMethodParamAndArg(params, args)((param, arg) => b += f(param, arg))
@@ -173,37 +166,6 @@ abstract class TreeInfo {
     else return fail
 
     true
-  }
-
-  /**
-   * Selects the correct parameter list when there are nested applications.
-   * Given Apply(fn, args), args might correspond to any of fn.symbol's parameter
-   * lists.  To choose the correct one before uncurry, we have to unwrap any
-   * applies: for instance Apply(fn @ Apply(Apply(_, _), _), args) implies args
-   * correspond to the third parameter list.
-   *
-   * The argument fn is the function part of the apply node being considered.
-   *
-   * Also accounts for varargs.
-   */
-  private def applyMethodParameters(fn: Tree): List[Symbol] = {
-    val depth  = applyDepth(fn)
-    // There could be applies which go beyond the parameter list(s),
-    // being applied to the result of the method call.
-    // !!! Note that this still doesn't seem correct, although it should
-    // be closer than what it replaced.
-    if (depth < fn.symbol.paramss.size) fn.symbol.paramss(depth)
-    else if (fn.symbol.paramss.isEmpty) Nil
-    else fn.symbol.paramss.last
-  }
-
-  def zipMethodParamsAndArgs(t: Tree): List[(Symbol, Tree)] = t match {
-    case Apply(fn, args) => zipMethodParamsAndArgs(applyMethodParameters(fn), args)
-    case _               => Nil
-  }
-  def foreachMethodParamAndArg(t: Tree)(f: (Symbol, Tree) => Unit): Unit = t match {
-    case Apply(fn, args) => foreachMethodParamAndArg(applyMethodParameters(fn), args)(f)
-    case _               =>
   }
 
   /** Is symbol potentially a getter of a variable?
@@ -292,10 +254,6 @@ abstract class TreeInfo {
     case x: Ident           => !x.isBackquoted && nme.isVariableName(x.name)
     case _                  => false
   }
-  def isDeprecatedIdentifier(tree: Tree): Boolean = tree match {
-    case x: Ident           => !x.isBackquoted && nme.isDeprecatedIdentifierName(x.name)
-    case _                  => false
-  }
 
   /** The first constructor definitions in `stats` */
   def firstConstructor(stats: List[Tree]): Tree = stats find {
@@ -353,12 +311,6 @@ abstract class TreeInfo {
 
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name) = operator.nonEmpty && (operator.endChar != ':')
-
-  /** Is tree a `this` node which belongs to `enclClass`? */
-  def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {
-    case This(_) => tree.symbol == enclClass
-    case _ => false
-  }
 
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass

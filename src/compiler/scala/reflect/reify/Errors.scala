@@ -21,11 +21,6 @@ trait Errors {
     throw new ReificationException(defaultErrorPosition, msg)
   }
 
-  def CannotReifySymbol(sym: Symbol) = {
-    val msg = "implementation restriction: cannot reify symbol %s (%s)".format(sym, sym.accurateKindString)
-    throw new ReificationException(defaultErrorPosition, msg)
-  }
-
   def CannotReifyWeakType(details: Any) = {
     val msg = "cannot create a TypeTag" + details
     throw new ReificationException(defaultErrorPosition, msg)
