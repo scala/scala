@@ -11,8 +11,8 @@
 package scala.xml
 package transform
 
-/** a RewriteRule, when applied to a term, yields either
- *  the resulting of rewriting or the term itself it the rule
+/** A RewriteRule, when applied to a term, yields either
+ *  the result of rewriting the term or the term itself if the rule
  *  is not applied.
  *
  *  @author  Burak Emir
