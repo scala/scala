@@ -1,0 +1,4 @@
+t6355.scala:12: error: implementation restriction: applyDynamic cannot be overloaded
+  def applyDynamic(name: String)(x: Int): Int = 2
+      ^
+one error found
