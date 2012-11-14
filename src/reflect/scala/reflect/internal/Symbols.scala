@@ -1213,6 +1213,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
         val current = phase
         try {
+          assertCorrectThread()
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
         } finally {
@@ -1283,6 +1284,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           infos = infos.prev
 
         if (validTo < curPeriod) {
+          assertCorrectThread()
           // adapt any infos that come from previous runs
           val current = phase
           try {
