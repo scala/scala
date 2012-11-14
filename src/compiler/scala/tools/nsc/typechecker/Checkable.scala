@@ -130,7 +130,7 @@ trait Checkable {
       else if (P3) RuntimeCheckable
       else if (uncheckableType == NoType) {
         // Avoid warning (except ourselves) if we can't pinpoint the uncheckable type
-        debugwarn("Checkability checker says 'Uncheckable', but uncheckable type cannot be found:\n" + summaryString)
+        debuglog("Checkability checker says 'Uncheckable', but uncheckable type cannot be found:\n" + summaryString)
         CheckabilityError
       }
       else Uncheckable

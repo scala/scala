@@ -253,11 +253,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     if (settings.debug.value)
       body
   }
-  // Warnings issued only under -Ydebug.  For messages which should reach
-  // developer ears, but are not adequately actionable by users.
-  @inline final override def debugwarn(msg: => String) {
-    if (settings.debug.value)
-      warning(msg)
+  /** This is for WARNINGS which should reach the ears of scala developers
+   *  whenever they occur, but are not useful for normal users. They should
+   *  be precise, explanatory, and infrequent. Please don't use this as a
+   *  logging mechanism. !!! is prefixed to all messages issued via this route
+   *  to make them visually distinct.
+   */
+  @inline final override def devWarning(msg: => String) {
+    if (settings.developer.value || settings.debug.value)
+      warning("!!! " + msg)
   }
 
   private def elapsedMessage(msg: String, start: Long) =

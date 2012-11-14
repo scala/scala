@@ -233,7 +233,7 @@ trait Erasure {
           // It seems there is a deeper problem here, which needs
           // following up to. But we will not risk regressions
           // in 2.10 because of it.
-          log(s"!!! unexpected constructor erasure $tp for $clazz")
+          devWarning(s"unexpected constructor erasure $tp for $clazz")
         specialScalaErasure(tp)
     }
   }

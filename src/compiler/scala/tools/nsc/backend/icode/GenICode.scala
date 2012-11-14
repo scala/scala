@@ -1251,8 +1251,11 @@ abstract class GenICode extends SubComponent  {
       val sym = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
-          case NoSymbol => assert(false, "Cannot use package as value: " + tree) ; NoSymbol
-          case s        => debugwarn("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+          case NoSymbol =>
+            abort("Cannot use package as value: " + tree)
+          case s        =>
+            devWarning(s"Found ${tree.symbol} where a package object is required. Converting to ${s.moduleClass}")
+            s.moduleClass
         }
       )
       debuglog("LOAD_MODULE from %s: %s".format(tree.shortClass, sym))
