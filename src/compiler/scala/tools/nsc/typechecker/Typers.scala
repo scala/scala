@@ -4426,15 +4426,6 @@ trait Typers extends Modes with Adaptations with Tags {
                 if (useTry) tryTypedApply(fun2, args)
                 else doTypedApply(tree, fun2, args, mode, pt)
 
-            /*
-              if (fun2.hasSymbolField && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
-                res.tpe = res.tpe.notNull
-              }
-              */
-              // TODO: In theory we should be able to call:
-              //if (fun2.hasSymbolField && fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass) {
-              // But this causes cyclic reference for Array class in Cleanup. It is easy to overcome this
-              // by calling ArrayClass.info here (or some other place before specialize).
               if (fun2.symbol == Array_apply && !res.isErrorTyped) {
                 val checked = gen.mkCheckInit(res)
                 // this check is needed to avoid infinite recursion in Duplicators
@@ -4449,36 +4440,34 @@ trait Typers extends Modes with Adaptations with Tags {
         }
       }
 
-      def typedApply(tree: Apply) = {
-        val fun = tree.fun
-        val args = tree.args
-        fun match {
-          case Block(stats, expr) =>
-            typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
-          case _ =>
-            normalTypedApply(tree, fun, args) match {
-              case Apply(Select(New(tpt), name), args)
-              if (tpt.tpe != null &&
-                tpt.tpe.typeSymbol == ArrayClass &&
-                args.length == 1 &&
-                erasure.GenericArray.unapply(tpt.tpe).isDefined) => // !!! todo simplify by using extractor
-                // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
-                // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len), where Array HK gets applied (N-1) times
-                // [Eugene] no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
-                val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
-                val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.toTypeConstructor, List(tpe))).last
-                val newArrayApp = atPos(tree.pos) {
-                  val tag = resolveClassTag(tree.pos, tagType)
-                  if (tag.isEmpty) MissingClassTagError(tree, tagType)
-                  else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
+      // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
+      // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len)
+      // where Array HK gets applied (N-1) times
+      object ArrayInstantiation {
+        def unapply(tree: Apply) = tree match {
+          case Apply(Select(New(tpt), name), arg :: Nil) if tpt.tpe != null && tpt.tpe.typeSymbol == ArrayClass =>
+            Some(tpt.tpe) collect {
+              case erasure.GenericArray(level, componentType) =>
+                val tagType = (1 until level).foldLeft(componentType)((res, _) => arrayType(res))
+
+                resolveClassTag(tree.pos, tagType) match {
+                  case EmptyTree => MissingClassTagError(tree, tagType)
+                  case tag       => atPos(tree.pos)(new ApplyToImplicitArgs(Select(tag, nme.newArray), arg :: Nil))
                 }
-                typed(newArrayApp, mode, pt)
-              case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => //SI-5696
-                TooManyArgumentListsForConstructor(tree)
-              case tree1 =>
-                tree1
             }
+          case _ => None
         }
+      }
+
+      def typedApply(tree: Apply) = tree match {
+        case Apply(Block(stats, expr), args) =>
+          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
+        case Apply(fun, args) =>
+          normalTypedApply(tree, fun, args) match {
+            case ArrayInstantiation(tree1)                                           => typed(tree1, mode, pt)
+            case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //SI-5696
+            case tree1                                                               => tree1
+          }
       }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree]): Tree = {
@@ -4534,8 +4523,6 @@ trait Typers extends Modes with Adaptations with Tags {
           case This(_) => qual1.symbol
           case _ => qual1.tpe.typeSymbol
         }
-        //println(clazz+"/"+qual1.tpe.typeSymbol+"/"+qual1)
-
         def findMixinSuper(site: Type): Type = {
           var ps = site.parents filter (_.typeSymbol.name == mix)
           if (ps.isEmpty)
@@ -4543,11 +4530,6 @@ trait Typers extends Modes with Adaptations with Tags {
           if (ps.isEmpty) {
             debuglog("Fatal: couldn't find site " + site + " in " + site.parents.map(_.typeSymbol.name))
             if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
-              // println(qual1)
-              // println(clazz)
-              // println(site)
-              // println(site.parents)
-              // println(mix)
               // the reference to super class got lost during erasure
               restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
               ErrorType
