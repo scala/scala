@@ -761,25 +761,44 @@ trait Contexts { self: Analyzer =>
      *  info of the package object.  However to avoid cycles we'll check
      *  what other ways we can before pushing that way.
      */
-    def isInPackageObject(sym: Symbol, pkg: Symbol) = {
-      val pkgClass = if (pkg.isTerm) pkg.moduleClass else pkg
+    def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean = {
+      def uninitialized(what: String) = {
+        log(s"Cannot look for $sym in package object of $pkg; $what is not initialized.")
+        false
+      }
+      def pkgClass = if (pkg.isTerm) pkg.moduleClass else pkg
       def matchesInfo = (
-        pkg.isInitialized && {
-          // need to be careful here to not get a cyclic reference during bootstrap
+        // need to be careful here to not get a cyclic reference during bootstrap
+        if (pkg.isInitialized) {
           val module = pkg.info member nme.PACKAGEkw
-          module.isInitialized && (module.info.member(sym.name).alternatives contains sym)
+          if (module.isInitialized)
+            module.info.member(sym.name).alternatives contains sym
+          else
+            uninitialized("" + module)
         }
+        else uninitialized("" + pkg)
       )
       def inPackageObject(sym: Symbol) = (
-           !sym.isPackage
-        && !sym.owner.isPackageClass
-        && (sym.owner ne NoSymbol)
-        && (sym.owner.owner == pkgClass || matchesInfo)
+        // To be in the package object, one of these must be true:
+        //   1) sym.owner is a package object class, and sym.owner.owner is the package class for `pkg`
+        //   2) sym.owner is inherited by the correct package object class
+        // We try to establish 1) by inspecting the owners directly, and then we try
+        // to rule out 2), and only if both those fail do we resort to looking in the info.
+        !sym.isPackage && (sym.owner ne NoSymbol) && (
+          if (sym.owner.isPackageObjectClass)
+            sym.owner.owner == pkgClass
+          else
+            !sym.owner.isPackageClass && matchesInfo
+        )
       )
 
+      // An overloaded symbol might not have the expected owner!
+      // The alternatives must be inspected directly.
       pkgClass.isPackageClass && (
-        if (sym.isOverloaded) sym.alternatives forall inPackageObject
-        else inPackageObject(sym)
+        if (sym.isOverloaded)
+          sym.alternatives forall (isInPackageObject(_, pkg))
+        else
+          inPackageObject(sym)
       )
     }
 
