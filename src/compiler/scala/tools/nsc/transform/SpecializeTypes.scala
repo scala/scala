@@ -1482,7 +1482,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               }
               // See SI-5583.  Don't know why it happens now if it didn't before.
               if (specMember.info.typeParams.isEmpty && residualTargs.nonEmpty) {
-                log("!!! Type args to be applied, but symbol says no parameters: " + ((specMember.defString, residualTargs)))
+                devWarning("Type args to be applied, but symbol says no parameters: " + ((specMember.defString, residualTargs)))
                 localTyper.typed(sel)
               }
               else {

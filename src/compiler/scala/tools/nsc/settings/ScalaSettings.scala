@@ -74,6 +74,7 @@ trait ScalaSettings extends AbsScalaSettings
   val assemextdirs  = StringSetting     ("-Xassem-extdirs", "dirs", "(Requires -target:msil) List of directories containing assemblies.  default:lib", Defaults.scalaLibDir.path).dependsOn(target, "msil")
   val sourcedir     = StringSetting     ("-Xsourcedir", "directory", "(Requires -target:msil) Mirror source folder structure in output directory.", ".").dependsOn(target, "msil")
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
+  val developer     = BooleanSetting    ("-Xdev", "Indicates user is a developer - issue warnings about anything which seems amiss")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions or assumptions.")
   val elidebelow    = IntSetting        ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
                                                 elidable.MINIMUM, None, elidable.byName get _)

@@ -1545,7 +1545,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
             val preSuperVals = treeInfo.preSuperFields(templ.body)
             if (preSuperVals.isEmpty && preSuperStats.nonEmpty)
-              debugwarn("Wanted to zip empty presuper val list with " + preSuperStats)
+              devWarning("Wanted to zip empty presuper val list with " + preSuperStats)
             else
               map2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe)
 
