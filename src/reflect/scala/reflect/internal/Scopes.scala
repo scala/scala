@@ -242,7 +242,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         // than a non-deterministic bizarre one (see any bug involving overloads
         // in package objects.)
         val alts = lookupAll(name).toList
-        log("!!! scope lookup of $name found multiple symbols: $alts")
+        def alts_s = alts map (s => s.defString) mkString " <and> "
+        log(s"!!! scope lookup of $name found multiple symbols: $alts_s")
         // FIXME - how is one supposed to create an overloaded symbol without
         // knowing the correct owner? Using the symbol owner is not correct;
         // say for instance this is List's scope and the symbols are its three
@@ -254,8 +255,9 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         // FIXME - a similar question for prefix, although there are more
         // clues from the symbols on that one, as implemented here. In general
         // the distinct list is one type and lub becomes the identity.
-        val prefix = lub(alts map (_.info.prefix) distinct)
-        NoSymbol.newOverloaded(prefix, alts)
+        // val prefix = lub(alts map (_.info.prefix) distinct)
+        // Now using NoSymbol and NoPrefix always to avoid forcing info (SI-6664)
+        NoSymbol.newOverloaded(NoPrefix, alts)
       }
     }
 
