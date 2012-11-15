@@ -242,7 +242,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         // than a non-deterministic bizarre one (see any bug involving overloads
         // in package objects.)
         val alts = lookupAll(name).toList
-        log("!!! scope lookup of $name found multiple symbols: $alts")
+        devWarning(s"scope lookup of $name found multiple symbols: $alts")
         // FIXME - how is one supposed to create an overloaded symbol without
         // knowing the correct owner? Using the symbol owner is not correct;
         // say for instance this is List's scope and the symbols are its three

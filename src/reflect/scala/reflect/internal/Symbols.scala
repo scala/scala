@@ -1268,13 +1268,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         cnt += 1
         // allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (cnt == 3) abort("no progress in completing " + this + ":" + tp)
+        if (cnt == 3) abort(s"no progress in completing $this: $tp")
       }
       rawInfo
     }
     catch {
       case ex: CyclicReference =>
-        debugwarn("... hit cycle trying to complete " + this.fullLocationString)
+        devWarning("... hit cycle trying to complete " + this.fullLocationString)
         throw ex
     }
 
@@ -3152,7 +3152,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def companionSymbol = fail(NoSymbol)
 
     locally {
-      debugwarn("creating stub symbol for " + stubWarning)
+      devWarning("creating stub symbol for " + stubWarning)
     }
   }
   class StubClassSymbol(owner0: Symbol, name0: TypeName) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol

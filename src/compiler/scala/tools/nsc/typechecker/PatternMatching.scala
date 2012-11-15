@@ -271,7 +271,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // we don't transform after uncurry
       // (that would require more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
-      if(phase.id >= currentRun.uncurryPhase.id) debugwarn("running translateMatch at "+ phase +" on "+ selector +" match "+ cases)
+      if (phase.id >= currentRun.uncurryPhase.id)
+        devWarning(s"running translateMatch past uncurry (at $phase) on $selector match $cases")
+
       patmatDebug("translating "+ cases.mkString("{", "\n", "}"))
 
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
