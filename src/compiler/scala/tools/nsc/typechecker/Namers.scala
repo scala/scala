@@ -909,11 +909,10 @@ trait Namers extends MethodSynthesis {
         val modClass = companionSymbolOf(clazz, context).moduleClass
         modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
-          def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
+          def hasCopy = (decls containsName nme.copy) || parents.exists(_ member nme.copy exists)
+
           // SI-5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
-          if (cdef.symbol == clazz && !hasCopy(decls) &&
-                  !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
-                  !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
+          if (cdef.symbol == clazz && !hasCopy)
             addCopyMethod(cdef, templateNamer)
         }
       }
