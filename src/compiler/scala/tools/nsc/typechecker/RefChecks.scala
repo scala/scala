@@ -130,6 +130,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
         }
       }
+
+      // Check for doomed attempt to overload applyDynamic
+      if (clazz isSubClass DynamicClass) {
+        clazz.info member nme.applyDynamic match {
+          case sym if sym.isOverloaded => unit.error(sym.pos, "implementation restriction: applyDynamic cannot be overloaded")
+          case _                       =>
+        }
+      }
+
       if (settings.lint.value) {
         clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
           val alts = clazz.info.decl(sym.name).alternatives
