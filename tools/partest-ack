@@ -5,7 +5,7 @@
 args="$@"
 
 pathMatches () {
-  ack --noenv --files-with-matches "$@" test/files
+  ack --noenv --text --files-with-matches "$@" test/files
 
   for p in $(find test/files/* -print); do
     [[ $p =~ $1 ]] && echo "$p"
