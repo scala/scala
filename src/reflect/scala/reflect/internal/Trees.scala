@@ -482,6 +482,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   case class TypeTree() extends TypTree with TypeTreeContextApi {
     private var orig: Tree = null
+    /** Was this type tree originally empty? That is, does it now contain
+      * an inferred type that must be forgotten in `resetAttrs` to
+      * enable retyping.
+      */
     private[scala] var wasEmpty: Boolean = false
 
     override def symbol = typeTreeSymbol(this) // if (tpe == null) null else tpe.typeSymbol
@@ -501,6 +505,15 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def defineType(tp: Type): this.type = {
       wasEmpty = isEmpty
       setType(tp)
+    }
+
+    override private[scala] def copyAttrs(tree: Tree) = {
+      super.copyAttrs(tree)
+      tree match {
+        case other: TypeTree => wasEmpty = other.wasEmpty // SI-6648 Critical for correct operation of `resetAttrs`.
+        case _ =>
+      }
+      this
     }
   }
   object TypeTree extends TypeTreeExtractor
