@@ -1,6 +1,6 @@
 t6323a.scala:11: `package`.this.materializeTypeTag[Test](scala.reflect.runtime.`package`.universe) is not a valid implicit value for reflect.runtime.universe.TypeTag[Test] because:
 failed to typecheck the materialized tag: 
-cannot create a TypeTag referring to local class Test.Test
+cannot create a TypeTag referring to local class Test.Test: use WeakTypeTag instead
       val value = u.typeOf[Test]
                           ^
 t6323a.scala:11: error: No TypeTag available for Test

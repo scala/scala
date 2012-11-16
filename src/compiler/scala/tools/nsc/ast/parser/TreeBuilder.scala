@@ -285,7 +285,7 @@ abstract class TreeBuilder {
   def makeGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat)
     val rhs1 =
-      if (valeq || treeInfo.isVariablePattern(pat)) rhs
+      if (valeq || treeInfo.isVarPatternDeep(pat)) rhs
       else makeFilter(rhs, pat1.duplicate, nme.CHECK_IF_REFUTABLE_STRING)
 
     if (valeq) ValEq(pos, pat1, rhs1)

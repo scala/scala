@@ -221,9 +221,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           deriveDefDef(tree)(_ =>
             atOwner(origMeth)(
               localTyper.typedPos(rhs.pos)(
-                (callPrefix /: vparamss) {
-                  case (fn, params) => Apply(fn, params map (param => Ident(param.symbol)))
-                }
+                gen.mkForwarder(callPrefix, mmap(vparamss)(_.symbol))
               )
             )
           )
