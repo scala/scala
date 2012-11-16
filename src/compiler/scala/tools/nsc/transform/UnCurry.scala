@@ -336,7 +336,7 @@ abstract class UnCurry extends InfoTransform
 
       // def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
       val applyOrElseMethodDef = {
-        val methSym = anonClass.newMethod(nme.applyOrElse, fun.pos, newFlags = FINAL | OVERRIDE)
+        val methSym = anonClass.newMethod(nme.applyOrElse, fun.pos, newFlags = FINAL | OVERRIDE | SYNTHETIC)
 
         val List(argtpe)            = formals
         val A1                      = methSym newTypeParameter(newTypeName("A1")) setInfo TypeBounds.upper(argtpe)

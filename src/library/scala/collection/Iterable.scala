@@ -11,7 +11,6 @@
 package scala.collection
 
 import generic._
-import scala.util.control.Breaks._
 import mutable.Builder
 
 /** A base trait for iterable collections.

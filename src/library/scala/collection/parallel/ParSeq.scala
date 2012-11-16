@@ -18,9 +18,6 @@ import scala.collection.generic.ParFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.GenSeq
 import scala.collection.parallel.mutable.ParArrayCombiner
-import scala.collection.parallel.mutable.ParArray
-
-
 
 /** A template trait for parallel sequences.
  *

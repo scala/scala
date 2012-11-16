@@ -8,11 +8,4 @@
 
 package scala.collection
 
-
-import generic._
-
-
-
 trait GenSeqView[+A, +Coll] extends GenSeqViewLike[A, Coll, GenSeqView[A, Coll]] { }
-
-

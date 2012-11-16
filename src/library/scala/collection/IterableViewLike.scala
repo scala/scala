@@ -9,7 +9,6 @@
 package scala.collection
 
 import generic._
-import TraversableView.NoBuilder
 import immutable.Stream
 import scala.language.implicitConversions
 

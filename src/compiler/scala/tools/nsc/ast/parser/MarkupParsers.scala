@@ -24,12 +24,6 @@ import scala.reflect.internal.Chars.{ SU, LF }
 // I rewrote most of these, but not as yet the library versions: so if you are
 // tempted to touch any of these, please be aware of that situation and try not
 // to let it get any worse.  -- paulp
-
-/** This trait ...
- *
- *  @author  Burak Emir
- *  @version 1.0
- */
 trait MarkupParsers {
   self: Parsers =>
 
@@ -216,9 +210,6 @@ trait MarkupParsers {
 
     /** Returns true if it encounters an end tag (without consuming it),
      *  appends trees to ts as side-effect.
-     *
-     *  @param ts ...
-     *  @return   ...
      */
     private def content_LT(ts: ArrayBuffer[Tree]): Boolean = {
       if (ch == '/')

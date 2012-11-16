@@ -45,8 +45,6 @@ object MinimizeMode extends Enumeration {
   val Never = Value
 }
 
-import Source._
-
 /** The object `XML` provides constants, and functions to load
  *  and save XML elements. Use this when data binding is not desired, i.e.
  *  when XML is handled using `Symbol` nodes.

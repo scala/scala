@@ -9,7 +9,7 @@
 package scala.collection
 package convert
 
-import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
+import java.{ util => ju }
 
 private[collection] trait Decorators {
   /** Generic class containing the `asJava` converter method */

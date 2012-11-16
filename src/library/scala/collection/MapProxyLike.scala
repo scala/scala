@@ -8,8 +8,6 @@
 
 package scala.collection
 
-import generic._
-
 // Methods could be printed by  cat MapLike.scala | egrep '^  (override )?def'
 
 /** This trait implements a proxy for Map objects. It forwards

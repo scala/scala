@@ -82,7 +82,7 @@ abstract class TailCalls extends Transform {
    *   that label.
    * </p>
    * <p>
-   *   Assumes: <code>Uncurry</code> has been run already, and no multiple
+   *   Assumes: `Uncurry` has been run already, and no multiple
    *            parameter lists exit.
    * </p>
    */
@@ -147,7 +147,6 @@ abstract class TailCalls extends Transform {
       }
 
       def enclosingType    = method.enclClass.typeOfThis
-      def methodTypeParams = method.tpe.typeParams
       def isEligible       = method.isEffectivelyFinal
       // @tailrec annotation indicates mandatory transformation
       def isMandatory      = method.hasAnnotation(TailrecClass) && !forMSIL

@@ -26,7 +26,7 @@ trait CompilationUnits { self: Global =>
   class CompilationUnit(val source: SourceFile) extends CompilationUnitContextApi {
 
     /** the fresh name creator */
-    var fresh: FreshNameCreator = new FreshNameCreator.Default
+    val fresh: FreshNameCreator = new FreshNameCreator.Default
 
     def freshTermName(prefix: String): TermName = newTermName(fresh.newName(prefix))
     def freshTypeName(prefix: String): TypeName = newTypeName(fresh.newName(prefix))
@@ -36,16 +36,6 @@ trait CompilationUnits { self: Global =>
 
     def exists = source != NoSourceFile && source != null
 
-//    def parseSettings() = {
-//      val argsmarker = "SCALAC_ARGS"
-//      if(comments nonEmpty) {
-//        val pragmas = comments find (_.text.startsWith("//#")) // only parse first one
-//        pragmas foreach { p =>
-//          val i = p.text.indexOf(argsmarker)
-//          if(i > 0)
-//        }
-//      }
-//    }
     /** Note: depends now contains toplevel classes.
      *  To get their sourcefiles, you need to dereference with .sourcefile
      */
@@ -107,18 +97,5 @@ trait CompilationUnits { self: Global =>
     lazy val isJava = source.file.name.endsWith(".java")
 
     override def toString() = source.toString()
-
-    def clear() {
-      fresh = new FreshNameCreator.Default
-      body = EmptyTree
-      depends.clear()
-      defined.clear()
-      synthetics.clear()
-      toCheck.clear()
-      checkedFeatures = Set()
-      icode.clear()
-    }
   }
 }
-
-

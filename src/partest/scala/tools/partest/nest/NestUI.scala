@@ -54,9 +54,6 @@ object NestUI {
   }
 
   def warning(msg: String) = print(_warning  + msg + _default)
-  def warning(msg: String, wr: PrintWriter) = synchronized {
-    wr.print(_warning + msg + _default)
-  }
 
   def normal(msg: String) = print(_default + msg)
   def normal(msg: String, wr: PrintWriter) = synchronized {
@@ -104,16 +101,9 @@ object NestUI {
   }
 
   var _verbose = false
-  var _debug = false
 
   def verbose(msg: String) {
     if (_verbose) {
-      outline("debug: ")
-      println(msg)
-    }
-  }
-  def debug(msg: String) {
-    if (isPartestDebug) {
       outline("debug: ")
       println(msg)
     }

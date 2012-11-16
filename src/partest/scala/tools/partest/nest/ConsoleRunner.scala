@@ -11,7 +11,6 @@ package nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 import utils.Properties._
-import RunnerUtils._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
@@ -51,8 +50,6 @@ class ConsoleRunner extends DirectRunner {
   private val testSetKinds  = testSets map (_.kind)
   private val testSetArgs   = testSets map ("--" + _.kind)
   private val testSetArgMap = testSetArgs zip testSets toMap
-
-  def denotesTestSet(arg: String)  = testSetArgs contains arg
 
   private def printVersion() { NestUI outline (versionMsg + "\n") }
 

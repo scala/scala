@@ -10,7 +10,6 @@ package scala.collection
 
 import generic._
 import mutable.{ Builder, ArrayBuffer }
-import TraversableView.NoBuilder
 import scala.annotation.migration
 import scala.language.implicitConversions
 

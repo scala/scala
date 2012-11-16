@@ -12,7 +12,7 @@ package factory
 
 import javax.xml.parsers.SAXParserFactory
 import parsing.{ FactoryAdapter, NoBindingFactoryAdapter }
-import java.io.{ InputStream, Reader, StringReader, File, FileDescriptor, FileInputStream }
+import java.io.{ InputStream, Reader, File, FileDescriptor }
 import java.net.URL
 
 /** Presents collection of XML loading methods which use the parser

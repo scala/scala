@@ -10,7 +10,6 @@ package scala.xml
 package parsing
 
 import scala.io.Source
-import scala.xml.dtd._
 import scala.annotation.switch
 import Utility.Escapes.{ pairs => unescape }
 

@@ -21,7 +21,7 @@ abstract class CompilerTest extends DirectTest {
   lazy val global: Global = newCompiler()
   lazy val units = compilationUnits(global)(sources: _ *)
   import global._
-  import definitions._
+  import definitions.{ compilerTypeFromTag }
 
   override def extraSettings = "-usejavacp -d " + testOutput.path
 
@@ -32,7 +32,6 @@ abstract class CompilerTest extends DirectTest {
   def sources: List[String] = List(code)
 
   // Utility functions
-
   class MkType(sym: Symbol) {
     def apply[M](implicit t: ru.TypeTag[M]): Type =
       if (sym eq NoSymbol) NoType

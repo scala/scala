@@ -13,8 +13,6 @@ object JavaTokens extends ast.parser.Tokens {
 
   /** identifiers */
   final val IDENTIFIER = 10
-  def isIdentifier(code : Int) =
-    code == IDENTIFIER
 
   /** keywords */
   final val ABSTRACT = 20
@@ -68,9 +66,6 @@ object JavaTokens extends ast.parser.Tokens {
   final val VOLATILE = 68
   final val WHILE = 69
 
-  def isKeyword(code : Int) =
-    code >= ABSTRACT && code <= WHILE
-
   /** special symbols */
   final val COMMA = 70
   final val SEMI = 71
@@ -114,9 +109,6 @@ object JavaTokens extends ast.parser.Tokens {
   final val LTLTEQ = 112
   final val GTGTEQ = 113
   final val GTGTGTEQ = 114
-
-  def isSymbol(code : Int) =
-    code >= COMMA && code <= GTGTGTEQ
 
   /** parenthesis */
   final val LPAREN = 115

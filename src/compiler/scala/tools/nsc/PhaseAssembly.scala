@@ -182,7 +182,7 @@ trait PhaseAssembly {
 
     /** Remove all nodes in the given graph, that have no phase object
      *  Make sure to clean up all edges when removing the node object
-     *  <code>Inform</code> with warnings, if an external phase has a
+     *  `Inform` with warnings, if an external phase has a
      *  dependency on something that is dropped.
      */
     def removeDanglingNodes() {

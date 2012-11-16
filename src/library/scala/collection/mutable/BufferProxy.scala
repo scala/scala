@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
-import generic._
 import script._
 
 /** This is a simple proxy class for <a href="Buffer.html"

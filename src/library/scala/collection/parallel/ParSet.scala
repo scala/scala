@@ -17,13 +17,7 @@ package scala.collection.parallel
 
 import scala.collection.Set
 import scala.collection.GenSet
-import scala.collection.mutable.Builder
 import scala.collection.generic._
-
-
-
-
-
 
 /** A template trait for parallel sets.
  *

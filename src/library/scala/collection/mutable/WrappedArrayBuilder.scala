@@ -11,7 +11,6 @@
 package scala.collection
 package mutable
 
-import generic._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 

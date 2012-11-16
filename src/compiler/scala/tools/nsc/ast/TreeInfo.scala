@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package ast
 
-import scala.reflect.internal.HasFlags
-
 /** This class ...
  *
  *  @author Martin Odersky
@@ -38,7 +36,4 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
     case ClassDef(_, `name`, _, _) :: Nil => true
     case _ => super.firstDefinesClassOrObject(trees, name)
   }
-
-  def isInterface(mods: HasFlags, body: List[Tree]) =
-    mods.isTrait && (body forall isInterfaceMember)
 }

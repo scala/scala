@@ -140,7 +140,6 @@ trait Matrix extends MatrixAdditions {
       cases: List[CaseDef],
       default: Tree
     ) {
-      def tvars = roots map (_.lhs)
       def valDefs = roots map (_.valDef)
       override def toString() = "MatrixInit(roots = %s, %d cases)".format(pp(roots), cases.size)
     }
@@ -151,27 +150,12 @@ trait Matrix extends MatrixAdditions {
     object PatternVarGroup {
       def apply(xs: PatternVar*) = new PatternVarGroup(xs.toList)
       def apply(xs: List[PatternVar]) = new PatternVarGroup(xs)
-
-      // XXX - transitional
-      def fromBindings(vlist: List[Binding], freeVars: List[Symbol] = Nil) = {
-        def vmap(v: Symbol): Option[Binding] = vlist find (_.pvar eq v)
-        val info =
-          if (freeVars.isEmpty) vlist
-          else (freeVars map vmap).flatten
-
-        val xs =
-          for (Binding(lhs, rhs) <- info) yield
-            new PatternVar(lhs, Ident(rhs) setType lhs.tpe, !(rhs hasFlag NO_EXHAUSTIVE))
-
-        new PatternVarGroup(xs)
-      }
     }
 
     val emptyPatternVarGroup = PatternVarGroup()
     class PatternVarGroup(val pvs: List[PatternVar]) {
       def syms    = pvs map (_.sym)
       def valDefs = pvs map (_.valDef)
-      def idents  = pvs map (_.ident)
 
       def extractIndex(index: Int): (PatternVar, PatternVarGroup) = {
         val (t, ts) = self.extractIndex(pvs, index)
@@ -180,16 +164,11 @@ trait Matrix extends MatrixAdditions {
 
       def isEmpty = pvs.isEmpty
       def size = pvs.size
-      def head = pvs.head
-      def ::(t: PatternVar) = PatternVarGroup(t :: pvs)
       def :::(ts: List[PatternVar]) = PatternVarGroup(ts ::: pvs)
-      def ++(other: PatternVarGroup) = PatternVarGroup(pvs ::: other.pvs)
 
       def apply(i: Int) = pvs(i)
       def zipWithIndex = pvs.zipWithIndex
       def indices = pvs.indices
-      def map[T](f: PatternVar => T) = pvs map f
-      def filter(p: PatternVar => Boolean) = PatternVarGroup(pvs filter p)
 
       override def toString() = pp(pvs)
     }
@@ -236,12 +215,6 @@ trait Matrix extends MatrixAdditions {
       val rhs = f(lhs)
 
       tracing("create")(new PatternVar(lhs, rhs, checked))
-    }
-    def createLazy(tpe: Type, f: Symbol => Tree, checked: Boolean) = {
-      val lhs = newVar(owner.pos, tpe, Flags.LAZY :: flags(checked))
-      val rhs = f(lhs)
-
-      tracing("createLazy")(new PatternVar(lhs, rhs, checked))
     }
 
     private def newVar(

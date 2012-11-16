@@ -6,9 +6,7 @@
 package scala.reflect
 package internal.util
 
-import NameTransformer._
 import scala.collection.{ mutable, immutable }
-import Origins._
 
 /** A debugging class for logging from whence a method is being called.
  *  Say you wanted to discover who was calling phase_= in SymbolTable.
