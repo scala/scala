@@ -6,6 +6,7 @@
 package scala.reflect
 package internal
 
+import scala.annotation.elidable
 import scala.collection.{ mutable, immutable }
 import util._
 
@@ -107,6 +108,11 @@ abstract class SymbolTable extends macros.Universe
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
   } with util.TraceSymbolActivity
+
+  /** Check that the executing thread is the compiler thread. No-op here,
+   *  overridden in interactive.Global. */
+  @elidable(elidable.WARNING)
+  def assertCorrectThread() {}
 
   /** Are we compiling for Java SE? */
   // def forJVM: Boolean
