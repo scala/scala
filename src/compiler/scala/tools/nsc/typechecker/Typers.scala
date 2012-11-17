@@ -853,6 +853,8 @@ trait Typers extends Modes with Adaptations with Tags {
               orElse { _ =>
                 debuglog("fallback on implicits: " + tree + "/" + resetAllAttrs(original))
                 val tree1 = typed(resetAllAttrs(original), mode, WildcardType)
+                // Q: `typed` already calls `addAnnotations` and `adapt`. the only difference here is that
+                // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
                 tree1.tpe = addAnnotations(tree1, tree1.tpe)
                 if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
               }
@@ -5194,7 +5196,6 @@ trait Typers extends Modes with Adaptations with Tags {
       lastTreeToTyper = tree
       indentTyping()
 
-      var alreadyTyped = false
       val startByType = if (Statistics.canEnable) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
       if (Statistics.canEnable) Statistics.incCounter(visitsByType, tree.getClass)
       try {
@@ -5204,7 +5205,7 @@ trait Typers extends Modes with Adaptations with Tags {
           if (tree.hasSymbolField) tree.symbol = NoSymbol
         }
 
-        alreadyTyped = tree.tpe ne null
+        val alreadyTyped = tree.tpe ne null
         val tree1: Tree = if (alreadyTyped) tree else {
           printTyping(
             ptLine("typing %s: pt = %s".format(ptTree(tree), pt),
