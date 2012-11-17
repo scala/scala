@@ -321,10 +321,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
     lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
                                         Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
-    private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
-      if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == Predef_classOf || meth.isTermMacro) return true
-      bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
-    }
+    private def isBytecodelessMethod(meth: MethodSymbol): Boolean = (
+      isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth.isTermMacro || {
+        bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
+      }
+    )
 
     // unlike other mirrors, method mirrors are created by a factory
     // that's because we want to have decent performance
@@ -415,7 +416,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           case Array_clone                            => ScalaRunTime.array_clone(objReceiver)
           case sym if isStringConcat(sym)             => receiver.toString + objArg0
           case sym if sym.owner.isPrimitiveValueClass => invokePrimitiveMethod
-          case sym if sym == Predef_classOf           => fail("Predef.classOf is a compile-time function")
           case sym if sym.isTermMacro                 => fail(s"${symbol.fullName} is a macro, i.e. a compile-time function")
           case _                                      => assert(false, this)
         }

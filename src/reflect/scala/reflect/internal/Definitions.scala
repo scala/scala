@@ -355,8 +355,7 @@ trait Definitions extends api.StandardDefinitions {
     // I could just change `isOmittablePrefix`, but there's more to it, so I'm leaving this as a todo for now
     lazy val UnqualifiedModules = List(PredefModule, ScalaPackage, JavaLangPackage)
     // Those modules and their module classes
-    lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
-
+    lazy val UnqualifiedOwners = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
     lazy val PredefModule      = requiredModule[scala.Predef.type]
     lazy val PredefModuleClass = PredefModule.moduleClass
 

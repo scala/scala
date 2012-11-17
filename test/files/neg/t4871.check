@@ -1,0 +1,4 @@
+t4871.scala:6: error: this type parameter must be specified
+    val z: Class[C] = classOf
+                      ^
+one error found

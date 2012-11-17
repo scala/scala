@@ -67,7 +67,8 @@ trait FastTrack {
       make(materializeTypeTag, c          => { case PolyArgs(ttag :: Nil, u :: Nil)     => c.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) }),
       make(ApiUniverseReify, c            => { case PolyArgs(ttag :: Nil, expr :: Nil)  => c.materializeExpr(c.prefix.tree, EmptyTree, expr) }),
       make(ReflectRuntimeCurrentMirror, c => { case _                                   => currentMirror(c).tree }),
-      make(StringContext_f, c             => { case Call(Select(Args(parts), _), args)  => c.macro_StringInterpolation_f(parts, args, c.expandee.pos) })
+      make(StringContext_f, c             => { case Call(Select(Args(parts), _), args)  => c.macro_StringInterpolation_f(parts, args, c.expandee.pos) }),
+      make(Predef_classOf, c              => { case PolyArgs(ttag :: Nil, Nil)          => gen.mkClassOf(ttag.tpe) })
     )
     entries filterNot (_.sym == NoSymbol) map (x => x.sym -> x) toMap
   }
