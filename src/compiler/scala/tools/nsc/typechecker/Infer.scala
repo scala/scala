@@ -1186,7 +1186,7 @@ trait Infer extends Checkable {
 
       /** Compute type arguments for undetermined params
        */
-      def inferFor(pt: Type): Option[List[Type]] = {
+      def inferFor(pt: Type): Option[(List[Symbol], List[Type])] = {
         val tvars   = undetparams map freshVar
         val resTpV  = resTp.instantiateTypeParams(undetparams, tvars)
 
@@ -1197,11 +1197,13 @@ trait Infer extends Checkable {
             val variances  =
               if (ctorTp.paramTypes.isEmpty) undetparams map varianceInType(ctorTp)
               else undetparams map varianceInTypes(ctorTp.paramTypes)
-            val targs      = solvedTypes(tvars, undetparams, variances, true, lubDepth(List(resTp, pt)))
+            val targs      = solvedTypes(tvars, undetparams, variances, false, lubDepth(List(resTp, pt)))
+            val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = adjustTypeArgs(undetparams, tvars, targs)
+
             // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
             // no checkBounds here. If we enable it, test bug602 fails.
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
-            Some(targs)
+            Some((okparams, okargs))
           } catch ifNoInstance { msg =>
             debuglog("NO INST "+ (tvars, tvars map (_.constr)))
             NoConstructorInstanceError(tree, resTp, pt, msg)
@@ -1215,7 +1217,7 @@ trait Infer extends Checkable {
 
       def inferForApproxPt =
         if (isFullyDefined(pt)) {
-          inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
+          inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { case (undetparams, targs) =>
             val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
             val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
             val ptvars     =
@@ -1232,12 +1234,12 @@ trait Infer extends Checkable {
             if (isPopulated(resTpInst, ptV)) {
               ptvars foreach instantiateTypeVar
               debuglog("isPopulated "+ resTpInst +", "+ ptV +" vars= "+ ptvars)
-              Some(targs)
+              Some((undetparams, targs))
             } else None
           }
         } else None
 
-      (inferFor(pt) orElse inferForApproxPt) map { targs =>
+      (inferFor(pt) orElse inferForApproxPt) map { case (undetparams, targs) =>
         new TreeTypeSubstituter(undetparams, targs).traverse(tree)
         notifyUndetparamsInferred(undetparams, targs)
       } getOrElse {
