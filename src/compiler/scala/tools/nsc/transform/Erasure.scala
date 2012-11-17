@@ -788,6 +788,7 @@ abstract class Erasure extends AddInterfaces
             else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.params.isEmpty) {
               assert(qual1.symbol.isStable, qual1.symbol);
               qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
+              return adaptMember(treeCopy.Select(tree, qual1, name))
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
               assert(tree.symbol.owner != ArrayClass)
               qual1 = cast(qual1, tree.symbol.owner.tpe)
