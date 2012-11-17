@@ -2468,6 +2468,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isMethod           = this hasFlag METHOD
     override def isModule           = this hasFlag MODULE
     override def isOverloaded       = this hasFlag OVERLOADED
+    /*** !!! TODO: shouldn't we do something like the following:
+    override def isOverloaded       = (
+      if (this.isInitialized)
+        this hasFlag OVERLOADED
+      else
+        (infos ne null) && infos.info.isInstanceOf[OverloadedType]
+    )
+    ***/
     override def isPackage          = this hasFlag PACKAGE
     override def isValueParameter   = this hasFlag PARAM
 
