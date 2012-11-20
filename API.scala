@@ -21,7 +21,7 @@ final class API(val global: CallbackGlobal) extends Compat
 {
 	import global._
 	def error(msg: String) = throw new RuntimeException(msg)
-	def debug(msg: String) = if(settings.verbose.value) inform(msg)
+	@inline def debug(msg: => String) = if(settings.verbose.value) inform(msg)
 
 	def newPhase(prev: Phase) = new ApiPhase(prev)
 	class ApiPhase(prev: Phase) extends Phase(prev)
@@ -296,6 +296,17 @@ final class API(val global: CallbackGlobal) extends Compat
 			else new xsbti.api.Private(qualifier)
 		}
 	}
+
+	/**
+	 * Replace all types that directly refer to the `forbidden` symbol by `NoType`.
+	 * (a specialized version of substThisAndSym)
+	 */
+	class SuppressSymbolRef(forbidden: Symbol) extends TypeMap {
+	  def apply(tp: Type) =
+			if (tp.typeSymbolDirect == forbidden) NoType
+			else mapOver(tp)
+	}
+
 	private def processType(in: Symbol, t: Type): xsbti.api.Type = typeCache.getOrElseUpdate((in, t), makeType(in, t))
 	private def makeType(in: Symbol, t: Type): xsbti.api.Type =
 	{
@@ -307,6 +318,35 @@ final class API(val global: CallbackGlobal) extends Compat
 			case ThisType(sym) => new xsbti.api.Singleton(thisPath(sym))
 			case SingleType(pre, sym) => projectionType(in, pre, sym)
 			case ConstantType(constant) => new xsbti.api.Constant(processType(in, constant.tpe), constant.stringValue)
+
+			/* explaining the special-casing of references to refinement classes (https://support.typesafe.com/tickets/1882)
+			 *
+			 * goal: a representation of type references to refinement classes that's stable across compilation runs
+			 *       (and thus insensitive to typing from source or unpickling from bytecode)
+			 *
+			 * problem: the current representation, which corresponds to the owner chain of the refinement:
+			 *   1. is affected by pickling, so typing from source or using unpickled symbols give different results (because the unpickler "localizes" owners -- this could be fixed in the compiler)
+			 *   2. can't distinguish multiple refinements in the same owner (this is a limitation of SBT's internal representation and cannot be fixed in the compiler)
+			 *
+			 * potential solutions:
+			 *   - simply drop the reference: won't work as collapsing all refinement types will cause recompilation to be skipped when a refinement is changed to another refinement
+			 *   - represent the symbol in the api: can't think of a stable way of referring to an anonymous symbol whose owner changes when pickled
+			 *   + expand the reference to the corresponding refinement type: doing that recursively may not terminate, but we can deal with that by approximating recursive references
+			 *     (all we care about is being sound for recompilation: recompile iff a dependency changes, and this will happen as long as we have one unrolling of the reference to the refinement)
+			 */
+			case TypeRef(pre, sym, Nil) if sym.isRefinementClass =>
+				// Since we only care about detecting changes reliably, we unroll a reference to a refinement class once.
+				// Recursive references are simply replaced by NoType -- changes to the type will be seen in the first unrolling.
+				// The API need not be type correct, so this truncation is acceptable. Most of all, the API should be compact.
+				val unrolling = pre.memberInfo(sym) // this is a refinement type
+
+				// in case there are recursive references, suppress them -- does this ever happen?
+				// we don't have a test case for this, so warn and hope we'll get a contribution for it :-)
+				val withoutRecursiveRefs = new SuppressSymbolRef(sym).mapOver(unrolling)
+				if (unrolling ne withoutRecursiveRefs)
+					reporter.warning(sym.pos, "sbt-api: approximated refinement ref"+ t +" (== "+ unrolling +") to "+ withoutRecursiveRefs +"\nThis is currently untested, please report the code you were compiling.")
+
+			  structure(withoutRecursiveRefs)
 			case tr @ TypeRef(pre, sym, args) =>
 				val base = projectionType(in, pre, sym)
 				if(args.isEmpty)
