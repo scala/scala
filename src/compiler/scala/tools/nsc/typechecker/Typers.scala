@@ -3647,45 +3647,39 @@ trait Typers extends Modes with Adaptations with Tags {
       case OverloadedType(pre, alts) =>
         inferPolyAlternatives(fun, args map (_.tpe))
         val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
-        val args1 = if (sameLength(args, tparams)) {
+        if (sameLength(args, tparams)) {
           //@M: in case TypeApply we can't check the kind-arities of the type arguments,
           // as we don't know which alternative to choose... here we do
-          map2Conserve(args, tparams) {
-            //@M! the polytype denotes the expected kind
-            (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyClass.tpe))
-          }
-        } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
-         // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
-         // inferPolyAlternatives loops...  -- I have no idea why :-(
-         // ...actually this was looping anyway, see bug #278.
-          return TypedApplyWrongNumberOfTpeParametersError(fun, fun)
-
-        typedTypeApply(tree, mode, fun, args1)
+          //@M! the polytype denotes the expected kind
+          val args1 = map2Conserve(args, tparams)((arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyClass.tpe)))
+          typedTypeApply(tree, mode, fun, args1)
+        }
+        else TypedApplyWrongNumberOfTpeParametersError(fun, fun)
+        // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
+        // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
+        // inferPolyAlternatives loops...  -- I have no idea why :-(
+        // ...actually this was looping anyway, see bug #278.
       case SingleType(_, _) =>
         typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
-      case PolyType(tparams, restpe) if tparams.nonEmpty =>
+      case PolyType(tparams, restpe) =>
         if (sameLength(tparams, args)) {
           val targs = args map (_.tpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
-          if (fun.symbol == Predef_classOf)
-            typedClassOf(tree, args.head, true)
-          else {
-            if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
-              val scrutineeType = fun match {
-                case Select(qual, _) => qual.tpe
-                case _               => AnyClass.tpe
-              }
-              checkCheckable(tree, targs.head, scrutineeType, inPattern = false)
+          if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
+            val scrutineeType = fun match {
+              case Select(qual, _) => qual.tpe
+              case _               => AnyClass.tpe
             }
-            val resultpe = restpe.instantiateTypeParams(tparams, targs)
-            //@M substitution in instantiateParams needs to be careful!
-            //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
-            //@M    --> first, m[a] gets changed to m[Int], then m gets substituted for List,
-            //          this must preserve m's type argument, so that we end up with List[Int], and not List[a]
-            //@M related bug: #1438
-            //println("instantiating type params "+restpe+" "+tparams+" "+targs+" = "+resultpe)
-            treeCopy.TypeApply(tree, fun, args) setType resultpe
+            checkCheckable(tree, targs.head, scrutineeType, inPattern = false)
           }
+          val resultpe = restpe.instantiateTypeParams(tparams, targs)
+          //@M substitution in instantiateParams needs to be careful!
+          //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
+          //@M    --> first, m[a] gets changed to m[Int], then m gets substituted for List,
+          //          this must preserve m's type argument, so that we end up with List[Int], and not List[a]
+          //@M related bug: #1438
+          //println("instantiating type params "+restpe+" "+tparams+" "+targs+" = "+resultpe)
+          treeCopy.TypeApply(tree, fun, args) setType resultpe
         }
         else {
           TypedApplyWrongNumberOfTpeParametersError(tree, fun)
@@ -4668,10 +4662,6 @@ trait Typers extends Modes with Adaptations with Tags {
             // this -> Foo.this
             if (sym.isThisSym)
               typed1(This(sym.owner) setPos tree.pos, mode, pt)
-            // Inferring classOf type parameter from expected type.  Otherwise an
-            // actual call to the stubbed classOf method is generated, returning null.
-            else if (isPredefMemberNamed(sym, nme.classOf) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty)
-              typedClassOf(tree, TypeTree(pt.typeArgs.head))
             else {
               val pre1  = if (sym.owner.isPackageClass) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
               val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
