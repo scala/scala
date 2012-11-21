@@ -52,7 +52,7 @@ abstract class ReachingDefinitions {
           // it makes it harder to spot the real problems.
           val result = (a.stack, b.stack).zipped map (_ ++ _)
           if (settings.debug.value && (a.stack.length != b.stack.length))
-            debugwarn("Mismatched stacks in ReachingDefinitions#lub2: " + a.stack + ", " + b.stack + ", returning " + result)
+            devWarning(s"Mismatched stacks in ReachingDefinitions#lub2: ${a.stack}, ${b.stack}, returning $result")
           result
         }
       )

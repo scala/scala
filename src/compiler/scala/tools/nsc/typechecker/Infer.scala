@@ -1319,7 +1319,8 @@ trait Infer extends Checkable {
           new TreeTypeSubstituter(undetparams, targs).traverse(tree)
           notifyUndetparamsInferred(undetparams, targs)
         case _ =>
-          debugwarn("failed inferConstructorInstance for "+ tree  +" : "+ tree.tpe +" under "+ undetparams +" pt = "+ pt +(if(isFullyDefined(pt)) " (fully defined)" else " (not fully defined)"))
+          def full = if (isFullyDefined(pt)) "(fully defined)" else "(not fully defined)"
+          devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt $full")
           // if (settings.explaintypes.value) explainTypes(resTp.instantiateTypeParams(undetparams, tvars), pt)
           ConstrInstantiationError(tree, resTp, pt)
       }

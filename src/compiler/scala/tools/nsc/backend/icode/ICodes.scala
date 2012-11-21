@@ -28,7 +28,7 @@ abstract class ICodes extends AnyRef
                                  with Repository
 {
   val global: Global
-  import global.{ log, definitions, settings, perRunCaches }
+  import global.{ log, definitions, settings, perRunCaches, devWarning }
 
   /** The ICode representation of classes */
   val classes = perRunCaches.newMap[global.Symbol, IClass]()
@@ -82,7 +82,7 @@ abstract class ICodes extends AnyRef
         // Something is leaving open/empty blocks around (see SI-4840) so
         // let's not kill the deal unless it's nonempty.
         if (b.isEmpty) {
-          log("!!! Found open but empty block while inlining " + m + ": removing from block list.")
+          devWarning(s"Found open but empty block while inlining $m: removing from block list.")
           m.code removeBlock b
         }
         else dumpMethodAndAbort(m, b)

@@ -398,8 +398,10 @@ trait Contexts { self: Analyzer =>
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
-      debugwarn("issue error: " + err.errMsg)
-      if (settings.Yissuedebug.value) (new Exception).printStackTrace()
+      if (settings.Yissuedebug.value) {
+        log("issue error: " + err.errMsg)
+        (new Exception).printStackTrace()
+      }
       if (pf isDefinedAt err) pf(err)
       else if (bufferErrors) { buffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
