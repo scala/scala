@@ -1,0 +1,36 @@
+package scala.reflect
+package internal
+package util
+
+trait StripMarginInterpolator {
+  def stringContext: StringContext
+
+  /**
+   * A safe combination of `[[scala.collection.immutable.StringLike#stripMargin]]
+   * and [[scala.StringContext#s]].
+   *
+   * The margin of each line is defined by whitespace leading up to a '|' character.
+   * This margin is stripped '''before''' the arguments are interpolated into to string.
+   *
+   * {{{
+   * scala> val foo = "f|o|o"
+   * foo: String = f|o|o
+   * scala> sm"""|${foo}
+   *             |"""
+   * res0: String =
+   * "f|o|o
+   * "
+   * }}}
+   */
+  final def sm(args: Any*): String = {
+    def stripTrailingPart(s: String) = {
+      val (pre, post) = s.span(_ != '\n')
+      pre + post.stripMargin
+    }
+    val stripped = stringContext.parts.toList match {
+      case head :: tail => head.stripMargin :: (tail map stripTrailingPart)
+      case Nil => Nil
+    }
+    new StringContext(stripped: _*).s(args: _*)
+  }
+}
