@@ -8,8 +8,6 @@
 
 package scala.math
 
-import java.{ lang => jl }
-
 /** A slightly more specific conversion trait for classes which
  *  extend ScalaNumber (which excludes value classes.)
  */

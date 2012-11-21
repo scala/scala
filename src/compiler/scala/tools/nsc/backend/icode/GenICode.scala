@@ -14,8 +14,7 @@ import scala.tools.nsc.symtab._
 import scala.annotation.switch
 import PartialFunction._
 
-/** This class ...
- *
+/**
  *  @author  Iulian Dragos
  *  @version 1.0
  */
@@ -159,8 +158,6 @@ abstract class GenICode extends SubComponent  {
      * and not produce any value. Use genLoad for expressions which leave
      * a value on top of the stack.
      *
-     * @param tree ...
-     * @param ctx  ...
      * @return a new context. This is necessary for control flow instructions
      *         which may change the current basic block.
      */
@@ -263,11 +260,6 @@ abstract class GenICode extends SubComponent  {
     }
 
     /** Generate primitive array operations.
-     *
-     *  @param tree ...
-     *  @param ctx  ...
-     *  @param code ...
-     *  @return     ...
      */
     private def genArrayOp(tree: Tree, ctx: Context, code: Int, expectedType: TypeKind): (Context, TypeKind) = {
       import scalaPrimitives._
@@ -1389,10 +1381,6 @@ abstract class GenICode extends SubComponent  {
     // }
 
     /** Generate string concatenation.
-     *
-     *  @param tree ...
-     *  @param ctx  ...
-     *  @return     ...
      */
     def genStringConcat(tree: Tree, ctx: Context): Context = {
       liftStringConcat(tree) match {
@@ -1706,8 +1694,6 @@ abstract class GenICode extends SubComponent  {
      *  If the block consists of a single unconditional jump, prune
      *  it by replacing the instructions in the predecessor to jump
      *  directly to the JUMP target of the block.
-     *
-     *  @param method ...
      */
     def prune(method: IMethod) = {
       var changed = false
@@ -1963,18 +1949,7 @@ abstract class GenICode extends SubComponent  {
         this
       }
 
-      def removeFinalizer(f: Tree): this.type = {
-        assert(cleanups.head contains f,
-               "Illegal nesting of cleanup operations: " + cleanups + " while exiting finalizer " + f);
-        cleanups = cleanups.tail
-        this
-      }
-
       /** Prepare a new context upon entry into a method.
-       *
-       *  @param m ...
-       *  @param d ...
-       *  @return  ...
        */
       def enterMethod(m: IMethod, d: DefDef): Context = {
         val ctx1 = new Context(this) setMethod(m)
@@ -2046,16 +2021,6 @@ abstract class GenICode extends SubComponent  {
         currentExceptionHandlers = currentExceptionHandlers.tail
       }
 
-      /** Remove the given handler from the list of active exception handlers. */
-      def removeActiveHandler(exh: ExceptionHandler): Unit = {
-        assert(handlerCount > 0 && handlers.head == exh,
-               "Wrong nesting of exception handlers." + this + " for " + exh)
-        handlerCount -= 1
-        handlers = handlers.tail
-        debuglog("removed handler: " + exh);
-
-      }
-
       /** Clone the current context */
       def dup: Context = new Context(this)
 
@@ -2074,14 +2039,14 @@ abstract class GenICode extends SubComponent  {
        * It returns the resulting context, with the same active handlers as
        * before the call. Use it like:
        *
-       * <code> ctx.Try( ctx => {
+       * ` ctx.Try( ctx => {
        *   ctx.bb.emit(...) // protected block
        * }, (ThrowableClass,
        *   ctx => {
        *     ctx.bb.emit(...); // exception handler
        *   }), (AnotherExceptionClass,
        *   ctx => {...
-       *   } ))</code>
+       *   } ))`
        */
       def Try(body: Context => Context,
               handlers: List[(Symbol, TypeKind, Context => Context)],
@@ -2342,7 +2307,6 @@ abstract class GenICode extends SubComponent  {
     val locals: ListBuffer[Local] = new ListBuffer
 
     def add(l: Local)     = locals += l
-    def remove(l: Local)  = locals -= l
 
     /** Return all locals that are in scope. */
     def varsInScope: Buffer[Local] = outer.varsInScope.clone() ++= locals

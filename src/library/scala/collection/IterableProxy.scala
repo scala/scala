@@ -8,8 +8,6 @@
 
 package scala.collection
 
-import generic._
-
 /** This trait implements a proxy for iterable objects. It forwards all calls
  *  to a different iterable object.
  *

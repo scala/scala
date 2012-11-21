@@ -8,13 +8,11 @@
 
 package scala.collection
 
-import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import convert._
 
 // TODO: I cleaned all this documentation up in JavaConversions, but the
 // documentation in here is basically the pre-cleaned-up version with minor
 // additions.  Would be nice to have in one place.
-
 
 /** A collection of decorators that allow converting between
  *  Scala and Java collections using `asScala` and `asJava` methods.

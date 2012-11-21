@@ -14,6 +14,5 @@ class SimpleTracer(out: PrintStream, enabled: Boolean = true) {
     if (enabled) out.println(msg+value)
     value
   }
-  def withOutput(out: PrintStream) = new SimpleTracer(out, enabled)
   def when(enabled: Boolean): SimpleTracer = new SimpleTracer(out, enabled)
 }

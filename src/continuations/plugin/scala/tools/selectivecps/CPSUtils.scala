@@ -7,7 +7,6 @@ import scala.tools.nsc.Global
 trait CPSUtils {
   val global: Global
   import global._
-  import definitions._
 
   var cpsEnabled = false
   val verbose: Boolean = System.getProperty("cpsVerbose", "false") == "true"

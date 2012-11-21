@@ -176,7 +176,7 @@ class MutableSettings(val errorFn: String => Unit)
   * The class loader defining `T` should provide resources `app.class.path`
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
-  def embeddedDefaults[T: ClassTag]: Unit =
+  def embeddedDefaults[T: ClassTag]: Unit = // called from sbt and repl
     embeddedDefaults(classTag[T].runtimeClass.getClassLoader)
 
   /** Initializes these settings for embedded use by a class from the given class loader.
@@ -239,7 +239,7 @@ class MutableSettings(val errorFn: String => Unit)
     /** Add a destination directory for sources found under srcdir.
      *  Both directories should exits.
      */
-    def add(srcDir: String, outDir: String): Unit =
+    def add(srcDir: String, outDir: String): Unit = // used in ide?
       add(checkDir(AbstractFile.getDirectory(srcDir), srcDir),
           checkDir(AbstractFile.getDirectory(outDir), outDir))
 
@@ -434,7 +434,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
-    override def tryToSetFromPropertyValue(s : String) {
+    override def tryToSetFromPropertyValue(s : String) { // used from ide
       value = s.equalsIgnoreCase("true")
     }
   }
@@ -527,7 +527,7 @@ class MutableSettings(val errorFn: String => Unit)
       Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
-    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
     def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -561,7 +561,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
-    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
+    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil) // used from ide
 
     withHelpSyntax(name + ":<" + helpArg + ">")
   }

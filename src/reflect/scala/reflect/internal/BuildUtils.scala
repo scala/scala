@@ -1,8 +1,6 @@
 package scala.reflect
 package internal
 
-import Flags._
-
 trait BuildUtils { self: SymbolTable =>
 
   class BuildImpl extends BuildApi {

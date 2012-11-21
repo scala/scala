@@ -392,9 +392,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       uttree
     }
 
-    def showAttributed(tree: u.Tree, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String =
-      compiler.showAttributed(importer.importTree(tree), printTypes, printIds, printKinds)
-
     def parse(code: String): u.Tree = {
       if (compiler.settings.verbose.value) println("parsing "+code)
       val ctree: compiler.Tree = compiler.parse(code)

@@ -8,7 +8,6 @@
 
 package scala.collection
 
-import generic._
 import mutable.ArrayBuffer
 import scala.annotation.tailrec
 

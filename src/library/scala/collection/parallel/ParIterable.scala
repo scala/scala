@@ -11,7 +11,6 @@ package scala.collection.parallel
 import scala.collection.GenIterable
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArrayCombiner
-import scala.collection.parallel.mutable.ParArray
 
 /** A template trait for parallel iterable collections.
  *

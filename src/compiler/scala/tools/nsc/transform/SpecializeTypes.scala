@@ -184,13 +184,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  /** Returns the generic class that was specialized to 'sClass', or
-   *  'sClass' itself if sClass is not a specialized subclass.
-   */
-  def genericClass(sClass: Symbol): Symbol =
-    if (sClass.isSpecialized) sClass.superClass
-    else sClass
-
   case class Overload(sym: Symbol, env: TypeEnv) {
     override def toString = "specialized overload " + sym + " in " + env
     def matchesSym(sym1: Symbol)  = sym.info =:= sym1.info
@@ -222,8 +215,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *  type bounds of other @specialized type parameters (and not in its result type).
      */
     def degenerate = false
-
-    def isAccessor = false
   }
 
   /** Symbol is a special overloaded method of 'original', in the environment env. */
@@ -247,9 +238,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Symbol is a specialized accessor for the `target` field. */
-  case class SpecializedAccessor(target: Symbol) extends SpecializedInfo {
-    override def isAccessor = true
-  }
+  case class SpecializedAccessor(target: Symbol) extends SpecializedInfo { }
 
   /** Symbol is a specialized method whose body should be the target's method body. */
   case class Implementation(target: Symbol) extends SpecializedInfo
@@ -287,9 +276,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Return specialized type parameters. */
   def specializedParams(sym: Symbol): List[Symbol] =
     sym.info.typeParams filter (_.isSpecialized)
-
-  def splitParams(tps: List[Symbol]) =
-    tps partition (_.isSpecialized)
 
   /** Given an original class symbol and a list of types its type parameters are instantiated at
    *  returns a list of type parameters that should remain in the TypeRef when instantiating a
@@ -1062,7 +1048,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (isPrimitiveValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
         env + ((sym1, tp2))
       else if (isSpecializedAnyRefSubtype(tp2, sym1))
-        env + ((sym1, tp2)) // env + ((sym1, AnyRefClass.tpe))
+        env + ((sym1, tp2))
       else if (strict)
         unifyError(tp1, tp2)
       else
@@ -1185,7 +1171,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *
    *  A conflicting type environment could still be satisfiable.
    */
-  def conflicting(env: TypeEnv) = !nonConflicting(env)
   def nonConflicting(env: TypeEnv) = env forall { case (tvar, tpe) =>
     (subst(env, tvar.info.bounds.lo) <:< tpe) && (tpe <:< subst(env, tvar.info.bounds.hi))
   }
@@ -1668,7 +1653,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val symbol = tree.symbol
       debuglog("specializing body of" + symbol.defString)
       val DefDef(_, _, tparams, vparams :: Nil, tpt, _) = tree
-//      val (_, origtparams) = splitParams(source.typeParams)
       val env = typeEnv(symbol)
       val boundTvars = env.keySet
       val origtparams = source.typeParams.filter(tparam => !boundTvars(tparam) || !isPrimitiveValueType(env(tparam)))
@@ -1864,12 +1848,5 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       resultTree
     }
-  }
-
-  def printSpecStats() {
-    println("    concreteSpecMembers: %7d".format(concreteSpecMethods.size))
-    println("    overloads:           %7d".format(overloads.size))
-    println("    typeEnv:             %7d".format(typeEnv.size))
-    println("    info:                %7d".format(info.size))
   }
 }

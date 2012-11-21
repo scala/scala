@@ -345,15 +345,6 @@ trait ModelFactoryImplicitSupport {
         makeRootPackage
       }
 
-    def targetTemplate: Option[TemplateEntity] = toType match {
-      // @Vlad: I'm being extra conservative in template creation -- I don't want to create templates for complex types
-      // such as refinement types because the template can't represent the type corectly (a template corresponds to a
-      // package, class, trait or object)
-      case t: TypeRef => Some(makeTemplate(t.sym))
-      case RefinedType(parents, decls) => None
-      case _ => error("Scaladoc implicits: Could not create template for: " + toType + " of type " + toType.getClass); None
-    }
-
     def targetTypeComponents: List[(TemplateEntity, TypeEntity)] = makeParentTypes(toType, None, inTpl)
 
     def convertorMethod: Either[MemberEntity, String] = {
@@ -492,14 +483,14 @@ trait ModelFactoryImplicitSupport {
   /**
    *  Make implicits explicit - Not used curently
    */
-  object implicitToExplicit extends TypeMap {
-    def apply(tp: Type): Type = mapOver(tp) match {
-      case MethodType(params, resultType) =>
-        MethodType(params.map(param => if (param.isImplicit) param.cloneSymbol.resetFlag(Flags.IMPLICIT) else param), resultType)
-      case other =>
-        other
-    }
-  }
+  // object implicitToExplicit extends TypeMap {
+  //   def apply(tp: Type): Type = mapOver(tp) match {
+  //     case MethodType(params, resultType) =>
+  //       MethodType(params.map(param => if (param.isImplicit) param.cloneSymbol.resetFlag(Flags.IMPLICIT) else param), resultType)
+  //     case other =>
+  //       other
+  //   }
+  // }
 
   /**
    * removeImplicitParameters transforms implicit parameters from the view result type into constraints and

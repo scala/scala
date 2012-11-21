@@ -13,11 +13,6 @@ package scala.collection.parallel.mutable
 
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
-import scala.collection.GenSet
-
-
-
-
 
 /** A mutable variant of `ParSet`.
  *

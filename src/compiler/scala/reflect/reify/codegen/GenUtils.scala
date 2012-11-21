@@ -90,22 +90,6 @@ trait GenUtils {
   /** An (unreified) path that refers to term definition with given fully qualified name */
   def termPath(fullname: String): Tree = path(fullname, newTermName)
 
-  /** An (unreified) path that refers to type definition with given fully qualified name */
-  def typePath(fullname: String): Tree = path(fullname, newTypeName)
-
-  def isTough(tpe: Type) = {
-    def isTough(tpe: Type) = tpe match {
-      case _: RefinedType => true
-      case _: ExistentialType => true
-      case _: ClassInfoType => true
-      case _: MethodType => true
-      case _: PolyType => true
-      case _ => false
-    }
-
-    tpe != null && (tpe exists isTough)
-  }
-
   object TypedOrAnnotated {
     def unapply(tree: Tree): Option[Tree] = tree match {
       case ty @ Typed(_, _) =>
@@ -115,15 +99,6 @@ trait GenUtils {
       case _ =>
         None
     }
-  }
-
-  def isAnnotated(tpe: Type) = {
-    def isAnnotated(tpe: Type) = tpe match {
-      case _: AnnotatedType => true
-      case _ => false
-    }
-
-    tpe != null && (tpe exists isAnnotated)
   }
 
   def isSemiConcreteTypeMember(tpe: Type) = tpe match {

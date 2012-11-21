@@ -6,12 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
-
-import generic._
 
 /** A default map which implements the `+` and `-`
  *  methods of maps. It does so using the default builder for

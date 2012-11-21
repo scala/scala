@@ -14,8 +14,6 @@ import event.Event
 import scala.collection.mutable.{Buffer, ListBuffer}
 
 object Reactions {
-  import scala.ref._
-
   class Impl extends Reactions {
     private val parts: Buffer[Reaction] = new ListBuffer[Reaction]
     def isDefinedAt(e: Event) = parts.exists(_ isDefinedAt e)

@@ -1388,12 +1388,6 @@ trait Namers extends MethodSynthesis {
         tpe
     }
 
-    def ensureParent(clazz: Symbol, parent: Symbol) = {
-      val info0 = clazz.info
-      val info1 = includeParent(info0, parent)
-      if (info0 ne info1) clazz setInfo info1
-    }
-
     class LogTransitions[S](onEnter: S => String, onExit: S => String) {
       val enabled = settings.debug.value
       @inline final def apply[T](entity: S)(body: => T): T = {

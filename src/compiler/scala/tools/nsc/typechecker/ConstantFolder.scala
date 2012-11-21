@@ -27,9 +27,6 @@ abstract class ConstantFolder {
 
   /** If tree is a constant value that can be converted to type `pt`, perform
    *  the conversion.
-   *
-   *  @param tree ...
-   *  @param pt ...
    */
   def apply(tree: Tree, pt: Type): Tree = fold(apply(tree), tree.tpe match {
     case ConstantType(x) => x convertTo pt

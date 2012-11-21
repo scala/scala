@@ -12,7 +12,7 @@ package scala.concurrent.impl
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-import scala.util.{Try, Success, Failure}
+import scala.util.{ Success, Failure }
 
 
 private[concurrent] object Future {
