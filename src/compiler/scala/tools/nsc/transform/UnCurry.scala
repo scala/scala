@@ -297,7 +297,8 @@ abstract class UnCurry extends InfoTransform
      *  If there's a default case, the original match is used for applyOrElse, and isDefinedAt returns `true`
      */
     def synthPartialFunction(fun: Function) = {
-      if (!settings.XoldPatmat.value) debugwarn("Under the new pattern matching scheme, PartialFunction should have been synthesized during typers.")
+      if (!settings.XoldPatmat.value)
+        devWarning("Under the new pattern matching scheme, PartialFunction should have been synthesized during typers.")
 
       val targs             = fun.tpe.typeArgs
       val (formals, restpe) = (targs.init, targs.last)
@@ -704,7 +705,7 @@ abstract class UnCurry extends InfoTransform
         val finalizer = tree.finalizer
         if (!settings.XoldPatmat.value) {
           if (catches exists (cd => !treeInfo.isCatchCase(cd)))
-            debugwarn("VPM BUG! illegal try/catch " + catches)
+            devWarning("VPM BUG - illegal try/catch " + catches)
           tree
         } else if (catches forall treeInfo.isCatchCase) {
           tree

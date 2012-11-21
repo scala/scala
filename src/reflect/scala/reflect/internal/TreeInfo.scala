@@ -147,11 +147,10 @@ abstract class TreeInfo {
     val plen   = params.length
     val alen   = args.length
     def fail() = {
-      global.debugwarn(
-        "Mismatch trying to zip method parameters and argument list:\n" +
-        "  params = " + params + "\n" +
-        "    args = " + args + "\n"
-      )
+      global.devWarning(
+        s"""|Mismatch trying to zip method parameters and argument list:
+            |  params = $params
+            |    args = $args""".stripMargin)
       false
     }
 

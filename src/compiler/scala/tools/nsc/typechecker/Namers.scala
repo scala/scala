@@ -336,7 +336,7 @@ trait Namers extends MethodSynthesis {
 
     private def enterClassSymbol(tree: ClassDef, clazz: ClassSymbol): Symbol = {
       if (clazz.sourceFile != null && clazz.sourceFile != contextFile)
-        debugwarn("!!! Source mismatch in " + clazz + ": " + clazz.sourceFile + " vs. " + contextFile)
+        devWarning(s"Source file mismatch in $clazz: ${clazz.sourceFile} vs. $contextFile")
 
       clazz.associatedFile = contextFile
       if (clazz.sourceFile != null) {

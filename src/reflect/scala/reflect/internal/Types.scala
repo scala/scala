@@ -1969,7 +1969,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case tr @ TypeRef(_, sym, args) if args.nonEmpty =>
             val tparams = tr.initializedTypeParams
             if (settings.debug.value && !sameLength(tparams, args))
-              debugwarn("Mismatched zip in computeRefs(): " + sym.info.typeParams + ", " + args)
+              devWarning(s"Mismatched zip in computeRefs(): ${sym.info.typeParams}, $args")
 
             foreach2(tparams, args) { (tparam1, arg) =>
               if (arg contains tparam) {
@@ -2102,7 +2102,7 @@ trait Types extends api.Types { self: SymbolTable =>
       // it later turns out not to have kind *. See SI-4070.  Only
       // logging it for now.
       if (sym.typeParams.size != args.size)
-        log("!!! %s.transform(%s), but tparams.isEmpty and args=".format(this, tp, args))
+        devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
 
       asSeenFromOwner(tp).instantiateTypeParams(sym.typeParams, args)
     }
@@ -3691,7 +3691,7 @@ trait Types extends api.Types { self: SymbolTable =>
     tycon match {
       case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
       case TypeRef(pre, sym, Nil)                         => copyTypeRef(tycon, pre, sym, args)
-      case TypeRef(pre, sym, bogons)                      => debugwarn(s"Dropping $bogons from $tycon in appliedType.") ; copyTypeRef(tycon, pre, sym, args)
+      case TypeRef(pre, sym, bogons)                      => devWarning(s"Dropping $bogons from $tycon in appliedType.") ; copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
       case ExistentialType(tparams, restpe)               => newExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
@@ -5036,7 +5036,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true) orElse {
           if (sym.isAliasType) throw missingAliasException
-          debugwarn(pre+"."+sym+" does no longer exist, phase = "+phase)
+          devWarning(s"$pre.$sym no longer exist at phase $phase")
           throw new MissingTypeControl // For build manager and presentation compiler purposes
         }
         /** The two symbols have the same fully qualified name */
@@ -5094,7 +5094,7 @@ trait Types extends api.Types { self: SymbolTable =>
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) {
               tp
             } else if (sym1 == NoSymbol) {
-              debugwarn("adapt fail: "+pre+" "+pre1+" "+sym)
+              devWarning(s"adapt to new run failed: pre=$pre pre1=$pre1 sym=$sym")
               tp
             } else {
               copyTypeRef(tp, pre1, sym1, args1)
@@ -7283,7 +7283,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   protected def typeToString(tpe: Type): String =
     if (tostringRecursions >= maxTostringRecursions) {
-      debugwarn("Exceeded recursion depth attempting to print type.")
+      devWarning("Exceeded recursion depth attempting to print " + util.shortClassOfInstance(tpe))
       if (settings.debug.value)
         (new Throwable).printStackTrace
 

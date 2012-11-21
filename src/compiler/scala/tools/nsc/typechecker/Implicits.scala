@@ -82,7 +82,7 @@ trait Implicits {
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
     if (saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
       context.updateBuffer(implicitSearchContext.errBuffer.filter(err => err.kind == ErrorKinds.Ambiguous || err.kind == ErrorKinds.Divergent))
-      debugwarn("update buffer: " + implicitSearchContext.errBuffer)
+      debuglog("update buffer: " + implicitSearchContext.errBuffer)
     }
     printInference("[infer implicit] inferred " + result)
     context.undetparams = context.undetparams filterNot result.subst.from.contains

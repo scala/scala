@@ -139,7 +139,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
       }
 
-      if (settings.lint.value) {
+      // This has become noisy with implicit classes.
+      if (settings.lint.value && settings.developer.value) {
         clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
           val alts = clazz.info.decl(sym.name).alternatives
           if (alts.size > 1)
