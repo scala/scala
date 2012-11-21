@@ -527,8 +527,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
       def isJavaProtected = host.isTrait && sym.isJavaDefined && {
         restrictionError(pos, unit,
-          s"""|$clazz accesses protected $sym inside a concrete trait method.
-              |Add an accessor in a class extending ${sym.enclClass} as a workaround.""".stripMargin
+          sm"""$clazz accesses protected $sym inside a concrete trait method.
+              |Add an accessor in a class extending ${sym.enclClass} as a workaround."""
         )
         true
       }

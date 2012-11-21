@@ -4863,12 +4863,12 @@ trait Typers extends Modes with Adaptations with Tags {
                 defSym = pre.member(defEntry.sym.name)
                 if (defSym ne defEntry.sym) {
                   qual = gen.mkAttributedQualifier(pre)
-                  log(s"""
+                  log(sm"""
                     |  !!! Overloaded package object member resolved incorrectly.
                     |        prefix: $pre
                     |     Discarded: ${defEntry.sym.defString}
                     |         Using: ${defSym.defString}
-                    """.stripMargin)
+                    """)
                 }
               }
               else

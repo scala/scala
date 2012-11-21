@@ -33,10 +33,10 @@ trait Errors {
   }
 
   def CannotConvertManifestToTagWithoutScalaReflect(tpe: Type, manifestInScope: Tree) = {
-    val msg = s"""
-      |to create a type tag here, it is necessary to interoperate with the manifest `$manifestInScope` in scope.
-      |however manifest -> typetag conversion requires Scala reflection, which is not present on the classpath.
-      |to proceed put scala-reflect.jar on your compilation classpath and recompile.""".trim.stripMargin
+    val msg =
+      sm"""to create a type tag here, it is necessary to interoperate with the manifest `$manifestInScope` in scope.
+          |however manifest -> typetag conversion requires Scala reflection, which is not present on the classpath.
+          |to proceed put scala-reflect.jar on your compilation classpath and recompile."""
     throw new ReificationException(defaultErrorPosition, msg)
   }
 
