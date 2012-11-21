@@ -1306,17 +1306,17 @@ trait Implicits {
         else {
           if (ReflectRuntimeUniverse == NoSymbol) {
             // todo. write a test for this
-            context.error(pos, s"""
-              |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
-              |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
-              |to proceed put scala-reflect.jar on your compilation classpath and recompile.""".trim.stripMargin)
+            context.error(pos,
+              sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+                  |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
+                  |to proceed put scala-reflect.jar on your compilation classpath and recompile.""")
             return SearchFailure
           }
           if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
-            context.error(pos, s"""
-              |to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
-              |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
-              |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""".trim.stripMargin)
+            context.error(pos,
+              sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
+                  |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
+                  |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""")
             return SearchFailure
           }
           val cm = typed(Ident(ReflectRuntimeCurrentMirror))

@@ -437,19 +437,19 @@ abstract class Erasure extends AddInterfaces
         noclash = false
         unit.error(
           if (member.owner == root) member.pos else root.pos,
-          s"""bridge generated for member ${fulldef(member)}
-             |which overrides ${fulldef(other)}
-             |clashes with definition of $what;
-             |both have erased type ${afterPostErasure(bridge.tpe)}""".stripMargin)
+          sm"""bridge generated for member ${fulldef(member)}
+              |which overrides ${fulldef(other)}
+              |clashes with definition of $what;
+              |both have erased type ${afterPostErasure(bridge.tpe)}""")
       }
       for (bc <- root.baseClasses) {
         if (settings.debug.value)
           afterPostErasure(println(
-            s"""check bridge overrides in $bc
-            ${bc.info.nonPrivateDecl(bridge.name)}
-            ${site.memberType(bridge)}
-            ${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
-            ${(bridge.matchingSymbol(bc, site))}""".stripMargin))
+            sm"""check bridge overrides in $bc
+                |${bc.info.nonPrivateDecl(bridge.name)}
+                |${site.memberType(bridge)}
+                |${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
+                |${(bridge.matchingSymbol(bc, site))}"""))
 
         def overriddenBy(sym: Symbol) =
           sym.matchingSymbol(bc, site).alternatives filter (sym => !sym.isBridge)
