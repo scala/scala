@@ -345,6 +345,12 @@ abstract class SymbolTable extends macros.Universe
   /** Is this symbol table a part of a compiler universe?
    */
   def isCompilerUniverse = false
+
+  /**
+   * Adds the `sm` String interpolator to a [[scala.StringContext]].
+   */
+  implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
+
 }
 
 object SymbolTableStats {
