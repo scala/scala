@@ -123,9 +123,10 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def collect2combiner[S, That](pf: PartialFunction[T, S], cb: Combiner[S, That]): Combiner[S, That] = {
     //val cb = pbf(repr)
+    val runWith = pf.runWith(cb += _)
     while (hasNext) {
       val curr = next
-      if (pf.isDefinedAt(curr)) cb += pf(curr)
+      runWith(curr)
     }
     cb
   }

@@ -275,7 +275,7 @@ trait TraversableLike[+A, +Repr] extends Any
 
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
+    foreach(pf.runWith(b += _))
     b.result
   }
 
