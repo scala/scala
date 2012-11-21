@@ -18,9 +18,6 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.ParFactory
 import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.Combiner
-import scala.collection.GenSeq
-
-
 
 /** An immutable variant of `ParSeq`.
  *

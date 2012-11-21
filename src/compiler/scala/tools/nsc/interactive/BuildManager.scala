@@ -15,9 +15,6 @@ trait BuildManager {
   /** Add the given source files to the managed build process. */
   def addSourceFiles(files: Set[AbstractFile])
 
-  /** Remove the given files from the managed build process. */
-  def removeFiles(files: Set[AbstractFile])
-
   /** The given files have been modified by the user. Recompile
    *  them and their dependent files.
    */
@@ -71,8 +68,6 @@ object BuildManagerTest extends EvalLoop {
     val settings = new Settings(buildError)
     settings.Ybuildmanagerdebug.value = true
     val command = new CompilerCommand(args.toList, settings)
-//    settings.make.value = "off"
-//    val buildManager: BuildManager = new SimpleBuildManager(settings)
     val buildManager: BuildManager = new RefinedBuildManager(settings)
 
     buildManager.addSourceFiles(command.files)

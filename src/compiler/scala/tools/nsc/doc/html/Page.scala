@@ -88,12 +88,6 @@ abstract class Page {
   def relativeLinkTo(destClass: TemplateEntity): String =
     relativeLinkTo(templateToPath(destClass))
 
-  /** A relative link from this page to some destination page in the Scaladoc site.
-    * @param destPage The page that the link will point to. */
-  def relativeLinkTo(destPage: HtmlPage): String = {
-    relativeLinkTo(destPage.path)
-  }
-
   /** A relative link from this page to some destination path.
     * @param destPath The path that the link will point to. */
   def relativeLinkTo(destPath: List[String]): String = {

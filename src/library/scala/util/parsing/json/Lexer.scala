@@ -11,7 +11,6 @@
 package scala.util.parsing.json
 
 import scala.util.parsing.combinator._
-import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
 import scala.util.parsing.input.CharArrayReader.EofCh
 

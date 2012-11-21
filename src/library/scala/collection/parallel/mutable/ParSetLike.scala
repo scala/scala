@@ -10,16 +10,10 @@
 package scala.collection
 package parallel.mutable
 
-
-
-import scala.collection.mutable.Set
-import scala.collection.mutable.Builder
 import scala.collection.mutable.Cloneable
 import scala.collection.GenSetLike
 import scala.collection.generic.Growable
 import scala.collection.generic.Shrinkable
-
-
 
 /** A template trait for mutable parallel sets. This trait is mixed in with concrete
  *  parallel sets to override the representation type.

@@ -71,7 +71,7 @@ object Plugin {
   }
 
   /** Try to load a plugin description from the specified
-   *  file, returning <code>None</code> if it does not work.
+   *  file, returning `None` if it does not work.
    */
   private def loadDescription(jarfile: Path): Option[PluginDescription] =
     // XXX Return to this once we have some ARM support

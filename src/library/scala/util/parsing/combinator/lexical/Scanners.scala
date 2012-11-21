@@ -6,13 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.parsing
 package combinator
 package lexical
 
-import token._
 import input._
 
 /** This component provides core functionality for lexical parsers.

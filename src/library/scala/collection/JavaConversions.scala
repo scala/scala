@@ -8,7 +8,6 @@
 
 package scala.collection
 
-import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import convert._
 
 /**   A collection of implicit conversions supporting interoperability between

@@ -2,13 +2,8 @@
 
 package scala.tools.selectivecps
 
-import scala.collection._
-
-import scala.tools.nsc._
 import scala.tools.nsc.transform._
 import scala.tools.nsc.plugins._
-
-import scala.tools.nsc.ast.TreeBrowsers
 import scala.tools.nsc.ast._
 
 /**

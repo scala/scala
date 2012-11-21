@@ -11,11 +11,6 @@ import util.ScalaClassLoader
 import util.Exceptional.unwrap
 
 trait CommonRunner {
-  /** Check whether a class with the specified name
-   *  exists on the specified class path. */
-  def classExists(urls: List[URL], objectName: String): Boolean =
-    ScalaClassLoader.classExists(urls, objectName)
-
   /** Run a given object, specified by name, using a
    *  specified classpath and argument list.
    *

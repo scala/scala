@@ -15,8 +15,6 @@ import scala.collection.generic._
 
 import scala.collection.parallel.ParIterableLike
 import scala.collection.parallel.Combiner
-import scala.collection.GenIterable
-
 
 /** A template trait for immutable parallel iterable collections.
  *

@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package include.sax
 
-import scala.xml.include._
 import scala.collection.mutable
 import org.xml.sax.{ ContentHandler, XMLReader, Locator, Attributes }
 import org.xml.sax.ext.LexicalHandler

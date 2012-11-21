@@ -107,19 +107,11 @@ object Javap {
   type FakeEnvironment = AnyRef
   type FakePrinter = AnyRef
 
-  def apply(path: String): Unit      = apply(Seq(path))
-  def apply(args: Seq[String]): Unit = new JavapClass() apply args foreach (_.show())
-
   sealed trait JpResult {
     type ResultType
     def isError: Boolean
     def value: ResultType
     def show(): Unit
-    // todo
-    // def header(): String
-    // def fields(): List[String]
-    // def methods(): List[String]
-    // def signatures(): List[String]
   }
   class JpError(msg: String) extends JpResult {
     type ResultType = String

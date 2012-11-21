@@ -33,7 +33,7 @@ trait EtaExpansion { self: Analyzer =>
   }
 
   /** <p>
-   *    Expand partial function applications of type <code>type</code>.
+   *    Expand partial function applications of type `type`.
    *  </p><pre>
    *  p.f(es_1)...(es_n)
    *     ==>  {
@@ -56,11 +56,8 @@ trait EtaExpansion { self: Analyzer =>
     }
     val defs = new ListBuffer[Tree]
 
-    /** Append to <code>defs</code> value definitions for all non-stable
-     *  subexpressions of the function application <code>tree</code>.
-     *
-     *  @param tree ...
-     *  @return     ...
+    /** Append to `defs` value definitions for all non-stable
+     *  subexpressions of the function application `tree`.
      */
     def liftoutPrefix(tree: Tree): Tree = {
       def liftout(tree: Tree, byName: Boolean): Tree =

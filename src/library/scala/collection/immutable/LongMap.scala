@@ -77,8 +77,6 @@ object LongMap {
   }
 }
 
-import LongMap._
-
 // Iterator over a non-empty LongMap.
 private[immutable] abstract class LongMapIterator[V, T](it: LongMap[V]) extends AbstractIterator[T] {
 

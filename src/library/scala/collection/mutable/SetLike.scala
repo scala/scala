@@ -11,7 +11,7 @@ package mutable
 
 import generic._
 import script._
-import scala.annotation.{ migration, bridge }
+import scala.annotation.migration
 import parallel.mutable.ParSet
 
 /** A template trait for mutable sets of type `mutable.Set[A]`.

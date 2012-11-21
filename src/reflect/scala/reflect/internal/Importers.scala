@@ -316,7 +316,6 @@ trait Importers extends api.Importers { self: SymbolTable =>
     def importName(name: from.Name): Name =
       if (name.isTypeName) newTypeName(name.toString) else newTermName(name.toString)
     def importTypeName(name: from.TypeName): TypeName = importName(name).toTypeName
-    def importTermName(name: from.TermName): TermName = importName(name).toTermName
 
     def importModifiers(mods: from.Modifiers): Modifiers =
       new Modifiers(mods.flags, importName(mods.privateWithin), mods.annotations map importTree)

@@ -31,8 +31,6 @@ trait WorklistAlgorithm {
    * Run the iterative algorithm until the worklist remains empty.
    * The initializer is run once before the loop starts and should
    * initialize the worklist.
-   *
-   * @param initWorklist ...
    */
   def run(initWorklist: => Unit) = {
     initWorklist

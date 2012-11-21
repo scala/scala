@@ -34,15 +34,6 @@ trait DataFlowAnalysis[L <: SemiLattice] {
     f
   }
 
-  /** Reinitialize, but keep the old solutions. Should be used when reanalyzing the
-   *  same method, after some code transformation.
-   */
-  def reinit(f: => Unit): Unit = {
-    iterations = 0
-    worklist.clear; visited.clear;
-    f
-  }
-
   def run(): Unit
 
   /** Implements forward dataflow analysis: the transfer function is
@@ -82,10 +73,6 @@ trait DataFlowAnalysis[L <: SemiLattice] {
       sys.error("Could not find element " + e.getMessage)
   }
 
-  /** ...
-   *
-   *  @param f ...
-   */
   def backwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit =
     while (worklist.nonEmpty) {
       if (stat) iterations += 1

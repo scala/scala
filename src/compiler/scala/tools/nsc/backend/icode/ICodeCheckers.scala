@@ -48,7 +48,7 @@ abstract class ICodeCheckers {
    *  @author  Iulian Dragos
    *  @version 1.0, 06/09/2005
    *
-   *  @todo Better checks for <code>MONITOR_ENTER/EXIT</code>
+   *  @todo Better checks for `MONITOR_ENTER/EXIT`
    *        Better checks for local var initializations
    *
    *  @todo Iulian says: I think there's some outdated logic in the checker.
@@ -413,10 +413,7 @@ abstract class ICodeCheckers {
         }
 
         /** Checks that the object passed as receiver has a method
-         *  <code>method</code> and that it is callable from the current method.
-         *
-         *  @param receiver ...
-         *  @param method   ...
+         *  `method` and that it is callable from the current method.
          */
         def checkMethod(receiver: TypeKind, method: Symbol) =
           receiver match {

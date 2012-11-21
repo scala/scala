@@ -720,16 +720,15 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   /** Does the same as `macroExpand`, but without typechecking the expansion
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
-  private def macroExpand1(typer: Typer, expandee: Tree): MacroExpansionResult =
+  private def macroExpand1(typer: Typer, expandee: Tree): MacroExpansionResult = {
     // verbose printing might cause recursive macro expansions, so I'm shutting it down here
     withInfoLevel(nodePrinters.InfoLevel.Quiet) {
       if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
         val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
         macroTraceVerbose("cancelled macro expansion because of %s: ".format(reason))(expandee)
-        return Cancel(typer.infer.setError(expandee))
+        Cancel(typer.infer.setError(expandee))
       }
-
-      try {
+      else try {
         val runtime = macroRuntime(expandee.symbol)
         if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
         else macroExpandWithoutRuntime(typer, expandee)
@@ -737,6 +736,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         case typer.TyperErrorGen.MacroExpansionException => Failure(expandee)
       }
     }
+  }
 
   /** Expands a macro when a runtime (i.e. the macro implementation) can be successfully loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
