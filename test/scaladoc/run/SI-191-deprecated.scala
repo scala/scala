@@ -1,5 +1,6 @@
 import scala.tools.nsc.doc.model._
-import scala.tools.nsc.doc.model.comment._
+import scala.tools.nsc.doc.base._
+import scala.tools.nsc.doc.base.comment._
 import scala.tools.partest.ScaladocModelTest
 import java.net.{URI, URL}
 import java.io.File

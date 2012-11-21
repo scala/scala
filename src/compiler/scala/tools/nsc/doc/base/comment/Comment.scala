@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 package doc
-package model
+package base
 package comment
 
 import scala.collection._
@@ -131,5 +131,4 @@ abstract class Comment {
     (authors map ("@author " + _.toString)).mkString("\n") +
     (result map ("@return " + _.toString)).mkString("\n") +
     (version map ("@version " + _.toString)).mkString
-
 }

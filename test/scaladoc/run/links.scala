@@ -1,3 +1,4 @@
+import scala.tools.nsc.doc.base._
 import scala.tools.nsc.doc.model._
 import scala.tools.partest.ScaladocModelTest
 
@@ -23,8 +24,8 @@ object Test extends ScaladocModelTest {
     val base = rootPackage._package("scala")._package("test")._package("scaladoc")._package("links")
     val TEST = base._object("TEST")
 
-    val memberLinks = countLinks(TEST.comment.get, _.link.isInstanceOf[LinkToMember])
-    val templateLinks = countLinks(TEST.comment.get, _.link.isInstanceOf[LinkToTpl])
+    val memberLinks = countLinks(TEST.comment.get, _.link.isInstanceOf[LinkToMember[_, _]])
+    val templateLinks = countLinks(TEST.comment.get, _.link.isInstanceOf[LinkToTpl[_]])
     assert(memberLinks == 17,  memberLinks +   " == 17 (the member links in object TEST)")
     assert(templateLinks == 6, templateLinks + " ==  6 (the template links in object TEST)")
   }

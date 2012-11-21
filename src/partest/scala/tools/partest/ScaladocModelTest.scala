@@ -12,7 +12,7 @@ import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.doc.{Settings, DocFactory, Universe}
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
-import scala.tools.nsc.doc.model.comment._
+import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.reporters.ConsoleReporter
 
 /** A class for testing scaladoc model generation
