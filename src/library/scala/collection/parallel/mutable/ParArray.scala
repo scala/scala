@@ -405,9 +405,10 @@ self =>
 
     private def collect2combiner_quick[S, That](pf: PartialFunction[T, S], a: Array[Any], cb: Builder[S, That], ntil: Int, from: Int) {
       var j = from
+      val runWith = pf.runWith(b => cb += b)
       while (j < ntil) {
         val curr = a(j).asInstanceOf[T]
-        if (pf.isDefinedAt(curr)) cb += pf(curr)
+        runWith(curr)
         j += 1
       }
     }
