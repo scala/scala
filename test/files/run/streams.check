@@ -1,5 +1,8 @@
 Stream()
 Stream()
+true
+true
+true
 
 Array(1)
 Stream(1, ?)
@@ -8,12 +11,21 @@ Stream()
 Stream()
 Stream(1)
 Stream()
+true
+true
+true
+true
 
 Array(1, 2)
 Stream(2)
 Stream()
 Stream(1, 2)
 Stream()
+true
+true
+true
+true
+true
 
 999
 512
@@ -23,3 +35,5 @@ Stream(100001, ?)
 true
 true
 705082704
+
+true
