@@ -2,6 +2,9 @@ object Test extends App {
   val s0: Stream[Int] = Stream.empty
   println(s0.take(1))
   println(s0.takeWhile(_ > 0))
+  println(s0.lengthCompare(-5) > 0)
+  println(s0.lengthCompare(0) == 0)
+  println(s0.lengthCompare(5) < 0)
   println
 
   val s1 = Stream.cons(1, Stream.empty)
@@ -12,6 +15,10 @@ object Test extends App {
   println(s1.drop(2))
   println(s1.drop(-1))
   println(s1.dropWhile(_ > 0))
+  println(s1.lengthCompare(-5) > 0)
+  println(s1.lengthCompare(0) > 0)
+  println(s1.lengthCompare(1) == 0)
+  println(s1.lengthCompare(5) < 0)
   println
 
   val s2 = s1.append(Stream.cons(2, Stream.empty))
@@ -20,6 +27,11 @@ object Test extends App {
   println(s2.drop(2))
   println(s2.drop(-1))
   println(s2.dropWhile(_ > 0))
+  println(s2.lengthCompare(-5) > 0)
+  println(s2.lengthCompare(0) > 0)
+  println(s2.lengthCompare(1) > 0)
+  println(s2.lengthCompare(2) == 0)
+  println(s2.lengthCompare(5) < 0)
   println
 
   val s3 = Stream.range(1, 1000) //100000 (ticket #153: Stackoverflow)
@@ -43,4 +55,12 @@ object Test extends App {
   println(Stream.from(1).take(size).foldLeft(0)(_ + _))
   val arr = new Array[Int](size)
   Stream.from(1).take(size).copyToArray(arr, 0)
+
+  println
+
+  // ticket #6415
+  lazy val x = { println("evaluated"); 1 }
+  val s4 = 0 #:: x #:: Stream.empty
+
+  println(s4.isDefinedAt(0))
 }

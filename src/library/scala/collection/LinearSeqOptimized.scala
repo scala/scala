@@ -247,14 +247,20 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   override /*SeqLike*/
-  def lengthCompare(len: Int): Int =  {
-    var i = 0
-    var these = self
-    while (!these.isEmpty && i <= len) {
-      i += 1
-      these = these.tail
+  def lengthCompare(len: Int): Int = {
+    // TODO: Remove this method when incrementing a major revision
+    // This method is the same as in SeqLike, no need to redefine it
+    if (len < 0) 1
+    else {
+      var i = 0
+      val it = iterator
+      while (it.hasNext) {
+        if (i == len) return if (it.hasNext) 1 else 0
+        it.next()
+        i += 1
+      }
+      i - len
     }
-    i - len
   }
 
   override /*SeqLike*/
