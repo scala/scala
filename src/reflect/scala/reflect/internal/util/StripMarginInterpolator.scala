@@ -23,8 +23,9 @@ trait StripMarginInterpolator {
    * }}}
    */
   final def sm(args: Any*): String = {
+    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
     def stripTrailingPart(s: String) = {
-      val (pre, post) = s.span(_ != '\n')
+      val (pre, post) = s.span(c != isLineBreak(c))
       pre + post.stripMargin
     }
     val stripped = stringContext.parts.toList match {

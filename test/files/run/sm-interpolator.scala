@@ -1,37 +1,45 @@
 object Test extends App {
-	import scala.reflect.internal.util.StringContextStripMarginOps
-  def assertEqual(expected: Any, actual: Any) = if (actual != expected) sys.error(s"expected: [$expected], actual: [$actual])")
+  import scala.reflect.internal.util.StringContextStripMarginOps
+  def check(actual: Any, expected: Any) = if (actual != expected) sys.error(s"expected: [$expected], actual: [$actual])")
 
   val bar = "|\n ||"
 
-	assertEqual(
-		sm"""|ab  
+  check(
+    sm"""|ab  
          |de
          |${bar} | ${1}""",
       "ab  \nde\n|\n || | 1")
 
-	assertEqual(
-		sm"|",
+  check(
+    sm"|",
       "")
 
-	assertEqual(
-		sm"${0}",
+  check(
+    sm"${0}",
       "0")
 
-	assertEqual(
-		sm"${0}",
+  check(
+    sm"${0}",
     "0")
 
-	assertEqual(
-		sm"""${0}|${1}
+  check(
+    sm"""${0}|${1}
      |""",
       "0|1\n")
 
-	assertEqual(
-		sm"""   ||""",
+  check(
+    sm"""   ||""",
       "|")
 
-	assertEqual(
-		sm""" ${" "} ||""",
+  check(
+    sm""" ${" "} ||""",
       "   ||")
+
+  check(
+    sm"""${""}\n  \n  | .""",
+     s"""${""}\n  \n  | .""".stripMargin)
+
+  check(
+    sm"""${""}\f  \f  | .""",
+     s"""${""}\f  \f  | .""".stripMargin)
 }
