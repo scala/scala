@@ -426,6 +426,7 @@ trait MethodSynthesis {
         // spot that brand of them. In other words it's an artifact of the implementation.
         val tpt = derivedSym.tpe.finalResultType match {
           case ExistentialType(_, _)  => TypeTree()
+          case _ if mods.isDeferred   => TypeTree()
           case tp                     => TypeTree(tp)
         }
         tpt setPos derivedSym.pos.focus
