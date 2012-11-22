@@ -1394,7 +1394,7 @@ trait Implicits {
         if (Statistics.canEnable) Statistics.stopTimer(inscopeSucceedNanos, succstart)
         if (Statistics.canEnable) Statistics.incCounter(inscopeImplicitHits)
       }
-      if (result.isFailure) {
+      if (result.isFailure && !result.isAmbiguousFailure) { // SI-6667, never search companions after an ambiguous error in in-scope implicits
         val previousErrs = context.flushAndReturnBuffer()
         val failstart = if (Statistics.canEnable) Statistics.startTimer(oftypeFailNanos) else null
         val succstart = if (Statistics.canEnable) Statistics.startTimer(oftypeSucceedNanos) else null
