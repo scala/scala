@@ -35,7 +35,7 @@ object Socket {
 
   def newIPv4Server(port: Int = 0)        = new Box(() => preferringIPv4(new ServerSocket(0)))
   def newServer(port: Int = 0)            = new Box(() => new ServerSocket(0))
-  def localhost(port: Int)                = apply(InetAddress.getLocalHost(), port)
+  def localhost(port: Int)                = apply(InetAddress.getByName(null), port)
   def apply(host: InetAddress, port: Int) = new Box(() => new Socket(new JSocket(host, port)))
   def apply(host: String, port: Int)      = new Box(() => new Socket(new JSocket(host, port)))
 }
