@@ -126,7 +126,7 @@ trait Unapplies extends ast.TreeDSL
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, ListOfNil, body, cdef.impl.pos.focus))
+      Template(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

@@ -511,7 +511,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               sym = closureClass,
               constrMods = Modifiers(0),
               vparamss = List(List(outerFieldDef)),
-              argss = ListOfNil,
               body = List(applyMethodDef),
               superPos = impl.pos)
           }

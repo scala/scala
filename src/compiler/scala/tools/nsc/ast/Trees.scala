@@ -82,7 +82,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *    body
    *  }
    */
-  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): Template = {
+  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): Template = {
     /* Add constructor to template */
 
     // create parameters for <init> as synthetic trees.
@@ -117,9 +117,16 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = atPos(superPos)(gen.mkSuperSelect)
-        val superCall = (superRef /: argss) (Apply.apply)
+        val superCall = Apply(superRef, Nil) // we can't know in advance which of the parents will end up as a superclass
+                                             // this requires knowing which of the parents is a type macro and which is not
+                                             // and that's something that cannot be found out before typer
+                                             // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
+                                             // this means that we don't know what will be the arguments of the super call
+                                             // therefore here we emit a dummy which gets populated when the template is named and typechecked
         List(
-          atPos(wrappingPos(superPos, lvdefs ::: argss.flatten)) (
+          // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
+          // is it going to be a problem that we can no longer include the `argss`?
+          atPos(wrappingPos(superPos, lvdefs)) (
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
@@ -137,11 +144,10 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *  @param constrMods the modifiers for the class constructor, i.e. as in `class C private (...)`
    *  @param vparamss   the value parameters -- if they have symbols they
    *                    should be owned by `sym`
-   *  @param argss      the supercall arguments
    *  @param body       the template statements without primary constructor
    *                    and value parameter fields.
    */
-  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): ClassDef = {
+  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): ClassDef = {
     // "if they have symbols they should be owned by `sym`"
     assert(
       mforall(vparamss)(p => (p.symbol eq NoSymbol) || (p.symbol.owner == sym)),
@@ -151,7 +157,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     ClassDef(sym,
       Template(sym.info.parents map TypeTree,
                if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
-               constrMods, vparamss, argss, body, superPos))
+               constrMods, vparamss, body, superPos))
   }
 
  // --- subcomponents --------------------------------------------------

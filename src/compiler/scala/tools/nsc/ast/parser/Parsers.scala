@@ -1562,9 +1562,9 @@ self =>
             val nstart = in.skipToken()
             val npos = r2p(nstart, nstart, in.lastOffset)
             val tstart = in.offset
-            val (parents, argss, self, stats) = template(isTrait = false)
+            val (parents, self, stats) = template()
             val cpos = r2p(tstart, tstart, in.lastOffset max tstart)
-            makeNew(parents, self, stats, argss, npos, cpos)
+            makeNew(parents, self, stats, npos, cpos)
           case _ =>
             syntaxErrorOrIncomplete("illegal start of simple expression", true)
             errorTermTree
@@ -2742,20 +2742,17 @@ self =>
      *  TraitParents       ::= AnnotType {with AnnotType}
      *  }}}
      */
-    def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {
-      val parents = new ListBuffer[Tree] += startAnnotType()
-      val argss = (
-        // TODO: the insertion of ListOfNil here is where "new Foo" becomes
-        // indistinguishable from "new Foo()".
-        if (in.token == LPAREN && !isTrait) multipleArgumentExprs()
-        else ListOfNil
-      )
-
-      while (in.token == WITH) {
-        in.nextToken()
-        parents += startAnnotType()
+    def templateParents(): List[Tree] = {
+      val parents = new ListBuffer[Tree]
+      def readAppliedParent() = {
+        val start = in.offset
+        val parent = startAnnotType()
+        val argss = if (in.token == LPAREN) multipleArgumentExprs() else Nil
+        parents += atPos(start)((parent /: argss)(Apply.apply))
       }
-      (parents.toList, argss)
+      readAppliedParent()
+      while (in.token == WITH) { in.nextToken(); readAppliedParent() }
+      parents.toList
     }
 
     /** {{{
@@ -2765,7 +2762,7 @@ self =>
      *  EarlyDef      ::= Annotations Modifiers PatDef
      *  }}}
      */
-    def template(isTrait: Boolean): (List[Tree], List[List[Tree]], ValDef, List[Tree]) = {
+    def template(): (List[Tree], ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (in.token == LBRACE) {
         // @S: pre template body cannot stub like post body can!
@@ -2782,16 +2779,16 @@ self =>
             case _ => List()
           }
           in.nextToken()
-          val (parents, argss) = templateParents(isTrait = isTrait)
-          val (self1, body1) = templateBodyOpt(traitParentSeen = isTrait)
-          (parents, argss, self1, earlyDefs ::: body1)
+          val parents = templateParents()
+          val (self1, body1) = templateBodyOpt(parenMeansSyntaxError = false)
+          (parents, self1, earlyDefs ::: body1)
         } else {
-          (List(), ListOfNil, self, body)
+          (List(), self, body)
         }
       } else {
-        val (parents, argss) = templateParents(isTrait = isTrait)
-        val (self, body) = templateBodyOpt(traitParentSeen = isTrait)
-        (parents, argss, self, body)
+        val parents = templateParents()
+        val (self, body) = templateBodyOpt(parenMeansSyntaxError = false)
+        (parents, self, body)
       }
     }
 
@@ -2805,15 +2802,15 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      val (parents0, argss, self, body) = (
+      val (parents0, self, body) = (
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait) {
           in.nextToken()
-          template(isTrait = mods.isTrait)
+          template()
         }
         else {
           newLineOptWhenFollowedBy(LBRACE)
-          val (self, body) = templateBodyOpt(traitParentSeen = false)
-          (List(), ListOfNil, self, body)
+          val (self, body) = templateBodyOpt(parenMeansSyntaxError = mods.isTrait || name.isTermName)
+          (List(), self, body)
         }
       )
       def anyrefParents() = {
@@ -2835,7 +2832,7 @@ self =>
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents0, self, anyvalConstructor :: body)
         else
-          Template(anyrefParents, self, constrMods, vparamss, argss, body, o2p(tstart))
+          Template(anyrefParents, self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 
@@ -2850,14 +2847,15 @@ self =>
       case (self, Nil)  => (self, EmptyTree.asList)
       case result       => result
     }
-    def templateBodyOpt(traitParentSeen: Boolean): (ValDef, List[Tree]) = {
+    def templateBodyOpt(parenMeansSyntaxError: Boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (in.token == LBRACE) {
         templateBody(isPre = false)
       } else {
-        if (in.token == LPAREN)
-          syntaxError((if (traitParentSeen) "parents of traits" else "traits or objects")+
-                      " may not have parameters", true)
+        if (in.token == LPAREN) {
+          if (parenMeansSyntaxError) syntaxError(s"traits or objects may not have parameters", true)
+          else assert(false, "unexpected opening parenthesis")
+        }
         (emptyValDef, List())
       }
     }

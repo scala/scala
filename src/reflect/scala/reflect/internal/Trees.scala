@@ -1034,6 +1034,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def New(tpe: Type, args: Tree*): Tree =
     ApplyConstructor(TypeTree(tpe), args.toList)
 
+  def New(tpe: Type, argss: List[List[Tree]]): Tree =
+    New(TypeTree(tpe), argss)
+
   def New(sym: Symbol, args: Tree*): Tree =
     New(sym.tpe, args: _*)
 

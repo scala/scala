@@ -330,6 +330,9 @@ abstract class TreeInfo {
   def preSuperFields(stats: List[Tree]): List[ValDef] =
     stats collect { case vd: ValDef if isEarlyValDef(vd) => vd }
 
+  def hasUntypedPreSuperFields(stats: List[Tree]): Boolean =
+    preSuperFields(stats) exists (_.tpt.isEmpty)
+
   def isEarlyDef(tree: Tree) = tree match {
     case TypeDef(mods, _, _, _) => mods hasFlag PRESUPER
     case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
@@ -494,6 +497,10 @@ abstract class TreeInfo {
   def isSynthCaseSymbol(sym: Symbol) = sym hasAllFlags SYNTH_CASE_FLAGS
   def hasSynthCaseSymbol(t: Tree)    = t.symbol != null && isSynthCaseSymbol(t.symbol)
 
+  def isTraitRef(tree: Tree): Boolean = {
+    val sym = if (tree.tpe != null) tree.tpe.typeSymbol else null
+    ((sym ne null) && sym.initialize.isTrait)
+  }
 
   /** Applications in Scala can have one of the following shapes:
    *
