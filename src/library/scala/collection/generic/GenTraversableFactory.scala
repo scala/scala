@@ -36,7 +36,7 @@ import scala.language.higherKinds
  *    @see GenericCanBuildFrom
  */
 abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
-  extends GenericCompanion[CC] {
+extends GenericCompanion[CC] {
 
   private[this] val ReusableCBFInstance: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
     override def apply() = newBuilder[Nothing]

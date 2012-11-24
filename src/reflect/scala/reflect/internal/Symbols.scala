@@ -404,9 +404,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  failure to the point when that name is used for something, which is
      *  often to the point of never.
      */
-    def newStubSymbol(name: Name): Symbol = name match {
-      case n: TypeName  => new StubClassSymbol(this, n)
-      case _            => new StubTermSymbol(this, name.toTermName)
+    def newStubSymbol(name: Name, missingMessage: String): Symbol = name match {
+      case n: TypeName  => new StubClassSymbol(this, n, missingMessage)
+      case _            => new StubTermSymbol(this, name.toTermName, missingMessage)
     }
 
     @deprecated("Use the other signature", "2.10.0")
@@ -1359,6 +1359,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
       }
     }
+
+    /** Raises a `MissingRequirementError` if this symbol is a `StubSymbol` */
+    def failIfStub() {}
 
     /** Initialize the symbol */
     final def initialize: this.type = {
@@ -3066,14 +3069,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
   trait StubSymbol extends Symbol {
-    protected def stubWarning = {
-      val from = if (associatedFile == null) "" else s" - referenced from ${associatedFile.canonicalPath}"
-      s"$kindString $nameString$locationString$from (a classfile may be missing)"
-    }
+    devWarning("creating stub symbol to defer error: " + missingMessage)
+
+    protected def missingMessage: String
+
+    /** Fail the stub by throwing a [[scala.reflect.internal.MissingRequirementError]]. */
+    override final def failIfStub() = {MissingRequirementError.signal(missingMessage)} //
+
+    /** Fail the stub by reporting an error to the reporter, setting the IS_ERROR flag
+      * on this symbol, and returning the dummy value `alt`.
+      */
     private def fail[T](alt: T): T = {
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
-        globalError(s"bad symbolic reference to " + stubWarning)
+        globalError(missingMessage)
         if (settings.debug.value)
           (new Throwable).printStackTrace
 
@@ -3089,13 +3098,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def info            = fail(NoType)
     override def rawInfo         = fail(NoType)
     override def companionSymbol = fail(NoSymbol)
-
-    locally {
-      devWarning("creating stub symbol for " + stubWarning)
-    }
   }
-  class StubClassSymbol(owner0: Symbol, name0: TypeName) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
-  class StubTermSymbol(owner0: Symbol, name0: TermName) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubClassSymbol(owner0: Symbol, name0: TypeName, protected val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubTermSymbol(owner0: Symbol, name0: TermName, protected val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
 
   trait FreeSymbol extends Symbol {
     def origin: String

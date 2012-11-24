@@ -13,7 +13,7 @@ import language.higherKinds
 
 /** A template for companion objects of IndexedSeq and subclasses thereof.
  *
- *  @since 2.8
+ *  @since 2.10
  */
 abstract class IndexedSeqFactory[CC[X] <: IndexedSeq[X] with GenericTraversableTemplate[X, CC]] extends SeqFactory[CC] {
   override def ReusableCBF: GenericCanBuildFrom[Nothing] =

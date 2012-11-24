@@ -20,7 +20,7 @@ import scala.annotation.switch
 /** @author Martin Odersky
  *  @version 1.0
  */
-abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
+abstract class UnPickler {
   val global: SymbolTable
   import global._
 
@@ -232,7 +232,12 @@ abstract class UnPickler /*extends scala.reflect.generic.UnPickler*/ {
               // (4) Call the mirror's "missing" hook.
               adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
                 // (5) Create a stub symbol to defer hard failure a little longer.
-                owner.newStubSymbol(name)
+                val missingMessage =
+                  s"""|bad symbolic reference. A signature in $filename refers to ${name.longString}
+                      |in ${owner.kindString} ${owner.fullName} which is not available.
+                      |It may be completely missing from the current classpath, or the version on
+                      |the classpath might be incompatible with the version used when compiling $filename.""".stripMargin
+                owner.newStubSymbol(name, missingMessage)
               }
             }
           }
