@@ -69,6 +69,11 @@ private[scala] abstract class UniquenessCache[K, V >: Null]
         val res = cached()
         if (res != null) res
         else {
+          // If we don't remove the old String key from the map, we can
+          // wind up with one String as the key and a different String as
+          // as the name field in the Symbol, which can lead to surprising
+          // GC behavior and duplicate Symbols. See SI-6706.
+          map remove name
           val sym = valueFromKey(name)
           map.put(name, new WeakReference(sym))
           sym
