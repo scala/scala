@@ -888,10 +888,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         // Run the signature parser to catch bogus signatures.
         val isValidSignature = wrap {
           // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)
-          import scala.tools.asm.util.SignatureChecker
-          if (sym.isMethod)    { SignatureChecker checkMethodSignature sig } // requires asm-util.jar
-          else if (sym.isTerm) { SignatureChecker checkFieldSignature  sig }
-          else                 { SignatureChecker checkClassSignature  sig }
+          import scala.tools.asm.util.CheckClassAdapter
+          if (sym.isMethod)    { CheckClassAdapter checkMethodSignature sig } // requires asm-util.jar
+          else if (sym.isTerm) { CheckClassAdapter checkFieldSignature  sig }
+          else                 { CheckClassAdapter checkClassSignature  sig }
         }
 
         if(!isValidSignature) {
