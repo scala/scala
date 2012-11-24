@@ -559,8 +559,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
                   if (isError) print(": error>")
                 } else if (hasSymbolField) {
                   tree match {
-                    case _: Ident | _: Select | _: SelectFromTypeTree => print(tree.symbol)
-                    case _ => print(tree.symbol.name)
+                    case refTree: RefTree =>
+                      if (tree.symbol.name != refTree.name) print("[", tree.symbol, " aka ", refTree.name, "]")
+                      else print(tree.symbol)
+                    case _ =>
+                      print(tree.symbol.name)
                   }
                 } else {
                   print(name)

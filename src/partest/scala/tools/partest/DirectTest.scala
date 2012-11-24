@@ -8,6 +8,7 @@ package scala.tools.partest
 import scala.tools.nsc._
 import io.Directory
 import util.{BatchSourceFile, CommandLineParser}
+import reporters.{Reporter, ConsoleReporter}
 
 /** A class for testing code which is embedded as a string.
  *  It allows for more complete control over settings, compiler
@@ -38,9 +39,12 @@ abstract class DirectTest extends App {
   // new compiler
   def newCompiler(args: String*): Global = {
     val settings = newSettings((CommandLineParser tokenize ("-d \"" + testOutput.path + "\" " + extraSettings)) ++ args.toList)
-    if (settings.Yrangepos.value) new Global(settings) with interactive.RangePositions
-    else new Global(settings)
+    if (settings.Yrangepos.value) new Global(settings, reporter(settings)) with interactive.RangePositions
+    else new Global(settings, reporter(settings))
   }
+
+  def reporter(settings: Settings): Reporter = new ConsoleReporter(settings)
+
   def newSources(sourceCodes: String*) = sourceCodes.toList.zipWithIndex map {
     case (src, idx) => new BatchSourceFile("newSource" + (idx + 1), src)
   }
