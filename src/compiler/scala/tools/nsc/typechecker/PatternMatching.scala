@@ -1405,7 +1405,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     // assert(owner ne null); assert(owner ne NoSymbol)
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") =
-      NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo tp
+      NoSymbol.newTermSymbol(freshName(prefix), pos, newFlags = SYNTHETIC) setInfo tp
 
     def newSynthCaseLabel(name: String) =
       NoSymbol.newLabel(freshName(name), NoPosition) setFlag treeInfo.SYNTH_CASE_FLAGS
