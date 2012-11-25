@@ -86,7 +86,7 @@ trait TraversableLike[+A, +Repr] extends Any
   def repr: Repr = this.asInstanceOf[Repr]
 
   final def isTraversableAgain: Boolean = true
-
+  
   /** The underlying collection seen as an instance of `$Coll`.
    *  By default this is implemented as the current collection object itself,
    *  but this can be overridden.
@@ -174,7 +174,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *
    *  @usecase def ++:[B](that: TraversableOnce[B]): $Coll[B]
    *    @inheritdoc
-   *
+   * 
    *    Example:
    *    {{{
    *      scala> val x = List(1)
@@ -660,7 +660,6 @@ trait TraversableLike[+A, +Repr] extends Any
   def view = new TraversableView[A, Repr] {
     protected lazy val underlying = self.repr
     override def foreach[U](f: A => U) = self foreach f
-    override def isEmpty = self.isEmpty
   }
 
   /** Creates a non-strict view of a slice of this $coll.

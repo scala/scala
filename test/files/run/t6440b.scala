@@ -12,37 +12,50 @@ object Test extends StoreReporterDirectTest {
   def library1 = """
     package pack1
     trait T
+    class U {
+      def t = new T {}
+      def one = 1
+    }
   """
 
   def library2 = """
     package pack2
-    trait U extends pack1.T
+    object V {
+      def u = new pack1.U
+    }
+    """
+
+  def app1 = """
+    package pack3
+    object Test {
+      pack2.V.u.one // okay
+    }
   """
 
-  def app = """
+  def app2 = """
     package pack3
-    object X {
-      trait U
+    object Test {
+      pack2.V.u.t // we have to fail if T.class is misisng
     }
-    import X._
-    import pack2._
-
-    trait V extends U
   """
 
   def show(): Unit = {
-    Seq(library1, library2) foreach compileCode
-    assert(filteredInfos.isEmpty, filteredInfos)
-
-    // blow away the entire package
+    compileCode(library1)
     val pack1 = new File(testOutput.path, "pack1")
     val tClass = new File(pack1, "T.class")
     assert(tClass.exists)
     assert(tClass.delete())
-    assert(pack1.delete())
+
+    // allowed to compile, no direct reference to `T`
+    compileCode(library2)
+    assert(filteredInfos.isEmpty, filteredInfos)
+
+    // allowed to compile, no direct reference to `T`
+    compileCode(app1)
+    assert(filteredInfos.isEmpty, filteredInfos)
 
     // bad symbolic reference error expected (but no stack trace!)
-    compileCode(app)
+    compileCode(app2)
     println(filteredInfos.mkString("\n"))
   }
 }

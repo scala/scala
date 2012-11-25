@@ -1,3 +1,9 @@
-error: bad symbolic reference to value global in class IMain - referenced from t5148.scala (a classfile may be missing)
-error: bad symbolic reference to value memberHandlers in class IMain - referenced from t5148.scala (a classfile may be missing)
+error: bad symbolic reference. A signature in Imports.class refers to term global
+in class scala.tools.nsc.interpreter.IMain which is not available.
+It may be completely missing from the current classpath, or the version on
+the classpath might be incompatible with the version used when compiling Imports.class.
+error: bad symbolic reference. A signature in Imports.class refers to term memberHandlers
+in class scala.tools.nsc.interpreter.IMain which is not available.
+It may be completely missing from the current classpath, or the version on
+the classpath might be incompatible with the version used when compiling Imports.class.
 two errors found
