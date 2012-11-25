@@ -135,29 +135,27 @@ final class ListBuffer[A]
    *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
    */
   def update(n: Int, x: A) {
-    try {
-      if (exported) copy()
-      if (n == 0) {
-        val newElem = new :: (x, start.tail);
-        if ((last0 eq null) || (last0 eq start)) {
-          last0 = newElem
-        }
-        start = newElem
-      } else {
-        var cursor = start
-        var i = 1
-        while (i < n) {
-          cursor = cursor.tail
-          i += 1
-        }
-        val newElem = new :: (x, cursor.tail.tail)
-        if (last0 eq cursor.tail) {
-          last0 = newElem
-        }
-        cursor.asInstanceOf[::[A]].tl = newElem
+    // We check the bounds early, so that we don't trigger copying.
+    if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString)
+    if (exported) copy()
+    if (n == 0) {
+      val newElem = new :: (x, start.tail);
+      if (last0 eq start) {
+        last0 = newElem
       }
-    } catch {
-      case ex: Exception => throw new IndexOutOfBoundsException(n.toString())
+      start = newElem
+    } else {
+      var cursor = start
+      var i = 1
+      while (i < n) {
+        cursor = cursor.tail
+        i += 1
+      }
+      val newElem = new :: (x, cursor.tail.tail)
+      if (last0 eq cursor.tail) {
+        last0 = newElem
+      }
+      cursor.asInstanceOf[::[A]].tl = newElem
     }
   }
 
@@ -219,34 +217,31 @@ final class ListBuffer[A]
    *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
    */
   def insertAll(n: Int, seq: Traversable[A]) {
-    try {
-      if (exported) copy()
-      var elems = seq.toList.reverse
-      len += elems.length
-      if (n == 0) {
-        while (!elems.isEmpty) {
-          val newElem = new :: (elems.head, start)
-          if (isEmpty) last0 = newElem
-          start = newElem
-          elems = elems.tail
-        }
-      } else {
-        var cursor = start
-        var i = 1
-        while (i < n) {
-          cursor = cursor.tail
-          i += 1
-        }
-        while (!elems.isEmpty) {
-          val newElem = new :: (elems.head, cursor.tail)
-          if (cursor.tail.isEmpty) last0 = newElem
-          cursor.asInstanceOf[::[A]].tl = newElem
-          elems = elems.tail
-        }
+    // We check the bounds early, so that we don't trigger copying.
+    if (n < 0 || n > len) throw new IndexOutOfBoundsException(n.toString)
+    if (exported) copy()
+    var elems = seq.toList.reverse
+    len += elems.length
+    if (n == 0) {
+      while (!elems.isEmpty) {
+        val newElem = new :: (elems.head, start)
+        if (start.isEmpty) last0 = newElem
+        start = newElem
+        elems = elems.tail
       }
-    } catch {
-      case ex: Exception =>
-        throw new IndexOutOfBoundsException(n.toString())
+    } else {
+      var cursor = start
+      var i = 1
+      while (i < n) {
+        cursor = cursor.tail
+        i += 1
+      }
+      while (!elems.isEmpty) {
+        val newElem = new :: (elems.head, cursor.tail)
+        if (cursor.tail.isEmpty) last0 = newElem
+        cursor.asInstanceOf[::[A]].tl = newElem
+        elems = elems.tail
+      }
     }
   }
 
@@ -265,7 +260,12 @@ final class ListBuffer[A]
    *  @param n         the index which refers to the first element to remove.
    *  @param count     the number of elements to remove.
    */
+  @annotation.migration("Invalid input values will be rejected in future releases.", "2.11")
   override def remove(n: Int, count: Int) {
+    if (n >= len)
+      return
+    if (count < 0)
+      throw new IllegalArgumentException(s"removing negative number ($count) of elements")
     if (exported) copy()
     val n1 = n max 0
     val count1 = count min (len - n1)

@@ -849,7 +849,6 @@ self: ParIterableLike[T, Repr, Sequential] =>
     override def seq = self.seq.view
     def splitter = self.splitter
     def size = splitter.remaining
-    override def isEmpty = size == 0
   }
 
   override def toArray[U >: T: ClassTag]: Array[U] = {

@@ -1,6 +1,7 @@
 import scala.tools.partest._
+import scala.tools.nsc.Settings
 
-object Test extends DirectTest {
+object Test extends StoreReporterDirectTest {
   def code = ???
 
   def library = """
@@ -29,18 +30,18 @@ object Test extends DirectTest {
   """
   def compileApp() = {
     val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    val global = newCompiler("-cp", classpath, "-d", testOutput.path)
     compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(app)
+    //global.reporter.ERROR.foreach(println)
   }
 
   def show(): Unit = {
-    val prevErr = System.err
-    val baos = new java.io.ByteArrayOutputStream();
-    System.setErr(new java.io.PrintStream(baos));
     compileLibrary();
+    println(filteredInfos.mkString("\n"))
+    storeReporter.infos.clear()
     compileApp();
     // we should get bad symbolic reference errors, because we're trying to use an implicit that can't be unpickled
     // but we don't know the number of these errors and their order, so I just ignore them all
-    baos.toString.split("\n") filter (!_.startsWith("error: bad symbolic reference")) foreach println
-    System.setErr(prevErr)
+    println(filteredInfos.filterNot (_.msg.contains("bad symbolic reference")).mkString("\n"))
   }
 }

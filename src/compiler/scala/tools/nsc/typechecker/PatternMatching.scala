@@ -414,7 +414,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
             val treeMaker = TypeTestTreeMaker(patBinder, patBinder, extractor.paramType, extractor.paramType)(pos, extractorArgTypeTest = true)
             (List(treeMaker), treeMaker.nextBinder)
-          } else (Nil, patBinder)
+          } else {
+            // no type test needed, but the tree maker relies on `patBinderOrCasted` having type `extractor.paramType` (and not just some type compatible with it)
+            // SI-6624 shows this is necessary because apparently patBinder may have an unfortunate type (.decls don't have the case field accessors)
+            // TODO: get to the bottom of this -- I assume it happens when type checking infers a weird type for an unapply call
+            // by going back to the parameterType for the extractor call we get a saner type, so let's just do that for now
+            /* TODO: uncomment when `settings.developer` and `devWarning` become available
+              if (settings.developer.value && !(patBinder.info =:= extractor.paramType))
+                devWarning(s"resetting info of $patBinder: ${patBinder.info} to ${extractor.paramType}")
+            */
+            (Nil, patBinder setInfo extractor.paramType)
+          }
 
         withSubPats(typeTestTreeMaker :+ extractor.treeMaker(patBinderOrCasted, pos), extractor.subBindersAndPatterns: _*)
       }

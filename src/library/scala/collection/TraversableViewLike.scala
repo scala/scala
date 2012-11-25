@@ -192,15 +192,6 @@ trait TraversableViewLike[+A,
   override def span(p: A => Boolean): (This, This) = (newTakenWhile(p), newDroppedWhile(p))
   override def splitAt(n: Int): (This, This) = (newTaken(n), newDropped(n))
 
-  // Without this, isEmpty tests go back to the Traversable default, which
-  // involves starting a foreach, which can force the first element of the
-  // view. This is just a backstop - it's overridden at all the "def view"
-  // instantiation points in the collections where the Coll type is known.
-  override def isEmpty = underlying match {
-    case x: GenTraversableOnce[_] => x.isEmpty
-    case _                        => super.isEmpty
-  }
-
   override def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
     newForced(thisSeq.scanLeft(z)(op)).asInstanceOf[That]
 
