@@ -17,7 +17,7 @@ import scala.language.{implicitConversions, higherKinds}
  *  @author Stephane Micheloud
  *
  */
-class Random(val self: java.util.Random) {
+class Random(val self: java.util.Random) extends AnyRef with Serializable {
   /** Creates a new random number generator using a single long seed. */
   def this(seed: Long) = this(new java.util.Random(seed))
 
