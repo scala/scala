@@ -369,7 +369,7 @@ abstract class UnCurry extends InfoTransform
       }
 
       val isDefinedAtMethodDef = {
-        val methSym = anonClass.newMethod(nme.isDefinedAt, fun.pos, FINAL)
+        val methSym = anonClass.newMethod(nme.isDefinedAt, fun.pos, FINAL | SYNTHETIC)
         val params  = methSym newSyntheticValueParams formals
         methSym setInfoAndEnter MethodType(params, BooleanClass.tpe)
 
