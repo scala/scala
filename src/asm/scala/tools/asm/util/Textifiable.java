@@ -34,7 +34,7 @@ import java.util.Map;
 import scala.tools.asm.Label;
 
 /**
- * An {@link org.objectweb.asm.Attribute Attribute} that can print a readable
+ * An {@link scala.tools.asm.Attribute Attribute} that can print a readable
  * representation of itself.
  *
  * Implementations should construct readable output from an attribute data
@@ -47,8 +47,10 @@ public interface Textifiable {
     /**
      * Build a human readable representation of this attribute.
      *
-     * @param buf a buffer used for printing Java code.
-     * @param labelNames map of label instances to their names.
+     * @param buf
+     *            a buffer used for printing Java code.
+     * @param labelNames
+     *            map of label instances to their names.
      */
     void textify(StringBuffer buf, Map<Label, String> labelNames);
 }
