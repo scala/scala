@@ -3891,7 +3891,7 @@ trait Typers extends Modes with Adaptations with Tags {
         case DynamicApplicationNamed(qual, _) if acceptsApplyDynamic(qual.tpe.widen) => true
         case _ => false
           // look deeper?
-          // val methPart = treeInfo.methPart(fun)
+          // val treeInfo.Applied(methPart, _, _) = fun
           // println("methPart of "+ fun +" is "+ methPart)
           // if (methPart ne fun) isApplyDynamicNamed(methPart)
           // else false
@@ -3927,7 +3927,7 @@ trait Typers extends Modes with Adaptations with Tags {
        */
       def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
         log(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
-        val treeSelection = treeInfo.methPart(tree)
+        val treeInfo.Applied(treeSelection, _, _) = tree
         def isDesugaredApply = treeSelection match {
           case Select(`qual`, nme.apply) => true
           case _                         => false
@@ -3940,7 +3940,7 @@ trait Typers extends Modes with Adaptations with Tags {
           // not supported: foo.bar(a1,..., an: _*)
           def hasStar(args: List[Tree]) = treeInfo.isWildcardStarArgList(args)
           def applyOp(args: List[Tree]) = if (hasNamed(args)) nme.applyDynamicNamed else nme.applyDynamic
-          def matches(t: Tree)          = isDesugaredApply || treeInfo.methPart(t) == treeSelection
+          def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
 
           /** Note that the trees which arrive here are potentially some distance from
            *  the trees of direct interest. `cxTree` is some enclosing expression which
@@ -3958,9 +3958,8 @@ trait Typers extends Modes with Adaptations with Tags {
             case _                                => t.children flatMap findSelection headOption
           }
           findSelection(cxTree) match {
-            case Some((opName, tapply)) =>
-              val targs = treeInfo.typeArguments(tapply)
-              val fun   = gen.mkTypeApply(Select(qual, opName), targs)
+            case Some((opName, treeInfo.Applied(_, targs, _))) =>
+              val fun = gen.mkTypeApply(Select(qual, opName), targs)
               atPos(qual.pos)(Apply(fun, Literal(Constant(name.decode)) :: Nil))
             case _ =>
               setError(tree)
@@ -4149,8 +4148,8 @@ trait Typers extends Modes with Adaptations with Tags {
           return fail()
 
         if (treeInfo.mayBeVarGetter(varsym)) {
-          treeInfo.methPart(lhs1) match {
-            case Select(qual, name) =>
+          lhs1 match {
+            case treeInfo.Applied(Select(qual, name), _, _) =>
               val sel = Select(qual, nme.getterToSetter(name.toTermName)) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
               return typed(app, mode, pt)
@@ -4568,9 +4567,9 @@ trait Typers extends Modes with Adaptations with Tags {
             }
 
           case Apply(fn, indices) =>
-            treeInfo.methPart(fn) match {
-              case Select(table, nme.apply) => mkUpdate(table, indices)
-              case _                        => UnexpectedTreeAssignmentConversionError(qual)
+            fn match {
+              case treeInfo.Applied(Select(table, nme.apply), _, _) => mkUpdate(table, indices)
+              case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }
         typed1(tree1, mode, pt)
