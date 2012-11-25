@@ -522,29 +522,6 @@ trait Future[+T] extends Awaitable[T] {
     p.future
   }
 
-  /** Creates a new future which holds the result of either this future or `that` future, depending on
-   *  which future was completed first.
-   *
-   *  $nonDeterministic
-   *
-   *  Example:
-   *  {{{
-   *  val f = future { sys.error("failed") }
-   *  val g = future { 5 }
-   *  val h = f either g
-   *  await(h, 0) // evaluates to either 5 or throws a runtime exception
-   *  }}}
-   */
-  def either[U >: T](that: Future[U]): Future[U] = {
-    val p = Promise[U]()
-    val completePromise: PartialFunction[Try[U], _] = { case result => p tryComplete result }
-
-    this onComplete completePromise
-    that onComplete completePromise
-
-    p.future
-  }
-
 }
 
 

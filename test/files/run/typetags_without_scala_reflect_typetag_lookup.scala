@@ -1,6 +1,6 @@
 import scala.tools.partest._
 
-object Test extends DirectTest {
+object Test extends StoreReporterDirectTest {
   def code = ???
 
   def library = """
@@ -32,14 +32,12 @@ object Test extends DirectTest {
   }
 
   def show(): Unit = {
-    val prevErr = System.err
-    val baos = new java.io.ByteArrayOutputStream();
-    System.setErr(new java.io.PrintStream(baos));
     compileLibrary();
+    println(filteredInfos.mkString("\n"))
+    storeReporter.infos.clear()
     compileApp();
-    // we should get bad symbolic reference errors, because we're trying to call a method that can't be unpickled
+    // we should get bad symbolic reference errors, because we're trying to use an implicit that can't be unpickled
     // but we don't know the number of these errors and their order, so I just ignore them all
-    baos.toString.split("\n") filter (!_.startsWith("error: bad symbolic reference")) foreach println
-    System.setErr(prevErr)
+    println(filteredInfos.filterNot(_.msg.contains("bad symbolic reference")).mkString("\n"))
   }
 }

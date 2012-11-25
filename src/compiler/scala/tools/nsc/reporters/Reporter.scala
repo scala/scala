@@ -20,9 +20,15 @@ abstract class Reporter {
   class Severity(val id: Int) extends severity.Value {
     var count: Int = 0
   }
-  val INFO    = new Severity(0)
-  val WARNING = new Severity(1)
-  val ERROR   = new Severity(2)
+  val INFO    = new Severity(0) {
+    override def toString: String = "INFO"
+  }
+  val WARNING = new Severity(1) {
+    override def toString: String = "WARNING"
+  }
+  val ERROR   = new Severity(2) {
+    override def toString: String = "ERROR"
+  }
 
   /** Whether very long lines can be truncated.  This exists so important
    *  debugging information (like printing the classpath) is not rendered
