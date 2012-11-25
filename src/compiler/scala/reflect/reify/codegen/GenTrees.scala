@@ -45,7 +45,9 @@ trait GenTrees {
       case global.EmptyTree =>
         reifyMirrorObject(EmptyTree)
       case global.emptyValDef =>
-        mirrorBuildSelect(nme.emptyValDef)
+        mirrorSelect(nme.emptyValDef)
+      case global.pendingSuperCall =>
+        mirrorSelect(nme.pendingSuperCall)
       case FreeDef(_, _, _, _, _) =>
         reifyNestedFreeDef(tree)
       case FreeRef(_, _) =>

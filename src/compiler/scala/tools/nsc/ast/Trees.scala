@@ -65,6 +65,13 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   // --- factory methods ----------------------------------------------------------
 
+  /** Factory method for a primary constructor super call `super.<init>(args_1)...(args_n)`
+   */
+  def PrimarySuperCall(argss: List[List[Tree]]): Tree = argss match {
+    case Nil        => Apply(gen.mkSuperSelect, Nil)
+    case xs :: rest => rest.foldLeft(Apply(gen.mkSuperSelect, xs): Tree)(Apply.apply)
+  }
+
     /** Generates a template with constructor corresponding to
    *
    *  constrmods (vparams1_) ... (vparams_n) preSuper { presupers }
@@ -117,12 +124,12 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = atPos(superPos)(gen.mkSuperSelect)
-        val superCall = Apply(superRef, Nil) // we can't know in advance which of the parents will end up as a superclass
-                                             // this requires knowing which of the parents is a type macro and which is not
-                                             // and that's something that cannot be found out before typer
-                                             // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
-                                             // this means that we don't know what will be the arguments of the super call
-                                             // therefore here we emit a dummy which gets populated when the template is named and typechecked
+        val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
+                                         // this requires knowing which of the parents is a type macro and which is not
+                                         // and that's something that cannot be found out before typer
+                                         // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
+                                         // this means that we don't know what will be the arguments of the super call
+                                         // therefore here we emit a dummy which gets populated when the template is named and typechecked
         List(
           // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
           // is it going to be a problem that we can no longer include the `argss`?
@@ -330,6 +337,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         else
           super.transform {
             tree match {
+              case tree if tree.isDummy =>
+                tree
               case tpt: TypeTree =>
                 if (tpt.original != null)
                   transform(tpt.original)
@@ -342,8 +351,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
               case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
                 transform(fn)
               case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
-                tree
-              case EmptyTree =>
                 tree
               case _ =>
                 val dupl = tree.duplicate

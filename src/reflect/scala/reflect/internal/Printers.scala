@@ -542,8 +542,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(")")
         case EmptyTree =>
           print("EmptyTree")
-        case emptyValDef: AnyRef if emptyValDef eq self.emptyValDef =>
+        case self.emptyValDef =>
           print("emptyValDef")
+        case self.pendingSuperCall =>
+          print("pendingSuperCall")
         case tree: Tree =>
           val hasSymbol = tree.hasSymbol && tree.symbol != NoSymbol
           val isError = hasSymbol && tree.symbol.name.toString == nme.ERROR.toString

@@ -2366,6 +2366,15 @@ trait Trees { self: Universe =>
    */
   val emptyValDef: ValDef
 
+  /** An empty superclass constructor call corresponding to:
+   *    super.<init>()
+   *  This is used as a placeholder in the primary constructor body in class templates
+   *  to denote the insertion point of a call to superclass constructor after the typechecker
+   *  figures out the superclass of a given template.
+   *  @group Trees
+   */
+  val pendingSuperCall: Apply
+
 // ---------------------- factories ----------------------------------------------
 
   /** A factory method for `ClassDef` nodes.
