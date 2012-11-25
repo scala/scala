@@ -110,24 +110,23 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
   /** Finds an entry in the hash table if such an element exists. */
   protected def findEntry(elem: A): Option[A] = {
-    var h = index(elemHashCode(elem))
-    var entry = table(h)
-    while (null != entry && entry != elem) {
-      h = (h + 1) % table.length
-      entry = table(h)
-    }
+    val entry = findEntryImpl(elem)
     if (null == entry) None else Some(entry.asInstanceOf[A])
   }
 
   /** Checks whether an element is contained in the hash table. */
   protected def containsEntry(elem: A): Boolean = {
+    null != findEntryImpl(elem)
+  }
+
+  private def findEntryImpl(elem: A): AnyRef = {
     var h = index(elemHashCode(elem))
     var entry = table(h)
     while (null != entry && entry != elem) {
       h = (h + 1) % table.length
       entry = table(h)
     }
-    null != entry
+    entry
   }
 
   /** Add entry if not yet in table.
