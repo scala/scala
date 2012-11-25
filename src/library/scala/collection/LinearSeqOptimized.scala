@@ -246,13 +246,10 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
 
   override /*SeqLike*/
   def lengthCompare(len: Int): Int =  {
-    var i = 0
-    var these = self
-    while (!these.isEmpty && i <= len) {
-      i += 1
-      these = these.tail
-    }
-    i - len
+    if (len == 0)
+      if (isEmpty) 0 else 1
+    else
+      if (isEmpty) -len else tail.lengthCompare(len - 1)
   }
 
   override /*SeqLike*/
