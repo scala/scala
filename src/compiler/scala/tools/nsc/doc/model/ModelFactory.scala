@@ -233,8 +233,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
    *  exists, but should not be documented (either it's not included in the source or it's not visible)
    */
   class NoDocTemplateImpl(sym: Symbol, inTpl: TemplateImpl) extends EntityImpl(sym, inTpl) with TemplateImpl with HigherKindedImpl with NoDocTemplate {
-    assert(modelFinished)
-    assert(!(noDocTemplatesCache isDefinedAt sym))
+    assert(modelFinished, this)
+    assert(!(noDocTemplatesCache isDefinedAt sym), (sym, noDocTemplatesCache(sym)))
     noDocTemplatesCache += (sym -> this)
     def isDocTemplate = false
   }
@@ -269,7 +269,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     *  All ancestors of the template and all non-package members.
     */
   abstract class DocTemplateImpl(sym: Symbol, inTpl: DocTemplateImpl) extends MemberTemplateImpl(sym, inTpl) with DocTemplateEntity {
-    assert(!modelFinished)
+    assert(!modelFinished, (sym, inTpl))
     assert(!(docTemplatesCache isDefinedAt sym), sym)
     docTemplatesCache += (sym -> this)
 
@@ -620,7 +620,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
      */
     def createTemplate(aSym: Symbol, inTpl: DocTemplateImpl): Option[MemberImpl] = {
       // don't call this after the model finished!
-      assert(!modelFinished)
+      assert(!modelFinished, (aSym, inTpl))
 
       def createRootPackageComment: Option[Comment] =
         if(settings.docRootContent.isDefault) None
@@ -636,7 +636,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         }
 
       def createDocTemplate(bSym: Symbol, inTpl: DocTemplateImpl): DocTemplateImpl = {
-        assert(!modelFinished) // only created BEFORE the model is finished
+        assert(!modelFinished, (bSym, inTpl)) // only created BEFORE the model is finished
         if (bSym.isAliasType && bSym != AnyRefClass)
           new DocTemplateImpl(bSym, inTpl) with AliasImpl with AliasType { override def isAliasType = true }
         else if (bSym.isAbstractType)
