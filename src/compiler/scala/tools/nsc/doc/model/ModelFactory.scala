@@ -842,24 +842,28 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       lazy val annotationClass =
         makeTemplate(annot.symbol)
       val arguments = { // lazy
-        def noParams = annot.args map { _ => None }
+        def annotArgs = annot.args match {
+          case Nil => annot.assocs collect { case (_, LiteralAnnotArg(const)) => Literal(const) }
+          case xs  => xs
+        }
+        def noParams = annotArgs map (_ => None)
+
         val params: List[Option[ValueParam]] = annotationClass match {
           case aClass: DocTemplateEntity with Class =>
             (aClass.primaryConstructor map { _.valueParams.head }) match {
               case Some(vps) => vps map { Some(_) }
-              case None => noParams
+              case _         => noParams
             }
           case _ => noParams
         }
-        assert(params.length == annot.args.length)
-        (params zip annot.args) flatMap { case (param, arg) =>
-          makeTree(arg) match {
-            case Some(tree) =>
-              Some(new ValueArgument {
-                def parameter = param
-                def value = tree
-              })
-            case None => None
+        assert(params.length == annotArgs.length, (params, annotArgs))
+
+        params zip annotArgs flatMap { case (param, arg) =>
+          makeTree(arg) map { tree =>
+            new ValueArgument {
+              def parameter = param
+              def value     = tree
+            }
           }
         }
       }
