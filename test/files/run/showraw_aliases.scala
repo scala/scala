@@ -9,7 +9,9 @@ object Test extends App {
   """)
   val ttree = tb.typeCheck(tree)
 
-  def stabilize(s: String) = """#\d+""".r.replaceAllIn(s, "#<id>")
-  println(showRaw(ttree))
+  def stabilizeIds(s: String) = """#\d+""".r.replaceAllIn(s, "#<id>")
+  def stabilizePositions(s: String) = """\d+""".r.replaceAllIn(s, "<offset>")
+  def stabilize(s: String) = stabilizePositions(stabilizeIds(s))
+  println(stabilize(showRaw(ttree)))
   println(stabilize(showRaw(ttree, printIds = true)))
 }
