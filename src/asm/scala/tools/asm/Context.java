@@ -27,64 +27,84 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
 
-import java.util.Map;
-
-import scala.tools.asm.MethodVisitor;
+package scala.tools.asm;
 
 /**
- * A node that represents a type instruction. A type instruction is an
- * instruction that takes a type descriptor as parameter.
+ * Information about a class being parsed in a {@link ClassReader}.
  *
  * @author Eric Bruneton
  */
-public class TypeInsnNode extends AbstractInsnNode {
+class Context {
 
     /**
-     * The operand of this instruction. This operand is an internal name (see
-     * {@link scala.tools.asm.Type}).
+     * Prototypes of the attributes that must be parsed for this class.
      */
-    public String desc;
+    Attribute[] attrs;
 
     /**
-     * Constructs a new {@link TypeInsnNode}.
-     *
-     * @param opcode
-     *            the opcode of the type instruction to be constructed. This
-     *            opcode must be NEW, ANEWARRAY, CHECKCAST or INSTANCEOF.
-     * @param desc
-     *            the operand of the instruction to be constructed. This operand
-     *            is an internal name (see {@link scala.tools.asm.Type}).
+     * The {@link ClassReader} option flags for the parsing of this class.
      */
-    public TypeInsnNode(final int opcode, final String desc) {
-        super(opcode);
-        this.desc = desc;
-    }
+    int flags;
 
     /**
-     * Sets the opcode of this instruction.
-     *
-     * @param opcode
-     *            the new instruction opcode. This opcode must be NEW,
-     *            ANEWARRAY, CHECKCAST or INSTANCEOF.
+     * The buffer used to read strings.
      */
-    public void setOpcode(final int opcode) {
-        this.opcode = opcode;
-    }
+    char[] buffer;
 
-    @Override
-    public int getType() {
-        return TYPE_INSN;
-    }
+    /**
+     * The start index of each bootstrap method.
+     */
+    int[] bootstrapMethods;
 
-    @Override
-    public void accept(final MethodVisitor mv) {
-        mv.visitTypeInsn(opcode, desc);
-    }
+    /**
+     * The access flags of the method currently being parsed.
+     */
+    int access;
 
-    @Override
-    public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new TypeInsnNode(opcode, desc);
-    }
+    /**
+     * The name of the method currently being parsed.
+     */
+    String name;
+
+    /**
+     * The descriptor of the method currently being parsed.
+     */
+    String desc;
+
+    /**
+     * The offset of the latest stack map frame that has been parsed.
+     */
+    int offset;
+
+    /**
+     * The encoding of the latest stack map frame that has been parsed.
+     */
+    int mode;
+
+    /**
+     * The number of locals in the latest stack map frame that has been parsed.
+     */
+    int localCount;
+
+    /**
+     * The number locals in the latest stack map frame that has been parsed,
+     * minus the number of locals in the previous frame.
+     */
+    int localDiff;
+
+    /**
+     * The local values of the latest stack map frame that has been parsed.
+     */
+    Object[] local;
+
+    /**
+     * The stack size of the latest stack map frame that has been parsed.
+     */
+    int stackCount;
+
+    /**
+     * The stack values of the latest stack map frame that has been parsed.
+     */
+    Object[] stack;
 }
