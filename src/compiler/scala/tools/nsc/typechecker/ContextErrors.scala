@@ -107,9 +107,9 @@ trait ContextErrors {
         s"$name extends Any, not AnyRef"
     )
     if (isPrimitiveValueType(found) || isTrivialTopType(tp)) "" else "\n" +
-       s"""|Note that $what.
-           |Such types can participate in value classes, but instances
-           |cannot appear in singleton types or in reference comparisons.""".stripMargin
+       sm"""|Note that $what.
+            |Such types can participate in value classes, but instances
+            |cannot appear in singleton types or in reference comparisons."""
   }
 
   import ErrorUtils._
@@ -1128,9 +1128,9 @@ trait ContextErrors {
                                (isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context) = {
       if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
         def coreMsg =
-           s"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
-               | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
-               | $trailer""".stripMargin
+           sm"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
+                | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
+                | $trailer"""
         def viewMsg = {
           val found :: req :: _ = pt.typeArgs
           def explanation = {
@@ -1141,19 +1141,19 @@ trait ContextErrors {
             // involving Any, are further explained from foundReqMsg.
             if (AnyRefClass.tpe <:< req) (
               if (sym == AnyClass || sym == UnitClass) (
-                 s"""|Note: ${sym.name} is not implicitly converted to AnyRef.  You can safely
-                     |pattern match `x: AnyRef` or cast `x.asInstanceOf[AnyRef]` to do so.""".stripMargin
+                 sm"""|Note: ${sym.name} is not implicitly converted to AnyRef.  You can safely
+                      |pattern match `x: AnyRef` or cast `x.asInstanceOf[AnyRef]` to do so."""
               )
               else boxedClass get sym map (boxed =>
-                 s"""|Note: an implicit exists from ${sym.fullName} => ${boxed.fullName}, but
-                     |methods inherited from Object are rendered ambiguous.  This is to avoid
-                     |a blanket implicit which would convert any ${sym.fullName} to any AnyRef.
-                     |You may wish to use a type ascription: `x: ${boxed.fullName}`.""".stripMargin
+                 sm"""|Note: an implicit exists from ${sym.fullName} => ${boxed.fullName}, but
+                      |methods inherited from Object are rendered ambiguous.  This is to avoid
+                      |a blanket implicit which would convert any ${sym.fullName} to any AnyRef.
+                      |You may wish to use a type ascription: `x: ${boxed.fullName}`."""
               ) getOrElse ""
             )
             else
-               s"""|Note that implicit conversions are not applicable because they are ambiguous:
-                   |${coreMsg}are possible conversion functions from $found to $req""".stripMargin
+               sm"""|Note that implicit conversions are not applicable because they are ambiguous:
+                    |${coreMsg}are possible conversion functions from $found to $req"""
           }
           typeErrorMsg(found, req, infer.isPossiblyMissingArgs(found, req)) + (
             if (explanation == "") "" else "\n" + explanation
