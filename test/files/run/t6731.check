@@ -1,0 +1,40 @@
+Mono$.bar()
+Mono$.bar
+Mono$.bar()
+Mono$.bar
+Mono$.bar
+Mono$.baz
+Mono$.bar(bippy=1, boppy=2)
+Mono$.baz
+Poly.bar[Nothing]
+Poly.bar[Int]
+Poly.bar[Nothing]()
+Poly.bar[Int]()
+Poly.bar[Int](1, 2, 3)
+Poly.bar[Nothing]
+Poly.bar[Int]
+Poly.bar[Nothing]()
+Poly.bar[Int]()
+Poly.bar[Int](1, 2, 3)
+Updating.bar
+Updating.bar = b
+Nest1$Nest2$Nest3$.bippy(1, 2, 3)
+Nest1$Nest2$Nest3$.bippy
+Named.bippy(a=1, b=2)
+Named.boppy(c=3, d=4)
+Named.apply()
+Named.apply()
+Named.apply(e=5, f=6)
+Named2.bippy(1)(q0, c)
+Named2.bippy(1)(q0, c)
+Named2.bippy(1)(b, q0)
+Named2.bippy(1)(q0, c)
+Named2.bippy(1)(c, b)
+Named2.bippy(1)(b, c)
+Named2.bippy(1)(q0, c)
+Named2.bippy(2)(b, c)
+Named2.bippy(1)(q0, c)
+Named2.bippy(5)(b, c)
+Named2.dingus(100)(b, dong)
+Named2.bippy(1)(q0, q1)
+Named2.hello(100)(!!, !!)
