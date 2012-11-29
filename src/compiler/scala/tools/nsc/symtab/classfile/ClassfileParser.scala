@@ -1225,16 +1225,20 @@ abstract class ClassfileParser {
   }
 
   def skipAttributes() {
-    val attrCount = in.nextChar
-    for (i <- 0 until attrCount) {
-      in.skip(2); in.skip(in.nextInt)
+    var attrCount: Int = in.nextChar
+    while (attrCount > 0) {
+      in skip 2
+      in skip in.nextInt
+      attrCount -= 1
     }
   }
 
   def skipMembers() {
-    val memberCount = in.nextChar
-    for (i <- 0 until memberCount) {
-      in.skip(6); skipAttributes()
+    var memberCount: Int = in.nextChar
+    while (memberCount > 0) {
+      in skip 6
+      skipAttributes()
+      memberCount -= 1
     }
   }
 
