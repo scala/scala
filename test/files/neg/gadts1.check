@@ -3,9 +3,9 @@ gadts1.scala:15: error: type mismatch;
  required: a
     case NumTerm(n) => c.x = Double(1.0) 
                                    ^
-gadts1.scala:20: error: class Cell of type Test.Cell does not take type parameters.
+gadts1.scala:20: error: Test.Cell[a] does not take parameters
     case Cell[a](x: Int) => c.x = 5
-             ^
+                ^
 gadts1.scala:20: error: type mismatch;
  found   : Int(5)
  required: a

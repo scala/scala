@@ -391,6 +391,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   case class TypeApply(fun: Tree, args: List[Tree])
        extends GenericApply with TypeApplyApi {
+
+    assert(fun.isTerm, fun)
+
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
@@ -426,7 +429,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object This extends ThisExtractor
 
   case class Select(qualifier: Tree, name: Name)
-       extends RefTree with SelectApi
+       extends RefTree with SelectApi {
+
+    // !!! assert disabled due to test case pos/annotDepMethType.scala triggering it.
+    // assert(qualifier.isTerm, qualifier)
+  }
   object Select extends SelectExtractor
 
   case class Ident(name: Name) extends RefTree with IdentContextApi {
@@ -458,7 +465,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object SingletonTypeTree extends SingletonTypeTreeExtractor
 
   case class SelectFromTypeTree(qualifier: Tree, name: TypeName)
-       extends RefTree with TypTree with SelectFromTypeTreeApi
+       extends RefTree with TypTree with SelectFromTypeTreeApi {
+
+    assert(qualifier.isType, qualifier)
+  }
   object SelectFromTypeTree extends SelectFromTypeTreeExtractor
 
   case class CompoundTypeTree(templ: Template)
@@ -467,6 +477,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   case class AppliedTypeTree(tpt: Tree, args: List[Tree])
        extends TypTree with AppliedTypeTreeApi {
+
+    assert(tpt.isType, tpt)
+
     override def symbol: Symbol = tpt.symbol
     override def symbol_=(sym: Symbol) { tpt.symbol = sym }
   }
@@ -1314,7 +1327,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     final def change(sym: Symbol) = {
-      if (sym != NoSymbol && sym.owner == oldowner) 
+      if (sym != NoSymbol && sym.owner == oldowner)
         sym.owner = newowner
     }
     override def traverse(tree: Tree) {
