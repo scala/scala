@@ -56,7 +56,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *  The class `C` is stored as a tree attachment.
    */
   case class InjectDerivedValue(arg: Tree)
-       extends SymTree
+       extends SymTree with TermTree
 
   class PostfixSelect(qual: Tree, name: Name) extends Select(qual, name)
 
