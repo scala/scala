@@ -1160,10 +1160,13 @@ trait Implicits {
       */
     private def tagOfType(pre: Type, tp: Type, tagClass: Symbol): SearchResult = {
       def success(arg: Tree) = {
-        def isMacroException(msg: String): Boolean =
+        def isMacroException(msg: String): Boolean = (
           // [Eugene] very unreliable, ask Hubert about a better way
-          msg contains "exception during macro expansion"
-
+          // [Paul] maybe next time ask Hubert BEFORE checking it in.
+          // And then never check it in. And then set it on fire.
+             (msg contains "exception during macro expansion")
+          || (msg contains "is an unresolved spliceable type")
+        )
         def processMacroExpansionError(pos: Position, msg: String): SearchResult = {
           // giving up and reporting all macro exceptions regardless of their source
           // this might lead to an avalanche of errors if one of your implicit macros misbehaves
