@@ -11,6 +11,7 @@
 package scala.collection
 package mutable
 
+import scala.annotation.tailrec
 import generic._
 import immutable.{List, Nil, ::}
 import java.io._
@@ -178,8 +179,23 @@ final class ListBuffer[A]
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type =
-    if (xs.asInstanceOf[AnyRef] eq this) ++= (this take size) else super.++=(xs)
+  private def ++=(elems: collection.LinearSeq[A]): this.type = {
+    @tailrec def loop(xs: collection.LinearSeq[A]) {
+      if (xs.nonEmpty) {
+        this += xs.head
+        loop(xs.tail)
+      }
+    }
+    loop(elems)
+    this
+  }
+
+  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
+    case x: AnyRef if x eq this      => this ++= (this take size)
+    case xs: collection.LinearSeq[_] => this ++= xs
+    case _                           => super.++=(xs)
+
+  }
 
   override def ++=:(xs: TraversableOnce[A]): this.type =
     if (xs.asInstanceOf[AnyRef] eq this) ++=: (this take size) else super.++=:(xs)
