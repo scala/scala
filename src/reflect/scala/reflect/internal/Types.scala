@@ -5021,19 +5021,19 @@ trait Types extends api.Types { self: SymbolTable =>
   /** The maximum depth of type `tp` */
   def typeDepth(tp: Type): Int = tp match {
     case TypeRef(pre, sym, args) =>
-      typeDepth(pre) max typeDepth(args) + 1
+      math.max(typeDepth(pre), typeDepth(args) + 1)
     case RefinedType(parents, decls) =>
-      typeDepth(parents) max typeDepth(decls.toList.map(_.info)) + 1
+      math.max(typeDepth(parents), symTypeDepth(decls.toList) + 1)
     case TypeBounds(lo, hi) =>
-      typeDepth(lo) max typeDepth(hi)
+      math.max(typeDepth(lo), typeDepth(hi))
     case MethodType(paramtypes, result) =>
       typeDepth(result)
     case NullaryMethodType(result) =>
       typeDepth(result)
     case PolyType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
+      math.max(typeDepth(result), symTypeDepth(tparams) + 1)
     case ExistentialType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
+      math.max(typeDepth(result), symTypeDepth(tparams) + 1)
     case _ =>
       1
   }
@@ -5045,13 +5045,14 @@ trait Types extends api.Types { self: SymbolTable =>
     //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
     //    d
     def loop(tps: List[Type], acc: Int): Int = tps match {
-      case tp :: rest => loop(rest, acc max by(tp))
-      case _ => acc
+      case tp :: rest => loop(rest, math.max(acc, by(tp)))
+      case _          => acc
     }
     loop(tps, 0)
   }
 
-  private def typeDepth(tps: List[Type]): Int = maxDepth(tps, typeDepth)
+  private def symTypeDepth(syms: List[Symbol]): Int  = typeDepth(syms map (_.info))
+  private def typeDepth(tps: List[Type]): Int        = maxDepth(tps, typeDepth)
   private def baseTypeSeqDepth(tps: List[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
