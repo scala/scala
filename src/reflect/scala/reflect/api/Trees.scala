@@ -2921,7 +2921,7 @@ trait Trees { self: Universe =>
     def transform(tree: Tree): Tree = itransform(this, tree)
 
     /** Transforms a list of trees. */
-    def transformTrees(trees: List[Tree]): List[Tree] = trees mapConserve (transform(_))
+    def transformTrees(trees: List[Tree]): List[Tree] = trees mapConserve transform
 
     /** Transforms a `Template`. */
     def transformTemplate(tree: Template): Template =
