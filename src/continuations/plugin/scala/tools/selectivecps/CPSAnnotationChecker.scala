@@ -221,7 +221,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else if (retMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) {
         // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
         // tree will look like having any possible annotation
-        
+
         // note 1: we are only adding a plus marker if the method's result type is a cps type
         //         (annotsExpected.nonEmpty == cpsParamAnnotation(pt).nonEmpty)
         // note 2: we are not adding the expected cps annotations, since they will be added
@@ -234,7 +234,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
 
     /** Returns an adapted type for a return expression if the method's result type (pt) is a CPS type.
      *  Otherwise, it returns the `default` type (`typedReturn` passes `NothingClass.tpe`).
-     *  
+     *
      *  A return expression in a method that has a CPS result type is an error unless the return
      *  is in tail position. Therefore, we are making sure that only the types of return expressions
      *  are adapted which will either be removed, or lead to an error.
@@ -396,8 +396,10 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
     override def addAnnotations(tree: Tree, tpe: Type): Type = {
       import scala.util.control._
       if (!cpsEnabled) {
-        if (Exception.failAsValue(classOf[MissingRequirementError])(false)(hasCpsParamTypes(tpe)))
+        val report = try hasCpsParamTypes(tpe) catch { case _: MissingRequirementError => false }
+        if (report)
           global.reporter.error(tree.pos, "this code must be compiled with the Scala continuations plugin enabled")
+
         return tpe
       }
 
