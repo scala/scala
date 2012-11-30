@@ -2951,8 +2951,10 @@ trait Trees { self: Universe =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
         else transform(stat)) filter (EmptyTree != _)
     /** Transforms `Modifiers`. */
-    def transformModifiers(mods: Modifiers): Modifiers =
-      mods.mapAnnotations(transformTrees)
+    def transformModifiers(mods: Modifiers): Modifiers = {
+      if (mods.annotations.isEmpty) mods
+      else mods mapAnnotations transformTrees
+    }
 
     /** Transforms a tree with a given owner symbol. */
     def atOwner[A](owner: Symbol)(trans: => A): A = {
