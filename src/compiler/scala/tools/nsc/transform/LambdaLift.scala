@@ -247,8 +247,8 @@ abstract class LambdaLift extends InfoTransform {
           // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
           //         Generating a a unique name, mangled with the enclosing class name, avoids a VerifyError
           //         in the case that a sub-class happens to lifts out a method with the *same* name.
-          val name = freshen(sym.name + nme.NAME_JOIN_STRING)
-          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name, sym.enclClass)
+          val name = freshen("" + sym.name + nme.NAME_JOIN_STRING)
+          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name.toTermName, sym.enclClass)
           else name
         }
       }
@@ -290,7 +290,7 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
-              val proxy = owner.newValue(proxyName, owner.pos, newFlags) setInfo fv.info
+              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags) setInfo fv.info
               if (owner.isClass) owner.info.decls enter proxy
               proxy
             }

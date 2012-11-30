@@ -207,14 +207,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         // println("creating new getter for "+ field +" : "+ field.info +" at "+ field.locationString+(field hasFlag MUTABLE))
         val newFlags = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED | ( if (field.isMutable) 0 else STABLE )
         // TODO preserve pre-erasure info?
-        clazz.newMethod(nme.getterName(field.name), field.pos, newFlags) setInfo MethodType(Nil, field.info)
+        clazz.newMethod(nme.getterName(field.name.toTermName), field.pos, newFlags) setInfo MethodType(Nil, field.info)
       }
 
       /** Create a new setter. Setters are never private or local. They are
        *  always accessors and deferred. */
       def newSetter(field: Symbol): Symbol = {
         //println("creating new setter for "+field+field.locationString+(field hasFlag MUTABLE))
-        val setterName = nme.getterToSetter(nme.getterName(field.name))
+        val setterName = nme.getterToSetter(nme.getterName(field.name.toTermName))
         val newFlags   = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED
         val setter     = clazz.newMethod(setterName, field.pos, newFlags)
         // TODO preserve pre-erasure info?
@@ -315,7 +315,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   // carries over the current entry in the type history)
                   val sym = enteringErasure {
                     // so we have a type history entry before erasure
-                    clazz.newValue(nme.getterToLocal(mixinMember.name), mixinMember.pos).setInfo(mixinMember.tpe.resultType)
+                    clazz.newValue(nme.getterToLocal(mixinMember.name.toTermName), mixinMember.pos).setInfo(mixinMember.tpe.resultType)
                   }
                   sym updateInfo mixinMember.tpe.resultType // info at current phase
 
@@ -711,7 +711,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def bitmapFor(clazz0: Symbol, offset: Int, field: Symbol): Symbol = {
         val category   = bitmapCategory(field)
-        val bitmapName = nme.newBitmapName(category, offset / flagsPerBitmap(field))
+        val bitmapName = nme.newBitmapName(category, offset / flagsPerBitmap(field)).toTermName
         val sym        = clazz0.info.decl(bitmapName)
 
         assert(!sym.isOverloaded, sym)
@@ -775,7 +775,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                         stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Symbol = {
-        val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, PRIVATE)
+        val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, PRIVATE)
         val params = defSym newSyntheticValueParams args.map(_.symbol.tpe)
         defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
         val rhs: Tree = (gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)

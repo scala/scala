@@ -480,7 +480,7 @@ trait TypeDiagnostics {
           && (m.isPrivate || m.isLocal)
           && !targets(m)
           && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
-          && !ignoreNames(m.name)                   // serialization methods
+          && !ignoreNames(m.name.toTermName)        // serialization methods
           && !isConstantType(m.info.resultType)     // subject to constant inlining
           && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
         )

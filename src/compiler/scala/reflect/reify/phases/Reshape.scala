@@ -254,7 +254,7 @@ trait Reshape {
       val flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
       val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
       val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
-      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
+      ValDef(mods2, name1.toTermName, tpt0, extractRhs(rhs0))
     }
 
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
@@ -293,7 +293,7 @@ trait Reshape {
           }
           val mods2 = toPreTyperModifiers(mods1, vdef.symbol)
           val name1 = nme.dropLocalSuffix(name)
-          val vdef1 = ValDef(mods2, name1, tpt, rhs)
+          val vdef1 = ValDef(mods2, name1.toTermName, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
           Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync
         case ddef: DefDef if !ddef.mods.isLazy =>

@@ -184,7 +184,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           def makeExtensionMethodSymbol = {
             val extensionName = extensionNames(origMeth).head
             val extensionMeth = (
-              companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
+              companion.moduleClass.newMethod(extensionName.toTermName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
                 setAnnotations origMeth.annotations
             )
             companion.info.decls.enter(extensionMeth)
