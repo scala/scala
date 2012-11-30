@@ -2048,7 +2048,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Returns all symbols overriden by this symbol. */
     final def allOverriddenSymbols: List[Symbol] = (
       if ((this eq NoSymbol) || !owner.isClass) Nil
-      else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
+      else {
+        def loop(xs: List[Symbol]): List[Symbol] = xs match {
+          case Nil     => Nil
+          case x :: xs =>
+            overriddenSymbol(x) match {
+              case NoSymbol => loop(xs)
+              case sym      => sym :: loop(xs)
+            }
+        }
+        loop(owner.ancestors)
+      }
     )
 
     /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
