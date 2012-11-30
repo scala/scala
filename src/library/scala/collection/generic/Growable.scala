@@ -6,9 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package generic
+
+import scala.annotation.tailrec
 
 /** This trait forms part of collections that can be augmented
  *  using a `+=` operator and that can be cleared of all elements using
@@ -45,7 +46,19 @@ trait Growable[-A] extends Clearable {
    *  @param xs   the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def ++=(xs: TraversableOnce[A]): this.type = { xs.seq foreach += ; this }
+  def ++=(xs: TraversableOnce[A]): this.type = {
+    @tailrec def loop(xs: collection.LinearSeq[A]) {
+      if (xs.nonEmpty) {
+        this += xs.head
+        loop(xs.tail)
+      }
+    }
+    xs.seq match {
+      case xs: collection.LinearSeq[_] => loop(xs)
+      case xs                          => xs foreach +=
+    }
+    this
+  }
 
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.
