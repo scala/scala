@@ -14,7 +14,7 @@ import scala.reflect.api.{Universe => ApiUniverse}
 trait Definitions extends api.StandardDefinitions {
   self: SymbolTable =>
 
-  import rootMirror.{getModule, getClassByName, getRequiredClass, getRequiredModule, getRequiredPackage, getClassIfDefined, getModuleIfDefined, getPackageObject, getPackageObjectIfDefined, requiredClass, requiredModule}
+  import rootMirror.{getModule, getPackage, getClassByName, getRequiredClass, getRequiredModule, getClassIfDefined, getModuleIfDefined, getPackageObject, getPackageObjectIfDefined, requiredClass, requiredModule}
 
   object definitions extends DefinitionsClass
 
@@ -169,11 +169,11 @@ trait Definitions extends api.StandardDefinitions {
 
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
-    lazy val JavaLangPackage      = getRequiredPackage(sn.JavaLang)
+    lazy val JavaLangPackage      = getPackage("java.lang")
     lazy val JavaLangPackageClass = JavaLangPackage.moduleClass.asClass
-    lazy val ScalaPackage         = getRequiredPackage(nme.scala_)
+    lazy val ScalaPackage         = getPackage("scala")
     lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
-    lazy val RuntimePackage       = getRequiredPackage("scala.runtime")
+    lazy val RuntimePackage       = getPackage("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
 
     // convenient one-argument parameter lists

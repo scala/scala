@@ -1198,7 +1198,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
     /* Typestate: should be called before emitting fields (because it adds an IField to the current IClass). */
     def addCreatorCode(block: BasicBlock) {
       val fieldSymbol = (
-        clasz.symbol.newValue(newTermName(androidFieldName), NoPosition, Flags.STATIC | Flags.FINAL)
+        clasz.symbol.newValue(androidFieldName, NoPosition, Flags.STATIC | Flags.FINAL)
           setInfo AndroidCreatorClass.tpe
       )
       val methodSymbol = definitions.getMember(clasz.symbol.companionModule, androidFieldName)
@@ -1213,7 +1213,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
 
       jclass.visitField(
         PublicStaticFinal,
-        androidFieldName,
+        androidFieldName.toString,
         tdesc_creator,
         null, // no java-generic-signature
         null  // no initial value
@@ -1233,7 +1233,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       clinit.visitMethodInsn(
         asm.Opcodes.INVOKEVIRTUAL,
         moduleName,
-        androidFieldName,
+        androidFieldName.toString,
         asm.Type.getMethodDescriptor(creatorType, Array.empty[asm.Type]: _*)
       )
 
@@ -1241,7 +1241,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       clinit.visitFieldInsn(
         asm.Opcodes.PUTSTATIC,
         thisName,
-        androidFieldName,
+        androidFieldName.toString,
         tdesc_creator
       )
     }

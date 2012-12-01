@@ -35,7 +35,7 @@ trait GenAndroid {
   def addCreatorCode(codegen: BytecodeGenerator, block: BasicBlock) {
     import codegen._
     val fieldSymbol = (
-      clasz.symbol.newValue(newTermName(fieldName), NoPosition, Flags.STATIC | Flags.FINAL)
+      clasz.symbol.newValue(fieldName, NoPosition, Flags.STATIC | Flags.FINAL)
         setInfo AndroidCreatorClass.tpe
     )
     val methodSymbol = definitions.getMember(clasz.symbol.companionModule, fieldName)
@@ -48,15 +48,15 @@ trait GenAndroid {
     import codegen._
     val creatorType = javaType(AndroidCreatorClass)
     jclass.addNewField(PublicStaticFinal,
-                       fieldName,
+                       fieldName.toString,
                        creatorType)
     val moduleName = javaName(clasz.symbol)+"$"
     clinit.emitGETSTATIC(moduleName,
                          nme.MODULE_INSTANCE_FIELD.toString,
                          new JObjectType(moduleName))
-    clinit.emitINVOKEVIRTUAL(moduleName, fieldName,
+    clinit.emitINVOKEVIRTUAL(moduleName, fieldName.toString,
                              new JMethodType(creatorType, Array()))
-    clinit.emitPUTSTATIC(jclass.getName(), fieldName, creatorType)
+    clinit.emitPUTSTATIC(jclass.getName(), fieldName.toString, creatorType)
   }
 
 }

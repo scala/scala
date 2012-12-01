@@ -511,7 +511,7 @@ trait ContextErrors {
         NormalTypeError(tree, fun.tpe+" does not take parameters")
 
       // Dynamic
-      def DynamicVarArgUnsupported(tree: Tree, name: String) =
+      def DynamicVarArgUnsupported(tree: Tree, name: Name) =
         issueNormalTypeError(tree, name+ " does not support passing a vararg parameter")
 
       def DynamicRewriteError(tree: Tree, err: AbsTypeError) = {
