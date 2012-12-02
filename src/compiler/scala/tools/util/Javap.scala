@@ -17,6 +17,7 @@ import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
 import scala.tools.nsc.io.File
 import scala.util.{ Properties, Try, Success, Failure }
 import scala.collection.JavaConverters
+import scala.collection.generic.Clearable
 import scala.language.reflectiveCalls
 
 import Javap._
@@ -54,7 +55,8 @@ class JavapClass(
   def apply(args: Seq[String]): List[JpResult] = {
     val (optional, claases) = args partition (_ startsWith "-")
     val options = if (optional.nonEmpty) optional else JavapTool.DefaultOptions
-    tool(options)(claases map (claas => claas -> bytesFor(claas)))
+    if (claases.nonEmpty) tool(options)(claases map (claas => claas -> bytesFor(claas)))
+    else List(JpResult(":javap [-lcsvp] [path1 path2 ...]"))
   }
 
   private def bytesFor(path: String) = Try {
@@ -69,12 +71,10 @@ class JavapClass(
    *  it represents.
    */
   def tryFile(path: String): Option[Array[Byte]] = {
-    val file = File(
+    val file =
       if (path.endsWith(".class")) path
       else path.replace('.', '/') + ".class"
-    )
-    if (!file.exists) None
-    else try Some(file.toByteArray) catch { case x: Exception => None }
+    (Try (File(file)) filter (_.exists) map (_.toByteArray)).toOption
   }
   /** Assume the string is a fully qualified class name and try to
    *  find the class object it represents.
@@ -126,8 +126,8 @@ class JavapTool6(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
 
   override def apply(options: Seq[String])(inputs: Seq[Input]): List[JpResult] =
     (inputs map {
-      case (_, Success(ba)) => new JpSuccess(showable(newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
-      case (_, Failure(e))  => new JpError(e.toString)
+      case (_, Success(ba)) => JpResult(showable(newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
+      case (_, Failure(e))  => JpResult(e.toString)
     }).toList orFailed List(noToolError)
 }
 
@@ -154,7 +154,30 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
     classOf[JIterable[String]]
   ) orFailed null
 
-  val reporter = new DiagnosticCollector[JavaFileObject]
+  class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
+    import scala.collection.mutable.{ ArrayBuffer, SynchronizedBuffer }
+    type D = Diagnostic[_ <: JavaFileObject]
+    val diagnostics = new ArrayBuffer[D] with SynchronizedBuffer[D]
+    override def report(d: Diagnostic[_ <: JavaFileObject]) {
+      diagnostics += d
+    }
+    override def clear() = diagnostics.clear()
+    /** All diagnostic messages.
+     *  @param locale Locale for diagnostic messages, null by default.
+     */
+    def messages(implicit locale: Locale = null) = (diagnostics map (_ getMessage locale)).toList
+
+    def reportable: String = {
+      import Properties.lineSeparator
+      //val container = "Binary file .* contains .*".r
+      //val m = messages filter (_ match { case container() => false case _ => true })
+      val m = messages
+      clear()
+      if (m.nonEmpty) m mkString ("", lineSeparator, lineSeparator)
+      else ""
+    }
+  }
+  val reporter = new JavaReporter
 
   // DisassemblerTool.getStandardFileManager(reporter,locale,charset)
   val defaultFileManager: JavaFileManager =
@@ -209,12 +232,7 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
       writer.reset()
       w
     }
-    val msgs = {
-      import Properties.lineSeparator
-      val m = reporter.messages
-      if (m.nonEmpty) m mkString ("", lineSeparator, lineSeparator)
-      else ""
-    }
+    val msgs = reporter.reportable
     new Showable {
       def show() = {
         val mw = msgs + written
@@ -232,11 +250,23 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
       .orFailed (throw new IllegalStateException)
   }
   // a result per input
+  private def apply1(options: Seq[String], claas: String, inputs: Seq[Input]): Try[JpResult] =
+    Try {
+      task(options, Seq(claas), inputs).call()
+    } map {
+      case true => JpResult(showable())
+      case _    => JpResult(reporter.reportable)
+    } recoverWith {
+      case e: java.lang.reflect.InvocationTargetException => e.getCause match {
+        case t: IllegalArgumentException => Success(JpResult(t.getMessage)) // bad option
+        case x => Failure(x)
+      }
+    } lastly {
+      reporter.clear
+    }
   override def apply(options: Seq[String])(inputs: Seq[Input]): List[JpResult] = (inputs map {
-    case (claas, Success(ba)) =>
-      if (task(options, Seq(claas), inputs).call()) new JpSuccess(showable())
-      else new JpError(reporter.messages mkString ",")
-    case (_, Failure(e))      => new JpError(e.toString)
+    case (claas, Success(_))  => apply1(options, claas, inputs).get
+    case (_, Failure(e))      => JpResult(e.toString)
   }).toList orFailed List(noToolError)
 }
 
@@ -301,23 +331,9 @@ object JavapTool {
   def apply(cl: ScalaClassLoader, pw: PrintWriter) =
     if (isTaskable(cl)) new JavapTool7(cl, pw) else new JavapTool6(cl, pw)
 
-  /** A richer [[javax.tools.DiagnosticCollector]]. */
-  implicit class JavaReporter(val c: DiagnosticCollector[JavaFileObject]) extends AnyVal {
-    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-    /** All diagnostics in the collector. */
-    def diagnostics: Iterable[Diagnostic[_ <: JavaFileObject]] = c.getDiagnostics.asScala
-    /** All diagnostic messages.
-     *  @param locale Locale for diagnostic messages, null by default.
-     */
-    def messages(implicit locale: Locale = null) = (diagnostics map (_ getMessage locale)).toList
-    /*
-    import Diagnostic.Kind.ERROR
-    private def isErr(d: Diagnostic[_]) = d.getKind == ERROR
-    /** Count the errors. */
-    def errorCount: Int = diagnostics count isErr
-    /** Error diagnostics in the collector. */
-    def errors = (diagnostics filter isErr).toList
-    */
+  implicit class Lastly[A](val t: Try[A]) extends AnyVal {
+    private def effect[X](last: =>Unit)(a: X): Try[A] = { last; t }
+    def lastly(last: =>Unit): Try[A] = t transform (effect(last) _, effect(last) _)
   }
 }
 
@@ -342,6 +358,10 @@ object Javap {
     // def fields(): List[String]
     // def methods(): List[String]
     // def signatures(): List[String]
+  }
+  object JpResult {
+    def apply(msg: String)    = new JpError(msg)
+    def apply(res: Showable)  = new JpSuccess(res)
   }
   class JpError(msg: String) extends JpResult {
     type ResultType = String
