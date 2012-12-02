@@ -42,7 +42,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     * of the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
-  @deprecated("Use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
+  // TODO undeprecated until Scala reflection becomes non-experimental
+  // @deprecated("Use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
   def <:<(that: ClassManifest[_]): Boolean = {
     // All types which could conform to these types will override <:<.
     def cannotMatch = {
@@ -76,7 +77,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     * of the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
-  @deprecated("Use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
+  // TODO undeprecated until Scala reflection becomes non-experimental
+  // @deprecated("Use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
   def >:>(that: ClassManifest[_]): Boolean =
     that <:< this
 
@@ -125,7 +127,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
     new ArrayBuilder.ofRef[T with AnyRef]()(this.asInstanceOf[ClassManifest[T with AnyRef]]).asInstanceOf[ArrayBuilder[T]]
 
-  @deprecated("Use scala.reflect.runtime.universe.TypeTag to capture type structure instead", "2.10.0")
+  // TODO undeprecated until Scala reflection becomes non-experimental
+  // @deprecated("Use scala.reflect.runtime.universe.TypeTag to capture type structure instead", "2.10.0")
   def typeArguments: List[OptManifest[_]] = List()
 
   protected def argString =
