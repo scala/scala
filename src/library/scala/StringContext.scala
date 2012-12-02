@@ -100,8 +100,8 @@ case class StringContext(parts: String*) {
    *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
    *  For example:
    *  {{{
-   *    scala> raw"\u0123"
-   *    res0: String = ģ
+   *    scala> raw"\u005cu0025"
+   *    res0: String = #
    *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
