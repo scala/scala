@@ -403,11 +403,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                    => false
   })
   def specializedTypeVars(tpes: List[Type]): immutable.Set[Symbol] = {
-    val buf = Set.newBuilder[Symbol]
-    tpes foreach (tp => buf ++= specializedTypeVars(tp))
-    buf.result
+    if (tpes.isEmpty) immutable.Set.empty else {
+      val buf = Set.newBuilder[Symbol]
+      tpes foreach (tp => buf ++= specializedTypeVars(tp))
+      buf.result
+    }
   }
-  def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = enteringTyper(specializedTypeVars(sym.info))
+  def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = (
+    if (definitions.neverHasTypeParameters(sym)) immutable.Set.empty
+    else enteringTyper(specializedTypeVars(sym.info))
+  )
 
   /** Return the set of @specialized type variables mentioned by the given type.
    *  It only counts type variables that appear:
@@ -436,7 +441,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case AnnotatedType(_, tp, _)     => specializedTypeVars(tp)
     case TypeBounds(lo, hi)          => specializedTypeVars(lo :: hi :: Nil)
     case RefinedType(parents, _)     => parents flatMap specializedTypeVars toSet
-    case _                           => Set()
+    case _                           => immutable.Set.empty
   }
 
   /** Returns the type parameter in the specialized class `sClass` that corresponds to type parameter
