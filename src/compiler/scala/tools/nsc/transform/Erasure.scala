@@ -402,7 +402,7 @@ abstract class Erasure extends AddInterfaces
       new overridingPairs.Cursor(root) {
         override def parents              = List(root.info.firstParent)
         override def exclude(sym: Symbol) = !sym.isMethod || sym.isPrivate || super.exclude(sym)
-        override def memberType(self: Type, sym: Symbol) = self memberType sym map {
+        override def memberTypeForOverriding(self: Type, sym: Symbol) = self memberType sym map {
           case MethodType(params, res) =>
             // SI-6135 / SI-6443
             // We're operating with signatures that have been uncurried and can have a dependently
