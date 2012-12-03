@@ -46,13 +46,16 @@ abstract class OverridingPairs {
      *  relative to <base>.this do
      */
     protected def matches(sym1: Symbol, sym2: Symbol): Boolean = {
-      def tp_s(s: Symbol) = self.memberType(s) + "/" + self.memberType(s).getClass
-      val result = sym1.isType || (self.memberType(sym1) matches self.memberType(sym2))
-      debuglog("overriding-pairs? %s matches %s (%s vs. %s) == %s".format(
-        sym1.fullLocationString, sym2.fullLocationString, tp_s(sym1), tp_s(sym2), result))
-
+      def tp_s(s: Symbol) = {
+        val memType = memberType(self, s)
+        s"${memType}/${memType.getClass}"
+      }
+      val result = sym1.isType || (memberType(self, sym1) matches memberType(self, sym2))
+      debuglog(s"overriding-pairs? ${sym1.fullLocationString} matches ${sym2.fullLocationString} (${tp_s(sym1)} vs. ${tp_s(sym2)}) == $result")
       result
     }
+
+    protected def memberType(self: Type, sym: Symbol) = self memberType sym
 
     /** An implementation of BitSets as arrays (maybe consider collection.BitSet
      *  for that?) The main purpose of this is to implement
