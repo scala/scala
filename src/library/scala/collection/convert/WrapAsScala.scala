@@ -10,11 +10,13 @@ package scala.collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
-import Wrappers._
 import scala.language.implicitConversions
 
 trait LowPriorityWrapAsScala {
   this: WrapAsScala =>
+
+  import Wrappers._
+
   /**
    * Implicitly converts a Java ConcurrentMap to a Scala mutable ConcurrentMap.
    * The returned Scala ConcurrentMap is backed by the provided Java
@@ -34,6 +36,7 @@ trait LowPriorityWrapAsScala {
 }
 
 trait WrapAsScala extends LowPriorityWrapAsScala {
+  import Wrappers._
   /**
    * Implicitly converts a Java `Iterator` to a Scala `Iterator`.
    *
