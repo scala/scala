@@ -1,0 +1,10 @@
+serialversionuid-not-const.scala:1: error: annotation argument needs to be a constant; found: 13L.toLong
+@SerialVersionUID(13l.toLong) class C1 extends Serializable
+                      ^
+serialversionuid-not-const.scala:3: error: annotation argument needs to be a constant; found: 13.asInstanceOf[Long]
+@SerialVersionUID(13.asInstanceOf[Long]) class C3 extends Serializable
+                                 ^
+serialversionuid-not-const.scala:4: error: annotation argument needs to be a constant; found: Test.bippy
+@SerialVersionUID(Test.bippy) class C4 extends Serializable
+                       ^
+three errors found
