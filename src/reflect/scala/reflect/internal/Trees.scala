@@ -36,7 +36,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def isDef = false
 
     def isEmpty = false
-    def isDummy = false
+    def canHaveAttrs = true
 
     /** The canonical way to test if a Tree represents a term.
      */
@@ -955,9 +955,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
 
-  trait DummyTree extends Tree {
-    override def isEmpty = true
-    override def isDummy = true
+  trait CannotHaveAttrs extends Tree {
+    override def canHaveAttrs = false
 
     private def unsupported(what: String, args: Any*) =
       throw new UnsupportedOperationException(s"$what($args) inapplicable for "+self.toString)
@@ -969,9 +968,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def tpe_=(t: Type) = if (t != NoType) unsupported("tpe_=", t)
   }
 
-  case object EmptyTree extends TermTree with DummyTree { val asList = List(this) }
-  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with DummyTree
-  object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with DummyTree
+  case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }
+  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
+  object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with CannotHaveAttrs
 
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     atPos(sym.pos) {
@@ -1123,7 +1122,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         traverse(annot); traverse(arg)
       case Template(parents, self, body) =>
         traverseTrees(parents)
-        if (!self.isEmpty) traverse(self)
+        if (self ne emptyValDef) traverse(self)
         traverseStats(body, tree.symbol)
       case Block(stats, expr) =>
         traverseTrees(stats); traverse(expr)

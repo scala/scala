@@ -2767,7 +2767,7 @@ self =>
       if (in.token == LBRACE) {
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
-        if (in.token == WITH && self.isEmpty) {
+        if (in.token == WITH && (self eq emptyValDef)) {
           val earlyDefs: List[Tree] = body flatMap {
             case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
               List(copyValDef(vdef)(mods = mods | Flags.PRESUPER))

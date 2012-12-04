@@ -52,7 +52,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
   object UnTyper extends Traverser {
     override def traverse(tree: Tree) = {
-      if (!tree.isDummy) {
+      if (tree.canHaveAttrs) {
         tree.tpe = null
         if (tree.hasSymbol) tree.symbol = NoSymbol
       }
