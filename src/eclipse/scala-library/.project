@@ -19,10 +19,10 @@
 		<link>
 			<name>build-quick-lib</name>
 			<type>2</type>
-			<locationURI>SCALA_BASEDIR/build/quick/classes/library</locationURI>
+			<locationURI>SCALA_BASEDIR/build/quick/classes/scala</locationURI>
 		</link>
 		<link>
-			<name>library</name>
+			<name>scala</name>
 			<type>2</type>
 			<locationURI>SCALA_BASEDIR/src/library</locationURI>
 		</link>
