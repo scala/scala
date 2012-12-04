@@ -1,0 +1,10 @@
+case-collision.scala:5: error: Class foo.BIPPY differs only in case from foo.Bippy. Such classes will overwrite one another on case-insensitive filesystems.
+class BIPPY
+      ^
+case-collision.scala:11: error: Class foo.HyRaX$ differs only in case from foo.Hyrax$. Such classes will overwrite one another on case-insensitive filesystems.
+object HyRaX
+       ^
+case-collision.scala:8: error: Class foo.DINGO$ differs only in case from foo.Dingo$. Such classes will overwrite one another on case-insensitive filesystems.
+object DINGO
+       ^
+three errors found
