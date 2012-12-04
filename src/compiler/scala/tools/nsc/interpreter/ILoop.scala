@@ -283,8 +283,16 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     val intp = ILoop.this.intp
     import intp._
 
-    new JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp)) {
-      override def tryClass(path: String) = super.tryClass(translatePath(path) getOrElse path)
+    new JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp), Some(isettings)) {
+      override def tryClass(path: String) = {
+        val claas = super.tryClass(translatePath(path) getOrElse path)
+        if (!claas.isEmpty) claas
+        // take path as a Name in scope and find its enclosing class
+        else translateEnclosingClass(path) match {
+          case Some(encl) => super.tryClass(encl)
+          case _          => claas
+        }
+      }
     }
   }
   private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())

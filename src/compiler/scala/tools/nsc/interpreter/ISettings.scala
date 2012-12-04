@@ -25,7 +25,7 @@ class ISettings(intp: IMain) {
   var maxAutoprintCompletion = 250
 
   /** String unwrapping can be disabled if it is causing issues.
-   *  Settings this to false means you will see Strings like "$iw.$iw.".
+   *  Setting this to false means you will see Strings like "$iw.$iw.".
    */
   var unwrapStrings = true
 
@@ -51,4 +51,13 @@ class ISettings(intp: IMain) {
     | ISettings {
     | %s
     | }""".stripMargin.format(allSettingsString)
+
+  /** Disable and finally restore String unwrapping for an operation.
+   */
+  def withoutUnwrapping[A](op: => A): A = {
+    val saved = this.unwrapStrings
+    this.unwrapStrings = false
+    try op
+    finally this.unwrapStrings = saved
+  }
 }

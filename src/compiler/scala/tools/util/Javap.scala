@@ -8,6 +8,7 @@ package util
 
 import java.lang.{ ClassLoader => JavaClassLoader, Iterable => JIterable }
 import scala.tools.nsc.util.ScalaClassLoader
+import scala.tools.nsc.interpreter.ISettings
 import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, InputStream,
                  PrintWriter, Writer }
 import java.util.{ Locale }
@@ -15,12 +16,15 @@ import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
                      ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
                      SimpleJavaFileObject, StandardLocation }
 import scala.tools.nsc.io.File
-import scala.util.{ Properties, Try, Success, Failure }
+import scala.io.Source
+import scala.util.{ Try, Success, Failure }
+import scala.util.Properties.lineSeparator
 import scala.collection.JavaConverters
 import scala.collection.generic.Clearable
 import scala.language.reflectiveCalls
 
 import Javap._
+import JavapTool.ToolArgs
 
 trait Javap {
   def loader: ScalaClassLoader
@@ -40,23 +44,27 @@ object NoJavap extends Javap {
 
 class JavapClass(
   val loader: ScalaClassLoader = ScalaClassLoader.appLoader,
-  val printWriter: PrintWriter = new PrintWriter(System.out, true)
+  val printWriter: PrintWriter = new PrintWriter(System.out, true),
+  isettings: Option[ISettings] = None
 ) extends Javap {
 
-  lazy val tool = JavapTool(loader, printWriter)
+  lazy val tool = JavapTool(loader, printWriter, isettings)
 
   /** Run the tool. Option args start with "-".
    *  The default options are "-protected -verbose".
    *  Byte data for filename args is retrieved with findBytes.
-   *  If the filename does not end with ".class", javap will
-   *  insert a banner of the form:
-   *  `Binary file dummy contains simple.Complex`.
    */
   def apply(args: Seq[String]): List[JpResult] = {
-    val (optional, claases) = args partition (_ startsWith "-")
-    val options = if (optional.nonEmpty) optional else JavapTool.DefaultOptions
-    if (claases.nonEmpty) tool(options)(claases map (claas => claas -> bytesFor(claas)))
-    else List(JpResult(":javap [-lcsvp] [path1 path2 ...]"))
+    val (options, claases) = args partition (_ startsWith "-")
+    val (flags, upgraded) = upgrade(options)
+    if (flags.help || claases.isEmpty) List(JpResult(JavapTool.helper(printWriter)))
+    else tool(flags.raw, upgraded)(claases map (claas => claas -> bytesFor(claas)))
+  }
+
+  /** Cull our tool options. */
+  private def upgrade(options: Seq[String]): (ToolArgs, Seq[String]) = ToolArgs fromArgs options match {
+    case (t,s) if s.nonEmpty  => (t,s)
+    case (t,s)                => (t, JavapTool.DefaultOptions)
   }
 
   private def bytesFor(path: String) = Try {
@@ -88,7 +96,7 @@ class JavapClass(
 abstract class JavapTool {
   type ByteAry = Array[Byte]
   type Input = Pair[String, Try[ByteAry]]
-  def apply(options: Seq[String])(inputs: Seq[Input]): List[JpResult]
+  def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult]
   // Since the tool is loaded by reflection, check for catastrophic failure.
   protected def failed: Boolean
   implicit protected class Failer[A](a: =>A) {
@@ -124,14 +132,14 @@ class JavapTool6(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
     result orFailed null
   }
 
-  override def apply(options: Seq[String])(inputs: Seq[Input]): List[JpResult] =
+  override def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult] =
     (inputs map {
       case (_, Success(ba)) => JpResult(showable(newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
       case (_, Failure(e))  => JpResult(e.toString)
     }).toList orFailed List(noToolError)
 }
 
-class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends JavapTool {
+class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter, isettings: Option[ISettings]) extends JavapTool {
 
   import JavapTool._
   type Task = {
@@ -167,11 +175,11 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
      */
     def messages(implicit locale: Locale = null) = (diagnostics map (_ getMessage locale)).toList
 
-    def reportable: String = {
-      import Properties.lineSeparator
-      //val container = "Binary file .* contains .*".r
-      //val m = messages filter (_ match { case container() => false case _ => true })
-      val m = messages
+    def reportable(raw: Boolean): String = {
+      // don't filter this message if raw, since the names are likely to differ
+      val container = "Binary file .* contains .*".r
+      val m = if (raw) messages
+              else messages filter (_ match { case container() => false case _ => true })
       clear()
       if (m.nonEmpty) m mkString ("", lineSeparator, lineSeparator)
       else ""
@@ -225,18 +233,23 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
   }
   val writer = new CharArrayWriter
   def fileManager(inputs: Seq[Input]) = new JavapFileManager(inputs)()
-  def showable(): Showable = {
+  def showable(raw: Boolean): Showable = {
     val written = {
       writer.flush()
       val w = writer.toString
       writer.reset()
       w
     }
-    val msgs = reporter.reportable
+    val msgs = reporter.reportable(raw)
     new Showable {
-      def show() = {
-        val mw = msgs + written
-        printWriter.write(mw, 0, mw.length) // ReplStrippingWriter clips on write(String) if truncating
+      val mw = msgs + written
+      // ReplStrippingWriter clips and scrubs on write(String)
+      // circumvent it by write(mw, 0, mw.length) or wrap it in withoutUnwrapping
+      def show() =
+        if (raw && isettings.isDefined) isettings.get withoutUnwrapping { writeLines() }
+        else writeLines()
+      private def writeLines() {
+        for (line <- Source.fromString(mw).getLines) printWriter write line+lineSeparator
         printWriter.flush()
       }
     }
@@ -250,12 +263,12 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
       .orFailed (throw new IllegalStateException)
   }
   // a result per input
-  private def apply1(options: Seq[String], claas: String, inputs: Seq[Input]): Try[JpResult] =
+  private def applyOne(raw: Boolean, options: Seq[String], claas: String, inputs: Seq[Input]): Try[JpResult] =
     Try {
       task(options, Seq(claas), inputs).call()
     } map {
-      case true => JpResult(showable())
-      case _    => JpResult(reporter.reportable)
+      case true => JpResult(showable(raw))
+      case _    => JpResult(reporter.reportable(raw))
     } recoverWith {
       case e: java.lang.reflect.InvocationTargetException => e.getCause match {
         case t: IllegalArgumentException => Success(JpResult(t.getMessage)) // bad option
@@ -264,8 +277,8 @@ class JavapTool7(loader: ScalaClassLoader, printWriter: PrintWriter) extends Jav
     } lastly {
       reporter.clear
     }
-  override def apply(options: Seq[String])(inputs: Seq[Input]): List[JpResult] = (inputs map {
-    case (claas, Success(_))  => apply1(options, claas, inputs).get
+  override def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult] = (inputs map {
+    case (claas, Success(_))  => applyOne(raw, options, claas, inputs).get
     case (_, Failure(e))      => JpResult(e.toString)
   }).toList orFailed List(noToolError)
 }
@@ -320,6 +333,73 @@ object JavapTool {
     }
   }
 
+  case class ToolArgs(raw: Boolean = false, help: Boolean = false)
+
+  object ToolArgs {
+    def fromArgs(args: Seq[String]): (ToolArgs, Seq[String]) = ((ToolArgs(), Seq[String]()) /: (args flatMap massage)) {
+      case ((t,others), s) => s match {
+        case "-help"  => (t copy (help=true), others)
+        case "-raw"   => (t copy (raw=true), others)
+        case _        => (t, others :+ s)
+      }
+    }
+  }
+
+  val helps = List(
+    "usage"       -> ":javap [opts] [path or class or -]...",
+    "-help"       -> "Prints this help message",
+    "-raw"        -> "Don't unmangle REPL names",
+    "-verbose/-v" -> "Stack size, number of locals, method args",
+    "-private/-p" -> "Private classes and members",
+    "-package"    -> "Package-private classes and members",
+    "-protected"  -> "Protected classes and members",
+    "-public"     -> "Public classes and members",
+    "-l"          -> "Line and local variable tables",
+    "-c"          -> "Disassembled code",
+    "-s"          -> "Internal type signatures",
+    "-sysinfo"    -> "System info of class",
+    "-constants"  -> "Static final constants"
+  )
+
+  // match prefixes and unpack opts, or -help on failure
+  def massage(arg: String): Seq[String] = {
+    require(arg startsWith "-")
+    // arg matches opt "-foo/-f" if prefix of -foo or exactly -f
+    val r = """(-[^/]*)(/(-.))?""".r
+    def maybe(opt: String, s: String): Option[String] = opt match {
+      //case r(lf,_,sf) if (lf startsWith s) || (s == sf) => Some(lf)
+      // disambiguate by preferring short form
+      case r(lf,_,sf) if s == sf          => Some(sf)
+      case r(lf,_,sf) if lf startsWith s  => Some(lf)
+      case _ => None
+    }
+    def candidates(s: String) = (helps map (h => maybe(h._1, s))).flatten
+    // one candidate or one single-char candidate
+    def uniqueOf(maybes: Seq[String]) = {
+      def single(s: String) = s.length == 2
+      if (maybes.length == 1) maybes
+      else if ((maybes count single) == 1) maybes filter single
+      else Nil
+    }
+    // each optchar must decode to exactly one option
+    def unpacked(s: String): Try[Seq[String]] = {
+      val ones = (s drop 1) map { c =>
+        val maybes = uniqueOf(candidates(s"-$c"))
+        if (maybes.length == 1) Some(maybes.head) else None
+      }
+      Try(ones) filter (_ forall (_.isDefined)) map (_.flatten)
+      //if (ones exists (_.isEmpty)) Nil else ones.flatten
+    }
+    val res = uniqueOf(candidates(arg))
+    if (res.nonEmpty) res
+    else (unpacked(arg)
+      getOrElse (Seq("-help"))) // or else someone needs help
+  }
+
+  def helper(pw: PrintWriter) = new Showable {
+    def show() = helps foreach (p => pw write "%-12.12s%s%n".format(p._1,p._2))
+  }
+
   val DefaultOptions = List("-protected", "-verbose")
 
   def isAvailable(cl: ScalaClassLoader = ScalaClassLoader.appLoader) = Seq(Env, Tool) exists (cn => hasClass(cl, cn))
@@ -328,8 +408,8 @@ object JavapTool {
 
   private def isTaskable(cl: ScalaClassLoader) = hasClass(cl, Tool)
 
-  def apply(cl: ScalaClassLoader, pw: PrintWriter) =
-    if (isTaskable(cl)) new JavapTool7(cl, pw) else new JavapTool6(cl, pw)
+  def apply(cl: ScalaClassLoader, pw: PrintWriter, is: Option[ISettings]) =
+    if (isTaskable(cl)) new JavapTool7(cl, pw, is) else new JavapTool6(cl, pw)
 
   implicit class Lastly[A](val t: Try[A]) extends AnyVal {
     private def effect[X](last: =>Unit)(a: X): Try[A] = { last; t }
