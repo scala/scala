@@ -1401,7 +1401,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (!sym.isClass) {
       // SI-6640 allow StubSymbols to reveal what's missing from the classpath before we trip the assertion.
       sym.failIfStub()
-      assert(false, sym)
+      abort(s"ThisType($sym) for sym which is not a class")
     }
 
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
@@ -7067,7 +7067,7 @@ trait Types extends api.Types { self: SymbolTable =>
     case ExistentialType(tparams, quantified) :: rest =>
       mergePrefixAndArgs(quantified :: rest, variance, depth) map (existentialAbstraction(tparams, _))
     case _ =>
-      assert(false, tps); None
+      abort(s"mergePrefixAndArgs($tps, $variance, $depth): unsupported tps")
   }
 
   def addMember(thistp: Type, tp: Type, sym: Symbol): Unit = addMember(thistp, tp, sym, AnyDepth)

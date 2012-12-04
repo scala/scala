@@ -510,8 +510,8 @@ trait Contexts { self: Analyzer =>
 /*
         var c = this
         while (c != NoContext && c.owner != owner) {
-          if (c.outer eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
-          if (c.outer.enclClass eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
+          if (c.outer eq null) abort("accessWithin(" + owner + ") " + c);//debug
+          if (c.outer.enclClass eq null) abort("accessWithin(" + owner + ") " + c);//debug
           c = c.outer.enclClass
         }
         c != NoContext

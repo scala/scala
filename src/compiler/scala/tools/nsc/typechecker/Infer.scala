@@ -221,7 +221,7 @@ trait Infer extends Checkable {
         // such as T <: T gets completed. See #360
         tvar.constr.inst = ErrorType
       else
-        assert(false, tvar.origin+" at "+tvar.origin.typeSymbol.owner)
+        abort(tvar.origin+" at "+tvar.origin.typeSymbol.owner)
     }
     tvars map instantiate
   }

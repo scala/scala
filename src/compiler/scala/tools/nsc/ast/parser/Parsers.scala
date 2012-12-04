@@ -2854,7 +2854,7 @@ self =>
       } else {
         if (in.token == LPAREN) {
           if (parenMeansSyntaxError) syntaxError(s"traits or objects may not have parameters", true)
-          else assert(false, "unexpected opening parenthesis")
+          else abort("unexpected opening parenthesis")
         }
         (emptyValDef, List())
       }

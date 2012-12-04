@@ -416,7 +416,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           case sym if sym.owner.isPrimitiveValueClass => invokePrimitiveMethod
           case sym if sym == Predef_classOf           => fail("Predef.classOf is a compile-time function")
           case sym if sym.isTermMacro                 => fail(s"${symbol.fullName} is a macro, i.e. a compile-time function")
-          case _                                      => assert(false, this)
+          case _                                      => abort(s"unsupported symbol $symbol when invoking $this")
         }
       }
     }

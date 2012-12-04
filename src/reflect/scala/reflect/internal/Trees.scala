@@ -958,11 +958,15 @@ trait Trees extends api.Trees { self: SymbolTable =>
   trait DummyTree extends Tree {
     override def isEmpty = true
     override def isDummy = true
+
+    private def unsupported(what: String, args: Any*) =
+      throw new UnsupportedOperationException(s"$what($args) inapplicable for "+self.toString)
+
     super.setPos(NoPosition)
-    override def setPos(pos: Position) = { assert(false); this }
+    override def setPos(pos: Position) = unsupported("setPos", pos)
+
     super.setType(NoType)
-    override def tpe_=(t: Type) =
-      if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for "+self.toString)
+    override def tpe_=(t: Type) = if (t != NoType) unsupported("tpe_=", t)
   }
 
   case object EmptyTree extends TermTree with DummyTree { val asList = List(this) }

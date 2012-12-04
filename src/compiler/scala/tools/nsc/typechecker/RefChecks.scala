@@ -1671,7 +1671,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             checkAnyValSubclass(currentOwner)
             if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
-          case dc@TypeTreeWithDeferredRefCheck() => assert(false, "adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc"); dc
+          case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
           case tpt@TypeTree() =>
             if(tpt.original != null) {
               tpt.original foreach {
