@@ -2828,7 +2828,10 @@ trait Typers extends Modes with Adaptations with Tags {
         var moreToAdd = true
         while (moreToAdd) {
           val initElems = scope.elems
-          for (sym <- scope)
+          // SI-5877 The decls of a package include decls of the package object. But we don't want to add
+          //         the corresponding synthetics to the package itself.
+          def isPackageObjectSym(sym: Symbol) = sym.owner.isPackageObjectClass && context.owner.isPackage
+          for (sym <- scope if !isPackageObjectSym(sym))
             for (tree <- context.unit.synthetics get sym) {
               newStats += typedStat(tree) // might add even more synthetics to the scope
               context.unit.synthetics -= sym
