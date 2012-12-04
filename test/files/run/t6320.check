@@ -1,0 +1,17 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.language.dynamics
+import scala.language.dynamics
+
+scala> class Dyn(m: Map[String, Any]) extends Dynamic { def selectDynamic[T](s: String): T = m(s).asInstanceOf[T] }
+defined class Dyn
+
+scala> new Dyn(Map("foo" -> 10)).foo[Int]
+res0: Int = 10
+
+scala> 
+
+scala> 
