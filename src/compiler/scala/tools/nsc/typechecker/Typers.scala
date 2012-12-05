@@ -2711,11 +2711,6 @@ trait Typers extends Modes with Adaptations with Tags {
       val stats = templ.body
       namer.enterSyms(stats)
 
-      // This is also checked later in typedStats, but that is too late for SI-5361, so
-      // we eagerly check this here.
-      for (stat <- stats if !treeInfo.isDeclarationOrTypeDef(stat))
-        OnlyDeclarationsError(stat)
-
       // need to delay rest of typedRefinement to avoid cyclic reference errors
       unit.toCheck += { () =>
         val stats1 = typedStats(stats, NoSymbol)
@@ -5067,7 +5062,13 @@ trait Typers extends Modes with Adaptations with Tags {
       def typedCompoundTypeTree(tree: CompoundTypeTree) = {
         val templ = tree.templ
         val parents1 = templ.parents mapConserve (typedType(_, mode))
-        if (parents1 exists (_.isErrorTyped)) tree setType ErrorType
+
+        // This is also checked later in typedStats, but that is too late for SI-5361, so
+        // we eagerly check this here.
+        for (stat <- templ.body if !treeInfo.isDeclarationOrTypeDef(stat))
+          OnlyDeclarationsError(stat)
+
+        if ((parents1 ++ templ.body) exists (_.isErrorTyped)) tree setType ErrorType
         else {
           val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
