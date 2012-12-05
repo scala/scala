@@ -1525,9 +1525,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
         case Select(module, apply) =>
-          // Fixes SI-5626. Classes in refinement types cannot be constructed with `new`. In this case,
-          // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
-          module.symbol.companionClass.isClass
+          ( // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`
+            treeInfo.isExprSafeToInline(module) &&
+            // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
+            // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
+            module.symbol.companionClass.isClass
+          )
       }
 
       val doTransform =
