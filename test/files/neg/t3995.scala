@@ -13,6 +13,13 @@ object Test {
 
   "": l.F0 // okay
 
+  l.apply("") // okay
+
+  {
+    val l = new Lift
+    l.apply("") // okay
+  }
+
   // fails trying to mkAttributedQualifier for pre = Skolem(_1 <: Lift with Singletom).F0
   // should this even have shown up in `companionImplicitMap`? It says that:
   //
