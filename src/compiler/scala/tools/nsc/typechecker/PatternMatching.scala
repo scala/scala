@@ -1151,7 +1151,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
           // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
           // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
-          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer) setInfo expectedTp.prefix setFlag SYNTHETIC | ARTIFACT
+          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedTp.prefix
 
           (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
         }
@@ -1413,7 +1413,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
     // assert(owner ne null); assert(owner ne NoSymbol)
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") =
-      NoSymbol.newTermSymbol(freshName(prefix), pos) setInfo tp
+      NoSymbol.newTermSymbol(freshName(prefix), pos, newFlags = SYNTHETIC) setInfo tp
 
     def newSynthCaseLabel(name: String) =
       NoSymbol.newLabel(freshName(name), NoPosition) setFlag treeInfo.SYNTH_CASE_FLAGS
@@ -3600,7 +3600,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
         val matchEnd = newSynthCaseLabel("matchEnd")
-        val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, SYNTHETIC) setInfo restpe.withoutAnnotations
+        val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, newFlags = SYNTHETIC) setInfo restpe.withoutAnnotations
         matchEnd setInfo MethodType(List(matchRes), restpe)
 
         def newCaseSym = newSynthCaseLabel("case") setInfo MethodType(Nil, restpe)

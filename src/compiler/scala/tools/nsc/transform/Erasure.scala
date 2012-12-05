@@ -437,19 +437,19 @@ abstract class Erasure extends AddInterfaces
         noclash = false
         unit.error(
           if (member.owner == root) member.pos else root.pos,
-          s"""bridge generated for member ${fulldef(member)}
-             |which overrides ${fulldef(other)}
-             |clashes with definition of $what;
-             |both have erased type ${exitingPostErasure(bridge.tpe)}""".stripMargin)
+          sm"""bridge generated for member ${fulldef(member)}
+              |which overrides ${fulldef(other)}
+              |clashes with definition of $what;
+              |both have erased type ${exitingPostErasure(bridge.tpe)}""")
       }
       for (bc <- root.baseClasses) {
         if (settings.debug.value)
           exitingPostErasure(println(
-            s"""check bridge overrides in $bc
-            ${bc.info.nonPrivateDecl(bridge.name)}
-            ${site.memberType(bridge)}
-            ${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
-            ${(bridge.matchingSymbol(bc, site))}""".stripMargin))
+            sm"""check bridge overrides in $bc
+                |${bc.info.nonPrivateDecl(bridge.name)}
+                |${site.memberType(bridge)}
+                |${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
+                |${(bridge.matchingSymbol(bc, site))}"""))
 
         def overriddenBy(sym: Symbol) =
           sym.matchingSymbol(bc, site).alternatives filter (sym => !sym.isBridge)
@@ -693,7 +693,7 @@ abstract class Erasure extends AddInterfaces
         adaptToType(unbox(tree, pt), pt)
       else if (isPrimitiveValueType(tree.tpe) && !isPrimitiveValueType(pt)) {
         adaptToType(box(tree, pt.toString), pt)
-      } else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.params.isEmpty) {
+      } else if (isMethodTypeWithEmptyParams(tree.tpe)) {
         // [H] this assert fails when trying to typecheck tree !(SomeClass.this.bitmap) for single lazy val
         //assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
@@ -774,16 +774,21 @@ abstract class Erasure extends AddInterfaces
             else if (!isPrimitiveValueType(qual1.tpe) && isPrimitiveValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
 
-            if (isPrimitiveValueMember(tree.symbol) && !isPrimitiveValueType(qual1.tpe))
+            def selectFrom(qual: Tree) = treeCopy.Select(tree, qual, name)
+
+            if (isPrimitiveValueMember(tree.symbol) && !isPrimitiveValueType(qual1.tpe)) {
               tree.symbol = NoSymbol
-            else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.params.isEmpty) {
+              selectFrom(qual1)
+            } else if (isMethodTypeWithEmptyParams(qual1.tpe)) {
               assert(qual1.symbol.isStable, qual1.symbol);
-              qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
+              val applied = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
+              adaptMember(selectFrom(applied))
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
               assert(tree.symbol.owner != ArrayClass)
-              qual1 = cast(qual1, tree.symbol.owner.tpe)
+              selectFrom(cast(qual1, tree.symbol.owner.tpe))
+            } else {
+              selectFrom(qual1)
             }
-            treeCopy.Select(tree, qual1, name)
           }
         case SelectFromArray(qual, name, erasure) =>
           var qual1 = typedQualifier(qual)
@@ -860,6 +865,11 @@ abstract class Erasure extends AddInterfaces
         case _ =>
           tree1
       }
+    }
+
+    private def isMethodTypeWithEmptyParams(tpe: Type) = tpe match {
+      case MethodType(Nil, _) => true
+      case _                  => false
     }
   }
 
