@@ -190,7 +190,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
       /* don't javaNameCache.clear() because that causes the following tests to fail:
        *   test/files/run/macro-repl-dontexpand.scala
        *   test/files/jvm/interpreter.scala
-       * TODO but why? what use could javaNameCache possibly see once GenJVM is over?
+       * TODO but why? what use could javaNameCache possibly see once GenASM is over?
        */
 
       /* TODO After emitting all class files (e.g., in a separate compiler phase) ASM can perform bytecode verification:

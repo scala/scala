@@ -24,7 +24,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   ) 
 
   // Collections of projects to run 'compile' on.
-  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, forkjoin, fjbg)
+  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, forkjoin)
   // Collection of projects to 'package' and 'publish' together.
   lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, actors, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
@@ -82,7 +82,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     makeExplodedDist <<= (makeExplodedDist in scaladist).identity,
     // Note: We override unmanagedSources so that ~ compile will look at all these sources, then run our aggregated compile...
     unmanagedSourceDirectories in Compile <<= baseDirectory apply (_ / "src") apply { dir =>
-      Seq("library/scala","actors","compiler","fjbg","swing","continuations/library","forkjoin") map (dir / _)
+      Seq("library/scala","actors","compiler","swing","continuations/library","forkjoin") map (dir / _)
     },
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
     commands += Release.pushStarr
@@ -132,8 +132,6 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
 
   // Jline nested project.   Compile this sucker once and be done.
   lazy val jline = Project("jline", file("src/jline"))
-  // Fast Java Bytecode Generator (nested in every scala-compiler.jar)
-  lazy val fjbg = Project("fjbg", file(".")) settings(settingOverrides : _*)
   // Our wrapped version of msil.
   lazy val asm = Project("asm", file(".")) settings(settingOverrides : _*)
   // Forkjoin backport
@@ -283,7 +281,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   // --------------------------------------------------------------
   //  Real Compiler Artifact
   // --------------------------------------------------------------
-  lazy val packageScalaBinTask = Seq(quickComp, fjbg, asm).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
+  lazy val packageScalaBinTask = Seq(quickComp, asm).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
@@ -331,6 +329,6 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val documentation = (
     Project("documentation", file("."))
     settings (documentationSettings: _*)
-    dependsOn(quickLib, quickComp, actors, fjbg, forkjoin, swing, continuationsLibrary)
+    dependsOn(quickLib, quickComp, actors, forkjoin, swing, continuationsLibrary)
   )
 }

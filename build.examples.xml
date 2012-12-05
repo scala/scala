@@ -28,8 +28,6 @@ PROPERTIES
   <!-- Location of pre-compiled libraries properties -->
   <property name="scala.lib.jar"      value="${lib.dir}/scala-library.jar"/>
   <property name="scala.comp.jar"     value="${lib.dir}/scala-compiler.jar"/>
-  <property name="fjbg.name"          value="fjbg.jar"/>
-  <property name="fjbg.jar"           value="${lib.dir}/${fjbg.name}"/>
   <property name="msil.name"          value="msil.jar"/>
   <property name="msil.jar"           value="${lib.dir}/${msil.name}"/>
   <property name="ant.jar"            value="${ant.home}/lib/ant.jar"/>
@@ -81,15 +79,6 @@ INITIALISATION
         />
       </not></condition>
     </fail>
-    <echo level="verbose" message="fjbg.jar=${fjbg.jar}"/>
-    <fail message="FJBG library in '${lib.dir}/' is not available">
-      <condition><not>
-        <available
-          classname="ch.epfl.lamp.fjbg.JCode"
-          classpath="${fjbg.jar}"
-        />
-      </not></condition>
-    </fail>
     <echo level="verbose" message="msil.jar=${msil.jar}"/>
     <fail message="MSIL library in '${lib.dir}/' is not available">
       <condition><not>
@@ -111,7 +100,6 @@ INITIALISATION
     </fail>
     <!-- Creating class-pathes -->
     <path id="common.classpath">
-      <pathelement location="${fjbg.jar}"/>
       <pathelement location="${msil.jar}"/>
     </path>
     <path id="scala.classpath">

@@ -19,7 +19,7 @@ trait Packaging { self: ScalaBuild.type =>
     genBin <<= genBinTask(genBinRunner, binDir, fullClasspath in Runtime, false),
     binDir in genBinQuick <<= baseDirectory apply (_ / "target" / "bin"),
     // Configure the classpath this way to avoid having .jar files and previous layers on the classpath.
-    fullClasspath in Runtime in genBinQuick <<= Seq(quickComp,quickLib,scalap,actors,swing,fjbg,jline,forkjoin).map(classDirectory in Compile in _).join.map(Attributed.blankSeq),
+    fullClasspath in Runtime in genBinQuick <<= Seq(quickComp,quickLib,scalap,actors,swing,jline,forkjoin).map(classDirectory in Compile in _).join.map(Attributed.blankSeq),
     fullClasspath in Runtime in genBinQuick <++= (fullClasspath in Compile in jline),
     genBinQuick <<= genBinTask(genBinRunner, binDir in genBinQuick, fullClasspath in Runtime in genBinQuick, true),
     runManmakerMan <<= runManmakerTask(fullClasspath in Runtime in manmaker, runner in manmaker, "scala.tools.docutil.EmitManPage", "man1", ".1"),
