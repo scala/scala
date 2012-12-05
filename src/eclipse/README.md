@@ -20,7 +20,9 @@ JDK. The Scala library uses such APIs, so you'd see this error:
 You can *fix* it by allowing calls to restricted APIs in `Java=>Compiler=>Errors/Warnings=>Deprecated and Restricted API` 
 settings.
 
-3. The IDE guesses the Scala library version by looking for `library.properties` inside 
+3. We need to build the continuations library for some dependencies and that library requires the continuations plugin to be enabled. In preferences go to Scala=>Compiler and add "continuations:enable" to the P parameter. 
+
+4. The IDE guesses the Scala library version by looking for `library.properties` inside 
 the library jar. The `scala-library` project does not have such a file, so you will see
 an error about incompatible libraries. You can work around it by adding a `library.properties`
 inside `src/library` with the following contents:
@@ -31,7 +33,7 @@ inside `src/library` with the following contents:
         osgi.version.number=2.10.0.v20120603-141530-b34313db72
         copyright.string=Copyright 2002-2012 LAMP/EPFL
 
-4. Project files are tracked by Git, so adding them to `.gitignore` won't prevent them
+5. Project files are tracked by Git, so adding them to `.gitignore` won't prevent them
 from being shown as dirty in `git status`. You can still ignore them by telling Git to
 consider them unchanged:
 
