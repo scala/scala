@@ -26,7 +26,7 @@ import scala.language.postfixOps
  *  @version 1.0
  *
  */
-abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with BytecodeWriters {
+abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with BytecodeWriters with GenJVMASM {
   import global._
   import icodes._
   import icodes.opcodes._
@@ -37,83 +37,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
   /** Create a new phase */
   override def newPhase(p: Phase): Phase = new JvmPhase(p)
 
-  private def outputDirectory(sym: Symbol): AbstractFile =
-    settings.outputDirs outputDirFor beforeFlatten(sym.sourceFile)
-
-  private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    var dir = base
-    val pathParts = clsName.split("[./]").toList
-    for (part <- pathParts.init) {
-      dir = dir.subdirectoryNamed(part)
-    }
-    dir.fileNamed(pathParts.last + suffix)
-  }
-  private def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
-    getFile(outputDirectory(sym), clsName, suffix)
-
   /** JVM code generation phase
    */
   class JvmPhase(prev: Phase) extends ICodePhase(prev) {
     def name = phaseName
     override def erasedTypes = true
     def apply(cls: IClass) = sys.error("no implementation")
-
-    def isJavaEntryPoint(clasz: IClass) = {
-      val sym = clasz.symbol
-      def fail(msg: String, pos: Position = sym.pos) = {
-        clasz.cunit.warning(sym.pos,
-          sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
-          "  Reason: " + msg
-          // TODO: make this next claim true, if possible
-          //   by generating valid main methods as static in module classes
-          //   not sure what the jvm allows here
-          // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
-        )
-        false
-      }
-      def failNoForwarder(msg: String) = {
-        fail(msg + ", which means no static forwarder can be generated.\n")
-      }
-      val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
-      val hasApproximate = possibles exists { m =>
-        m.info match {
-          case MethodType(p :: Nil, _) => p.tpe.typeSymbol == ArrayClass
-          case _                       => false
-        }
-      }
-      // At this point it's a module with a main-looking method, so either
-      // succeed or warn that it isn't.
-      hasApproximate && {
-        // Before erasure so we can identify generic mains.
-        beforeErasure {
-          val companion     = sym.linkedClassOfClass
-          val companionMain = companion.tpe.member(nme.main)
-
-          if (hasJavaMainMethod(companion))
-            failNoForwarder("companion contains its own main method")
-          else if (companion.tpe.member(nme.main) != NoSymbol)
-            // this is only because forwarders aren't smart enough yet
-            failNoForwarder("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
-          else if (companion.isTrait)
-            failNoForwarder("companion is a trait")
-          // Now either succeeed, or issue some additional warnings for things which look like
-          // attempts to be java main methods.
-          else possibles exists { m =>
-            m.info match {
-              case PolyType(_, _) =>
-                fail("main methods cannot be generic.")
-              case MethodType(params, res) =>
-                if (res.typeSymbol :: params exists (_.isAbstractType))
-                  fail("main methods cannot refer to type parameters or abstract types.", m.pos)
-                else
-                  isJavaMainMethod(m) || fail("main method must have exact signature (Array[String])Unit", m.pos)
-              case tp =>
-                fail("don't know what this is: " + tp, m.pos)
-            }
-          }
-        }
-      }
-    }
 
     override def run() {
       // we reinstantiate the bytecode generator at each run, to allow the GC
@@ -209,12 +138,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val BeanInfoSkipAttr    = rootMirror.getRequiredClass("scala.beans.BeanInfoSkip")
     val BeanDisplayNameAttr = rootMirror.getRequiredClass("scala.beans.BeanDisplayName")
     val BeanDescriptionAttr = rootMirror.getRequiredClass("scala.beans.BeanDescription")
-
-    final val ExcludedForwarderFlags = {
-      import Flags._
-      // Should include DEFERRED but this breaks findMember.
-      ( CASE | SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags )
-    }
 
     // Additional interface parents based on annotations and other cues
     def newParentForAttr(attr: Symbol): Option[Symbol] = attr match {
