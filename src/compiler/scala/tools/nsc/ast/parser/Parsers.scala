@@ -1898,7 +1898,7 @@ self =>
               case _ =>
             }
             val typeAppliedTree = in.token match {
-              case LBRACKET   => atPos(start, in.offset)(TypeApply(convertToTypeId(t), typeArgs()))
+              case LBRACKET   => atPos(start, in.offset)(AppliedTypeTree(convertToTypeId(t), typeArgs()))
               case _          => t
             }
             in.token match {

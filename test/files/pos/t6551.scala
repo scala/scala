@@ -1,4 +1,4 @@
-import language.dynamics
+import scala.language.dynamics
 
 object Test {
   def main(args: Array[String]) {

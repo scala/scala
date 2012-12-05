@@ -77,7 +77,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
     def isJava: Boolean = isJavaDefined
     def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
-    def isVar: Boolean = isTerm && !isModule && !isMethod && isMutable
+    def isVar: Boolean = isTerm && !isModule && !isMethod && !isLazy && isMutable
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)
