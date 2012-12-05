@@ -1130,13 +1130,6 @@ trait Typers extends Modes with Adaptations with Tags {
                     // (14); the condition prevents chains of views
                     debuglog("inferring view from " + tree.tpe + " to " + pt)
                     val coercion = inferView(tree, tree.tpe, pt, true)
-                    // convert forward views of delegate types into closures wrapped around
-                    // the delegate's apply method (the "Invoke" method, which was translated into apply)
-                    if (forMSIL && coercion != null && isCorrespondingDelegate(tree.tpe, pt)) {
-                      val meth: Symbol = tree.tpe.member(nme.apply)
-                      debuglog("replacing forward delegate view with: " + meth + ":" + meth.tpe)
-                      return typed(Select(tree, meth), mode, pt)
-                    }
                     if (coercion != EmptyTree) {
                       def msg = "inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe
                       if (settings.logImplicitConv.value)
@@ -3037,26 +3030,6 @@ trait Typers extends Modes with Adaptations with Tags {
                   case _ => tp
                 }
 
-                // Replace the Delegate-Chainer methods += and -= with corresponding
-                // + and - calls, which are translated in the code generator into
-                // Combine and Remove
-                if (forMSIL) {
-                  fun match {
-                    case Select(qual, name) =>
-                      if (isSubType(qual.tpe, DelegateClass.tpe)
-                        && (name == encode("+=") || name == encode("-="))) {
-                        val n = if (name == encode("+=")) nme.PLUS else nme.MINUS
-                        val f = Select(qual, n)
-                        // the compiler thinks, the PLUS method takes only one argument,
-                        // but he thinks it's an instance method -> still two ref's on the stack
-                        //  -> translated by backend
-                        val rhs = treeCopy.Apply(tree, f, args)
-                        return typed(Assign(qual, rhs))
-                      }
-                    case _ => ()
-                  }
-                }
-
                 /**
                  * This is translating uses of List() into Nil.  This is less
                  *  than ideal from a consistency standpoint, but it shouldn't be
@@ -4162,24 +4135,7 @@ trait Typers extends Modes with Adaptations with Tags {
           else adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
         case MethodType(formals, _) =>
           if (isFunctionType(pt)) expr1
-          else expr1 match {
-            case Select(qual, name) if (forMSIL &&
-                                        pt != WildcardType &&
-                                        pt != ErrorType &&
-                                        isSubType(pt, DelegateClass.tpe)) =>
-              val scalaCaller = newScalaCaller(pt)
-              addScalaCallerInfo(scalaCaller, expr1.symbol)
-              val n: Name = scalaCaller.name
-              val del = Ident(DelegateClass) setType DelegateClass.tpe
-              val f = Select(del, n)
-              //val f1 = TypeApply(f, List(Ident(pt.symbol) setType pt))
-              val args: List[Tree] = if(expr1.symbol.isStatic) List(Literal(Constant(null)))
-                                     else List(qual) // where the scala-method is located
-              val rhs = Apply(f, args)
-              typed(rhs)
-            case _ =>
-              adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
-          }
+          else adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
         case ErrorType =>
           expr1
         case _ =>

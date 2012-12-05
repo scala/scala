@@ -1116,8 +1116,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
         def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
-        // test is behind a platform guard
-        def isJavaNumber(s: Symbol) = !forMSIL && (s isSubClass JavaNumberClass)
+        def isJavaNumber(s: Symbol) = s isSubClass JavaNumberClass
         // includes java.lang.Number if appropriate [SI-5779]
         def isAnyNumber(s: Symbol) = isScalaNumber(s) || isJavaNumber(s)
         def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
@@ -1160,7 +1159,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             nonSensiblyNeq()
         }
         else if (isNumeric(receiver)) {
-          if (!isNumeric(actual) && !forMSIL)
+          if (!isNumeric(actual))
             if (isUnit(actual) || isBoolean(actual) || !isMaybeValue(actual))   // 5 == "abc"
               nonSensiblyNeq()
         }

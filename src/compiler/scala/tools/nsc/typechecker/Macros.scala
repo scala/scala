@@ -470,9 +470,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  Is also capable of detecting REPL and reusing its classloader.
    */
   lazy val macroClassloader: ClassLoader = {
-    if (global.forMSIL)
-      throw new UnsupportedOperationException("Scala reflection not available on this platform")
-
     val classpath = global.classPath.asURLs
     macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
     val loader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
