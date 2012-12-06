@@ -6,7 +6,6 @@ strap="$dir/../build/strap/classes"
 [[ -d $strap ]] || { echo "Error: no directory at $strap"; exit 1; }
 
 cp=$($dir/cpof $strap)
-fjbg=$($dir/abspath $dir/../lib/fjbg.jar)
 asm=$($dir/abspath $dir/../build/asm/classes)
 
-echo $cp:$fjbg:$asm
+echo $cp:$asm

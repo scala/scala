@@ -1,7 +1,7 @@
 scalac error: bad option: '-dd'
   scalac -help  gives more information
 Usage: scalac <options | source files>
-where possible options include: 
+where possible options include:
   -doc                            Generate documentation
   -g:<g>                          Generate debugging info (none,source,line,vars,notc)
   -nowarn                         Generate no warnings
@@ -15,10 +15,8 @@ where possible options include:
   -encoding <encoding>            Specify character encoding used by source files
   -windowtitle <windowtitle>      Specify window title of generated HTML documentation
   -documenttitle <documenttitle>  Specify document title of generated HTML documentation
-  -target:<target>                Specify which backend to use (jvm-1.5,msil)
+  -target:<target>                Specify which backend to use (jvm-1.5)
   -migrate                        Assist in migrating from Scala version 1.0
-  -o <file>                       Name of the output assembly (only relevant with -target:msil)
-  -r <path>                       List of assemblies referenced by the program (only relevant with -target:msil)
   -debug                          Output debugging messages
   -deprecation                    enable detailed deprecation warnings
   -unchecked                      enable detailed unchecked warnings

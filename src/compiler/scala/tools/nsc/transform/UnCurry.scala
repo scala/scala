@@ -61,24 +61,6 @@ abstract class UnCurry extends InfoTransform
 
 // uncurry and uncurryType expand type aliases
 
-  /** Traverse tree omitting local method definitions.
-   *  If a `return` is encountered, set `returnFound` to true.
-   *  Used for MSIL only.
-   */
-  private object lookForReturns extends Traverser {
-    var returnFound = false
-    override def traverse(tree: Tree): Unit =  tree match {
-      case Return(_) => returnFound = true
-      case DefDef(_, _, _, _, _, _) => ;
-      case _ => super.traverse(tree)
-    }
-    def found(tree: Tree) = {
-      returnFound = false
-      traverse(tree)
-      returnFound
-    }
-  }
-
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var needTryLift       = false
     private var inPattern         = false
@@ -537,13 +519,6 @@ abstract class UnCurry extends InfoTransform
         finally needTryLift = saved
       }
 
-      /** A try or synchronized needs to be lifted anyway for MSIL if it contains
-       *  return statements. These are disallowed in the CLR. By lifting
-       *  such returns will be converted to throws.
-       */
-      def shouldBeLiftedAnyway(tree: Tree) = false && // buggy, see #1981
-        forMSIL && lookForReturns.found(tree)
-
       /** Transform tree `t` to { def f = t; f } where `f` is a fresh name
        */
       def liftTree(tree: Tree) = {
@@ -618,13 +593,10 @@ abstract class UnCurry extends InfoTransform
             treeCopy.UnApply(tree, fn1, args1)
 
           case Apply(fn, args) =>
-            if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head))
-              transform(treeCopy.Apply(tree, fn, List(liftTree(args.head))))
-            else
-              withNeedLift(true) {
-                val formals = fn.tpe.paramTypes
-                treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
-              }
+            withNeedLift(true) {
+              val formals = fn.tpe.paramTypes
+              treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
+            }
 
           case Assign(_: RefTree, _) =>
             withNeedLift(true) { super.transform(tree) }
@@ -643,7 +615,7 @@ abstract class UnCurry extends InfoTransform
             super.transform(tree)
 
           case Try(block, catches, finalizer) =>
-            if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
+            if (needTryLift) transform(liftTree(tree))
             else super.transform(tree)
 
           case CaseDef(pat, guard, body) =>
