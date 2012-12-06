@@ -996,7 +996,14 @@ trait Contexts { self: Analyzer =>
       if (settings.lint.value && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
         recordUsage(current, result)
 
-      result
+      // Harden against the fallout from bugs like SI-6745
+      //
+      // [JZ] I considered issuing a devWarning and moving the
+      //      check inside the above loop, as I believe that
+      //      this always represents a mistake on the part of
+      //      the caller.
+      if (definitions isImportable result) result
+      else NoSymbol
     }
     private def selectorString(s: ImportSelector): String = {
       if (s.name == nme.WILDCARD && s.rename == null) "_"
