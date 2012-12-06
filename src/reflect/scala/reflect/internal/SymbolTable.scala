@@ -344,6 +344,11 @@ abstract class SymbolTable extends macros.Universe
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
   @deprecated("Use enteringPhaseNotLaterThan", "2.10.0")
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T = enteringPhaseNotLaterThan(target)(op)
+
+  /**
+   * Adds the `sm` String interpolator to a [[scala.StringContext]].
+   */
+  implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
 }
 
 object SymbolTableStats {

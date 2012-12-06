@@ -117,16 +117,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       }
 
     def pickle(macroImplRef: Tree): Tree = {
-      val macroImpl = macroImplRef.symbol
+      val MacroImplReference(owner, macroImpl, targs) = macroImplRef
       val paramss = macroImpl.paramss
 
-      // this logic relies on the assumptions that were valid for the old macro prototype
-      // namely that macro implementations can only be defined in top-level classes and modules
-      // with the new prototype that materialized in a SIP, macros need to be statically accessible, which is different
-      // for example, a macro def could be defined in a trait that is implemented by an object
-      // there are some more clever cases when seemingly non-static method ends up being statically accessible
-      // however, the code below doesn't account for these guys, because it'd take a look of time to get it right
-      // for now I leave it as a todo and move along to more the important stuff
       // todo. refactor when fixing SI-5498
       def className: String = {
         def loop(sym: Symbol): String = sym match {
@@ -138,7 +131,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             loop(sym.owner) + separator + sym.javaSimpleName.toString
         }
 
-        loop(macroImpl.owner.enclClass)
+        loop(owner)
       }
 
       def signature: List[Int] = {
@@ -159,7 +152,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       // I just named it "macro", because it's macro-related, but I could as well name it "foobar"
       val nucleus = Ident(newTermName("macro"))
       val wrapped = Apply(nucleus, payload map { case (k, v) => Assign(pickleAtom(k), pickleAtom(v)) })
-      val pickle = gen.mkTypeApply(wrapped, treeInfo.typeArguments(macroImplRef.duplicate))
+      val pickle = gen.mkTypeApply(wrapped, targs map (_.duplicate))
 
       // assign NoType to all freshly created AST nodes
       // otherwise pickler will choke on tree.tpe being null
