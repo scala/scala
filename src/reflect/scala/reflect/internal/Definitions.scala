@@ -684,9 +684,7 @@ trait Definitions extends api.StandardDefinitions {
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
-    def ClassType(arg: Type) =
-      if (phase.erasedTypes || forMSIL) ClassClass.tpe
-      else appliedType(ClassClass, arg)
+    def ClassType(arg: Type) = if (phase.erasedTypes) ClassClass.tpe else appliedType(ClassClass, arg)
 
     def EnumType(sym: Symbol) =
       // given (in java): "class A { enum E { VAL1 } }"
@@ -703,34 +701,6 @@ trait Definitions extends api.StandardDefinitions {
      */
     def classExistentialType(clazz: Symbol): Type =
       newExistentialType(clazz.typeParams, clazz.tpe_*)
-
-    //
-    // .NET backend
-    //
-
-    lazy val ComparatorClass = getRequiredClass("scala.runtime.Comparator")
-    // System.MulticastDelegate
-    lazy val DelegateClass: ClassSymbol = getClassByName(sn.Delegate)
-    var Delegate_scalaCallers: List[Symbol] = List() // Syncnote: No protection necessary yet as only for .NET where reflection is not supported.
-    // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
-    // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
-    lazy val Delegate_scalaCallerTargets: mutable.HashMap[Symbol, Symbol] = mutable.HashMap()
-
-    def isCorrespondingDelegate(delegateType: Type, functionType: Type): Boolean = {
-      isSubType(delegateType, DelegateClass.tpe) &&
-      (delegateType.member(nme.apply).tpe match {
-      	case MethodType(delegateParams, delegateReturn) =>
-      	  isFunctionType(functionType) &&
-      	  (functionType.normalize match {
-      	    case TypeRef(_, _, args) =>
-      	      (delegateParams.map(pt => {
-                      if (pt.tpe == AnyClass.tpe) definitions.ObjectClass.tpe else pt})
-      	       ::: List(delegateReturn)) == args
-      	    case _ => false
-      	  })
-        case _ => false
-      })
-    }
 
     // members of class scala.Any
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
@@ -1164,27 +1134,5 @@ trait Definitions extends api.StandardDefinitions {
       val _ = symbolsNotPresentInBytecode
       isInitialized = true
     } //init
-
-    var nbScalaCallers: Int = 0
-    def newScalaCaller(delegateType: Type): MethodSymbol = {
-      assert(forMSIL, "scalaCallers can only be created if target is .NET")
-      // object: reference to object on which to call (scala-)method
-      val paramTypes: List[Type] = List(ObjectClass.tpe)
-      val name = newTermName("$scalaCaller$$" + nbScalaCallers)
-      // tparam => resultType, which is the resultType of PolyType, i.e. the result type after applying the
-      // type parameter =-> a MethodType in this case
-      // TODO: set type bounds manually (-> MulticastDelegate), see newTypeParam
-      val newCaller = enterNewMethod(DelegateClass, name, paramTypes, delegateType, FINAL | STATIC)
-      // val newCaller = newPolyMethod(DelegateClass, name,
-      // tparam => MethodType(paramTypes, tparam.typeConstructor)) setFlag (FINAL | STATIC)
-      Delegate_scalaCallers = Delegate_scalaCallers ::: List(newCaller)
-      nbScalaCallers += 1
-      newCaller
-    }
-
-    def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol) {
-      assert(Delegate_scalaCallers contains scalaCaller)
-      Delegate_scalaCallerTargets += (scalaCaller -> methSym)
-    }
   }
 }

@@ -47,19 +47,19 @@ trait Layers extends Build {
          case _ => error("Cannot build a ScalaReference with more than one classpath element")
       }
   }
-  
+
   /** Creates a "layer" of Scala compilation.  That is, this will build the next version of Scala from a previous version.
    * Returns the library project and compiler project from the next layer.
    * Note:  The library and compiler are not *complete* in the sense that they are missing things like "actors" and "fjbg".
    */
   def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]], autoLock: Boolean = false) : (Project, Project, Project) = {
-    val autoLockSettings: Seq[Setting[_]] = 
-      if(autoLock) Seq(compile in Compile <<= (compile in Compile, lock) apply { (c, l) => 
+    val autoLockSettings: Seq[Setting[_]] =
+      if(autoLock) Seq(compile in Compile <<= (compile in Compile, lock) apply { (c, l) =>
         c flatMapR { cResult =>
           val result = Result.tryValue(cResult)
           l mapR { tx => result }
         }
-      }) 
+      })
       else Seq.empty
 
 
@@ -69,7 +69,7 @@ trait Layers extends Build {
       unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
       managedClasspath in Compile := Seq(),
       scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
-      resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
+      resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),
       defaultExcludes in unmanagedResources := ("*.scala" | "*.java" | "*.disabled"),
       // TODO - Allow other scalac option settings.
       scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
@@ -96,7 +96,6 @@ trait Layers extends Build {
       version := layer,
       scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
-      unmanagedSourceDirectories in Compile <+= (baseDirectory) apply (_ / "src" / "msil"),
       defaultExcludes := ("tests"),
       defaultExcludes in unmanagedResources := "*.scala",
       resourceGenerators in Compile <+= (resourceManaged, Versions.scalaVersions, skip in Compile, streams) map Versions.generateVersionPropertiesFile("compiler.properties"),

@@ -30,8 +30,6 @@ PROPERTIES
   <property name="scala.comp.jar"     value="${lib.dir}/scala-compiler.jar"/>
   <property name="fjbg.name"          value="fjbg.jar"/>
   <property name="fjbg.jar"           value="${lib.dir}/${fjbg.name}"/>
-  <property name="msil.name"          value="msil.jar"/>
-  <property name="msil.jar"           value="${lib.dir}/${msil.name}"/>
   <property name="ant.jar"            value="${ant.home}/lib/ant.jar"/>
   <property name="ant-contrib.jar"    value="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- -->
@@ -59,7 +57,7 @@ INITIALISATION
     <fail message="Scala library in '${lib.dir}/' is not available">
       <condition><not><and>
         <available
-          classname="scala.Predef" 
+          classname="scala.Predef"
           classpath="${scala.lib.jar}"
         />
         <available
@@ -90,15 +88,6 @@ INITIALISATION
         />
       </not></condition>
     </fail>
-    <echo level="verbose" message="msil.jar=${msil.jar}"/>
-    <fail message="MSIL library in '${lib.dir}/' is not available">
-      <condition><not>
-        <available
-          classname="ch.epfl.lamp.compiler.msil.MemberInfo"
-          classpath="${msil.jar}"
-        />
-      </not></condition>
-    </fail>
     <echo level="verbose" message="ant.jar=${ant.jar}"/>
     <echo level="verbose" message="ant-contrib.jar=${ant-contrib.jar}"/>
     <fail message="Additional Ant tasks in '${lib.dir}/' is not available">
@@ -112,7 +101,6 @@ INITIALISATION
     <!-- Creating class-pathes -->
     <path id="common.classpath">
       <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
     </path>
     <path id="scala.classpath">
       <pathelement location="${scala.lib.jar}"/>
