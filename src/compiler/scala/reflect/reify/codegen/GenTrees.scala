@@ -144,6 +144,11 @@ trait GenTrees {
       }
     case tree @ Ident(_) if tree.symbol.isLocalToReifee =>
       mirrorCall(nme.Ident, reify(tree.name))
+    case Select(qual, name) =>
+      if (tree.symbol != NoSymbol && tree.symbol.name != name)
+        reifyProduct(Select(qual, tree.symbol.name))
+      else
+        reifyProduct(tree)
     case _ =>
       throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
   }
@@ -193,6 +198,8 @@ trait GenTrees {
     }
 
     tree match {
+      case Select(qual, name) if (name != tree.symbol.name) =>
+        reifyBoundType(Select(qual, tree.symbol.name))
       case Select(_, _) =>
         reifyBoundType(tree)
       case SelectFromTypeTree(_, _) =>
