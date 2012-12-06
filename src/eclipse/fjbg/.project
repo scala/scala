@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>fjbg</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.scala-ide.sdt.core.scalabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.scala-ide.sdt.core.scalanature</nature>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>fjbg</name>
+			<type>2</type>
+			<locationURI>SCALA_BASEDIR/src/fjbg</locationURI>
+		</link>
+		<link>
+			<name>libs-classes-fjbg</name>
+			<type>2</type>
+			<locationURI>SCALA_BASEDIR/build/libs/classes/fjbg</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
