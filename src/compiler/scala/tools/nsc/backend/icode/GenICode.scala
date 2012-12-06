@@ -925,7 +925,7 @@ abstract class GenICode extends SubComponent  {
               val cm = CALL_METHOD(sym, invokeStyle)
 
               /** In a couple cases, squirrel away a little extra information in the
-               *  CALL_METHOD for use by GenJVM.
+               *  CALL_METHOD for use by GenASM.
                */
               fun match {
                 case Select(qual, _) =>

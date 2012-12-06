@@ -34,7 +34,7 @@ trait Testing { self: ScalaBuild.type =>
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
     settings (continuationsTestsuiteSettings:_*) 
-    dependsOn (partest, scalaLibrary, scalaCompiler, fjbg)
+    dependsOn (partest, scalaLibrary, scalaCompiler)
   )
 
 }

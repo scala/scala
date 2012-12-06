@@ -7,7 +7,6 @@ Eclipse-LazyStart: true
 Bundle-ClassPath: 
  .,
  bin,
- lib/fjbg.jar,
  lib/jline.jar,
  lib/msil.jar
 Export-Package: 
@@ -50,8 +49,6 @@ Export-Package:
  ch.epfl.lamp.compiler.msil,
  ch.epfl.lamp.compiler.msil.emit,
  ch.epfl.lamp.compiler.msil.util,
- ch.epfl.lamp.fjbg,
- ch.epfl.lamp.util
 Require-Bundle: 
  org.apache.ant,
  org.scala-ide.scala.library
