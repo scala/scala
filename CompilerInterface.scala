@@ -162,13 +162,21 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 			def newPhase(prev: Phase) = analyzer.newPhase(prev)
 			def name = phaseName
 		}
+		/** This phase walks trees and constructs a representation of the public API, which is used for incremental recompilation.
+		 *
+		 * We extract the api after picklers, since that way we see the same symbol information/structure
+		 * irrespective of whether we were typechecking from source / unpickling previously compiled classes.
+		 */
 		object apiExtractor extends
 		{
 			val global: Compiler.this.type = Compiler.this
 			val phaseName = API.name
 			val runsAfter = List("typer")
 			override val runsBefore = List("erasure")
-			val runsRightAfter = Some("typer")
+			// allow apiExtractor's phase to be overridden using the sbt.api.phase property
+			// (in case someone would like the old timing, which was right after typer)
+			// TODO: consider migrating to simply specifying "pickler" for `runsAfter` and "uncurry" for `runsBefore`
+			val runsRightAfter = Option(System.getProperty("sbt.api.phase")) orElse Some("pickler")
 		}
 		with SubComponent
 		{
