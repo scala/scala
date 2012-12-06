@@ -172,14 +172,15 @@ trait Mirrors extends api.Mirrors {
         case _                                              => MissingRequirementError.notFound("package " + fullname)
       }
 
-    def getPackage(fullname: Name): ModuleSymbol =
+    def getPackage(fullname: TermName): ModuleSymbol =
       ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname), allowModules = true)
 
-    def getRequiredPackage(fullname: String): ModuleSymbol =
+    @deprecated("Use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
       getPackage(newTermNameCached(fullname))
 
-    def getPackageObject(fullname: String): ModuleSymbol =
-      (getPackage(newTermName(fullname)).info member nme.PACKAGE) match {
+    def getPackageObject(fullname: String): ModuleSymbol = getPackageObject(newTermName(fullname))
+    def getPackageObject(fullname: TermName): ModuleSymbol =
+      (getPackage(fullname).info member nme.PACKAGE) match {
         case x: ModuleSymbol => x
         case _               => MissingRequirementError.notFound("package object " + fullname)
       }
@@ -187,8 +188,8 @@ trait Mirrors extends api.Mirrors {
     def getPackageObjectIfDefined(fullname: String): Symbol =
       getPackageObjectIfDefined(newTermNameCached(fullname))
 
-    def getPackageObjectIfDefined(fullname: Name): Symbol =
-      wrapMissing(getPackageObject(fullname.toTermName))
+    def getPackageObjectIfDefined(fullname: TermName): Symbol =
+      wrapMissing(getPackageObject(fullname))
 
     override def staticPackage(fullname: String): ModuleSymbol =
       ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)

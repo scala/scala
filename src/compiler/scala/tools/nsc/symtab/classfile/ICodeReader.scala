@@ -80,7 +80,7 @@ abstract class ICodeReader extends ClassfileParser {
     val jflags   = in.nextChar
     val name     = pool getName in.nextChar
     val owner    = getOwner(jflags)
-    val dummySym = owner.newMethod(name, owner.pos, toScalaMethodFlags(jflags))
+    val dummySym = owner.newMethod(name.toTermName, owner.pos, toScalaMethodFlags(jflags))
 
     try {
       val ch  = in.nextChar
@@ -94,7 +94,7 @@ abstract class ICodeReader extends ClassfileParser {
         if (sym == NoSymbol)
           sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
         if (sym == NoSymbol) {
-          sym = if (field) owner.newValue(name, owner.pos, toScalaFieldFlags(jflags)) else dummySym
+          sym = if (field) owner.newValue(name.toTermName, owner.pos, toScalaFieldFlags(jflags)) else dummySym
           sym setInfoAndEnter tpe
           log(s"ICodeReader could not locate ${name.decode} in $owner.  Created ${sym.defString}.")
         }

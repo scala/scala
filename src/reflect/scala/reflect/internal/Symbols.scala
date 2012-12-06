@@ -248,7 +248,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def newModuleAndClassSymbol(name: Name, pos: Position, flags0: FlagSet): (ModuleSymbol, ClassSymbol) = {
       val flags = flags0 | MODULE
-      val m = newModuleSymbol(name, pos, flags)
+      val m = newModuleSymbol(name.toTermName, pos, flags)
       val c = newModuleClass(name.toTypeName, pos, flags & ModuleToClassFlags)
       connectModuleToClass(m, c)
       (m, c)

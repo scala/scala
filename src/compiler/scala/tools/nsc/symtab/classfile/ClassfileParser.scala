@@ -252,8 +252,8 @@ abstract class ClassfileParser {
             } else {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
               f = tpe match {
-                case MethodType(_, _) => owner.newMethod(name, owner.pos)
-                case _                => owner.newVariable(name, owner.pos)
+                case MethodType(_, _) => owner.newMethod(name.toTermName, owner.pos)
+                case _                => owner.newVariable(name.toTermName, owner.pos)
               }
               f setInfo tpe
               log("created fake member " + f.fullName)
@@ -282,7 +282,7 @@ abstract class ClassfileParser {
         if (in.buf(start).toInt != CONSTANT_NAMEANDTYPE) errorBadTag(start)
         val name = getName(in.getChar(start + 1).toInt)
         // create a dummy symbol for method types
-        val dummySym = ownerTpe.typeSymbol.newMethod(name, ownerTpe.typeSymbol.pos)
+        val dummySym = ownerTpe.typeSymbol.newMethod(name.toTermName, ownerTpe.typeSymbol.pos)
         var tpe  = getType(dummySym, in.getChar(start + 3).toInt)
 
         // fix the return type, which is blindly set to the class currently parsed
@@ -457,7 +457,7 @@ abstract class ClassfileParser {
         ss = name.subName(start, end)
         sym = owner.info.decls lookup ss
         if (sym == NoSymbol) {
-          sym = owner.newPackage(ss) setInfo completer
+          sym = owner.newPackage(ss.toTermName) setInfo completer
           sym.moduleClass setInfo completer
           owner.info.decls enter sym
         }
@@ -604,7 +604,7 @@ abstract class ClassfileParser {
     } else {
       val name    = pool.getName(in.nextChar)
       val info    = pool.getType(in.nextChar)
-      val sym     = getOwner(jflags).newValue(name, NoPosition, sflags)
+      val sym     = getOwner(jflags).newValue(name.toTermName, NoPosition, sflags)
       val isEnum  = (jflags & JAVA_ACC_ENUM) != 0
 
       sym setInfo {
@@ -639,7 +639,7 @@ abstract class ClassfileParser {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
-        val sym = getOwner(jflags).newMethod(name, NoPosition, sflags)
+        val sym = getOwner(jflags).newMethod(name.toTermName, NoPosition, sflags)
         var info = pool.getType(sym, (in.nextChar))
         if (name == nme.CONSTRUCTOR)
           info match {

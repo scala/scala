@@ -149,7 +149,7 @@ trait MemberHandlers {
   }
 
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
-    override def definesTerm = Some(name)
+    override def definesTerm = Some(name.toTermName)
     override def definesValue = true
 
     override def resultExtractionCode(req: Request) = codegenln("defined module ", name)

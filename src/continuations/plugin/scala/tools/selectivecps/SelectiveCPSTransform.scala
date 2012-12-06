@@ -345,7 +345,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   val ctxSym = currentOwner.newValue(newTermName("" + vd.symbol.name + cpsNames.shiftSuffix)).setInfo(rhs1.tpe)
                   val ctxDef = localTyper.typed(ValDef(ctxSym, rhs1))
                   def ctxRef = localTyper.typed(Ident(ctxSym))
-                  val argSym = currentOwner.newValue(vd.symbol.name).setInfo(tpe)
+                  val argSym = currentOwner.newValue(vd.symbol.name.toTermName).setInfo(tpe)
                   val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member(cpsNames.getTrivialValue))))
                   val switchExpr = localTyper.typedPos(vd.symbol.pos) {
                     val body2 = mkBlock(bodyStms, bodyExpr).duplicate // dup before typing!

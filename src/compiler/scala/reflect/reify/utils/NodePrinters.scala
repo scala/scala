@@ -75,10 +75,10 @@ trait NodePrinters {
       printout += universe.trim
       if (mirrorIsUsed) printout += mirror.replace("Mirror[", "scala.reflect.api.Mirror[").trim
       val imports = scala.collection.mutable.ListBuffer[String]();
-      imports += nme.UNIVERSE_SHORT
+      imports += nme.UNIVERSE_SHORT.toString
       // if (buildIsUsed) imports += nme.build
-      if (mirrorIsUsed) imports += nme.MIRROR_SHORT
-      if (flagsAreUsed) imports += nme.Flag
+      if (mirrorIsUsed) imports += nme.MIRROR_SHORT.toString
+      if (flagsAreUsed) imports += nme.Flag.toString
       printout += s"""import ${imports map (_ + "._") mkString ", "}"""
 
       val name = if (isExpr) "tree" else "tpe"

@@ -148,13 +148,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         unwrapped = new Transformer {
           override def transform(tree: Tree): Tree =
             tree match {
-              case Ident(name) if invertedIndex contains name =>
+              case Ident(name: TermName) if invertedIndex contains name =>
                 Ident(invertedIndex(name)) setType tree.tpe
               case _ =>
                 super.transform(tree)
             }
         }.transform(unwrapped)
-        new TreeTypeSubstituter(dummies1 map (_.symbol), dummies1 map (dummy => SingleType(NoPrefix, invertedIndex(dummy.symbol.name)))).traverse(unwrapped)
+        new TreeTypeSubstituter(dummies1 map (_.symbol), dummies1 map (dummy => SingleType(NoPrefix, invertedIndex(dummy.symbol.name.toTermName)))).traverse(unwrapped)
         unwrapped = if (expr0.isTerm) unwrapped else unwrapFromTerm(unwrapped)
         unwrapped
       }

@@ -608,8 +608,7 @@ abstract class TypeParser {
       if(method.IsSpecialName) {
         val paramsArity = method.GetParameters().size
         // handle operator overload, otherwise handle as any static method
-        val operName = operatorOverload(name, paramsArity)
-        if (operName.isDefined) { return operName.get; }
+        operatorOverload(name, paramsArity) foreach (x => return x.toTermName)
       }
       return newTermName(name);
     }
