@@ -1929,8 +1929,7 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
       val clazz = context.owner
-      // complete lazy annotations
-      val annots = clazz.annotations
+      clazz.annotations.map(_.completeInfo)
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
       val self1 = templ.self match {
@@ -2025,8 +2024,7 @@ trait Typers extends Modes with Adaptations with Tags {
       val typer1 = constrTyperIf(sym.isParameter && sym.owner.isConstructor)
       val typedMods = typedModifiers(vdef.mods)
 
-      // complete lazy annotations
-      val annots = sym.annotations
+      sym.annotations.map(_.completeInfo)
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
@@ -2269,8 +2267,7 @@ trait Typers extends Modes with Adaptations with Tags {
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
-      // complete lazy annotations
-      val annots = meth.annotations
+      meth.annotations.map(_.completeInfo)
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe))
@@ -2345,8 +2342,7 @@ trait Typers extends Modes with Adaptations with Tags {
       reenterTypeParams(tdef.tparams)
       val tparams1 = tdef.tparams mapConserve typedTypeDef
       val typedMods = typedModifiers(tdef.mods)
-      // complete lazy annotations
-      val annots = tdef.symbol.annotations
+      tdef.symbol.annotations.map(_.completeInfo)
 
       // @specialized should not be pickled when compiling with -no-specialize
       if (settings.nospecialization.value && currentRun.compiles(tdef.symbol)) {
@@ -5253,8 +5249,6 @@ trait Typers extends Modes with Adaptations with Tags {
       def typedPackageDef(pdef: PackageDef) = {
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
-        // complete lazy annotations
-        val annots = sym.annotations
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
           .typedStats(pdef.stats, NoSymbol)
         treeCopy.PackageDef(tree, pid1, stats1) setType NoType

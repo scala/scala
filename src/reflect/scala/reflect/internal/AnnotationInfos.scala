@@ -201,6 +201,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     override def toString = if (forced) forcedInfo.toString else "@<?>"
 
     override def pos: Position = if (forced) forcedInfo.pos else NoPosition
+
+    override def completeInfo(): Unit = forcedInfo
   }
 
   /** Typed information about an annotation. It can be attached to either
@@ -241,6 +243,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
       rawpos = pos
       this
     }
+
+    // Forces LazyAnnotationInfo, no op otherwise
+    def completeInfo(): Unit = ()
 
     /** Annotations annotating annotations are confusing so I drew
      *  an example.  Given the following code:

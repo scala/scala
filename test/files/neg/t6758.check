@@ -1,0 +1,28 @@
+t6758.scala:5: error: not found: type inargument
+    @inargument
+     ^
+t6758.scala:11: error: not found: type infunction
+    @infunction
+     ^
+t6758.scala:18: error: not found: type nested
+      @nested
+       ^
+t6758.scala:25: error: not found: type param
+  def func(@param x: Int): Int = 0
+            ^
+t6758.scala:28: error: not found: type typealias
+    @typealias
+     ^
+t6758.scala:32: error: not found: type classs
+  @classs
+   ^
+t6758.scala:35: error: not found: type module
+  @module
+   ^
+t6758.scala:38: error: not found: type typeparam
+  class D[@typeparam T]
+           ^
+t6758.scala:41: error: not found: type valueparam
+    @valueparam x: Any
+     ^
+9 errors found
