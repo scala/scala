@@ -30,41 +30,35 @@ trait GenUtils {
   def call(fname: String, args: Tree*): Tree =
     Apply(termPath(fname), args.toList)
 
-  def mirrorSelect(name: String): Tree =
-    termPath(nme.UNIVERSE_PREFIX + name)
+  def mirrorSelect(name: String): Tree   = termPath(nme.UNIVERSE_PREFIX + name)
+  def mirrorSelect(name: TermName): Tree = mirrorSelect(name.toString)
 
-  def mirrorBuildSelect(name: String): Tree =
-    termPath(nme.UNIVERSE_BUILD_PREFIX + name)
+  def mirrorBuildSelect(name: TermName): Tree =
+    termPath("" + nme.UNIVERSE_BUILD_PREFIX + name)
 
-  def mirrorMirrorSelect(name: String): Tree =
-    termPath(nme.MIRROR_PREFIX + name)
+  def mirrorMirrorSelect(name: TermName): Tree =
+    termPath("" + nme.MIRROR_PREFIX + name)
 
   def mirrorCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.UNIVERSE_PREFIX append name), args: _*)
-
-  def mirrorCall(name: String, args: Tree*): Tree =
-    call(nme.UNIVERSE_PREFIX + name, args: _*)
+    call("" + nme.UNIVERSE_PREFIX + name, args: _*)
 
   def mirrorBuildCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.UNIVERSE_BUILD_PREFIX append name), args: _*)
-
-  def mirrorBuildCall(name: String, args: Tree*): Tree =
-    call(nme.UNIVERSE_BUILD_PREFIX + name, args: _*)
+    call("" + nme.UNIVERSE_BUILD_PREFIX + name, args: _*)
 
   def mirrorMirrorCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.MIRROR_PREFIX append name), args: _*)
-
-  def mirrorMirrorCall(name: String, args: Tree*): Tree =
-    call(nme.MIRROR_PREFIX + name, args: _*)
+    call("" + nme.MIRROR_PREFIX + name, args: _*)
 
   def mirrorFactoryCall(value: Product, args: Tree*): Tree =
     mirrorFactoryCall(value.productPrefix, args: _*)
 
-  def mirrorFactoryCall(prefix: String, args: Tree*): Tree =
-    mirrorCall(prefix, args: _*)
+  def mirrorFactoryCall(prefix: TermName, args: Tree*): Tree =
+    mirrorCall("" + prefix, args: _*)
+
+  def scalaFactoryCall(name: TermName, args: Tree*): Tree =
+    call(s"scala.$name.apply", args: _*)
 
   def scalaFactoryCall(name: String, args: Tree*): Tree =
-    call("scala." + name + ".apply", args: _*)
+    scalaFactoryCall(name: TermName, args: _*)
 
   def mkList(args: List[Tree]): Tree =
     scalaFactoryCall("collection.immutable.List", args: _*)

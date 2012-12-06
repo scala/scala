@@ -74,7 +74,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
 
     val mval = (
-      accessor.owner.newVariable(nme.moduleVarName(accessor.name), accessor.pos.focus, MODULEVAR | extraFlags)
+      accessor.owner.newVariable(nme.moduleVarName(accessor.name.toTermName), accessor.pos.focus, MODULEVAR | extraFlags)
         setInfo accessor.tpe.finalResultType
         addAnnotation VolatileAttr
     )
@@ -210,7 +210,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    */
   private def mkPackedValDef(expr: Tree, owner: Symbol, name: Name): (ValDef, () => Ident) = {
     val packedType = typer.packedType(expr, owner)
-    val sym = owner.newValue(name, expr.pos.makeTransparent, SYNTHETIC) setInfo packedType
+    val sym = owner.newValue(name.toTermName, expr.pos.makeTransparent, SYNTHETIC) setInfo packedType
 
     (ValDef(sym, expr), () => Ident(sym) setPos sym.pos.focus setType expr.tpe)
   }

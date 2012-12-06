@@ -60,7 +60,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // The constructor parameter corresponding to an accessor
       def parameter(acc: Symbol): Symbol =
-        parameterNamed(nme.getterName(acc.originalName))
+        parameterNamed(nme.getterName(acc.originalName.toTermName))
 
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$` afterwards.
@@ -281,7 +281,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           specializedStats find {
             case Assign(sel @ Select(This(_), _), rhs) =>
               (    (sel.symbol hasFlag SPECIALIZED)
-                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name)) == nme.localToGetter(sym.name))
+                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name.toTermName)) == nme.localToGetter(sym.name.toTermName))
               )
             case _ => false
           }
@@ -399,7 +399,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       def addGetter(sym: Symbol): Symbol = {
         val getr = addAccessor(
-          sym, nme.getterName(sym.name), getterFlags(sym.flags))
+          sym, nme.getterName(sym.name.toTermName), getterFlags(sym.flags))
         getr setInfo MethodType(List(), sym.tpe)
         defBuf += localTyper.typedPos(sym.pos)(DefDef(getr, Select(This(clazz), sym)))
         getr
@@ -408,7 +408,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       def addSetter(sym: Symbol): Symbol = {
         sym setFlag MUTABLE
         val setr = addAccessor(
-          sym, nme.getterToSetter(nme.getterName(sym.name)), setterFlags(sym.flags))
+          sym, nme.getterToSetter(nme.getterName(sym.name.toTermName)), setterFlags(sym.flags))
         setr setInfo MethodType(setr.newSyntheticValueParams(List(sym.tpe)), UnitClass.tpe)
         defBuf += localTyper.typed {
           //util.trace("adding setter def for "+setr) {

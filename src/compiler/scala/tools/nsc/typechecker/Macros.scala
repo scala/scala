@@ -317,7 +317,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       def sigma(tpe: Type): Type = SigmaTypeMap(tpe)
 
       def makeParam(name: Name, pos: Position, tpe: Type, flags: Long) =
-        macroDef.newValueParameter(name, pos, flags) setInfo tpe
+        macroDef.newValueParameter(name.toTermName, pos, flags) setInfo tpe
       def implType(isType: Boolean, origTpe: Type): Type = {
         def tsym = if (isType) WeakTagClass else ExprClass
         def targ = origTpe.typeArgs.headOption getOrElse NoType

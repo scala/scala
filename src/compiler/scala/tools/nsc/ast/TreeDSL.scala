@@ -181,7 +181,7 @@ trait TreeDSL {
       self: VODDStart =>
 
       type ResultTreeType = ValDef
-      def mkTree(rhs: Tree): ValDef = ValDef(mods, name, tpt, rhs)
+      def mkTree(rhs: Tree): ValDef = ValDef(mods, name.toTermName, tpt, rhs)
     }
     trait DefCreator {
       self: VODDStart =>

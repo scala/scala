@@ -465,7 +465,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           staticSingletonInstance(classLoader, symbol.fullName)
         else
           if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClass))
-          else innerSingletonInstance(outer, symbol.name)
+          else innerSingletonInstance(outer, symbol.name.toString)
       }
       override def toString = s"module mirror for ${symbol.fullName} (bound to $outer)"
     }

@@ -60,7 +60,7 @@ trait MethodSynthesis {
       overrideFlag | SYNTHETIC
     }
     def newMethodFlags(method: Symbol) = {
-      val overrideFlag = if (isOverride(method.name)) OVERRIDE else 0L
+      val overrideFlag = if (isOverride(method.name.toTermName)) OVERRIDE else 0L
       (method.flags | overrideFlag | SYNTHETIC) & ~DEFERRED
     }
 
@@ -68,11 +68,13 @@ trait MethodSynthesis {
       localTyper typed ValOrDefDef(method, f(method))
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
-      val m = clazz.newMethod(name.toTermName, clazz.pos.focus, newMethodFlags(name))
+      val name1 = name.toTermName
+      val m = clazz.newMethod(name1, clazz.pos.focus, newMethodFlags(name1))
       finishMethod(m setInfoAndEnter info, f)
     }
     private def createInternal(name: Name, f: Symbol => Tree, infoFn: Symbol => Type): Tree = {
-      val m = clazz.newMethod(name.toTermName, clazz.pos.focus, newMethodFlags(name))
+      val name1 = name.toTermName
+      val m = clazz.newMethod(name1, clazz.pos.focus, newMethodFlags(name1))
       finishMethod(m setInfoAndEnter infoFn(m), f)
     }
     private def cloneInternal(original: Symbol, f: Symbol => Tree, name: Name): Tree = {

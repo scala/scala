@@ -18,8 +18,6 @@ trait StdNames {
 
   def encode(str: String): TermName = newTermNameCached(NameTransformer.encode(str))
 
-  implicit def lowerTermNames(n: TermName): String = n.toString
-
   /** Tensions: would like the keywords to be the very first names entered into the names
    *  storage so their ids count from 0, which simplifies the parser. Switched to abstract
    *  classes to avoid all the indirection which is generated with implementation-containing
@@ -37,11 +35,7 @@ trait StdNames {
       kws = kws + result
       result
     }
-    def result: Set[TermName] = {
-      val result = kws
-      kws = null
-      result
-    }
+    def result: Set[TermName] = try kws finally kws = null
   }
 
   private final object compactify extends (String => String) {
@@ -201,6 +195,8 @@ trait StdNames {
   }
 
   abstract class TypeNames extends Keywords with TypeNamesApi {
+    override type NameType = TypeName
+
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
     final val BYNAME_PARAM_CLASS_NAME: NameType        = "<byname>"
@@ -262,6 +258,8 @@ trait StdNames {
   }
 
   abstract class TermNames extends Keywords with TermNamesApi {
+    override type NameType = TermName
+
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
 
     /** Base strings from which synthetic names are derived. */

@@ -10,22 +10,7 @@ import scala.io.Codec
 import java.security.MessageDigest
 import scala.language.implicitConversions
 
-trait LowPriorityNames {
-  self: Names =>
-
-  implicit def nameToNameOps(name: Name): NameOps[Name] = new NameOps[Name](name)
-}
-
-/** The class Names ...
- *
- *  @author  Martin Odersky
- *  @version 1.0, 05/02/2005
- */
-trait Names extends api.Names with LowPriorityNames {
-  implicit def promoteTermNamesAsNecessary(name: Name): TermName = name.toTermName
-
-// Operations -------------------------------------------------------------
-
+trait Names extends api.Names {
   private final val HASH_SIZE  = 0x8000
   private final val HASH_MASK  = 0x7FFF
   private final val NAME_SIZE  = 0x20000
@@ -399,9 +384,13 @@ trait Names extends api.Names with LowPriorityNames {
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
   }
 
+  implicit def AnyNameOps(name: Name): NameOps[Name]          = new NameOps(name)
   implicit def TermNameOps(name: TermName): NameOps[TermName] = new NameOps(name)
   implicit def TypeNameOps(name: TypeName): NameOps[TypeName] = new NameOps(name)
 
+  /** FIXME: This is a good example of something which is pure "value class" but cannot
+   *  reap the benefits because an (unused) $outer pointer so it is not single-field.
+   */
   final class NameOps[T <: Name](name: T) {
     def stripSuffix(suffix: Name): T = if (name endsWith suffix) dropRight(suffix.length) else name
     def dropRight(n: Int): T         = name.subName(0, name.length - n).asInstanceOf[T]
