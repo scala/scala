@@ -84,7 +84,6 @@ class ConsoleFileManager extends FileManager {
       latestReflectFile = testClassesDir / "reflect"
       latestCompFile    = testClassesDir / "compiler"
       latestPartestFile = testClassesDir / "partest"
-      latestFjbgFile    = testParent / "lib" / "fjbg.jar"
     }
     else if (testBuild.isDefined) {
       val dir = Path(testBuild.get)
@@ -94,7 +93,6 @@ class ConsoleFileManager extends FileManager {
       latestReflectFile = dir / "lib/scala-reflect.jar"
       latestCompFile    = dir / "lib/scala-compiler.jar"
       latestPartestFile = dir / "lib/scala-partest.jar"
-      latestFjbgFile    = testParent / "lib" / "fjbg.jar"
     }
     else {
       def setupQuick() {
@@ -152,8 +150,6 @@ class ConsoleFileManager extends FileManager {
 
       // run setup based on most recent time
       pairs(pairs.keys max)()
-
-      latestFjbgFile = prefixFile("lib/fjbg.jar")
     }
 
     LATEST_LIB = latestLibFile.getAbsolutePath
@@ -174,7 +170,6 @@ class ConsoleFileManager extends FileManager {
   var latestReflectFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
-  var latestFjbgFile: File = _
   def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
   var testClassesDir: Directory = _
   // initialize above fields

@@ -42,13 +42,9 @@ trait JavaPlatform extends Platform {
     if (settings.make.isDefault) Nil
     else List(dependencyAnalysis)
 
-  private def classEmitPhase =
-    if (settings.target.value == "jvm-1.5-fjbg") genJVM
-    else genASM
-
   def platformPhases = List(
     flatten,        // get rid of inner classes
-    classEmitPhase  // generate .class files
+    genASM  // generate .class files
   ) ++ depAnalysisPhase
 
   lazy val externalEquals          = getDecl(BoxesRunTimeClass, nme.equals_)

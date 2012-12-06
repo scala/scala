@@ -72,7 +72,6 @@ QUICK BUILD (QUICK)
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
-      <pathelement location="${lib.dir}/fjbg.jar"/>
       <pathelement location="${lib.dir}/msil.jar"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
       <pathelement location="${ant.home}/lib/ant.jar"/>

@@ -44,7 +44,7 @@ If you want to go back to normal (for instance, to commit your changes to projec
 DETAILS
 =======
 
-The compiler project depends on the library, reflect, asm and fjbg projects. The
+The compiler project depends on the library, reflect, and asm projects. The
 builder will take care of the correct ordering, and changes in one project will
 be picked up by the dependent projects.
 
