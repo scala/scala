@@ -513,7 +513,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *       - create a new method definition that also has a `self` parameter
      *         (which comes first) Iuli: this position is assumed by tail call elimination
      *         on a different receiver. Storing a new 'this' assumes it is located at
-     *         index 0 in the local variable table. See 'STORE_THIS' and GenASM/GenMSIL.
+     *         index 0 in the local variable table. See 'STORE_THIS' and GenASM.
      *   - Map implementation class types in type-apply's to their interfaces
      *   - Remove all fields in implementation classes
      */

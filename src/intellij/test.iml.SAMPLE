@@ -13,7 +13,6 @@
     <orderEntry type="module" module-name="partest" />
     <orderEntry type="module" module-name="asm" />
     <orderEntry type="module" module-name="forkjoin" />
-    <orderEntry type="module" module-name="msil" />
   </component>
 </module>
 

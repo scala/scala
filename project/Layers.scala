@@ -93,7 +93,6 @@ trait Layers extends Build {
       version := layer,
       scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
-      unmanagedSourceDirectories in Compile <+= (baseDirectory) apply (_ / "src" / "msil"),
       defaultExcludes := ("tests"),
       defaultExcludes in unmanagedResources := "*.scala",
       resourceGenerators in Compile <+= (resourceManaged, Versions.scalaVersions, skip in Compile, streams) map Versions.generateVersionPropertiesFile("compiler.properties"),

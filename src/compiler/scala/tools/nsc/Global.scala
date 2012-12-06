@@ -23,7 +23,7 @@ import ast.parser._
 import typechecker._
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
-import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
+import backend.{ ScalaPrimitives, Platform, JavaPlatform }
 import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
@@ -77,8 +77,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type ThisPlatform = Platform { val global: Global.this.type }
 
   lazy val platform: ThisPlatform =
-    if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
-    else new { val global: Global.this.type = Global.this } with JavaPlatform
+    new { val global: Global.this.type = Global.this } with JavaPlatform
 
   type PlatformClassPath = ClassPath[platform.BinaryRepr]
   type OptClassPath = Option[PlatformClassPath]
@@ -613,7 +612,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   object terminal extends {
     val global: Global.this.type = Global.this
     val phaseName = "terminal"
-    val runsAfter = List("jvm", "msil")
+    val runsAfter = List("jvm")
     val runsRightAfter = None
   } with SubComponent {
     private var cache: Option[GlobalPhase] = None
@@ -1307,7 +1306,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val closelimPhase                = phaseNamed("closelim")
     val dcePhase                     = phaseNamed("dce")
     // val jvmPhase                     = phaseNamed("jvm")
-    // val msilPhase                    = phaseNamed("msil")
 
     def runIsAt(ph: Phase)   = globalPhase.id == ph.id
     def runIsAtOptimiz       = {
@@ -1668,14 +1666,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     })
   }
-  // In order to not outright break code which overrides onlyPresentation (like sbt 0.7.5.RC0)
-  // I restored and deprecated it.  That would be enough to avoid the compilation
-  // failure, but the override wouldn't accomplish anything.  So now forInteractive
-  // and forScaladoc default to onlyPresentation, which is the same as defaulting
-  // to false except in old code.  The downside is that this leaves us calling a
-  // deprecated method: but I see no simple way out, so I leave it for now.
-  // def forJVM           = settings.target.value startsWith "jvm"
-  override def forMSIL = settings.target.value startsWith "msil"
   def forInteractive   = false
   def forScaladoc      = false
   def createJavadoc    = false

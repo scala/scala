@@ -11,7 +11,7 @@ SuperSabbus for Scala detach plugin.
 <!-- ===========================================================================
 END-USER TARGETS
 ============================================================================ -->
-  
+
   <target name="build" depends="pack.done"
     description="Builds the Scala detach plugin."/>
 
@@ -72,7 +72,6 @@ QUICK BUILD (QUICK)
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
-      <pathelement location="${lib.dir}/msil.jar"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
       <pathelement location="${ant.home}/lib/ant.jar"/>
     </path>
@@ -119,9 +118,9 @@ QUICK BUILD (QUICK)
 <!-- ===========================================================================
 PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  
+
   <target name="pack.start" depends="quick.done"/>
-  
+
   <target name="pack.pre-lib" depends="pack.start">
     <uptodate
       property="pack.lib.available"

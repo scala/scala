@@ -427,11 +427,4 @@ trait TypeKinds { self: ICodes =>
     primitiveTypeMap.getOrElse(sym, newReference(sym))
   private def primitiveOrClassType(sym: Symbol, targs: List[Type]) =
     primitiveTypeMap.getOrElse(sym, arrayOrClassType(sym, targs))
-
-  def msil_mgdptr(tk: TypeKind): TypeKind = (tk: @unchecked) match {
-    case REFERENCE(cls)  => REFERENCE(loaders.clrTypes.mdgptrcls4clssym(cls))
-    // TODO have ready class-symbols for the by-ref versions of built-in valuetypes
-    case _ => abort("cannot obtain a managed pointer for " + tk)
-  }
-
 }
