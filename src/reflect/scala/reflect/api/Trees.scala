@@ -1729,6 +1729,16 @@ trait Trees { self: Universe =>
    *  This AST node corresponds to the following Scala code:
    *
    *    fun[args]
+   *
+   *  Should only be used with `fun` nodes which are terms, i.e. which have `isTerm` returning `true`.
+   *  Otherwise `AppliedTypeTree` should be used instead.
+   *
+   *    def foo[T] = ???
+   *    foo[Int] // represented as TypeApply(Ident(<foo>), List(TypeTree(<Int>)))
+   *
+   *    List[Int] as in `val x: List[Int] = ???`
+   *    // represented as AppliedTypeTree(Ident(<List>), List(TypeTree(<Int>)))
+   *
    *  @group Extractors
    */
   abstract class TypeApplyExtractor {
@@ -1899,6 +1909,12 @@ trait Trees { self: Universe =>
    *  This AST node corresponds to the following Scala code:
    *
    *    qualifier.selector
+   *
+   *  Should only be used with `qualifier` nodes which are terms, i.e. which have `isTerm` returning `true`.
+   *  Otherwise `SelectFromTypeTree` should be used instead.
+   *
+   *    foo.Bar // represented as Select(Ident(<foo>), <Bar>)
+   *    Foo#Bar // represented as SelectFromTypeTree(Ident(<Foo>), <Bar>)
    *  @group Extractors
    */
   abstract class SelectExtractor {
@@ -2131,7 +2147,6 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  // [Eugene++] don't see why we need it, when we have Select
   type SelectFromTypeTree >: Null <: TypTree with RefTree with SelectFromTypeTreeApi
 
   /** A tag that preserves the identity of the `SelectFromTypeTree` abstract type from erasure.
@@ -2151,6 +2166,12 @@ trait Trees { self: Universe =>
    *    qualifier # selector
    *
    *  Note: a path-dependent type p.T is expressed as p.type # T
+   *
+   *  Should only be used with `qualifier` nodes which are types, i.e. which have `isType` returning `true`.
+   *  Otherwise `Select` should be used instead.
+   *
+   *    Foo#Bar // represented as SelectFromTypeTree(Ident(<Foo>), <Bar>)
+   *    foo.Bar // represented as Select(Ident(<foo>), <Bar>)
    *  @group Extractors
    */
   abstract class SelectFromTypeTreeExtractor {
@@ -2226,6 +2247,15 @@ trait Trees { self: Universe =>
    *  This AST node corresponds to the following Scala code:
    *
    *    tpt[args]
+   *
+   *  Should only be used with `tpt` nodes which are types, i.e. which have `isType` returning `true`.
+   *  Otherwise `TypeApply` should be used instead.
+   *
+   *    List[Int] as in `val x: List[Int] = ???`
+   *    // represented as AppliedTypeTree(Ident(<List>), List(TypeTree(<Int>)))
+   *
+   *    def foo[T] = ???
+   *    foo[Int] // represented as TypeApply(Ident(<foo>), List(TypeTree(<Int>)))
    *  @group Extractors
    */
   abstract class AppliedTypeTreeExtractor {
