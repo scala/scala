@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="lib/jline.jar"/>
 	<classpathentry kind="lib" path="lib/msil.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
 	<classpathentry kind="output" path="build-quick-partest"/>
 </classpath>
