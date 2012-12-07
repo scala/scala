@@ -3,5 +3,6 @@
 	<classpathentry kind="src" path="reflect"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
 	<classpathentry kind="output" path="build-quick-reflect"/>
 </classpath>
