@@ -309,7 +309,7 @@ abstract class UnPickler {
           if (isModuleRoot) moduleRoot setFlag pflags
           else owner.newLinkedModule(clazz, pflags)
         case VALsym =>
-          if (isModuleRoot) { assert(false); NoSymbol }
+          if (isModuleRoot) { abort(s"VALsym at module root: owner = $owner, name = $name") }
           else owner.newTermSymbol(name.toTermName, NoPosition, pflags)
 
         case _ =>

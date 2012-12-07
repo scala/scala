@@ -3090,7 +3090,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class RefinementClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)
   extends ClassSymbol(owner0, pos0, tpnme.REFINE_CLASS_NAME) {
     override def name_=(name: Name) {
-      assert(false, "Cannot set name of RefinementClassSymbol to " + name)
+      abort("Cannot set name of RefinementClassSymbol to " + name)
       super.name_=(name)
     }
     override def isRefinementClass       = true

@@ -871,8 +871,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val cond                    = Apply(Select(moduleVarRef, nme.eq), List(NULL))
             mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
-            assert(false, "Invalid getter " + rhs + " for module in class " + clazz)
-            EmptyTree
+            abort("Invalid getter " + rhs + " for module in class " + clazz)
         }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {

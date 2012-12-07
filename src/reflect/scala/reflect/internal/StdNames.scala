@@ -730,6 +730,7 @@ trait StdNames {
     val null_ : NameType               = "null"
     val ofDim: NameType                = "ofDim"
     val origin: NameType               = "origin"
+    val pendingSuperCall: NameType     = "pendingSuperCall"
     val prefix : NameType              = "prefix"
     val productArity: NameType         = "productArity"
     val productElement: NameType       = "productElement"
