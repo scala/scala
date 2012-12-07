@@ -403,14 +403,14 @@ abstract class Erasure extends AddInterfaces
         override def parents              = List(root.info.firstParent)
         override def exclude(sym: Symbol) = !sym.isMethod || sym.isPrivate || super.exclude(sym)
         override def memberTypeForOverriding(self: Type, sym: Symbol) = self memberType sym map {
-          case MethodType(params, res) =>
+          case MethodType(params@(p1 :: p2 :: ps), res) => // only needed for arity-2 and higher
             // SI-6135 / SI-6443
             // We're operating with signatures that have been uncurried and can have a dependently
             // typed parameter in `params` that refers to an earlier parameter *in the same list*.
             // Such types don't match the types of the corresponding parameter in the super class,
             // preventing creation of bridge methods.
             //
-            // Ideally, we would restore the nested MethodTypes to repreprent the parameter grouping
+            // Ideally, we would restore the nested MethodTypes to represent the parameter grouping
             // before uncurry; but this would not account for methods added during specialization.
             //
             // Instead, we just take the conservative approximation that the original method was
