@@ -51,13 +51,4 @@ class ISettings(intp: IMain) {
     | ISettings {
     | %s
     | }""".stripMargin.format(allSettingsString)
-
-  /** Disable and finally restore String unwrapping for an operation.
-   */
-  def withoutUnwrapping[A](op: => A): A = {
-    val saved = this.unwrapStrings
-    this.unwrapStrings = false
-    try op
-    finally this.unwrapStrings = saved
-  }
 }
