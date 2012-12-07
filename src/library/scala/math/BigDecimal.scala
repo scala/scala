@@ -198,7 +198,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     */
   def isValidDouble = {
     val d = toDouble
-    !d.isInfinity && bigDecimal.compareTo(new java.math.BigDecimal(d)) == 0
+    !d.isInfinity && bigDecimal.compareTo(new java.math.BigDecimal(jl.Double.toString(d), mc))) == 0
   }
 
   private def noArithmeticException(body: => Unit): Boolean = {
