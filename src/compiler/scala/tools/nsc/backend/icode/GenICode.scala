@@ -753,7 +753,8 @@ abstract class GenICode extends SubComponent  {
               } else
                 ctx1.bb.emit(CONSTANT(Constant(false)))
             } else if (r.isValueType && cast) {
-              assert(false, tree) /* Erasure should have added an unboxing operation to prevent that. */
+              /* Erasure should have added an unboxing operation to prevent that. */
+              abort("should have been unboxed by erasure: " + tree)
             } else if (r.isValueType) {
               ctx.bb.emit(IS_INSTANCE(REFERENCE(definitions.boxedClass(r.toType.typeSymbol))))
             } else {
@@ -1257,7 +1258,7 @@ abstract class GenICode extends SubComponent  {
       val sym = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
-          case NoSymbol => assert(false, "Cannot use package as value: " + tree) ; NoSymbol
+          case NoSymbol => abort("Cannot use package as value: " + tree)
           case s        => debugwarn("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
         }
       )
