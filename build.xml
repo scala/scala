@@ -288,7 +288,8 @@ INITIALISATION
        This is to facilitate testing new command line options which do not yet exist in starr. -->
   <property name="scalac.args.quickonly" value=""/>
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-	  <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+	  <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly} -Ydependent-method-types"/>
+    <property name="scalac.args.strap.lib" value="${scalac.args.all} -Ydependent-method-types"/>
     <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
     <!-- This is the start time for the distribution -->
@@ -376,8 +377,9 @@ LOCAL REFERENCE BUILD (LOCKER)
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-locker.dir}/classes/library"
-      classpath="${build-locker.dir}/classes/library"
+      classpathref="quick.compilation.path"
       includes="**/*.java"
+      excludes="scala/concurrent/**/*.java"
       target="1.5" source="1.5">
         <compilerarg line="${javac.args}"/>
     </javac>
@@ -392,6 +394,17 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
+      <!-- Exclude duration package and everything that depends on it -->
+      <exclude name="scala/concurrent/duration/**/*.scala"/>
+      <exclude name="scala/concurrent/package.scala"/>
+      <exclude name="scala/concurrent/Awaitable.scala"/>
+      <exclude name="scala/concurrent/Future.scala"/>
+      <exclude name="scala/concurrent/Promise.scala"/>
+      <exclude name="scala/concurrent/ExecutionContext.scala"/>
+      <exclude name="scala/concurrent/BlockContext.scala"/>
+      <exclude name="scala/concurrent/impl/Future.scala"/>
+      <exclude name="scala/concurrent/impl/Promise.scala"/>
+      <exclude name="scala/concurrent/impl/ExecutionContextImpl.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
         <pathelement location="${lib.dir}/forkjoin.jar"/>
@@ -546,7 +559,7 @@ QUICK BUILD (QUICK)
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-quick.dir}/classes/library"
-      classpath="${build-quick.dir}/classes/library"
+      classpathref="quick.compilation.path"
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/> 
@@ -1083,7 +1096,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
+      classpathref="strap.compilation.path"
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
@@ -1100,7 +1113,7 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
       srcpath="${src.dir}/library"
-      params="${scalac.args.all}"
+      params="${scalac.args.strap.lib}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1531,6 +1544,7 @@ DOCUMENTATION
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
+      addparams="-Ydependent-method-types"
       docRootContent="${build-docs.dir}/library/lib/rootdoc.txt"> 
       <src>
         <files includes="${src.dir}/actors"/>
