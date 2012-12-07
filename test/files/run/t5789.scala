@@ -12,9 +12,7 @@ object Test {
     """
 
     val s = new Settings()
-    s.optimise.value = false
-    s.debug.value  = true
-    s.log.value = List("all")
+    s.optimise.value = true
     val lines = ILoop.runForTranscript(code + "\n" + code, s).lines.toList
 
 
