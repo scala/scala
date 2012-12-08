@@ -932,7 +932,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString = "Modifiers(%s, %s, %s)".format(flagString, annotations mkString ", ", positions)
   }
 
-  object Modifiers extends ModifiersCreator
+  object Modifiers extends ModifiersExtractor
 
   implicit val ModifiersTag = ClassTag[Modifiers](classOf[Modifiers])
 
