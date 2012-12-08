@@ -251,7 +251,10 @@ abstract class UnCurry extends InfoTransform
 
           val applyMethodDef = {
             val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
-            methSym setInfoAndEnter MethodType(methSym newSyntheticValueParams formals, restpe)
+            val paramSyms = map2(formals, fun.vparams) {
+              (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
+            }
+            methSym setInfoAndEnter MethodType(paramSyms, restpe)
 
             fun.vparams foreach  (_.symbol.owner =  methSym)
             fun.body changeOwner (fun.symbol     -> methSym)
