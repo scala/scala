@@ -3024,9 +3024,12 @@ trait Trees { self: Universe =>
    *  Modifiers encapsulate flags, visibility annotations and Scala annotations for member definitions.
    *  @group Traversal
    */
+  // This should be renamed into ModifiersExtractor in 2.11.
+  // It can't be renamed straight away as it will break binary compatibility.
   abstract class ModifiersCreator {
     def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
+    def unapply(mods: Modifiers): Option[(FlagSet, Name, List[Tree])]
   }
 
   /** The factory for `Modifiers` instances.
