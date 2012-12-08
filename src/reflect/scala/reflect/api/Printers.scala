@@ -143,6 +143,7 @@ trait Printers { self: Universe =>
     protected var printIds = false
     protected var printKinds = false
     protected var printMirrors = false
+    protected var printPositions = false
     def withTypes: this.type = { printTypes = true; this }
     def withoutTypes: this.type = { printTypes = false; this }
     def withIds: this.type = { printIds = true; this }
@@ -151,6 +152,8 @@ trait Printers { self: Universe =>
     def withoutKinds: this.type = { printKinds = false; this }
     def withMirrors: this.type = { printMirrors = true; this }
     def withoutMirrors: this.type = { printMirrors = false; this }
+    def withPositions: this.type = { printPositions = true; this }
+    def withoutPositions: this.type = { printPositions = false; this }
   }
 
   /** @group Printers */
@@ -163,7 +166,7 @@ trait Printers { self: Universe =>
   }
 
   /** @group Printers */
-  protected def render(what: Any, mkPrinter: PrintWriter => TreePrinter, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None): String = {
+  protected def render(what: Any, mkPrinter: PrintWriter => TreePrinter, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String = {
     val buffer = new StringWriter()
     val writer = new PrintWriter(buffer)
     val printer = mkPrinter(writer)
@@ -171,23 +174,24 @@ trait Printers { self: Universe =>
     printIds.value.map(printIds => if (printIds) printer.withIds else printer.withoutIds)
     printKinds.value.map(printKinds => if (printKinds) printer.withKinds else printer.withoutKinds)
     printMirrors.value.map(printMirrors => if (printMirrors) printer.withMirrors else printer.withoutMirrors)
+    printPositions.value.map(printPositions => if (printPositions) printer.withPositions else printer.withoutPositions)
     printer.print(what)
     writer.flush()
     buffer.toString
   }
 
   /** By default trees are printed with `show`
-   * @group Printers
+   *  @group Printers
    */
   override protected def treeToString(tree: Tree) = show(tree)
 
   /** Renders a representation of a reflection artifact
-   * as desugared Java code.
+   *  as desugared Scala code.
    *
-   * @group Printers
+   *  @group Printers
    */
-  def show(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None): String =
-    render(any, newTreePrinter(_), printTypes, printIds, printKinds, printMirrors)
+  def show(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
+    render(any, newTreePrinter(_), printTypes, printIds, printKinds, printMirrors, printPositions)
 
   /** Hook to define what `show(...)` means.
    * @group Printers
@@ -195,12 +199,12 @@ trait Printers { self: Universe =>
   protected def newTreePrinter(out: PrintWriter): TreePrinter
 
   /** Renders internal structure of a reflection artifact as the
-   * visualization of a Scala syntax tree.
+   *  visualization of a Scala syntax tree.
    *
-   * @group Printers
+   *  @group Printers
    */
-  def showRaw(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None): String =
-    render(any, newRawTreePrinter(_), printTypes, printIds, printKinds, printMirrors)
+  def showRaw(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
+    render(any, newRawTreePrinter(_), printTypes, printIds, printKinds, printMirrors, printPositions)
 
   /** Hook to define what `showRaw(...)` means.
    * @group Printers
