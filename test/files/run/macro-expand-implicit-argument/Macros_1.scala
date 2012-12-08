@@ -41,7 +41,7 @@ object Macros {
     def const(x:Int) = Literal(Constant(x))
 
     val n = as.length
-    val arr = newTermName("arr")
+    val arr = TermName("arr")
 
     val create = Apply(Select(ct.tree, "newArray"), List(const(n)))
     val arrtpe = TypeTree(implicitly[c.WeakTypeTag[Array[A]]].tpe)

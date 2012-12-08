@@ -20,15 +20,15 @@ object Test extends App {
 
   def testMethodInvocation(instance: Any) = {
     val instanceMirror = cm.reflect(instance)
-    val method = instanceMirror.symbol.typeSignature.declaration(newTermName("foo")).asMethod
+    val method = instanceMirror.symbol.typeSignature.declaration(TermName("foo")).asMethod
     val methodMirror = instanceMirror.reflectMethod(method)
     println(methodMirror())
   }
 
   def testNestedClass(name: String) = {
-    val sym = b.typeSignature.declaration(newTypeName(name)).asClass
+    val sym = b.typeSignature.declaration(TypeName(name)).asClass
     println(sym)
-    val ctor = sym.typeSignature.declaration(newTermName("<init>")).asMethod
+    val ctor = sym.typeSignature.declaration(TermName("<init>")).asMethod
     val ctorMirror = cm.reflectClass(sym).reflectConstructor(ctor)
     val instance = ctorMirror()
     println(instance)
@@ -39,7 +39,7 @@ object Test extends App {
   testNestedClass("B2")
 
   def testNestedModule(name: String) = {
-    val sym = b.typeSignature.declaration(newTermName(name)).asModule
+    val sym = b.typeSignature.declaration(TermName(name)).asModule
     println(sym)
     val moduleMirror = cm.reflectModule(sym)
     val instance = moduleMirror.instance
