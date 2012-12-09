@@ -1511,7 +1511,7 @@ trait Typers extends Modes with Adaptations with Tags {
      *
      *  Returns a `TypeTree` representing a resolved parent type.
      *  If the typechecked parent reference implies non-nullary and non-empty argument list,
-     *  this argument list is attached to the returned value in SuperCallArgsAttachment.
+     *  this argument list is attached to the returned value in SuperArgsAttachment.
      *  The attachment is necessary for the subsequent typecheck to fixup a super constructor call
      *  in the body of the primary constructor (see `typedTemplate` for details).
      *
@@ -1577,7 +1577,7 @@ trait Typers extends Modes with Adaptations with Tags {
         // this is the place where we tell the typer what argss should be used for the super call
         // if argss are nullary or empty, then (see the docs for `typedPrimaryConstrBody`)
         // the super call dummy is already good enough, so we don't need to do anything
-        if (argssAreTrivial) supertpt else supertpt updateAttachment SuperCallArgsAttachment(argss)
+        if (argssAreTrivial) supertpt else supertpt updateAttachment SuperArgsAttachment(argss)
       }
     }
 
@@ -1977,7 +1977,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val primaryCtor = treeInfo.firstConstructor(body)
         val primaryCtor1 = primaryCtor match {
           case DefDef(_, _, _, _, _, Block(earlyVals :+ global.pendingSuperCall, unit)) =>
-            val argss = superCallArgs(parents1.head) getOrElse Nil
+            val argss = superArgs(parents1.head) getOrElse Nil
             val pos = wrappingPos(parents1.head.pos, argss.flatten)
             val superCall = atPos(pos)(PrimarySuperCall(argss))
             deriveDefDef(primaryCtor)(block => Block(earlyVals :+ superCall, unit) setPos pos) setPos pos
