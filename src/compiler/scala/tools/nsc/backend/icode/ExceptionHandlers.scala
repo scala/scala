@@ -27,9 +27,6 @@ trait ExceptionHandlers {
     private var _startBlock: BasicBlock = _;
     var finalizer: Finalizer = _;
 
-    /** Needed for the MSIL backend. */
-    var resultKind: TypeKind = _;
-
     def setStartBlock(b: BasicBlock) = {
       _startBlock = b;
       b.exceptionHandlerStart = true

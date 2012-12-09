@@ -117,12 +117,6 @@ abstract class SymbolTable extends macros.Universe
   @elidable(elidable.WARNING)
   def assertCorrectThread() {}
 
-  /** Are we compiling for Java SE? */
-  // def forJVM: Boolean
-
-  /** Are we compiling for .NET? */
-  def forMSIL: Boolean = false
-
   /** A last effort if symbol in a select <owner>.<name> is not found.
    *  This is overridden by the reflection compiler to make up a package
    *  when it makes sense (i.e. <owner> is a package and <name> is a term name).

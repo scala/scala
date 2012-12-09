@@ -12,7 +12,7 @@ import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
-import scala.tools.nsc.io.{ AbstractFile, MsilFile }
+import scala.tools.nsc.io.{ AbstractFile }
 
 /** This class ...
  *
@@ -152,7 +152,7 @@ abstract class SymbolLoaders {
     def sourcefile: Option[AbstractFile] = None
 
     /**
-     * Description of the resource (ClassPath, AbstractFile, MsilFile)
+     * Description of the resource (ClassPath, AbstractFile)
      * being processed by this loader
      */
     protected def description: String
@@ -265,16 +265,6 @@ abstract class SymbolLoaders {
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
   }
 
-  class MsilFileLoader(msilFile: MsilFile) extends SymbolLoader with FlagAssigningCompleter {
-    private def typ = msilFile.msilType
-    private object typeParser extends clr.TypeParser {
-      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
-    }
-
-    protected def description = "MsilFile "+ typ.FullName + ", assembly "+ typ.Assembly.FullName
-    protected def doComplete(root: Symbol) { typeParser.parse(typ, root) }
-  }
-
   class SourcefileLoader(val srcfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
     protected def description = "source file "+ srcfile.toString
     override def fromSource = true
@@ -285,11 +275,6 @@ abstract class SymbolLoaders {
   object moduleClassLoader extends SymbolLoader with FlagAssigningCompleter {
     protected def description = "module class loader"
     protected def doComplete(root: Symbol) { root.sourceModule.initialize }
-  }
-
-  object clrTypes extends clr.CLRTypes {
-    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
-    if (global.forMSIL) init()
   }
 
   /** used from classfile parser to avoid cyclies */

@@ -18,7 +18,6 @@ build script or user-created if needed.  This is not a complete listing. ::
    +--dist/                     The destination folder for Scala distributions.
    +--docs/                     Documentation and sample code.
    +--lib/                      Pre-compiled libraries for the build.
-   |   +--fjbg.jar              The Java byte-code generation library.
    |   +--scala-compiler.jar    The stable reference ('starr') compiler jar
    |   +--scala-library.jar     The stable reference ('starr') library jar
    |   +--scala-library-src.jar A snapshot of the source used to build starr.

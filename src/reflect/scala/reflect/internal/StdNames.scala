@@ -584,7 +584,7 @@ trait StdNames {
     val canEqual_ : NameType           = "canEqual"
     val checkInitialized: NameType     = "checkInitialized"
     val classOf: NameType              = "classOf"
-    val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
+    val clone_ : NameType              = "clone"
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
     val currentMirror: NameType        = "currentMirror"
@@ -598,20 +598,20 @@ trait StdNames {
     val equalsNumChar : NameType       = "equalsNumChar"
     val equalsNumNum : NameType        = "equalsNumNum"
     val equalsNumObject : NameType     = "equalsNumObject"
-    val equals_ : NameType             = if (forMSIL) "Equals" else "equals"
+    val equals_ : NameType             = "equals"
     val error: NameType                = "error"
     val ex: NameType                   = "ex"
     val experimental: NameType         = "experimental"
     val f: NameType                    = "f"
     val false_ : NameType              = "false"
     val filter: NameType               = "filter"
-    val finalize_ : NameType           = if (forMSIL) "Finalize" else "finalize"
+    val finalize_ : NameType           = "finalize"
     val find_ : NameType               = "find"
     val flagsFromBits : NameType       = "flagsFromBits"
     val flatMap: NameType              = "flatMap"
     val foreach: NameType              = "foreach"
     val get: NameType                  = "get"
-    val hashCode_ : NameType           = if (forMSIL) "GetHashCode" else "hashCode"
+    val hashCode_ : NameType           = "hashCode"
     val hash_ : NameType               = "hash"
     val implicitly: NameType           = "implicitly"
     val in: NameType                   = "in"
@@ -675,7 +675,7 @@ trait StdNames {
     val thisPrefix : NameType          = "thisPrefix"
     val toArray: NameType              = "toArray"
     val toObjectArray : NameType       = "toObjectArray"
-    val toString_ : NameType           = if (forMSIL) "ToString" else "toString"
+    val toString_ : NameType           = "toString"
     val toTypeConstructor: NameType    = "toTypeConstructor"
     val tpe : NameType                 = "tpe"
     val tree : NameType                = "tree"
@@ -929,33 +929,6 @@ trait StdNames {
     @deprecated("Use a method in tpnme", "2.10.0") def interfaceName(implname: Name): TypeName = tpnme.interfaceName(implname)
   }
 
-  abstract class SymbolNames {
-    protected val stringToTermName = null
-    protected val stringToTypeName = null
-    protected implicit def createNameType(s: String): TypeName = newTypeNameCached(s)
-
-    val BoxedBoolean        : TypeName
-    val BoxedCharacter      : TypeName
-    val BoxedNumber         : TypeName
-    val Delegate            : TypeName
-    val IOOBException       : TypeName // IndexOutOfBoundsException
-    val InvTargetException  : TypeName // InvocationTargetException
-    val MethodAsObject      : TypeName
-    val NPException         : TypeName // NullPointerException
-    val Object              : TypeName
-    val Throwable           : TypeName
-    val ValueType           : TypeName
-
-    val GetCause            : TermName
-    val GetClass            : TermName
-    val GetClassLoader      : TermName
-    val GetMethod           : TermName
-    val Invoke              : TermName
-    val JavaLang            : TermName
-
-    val Boxed: immutable.Map[TypeName, TypeName]
-  }
-
   class JavaKeywords {
     private val kw = new KeywordSetBuilder
 
@@ -1013,7 +986,11 @@ trait StdNames {
     final val keywords = kw.result
   }
 
-  private abstract class JavaNames extends SymbolNames {
+  sealed abstract class SymbolNames {
+    protected val stringToTermName = null
+    protected val stringToTypeName = null
+    protected implicit def createNameType(s: String): TypeName = newTypeNameCached(s)
+
     final val BoxedBoolean: TypeName       = "java.lang.Boolean"
     final val BoxedByte: TypeName          = "java.lang.Byte"
     final val BoxedCharacter: TypeName     = "java.lang.Character"
@@ -1023,14 +1000,12 @@ trait StdNames {
     final val BoxedLong: TypeName          = "java.lang.Long"
     final val BoxedNumber: TypeName        = "java.lang.Number"
     final val BoxedShort: TypeName         = "java.lang.Short"
-    final val Delegate: TypeName           = tpnme.NO_NAME
     final val IOOBException: TypeName      = "java.lang.IndexOutOfBoundsException"
     final val InvTargetException: TypeName = "java.lang.reflect.InvocationTargetException"
     final val MethodAsObject: TypeName     = "java.lang.reflect.Method"
     final val NPException: TypeName        = "java.lang.NullPointerException"
     final val Object: TypeName             = "java.lang.Object"
     final val Throwable: TypeName          = "java.lang.Throwable"
-    final val ValueType: TypeName          = tpnme.NO_NAME
 
     final val GetCause: TermName         = newTermName("getCause")
     final val GetClass: TermName         = newTermName("getClass")
@@ -1051,39 +1026,5 @@ trait StdNames {
     )
   }
 
-  private class MSILNames extends SymbolNames {
-    final val BoxedBoolean: TypeName        = "System.IConvertible"
-    final val BoxedCharacter: TypeName      = "System.IConvertible"
-    final val BoxedNumber: TypeName         = "System.IConvertible"
-    final val Delegate: TypeName            = "System.MulticastDelegate"
-    final val IOOBException: TypeName       = "System.IndexOutOfRangeException"
-    final val InvTargetException: TypeName  = "System.Reflection.TargetInvocationException"
-    final val MethodAsObject: TypeName      = "System.Reflection.MethodInfo"
-    final val NPException: TypeName         = "System.NullReferenceException"
-    final val Object: TypeName              = "System.Object"
-    final val Throwable: TypeName           = "System.Exception"
-    final val ValueType: TypeName           = "System.ValueType"
-
-    final val GetCause: TermName         = newTermName("InnerException") /* System.Reflection.TargetInvocationException.InnerException */
-    final val GetClass: TermName         = newTermName("GetType")
-    final lazy val GetClassLoader: TermName   = throw new UnsupportedOperationException("Scala reflection is not supported on this platform");
-    final val GetMethod: TermName        = newTermName("GetMethod")
-    final val Invoke: TermName           = newTermName("Invoke")
-    final val JavaLang: TermName         = newTermName("System")
-
-    val Boxed = immutable.Map[TypeName, TypeName](
-      tpnme.Boolean -> "System.Boolean",
-      tpnme.Byte    -> "System.SByte", // a scala.Byte is signed and a System.SByte too (unlike a System.Byte)
-      tpnme.Char    -> "System.Char",
-      tpnme.Short   -> "System.Int16",
-      tpnme.Int     -> "System.Int32",
-      tpnme.Long    -> "System.Int64",
-      tpnme.Float   -> "System.Single",
-      tpnme.Double  -> "System.Double"
-    )
-  }
-
-  lazy val sn: SymbolNames =
-    if (forMSIL) new MSILNames
-    else new JavaNames { }
+  lazy val sn: SymbolNames = new SymbolNames { }
 }

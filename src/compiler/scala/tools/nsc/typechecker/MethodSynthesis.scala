@@ -203,8 +203,7 @@ trait MethodSynthesis {
     )
     def beanAccessors(vd: ValDef): List[DerivedFromValDef] = {
       val setter = if (vd.mods.isMutable) List(BeanSetter(vd)) else Nil
-      if (forMSIL) Nil
-      else if (vd.symbol hasAnnotation BeanPropertyAttr)
+      if (vd.symbol hasAnnotation BeanPropertyAttr)
         BeanGetter(vd) :: setter
       else if (vd.symbol hasAnnotation BooleanBeanPropertyAttr)
         BooleanBeanGetter(vd) :: setter
@@ -523,9 +522,6 @@ trait MethodSynthesis {
     }
 
     protected def enterBeans(tree: ValDef) {
-      if (forMSIL)
-        return
-
       val ValDef(mods, name, _, _) = tree
       val beans = beanAccessorsFromNames(tree)
       if (beans.nonEmpty) {
