@@ -326,13 +326,25 @@ trait TypeTags { self: Universe =>
    * Shortcut for `implicitly[WeakTypeTag[T]].tpe`
    * @group TypeTags
    */
-  def weakTypeOf[T](implicit attag: WeakTypeTag[T]): Type = attag.tpe
+  def weakTypeOf[T](implicit attag: WeakTypeTag[T]): Type = if (attag != null) attag.tpe else typeOf[Null]
+
+  /**
+   * Type of `x` as derived from a weak type tag.
+   * @group TypeTags
+   */
+  def weakTypeOf[T: WeakTypeTag](x: => T): Type = weakTypeOf[T]
 
   /**
    * Shortcut for `implicitly[TypeTag[T]].tpe`
    * @group TypeTags
    */
-  def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
+  def typeOf[T](implicit ttag: TypeTag[T]): Type = if (ttag != null) ttag.tpe else typeOf[Null]
+
+  /**
+   * Type of `x` as derived from a type tag.
+   * @group TypeTags
+   */
+  def typeOf[T: TypeTag](x: => T): Type = typeOf[T]
 }
 
 private[scala] class SerializedTypeTag(var tpec: TypeCreator, var concrete: Boolean) extends Serializable {
