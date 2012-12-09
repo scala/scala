@@ -381,19 +381,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         if (clazz.isImplClass) {
           clazz setFlag lateMODULE
           var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
-          if (sourceModule != NoSymbol) {
-            sourceModule setPos sym.pos
-            if (sourceModule.flags != MODULE) {
-              log("!!! Directly setting sourceModule flags from %s to MODULE".format(sourceModule.flagString))
-              sourceModule.flags = MODULE
-            }
-          }
-          else {
+          if (sourceModule == NoSymbol) {
             sourceModule = (
               clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE)
                 setModuleClass sym.asInstanceOf[ClassSymbol]
             )
             clazz.owner.info.decls enter sourceModule
+          }
+          else {
+            sourceModule setPos sym.pos
+            if (sourceModule.flags != MODULE) {
+              log("!!! Directly setting sourceModule flags from %s to MODULE".format(sourceModule.flagString))
+              sourceModule.flags = MODULE
+            }
           }
           sourceModule setInfo sym.tpe
           // Companion module isn't visible for anonymous class at this point anyway
