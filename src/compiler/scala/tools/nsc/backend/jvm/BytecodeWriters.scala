@@ -24,13 +24,26 @@ trait BytecodeWriters {
   private def outputDirectory(sym: Symbol): AbstractFile = (
     settings.outputDirs.outputDirFor(enteringFlatten(sym.sourceFile))
   )
-  private def getFile(base: AbstractFile, /*cls.getName()*/ clsName: String, suffix: String): AbstractFile = {
-    var dir = base
-    val pathParts = clsName.split("[./]").toList
-    for (part <- pathParts.init) {
-      dir = dir.subdirectoryNamed(part)
+  /** Avoids assertions in AbstractFile in case where a directory is sought
+   *  but a file exists instead. Remove the file (it's lying around in the
+   *  output directory - removing it is reasonable) and make a directory.
+   */
+  private def ensureDirectory(dir: AbstractFile): AbstractFile = {
+    if (dir.isDirectory) dir else {
+      warning(s"Removing file $dir from output directory")
+      val container = dir.container
+      val name = dir.name
+      dir.delete()
+      container.subdirectoryNamed(name)
     }
-    dir.fileNamed(pathParts.last + suffix)
+  }
+  private def getFile(base: AbstractFile, /*cls.getName()*/ clsName: String, suffix: String): AbstractFile = {
+    val pathParts = clsName.split("[./]").toList
+    var dir = base
+    for (part <- pathParts.init)
+      dir = ensureDirectory(dir) subdirectoryNamed part
+
+    ensureDirectory(dir) fileNamed pathParts.last + suffix
   }
   private def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
     getFile(outputDirectory(sym), clsName, suffix)
