@@ -1008,12 +1008,18 @@ trait Infer extends Checkable {
       //@M TODO: better place to check this?
       //@M TODO: errors for getters & setters are reported separately
       val kindErrors = checkKindBounds(tparams, targs, pre, owner)
+      def alreadyHasErrors = (targs exists (_.isErroneous)) || (tparams exists (_.isErroneous))
 
       if(!kindErrors.isEmpty) {
         if (targs contains WildcardType) true
-        else { KindBoundErrors(tree, prefix, targs, tparams, kindErrors); false }
+        else {
+          if (!alreadyHasErrors) {
+            KindBoundErrors(tree, prefix, targs, tparams, kindErrors)
+            false
+          } else true
+        }
       } else if (!isWithinBounds(pre, owner, tparams, targs)) {
-        if (!(targs exists (_.isErroneous)) && !(tparams exists (_.isErroneous))) {
+        if (!alreadyHasErrors) {
           NotWithinBounds(tree, prefix, targs, tparams, kindErrors)
           false
         } else true
