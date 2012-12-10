@@ -56,9 +56,6 @@ class StandardCompileServer extends SocketServer {
     (totalMemory - freeMemory).toDouble / maxMemory.toDouble > MaxCharge
   }
 
-  protected def newOfflineCompilerCommand(arguments: List[String], settings: FscSettings): OfflineCompilerCommand =
-    new OfflineCompilerCommand(arguments, settings)
-
   /** Problematically, Settings are only considered equal if every setting
    *  is exactly equal.  In fsc this immediately breaks down because the randomly
    *  chosen temporary outdirs differ between client and server.  Among other
@@ -91,7 +88,7 @@ class StandardCompileServer extends SocketServer {
     val args        = input.split("\0", -1).toList
     val newSettings = new FscSettings(fscError)
     this.verbose    = newSettings.verbose.value
-    val command     = newOfflineCompilerCommand(args, newSettings)
+    val command     = new OfflineCompilerCommand(args, newSettings)
 
     info("Settings after normalizing paths: " + newSettings)
     printMemoryStats()
