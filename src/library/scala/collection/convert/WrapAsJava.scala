@@ -10,10 +10,11 @@ package scala.collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
-import Wrappers._
 import scala.language.implicitConversions
 
 trait WrapAsJava {
+  import Wrappers._
+
   /**
    * Implicitly converts a Scala Iterator to a Java Iterator.
    * The returned Java Iterator is backed by the provided Scala
