@@ -183,7 +183,7 @@ extends MutableList[A]
 
   private[this] def decrementLength() {
     len -= 1
-    if (len == 0) last0 = new LinkedList[A]()
+    if (len == 0) last0 = first0
   }
 }
 

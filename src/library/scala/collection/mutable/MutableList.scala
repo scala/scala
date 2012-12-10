@@ -65,7 +65,7 @@ extends AbstractSeq[A]
     require(nonEmpty, "tail of empty list")
     tl.first0 = first0.tail
     tl.len = len - 1
-    tl.last0 = if (tl.len == 0) new LinkedList[A]() else last0
+    tl.last0 = if (tl.len == 0) tl.first0 else last0
   }
 
   /** Prepends a single element to this list. This operation takes constant
