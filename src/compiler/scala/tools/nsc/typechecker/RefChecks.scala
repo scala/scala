@@ -1264,13 +1264,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       val cdef     = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
 
       def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
-        lazy val createModuleVar = gen.mkModuleVarDef(sym)
-        sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
-          // In case we are dealing with local symbol then we already have
-          // to correct error with forward reference
-          case NoSymbol => createModuleVar
-          case vsym     => ValDef(vsym)
-        }
+        // See SI-5012, SI-6712.
+        val vsym = (
+          if (sym.owner.isTerm) NoSymbol
+          else sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName))
+        )
+        // In case we are dealing with local symbol then we already have
+        // to correct error with forward reference
+        if (vsym == NoSymbol) gen.mkModuleVarDef(sym)
+        else ValDef(vsym)
       }
       def createStaticModuleAccessor() = afterRefchecks {
         val method = (
