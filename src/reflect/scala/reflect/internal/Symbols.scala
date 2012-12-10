@@ -243,6 +243,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newImport(pos: Position): TermSymbol =
       newTermSymbol(nme.IMPORT, pos)
 
+    def newModuleVarSymbol(accessor: Symbol): TermSymbol = {
+      val newName  = nme.moduleVarName(accessor.name.toTermName)
+      val newFlags = MODULEVAR | ( if (this.isClass) PrivateLocal | SYNTHETIC else 0 )
+      val newInfo  = accessor.tpe.finalResultType
+      val mval     = newVariable(newName, accessor.pos.focus, newFlags) addAnnotation VolatileAttr
+
+      if (this.isClass)
+        mval setInfoAndEnter newInfo
+      else
+        mval setInfo newInfo
+    }
+
     final def newModuleSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): ModuleSymbol =
       newTermSymbol(name, pos, newFlags).asInstanceOf[ModuleSymbol]
 

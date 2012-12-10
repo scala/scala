@@ -23,7 +23,7 @@ abstract class Flatten extends InfoTransform {
     val old   = (scope lookupUnshadowedEntries sym.name).toList
     old foreach (scope unlink _)
     scope enter sym
-    log(s"lifted ${sym.fullLocationString}" + ( if (old.isEmpty) "" else " after unlinking $old from scope." ))
+    log(s"lifted ${sym.fullLocationString}" + ( if (old.isEmpty) "" else s" after unlinking $old from scope." ))
     old
   }
 

@@ -867,7 +867,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val cond                    = Apply(Select(moduleVarRef, Object_eq), List(NULL))
             mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
-            abort("Invalid getter " + rhs + " for module in class " + clazz)
+            abort(s"Invalid getter $rhs for module in $clazz")
         }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
@@ -1059,11 +1059,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
             // add modules
-            val vdef = gen.mkModuleVarDef(sym)
-            addDef(position(sym), vdef)
+            val vsym = sym.owner.newModuleVarSymbol(sym)
+            addDef(position(sym), ValDef(vsym))
 
-            val rhs          = gen.newModule(sym, vdef.symbol.tpe)
-            val assignAndRet = gen.mkAssignAndReturn(vdef.symbol, rhs)
+            // !!! TODO - unravel the enormous duplication between this code and
+            // eliminateModuleDefs in RefChecks.
+            val rhs          = gen.newModule(sym, vsym.tpe)
+            val assignAndRet = gen.mkAssignAndReturn(vsym, rhs)
             val attrThis     = gen.mkAttributedThis(clazz)
             val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
 
