@@ -56,12 +56,16 @@ extends AbstractSeq[A]
   /** Returns the rest of this list
    */
   override def tail: MutableList[A] = {
-    require(nonEmpty, "tail of empty list")
     val tl = new MutableList[A]
-    tl.first0 = first0.tail
-    tl.last0 = last0
-    tl.len = len - 1
+    tailImpl(tl)
     tl
+  }
+
+  protected final def tailImpl(tl: MutableList[A]) {
+    require(nonEmpty, "tail of empty list")
+    tl.first0 = first0.tail
+    tl.len = len - 1
+    tl.last0 = if (tl.len == 0) tl.first0 else last0
   }
 
   /** Prepends a single element to this list. This operation takes constant
