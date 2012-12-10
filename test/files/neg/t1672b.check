@@ -1,0 +1,16 @@
+t1672b.scala:3: error: could not optimize @tailrec annotated method bar: it contains a recursive call not in tail position
+  def bar : Nothing = {
+      ^
+t1672b.scala:14: error: could not optimize @tailrec annotated method baz: it contains a recursive call not in tail position
+  def baz : Nothing = {
+      ^
+t1672b.scala:29: error: could not optimize @tailrec annotated method boz: it contains a recursive call not in tail position
+      case _: Throwable => boz; ???
+                                ^
+t1672b.scala:34: error: could not optimize @tailrec annotated method bez: it contains a recursive call not in tail position
+  def bez : Nothing = {
+      ^
+t1672b.scala:46: error: could not optimize @tailrec annotated method bar: it contains a recursive call not in tail position
+    else 1 + (try {
+           ^
+5 errors found
