@@ -875,7 +875,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val bitmapSym = bitmapFor(clazz, offset, sym)
         val kind      = bitmapKind(sym)
         val mask      = maskForOffset(offset, sym, kind)
-        val msg       = "Uninitialized field: " + unit.source + ": " + pos.line
+        val msg       = s"Uninitialized field: ${unit.source}: ${pos.line}"
         val result    =
           IF (mkTest(clazz, mask, bitmapSym, false, kind)) .
             THEN (retVal) .

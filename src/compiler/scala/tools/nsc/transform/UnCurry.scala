@@ -362,11 +362,11 @@ abstract class UnCurry extends InfoTransform
 
         val body = bodyForIDA match {
           case Match(selector, cases) =>
-            if (cases exists treeInfo.isDefaultCase) TRUE_typed
+            if (cases exists treeInfo.isDefaultCase) TRUE
             else
               doSubst(Match(/*gen.mkUnchecked*/(selector),
-                        (cases map (c => deriveCaseDef(c)(x => TRUE_typed))) :+ (
-                        DEFAULT ==> FALSE_typed)))
+                        (cases map (c => deriveCaseDef(c)(x => TRUE))) :+ (
+                        DEFAULT ==> FALSE)))
 
         }
         body.changeOwner(fun.symbol -> methSym)
