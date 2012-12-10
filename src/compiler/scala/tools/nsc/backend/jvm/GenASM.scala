@@ -160,7 +160,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters {
         }
 
       // For predictably ordered error messages.
-      var sortedClasses = classes.values.toList sortBy ("" + _.symbol.fullName)
+      var sortedClasses = classes.values.toList sortBy (_.symbol.fullName)
+
+      // Warn when classes will overwrite one another on case-insensitive systems.
+      for ((_, v1 :: v2 :: _) <- sortedClasses groupBy (_.symbol.javaClassName.toString.toLowerCase)) {
+        v1.cunit.warning(v1.symbol.pos,
+          s"Class ${v1.symbol.javaClassName} differs only in case from ${v2.symbol.javaClassName}. " +
+          "Such classes will overwrite one another on case-insensitive filesystems.")
+      }
 
       debuglog("Created new bytecode generator for " + classes.size + " classes.")
       val bytecodeWriter  = initBytecodeWriter(sortedClasses filter isJavaEntryPoint)
