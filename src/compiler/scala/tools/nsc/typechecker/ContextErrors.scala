@@ -1077,7 +1077,7 @@ trait ContextErrors {
             "`override' modifier not allowed for constructors"
 
           case AbstractOverride =>
-            "`abstract override' modifier only allowed for members of traits"
+            "`abstract override' modifier only allowed for non-type members of traits"
 
           case LazyAndEarlyInit =>
             "`lazy' definitions may not be initialized early"

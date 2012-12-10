@@ -1,0 +1,4 @@
+t6795.scala:3: error: `abstract override' modifier only allowed for non-type members of traits
+trait T1 extends T { abstract override type U = Int }
+                                            ^
+one error found
