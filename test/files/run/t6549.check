@@ -1,0 +1,32 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> case class `X"`(var xxx: Any)
+defined class X$u0022
+
+scala> val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
+m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), 's -> X"("))
+
+scala> m("")
+res0: X" = X"(")
+
+scala> m("").xxx
+res1: Any = "
+
+scala> m("").xxx = 0
+m("").xxx: Any = 0
+
+scala> m("").xxx = "\""
+m("").xxx: Any = "
+
+scala> m('s).xxx = 's
+m(scala.Symbol("s")).xxx: Any = 's
+
+scala> val `"` = 0
+": Int = 0
+
+scala> 
+
+scala> 
