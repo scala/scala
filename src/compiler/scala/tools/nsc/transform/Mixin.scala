@@ -1035,16 +1035,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
         // if class is not a trait add accessor definitions
         else if (!clazz.isTrait) {
+          // This needs to be a def to avoid sharing trees
+          def accessedRef = accessedReference(sym)
           if (sym.hasAccessorFlag && (!sym.isDeferred || sym.hasFlag(lateDEFERRED))) {
             // add accessor definitions
             addDefDef(sym, {
-              val accessedRef = accessedReference(sym)
               if (sym.isSetter) {
                 if (isOverriddenSetter(sym)) UNIT
                 else accessedRef match {
-                  case Literal(_) => accessedRef
-                  case _ =>
-                    val init   = Assign(accessedRef, Ident(sym.firstParam))
+                  case ref @ Literal(_) => ref
+                  case ref =>
+                    val init   = Assign(ref, Ident(sym.firstParam))
                     val getter = sym.getter(clazz)
 
                     if (!needsInitFlag(getter)) init

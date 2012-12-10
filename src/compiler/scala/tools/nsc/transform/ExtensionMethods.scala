@@ -232,12 +232,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       super.transformStats(stats, exprOwner) map {
-        case md @ ModuleDef(_, _, _) if extensionDefs contains md.symbol =>
-          val defns = extensionDefs(md.symbol).toList map (member =>
-            atOwner(md.symbol)(localTyper.typedPos(md.pos.focus)(member))
-          )
-          extensionDefs -= md.symbol
-          deriveModuleDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ defns))
+        case md @ ModuleDef(_, _, _) =>
+          val extraStats = extensionDefs remove md.symbol match {
+            case Some(defns) => defns.toList map (defn => atOwner(md.symbol)(localTyper.typedPos(md.pos.focus)(defn.duplicate)))
+            case _           => Nil
+          }
+          if (extraStats.isEmpty) md
+          else deriveModuleDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ extraStats))
         case stat =>
           stat
       }
