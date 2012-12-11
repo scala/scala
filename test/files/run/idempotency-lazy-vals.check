@@ -1,0 +1,23 @@
+6
+{
+  class C extends AnyRef {
+    def <init>(): C = {
+      C.super.<init>();
+      ()
+    };
+    lazy private[this] val x: Int = _;
+    <stable> <accessor> lazy def x: Int = {
+      C.this.x = 2;
+      C.this.x
+    };
+    lazy private[this] val y: Int = _;
+    implicit <stable> <accessor> lazy def y: Int = {
+      C.this.y = 3;
+      C.this.y
+    }
+  };
+  val c: C = new C();
+  import c._;
+  c.x.*(scala.this.Predef.implicitly[Int](c.y))
+}
+error!

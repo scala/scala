@@ -3,13 +3,4 @@ Note: this is often due in part to a class depending on a definition nested with
 If applicable, you may wish to try moving some members into another object.
 import User.UserStatus._
             ^
-cyclics-import.scala:12: error: not found: type Value
-    type UserStatus = Value
-                      ^
-cyclics-import.scala:14: error: not found: value Value
-    val Active = Value("1")
-                 ^
-cyclics-import.scala:15: error: not found: value Value
-    val Disabled = Value("2")
-                   ^
-four errors found
+one error found

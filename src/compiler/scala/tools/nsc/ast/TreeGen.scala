@@ -60,7 +60,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
     // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
     // are very picky about things and it crashes the compiler with "unexpected new".
-    Annotated(New(scalaDot(UncheckedClass.name), ListOfNil), expr)
+    Annotated(New(scalaDot(UncheckedClass.name), Nil), expr)
   }
 
   // Builds a tree of the form "{ lhs = rhs ; lhs  }"

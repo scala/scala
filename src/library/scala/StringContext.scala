@@ -100,8 +100,8 @@ case class StringContext(parts: String*) {
    *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
    *  For example:
    *  {{{
-   *    scala> raw"\u0123"
-   *    res0: String = ģ
+   *    scala> raw"\u005cu0025"
+   *    res0: String = #
    *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
@@ -191,7 +191,7 @@ object StringContext {
     var cur = 0
     var idx = 0
     def output(ch: Char) = {
-      bldr append str.substring (start, cur)
+      bldr.append(str, start, cur)
       bldr append ch
       start = idx
     }
@@ -199,14 +199,15 @@ object StringContext {
       cur = idx
       if (str(idx) == '\\') {
         idx += 1
+        if (idx >= len) throw new InvalidEscapeException(str, cur)
         if ('0' <= str(idx) && str(idx) <= '7') {
           val leadch = str(idx)
           var oct = leadch - '0'
           idx += 1
-          if ('0' <= str(idx) && str(idx) <= '7') {
+          if (idx < len && '0' <= str(idx) && str(idx) <= '7') {
             oct = oct * 8 + str(idx) - '0'
             idx += 1
-            if (leadch <= '3' && '0' <= str(idx) && str(idx) <= '7') {
+            if (idx < len && leadch <= '3' && '0' <= str(idx) && str(idx) <= '7') {
               oct = oct * 8 + str(idx) - '0'
               idx += 1
             }
@@ -234,6 +235,6 @@ object StringContext {
       }
     }
     if (start == 0) str
-    else (bldr append str.substring(start, idx)).toString
+    else bldr.append(str, start, idx).toString
   }
 }

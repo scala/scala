@@ -645,6 +645,7 @@ trait StdNames {
     val notifyAll_ : NameType          = "notifyAll"
     val notify_ : NameType             = "notify"
     val null_ : NameType               = "null"
+    val pendingSuperCall: NameType     = "pendingSuperCall"
     val prefix : NameType              = "prefix"
     val productArity: NameType         = "productArity"
     val productElement: NameType       = "productElement"

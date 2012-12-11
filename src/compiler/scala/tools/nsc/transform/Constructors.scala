@@ -68,7 +68,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + nme.NAME_JOIN_STRING)
 
         (constrParams filter matchesName) match {
-          case Nil    => assert(false, name + " not in " + constrParams) ; null
+          case Nil    => abort(name + " not in " + constrParams)
           case p :: _ => p
         }
       }
@@ -511,7 +511,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               sym = closureClass,
               constrMods = Modifiers(0),
               vparamss = List(List(outerFieldDef)),
-              argss = ListOfNil,
               body = List(applyMethodDef),
               superPos = impl.pos)
           }

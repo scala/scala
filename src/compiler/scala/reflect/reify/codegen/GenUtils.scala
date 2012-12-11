@@ -33,9 +33,6 @@ trait GenUtils {
   def mirrorSelect(name: String): Tree   = termPath(nme.UNIVERSE_PREFIX + name)
   def mirrorSelect(name: TermName): Tree = mirrorSelect(name.toString)
 
-  def mirrorBuildSelect(name: TermName): Tree =
-    termPath("" + nme.UNIVERSE_BUILD_PREFIX + name)
-
   def mirrorMirrorSelect(name: TermName): Tree =
     termPath("" + nme.MIRROR_PREFIX + name)
 

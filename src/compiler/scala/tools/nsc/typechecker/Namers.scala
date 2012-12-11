@@ -874,13 +874,8 @@ trait Namers extends MethodSynthesis {
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
-        val tp = tpt.tpe
-        val inheritsSelf = tp.typeSymbol == owner
-        if (inheritsSelf)
-          InheritsItselfError(tpt)
-
-        if (inheritsSelf || tp.isError) AnyRefClass.tpe
-        else tp
+        if (tpt.tpe.isError) AnyRefClass.tpe
+        else tpt.tpe
       }
 
       val parents = typer.parentTypes(templ) map checkParent
@@ -1285,8 +1280,12 @@ trait Namers extends MethodSynthesis {
         if (!annotated.isInitialized) tree match {
           case defn: MemberDef =>
             val ainfos = defn.mods.annotations filterNot (_ eq null) map { ann =>
-              // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, SI-5892.
-              AnnotationInfo lazily enteringTyper(typer typedAnnotation ann)
+              // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
+              AnnotationInfo lazily {
+                val context1 = typer.context.make(ann)
+                context1.setReportErrors()
+                enteringTyper(newTyper(context1) typedAnnotation ann)
+              }
             }
             if (ainfos.nonEmpty) {
               annotated setAnnotations ainfos

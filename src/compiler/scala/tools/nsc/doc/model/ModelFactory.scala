@@ -895,7 +895,16 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           // units.filter should return only one element
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
-              (unit.body find (_.symbol == aSym)) match {
+              // SI-4922 `sym == aSym` is insufficent if `aSym` is a clone of symbol
+              //         of the parameter in the tree, as can happen with type parametric methods.
+              def isCorrespondingParam(sym: Symbol) = (
+                sym != null &&
+                sym != NoSymbol &&
+                sym.owner == aSym.owner &&
+                sym.name == aSym.name &&
+                sym.isParamWithDefault
+              )
+              (unit.body find (t => isCorrespondingParam(t.symbol))) match {
                 case Some(ValDef(_,_,_,rhs)) => makeTree(rhs)
                 case _ => None
               }

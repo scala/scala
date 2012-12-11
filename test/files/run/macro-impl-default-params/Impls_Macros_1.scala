@@ -6,11 +6,11 @@ object Impls {
     import c.{prefix => prefix}
     import c.universe._
     val U = implicitly[c.WeakTypeTag[U]]
-    val body = Block(
+    val body = Block(List(
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("invoking foo_targs...")))),
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("type of prefix is: " + prefix.staticType)))),
       Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("type of prefix tree is: " + prefix.tree.tpe)))),
-      Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("U is: " + U.tpe)))),
+      Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("U is: " + U.tpe))))),
       Literal(Constant(())))
     c.Expr[Unit](body)
   }

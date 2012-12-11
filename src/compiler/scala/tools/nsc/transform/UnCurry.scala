@@ -250,7 +250,7 @@ abstract class UnCurry extends InfoTransform
 
           localTyper.typedPos(fun.pos) {
             Block(
-              List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, List(applyMethodDef), fun.pos)),
+              List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
               Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
           }
 
@@ -376,7 +376,7 @@ abstract class UnCurry extends InfoTransform
 
       localTyper.typedPos(fun.pos) {
         Block(
-          List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, List(applyOrElseMethodDef, isDefinedAtMethodDef), fun.pos)),
+          List(ClassDef(anonClass, NoMods, ListOfNil, List(applyOrElseMethodDef, isDefinedAtMethodDef), fun.pos)),
           Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
       }
     }
