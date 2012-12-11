@@ -879,7 +879,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           override def transform(tree: Tree): Tree = {
             def subst(from: List[Symbol], to: List[Tree]): Tree =
               if (from.isEmpty) tree
-              else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate, tree.tpe)
+              else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate.setPos(tree.pos), tree.tpe)
               else subst(from.tail, to.tail)
 
             tree match {

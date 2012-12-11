@@ -12,7 +12,7 @@
         [84]<synthetic> val o7: [84]Option[Int] = [84][84]Case3.unapply([84]x1);
         [84]if ([84]o7.isEmpty.unary_!)
           [84]{
-            [90]val nr: [90]Int = [64]o7.get;
+            [90]val nr: [90]Int = [90]o7.get;
             [97][97]matchEnd4([97]())
           }
         else
