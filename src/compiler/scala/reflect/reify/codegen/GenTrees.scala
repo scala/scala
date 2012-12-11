@@ -117,88 +117,102 @@ trait GenTrees {
   // unlike in `reifyBoundType` we can skip checking for `tpe` being local or not local w.r.t the reifee
   // a single check for a symbol of the bound term should be enough
   // that's because only Idents and Thises can be bound terms, and they cannot host complex types
-  private def reifyBoundTerm(tree: Tree): Tree = tree match {
-    case tree @ This(_) if tree.symbol == NoSymbol =>
-      throw new Error("unexpected: bound term that doesn't have a symbol: " + showRaw(tree))
-    case tree @ This(_) if tree.symbol.isClass && !tree.symbol.isModuleClass && !tree.symbol.isLocalToReifee =>
-      val sym = tree.symbol
-      if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
-      if (reifyDebug) println("Free: " + sym)
-      mirrorBuildCall(nme.Ident, reifyFreeTerm(This(sym)))
-    case tree @ This(_) if !tree.symbol.isLocalToReifee =>
-      if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))
-      mirrorBuildCall(nme.This, reify(tree.symbol))
-    case tree @ This(_) if tree.symbol.isLocalToReifee =>
-      mirrorCall(nme.This, reify(tree.qual))
-    case tree @ Ident(_) if tree.symbol == NoSymbol =>
-      // this sometimes happens, e.g. for binds that don't have a body
-      // or for untyped code generated during previous phases
-      // (see a comment in Reifiers about the latter, starting with "why do we resetAllAttrs?")
-      mirrorCall(nme.Ident, reify(tree.name))
-    case tree @ Ident(_) if !tree.symbol.isLocalToReifee =>
-      if (tree.symbol.isVariable && tree.symbol.owner.isTerm) {
-        captureVariable(tree.symbol) // Note order dependency: captureVariable needs to come before reification here.
-        mirrorCall(nme.Select, mirrorBuildCall(nme.Ident, reify(tree.symbol)), reify(nme.elem))
-      } else {
-        mirrorBuildCall(nme.Ident, reify(tree.symbol))
-      }
-    case tree @ Ident(_) if tree.symbol.isLocalToReifee =>
-      mirrorCall(nme.Ident, reify(tree.name))
-    case _ =>
-      throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
+  private def reifyBoundTerm(tree: Tree): Tree = {
+    val sym = tree.symbol
+
+    tree match {
+      case This(qual) =>
+        assert(sym != NoSymbol, "unexpected: bound term that doesn't have a symbol: " + showRaw(tree))
+        if (sym.isLocalToReifee)
+          mirrorCall(nme.This, reify(qual))
+        else if (sym.isClass && !sym.isModuleClass) {
+          if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
+          if (reifyDebug) println("Free: " + sym)
+          mirrorBuildCall(nme.Ident, reifyFreeTerm(This(sym)))
+        }
+        else {
+          if (reifyDebug) println("This for %s, reified as This".format(sym))
+          mirrorBuildCall(nme.This, reify(sym))
+        }
+
+      case Ident(name) =>
+        if (sym == NoSymbol) {
+          // this sometimes happens, e.g. for binds that don't have a body
+          // or for untyped code generated during previous phases
+          // (see a comment in Reifiers about the latter, starting with "why do we resetAllAttrs?")
+          mirrorCall(nme.Ident, reify(name))
+        }
+        else if (!sym.isLocalToReifee) {
+          if (sym.isVariable && sym.owner.isTerm) {
+            captureVariable(sym) // Note order dependency: captureVariable needs to come before reification here.
+            mirrorCall(nme.Select, mirrorBuildCall(nme.Ident, reify(sym)), reify(nme.elem))
+          }
+          else mirrorBuildCall(nme.Ident, reify(sym))
+        }
+        else mirrorCall(nme.Ident, reify(name))
+
+      case Select(qual, name) =>
+        if (sym == NoSymbol || sym.name == name)
+          reifyProduct(tree)
+        else
+          reifyProduct(Select(qual, sym.name))
+
+      case _ =>
+        throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
+    }
   }
 
   private def reifyBoundType(tree: Tree): Tree = {
+    val sym = tree.symbol
+    val tpe = tree.tpe
+
     def reifyBoundType(tree: Tree): Tree = {
-      if (tree.tpe == null)
-        throw new Error("unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
+      assert(tpe != null, "unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
 
       // if a symbol or a type of the scrutinee are local to reifee
       // (e.g. point to a locally declared class or to a path-dependent thingie that depends on a local variable)
       // then we can reify the scrutinee as a symless AST and that will definitely be hygienic
       // why? because then typechecking of a scrutinee doesn't depend on the environment external to the quasiquote
       // otherwise we need to reify the corresponding type
-      if (tree.symbol.isLocalToReifee || tree.tpe.isLocalToReifee)
+      if (sym.isLocalToReifee || tpe.isLocalToReifee)
         reifyProduct(tree)
       else {
-        val sym = tree.symbol
-        val tpe = tree.tpe
         if (reifyDebug) println("reifying bound type %s (underlying type is %s)".format(sym, tpe))
 
         if (tpe.isSpliceable) {
           val spliced = spliceType(tpe)
+
           if (spliced == EmptyTree) {
             if (reifyDebug) println("splicing failed: reify as is")
             mirrorBuildCall(nme.TypeTree, reify(tpe))
-          } else {
-            spliced match {
-              case TypeRefToFreeType(freeType) =>
-                if (reifyDebug) println("splicing returned a free type: " + freeType)
-                Ident(freeType)
-              case _ =>
-                if (reifyDebug) println("splicing succeeded: " + spliced)
-                mirrorBuildCall(nme.TypeTree, spliced)
-            }
           }
-        } else {
-          if (sym.isLocatable) {
-            if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
-            mirrorBuildCall(nme.Ident, reify(sym))
-          } else {
-            if (reifyDebug) println("tpe is not locatable: reify as TypeTree(%s)".format(tpe))
-            mirrorBuildCall(nme.TypeTree, reify(tpe))
+          else spliced match {
+            case TypeRefToFreeType(freeType) =>
+              if (reifyDebug) println("splicing returned a free type: " + freeType)
+              Ident(freeType)
+            case _ =>
+              if (reifyDebug) println("splicing succeeded: " + spliced)
+              mirrorBuildCall(nme.TypeTree, spliced)
           }
+        }
+        else if (sym.isLocatable) {
+          if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
+          mirrorBuildCall(nme.Ident, reify(sym))
+        }
+        else {
+          if (reifyDebug) println("tpe is not locatable: reify as TypeTree(%s)".format(tpe))
+          mirrorBuildCall(nme.TypeTree, reify(tpe))
         }
       }
     }
 
     tree match {
-      case Select(_, _) =>
+      case Select(qual, name) if name != sym.name =>
+        reifyBoundType(Select(qual, sym.name))
+
+      case Select(_, _) | SelectFromTypeTree(_, _) | Ident(_) =>
         reifyBoundType(tree)
-      case SelectFromTypeTree(_, _) =>
-        reifyBoundType(tree)
-      case Ident(_) =>
-        reifyBoundType(tree)
+
       case _ =>
         throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
     }
