@@ -218,6 +218,7 @@ class MutableSettings(val errorFn: String => Unit)
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
+  def MultiIntSetting(name: String, arg: String, descr: String) = add(new MultiIntSetting(name, arg, descr))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
@@ -526,7 +527,32 @@ class MutableSettings(val errorFn: String => Unit)
   extends Setting(name, descr) {
     type T = List[String]
     protected var v: T = Nil
-    def appendToValue(str: String) { value ++= List(str) }
+    def appendToValue(str: String) { value :+= str }
+
+    def tryToSet(args: List[String]) = {
+      val (strings, rest) = args span (x => !x.startsWith("-"))
+      strings foreach appendToValue
+
+      Some(rest)
+    }
+    override def tryToSetColon(args: List[String]) = tryToSet(args)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
+    def unparse: List[String] = value map (name + ":" + _)
+
+    withHelpSyntax(name + ":<" + arg + ">")
+  }
+
+  /** A setting that accumulates all ints supplied to it,
+   *  until it encounters one starting with a '-'. Because '-' is special
+   *  negative ints must be represented using '~', e.g. ~12 is -12*/
+  class MultiIntSetting private[nsc](
+    name: String,
+    val arg: String,
+    descr: String)
+  extends Setting(name, descr) {
+    type T = List[Int]
+    protected var v: T = Nil
+    def appendToValue(str: String) { value :+= str.replace('~', '-').toInt }
 
     def tryToSet(args: List[String]) = {
       val (strings, rest) = args span (x => !x.startsWith("-"))
