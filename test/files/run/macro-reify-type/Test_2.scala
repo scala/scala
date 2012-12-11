@@ -7,10 +7,10 @@ object Test extends App {
   //val $m: $u.Mirror = scala.reflect.runtime.universe.rootMirror;
   //import $u._, $m._, Flag._
   //val tpe = {
-  //  val symdef$B2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), newTypeName("B"), NoPosition, DEFERRED | PARAM, false);
-  //  val symdef$That2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), newTypeName("That"), NoPosition, DEFERRED | PARAM, false);
-  //  val symdef$f2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), newTermName("f"), NoPosition, PARAM, false);
-  //  val symdef$bf2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), newTermName("bf"), NoPosition, IMPLICIT | PARAM, false);
+  //  val symdef$B2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), TypeName("B"), NoPosition, DEFERRED | PARAM, false);
+  //  val symdef$That2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), TypeName("That"), NoPosition, DEFERRED | PARAM, false);
+  //  val symdef$f2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), TermName("f"), NoPosition, PARAM, false);
+  //  val symdef$bf2 = build.newNestedSymbol(build.selectTerm(staticClass("scala.collection.TraversableLike"), "map"), TermName("bf"), NoPosition, IMPLICIT | PARAM, false);
   //  build.setTypeSignature(symdef$B2, TypeBounds(staticClass("scala.Nothing").asType.toTypeConstructor, staticClass("scala.Any").asType.toTypeConstructor));
   //  build.setTypeSignature(symdef$That2, TypeBounds(staticClass("scala.Nothing").asType.toTypeConstructor, staticClass("scala.Any").asType.toTypeConstructor));
   //  build.setTypeSignature(symdef$f2, TypeRef(ThisType(staticPackage("scala").asModule.moduleClass), staticClass("scala.Function1"), List(staticClass("scala.Int").asType.toTypeConstructor, TypeRef(NoPrefix, symdef$B2, List()))));

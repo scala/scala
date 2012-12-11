@@ -28,7 +28,7 @@ object Test extends App {
         val ctor = tpe.declaration(nme.CONSTRUCTOR).asMethod
         cm.reflectClass(ctor.owner.asClass).reflectConstructor(ctor)(args: _*)
       } else {
-        val meth = tpe.declaration(newTermName(method).encodedName.toTermName).asMethod
+        val meth = tpe.declaration(TermName(method).encodedName.toTermName).asMethod
         cm.reflect(receiver).reflectMethod(meth)(args: _*)
       }
     })
