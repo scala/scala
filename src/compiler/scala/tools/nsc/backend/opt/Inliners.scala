@@ -311,7 +311,7 @@ abstract class Inliners extends SubComponent {
       def isRecursive   = m.recursive
       def hasCode       = m.code != null
       def hasSourceFile = m.sourceFile != null
-      def hasHandlers   = handlers.nonEmpty
+      def hasHandlers   = handlers.nonEmpty || m.bytecodeHasEHs
 
       // the number of inlined calls in 'm', used by 'shouldInline'
       var inlinedCalls = 0
@@ -495,7 +495,7 @@ abstract class Inliners extends SubComponent {
       }
 
       def isStampedForInlining(stack: TypeStack) =
-        !sameSymbols && inc.hasCode && shouldInline && isSafeToInline(stack)
+        !sameSymbols && inc.hasCode && !inc.m.bytecodeHasEHs && shouldInline && isSafeToInline(stack)
 
       def logFailure(stack: TypeStack) = log(
         """|inline failed for %s:
