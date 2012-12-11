@@ -251,6 +251,8 @@ trait Extractors {
 
   object BoundTerm {
     def unapply(tree: Tree): Option[Tree] = tree match {
+      case Select(_, name) if name.isTermName =>
+        Some(tree)
       case Ident(name) if name.isTermName =>
         Some(tree)
       case This(_) =>
