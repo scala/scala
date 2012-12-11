@@ -25,7 +25,7 @@ class ISettings(intp: IMain) {
   var maxAutoprintCompletion = 250
 
   /** String unwrapping can be disabled if it is causing issues.
-   *  Settings this to false means you will see Strings like "$iw.$iw.".
+   *  Setting this to false means you will see Strings like "$iw.$iw.".
    */
   var unwrapStrings = true
 

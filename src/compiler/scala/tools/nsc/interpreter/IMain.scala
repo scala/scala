@@ -312,6 +312,14 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       case _        => Some(flatPath(sym))
     }
   }
+  def translateEnclosingClass(n: String) = {
+    def enclosingClass(s: Symbol): Symbol =
+      if (s == NoSymbol || s.isClass) s else enclosingClass(s.owner)
+    enclosingClass(symbolOfTerm(n)) match {
+      case NoSymbol => None
+      case c        => Some(flatPath(c))
+    }
+  }
 
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     /** Overridden here to try translating a simple name to the generated
