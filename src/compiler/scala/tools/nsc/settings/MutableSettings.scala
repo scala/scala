@@ -518,20 +518,25 @@ class MutableSettings(val errorFn: String => Unit)
       }
   }
 
-  /** A setting that accumulates all strings supplied to it,
-   *  until it encounters one starting with a '-'. */
-  class MultiStringSetting private[nsc](
+  /** Base class for a setting that accumulates all Xs supplied to it,
+   *  until it encounters one starting with a '-'. This class takes care of
+   *  breaking up the arguments into pieces, but subclasses need to specify
+   *  a parsing function to apply to each argument */
+  abstract class MultiSetting[X] private[nsc](
     name: String,
     val arg: String,
-    descr: String)
-  extends Setting(name, descr) {
-    type T = List[String]
+    descr: String) extends Setting(name, descr) {
+    
+    type T = List[X]
+    
+    // function used to transform an individual argument into an X
+    def parseFunction : String => X
+    
     protected var v: T = Nil
-    def appendToValue(str: String) { value :+= str }
-
+    
     def tryToSet(args: List[String]) = {
       val (strings, rest) = args span (x => !x.startsWith("-"))
-      strings foreach appendToValue
+      value ++= (strings map parseFunction)
 
       Some(rest)
     }
@@ -541,30 +546,26 @@ class MutableSettings(val errorFn: String => Unit)
 
     withHelpSyntax(name + ":<" + arg + ">")
   }
+    
+  /** A setting that accumulates all strings supplied to it,
+   *  until it encounters one starting with a '-'. */
+  class MultiStringSetting private[nsc](
+    name: String,
+    arg: String,
+    descr: String)
+  extends MultiSetting[String](name, arg, descr) {
+    def parseFunction = identity
+  }
 
   /** A setting that accumulates all ints supplied to it,
    *  until it encounters one starting with a '-'. Because '-' is special
    *  negative ints must be represented using '~', e.g. ~12 is -12*/
   class MultiIntSetting private[nsc](
     name: String,
-    val arg: String,
+    arg: String,
     descr: String)
-  extends Setting(name, descr) {
-    type T = List[Int]
-    protected var v: T = Nil
-    def appendToValue(str: String) { value :+= str.replace('~', '-').toInt }
-
-    def tryToSet(args: List[String]) = {
-      val (strings, rest) = args span (x => !x.startsWith("-"))
-      strings foreach appendToValue
-
-      Some(rest)
-    }
-    override def tryToSetColon(args: List[String]) = tryToSet(args)
-    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
-    def unparse: List[String] = value map (name + ":" + _)
-
-    withHelpSyntax(name + ":<" + arg + ">")
+  extends MultiSetting[Int](name, arg, descr) {    
+    def parseFunction = _.replace('~', '-').toInt
   }
 
   /** A setting represented by a string in a given set of `choices`,
