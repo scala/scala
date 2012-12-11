@@ -1,10 +1,10 @@
-t6260.scala:3: error: bridge generated for member method apply: (x$1: Box[X])Box[Y] in anonymous class $anonfun
+t6260.scala:3: error: bridge generated for member method apply: (bx: Box[X])Box[Y] in anonymous class $anonfun
 which overrides method apply: (v1: T1)R in trait Function1
 clashes with definition of the member itself;
 both have erased type (v1: Object)Object
     ((bx: Box[X]) => new Box(f(bx.x)))(this)
                   ^
-t6260.scala:8: error: bridge generated for member method apply: (x$1: Box[X])Box[Y] in anonymous class $anonfun
+t6260.scala:8: error: bridge generated for member method apply: (bx: Box[X])Box[Y] in anonymous class $anonfun
 which overrides method apply: (v1: T1)R in trait Function1
 clashes with definition of the member itself;
 both have erased type (v1: Object)Object
