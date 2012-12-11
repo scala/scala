@@ -1,0 +1,6 @@
+t6535.scala:2: error: encountered unrecoverable cycle resolving import.
+Note: this is often due in part to a class depending on a definition nested within its companion.
+If applicable, you may wish to try moving some members into another object.
+  import Bs.B._
+            ^
+one error found

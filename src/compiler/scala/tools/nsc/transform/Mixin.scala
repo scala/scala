@@ -266,7 +266,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /** Mix in members of implementation class mixinClass into class clazz */
     def mixinImplClassMembers(mixinClass: Symbol, mixinInterface: Symbol) {
-      assert(mixinClass.isImplClass, "Not an impl class:" +
+      if (!mixinClass.isImplClass) debugwarn ("Impl class flag is not set " +
         ((mixinClass.debugLocationString, mixinInterface.debugLocationString)))
 
       for (member <- mixinClass.info.decls ; if isForwarded(member)) {
@@ -357,7 +357,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     // first complete the superclass with mixed in members
     addMixedinMembers(clazz.superClass, unit)
 
-    //Console.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
     for (mc <- clazz.mixinClasses ; if mc hasFlag lateINTERFACE) {
       // @SEAN: adding trait tracking so we don't have to recompile transitive closures
       unit.depends += mc
@@ -868,8 +867,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val cond                    = Apply(Select(moduleVarRef, Object_eq), List(NULL))
             mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
-            assert(false, "Invalid getter " + rhs + " for module in class " + clazz)
-            EmptyTree
+            abort("Invalid getter " + rhs + " for module in class " + clazz)
         }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {

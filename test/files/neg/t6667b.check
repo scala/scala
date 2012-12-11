@@ -1,0 +1,13 @@
+t6667b.scala:16: error: ambiguous implicit values:
+ both value a in object Test of type => Test.Box
+ and value b of type Test.Box
+ match expected type Test.Box
+      new Test()
+      ^
+t6667b.scala:19: error: ambiguous implicit values:
+ both value a in object Test of type => Test.Box
+ and value b of type Test.Box
+ match expected type Test.Box
+    new Test()
+    ^
+two errors found

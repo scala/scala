@@ -7,6 +7,7 @@
 package scala.reflect.internal.util
 
 import scala.reflect.ClassTag
+import scala.reflect.internal.FatalError
 import scala.reflect.macros.Attachments
 
 object Position {
@@ -269,7 +270,7 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
 /** new for position ranges */
 class RangePosition(source: SourceFile, override val start: Int, point: Int, override val end: Int)
 extends OffsetPosition(source, point) {
-  if (start > end) assert(false, "bad position: "+show)
+  if (start > end) sys.error("bad position: "+show)
   override def isRange: Boolean = true
   override def isOpaqueRange: Boolean = true
   override def startOrPoint: Int = start

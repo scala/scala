@@ -182,13 +182,17 @@ trait ContextErrors {
       }
 
       def ParentTypesError(templ: Template, ex: TypeError) = {
-         templ.tpe = null
-         issueNormalTypeError(templ, ex.getMessage())
+        templ.tpe = null
+        issueNormalTypeError(templ, ex.getMessage())
+        setError(templ)
       }
 
       // additional parentTypes errors
-      def ConstrArgsInTraitParentTpeError(arg: Tree, parent: Symbol) =
+      def ConstrArgsInParentWhichIsTraitError(arg: Tree, parent: Symbol) =
         issueNormalTypeError(arg, parent + " is a trait; does not take constructor arguments")
+
+      def ConstrArgsInParentOfTraitError(arg: Tree, parent: Symbol) =
+        issueNormalTypeError(arg, "parents of traits may not have parameters")
 
       def MissingTypeArgumentsParentTpeError(supertpt: Tree) =
         issueNormalTypeError(supertpt, "missing type arguments")
@@ -1040,9 +1044,6 @@ trait ContextErrors {
       def MaxParametersCaseClassError(tree: Tree) =
         issueNormalTypeError(tree, "Implementation restriction: case classes cannot have more than " + definitions.MaxFunctionArity + " parameters.")
 
-      def InheritsItselfError(tree: Tree) =
-        issueNormalTypeError(tree, tree.tpe.typeSymbol+" inherits itself")
-
       def MissingParameterOrValTypeError(vparam: Tree) =
         issueNormalTypeError(vparam, "missing parameter type")
 
@@ -1276,7 +1277,10 @@ trait ContextErrors {
       fail()
     }
 
-    private def implRefError(message: String) = genericError(methPart(macroDdef.rhs), message)
+    private def implRefError(message: String) = {
+      val treeInfo.Applied(implRef, _, _) = macroDdef.rhs
+      genericError(implRef, message)
+    }
 
     private def compatibilityError(message: String) =
       implRefError(

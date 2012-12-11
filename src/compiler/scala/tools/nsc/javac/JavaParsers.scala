@@ -506,7 +506,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               if (parentToken == AT && in.token == DEFAULT) {
                 val annot =
                   atPos(pos) {
-                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), ListOfNil)
+                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), Nil)
                   }
                 mods1 = mods1 withAnnotations List(annot)
                 skipTo(SEMI)
