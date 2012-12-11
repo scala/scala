@@ -801,8 +801,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       protected def spliceApply(binder: Symbol): Tree = {
         object splice extends Transformer {
           override def transform(t: Tree) = t match {
-            case Apply(x, List(Ident(nme.SELECTOR_DUMMY))) =>
-              treeCopy.Apply(t, x, List(CODE.REF(binder)))
+            case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
+              treeCopy.Apply(t, x, List(CODE.REF(binder).setPos(i.pos)))
             case _ => super.transform(t)
           }
         }

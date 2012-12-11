@@ -1,0 +1,30 @@
+[[syntax trees at end of                    patmat]] // newSource1
+[7]package [7]<empty> {
+  [7]object Case3 extends [13][105]scala.AnyRef {
+    [105]def <init>(): [13]Case3.type = [105]{
+      [105][105][105]Case3.super.<init>();
+      [13]()
+    };
+    [21]def unapply([29]z: [32]<type: [32]scala.Any>): [21]Option[Int] = [56][52][52]scala.Some.apply[[52]Int]([58]-1);
+    [64]{
+      [64]case <synthetic> val x1: [64]Any = [64]"";
+      [64]case5()[84]{
+        [84]<synthetic> val o7: [84]Option[Int] = [84][84]Case3.unapply([84]x1);
+        [84]if ([84]o7.isEmpty.unary_!)
+          [84]{
+            [90]val nr: [90]Int = [64]o7.get;
+            [97][97]matchEnd4([97]())
+          }
+        else
+          [84][84]case6()
+      };
+      [64]case6(){
+        [64][64]matchEnd4([64]throw [64][64][64]new [64]MatchError([64]x1))
+      };
+      [64]matchEnd4(x: [NoPosition]Unit){
+        [64]x
+      }
+    }
+  }
+}
+
