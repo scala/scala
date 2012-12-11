@@ -421,9 +421,34 @@ object TraversableOnce {
   class ForceImplicitAmbiguity
 
   implicit class MonadOps[+A](trav: TraversableOnce[A]) {
-    def map[B](f: A => B): TraversableOnce[B] = trav.toIterator map f
-    def flatMap[B](f: A => GenTraversableOnce[B]): TraversableOnce[B] = trav.toIterator flatMap f
-    def withFilter(p: A => Boolean) = trav.toIterator filter p
+    def map[B](converter: A => B): TraversableOnce[B] = new Traversable[B] {
+      override def foreach[U](f: B => U) {
+        for (a <- trav) {
+          f(converter(a))
+        }
+      }
+    }
+
+    def flatMap[B](converter: A => GenTraversableOnce[B]): TraversableOnce[B] = new Traversable[B] {
+      override def foreach[U](f: B => U) {
+        for (a <- trav) {
+          for (b <- converter(a)) {
+            f(b)
+          }
+        }
+      }
+    }
+
+    def withFilter(p: A => Boolean): TraversableOnce[A] = new Traversable[A] {
+      override def foreach[U](f: A => U) {
+        for (a <- trav) {
+          if (p(a)) {
+            f(a)
+          }
+        }
+      }
+    }
+
     def filter(p: A => Boolean): TraversableOnce[A] = withFilter(p)
   }
 }
