@@ -9,8 +9,6 @@
 
 package scala.concurrent
 
-import ops.future
-
 /** A <code>DelayedLazyVal</code> is a wrapper for lengthy
  *  computations which have a valid partially computed result.
  *  The first argument is a function for obtaining the result
@@ -41,7 +39,7 @@ class DelayedLazyVal[T](f: () => T, body: => Unit) {
    */
   def apply(): T = if (isDone) complete else f()
 
-  future {
+  ops.future {
     body
     _isDone = true
   }
