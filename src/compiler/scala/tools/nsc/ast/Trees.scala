@@ -111,7 +111,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         rhs = EmptyTree
       )
     }
-    val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = Modifiers(PRESUPER)) }
+    val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = vdef.mods | PRESUPER) }
 
     val constrs = {
       if (constrMods hasFlag TRAIT) {
