@@ -74,7 +74,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         def textTypeEntity(text: String) =
           new TypeEntity {
             val name = text
-            def refEntity: SortedMap[Int, (LinkTo, Int)] = SortedMap()
+            def refEntity: SortedMap[Int, (base.LinkTo, Int)] = SortedMap()
           }
 
         // it seems dot chokes on node names over 8000 chars, so let's limit the size of the string

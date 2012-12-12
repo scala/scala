@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 package doc
-package model
+package base
 package comment
 
 import scala.collection._

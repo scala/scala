@@ -10,8 +10,6 @@ package scala.tools.nsc
 package doc
 package model
 
-import comment._
-
 import scala.collection._
 import scala.util.matching.Regex
 

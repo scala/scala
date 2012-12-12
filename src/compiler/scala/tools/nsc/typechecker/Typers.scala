@@ -48,6 +48,7 @@ trait Typers extends Modes with Adaptations with Tags {
     resetContexts()
     resetImplicits()
     transformed.clear()
+    clearDocComments()
   }
 
   object UnTyper extends Traverser {
@@ -5261,8 +5262,8 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       def typedDocDef(docdef: DocDef) = {
-        val comment = docdef.comment
         if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
+          val comment = docdef.comment          
           docComments(sym) = comment
           comment.defineVariables(sym)
           val typer1 = newTyper(context.makeNewScope(tree, context.owner))

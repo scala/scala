@@ -1,3 +1,4 @@
+import scala.tools.nsc.doc.base._
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
 import scala.tools.partest.ScaladocModelTest

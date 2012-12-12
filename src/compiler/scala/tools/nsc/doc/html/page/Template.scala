@@ -8,6 +8,9 @@ package doc
 package html
 package page
 
+import base._
+import base.comment._
+
 import model._
 import model.diagram._
 import diagram._
