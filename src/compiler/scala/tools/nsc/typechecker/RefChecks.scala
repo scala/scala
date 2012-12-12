@@ -1251,57 +1251,61 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       finally popLevel()
     }
 
-    /** Eliminate ModuleDefs.
-     *   - A top level object is replaced with their module class.
-     *   - An inner object is transformed into a module var, created on first access.
+    /** Eliminate ModuleDefs. In all cases the ModuleDef (carrying a module symbol) is
+     *  replaced with a ClassDef (carrying the corresponding module class symbol) with additional
+     *  trees created as follows:
      *
-     *  In both cases, this transformation returns the list of replacement trees:
-     *   - Top level: the module class accessor definition
-     *   - Inner: a class definition, declaration of module var, and module var accessor
+     *  1) A statically reachable object (either top-level or nested only in objects) receives
+     *     no additional trees.
+     *  2) An inner object which matches an existing member (e.g. implements an interface)
+     *     receives an accessor DefDef to implement the interface.
+     *  3) An inner object otherwise receives a private ValDef which declares a module var
+     *     (the field which holds the module class - it has a name like Foo$module) and an
+     *     accessor for that field. The instance is created lazily, on first access.
      */
-    private def eliminateModuleDefs(tree: Tree): List[Tree] = {
-      val ModuleDef(mods, name, impl) = tree
-      val sym      = tree.symbol
-      val classSym = sym.moduleClass
-      val cdef     = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
+    private def eliminateModuleDefs(moduleDef: Tree): List[Tree] = exitingRefchecks {
+      val ModuleDef(mods, name, impl) = moduleDef
+      val module        = moduleDef.symbol
+      val site          = module.owner
+      val moduleName    = module.name.toTermName
+      // The typer doesn't take kindly to seeing this ClassDef; we have to
+      // set NoType so it will be ignored.
+      val cdef          = ClassDef(module.moduleClass, impl) setType NoType
 
-      def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
-        // See SI-5012, SI-6712.
+      // Create the module var unless the immediate owner is a class and
+      // the module var already exists there. See SI-5012, SI-6712.
+      def findOrCreateModuleVar() = {
         val vsym = (
-          if (sym.owner.isTerm) NoSymbol
-          else sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName))
+          if (site.isTerm) NoSymbol
+          else site.info decl nme.moduleVarName(moduleName)
         )
-        // In case we are dealing with local symbol then we already have
-        // to correct error with forward reference
-        if (vsym == NoSymbol) gen.mkModuleVarDef(sym)
-        else ValDef(vsym)
+        vsym orElse (site newModuleVarSymbol module)
       }
-      def createStaticModuleAccessor() = exitingRefchecks {
-        val method = (
-          sym.owner.newMethod(sym.name.toTermName, sym.pos, (sym.flags | STABLE) & ~MODULE)
-            setInfoAndEnter NullaryMethodType(sym.moduleClass.tpe)
-        )
-        localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym))
+      def newInnerObject() = {
+        // Create the module var unless it is already in the module owner's scope.
+        // The lookup is on module.enclClass and not module.owner lest there be a
+        // nullary method between us and the class; see SI-5012.
+        val moduleVar = findOrCreateModuleVar()
+        val rhs       = gen.newModule(module, moduleVar.tpe)
+        val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(moduleVar, rhs)
+        val accessor  = DefDef(module, body.changeOwner(moduleVar -> module))
+
+        ValDef(moduleVar) :: accessor :: Nil
       }
-      def createInnerModuleAccessor(vdef: Tree) = List(
-        vdef,
-        localTyper.typedPos(tree.pos) {
-          val vsym = vdef.symbol
-          exitingRefchecks {
-            val rhs  = gen.newModule(sym, vsym.tpe)
-            val body = if (sym.owner.isTrait) rhs else gen.mkAssignAndReturn(vsym, rhs)
-            DefDef(sym, body.changeOwner(vsym -> sym))
-          }
-        }
-      )
-      transformTrees(cdef :: {
-        if (!sym.isStatic)
-          createInnerModuleAccessor(findOrCreateModuleVar)
-        else if (sym.isOverridingSymbol)
-          List(createStaticModuleAccessor())
+      def matchingInnerObject() = {
+        val newFlags = (module.flags | STABLE) & ~MODULE
+        val newInfo  = NullaryMethodType(module.moduleClass.tpe)
+        val accessor = site.newMethod(moduleName, module.pos, newFlags) setInfoAndEnter newInfo
+
+        DefDef(accessor, Select(This(site), module)) :: Nil
+      }
+      val newTrees = cdef :: (
+        if (module.isStatic)
+          if (module.isOverridingSymbol) matchingInnerObject() else Nil
         else
-          Nil
-      })
+          newInnerObject()
+      )
+      transformTrees(newTrees map localTyper.typedPos(moduleDef.pos))
     }
 
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {

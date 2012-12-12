@@ -867,7 +867,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val cond                    = Apply(Select(moduleVarRef, Object_eq), List(NULL))
             mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
           case _ =>
-            abort("Invalid getter " + rhs + " for module in class " + clazz)
+            abort(s"Invalid getter $rhs for module in $clazz")
         }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
@@ -875,7 +875,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val bitmapSym = bitmapFor(clazz, offset, sym)
         val kind      = bitmapKind(sym)
         val mask      = maskForOffset(offset, sym, kind)
-        val msg       = "Uninitialized field: " + unit.source + ": " + pos.line
+        val msg       = s"Uninitialized field: ${unit.source}: ${pos.line}"
         val result    =
           IF (mkTest(clazz, mask, bitmapSym, false, kind)) .
             THEN (retVal) .
@@ -1035,16 +1035,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
         // if class is not a trait add accessor definitions
         else if (!clazz.isTrait) {
+          // This needs to be a def to avoid sharing trees
+          def accessedRef = accessedReference(sym)
           if (sym.hasAccessorFlag && (!sym.isDeferred || sym.hasFlag(lateDEFERRED))) {
             // add accessor definitions
             addDefDef(sym, {
-              val accessedRef = accessedReference(sym)
               if (sym.isSetter) {
                 if (isOverriddenSetter(sym)) UNIT
                 else accessedRef match {
-                  case Literal(_) => accessedRef
-                  case _ =>
-                    val init   = Assign(accessedRef, Ident(sym.firstParam))
+                  case ref @ Literal(_) => ref
+                  case ref =>
+                    val init   = Assign(ref, Ident(sym.firstParam))
                     val getter = sym.getter(clazz)
 
                     if (!needsInitFlag(getter)) init
@@ -1059,11 +1060,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
             // add modules
-            val vdef = gen.mkModuleVarDef(sym)
-            addDef(position(sym), vdef)
+            val vsym = sym.owner.newModuleVarSymbol(sym)
+            addDef(position(sym), ValDef(vsym))
 
-            val rhs          = gen.newModule(sym, vdef.symbol.tpe)
-            val assignAndRet = gen.mkAssignAndReturn(vdef.symbol, rhs)
+            // !!! TODO - unravel the enormous duplication between this code and
+            // eliminateModuleDefs in RefChecks.
+            val rhs          = gen.newModule(sym, vsym.tpe)
+            val assignAndRet = gen.mkAssignAndReturn(vsym, rhs)
             val attrThis     = gen.mkAttributedThis(clazz)
             val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
 

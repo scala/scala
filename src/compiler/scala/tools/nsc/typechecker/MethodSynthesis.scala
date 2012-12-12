@@ -50,7 +50,9 @@ trait MethodSynthesis {
 
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
     def mkThis = This(clazz) setPos clazz.pos.focus
-    def mkThisSelect(sym: Symbol) = atPos(clazz.pos.focus)(Select(mkThis, sym))
+    def mkThisSelect(sym: Symbol) = atPos(clazz.pos.focus)(
+      if (clazz.isClass) Select(This(clazz), sym) else Ident(sym)
+    )
 
     private def isOverride(name: TermName) =
       clazzMember(name).alternatives exists (sym => !sym.isDeferred && (sym.owner != clazz))

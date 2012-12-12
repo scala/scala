@@ -620,9 +620,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         // create a symbol for the static field
         val stfieldSym = (
           currentClass.newVariable(mkTerm("symbol$"), pos, PRIVATE | STATIC | SYNTHETIC | FINAL)
-            setInfo SymbolClass.tpe
+            setInfoAndEnter SymbolClass.tpe
         )
-        currentClass.info.decls enter stfieldSym
 
         // create field definition and initialization
         val stfieldDef  = theTyper.typedPos(pos)(VAL(stfieldSym) === rhs)
