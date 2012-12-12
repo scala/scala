@@ -3,7 +3,6 @@ package model
 package diagram
 
 import model._
-import comment.CommentFactory
 import java.util.regex.{Pattern, Matcher}
 import scala.util.matching.Regex
 

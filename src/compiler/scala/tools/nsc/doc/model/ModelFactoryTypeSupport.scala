@@ -4,8 +4,7 @@ package scala.tools.nsc
 package doc
 package model
 
-import comment._
-
+import base._
 import diagram._
 
 import scala.collection._
@@ -24,7 +23,8 @@ trait ModelFactoryTypeSupport {
                with ModelFactoryTypeSupport
                with DiagramFactory
                with CommentFactory
-               with TreeFactory =>
+               with TreeFactory
+               with MemberLookup =>
 
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
