@@ -1266,13 +1266,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       val cdef     = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
 
       def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
-        lazy val createModuleVar = gen.mkModuleVarDef(sym)
-        sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
-          // In case we are dealing with local symbol then we already have
-          // to correct error with forward reference
-          case NoSymbol => createModuleVar
-          case vsym     => ValDef(vsym)
-        }
+        // See SI-5012, SI-6712.
+        val vsym = (
+          if (sym.owner.isTerm) NoSymbol
+          else sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName))
+        )
+        // In case we are dealing with local symbol then we already have
+        // to correct error with forward reference
+        if (vsym == NoSymbol) gen.mkModuleVarDef(sym)
+        else ValDef(vsym)
       }
       def createStaticModuleAccessor() = exitingRefchecks {
         val method = (
@@ -1679,7 +1681,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             checkAnyValSubclass(currentOwner)
             if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
-          case dc@TypeTreeWithDeferredRefCheck() => assert(false, "adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc"); dc
+          case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
           case tpt@TypeTree() =>
             if(tpt.original != null) {
               tpt.original foreach {

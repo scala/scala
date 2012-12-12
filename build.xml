@@ -22,7 +22,7 @@ END-USER TARGETS
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
-  <target name="test" depends="test.done, osgi.test"
+  <target name="test" depends="test.done, osgi.test, bc.run"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
 
   <target name="test-opt"
@@ -2487,6 +2487,40 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt"/>
+
+
+<!-- ===========================================================================
+Binary compatibility testing
+============================================================================ -->
+
+  <target name="bc.init" depends="init">
+    <property name="bc-build.dir" value="${build.dir}/bc"/>
+    <!-- Obtain mima -->
+    <mkdir dir="${bc-build.dir}"/>
+    <!-- Pull down MIMA -->
+    <artifact:dependencies pathId="mima.classpath">
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.4"/>
+    </artifact:dependencies>
+    <artifact:dependencies pathId="old.bc.classpath">
+      <dependency groupId="org.scala-lang" artifactId="scala-library" version="2.10.0-RC2"/>
+    </artifact:dependencies>
+  </target>
+
+  <target name="bc.run" depends="bc.init, pack.lib">
+    <java
+       fork="true"
+       failonerror="true"
+       classname="com.typesafe.tools.mima.cli.Main">
+         <arg value="--prev"/>
+         <arg value="${org.scala-lang:scala-library:jar}"/>
+         <arg value="--curr"/>
+         <arg value="${build-pack.dir}/lib/scala-library.jar"/>
+         <classpath>
+           <path refid="mima.classpath"/>
+         </classpath>
+     </java>
+  </target>
+
 
 <!-- ===========================================================================
 DISTRIBUTION

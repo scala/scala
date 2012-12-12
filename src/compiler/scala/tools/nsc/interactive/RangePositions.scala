@@ -143,7 +143,7 @@ self: scala.tools.nsc.Global =>
    */
   private def setChildrenPos(pos: Position, trees: List[Tree]): Unit = try {
     for (tree <- trees) {
-      if (!tree.isEmpty && tree.pos == NoPosition) {
+      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
         val children = tree.children
         if (children.isEmpty) {
           tree setPos pos.focus
@@ -164,7 +164,7 @@ self: scala.tools.nsc.Global =>
    */
   override def atPos[T <: Tree](pos: Position)(tree: T): T = {
     if (pos.isOpaqueRange) {
-      if (!tree.isEmpty && tree.pos == NoPosition) {
+      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
         tree.setPos(pos)
         val children = tree.children
         if (children.nonEmpty) {
@@ -202,7 +202,7 @@ self: scala.tools.nsc.Global =>
 
     def validate(tree: Tree, encltree: Tree): Unit = {
 
-      if (!tree.isEmpty) {
+      if (!tree.isEmpty && tree.canHaveAttrs) {
         if (settings.Yposdebug.value && (settings.verbose.value || settings.Yrangepos.value))
           println("[%10s] %s".format("validate", treeStatus(tree, encltree)))
 

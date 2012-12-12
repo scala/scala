@@ -60,7 +60,7 @@ trait BaseTypeSeqs {
         elems(i) match {
           case rtp @ RefinedType(variants, decls) =>
             // can't assert decls.isEmpty; see t0764
-            //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
+            //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
             //Console.println("compute closure of "+this+" => glb("+variants+")")
             pending += i
             try {
