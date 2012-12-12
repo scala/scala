@@ -1146,7 +1146,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           val expectedOuter = expectedTp.prefix match {
             case ThisType(clazz)      => THIS(clazz)
             case pre if pre != NoType => REF(pre.prefix, pre.termSymbol)
-            case _ => TRUE_typed // fallback for SI-6183
+            case _ => TRUE // fallback for SI-6183
           }
 
           // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
@@ -1278,10 +1278,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
           // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
           val combinedAlts = altss map (altTreeMakers =>
-            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE_typed)))(casegen))
+            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE_typed))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => FALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -3241,7 +3241,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           }
       }
 
-      private val defaultLabel: Symbol =  newSynthCaseLabel("default")
+      private val defaultLabel: Symbol = newSynthCaseLabel("default")
 
       /** Collapse guarded cases that switch on the same constant (the last case may be unguarded).
        *
@@ -3682,7 +3682,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree =
           ifThenElseZero(cond, BLOCK(
-            condSym    === TRUE_typed,
+            condSym    === TRUE,
             nextBinder === res,
             next
           ))

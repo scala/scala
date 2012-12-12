@@ -65,27 +65,9 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
 
   // Builds a tree of the form "{ lhs = rhs ; lhs  }"
   def mkAssignAndReturn(lhs: Symbol, rhs: Tree): Tree = {
-    val lhsRef = mkUnattributedRef(lhs)
+    def lhsRef = if (lhs.owner.isClass) Select(This(lhs.owner), lhs) else Ident(lhs)
     Block(Assign(lhsRef, rhs) :: Nil, lhsRef)
   }
-
-  def mkModuleVarDef(accessor: Symbol) = {
-    val inClass    = accessor.owner.isClass
-    val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
-
-    val mval = (
-      accessor.owner.newVariable(nme.moduleVarName(accessor.name.toTermName), accessor.pos.focus, MODULEVAR | extraFlags)
-        setInfo accessor.tpe.finalResultType
-        addAnnotation VolatileAttr
-    )
-    if (inClass)
-      mval.owner.info.decls enter mval
-
-    ValDef(mval)
-  }
-
-  def mkModuleAccessDef(accessor: Symbol, msym: Symbol) =
-    DefDef(accessor, Select(This(msym.owner), msym))
 
   def newModule(accessor: Symbol, tpe: Type) = {
     val ps = tpe.typeSymbol.primaryConstructor.info.paramTypes

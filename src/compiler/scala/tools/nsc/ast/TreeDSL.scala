@@ -30,24 +30,17 @@ trait TreeDSL {
     def returning[T](x: T)(f: T => Unit): T = util.returning(x)(f)
 
     object LIT extends (Any => Literal) {
+      def typed(x: Any)   = apply(x) setType ConstantType(Constant(x))
       def apply(x: Any)   = Literal(Constant(x))
       def unapply(x: Any) = condOpt(x) { case Literal(Constant(value)) => value }
     }
 
-    // You might think these could all be vals, but empirically I have found that
-    // at least in the case of UNIT the compiler breaks if you re-use trees.
-    // However we need stable identifiers to have attractive pattern matching.
-    // So it's inconsistent until I devise a better way.
-    val TRUE          = LIT(true)
-    val FALSE         = LIT(false)
-    val ZERO          = LIT(0)
-    def NULL          = LIT(null)
-    def UNIT          = LIT(())
-
-    // for those preferring boring, predictable lives, without the thrills of tree-sharing
-    // (but with the perk of typed trees)
-    def TRUE_typed  = LIT(true) setType ConstantType(Constant(true))
-    def FALSE_typed = LIT(false) setType ConstantType(Constant(false))
+    // Boring, predictable trees.
+    def TRUE  = LIT typed true
+    def FALSE = LIT typed false
+    def ZERO  = LIT(0)
+    def NULL  = LIT(null)
+    def UNIT  = LIT(())
 
     object WILD {
       def empty               = Ident(nme.WILDCARD)
@@ -106,6 +99,10 @@ trait TreeDSL {
       def DOT(sym: Symbol)          = SelectStart(Select(target, sym))
 
       /** Assignment */
+      // !!! This method is responsible for some tree sharing, but a diligent
+      // reviewer pointed out that we shouldn't blindly duplicate these trees
+      // as there might be DefTrees nested beneath them.  It's not entirely
+      // clear how to proceed, so for now it retains the non-duplicating behavior.
       def ===(rhs: Tree)            = Assign(target, rhs)
 
       /** Methods for sequences **/

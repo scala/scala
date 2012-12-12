@@ -522,7 +522,7 @@ abstract class Erasure extends AddInterfaces
           && !exitingErasure((member.tpe <:< other.tpe))) // no static guarantees (TODO: is the subtype test ever true?)
 
         import CODE._
-        val _false    = FALSE_typed
+        val _false    = FALSE
         val pt        = member.tpe.resultType
         lazy val zero =
           if      (_false.tpe <:< pt)    _false
