@@ -100,7 +100,8 @@ object ModifierFlags extends ModifierFlags
 
   private final val PKL_MASK       = 0x00000FFF
 
-  final val PickledFlags: Long  = 0xFFFFFFFFL
+  // must pickle EXISTENTIAL for SI-6692
+  final val PickledFlags: Long     = 0x8FFFFFFFFL
 
   private def rawPickledCorrespondence = Array(
     (IMPLICIT, IMPLICIT_PKL),
