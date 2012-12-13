@@ -1240,9 +1240,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     class BodyDuplicator(_context: Context) extends super.BodyDuplicator(_context) {
       override def castType(tree: Tree, pt: Type): Tree = {
-        // log(" expected type: " + pt)
-        // log(" tree type: " + tree.tpe)
-        tree.tpe = if (tree.tpe != null) fixType(tree.tpe) else null
+        tree modifyType fixType
         // log(" tree type: " + tree.tpe)
         val ntree = if (tree.tpe != null && !(tree.tpe <:< pt)) {
           val casttpe = CastMap(tree.tpe)
@@ -1250,8 +1248,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           else if (casttpe <:< CastMap(pt)) gen.mkCast(tree, pt)
           else tree
         } else tree
-        ntree.tpe = null
-        ntree
+
+        ntree.clearType()
       }
     }
 
@@ -1679,8 +1677,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         false) // don't make private fields public
 
       val newBody = symSubstituter(body(source).duplicate)
-      tpt.tpe = tpt.tpe.substSym(oldtparams, newtparams)
-
+      tpt modifyType (_.substSym(oldtparams, newtparams))
       copyDefDef(tree)(vparamss = List(newSyms map ValDef), rhs = newBody)
     }
 

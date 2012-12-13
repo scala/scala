@@ -439,7 +439,7 @@ trait Importers extends api.Importers { self: SymbolTable =>
               if (tt.original != null) mytt.setOriginal(importTree(tt.original))
             case _ =>
               if (mytree.hasSymbolField) mytree.symbol = importSymbol(tree.symbol)
-              mytree.tpe = importType(tree.tpe)
+              mytree setType importType(tree.tpe)
           }
         }
       })

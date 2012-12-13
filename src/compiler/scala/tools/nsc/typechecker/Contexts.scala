@@ -106,8 +106,8 @@ trait Contexts { self: Analyzer =>
     var sc = startContext
     while (sc != NoContext) {
       sc.tree match {
-        case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol)
-        case _ =>
+        case Import(qual, _) => qual setType singleType(qual.symbol.owner.thisType, qual.symbol)
+        case _               =>
       }
       sc = sc.outer
     }

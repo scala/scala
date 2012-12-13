@@ -94,11 +94,11 @@ trait EtaExpansion { self: Analyzer =>
             // with repeated params, there might be more or fewer args than params
             liftout(arg, byName(i).getOrElse(false))
           }
-          treeCopy.Apply(tree, liftoutPrefix(fn), newArgs) setType null
+          treeCopy.Apply(tree, liftoutPrefix(fn), newArgs).clearType()
         case TypeApply(fn, args) =>
-          treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
+          treeCopy.TypeApply(tree, liftoutPrefix(fn), args).clearType()
         case Select(qual, name) =>
-          treeCopy.Select(tree, liftout(qual, false), name) setSymbol NoSymbol setType null
+          treeCopy.Select(tree, liftout(qual, false), name).clearType() setSymbol NoSymbol
         case Ident(name) =>
           tree
       }

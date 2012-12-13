@@ -24,7 +24,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
     private[this] var rawtpe: Type = _
     final def tpe = rawtpe
-    def tpe_=(t: Type) = rawtpe = t
+    @deprecated("Use setType", "2.11.0") def tpe_=(t: Type): Unit = setType(t)
+
+    def clearType(): this.type = this setType null
     def setType(tp: Type): this.type = { rawtpe = tp; this }
     def defineType(tp: Type): this.type = setType(tp)
 
@@ -1402,7 +1404,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
     val newtpe = to.tpe
     override def transform(tree: Tree) = {
-      if (tree.tpe ne null) tree.tpe = tree.tpe.substThis(clazz, newtpe)
+      tree modifyType (_.substThis(clazz, newtpe))
       tree match {
         case This(_) if tree.symbol == clazz => to
         case _ => super.transform(tree)
@@ -1412,8 +1414,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {
     override def traverse(tree: Tree) {
-      if (tree.tpe ne null)
-        tree.tpe = typeMap(tree.tpe)
+      tree modifyType typeMap
       if (tree.isDef)
         tree.symbol modifyInfo typeMap
 
@@ -1445,8 +1446,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
           if (tree.symbol == from.head) tree setSymbol to.head
           else subst(from.tail, to.tail)
       }
+      tree modifyType symSubst
 
-      if (tree.tpe ne null) tree.tpe = symSubst(tree.tpe)
       if (tree.hasSymbolField) {
         subst(from, to)
         tree match {

@@ -1361,8 +1361,7 @@ trait Namers extends MethodSynthesis {
             transformed(tree) = newImport
             // copy symbol and type attributes back into old expression
             // so that the structure builder will find it.
-            expr.symbol = expr1.symbol
-            expr.tpe = expr1.tpe
+            expr setSymbol expr1.symbol setType expr1.tpe
             ImportType(expr1)
           }
       }
