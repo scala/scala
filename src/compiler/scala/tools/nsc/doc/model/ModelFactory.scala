@@ -1093,13 +1093,5 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (bSym.isAliasType || bSym.isAbstractType) &&
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
-
-  object LinkToTpl {
-    // this makes it easier to create links
-    def apply(tpl: TemplateEntity): LinkTo = tpl match {
-      case dtpl: DocTemplateEntity => new LinkToTpl(dtpl)
-      case _ => new Tooltip(tpl.qualifiedName)
-    }
-  }
 }
 
