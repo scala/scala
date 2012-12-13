@@ -1,0 +1,27 @@
+a1 a2 a3_t o1/o1 o2 outertrait.Outer/o1 List(a1, o1)
+a1 a2 a3_c o1/o1 o2 outertrait.Outer/o1 List(a1, o1)
+a1 a2 a3_o o1/o1 o2 outertrait.Outer/o1 List(a1, o1)
+a1 a2 a3_tc o1/o1 o2 outertrait.Outer/o1 List(a1, o1)
+a1 a2 a3_to o1/o1 o2 outertrait.Outer/o1 List(a1, o1)
+a1 a2 a3_tco o1/o1 o2 outertrait.Outer/o1 List(a1, o1)
+
+a1 a2 a3_t o1/o1 o2 outerclass.Outer/o1 List(a1, o1)
+a1 a2 a3_c o1/o1 o2 outerclass.Outer/o1 List(a1, o1)
+a1 a2 a3_o o1/o1 o2 outerclass.Outer/o1 List(a1, o1)
+a1 a2 a3_tc o1/o1 o2 outerclass.Outer/o1 List(a1, o1)
+a1 a2 a3_to o1/o1 o2 outerclass.Outer/o1 List(a1, o1)
+a1 a2 a3_tco o1/o1 o2 outerclass.Outer/o1 List(a1, o1)
+
+a1 a2 a3_t o1/o1 o2 withinmethod.Outer/o1 List(a1, o1)
+a1 a2 a3_c o1/o1 o2 withinmethod.Outer/o1 List(a1, o1)
+a1 a2 a3_o o1/o1 o2 withinmethod.Outer/o1 List(a1, o1)
+a1 a2 a3_tc o1/o1 o2 withinmethod.Outer/o1 List(a1, o1)
+a1 a2 a3_to o1/o1 o2 withinmethod.Outer/o1 List(a1, o1)
+a1 a2 a3_tco o1/o1 o2 withinmethod.Outer/o1 List(a1, o1)
+child super class
+child super trait
+child super class 2
+child super trait 2
+child super class 3
+child super trait 3a
+child super trait 3a
