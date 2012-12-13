@@ -1375,7 +1375,7 @@ abstract class RefChecks extends InfoTransform {
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
-        assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY))
+        assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), "The following selector should have been transformed by SuperAccessors:" + tree)
 
       transformCaseApply(tree,
         qual match {
