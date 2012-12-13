@@ -5159,7 +5159,7 @@ trait Typers extends Modes with Adaptations with Tags {
             val tree1 = (
               if (qual == EmptyTree) tree
               // atPos necessary because qualifier might come from startContext
-              else atPos(tree.pos)(Select(qual, name))
+              else atPos(tree.pos)(Select(qual, name) setAttachments tree.attachments)
             )
             val (tree2, pre2) = makeAccessible(tree1, defSym, pre, qual)
             // assert(pre.typeArgs isEmpty) // no need to add #2416-style check here, right?
