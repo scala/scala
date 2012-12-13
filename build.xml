@@ -286,10 +286,9 @@ INITIALISATION
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
        This is to facilitate testing new command line options which do not yet exist in starr. -->
-  <property name="scalac.args.quickonly" value=""/>
+    <property name="scalac.args.quickonly" value="-Ydependent-method-types"/>
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-          <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
-    <property name="scalac.args.strap.lib" value="${scalac.args.all} -Ydependent-method-types"/>
+    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
     <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
     <!-- This is the start time for the distribution -->
@@ -576,7 +575,7 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/library"
-      params="${scalac.args.quick} -Ydependent-method-types"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1113,7 +1112,7 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
       srcpath="${src.dir}/library"
-      params="${scalac.args.strap.lib}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1122,7 +1121,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/actors"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1131,7 +1130,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1140,7 +1139,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1176,7 +1175,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/compiler"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
+      params="${scalac.args.quick}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
