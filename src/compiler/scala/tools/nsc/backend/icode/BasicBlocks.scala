@@ -320,7 +320,12 @@ trait BasicBlocks {
       else
         instrs.zipWithIndex collect {
           case (oldInstr, i) if map contains oldInstr =>
-            code.touched |= replaceInstruction(i, map(oldInstr))
+            // SI-6288 clone important here because `replaceInstruction` assigns
+            // a position to `newInstr`. Without this, a single instruction can
+            // be added twice, and the position last position assigned clobbers
+            // all previous positions in other usages.
+            val newInstr = map(oldInstr).clone()
+            code.touched |= replaceInstruction(i, newInstr)
         }
 
     ////////////////////// Emit //////////////////////
