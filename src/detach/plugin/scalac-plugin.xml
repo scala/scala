@@ -1,4 +1,0 @@
-<plugin>
-  <name>detach</name>
-  <classname>scala.tools.detach.DetachPlugin</classname>
-</plugin>
