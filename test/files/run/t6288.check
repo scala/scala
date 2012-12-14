@@ -1,0 +1,85 @@
+[[syntax trees at end of                    patmat]] // newSource1
+[7]package [7]<empty> {
+  [7]object Case3 extends [13][106]scala.AnyRef {
+    [106]def <init>(): [13]Case3.type = [106]{
+      [106][106][106]Case3.super.<init>();
+      [13]()
+    };
+    [21]def unapply([29]z: [32]<type: [32]scala.Any>): [21]Option[Int] = [56][52][52]scala.Some.apply[[52]Int]([58]-1);
+    [64]{
+      [64]case <synthetic> val x1: [64]Any = [64]"";
+      [64]case5()[84]{
+        [84]<synthetic> val o7: [84]Option[Int] = [84][84]Case3.unapply([84]x1);
+        [84]if ([84]o7.isEmpty.unary_!)
+          [84]{
+            [90]val nr: [90]Int = [90]o7.get;
+            [97][97]matchEnd4([97]())
+          }
+        else
+          [84][84]case6()
+      };
+      [64]case6(){
+        [64][64]matchEnd4([64]throw [64][64][64]new [64]MatchError([64]x1))
+      };
+      [64]matchEnd4(x: [NoPosition]Unit){
+        [64]x
+      }
+    }
+  };
+  [113]object Case4 extends [119][217]scala.AnyRef {
+    [217]def <init>(): [119]Case4.type = [217]{
+      [217][217][217]Case4.super.<init>();
+      [119]()
+    };
+    [127]def unapplySeq([138]z: [141]<type: [141]scala.Any>): [127]Option[List[Int]] = [167]scala.None;
+    [175]{
+      [175]case <synthetic> val x1: [175]Any = [175]"";
+      [175]case5()[195]{
+        [195]<synthetic> val o7: [195]Option[List[Int]] = [195][195]Case4.unapplySeq([195]x1);
+        [195]if ([195]o7.isEmpty.unary_!)
+          [195]if ([195][195][195][195]o7.get.!=([195]null).&&([195][195][195][195]o7.get.lengthCompare([195]1).==([195]0)))
+            [195]{
+              [201]val nr: [201]Int = [201][201]o7.get.apply([201]0);
+              [208][208]matchEnd4([208]())
+            }
+          else
+            [195][195]case6()
+        else
+          [195][195]case6()
+      };
+      [175]case6(){
+        [175][175]matchEnd4([175]throw [175][175][175]new [175]MatchError([175]x1))
+      };
+      [175]matchEnd4(x: [NoPosition]Unit){
+        [175]x
+      }
+    }
+  };
+  [224]object Case5 extends [230][312]scala.AnyRef {
+    [312]def <init>(): [230]Case5.type = [312]{
+      [312][312][312]Case5.super.<init>();
+      [230]()
+    };
+    [238]def unapply([246]z: [249]<type: [249]scala.Any>): [238]Boolean = [265]true;
+    [273]{
+      [273]case <synthetic> val x1: [273]Any = [273]"";
+      [273]case5()[293]{
+        [293]<synthetic> val o7: [293]Option[List[Int]] = [293][293]Case4.unapplySeq([293]x1);
+        [293]if ([293]o7.isEmpty.unary_!)
+          [293]if ([293][293][293][293]o7.get.!=([293]null).&&([293][293][293][293]o7.get.lengthCompare([293]0).==([195]0)))
+            [304][304]matchEnd4([304]())
+          else
+            [293][293]case6()
+        else
+          [293][293]case6()
+      };
+      [273]case6(){
+        [273][273]matchEnd4([273]throw [273][273][273]new [273]MatchError([273]x1))
+      };
+      [273]matchEnd4(x: [NoPosition]Unit){
+        [273]x
+      }
+    }
+  }
+}
+
