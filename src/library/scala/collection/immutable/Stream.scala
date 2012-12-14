@@ -479,7 +479,7 @@ self =>
   final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
 
     override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-      def tailMap(coll: Stream[A]): Stream[B] = {
+      def tailMapConstStack(coll: Stream[A]): Stream[B] = {
         var head: A = null.asInstanceOf[A]
         var tail: Stream[A] = coll
         while (true) {
@@ -488,17 +488,17 @@ self =>
           head = tail.head
           tail = tail.tail
           if (p(head))
-            return cons(f(head), tailMap(tail))
+            return cons(f(head), tailMapConstStack(tail))
         }
         throw new RuntimeException()
       }
 
-      if (isStreamBuilder(bf)) asThat(tailMap(Stream.this))
+      if (isStreamBuilder(bf)) asThat(tailMapConstStack(Stream.this))
       else super.map(f)(bf)
     }
 
     override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-      def tailFlatMap(coll: Stream[A]): Stream[B] = {
+      def tailFlatMapConstStack(coll: Stream[A]): Stream[B] = {
         var head: A = null.asInstanceOf[A]
         var tail: Stream[A] = coll
         while (true) {
@@ -507,12 +507,12 @@ self =>
           head = tail.head
           tail = tail.tail
           if (p(head))
-            return f(head).toStream append tailFlatMap(tail)
+            return f(head).toStream append tailFlatMapConstStack(tail)
         }
         throw new RuntimeException()
       }
 
-      if (isStreamBuilder(bf)) asThat(tailFlatMap(Stream.this))
+      if (isStreamBuilder(bf)) asThat(tailFlatMapConstStack(Stream.this))
       else super.flatMap(f)(bf)
     }
 
@@ -522,6 +522,10 @@ self =>
 
     override def withFilter(q: A => Boolean): StreamWithFilter =
       new StreamWithFilter(x => p(x) && q(x))
+
+    // DO NOT USE -- for binary compatibility
+    def tailMap$1(f: Nothing => Nothing): Stream[Nothing] = null
+    def tailFlatMap$1(f: Nothing => Nothing): Stream[Nothing] = null
   }
 
   /** A lazier Iterator than LinearSeqLike's. */
