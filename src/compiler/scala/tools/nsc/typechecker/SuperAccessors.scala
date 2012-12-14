@@ -65,7 +65,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
         acc
       }
-      
+
       atPos(sel.pos)(Select(gen.mkAttributedThis(clazz), superAcc) setType sel.tpe)
     }
 
@@ -131,20 +131,20 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       // we need an accessor to get to a super on an outer thing, but only if we can't call name more directly on
       // a trait implementation class. So this complicated condition is leaving alone cases where we don't need to do
       // anything special (i.e. we're getting a direct super class) or where a later transform will inject a call to
-      // a trait implementation method directly. 
+      // a trait implementation method directly.
       //
-      // SI-6536 has more discussion about how this works. 
+      // SI-6536 has more discussion about how this works.
       //
-      // So, we're looking for items of the form clazz.super[mix].name (or clazz.super.name wich is seen as 
+      // So, we're looking for items of the form clazz.super[mix].name (or clazz.super.name wich is seen as
       // clazz.super[EMPTY].name with some limitations. First, name has to be a term rather than a type.
-      // Then there are a couple of cases. 
+      // Then there are a couple of cases.
       def requiresAccessor = name.isTermName && (mix match {
         // If mix is empty then we only need an accessor if clazz is a trait, it's not this current class,
-        // or the validCurentOwner setting is false...which...ugh, is a mess. 
-        case tpnme.EMPTY => clazz.isTrait || clazz != currentClass || !validCurrentOwner 
+        // or the validCurentOwner setting is false...which...ugh, is a mess.
+        case tpnme.EMPTY => clazz.isTrait || clazz != currentClass || !validCurrentOwner
         // If the mix is set then if it refers to a class and the clazz part isn't the current class
         // it's not just super[mix].name then we need to generate an accessor.
-        case _           => clazz != currentClass && !mixTpeIsTrait 
+        case _           => clazz != currentClass && !mixTpeIsTrait
       })
 
       if (requiresAccessor) ensureAccessor(sel)
@@ -232,7 +232,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
                   if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
                     unit.warning(sel.pos,
-                        sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name
+                        sym.fullLocationString + " shadows mutable " + m2.name
                       + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
                       + sym.owner + " - you may want to give them distinct names."
                     )
@@ -263,7 +263,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             // FIXME - this should be unified with needsProtectedAccessor, but some
             // subtlety which presently eludes me is foiling my attempts.
             val shouldEnsureAccessor = (
-                 currentClass.isTrait 
+                 currentClass.isTrait
               && sym.isProtected
               && sym.enclClass != currentClass
               && !sym.owner.isTrait
