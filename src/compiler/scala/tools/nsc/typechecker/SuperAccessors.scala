@@ -118,8 +118,36 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           unit.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'");
       }
-      if (name.isTermName && mix == tpnme.EMPTY && (clazz.isTrait || clazz != currentClass || !validCurrentOwner))
-        ensureAccessor(sel)
+
+      // determine if the mix in clazz.super[mix].name is a trait
+      def mixTpeIsTrait = sup.tpe match {
+        case SuperType(_, mixTpe) => mixTpe.typeSymbol.isTrait
+        case _                    =>
+          log("Warning: could not determine the type of mix " + mix + " by going through a Super node's "+
+              "type because instead of a SuperType it was " + sup.tpe)
+          false
+      }
+
+      // we need an accessor to get to a super on an outer thing, but only if we can't call name more directly on
+      // a trait implementation class. So this complicated condition is leaving alone cases where we don't need to do
+      // anything special (i.e. we're getting a direct super class) or where a later transform will inject a call to
+      // a trait implementation method directly. 
+      //
+      // SI-6536 has more discussion about how this works. 
+      //
+      // So, we're looking for items of the form clazz.super[mix].name (or clazz.super.name wich is seen as 
+      // clazz.super[EMPTY].name with some limitations. First, name has to be a term rather than a type.
+      // Then there are a couple of cases. 
+      def requiresAccessor = name.isTermName && (mix match {
+        // If mix is empty then we only need an accessor if clazz is a trait, it's not this current class,
+        // or the validCurentOwner setting is false...which...ugh, is a mess. 
+        case tpnme.EMPTY => clazz.isTrait || clazz != currentClass || !validCurrentOwner 
+        // If the mix is set then if it refers to a class and the clazz part isn't the current class
+        // it's not just super[mix].name then we need to generate an accessor.
+        case _           => clazz != currentClass && !mixTpeIsTrait 
+      })
+
+      if (requiresAccessor) ensureAccessor(sel)
       else sel
     }
 
