@@ -89,6 +89,12 @@ abstract class TreeInfo {
       tree.symbol.isStable && isExprSafeToInline(qual)
     case TypeApply(fn, _) =>
       isExprSafeToInline(fn)
+    /* Special case for reified free terms. During reflective compilation,
+     * reified value recovered flag <stable> from free term and wrapped into a
+     * Function object, so it can pass stability check here to become a stable
+     * identifier.*/
+    case Apply(Select(free @ Ident(_), nme.apply), _) if free.symbol.name endsWith nme.REIFY_FREE_VALUE_SUFFIX =>
+      free.symbol.hasStableFlag && isExprSafeToInline(free)
     case Apply(fn, List()) =>
       /* Note: After uncurry, field accesses are represented as Apply(getter, Nil),
        * so an Apply can also be pure.
