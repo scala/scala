@@ -100,6 +100,8 @@ trait GenSymbols {
     reifyIntoSymtab(binding.symbol) { sym =>
       if (reifyDebug) println("Free term" + (if (sym.isCapturedVariable) " (captured)" else "") + ": " + sym + "(" + sym.accurateKindString + ")")
       val name = newTermName(nme.REIFY_FREE_PREFIX + sym.name + (if (sym.isType) nme.REIFY_FREE_THIS_SUFFIX else ""))
+      // Flag <stable> is set here to make reified free value pass stability test during reflective compilation
+      if (!sym.isMutable) sym setFlag reflect.internal.Flags.STABLE
       if (sym.isCapturedVariable) {
         assert(binding.isInstanceOf[Ident], showRaw(binding))
         val capturedBinding = referenceCapturedVariable(sym)

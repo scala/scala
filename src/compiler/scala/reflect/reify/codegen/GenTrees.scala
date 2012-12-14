@@ -165,11 +165,11 @@ trait GenTrees {
     }
   }
 
-  private def reifyBoundType(tree: Tree): Tree = {
+  private def reifyBoundType(tree: RefTree): Tree = {
     val sym = tree.symbol
     val tpe = tree.tpe
 
-    def reifyBoundType(tree: Tree): Tree = {
+    def reifyBoundType(tree: RefTree): Tree = {
       assert(tpe != null, "unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
 
       // if a symbol or a type of the scrutinee are local to reifee
@@ -198,13 +198,19 @@ trait GenTrees {
               mirrorBuildCall(nme.TypeTree, spliced)
           }
         }
-        else if (sym.isLocatable) {
-          if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
-          mirrorBuildCall(nme.Ident, reify(sym))
-        }
-        else {
-          if (reifyDebug) println("tpe is not locatable: reify as TypeTree(%s)".format(tpe))
-          mirrorBuildCall(nme.TypeTree, reify(tpe))
+        else tree match {
+          case Select(qual, name) if !qual.symbol.isPackage && !qual.symbol.isPackageObject && qual.symbol != definitions.PredefModule =>
+            if (reifyDebug) println(s"reifying Select($qual, $name)")
+            mirrorCall(nme.Select, reify(qual), reify(name))
+          case SelectFromTypeTree(qual, name) =>
+            if (reifyDebug) println(s"reifying SelectFromTypeTree($qual, $name)")
+            mirrorCall(nme.SelectFromTypeTree, reify(qual), reify(name))
+          case _ if sym.isLocatable =>
+            if (reifyDebug) println(s"tpe is locatable: reify as Ident($sym)")
+            mirrorBuildCall(nme.Ident, reify(sym))
+          case _ =>
+            if (reifyDebug) println(s"tpe is not locatable: reify as TypeTree($tpe)")
+            mirrorBuildCall(nme.TypeTree, reify(tpe))
         }
       }
     }

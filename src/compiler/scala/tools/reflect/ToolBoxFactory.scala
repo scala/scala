@@ -212,7 +212,11 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
           def makeParam(schema: (FreeTermSymbol, TermName)) = {
             val (fv, name) = schema
-            meth.newValueParameter(name) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
+            /* Free term symbol `fv` can contain flag <stable> which was set by
+             * `scala.reflect.reify.codegen.GenSymbols.reifyFreeTerm` method.
+             * It is recovered here, so value parameter can pass `isExprSafeToInline`
+             * test in `scala.reflect.internal.TreeInfo`. */
+            meth.newValueParameter(name, newFlags = if (fv.hasStableFlag) Flags.STABLE else 0) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
           }
           meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyClass.tpe)
           minfo.decls enter meth
@@ -417,4 +421,3 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     def eval(tree: u.Tree): Any = compile(tree)()
   }
 }
-
