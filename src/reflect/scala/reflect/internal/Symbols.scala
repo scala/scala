@@ -822,6 +822,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       )
     )
 
+    /** Is this symbol owned by a package? */
+    final def isTopLevel = owner.isPackageClass
+
     /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
     final def isLocal: Boolean = owner.isTerm
 
@@ -2880,7 +2883,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isAnonymousClass        = name containsName tpnme.ANON_CLASS_NAME
     override def isConcreteClass         = !(this hasFlag ABSTRACT | TRAIT)
     override def isJavaInterface         = hasAllFlags(JAVA | TRAIT)
-    override def isNestedClass           = !owner.isPackageClass
+    override def isNestedClass           = !isTopLevel
     override def isNumericValueClass     = definitions.isNumericValueClass(this)
     override def isNumeric               = isNumericValueClass
     override def isPackageObjectClass    = isModuleClass && (name == tpnme.PACKAGE)
