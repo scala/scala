@@ -4753,7 +4753,7 @@ trait Typers extends Modes with Adaptations with Tags {
               case sym      => typed1(tree setSymbol sym, mode, pt)
             }
           case LookupSucceeded(qual, sym)   =>
-            // this -> Foo.this
+            (// this -> Foo.this
             if (sym.isThisSym)
               typed1(This(sym.owner) setPos tree.pos, mode, pt)
             // Inferring classOf type parameter from expected type.  Otherwise an
@@ -4762,12 +4762,12 @@ trait Typers extends Modes with Adaptations with Tags {
               typedClassOf(tree, TypeTree(pt.typeArgs.head))
             else {
               val pre1  = if (sym.owner.isPackageClass) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name) setAttachments tree.attachments)
+              val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
               // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
               //         inference errors in pattern matching.
               stabilize(tree2, pre2, mode, pt) modifyType dropIllegalStarTypes
-            }
+            }) setAttachments tree.attachments
         }
       }
 
