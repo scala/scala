@@ -148,9 +148,34 @@ abstract class Pickler extends SubComponent {
         true
     }
 
+    /** If the symbol is a type skolem, deskolemize and log it.
+     *  If we fail to deskolemize, in a method like
+     *    trait Trait[+A] { def f[CC[X]] : CC[A] }
+     *  the applied type CC[A] will hold a different CC symbol
+     *  than the type-constructor type-parameter CC.
+     */
+    private def deskolemize(sym: Symbol) = {
+      if (sym.isTypeSkolem) {
+        val sym1 = sym.deSkolemize
+        log({
+          val what0 = sym.defString
+          val what = sym1.defString match {
+            case `what0` => what0
+            case other   => what0 + "->" + other
+          }
+          val where = sym.enclMethod.fullLocationString
+          s"deskolemizing $what in $where"
+        })
+        sym1
+      }
+      else sym
+    }
+
     /** Store symbol in index. If symbol is local, also store everything it references.
      */
-    def putSymbol(sym: Symbol) {
+    def putSymbol(sym0: Symbol) {
+      val sym = deskolemize(sym0)
+
       if (putEntry(sym)) {
         if (isLocal(sym)) {
           putEntry(sym.name)
@@ -503,7 +528,13 @@ abstract class Pickler extends SubComponent {
 
     /** Write a reference to object, i.e., the object's number in the map index.
      */
-    private def writeRef(ref: AnyRef) { writeNat(index(ref)) }
+    private def writeRef(ref0: AnyRef) {
+      val ref = ref0 match {
+        case sym: Symbol => deskolemize(sym)
+        case _           => ref0
+      }
+      writeNat(index(ref))
+    }
     private def writeRefs(refs: List[AnyRef]) { refs foreach writeRef }
     private def writeRefsWithLength(refs: List[AnyRef]) {
       writeNat(refs.length)
