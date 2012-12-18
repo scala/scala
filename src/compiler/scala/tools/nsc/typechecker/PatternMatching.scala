@@ -248,7 +248,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             case Bind(name, _)   => s" '$name'"
             case _               => ""
           }
-          vpat = s"variable pattern$vpatName on line ${cdef.pat.pos.line}"
+          vpat =
+            if (cdef.pat.pos != NoPosition)
+              s"variable pattern$vpatName on line ${cdef.pat.pos.line}"
+            else
+              s"variable pattern$vpatName"
           context.unit.warning(cdef.pos, s"patterns after a variable pattern cannot match (SLS 8.1.1)" + addendum(cdef.pat))
         }
       }
