@@ -7,8 +7,6 @@ package scala.tools.nsc
 package doc
 
 import java.io.File
-import java.net.URI
-import java.lang.System
 import scala.language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
@@ -72,10 +70,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     ""
   )
 
-  val docExternalUris = MultiStringSetting (
-    "-doc-external-uris",
+  val docExternalDoc = MultiStringSetting (
+    "-doc-external-doc",
     "external-doc",
-    "comma-separated list of file://classpath_entry_path#doc_URL URIs for external dependencies"
+    "comma-separated list of classpath_entry_path#doc_URL pairs describing external dependencies."
   )
 
   val useStupidTypes = BooleanSetting (
@@ -265,9 +263,15 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       map ++ (pkgs map (_ -> url))
   }
 
-  lazy val extUrlMapping: Map[String, String] = docExternalUris.value map { s =>
-    val uri = new URI(s)
-    uri.getSchemeSpecificPart -> appendIndex(uri.getFragment)
+  lazy val extUrlMapping: Map[String, String] = docExternalDoc.value flatMap { s =>
+    val idx = s.indexOf("#")
+    if (idx > 0) {
+      val (first, last) = s.splitAt(idx)
+      Some(new File(first).getAbsolutePath -> appendIndex(last.substring(1)))
+    } else {
+      error(s"Illegal -doc-external-doc option; expected a pair with '#' separator, found: '$s'")
+      None
+    }
   } toMap
 
   /**
