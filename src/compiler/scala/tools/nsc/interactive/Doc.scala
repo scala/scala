@@ -32,6 +32,15 @@ abstract class Doc(val settings: doc.Settings) extends MemberLookupBase with Com
           None
     }
 
+  override def toString(link: LinkTo) = ask { () =>
+    link match {
+      case LinkToMember(mbr: Symbol, site: Symbol) =>
+        mbr.signatureString + " in " + site.toString
+      case LinkToTpl(sym: Symbol) => sym.toString
+      case _ => link.toString
+    }
+  }
+
   def retrieve(sym: Symbol, site: Symbol): Option[DocResult] = {
     val sig = ask { () => externalSignature(sym) }
     findExternalLink(sym, sig) map { link => UrlResult(link.url) } orElse {
