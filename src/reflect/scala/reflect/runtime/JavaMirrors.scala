@@ -574,7 +574,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
-                initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
+                initClassAndModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
             }
         }
       } catch {
@@ -676,9 +676,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         def enter(sym: Symbol, mods: Int) =
           (if (jModifier.isStatic(mods)) module.moduleClass else clazz).info.decls enter sym
 
-        for (jinner <- jclazz.getDeclaredClasses) {
-          enter(jclassAsScala(jinner, clazz), jinner.getModifiers)
-        }
+        for (jinner <- jclazz.getDeclaredClasses)
+          jclassAsScala(jinner) // inner class is entered as a side-effect
+                                // no need to call enter explicitly
 
         pendingLoadActions = { () =>
 
@@ -1036,14 +1036,14 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      *  @param jclazz  The Java class
      *  @return A Scala class symbol that wraps all reflection info of `jclazz`
      */
-    private def jclassAsScala(jclazz: jClass[_]): Symbol = jclassAsScala(jclazz, sOwner(jclazz))
+    private def jclassAsScala(jclazz: jClass[_]): ClassSymbol =
+      toScala(classCache, jclazz)(_ jclassAsScala1 _)
 
-    private def jclassAsScala(jclazz: jClass[_], owner: Symbol): ClassSymbol = {
+    private def jclassAsScala1(jclazz: jClass[_]): ClassSymbol = {
+      val owner = sOwner(jclazz)
       val name = scalaSimpleName(jclazz)
       val completer = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
-      val (clazz, module) = createClassModule(owner, name, completer)
-      classCache enter (jclazz, clazz)
-      clazz
+      initAndEnterClassAndModule(owner, name, completer)._1
     }
 
     /**
