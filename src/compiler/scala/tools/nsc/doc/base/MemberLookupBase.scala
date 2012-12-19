@@ -15,6 +15,7 @@ trait MemberLookupBase {
   import global._
   def internalLink(sym: Symbol, site: Symbol): Option[LinkTo]
   def chooseLink(links: List[LinkTo]): LinkTo
+  def toString(link: LinkTo): String
 
   import global._
   import definitions.{ NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
@@ -24,6 +25,25 @@ trait MemberLookupBase {
 
   def makeEntityLink(title: Inline, pos: Position, query: String, siteOpt: Option[Symbol]) =
     new EntityLink(title) { lazy val link = memberLookup(pos, query, siteOpt) }
+
+  private var showExplanation = true
+  private def explanation: String =
+    if (showExplanation) {
+      showExplanation = false
+      """
+      |Quick crash course on using Scaladoc links
+      |==========================================
+      |Disambiguating terms and types: Prefix terms with '$' and types with '!' in case both names are in use:
+      | - [[scala.collection.immutable.List!.apply class List's apply method]] and
+      | - [[scala.collection.immutable.List$.apply object List's apply method]]
+      |Disambiguating overloaded members: If a term is overloaded, you can indicate the first part of its signature followed by *:
+      | - [[[scala.collection.immutable.List$.fill[A](Int)(⇒A):List[A]* Fill with a single parameter]]]
+      | - [[[scala.collection.immutable.List$.fill[A](Int,Int)(⇒A):List[List[A]]* Fill with a two parameters]]]
+      |Notes:
+      | - you can use any number of matching square brackets to avoid interference with the signature
+      | - you can use \\. to escape dots in prefixes (don't forget to use * at the end to match the signature!)
+      | - you can use \\# to escape hashes, otherwise they will be considered as delimiters, like dots.""".stripMargin
+    } else ""
 
   def memberLookup(pos: Position, query: String, siteOpt: Option[Symbol]): LinkTo = {
     var members = breakMembers(query)
@@ -73,36 +93,23 @@ trait MemberLookupBase {
         def linkToString(link: LinkTo) = {
           val chosenInfo =
             if (link == chosen) " [chosen]" else ""
-          link.toString + chosenInfo + "\n"
+          toString(link) + chosenInfo + "\n"
         }
-        if (!settings.docNoLinkWarnings.value)
+        if (!settings.docNoLinkWarnings.value) {
+          val allLinks = links.map(linkToString).mkString
           reporter.warning(pos,
-            "The link target \"" + query + "\" is ambiguous. Several (possibly overloaded) members fit the target:\n" +
-            links.map(linkToString).mkString +
-            (if (MemberLookup.showExplanation)
-              "\n\n" +
-              "Quick crash course on using Scaladoc links\n" +
-              "==========================================\n" +
-              "Disambiguating terms and types: Prefix terms with '$' and types with '!' in case both names are in use:\n" +
-              " - [[scala.collection.immutable.List!.apply class List's apply method]] and\n" +
-              " - [[scala.collection.immutable.List$.apply object List's apply method]]\n" +
-              "Disambiguating overloaded members: If a term is overloaded, you can indicate the first part of its signature followed by *:\n" +
-              " - [[[scala.collection.immutable.List$.fill[A](Int)(⇒A):List[A]* Fill with a single parameter]]]\n" +
-              " - [[[scala.collection.immutable.List$.fill[A](Int,Int)(⇒A):List[List[A]]* Fill with a two parameters]]]\n" +
-              "Notes: \n" +
-              " - you can use any number of matching square brackets to avoid interference with the signature\n" +
-              " - you can use \\. to escape dots in prefixes (don't forget to use * at the end to match the signature!)\n" +
-              " - you can use \\# to escape hashes, otherwise they will be considered as delimiters, like dots.\n"
-            else "")
-        )
+            s"""The link target \"$query\" is ambiguous. Several members fit the target:
+            |$allLinks
+            |$explanation""".stripMargin)
+        }
         chosen
     }
   }
 
-  private abstract class SearchStrategy
-  private object BothTypeAndTerm extends SearchStrategy
-  private object OnlyType extends SearchStrategy
-  private object OnlyTerm extends SearchStrategy
+  private sealed trait SearchStrategy
+  private case object BothTypeAndTerm extends SearchStrategy
+  private case object OnlyType extends SearchStrategy
+  private case object OnlyTerm extends SearchStrategy
 
   private def lookupInRootPackage(pos: Position, members: List[String]) =
     lookupInTemplate(pos, members, EmptyPackage) ::: lookupInTemplate(pos, members, RootPackage)
@@ -156,14 +163,11 @@ trait MemberLookupBase {
     else if (member.endsWith("*"))
       cleanupBogusClasses(container.info.nonPrivateDecls) filter signatureMatch
     else
-      if (strategy == BothTypeAndTerm)
-        termSyms ::: typeSyms
-      else if (strategy == OnlyType)
-        typeSyms
-      else if (strategy == OnlyTerm)
-        termSyms
-      else
-        Nil
+      strategy match {
+        case BothTypeAndTerm => termSyms ::: typeSyms
+        case OnlyType => typeSyms
+        case OnlyTerm => termSyms
+      }
 
     //println("lookupInTemplate(" + member + ", " + container + ") => " + result)
     result
@@ -222,9 +226,4 @@ trait MemberLookupBase {
     sym.info // force it, otherwise we see lazy types
     (sym.nameString + sym.signatureString).replaceAll("\\s", "")
   }
-}
-
-object MemberLookup {
-  private[this] var _showExplanation = true
-  def showExplanation: Boolean = if (_showExplanation) { _showExplanation = false; true } else false
 }
