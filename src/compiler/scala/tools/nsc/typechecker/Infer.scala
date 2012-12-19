@@ -1122,15 +1122,17 @@ trait Infer extends Checkable {
      */
     def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, useWeaklyCompatible: Boolean = false): List[Symbol] = {
       val treeTp = if(treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
+      val (targs, tvars) = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
       printInference(
         ptBlock("inferExprInstance",
           "tree"    -> tree,
           "tree.tpe"-> tree.tpe,
           "tparams" -> tparams,
-          "pt"      -> pt
+          "pt"      -> pt,
+          "targs"   -> targs,
+          "tvars"   -> tvars
         )
       )
-      val (targs, tvars) = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
         substExpr(tree, tparams, targs, pt)
