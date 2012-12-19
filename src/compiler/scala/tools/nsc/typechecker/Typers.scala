@@ -3532,14 +3532,13 @@ trait Typers extends Modes with Adaptations with Tags {
      * @param annClass the expected annotation class
      */
     def typedAnnotation(ann: Tree, mode: Int = EXPRmode, selfsym: Symbol = NoSymbol, annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
-      lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
 
       def reportAnnotationError(err: AbsTypeError) = {
         pending += err
         hasError = true
-        annotationError
+        ErroneousAnnotation
       }
 
       /** Calling constfold right here is necessary because some trees (negated
@@ -3619,12 +3618,12 @@ trait Typers extends Modes with Adaptations with Tags {
         extract(ann, List())
       }
 
-      val res = if (fun.isErroneous) annotationError
+      val res = if (fun.isErroneous) ErroneousAnnotation
       else {
         val typedFun @ Select(New(tpt), _) = typed(fun, forFunMode(mode), WildcardType)
         val annType = tpt.tpe
 
-        if (typedFun.isErroneous) annotationError
+        if (typedFun.isErroneous) ErroneousAnnotation
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
           val isJava = typedFun.symbol.owner.isJavaDefined
@@ -3669,7 +3668,7 @@ trait Typers extends Modes with Adaptations with Tags {
                 reportAnnotationError(AnnotationMissingArgError(ann, annType, sym))
             }
 
-            if (hasError) annotationError
+            if (hasError) ErroneousAnnotation
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
           }
         } else if (requireJava) {
@@ -3733,14 +3732,14 @@ trait Typers extends Modes with Adaptations with Tags {
           if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
             unit.deprecationWarning(ann.pos, "@deprecated now takes two arguments; see the scaladoc.")
 
-          if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) annotationError
+          if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
         }
       }
 
       if (hasError) {
         pending.foreach(ErrorUtils.issueTypeError)
-        annotationError
+        ErroneousAnnotation
       } else res
     }
 
