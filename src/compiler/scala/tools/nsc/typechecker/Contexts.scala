@@ -436,16 +436,7 @@ trait Contexts { self: Analyzer =>
       case _                => outer.isLocal()
     }
 
-    /** Fast path for some slow checks (ambiguous assignment in Refchecks, and
-     *  existence of __match for MatchTranslation in virtpatmat.) This logic probably
-     *  needs improvement.
-     */
-    def isNameInScope(name: Name) = (
-      enclosingContextChain exists (ctx =>
-           (ctx.scope.lookupEntry(name) != null)
-        || (ctx.owner.rawInfo.member(name) != NoSymbol)
-      )
-    )
+    def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
     // nextOuter determines which context is searched next for implicits
     // (after `this`, which contributes `newImplicits` below.) In
