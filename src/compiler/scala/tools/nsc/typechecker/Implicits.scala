@@ -946,8 +946,8 @@ trait Implicits {
      *    - for alias types and abstract types, we take instead the parts
      *    - of their upper bounds.
      *  @return For those parts that refer to classes with companion objects that
-     *  can be accessed with unambiguous stable prefixes, the implicits infos
-     *  which are members of these companion objects.
+     *  can be accessed with unambiguous stable prefixes that are not existentially
+     *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
 
@@ -963,7 +963,7 @@ trait Implicits {
                 infoMap(sym) = List() // ambiguous prefix - ignore implicit members
               }
             case None =>
-              if (pre.isStable) {
+              if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
                 val companion = companionSymbolOf(sym, context)
                 companion.moduleClass match {
                   case mc: ModuleClassSymbol =>
