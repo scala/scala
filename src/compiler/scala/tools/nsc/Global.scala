@@ -779,7 +779,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
   protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
-  private lazy val phaseTimings = new Phases.TimingModel   // tracking phase stats
 
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
@@ -1584,7 +1583,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
         // progress update
         informTime(globalPhase.description, startTime)
-        phaseTimings(globalPhase) = currentTime - startTime
 
         if (opt.writeICodeAtICode || (opt.printPhase && runIsAtOptimiz)) {
           // Write *.icode files when -Xprint-icode or -Xprint:<some-optimiz-phase> was given.
