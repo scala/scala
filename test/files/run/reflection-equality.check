@@ -29,7 +29,7 @@ java.lang.Object {
   def methodIntIntInt(x: scala.Int,y: scala.Int): scala.Int
 }
 
-scala> val ms: MethodSymbol = ts.declaration(newTermName("methodIntIntInt")).asMethod
+scala> val ms: MethodSymbol = ts.declaration(TermName("methodIntIntInt")).asMethod
 ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
 
 scala> val MethodType( _, t1 ) = ms.typeSignature

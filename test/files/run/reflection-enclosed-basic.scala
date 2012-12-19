@@ -12,7 +12,7 @@ private object B6 extends B2 { override def toString = "B6"; override def foo = 
 object Test extends App {
   def testMethodInvocation(instance: Any) = {
     val instanceMirror = cm.reflect(instance)
-    val method = instanceMirror.symbol.typeSignature.declaration(newTermName("foo")).asMethod
+    val method = instanceMirror.symbol.typeSignature.declaration(TermName("foo")).asMethod
     val methodMirror = instanceMirror.reflectMethod(method)
     println(methodMirror())
   }
@@ -20,7 +20,7 @@ object Test extends App {
   def testNestedClass(name: String) = {
     val sym = cm.staticClass(name)
     println(sym)
-    val ctor = sym.typeSignature.declaration(newTermName("<init>")).asMethod
+    val ctor = sym.typeSignature.declaration(TermName("<init>")).asMethod
     val ctorMirror = cm.reflectClass(sym).reflectConstructor(ctor)
     val instance = ctorMirror()
     println(instance)

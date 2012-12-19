@@ -38,8 +38,8 @@ trait NodePrinters {
           flagsAreUsed = true
           show(m.group(1).toLong)
         })
-        s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
-        s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
+        s = s.replace("Modifiers(0L, TypeName(\"\"), List())", "Modifiers()")
+        s = """Modifiers\((\d+)[lL], TypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
           val buf = new scala.collection.mutable.ListBuffer[String]
 
           val annotations = m.group(3)
@@ -48,7 +48,7 @@ trait NodePrinters {
 
           val privateWithin = "" + m.group(2)
           if (buf.nonEmpty || privateWithin != "")
-            buf.append("newTypeName(\"" + privateWithin + "\")")
+            buf.append("TypeName(\"" + privateWithin + "\")")
 
           val bits = m.group(1)
           if (buf.nonEmpty || bits != "0L") {
