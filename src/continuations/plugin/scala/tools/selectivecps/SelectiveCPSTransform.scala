@@ -85,7 +85,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             //gen.mkAttributedSelect(gen.mkAttributedSelect(gen.mkAttributedSelect(gen.mkAttributedIdent(ScalaPackage),
             //ScalaPackage.tpe.member("util")), ScalaPackage.tpe.member("util").tpe.member("continuations")), MethShiftR)
             //gen.mkAttributedRef(ModCPS.tpe,  MethShiftR) // TODO: correct?
-            debuglog("funR.tpe = " + funR.tpe)
+            debuglog("funR.tpe: " + funR.tpe)
             Apply(
                 TypeApply(funR, targs).setType(appliedType(funR.tpe, targs.map((t:Tree) => t.tpe))),
                 args.map(transform(_))
@@ -97,7 +97,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           debuglog("found shiftUnit: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethShiftUnitR) // TODO: correct?
-            debuglog("funR.tpe = " + funR.tpe)
+            debuglog("funR.tpe: " + funR.tpe)
             Apply(
                 TypeApply(funR, List(targs(0), targs(1))).setType(appliedType(funR.tpe,
                     List(targs(0).tpe, targs(1).tpe))),
@@ -110,7 +110,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           log("found reify: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethReifyR) // TODO: correct?
-            debuglog("funR.tpe = " + funR.tpe)
+            debuglog("funR.tpe: " + funR.tpe)
             Apply(
                 TypeApply(funR, targs).setType(appliedType(funR.tpe, targs.map((t:Tree) => t.tpe))),
                 args.map(transform(_))

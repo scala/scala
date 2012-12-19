@@ -2632,8 +2632,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *
    *  {{{
    *    tsym is an instance of AbstractTypeSymbol
-   *    tsym.info = TypeBounds(Nothing, Number)
-   *    tsym.tpe  = TypeRef(NoPrefix, T, List())
+   *    tsym.info == TypeBounds(Nothing, Number)
+   *    tsym.tpe  == TypeRef(NoPrefix, T, List())
    *  }}}
    */
   class AbstractTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
