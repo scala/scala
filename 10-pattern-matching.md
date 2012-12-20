@@ -395,8 +395,13 @@ just the bounds of these type variables. That is, assuming $T$ has
 bound type variables $a_1 , \ldots , a_n$ which correspond to class
 type parameters $a'_1 , \ldots , a'_n$ with lower bounds $L_1
 , \ldots , L_n$ and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$
-contains the constraints \bda{rcll} a_i &<:& \sigma U_i & \gap (i = 1
-, \ldots , n)\\ \sigma L_i &<:& a_i & \gap (i = 1 , \ldots , n) \eda
+contains the constraints 
+
+$$\begin{array}
+a_i        &<:& \sigma U_i & (i = 1, \ldots , n)  \\ 
+\sigma L_i &<:& a_i        & (i = 1 , \ldots , n)
+\end{array}$$
+
 where $\sigma$ is the substitution $[a'_1 := a_1 , \ldots , a'_n :=
 a_n]$.
 
@@ -563,7 +568,7 @@ $L'_1 , \ldots , L'_m$ and maximal bounds $U'_1 , \ldots , U'_m$ such
 that for all $i$, $L_i <: L'_i$ and $U'_i <: U_i$ and the following
 constraint system is satisfied:
 
-$L_1 <: a_1 <: U_1\;\wedge\;\ldots\;\wedge\;L_m <: a_m <: U_m \ \Rightarrow\ T_p <: T$
+$$L_1 <: a_1 <: U_1\;\wedge\;\ldots\;\wedge\;L_m <: a_m <: U_m \ \Rightarrow\ T_p <: T$$
 
 If no such bounds can be found, a compile time error results.  If such
 bounds are found, the pattern matching clause starting with $p$ is
@@ -578,8 +583,9 @@ $b_i$.
 
 When applying a pattern matching expression to a selector value,
 patterns are tried in sequence until one is found which matches the
-[selector value](#patterns). Say this case is $\CASE;p_i
-\Arrow b_i$.  The result of the whole expression is then the result of
+[selector value](#patterns). Say this case is 
+$\mathbf{case} p_i \Rightarrow b_i$. The result of the whole expression is 
+then the result of
 evaluating $b_i$, where all pattern variables of $p_i$ are bound to
 the corresponding parts of the selector value.  If no matching pattern
 is found, a `scala.MatchError` exception is thrown.
@@ -708,7 +714,7 @@ already a variable or wildcard pattern.
 (@) Here is a method which uses a fold-left operation
     `/:` to compute the scalar product of 
     two vectors:
-    
+
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
     def scalarProduct(xs: Array[Double], ys: Array[Double]) = 
       (0.0 /: (xs zip ys)) {
