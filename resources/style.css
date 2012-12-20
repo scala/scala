@@ -48,14 +48,14 @@ ol[type="1"] {
 	padding: 0;
 }
 
-ol[type="1"] li {
+ol[type="1"] > li {
 	margin-top: 1em;
 	padding: 1em;
 	background-color: #E5ECF9;
 	border: 1px dashed black;
 }
 
-ol[type="1"] li:before {
+ol[type="1"] > li:before {
 	content: "Example ";
 }
 

@@ -5,23 +5,23 @@ Patterns
 --------
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
-  Pattern         ::=  Pattern1 { `|' Pattern1 }
-  Pattern1        ::=  varid `:' TypePat
-                    |  `_' `:' TypePat
+  Pattern         ::=  Pattern1 { ‘|’ Pattern1 }
+  Pattern1        ::=  varid ‘:’ TypePat
+                    |  ‘_’ ‘:’ TypePat
                     |  Pattern2
-  Pattern2        ::=  varid [`@' Pattern3]
+  Pattern2        ::=  varid [‘@’ Pattern3]
                     |  Pattern3
   Pattern3        ::=  SimplePattern 
                     |  SimplePattern {id [nl] SimplePattern}
-  SimplePattern   ::=  `_'
+  SimplePattern   ::=  ‘_’
                     |  varid
                     |  Literal
                     |  StableId
-                    |  StableId `(' [Patterns] `)'
-                    |  StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
-                    |  `(' [Patterns] `)'
+                    |  StableId ‘(’ [Patterns] ‘)’
+                    |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
+                    |  ‘(’ [Patterns] ‘)’
                     |  XmlPattern
-  Patterns        ::=  Pattern {`,' Patterns}
+  Patterns        ::=  Pattern {‘,’ Patterns}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A pattern is built from constants, constructors, variables and type
@@ -31,23 +31,23 @@ variables in the pattern to the corresponding components of the value
 (or sequence of values).  The same variable name may not be bound more
 than once in a pattern.
 
-\example Some examples of patterns are:
+(@) Some examples of patterns are:
 
-#.  The pattern `ex: IOException` matches all instances of class
-    `IOException`, binding variable \verb@ex@ to the instance.
-#.  The pattern `Some(x)` matches values of the form `Some($v$)`,
-    binding `x` to the argument value $v$ of the `Some` constructor.
-#.  The pattern `(x, _)` matches pairs of values, binding `x` to
-    the first component of the pair. The second component is matched
-    with a wildcard pattern.
-#.  The pattern `x :: y :: xs`{.scala} matches lists of length $\geq 2$,
-    binding `x` to the list's first element, `y` to the list's
-    second element, and `xs` to the remainder.
-#.  The pattern `1 | 2 | 3` matches the integers between 1 and 3.
+    #.  The pattern `ex: IOException` matches all instances of class
+        `IOException`, binding variable \verb@ex@ to the instance.
+    #.  The pattern `Some(x)` matches values of the form `Some($v$)`,
+        binding `x` to the argument value $v$ of the `Some` constructor.
+    #.  The pattern `(x, _)` matches pairs of values, binding `x` to
+        the first component of the pair. The second component is matched
+        with a wildcard pattern.
+    #.  The pattern `x :: y :: xs`{.scala} matches lists of length $\geq 2$,
+        binding `x` to the list's first element, `y` to the list's
+        second element, and `xs` to the remainder.
+    #.  The pattern `1 | 2 | 3` matches the integers between 1 and 3.
 
-Pattern matching is always done in a context which supplies an
-expected type of the pattern. We distinguish the following kinds of
-patterns.
+    Pattern matching is always done in a context which supplies an
+    expected type of the pattern. We distinguish the following kinds of
+    patterns.
 
 ### Variable Patterns
 
@@ -213,26 +213,26 @@ result type is of the form `Option[$S$]`, where $S$ is a subtype of
 `Seq[$T$]` for some element type $T$. 
 This case is further discussed [here](#pattern-seqs).
 
-\example  The `Predef` object contains a definition of an
-extractor object `Pair`:
+(@) The `Predef` object contains a definition of an
+    extractor object `Pair`:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-object Pair {
-  def apply[A, B](x: A, y: B) = Tuple2(x, y)
-  def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
-}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    object Pair {
+      def apply[A, B](x: A, y: B) = Tuple2(x, y)
+      def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
+    }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This means that the name `Pair` can be used in place of `Tuple2` for tuple 
-formation as well as for deconstruction of tuples in patterns.
-Hence, the following is possible:
+    This means that the name `Pair` can be used in place of `Tuple2` for tuple 
+    formation as well as for deconstruction of tuples in patterns.
+    Hence, the following is possible:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-val x = (1, 2)
-val y = x match {
-  case Pair(i, s) => Pair(s + i, i * i)
-}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    val x = (1, 2)
+    val y = x match {
+      case Pair(i, s) => Pair(s + i, i * i)
+    }
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Pattern Sequences
 

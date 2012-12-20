@@ -10,15 +10,16 @@ cat 01-title.md \
     08-expressions.md \
     09-implicit-parameters-and-views.md \
     10-pattern-matching.md \
+    11-top-level-definitions.md \
+    12-xml-expressions-and-patterns.md \
+    13-user-defined-annotations.md \
     15-scala-syntax-summary.md \
     16-references.md > build/ScalaReference.md
 
-
-
-#    11-top-level-definitions.md \
-#    12-xml-expressions-and-patterns.md \
-#    13-user-defined-annotations.md \
 #    14-the-scala-standard-library.md \
+
+
+
 
 
 pandoc -f markdown \
