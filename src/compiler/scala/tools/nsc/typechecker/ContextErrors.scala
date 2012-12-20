@@ -977,7 +977,7 @@ trait ContextErrors {
       object SymValidateErrors extends Enumeration {
         val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
           OverrideClass, SealedNonClass, AbstractNonClass,
-          OverrideConstr, AbstractOverride, LazyAndEarlyInit,
+          OverrideConstr, AbstractOverride, AbstractOverrideOnTypeMember, LazyAndEarlyInit,
           ByNameParameter, AbstractVar = Value
       }
 
@@ -1075,6 +1075,9 @@ trait ContextErrors {
 
           case AbstractOverride =>
             "`abstract override' modifier only allowed for members of traits"
+
+          case AbstractOverrideOnTypeMember =>
+            "`abstract override' modifier not allowed for type members"
 
           case LazyAndEarlyInit =>
             "`lazy' definitions may not be initialized early"

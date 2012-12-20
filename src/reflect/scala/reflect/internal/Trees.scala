@@ -824,7 +824,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
     def Annotated(tree: Tree, annot: Tree, arg: Tree) = tree match {
       case t @ Annotated(annot0, arg0)
-      if (annot0==annot) => t
+      if (annot0==annot && arg0==arg) => t
       case _ => treeCopy.Annotated(tree, annot, arg)
     }
     def SingletonTypeTree(tree: Tree, ref: Tree) = tree match {

@@ -8,6 +8,7 @@ package scala.tools.nsc
 import scala.reflect.internal.util.TableDef
 import scala.language.postfixOps
 
+@deprecated("Scheduled for removal as being a dead-code in the compiler.", "2.10.1")
 object Phases {
   val MaxPhases = 64
 

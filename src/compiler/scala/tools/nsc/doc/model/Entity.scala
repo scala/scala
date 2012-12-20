@@ -9,7 +9,7 @@ package doc
 package model
 
 import scala.collection._
-import comment._
+import base.comment._
 import diagram._
 
 /** An entity in a Scaladoc universe. Entities are declarations in the program and correspond to symbols in the
