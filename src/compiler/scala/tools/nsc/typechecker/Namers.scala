@@ -1462,8 +1462,12 @@ trait Namers extends MethodSynthesis {
 
       if (sym.isConstructor && sym.isAnyOverride)
         fail(OverrideConstr)
-      if (sym.isAbstractOverride && !sym.owner.isTrait)
-        fail(AbstractOverride)
+      if (sym.isAbstractOverride) {
+          if (!sym.owner.isTrait)
+            fail(AbstractOverride)
+          if(sym.isType)
+            fail(AbstractOverrideOnTypeMember)
+      }
       if (sym.isLazy && sym.hasFlag(PRESUPER))
         fail(LazyAndEarlyInit)
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)

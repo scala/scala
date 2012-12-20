@@ -1545,8 +1545,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         sym.name == nme.apply &&
         isClassTypeAccessible(tree)
 
-      if (doTransform)
+      if (doTransform) {
+        tree foreach {
+          case i@Ident(_) =>
+            enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
+          case _ =>
+        }
         toConstructor(tree.pos, tree.tpe)
+      }
       else {
         ifNot
         tree

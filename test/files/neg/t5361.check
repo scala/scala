@@ -1,0 +1,4 @@
+t5361.scala:2: error: only declarations allowed here
+  val x : { val self = this } = new { self => }
+                ^
+one error found

@@ -4,8 +4,7 @@ package scala.tools.nsc
 package doc
 package model
 
-import comment._
-
+import base._
 import diagram._
 
 import scala.collection._
@@ -17,7 +16,8 @@ trait ModelFactoryTypeSupport {
                with ModelFactoryTypeSupport
                with DiagramFactory
                with CommentFactory
-               with TreeFactory =>
+               with TreeFactory
+               with MemberLookup =>
 
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
@@ -82,7 +82,10 @@ trait ModelFactoryTypeSupport {
             findTemplateMaybe(bSym) match {
               case Some(bTpl) if owner == bSym.owner =>
                 // (0) the owner's class is linked AND has a template - lovely
-                LinkToTpl(bTpl)
+                bTpl match {
+                  case dtpl: DocTemplateEntity => new LinkToTpl(dtpl)
+                  case _ => new Tooltip(bTpl.qualifiedName)
+                }
               case _ =>
                 val oTpl = findTemplateMaybe(owner)
                 (oTpl, oTpl flatMap (findMember(bSym, _))) match {

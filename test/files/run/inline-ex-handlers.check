@@ -47,7 +47,7 @@
 <     106	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     106	CALL_METHOD MyException.message (dynamic)
 502c504
 <   blocks: [1,2,3,4,6,7,8,9,10]
 ---
@@ -162,12 +162,12 @@
 <     176	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     176	CALL_METHOD MyException.message (dynamic)
 783c833,834
 <     177	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     177	CALL_METHOD MyException.message (dynamic)
 785c836,837
 <     177	THROW(MyException)
 ---
@@ -194,12 +194,12 @@
 <     181	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     181	CALL_METHOD MyException.message (dynamic)
 822c878,879
 <     182	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     182	CALL_METHOD MyException.message (dynamic)
 824c881,882
 <     182	THROW(MyException)
 ---
@@ -260,7 +260,7 @@
 <     127	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     127	CALL_METHOD MyException.message (dynamic)
 966c1042
 <     catch (IllegalArgumentException) in ArrayBuffer(6, 7, 8, 11, 14, 16, 17, 19) starting at: 3
 ---
@@ -299,7 +299,7 @@
 <     154	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     154	CALL_METHOD MyException.message (dynamic)
 1275c1354
 <   blocks: [1,2,3,4,5,7]
 ---
@@ -354,22 +354,23 @@
 <     213	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
->     ?	CALL_METHOD MyException.message (dynamic)
+>     213	CALL_METHOD MyException.message (dynamic)
 1470c1560
 <   blocks: [1,2,3,4,5,7]
 ---
 >   blocks: [1,2,3,4,5,7,8]
-1494c1584,1591
+1494c1584,1585
 <     58	THROW(IllegalArgumentException)
 ---
 >     ?	STORE_LOCAL(value e)
 >     ?	JUMP 8
->     
+1495a1587,1592
 >   8: 
 >     62	LOAD_MODULE object Predef
 >     62	CONSTANT("RuntimeException")
 >     62	CALL_METHOD scala.Predef.println (dynamic)
 >     62	JUMP 2
+>     
 1543c1640
 <   blocks: [1,2,3,4]
 ---

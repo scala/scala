@@ -54,10 +54,10 @@ abstract class Driver {
           doCompile(compiler)
       } catch {
         case ex: Throwable =>
-          compiler.logThrowable(ex)
+          compiler.reportThrowable(ex)
           ex match {
-            case FatalError(msg)  => reporter.error(null, "fatal error: " + msg)
-            case _                => throw ex
+            case FatalError(msg)  => // signals that we should fail compilation.
+            case _                => throw ex // unexpected error, tell the outside world.
           }
       }
     }

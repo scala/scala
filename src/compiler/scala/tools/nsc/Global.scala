@@ -284,7 +284,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       log(msg)
   }
 
-  def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
+  @deprecated("Renamed to reportThrowable", "2.10.1")
+  def logThrowable(t: Throwable): Unit = reportThrowable(t)
+  def reportThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   override def throwableAsString(t: Throwable) = util.stackTraceString(t)
 
 // ------------ File interface -----------------------------------------
@@ -709,7 +711,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
   protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
-  private lazy val phaseTimings = new Phases.TimingModel   // tracking phase stats
 
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
@@ -1038,37 +1039,41 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
-  override def supplementErrorMessage(errorMessage: String): String = try {
-    val tree      = analyzer.lastTreeToTyper
-    val sym       = tree.symbol
-    val tpe       = tree.tpe
-    val enclosing = lastSeenContext.enclClassOrMethod.tree
+  override def supplementErrorMessage(errorMessage: String): String =
+    if (currentRun.supplementedError) errorMessage
+    else try {
+      val tree      = analyzer.lastTreeToTyper
+      val sym       = tree.symbol
+      val tpe       = tree.tpe
+      val enclosing = lastSeenContext.enclClassOrMethod.tree
 
-    val info1 = formatExplain(
-      "while compiling"    -> currentSource.path,
-      "during phase"       -> ( if (globalPhase eq phase) phase else "global=%s, enteringPhase=%s".format(globalPhase, phase) ),
-      "library version"    -> scala.util.Properties.versionString,
-      "compiler version"   -> Properties.versionString,
-      "reconstructed args" -> settings.recreateArgs.mkString(" ")
-    )
-    val info2 = formatExplain(
-      "last tree to typer" -> tree.summaryString,
-      "symbol"             -> Option(sym).fold("null")(_.debugLocationString),
-      "symbol definition"  -> Option(sym).fold("null")(_.defString),
-      "tpe"                -> tpe,
-      "symbol owners"      -> ownerChainString(sym),
-      "context owners"     -> ownerChainString(lastSeenContext.owner)
-    )
-    val info3: List[String] = (
-         ( List("== Enclosing template or block ==", nodePrinters.nodeToString(enclosing).trim) )
-      ++ ( if (tpe eq null) Nil else List("== Expanded type of tree ==", typeDeconstruct.show(tpe)) )
-      ++ ( if (!settings.debug.value) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
-      ++ ( List(errorMessage) )
-    )
+      val info1 = formatExplain(
+        "while compiling"    -> currentSource.path,
+        "during phase"       -> ( if (globalPhase eq phase) phase else "global=%s, enteringPhase=%s".format(globalPhase, phase) ),
+        "library version"    -> scala.util.Properties.versionString,
+        "compiler version"   -> Properties.versionString,
+        "reconstructed args" -> settings.recreateArgs.mkString(" ")
+      )
+      val info2 = formatExplain(
+        "last tree to typer" -> tree.summaryString,
+        "symbol"             -> Option(sym).fold("null")(_.debugLocationString),
+        "symbol definition"  -> Option(sym).fold("null")(_.defString),
+        "tpe"                -> tpe,
+        "symbol owners"      -> ownerChainString(sym),
+        "context owners"     -> ownerChainString(lastSeenContext.owner)
+      )
+      val info3: List[String] = (
+           ( List("== Enclosing template or block ==", nodePrinters.nodeToString(enclosing).trim) )
+        ++ ( if (tpe eq null) Nil else List("== Expanded type of tree ==", typeDeconstruct.show(tpe)) )
+        ++ ( if (!settings.debug.value) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
+        ++ ( List(errorMessage) )
+      )
 
-    ("\n" + info1) :: info2 :: info3 mkString "\n\n"
-  }
-  catch { case x: Exception => errorMessage }
+      currentRun.supplementedError = true
+
+      ("\n" + info1) :: info2 :: info3 mkString "\n\n"
+    }
+    catch { case x: Exception => errorMessage }
 
   /** The id of the currently active run
    */
@@ -1121,6 +1126,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     /** Has any macro expansion used a fallback during this run? */
     var seenMacroExpansionsFallingBack = false
+
+    /** Have we already supplemented the error message of a compiler crash? */
+    private[nsc] final var supplementedError = false
 
     private val unitbuf = new mutable.ListBuffer[CompilationUnit]
     val compiledFiles   = new mutable.HashSet[String]
@@ -1478,7 +1486,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
         // progress update
         informTime(globalPhase.description, startTime)
-        phaseTimings(globalPhase) = currentTime - startTime
         val shouldWriteIcode = (
              (settings.writeICode.isSetByUser && (settings.writeICode containsPhase globalPhase))
           || (!settings.Xprint.doAllPhases && (settings.Xprint containsPhase globalPhase) && runIsAtOptimiz)
