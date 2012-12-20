@@ -335,12 +335,10 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     }
   }
 
-  def memberToShortCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
-    if (mbr.comment.isEmpty)
-      NodeSeq.Empty
-    else
-      <p class="shortcomment cmt">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ inlineToHtml(mbr.comment.get.short) }</p>
-  }
+  def memberToShortCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
+    mbr.comment.fold(NodeSeq.Empty) { comment =>
+      <p class="shortcomment cmt">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ inlineToHtml(comment.short) }</p>
+    }
 
   def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
@@ -361,37 +359,34 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         case _ => Nil
       }
 
-      def mbrCmt = mbr.comment.get
-
-      def paramCommentToHtml(prs: List[ParameterEntity]): NodeSeq = prs match {
+      def paramCommentToHtml(prs: List[ParameterEntity], comment: Comment): NodeSeq = prs match {
 
         case (tp: TypeParam) :: rest =>
           val paramEntry: NodeSeq = {
-            <dt class="tparam">{ tp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.typeParams(tp.name)) }</dd>
+            <dt class="tparam">{ tp.name }</dt><dd class="cmt">{ bodyToHtml(comment.typeParams(tp.name)) }</dd>
           }
-          paramEntry ++ paramCommentToHtml(rest)
+          paramEntry ++ paramCommentToHtml(rest, comment)
 
         case (vp: ValueParam) :: rest  =>
           val paramEntry: NodeSeq = {
-            <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.valueParams(vp.name)) }</dd>
+            <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(comment.valueParams(vp.name)) }</dd>
           }
-          paramEntry ++ paramCommentToHtml(rest)
+          paramEntry ++ paramCommentToHtml(rest, comment)
 
         case _ =>
           NodeSeq.Empty
       }
 
-      if (mbr.comment.isEmpty) NodeSeq.Empty
-      else {
+      mbr.comment.fold(NodeSeq.Empty) { comment =>
         val cmtedPrs = prs filter {
-          case tp: TypeParam => mbrCmt.typeParams isDefinedAt tp.name
-          case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
+          case tp: TypeParam => comment.typeParams isDefinedAt tp.name
+          case vp: ValueParam => comment.valueParams isDefinedAt vp.name
         }
-        if (cmtedPrs.isEmpty && mbrCmt.result.isEmpty) NodeSeq.Empty
+        if (cmtedPrs.isEmpty && comment.result.isEmpty) NodeSeq.Empty
         else {
           <dl class="paramcmts block">{
-            paramCommentToHtml(cmtedPrs) ++ (
-            mbrCmt.result match {
+            paramCommentToHtml(cmtedPrs, comment) ++ (
+            comment.result match {
               case None => NodeSeq.Empty
               case Some(cmt) =>
                 <dt>returns</dt><dd class="cmt">{ bodyToHtml(cmt) }</dd>
@@ -470,7 +465,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     }
 
     // --- start attributes block vals
-    val attributes: Seq[scala.xml.Node] = {
+    val attributes: NodeSeq = {
       val fvs: List[comment.Paragraph] = visibility(mbr).toList
       if (fvs.isEmpty || isReduced) NodeSeq.Empty
       else {
@@ -479,7 +474,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       }
     }
 
-    val definitionClasses: Seq[scala.xml.Node] = {
+    val definitionClasses: NodeSeq = {
       val inDefTpls = mbr.inDefinitionTemplates
       if ((inDefTpls.tail.isEmpty && (inDefTpls.head == inTpl)) || isReduced) NodeSeq.Empty
       else {
@@ -488,7 +483,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       }
     }
 
-    val fullSignature: Seq[scala.xml.Node] = {
+    val fullSignature: NodeSeq = {
       mbr match {
         case nte: NonTemplateMemberEntity if nte.isUseCase =>
           <div class="full-signature-block toggleContainer">
@@ -499,14 +494,14 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       }
     }
 
-    val selfType: Seq[scala.xml.Node] = mbr match {
+    val selfType: NodeSeq = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
         <dt>Self Type</dt>
         <dd>{ typeToHtml(dtpl.selfType.get, hasLinks = true) }</dd>
       case _ => NodeSeq.Empty
     }
 
-    val annotations: Seq[scala.xml.Node] = {
+    val annotations: NodeSeq = {
       // A list of annotations which don't show their arguments, e. g. because they are shown separately.
       val annotationsWithHiddenArguments = List("deprecated", "Deprecated", "migration")
 
@@ -528,7 +523,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       } else NodeSeq.Empty
     }
 
-    val sourceLink: Seq[scala.xml.Node] = mbr match {
+    val sourceLink: NodeSeq = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined && !isReduced) =>
         val (absFile, line) = dtpl.inSource.get
         <dt>Source</dt>
@@ -536,83 +531,87 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       case _ => NodeSeq.Empty
     }
 
-    val deprecation: Seq[scala.xml.Node] =
-      if (mbr.deprecation.isEmpty || isReduced) NodeSeq.Empty
-      else {
-        <dt>Deprecated</dt>
-        <dd class="cmt">{ bodyToHtml(mbr.deprecation.get) }</dd>
+    val deprecation: NodeSeq =
+      mbr.deprecation match {
+        case Some(deprecation) if !isReduced =>
+          <dt>Deprecated</dt>
+          <dd class="cmt">{ bodyToHtml(deprecation) }</dd>
+        case _ => NodeSeq.Empty
       }
 
-    val migration: Seq[scala.xml.Node] =
-      if(mbr.migration.isEmpty || isReduced) NodeSeq.Empty
-      else {
+    val migration: NodeSeq =
+      mbr.migration match {
+        case Some(migration) if !isReduced =>
           <dt>Migration</dt>
-          <dd class="cmt">{ bodyToHtml(mbr.migration.get) }</dd>
+          <dd class="cmt">{ bodyToHtml(migration) }</dd>
+        case _ => NodeSeq.Empty
       }
 
-    val mainComment: Seq[scala.xml.Node] = mbr.comment match {
+    val mainComment: NodeSeq = mbr.comment match {
       case Some(comment) if (! isReduced) =>
+        def orEmpty[T](it: Iterable[T])(gen:  =>NodeSeq): NodeSeq =
+          if (it.isEmpty) NodeSeq.Empty else gen
+
         val example =
-          if(!comment.example.isEmpty)
+          orEmpty(comment.example) {
             <div class="block">Example{ if (comment.example.length > 1) "s" else ""}:
-                <ol>{
-                val exampleXml: List[scala.xml.NodeSeq] =
-                  for(example <- comment.example ) yield
-                    <li class="cmt">{ bodyToHtml(example) }</li>
-                exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
+               <ol>{
+                 val exampleXml: List[NodeSeq] = for (ex <- comment.example) yield
+                   <li class="cmt">{ bodyToHtml(ex) }</li>
+                 exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
               }</ol>
-              </div>
-          else NodeSeq.Empty
+            </div>
+	  }
 
-        val version: Seq[scala.xml.Node] =
-          if(!comment.version.isEmpty) {
+        val version: NodeSeq =
+          orEmpty(comment.version) {
             <dt>Version</dt>
-            <dd>{ for(body <- comment.version.toList) yield {bodyToHtml(body)} }</dd>
-          } else NodeSeq.Empty
+            <dd>{ for(body <- comment.version.toList) yield bodyToHtml(body) }</dd>
+          }
 
-        val sinceVersion: Seq[scala.xml.Node] =
-          if(!comment.since.isEmpty) {
+        val sinceVersion: NodeSeq =
+          orEmpty(comment.since) {
             <dt>Since</dt>
-            <dd>{ for(body <- comment.since.toList) yield {bodyToHtml(body)} }</dd>
-          } else NodeSeq.Empty
+            <dd>{ for(body <- comment.since.toList) yield bodyToHtml(body) }</dd>
+          }
 
-        val note: Seq[scala.xml.Node] =
-          if(!comment.note.isEmpty) {
+        val note: NodeSeq =
+          orEmpty(comment.note) {
             <dt>Note</dt>
             <dd>{
-              val noteXml: List[scala.xml.NodeSeq] = (for(note <- comment.note ) yield <span class="cmt">{bodyToHtml(note)}</span> )
+              val noteXml: List[NodeSeq] =  for(note <- comment.note ) yield <span class="cmt">{bodyToHtml(note)}</span>
               noteXml.reduceLeft(_ ++ Text(", ") ++ _)
             }</dd>
-          } else NodeSeq.Empty
+          }
 
-        val seeAlso: Seq[scala.xml.Node] =
-          if(!comment.see.isEmpty) {
+        val seeAlso: NodeSeq =
+          orEmpty(comment.see) {
             <dt>See also</dt>
             <dd>{
-              val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <span class="cmt">{bodyToHtml(see)}</span> )
+              val seeXml: List[NodeSeq] = for(see <- comment.see ) yield <span class="cmt">{bodyToHtml(see)}</span>
               seeXml.reduceLeft(_ ++ _)
             }</dd>
-          } else NodeSeq.Empty
+          }
 
-        val exceptions: Seq[scala.xml.Node] =
-          if(!comment.throws.isEmpty) {
+        val exceptions: NodeSeq =
+          orEmpty(comment.throws) {
             <dt>Exceptions thrown</dt>
             <dd>{
-              val exceptionsXml: Iterable[scala.xml.NodeSeq] =
-                for(exception <- comment.throws.toList.sortBy(_._1) ) yield
-                  <span class="cmt">{Text(exception._1) ++ bodyToHtml(exception._2)}</span>
+              val exceptionsXml: List[NodeSeq] =
+                for((name, body) <- comment.throws.toList.sortBy(_._1) ) yield
+                  <span class="cmt">{Text(name) ++ bodyToHtml(body)}</span>
               exceptionsXml.reduceLeft(_ ++ Text("") ++ _)
             }</dd>
-          } else NodeSeq.Empty
+          }
 
-        val todo: Seq[scala.xml.Node] =
-          if(!comment.todo.isEmpty) {
+        val todo: NodeSeq =
+          orEmpty(comment.todo) {
             <dt>To do</dt>
             <dd>{
-              val todoXml: List[scala.xml.NodeSeq] = (for(todo <- comment.todo ) yield <span class="cmt">{bodyToHtml(todo)}</span> )
+              val todoXml: List[NodeSeq] = (for(todo <- comment.todo ) yield <span class="cmt">{bodyToHtml(todo)}</span> )
               todoXml.reduceLeft(_ ++ Text(", ") ++ _)
             }</dd>
-          } else NodeSeq.Empty
+          }
 
         example ++ version ++ sinceVersion ++ exceptions ++ todo ++ note ++ seeAlso
 
