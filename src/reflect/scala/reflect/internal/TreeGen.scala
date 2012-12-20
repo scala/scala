@@ -128,9 +128,9 @@ abstract class TreeGen extends macros.TreeBuilder {
     else mkAttributedIdent(sym)
 
   /** Replaces tree type with a stable type if possible */
-  def stabilize(tree: Tree): Tree = {
-    for(tp <- stableTypeFor(tree)) tree.tpe = tp
-    tree
+  def stabilize(tree: Tree): Tree = stableTypeFor(tree) match {
+    case Some(tp) => tree setType tp
+    case _        => tree
   }
 
   /** Computes stable type for a tree if possible */

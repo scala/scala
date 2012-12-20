@@ -857,8 +857,7 @@ abstract class Erasure extends AddInterfaces
               alt => alt == first || !(first.tpe looselyMatches alt.tpe)
             }
             if (tree.symbol ne sym1) {
-              tree1.symbol = sym1
-              tree1.tpe = sym1.tpe
+              tree1 setSymbol sym1 setType sym1.tpe
             }
           }
           tree1
@@ -1260,13 +1259,12 @@ abstract class Erasure extends AddInterfaces
               tree1 setType specialScalaErasure(tree1.tpe)
             case ArrayValue(elemtpt, trees) =>
               treeCopy.ArrayValue(
-                tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform) setType null
+                tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform).clearType()
             case DefDef(_, _, _, _, tpt, _) =>
-              val result = super.transform(tree1) setType null
-              tpt.tpe = specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
-              result
+              try super.transform(tree1).clearType()
+              finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
             case _ =>
-              super.transform(tree1) setType null
+              super.transform(tree1).clearType()
           }
         }
       }

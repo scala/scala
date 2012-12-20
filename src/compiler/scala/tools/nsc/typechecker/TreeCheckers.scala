@@ -192,11 +192,8 @@ abstract class TreeCheckers extends Analyzer {
     override def typed(tree: Tree, mode: Int, pt: Type): Tree = returning(tree) {
       case EmptyTree | TypeTree() => ()
       case _ if tree.tpe != null  =>
-        tpeOfTree.getOrElseUpdate(tree, {
-          val saved = tree.tpe
-          tree.tpe = null
-          saved
-        })
+        tpeOfTree.getOrElseUpdate(tree, try tree.tpe finally tree.clearType())
+
         wrap(tree)(super.typed(tree, mode, pt) match {
           case _: Literal     => ()
           case x if x ne tree => treesDiffer(tree, x)
@@ -288,7 +285,7 @@ abstract class TreeCheckers extends Analyzer {
               if (oldtpe =:= tree.tpe) ()
               else typesDiffer(tree, oldtpe, tree.tpe)
 
-              tree.tpe = oldtpe
+              tree setType oldtpe
               super.traverse(tree)
             }
         }

@@ -396,8 +396,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           sourceModule setInfo sym.tpe
           // Companion module isn't visible for anonymous class at this point anyway
-          assert(clazz.sourceModule != NoSymbol || clazz.isAnonymousClass,
-            clazz + " has no sourceModule: sym = " + sym + " sym.tpe = " + sym.tpe)
+          assert(clazz.sourceModule != NoSymbol || clazz.isAnonymousClass,  s"$clazz has no sourceModule: $sym ${sym.tpe}")
           parents1 = List()
           decls1 = newScopeWith(decls.toList filter isImplementedStatically: _*)
         } else if (!parents.isEmpty) {
@@ -545,12 +544,18 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             }
             tree
           }
+        // !!! What is this doing, and why is it only looking for exactly
+        // one type parameter? It would seem to be
+        //   "Map implementation class types in type-apply's to their interfaces"
+        // from the comment on preTransform, but is there some way we should know
+        // that impl class types in type applies can only appear in single
+        // type parameter type constructors?
         case Apply(tapp @ TypeApply(fn, List(arg)), List()) =>
           if (arg.tpe.typeSymbol.isImplClass) {
             val ifacetpe = toInterface(arg.tpe)
-            arg.tpe = ifacetpe
-            tapp.tpe = MethodType(List(), ifacetpe)
-            tree.tpe = ifacetpe
+            arg setType ifacetpe
+            tapp setType MethodType(Nil, ifacetpe)
+            tree setType ifacetpe
           }
           tree
         case ValDef(_, _, _, _) if currentOwner.isImplClass =>
@@ -1129,7 +1134,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       // change every node type that refers to an implementation class to its
       // corresponding interface, unless the node's symbol is an implementation class.
       if (tree.tpe.typeSymbol.isImplClass && ((sym eq null) || !sym.isImplClass))
-        tree.tpe = toInterface(tree.tpe)
+        tree modifyType toInterface
 
       tree match {
         case templ @ Template(parents, self, body) =>

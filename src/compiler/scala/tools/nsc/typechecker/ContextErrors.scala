@@ -154,7 +154,7 @@ trait ContextErrors {
         // the found/req types.
         val foundType: Type = req.normalize match {
           case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
-            val retyped    = typed (tree.duplicate setType null)
+            val retyped    = typed (tree.duplicate.clearType())
             val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
             if (foundDecls.isEmpty || (found.typeSymbol eq NoSymbol)) found
             else {
@@ -182,7 +182,7 @@ trait ContextErrors {
       }
 
       def ParentTypesError(templ: Template, ex: TypeError) = {
-        templ.tpe = null
+        templ.clearType()
         issueNormalTypeError(templ, ex.getMessage())
         setError(templ)
       }

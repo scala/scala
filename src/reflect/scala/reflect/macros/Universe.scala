@@ -114,7 +114,7 @@ abstract class Universe extends scala.reflect.api.Universe {
     def setPos(newpos: Position): Tree
 
     /** Sets the `tpe` of the tree. Returns `Unit`. */
-    def tpe_=(t: Type): Unit
+    @deprecated("Use setType", "2.11.0") def tpe_=(t: Type): Unit
 
     /** Sets the `tpe` of the tree. Returns the tree itself. */
     def setType(tp: Type): Tree
