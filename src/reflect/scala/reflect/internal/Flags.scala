@@ -262,7 +262,7 @@ class Flags extends ModifierFlags {
    *  Getters of immutable values also get STABLE.
    */
   final val GetterFlags = ~(PRESUPER | MUTABLE)
-  final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR)
+  final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR | IMPLICIT)
 
   /** When a symbol for a default getter is created, it inherits these
    *  flags from the method with the default.  Other flags applied at creation
