@@ -245,7 +245,7 @@ trait Symbols { self: Universe =>
     /** Does this symbol represent the definition of a term?
      *  Note that every symbol is either a term or a type.
      *  So for every symbol `sym` (except for `NoSymbol`),
-     *  either `sym.isTerm` is true or `sym.isTerm` is true.
+     *  either `sym.isTerm` is true or `sym.isType` is true.
      *
      *  @group Tests
      */
