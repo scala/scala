@@ -25,13 +25,14 @@ Conversion from LaTeX - Guidelines
 #. Convert all `{\em ...}`
 #. Convert all `\lstlisting`
 #. Convert all `\lstinline`
+#. Convert all `\code`
 #. Convert all `\sref{sec:...}`
 #. Convert all `\begin{itemize}`
 #. Convert all `\begin{enumerate}`
 #. Convert all `\example`
-#. Convert all `\code`
 #. Convert all `\footnote`
 #. Convert all `\paragraph`
+#. Convert all `\begin{quote}`
 #. Delete all `\comment{...}`
 #. Convert all single quote pairs
 #. Convert all double quote pairs
