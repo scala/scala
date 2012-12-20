@@ -13,12 +13,9 @@ cat 01-title.md \
     11-top-level-definitions.md \
     12-xml-expressions-and-patterns.md \
     13-user-defined-annotations.md \
+    14-the-scala-standard-library.md \
     15-scala-syntax-summary.md \
     16-references.md > build/ScalaReference.md
-
-#    14-the-scala-standard-library.md \
-
-
 
 
 
