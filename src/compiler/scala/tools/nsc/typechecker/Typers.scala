@@ -3497,12 +3497,13 @@ trait Typers extends Modes with Adaptations with Tags {
       // println(util.Position.formatMessage(uncheckedPattern.pos, "made unchecked type test into a checked one", true))
 
       val args = List(uncheckedPattern)
+      val app  = atPos(uncheckedPattern.pos)(Apply(classTagExtractor, args))
       // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
       // and re-typechecks of the target of the unapply call in PATTERNmode,
       // this breaks down when the classTagExtractor (which defineds the unapply member) is not a simple reference to an object,
       // but an arbitrary tree as is the case here
-      doTypedUnapply(Apply(classTagExtractor, args), classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
-      }
+      doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
+    }
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
@@ -4646,12 +4647,11 @@ trait Typers extends Modes with Adaptations with Tags {
                 // [Eugene] no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
                 val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
                 val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.toTypeConstructor, List(tpe))).last
-                val newArrayApp = atPos(tree.pos) {
+                atPos(tree.pos) {
                   val tag = resolveClassTag(tree.pos, tagType)
                   if (tag.isEmpty) MissingClassTagError(tree, tagType)
-                  else new ApplyToImplicitArgs(Select(tag, nme.newArray), args)
+                  else typed(new ApplyToImplicitArgs(Select(tag, nme.newArray), args))
                 }
-                typed(newArrayApp, mode, pt)
               case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => //SI-5696
                 TooManyArgumentListsForConstructor(tree)
               case tree1 =>

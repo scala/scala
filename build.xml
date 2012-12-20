@@ -2719,7 +2719,12 @@ DISTRIBUTION
   <target name="dist.base" depends="dist.start">
     <mkdir dir="${dist.dir}/lib"/>
     <copy toDir="${dist.dir}/lib">
-      <fileset dir="${build-pack.dir}/lib"/>
+      <fileset dir="${build-pack.dir}/lib">
+        <include name="jline.jar"/>
+        <include name="scalacheck.jar"/>
+        <include name="scala-partest.jar"/>
+        <include name="scalap.jar"/>
+      </fileset>
     </copy>
     <mkdir dir="${dist.dir}/bin"/>
     <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
