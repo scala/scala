@@ -3,7 +3,6 @@ package model
 package diagram
 
 import model._
-import comment.CommentFactory
 
 // statistics
 import  html.page.diagram.DiagramStats
@@ -24,7 +23,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
 
   // the following can used for hardcoding different relations into the diagram, for bootstrapping purposes
   def aggregationNode(text: String) =
-    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (LinkTo, Int)]() }, None)()
+    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (base.LinkTo, Int)]() }, None)()
 
   /** Create the inheritance diagram for this template */
   def makeInheritanceDiagram(tpl: DocTemplateImpl): Option[Diagram] = {

@@ -19,16 +19,16 @@ trait StdAttachments {
    *  by `parentTypes`. This attachment coordinates `parentTypes` and `typedTemplate` and
    *  allows them to complete the synthesis.
    */
-  case class SuperCallArgsAttachment(argss: List[List[Tree]])
+  case class SuperArgsAttachment(argss: List[List[Tree]])
 
-  /** Convenience method for `SuperCallArgsAttachment`.
+  /** Convenience method for `SuperArgsAttachment`.
    *  Compared with `MacroRuntimeAttachment` this attachment has different a usage pattern,
    *  so it really benefits from a dedicated extractor.
    */
-  def superCallArgs(tree: Tree): Option[List[List[Tree]]] =
-    tree.attachments.get[SuperCallArgsAttachment] collect { case SuperCallArgsAttachment(argss) => argss }
+  def superArgs(tree: Tree): Option[List[List[Tree]]] =
+    tree.attachments.get[SuperArgsAttachment] collect { case SuperArgsAttachment(argss) => argss }
 
-  /** Determines whether the given tree has an associated SuperCallArgsAttachment.
+  /** Determines whether the given tree has an associated SuperArgsAttachment.
    */
-  def hasSuperArgs(tree: Tree): Boolean = superCallArgs(tree).nonEmpty
+  def hasSuperArgs(tree: Tree): Boolean = superArgs(tree).nonEmpty
 }

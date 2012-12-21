@@ -6321,11 +6321,11 @@ trait Types extends api.Types { self: SymbolTable =>
       case ExistentialType(qs, _) => qs
       case t => List()
     }
-    def stripType(tp: Type) = tp match {
+    def stripType(tp: Type): Type = tp match {
       case ExistentialType(_, res) =>
         res
       case tv@TypeVar(_, constr) =>
-        if (tv.instValid) constr.inst
+        if (tv.instValid) stripType(constr.inst)
         else if (tv.untouchable) tv
         else abort("trying to do lub/glb of typevar "+tp)
       case t => t

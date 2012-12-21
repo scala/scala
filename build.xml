@@ -2503,6 +2503,7 @@ Binary compatibility testing
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="2.10.0-RC2"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="2.10.0-RC2"/>
     </artifact:dependencies>
   </target>
 
@@ -2518,7 +2519,19 @@ Binary compatibility testing
          <classpath>
            <path refid="mima.classpath"/>
          </classpath>
-     </java>
+    </java>
+    <java
+       fork="true"
+       failonerror="true"
+       classname="com.typesafe.tools.mima.cli.Main">
+         <arg value="--prev"/>
+         <arg value="${org.scala-lang:scala-reflect:jar}"/>
+         <arg value="--curr"/>
+         <arg value="${build-pack.dir}/lib/scala-reflect.jar"/>
+         <classpath>
+           <path refid="mima.classpath"/>
+         </classpath>
+    </java>
   </target>
 
 

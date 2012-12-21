@@ -5,6 +5,7 @@ import java.util.Calendar
 import scala.tools.nsc.interactive.tests._
 import scala.tools.nsc.util._
 import scala.tools.nsc.io._
+import scala.tools.nsc.doc
 
 /** This test runs the presentation compiler on the Scala compiler project itself and records memory consumption.
  *
@@ -23,6 +24,8 @@ import scala.tools.nsc.io._
  */
 object Test extends InteractiveTest {
   final val mega = 1024 * 1024
+
+  override val settings: doc.Settings = docSettings
 
   override def execute(): Unit = memoryConsumptionTest()
 

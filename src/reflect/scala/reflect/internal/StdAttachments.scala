@@ -10,6 +10,7 @@ trait StdAttachments {
   trait Attachable {
     protected var rawatt: scala.reflect.macros.Attachments { type Pos = Position } = NoPosition
     def attachments = rawatt
+    def setAttachments(attachments: scala.reflect.macros.Attachments { type Pos = Position }): this.type = { rawatt = attachments; this }
     def updateAttachment[T: ClassTag](attachment: T): this.type = { rawatt = rawatt.update(attachment); this }
     def removeAttachment[T: ClassTag]: this.type = { rawatt = rawatt.remove[T]; this }
 

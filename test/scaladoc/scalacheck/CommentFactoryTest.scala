@@ -3,8 +3,7 @@ import org.scalacheck.Prop._
 
 import scala.tools.nsc.Global
 import scala.tools.nsc.doc
-import scala.tools.nsc.doc.model._
-import scala.tools.nsc.doc.model.comment._
+import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
 

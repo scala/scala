@@ -1,0 +1,48 @@
+body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
+))))))
+@example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
+@version:
+@since:
+@todo:
+@note:
+@see:
+body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
+))))))
+@example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
+@version:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(1), Text(.)))), Text(0, 09/07/2012))))))
+@since:
+@todo:
+@note:
+@see:
+body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
+))))))
+@example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
+@version:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(1), Text(.)))), Text(0, 09/07/2012))))))
+@since:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(2), Text(.)))), Text(10))))))
+@todo:
+@note:
+@see:
+body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
+))))))
+@example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
+@version:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(1), Text(.)))), Text(0, 09/07/2012))))))
+@since:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(2), Text(.)))), Text(10))))))
+@todo:Body(List(Paragraph(Chain(List(Summary(Text(this method is unsafe)))))))
+@note:
+@see:
+body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
+))))))
+@example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
+@version:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(1), Text(.)))), Text(0, 09/07/2012))))))
+@since:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(2), Text(.)))), Text(10))))))
+@todo:Body(List(Paragraph(Chain(List(Summary(Text(this method is unsafe)))))))
+@note:Body(List(Paragraph(Chain(List(Summary(Text(Don't inherit!)))))))
+@see:
+body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
+))))))
+@example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
+@version:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(1), Text(.)))), Text(0, 09/07/2012))))))
+@since:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(2), Text(.)))), Text(10))))))
+@todo:Body(List(Paragraph(Chain(List(Summary(Text(this method is unsafe)))))))
+@note:Body(List(Paragraph(Chain(List(Summary(Text(Don't inherit!)))))))
+@see:Body(List(Paragraph(Chain(List(Summary(Text(some other method)))))))

@@ -70,6 +70,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
   override def forInteractive = true
+  override def forScaladoc = settings.isScaladoc
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
