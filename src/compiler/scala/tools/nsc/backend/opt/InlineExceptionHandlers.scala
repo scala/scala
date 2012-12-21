@@ -52,7 +52,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
   import icodes._
   import icodes.opcodes._
 
-  val phaseName = "inlineExceptionHandlers"
+  val phaseName = "inlinehandlers"
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new InlineExceptionHandlersPhase(p)

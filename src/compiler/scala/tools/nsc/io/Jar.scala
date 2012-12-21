@@ -47,6 +47,20 @@ class Jar(file: File) extends Iterable[JarEntry] {
     case _        => Nil
   }
 
+  /** Invoke f with input for named jar entry (or None). */
+  def withEntryStream[A](name: String)(f: Option[InputStream] => A) = {
+    val jarFile = new JarFile(file.jfile)
+    def apply() =
+      jarFile getEntry name match {
+        case null   => f(None)
+        case entry  =>
+          val in = Some(jarFile getInputStream entry)
+          try f(in)
+          finally in map (_.close())
+      }
+    try apply() finally jarFile.close()
+  }
+
   def withJarInput[T](f: JarInputStream => T): T = {
     val in = new JarInputStream(file.inputStream())
     try f(in)

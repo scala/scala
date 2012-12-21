@@ -17,12 +17,13 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
   import definitions._             // standard classes and methods
   import typer.atOwner             // methods to type trees
 
+  override def description = "ANF pre-transform for @cps"
+
   /** the following two members override abstract members in Transform */
   val phaseName: String = "selectiveanf"
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ANFTransformer(unit)
-
 
   class ANFTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 

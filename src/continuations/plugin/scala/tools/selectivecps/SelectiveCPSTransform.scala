@@ -17,6 +17,8 @@ abstract class SelectiveCPSTransform extends PluginComponent with
   import definitions._             // standard classes and methods
   import typer.atOwner             // methods to type trees
 
+  override def description = "@cps-driven transform of selectiveanf assignments"
+
   /** the following two members override abstract members in Transform */
   val phaseName: String = "selectivecps"
 
