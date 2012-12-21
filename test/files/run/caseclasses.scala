@@ -1,6 +1,6 @@
 case class Foo(x: Int)(y: Int)
 
-case class Bar
+case class Bar()
 
 abstract class Base
 abstract case class Abs(x: Int) extends Base
