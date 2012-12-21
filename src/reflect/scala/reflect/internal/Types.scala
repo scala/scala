@@ -3236,7 +3236,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (constr.instValid) constr.inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
-      else if (isHigherKinded) typeFun(params, applyArgs(params map (_.typeConstructor)))
+      else if (isHigherKinded) logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
       else super.normalize
     )
     override def typeSymbol = origin.typeSymbol
@@ -3663,7 +3663,7 @@ trait Types extends api.Types { self: SymbolTable =>
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type =
     if (tparams.isEmpty) tpe0
     else {
-      val tpe      = deAlias(tpe0)
+      val tpe      = normalizeAliases(tpe0)
       val tpe1     = new ExistentialExtrapolation(tparams) extrapolate tpe
       var tparams0 = tparams
       var tparams1 = tparams0 filter tpe1.contains
@@ -3677,13 +3677,31 @@ trait Types extends api.Types { self: SymbolTable =>
       newExistentialType(tparams1, tpe1)
     }
 
-  /** Remove any occurrences of type aliases from this type */
-  object deAlias extends TypeMap {
-    def apply(tp: Type): Type = mapOver {
-      tp match {
-        case TypeRef(pre, sym, args) if sym.isAliasType => tp.normalize
-        case _ => tp
-      }
+  /** Normalize any type aliases within this type (@see Type#normalize).
+   *  Note that this depends very much on the call to "normalize", not "dealias",
+   *  so it is no longer carries the too-stealthy name "deAlias".
+   */
+  object normalizeAliases extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(_, sym, _) if sym.isAliasType =>
+        def msg = if (tp.isHigherKinded) s"Normalizing type alias function $tp" else s"Dealiasing type alias $tp"
+        mapOver(logResult(msg)(tp.normalize))
+      case _                                     => mapOver(tp)
+    }
+  }
+
+  /** Repeatedly apply .widen and .dealias to the given type
+   *  until neither accomplishes anything. This compensates for
+   *  the fact that type aliases can hide beneath singleton
+   *  types and singleton types can hide inside type aliases.
+   */
+  def dropAliasesAndSingleTypes(tp: Type): Type = {
+    val tp1 = tp.dealias
+    if (tp ne tp1) dropAliasesAndSingleTypes(tp1)
+    else {
+      val tp1 = tp.widen
+      if (tp ne tp1) dropAliasesAndSingleTypes(tp1)
+      else tp
     }
   }
 

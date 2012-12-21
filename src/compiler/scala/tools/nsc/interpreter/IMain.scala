@@ -523,7 +523,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   // normalize non-public types so we don't see protected aliases like Self
   def normalizeNonPublic(tp: Type) = tp match {
-    case TypeRef(_, sym, _) if sym.isAliasType && !sym.isPublic => tp.normalize
+    case TypeRef(_, sym, _) if sym.isAliasType && !sym.isPublic => tp.dealias
     case _                                                      => tp
   }
 
