@@ -28,9 +28,6 @@ public Test4$Foo8(int)
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
 private int Test4$Foo9.z
 
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
-public int Test4$Foo9.getZ()
-
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://apple.com)
 public int Test4$Foo9.x()
 
