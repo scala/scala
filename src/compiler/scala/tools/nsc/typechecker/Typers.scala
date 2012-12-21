@@ -5317,7 +5317,7 @@ trait Typers extends Modes with Adaptations with Tags {
     def typedTypeConstructor(tree: Tree, mode: Int): Tree = {
       val result = typed(tree, forTypeMode(mode) | FUNmode, WildcardType)
 
-      val restpe = result.tpe.normalize // normalize to get rid of type aliases for the following check (#1241)
+      val restpe = result.tpe.dealias // get rid of type aliases for the following check (#1241)
       if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable && !context.unit.isJava) {
         // The isJava exception if OK only because the only type constructors scalac gets
         // to see are those in the signatures. These do not need a unique object as a prefix.
