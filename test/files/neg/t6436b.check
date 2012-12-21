@@ -2,8 +2,8 @@ t6436b.scala:8: error: type mismatch;
  found   : StringContext
  required: ?{def q: ?}
 Note that implicit conversions are not applicable because they are ambiguous:
- both method foo1 in object quasiquotes of type (ctx: StringContext)Object{def q: Nothing}
- and method foo2 in object quasiquotes of type (ctx: StringContext)Object{def q: Nothing}
+ both method foo1 in object quasiquotes of type (ctx: StringContext)AnyRef{def q: Nothing}
+ and method foo2 in object quasiquotes of type (ctx: StringContext)AnyRef{def q: Nothing}
  are possible conversion functions from StringContext to ?{def q: ?}
   println(StringContext("a").q())
                        ^

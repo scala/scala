@@ -5317,29 +5317,18 @@ trait Typers extends Modes with Adaptations with Tags {
     def typedTypeConstructor(tree: Tree, mode: Int): Tree = {
       val result = typed(tree, forTypeMode(mode) | FUNmode, WildcardType)
 
-      val restpe = result.tpe.dealias // get rid of type aliases for the following check (#1241)
-      if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable && !context.unit.isJava) {
-        // The isJava exception if OK only because the only type constructors scalac gets
-        // to see are those in the signatures. These do not need a unique object as a prefix.
-        // The situation is different for new's and super's, but scalac does not look deep
-        // enough to see those. See #3938
-        ConstructorPrefixError(tree, restpe)
-      } else {
-        //@M fix for #2208
-        // if there are no type arguments, normalization does not bypass any checks, so perform it to get rid of AnyRef
-        if (result.tpe.typeArgs.isEmpty) {
-          // minimal check: if(result.tpe.typeSymbolDirect eq AnyRefClass) {
-          // must expand the fake AnyRef type alias, because bootstrapping (init in Definitions) is not
-          // designed to deal with the cycles in the scala package (ScalaObject extends
-          // AnyRef, but the AnyRef type alias is entered after the scala package is
-          // loaded and completed, so that ScalaObject is unpickled while AnyRef is not
-          // yet defined )
-          // !!! TODO - revisit now that ScalaObject is gone.
-          result setType(restpe)
-        } else { // must not normalize: type application must be (bounds-)checked (during RefChecks), see #2208
+      // get rid of type aliases for the following check (#1241)
+      result.tpe.dealias match {
+        case restpe @ TypeRef(pre, _, _) if !phase.erasedTypes && !pre.isStable && !context.unit.isJava =>
+          // The isJava exception if OK only because the only type constructors scalac gets
+          // to see are those in the signatures. These do not need a unique object as a prefix.
+          // The situation is different for new's and super's, but scalac does not look deep
+          // enough to see those. See #3938
+          ConstructorPrefixError(tree, restpe)
+        case _ =>
+          // must not normalize: type application must be (bounds-)checked (during RefChecks), see #2208
           // during uncurry (after refchecks), all types are normalized
           result
-        }
       }
     }
 
