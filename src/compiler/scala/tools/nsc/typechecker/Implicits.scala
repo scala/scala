@@ -439,8 +439,8 @@ trait Implicits {
       val start = if (Statistics.canEnable) Statistics.startTimer(matchesPtNanos) else null
       val result = normSubType(tp, pt) || isView && {
         pt match {
-          case TypeRef(_, Function1.Sym, args) =>
-            matchesPtView(tp, args.head, args.tail.head, undet)
+          case TypeRef(_, Function1.Sym, arg1 :: arg2 :: Nil) =>
+            matchesPtView(tp, arg1, arg2, undet)
           case _ =>
             false
         }
@@ -484,7 +484,7 @@ trait Implicits {
             loop(restpe, pt)
           else pt match {
             case tr @ TypeRef(pre, sym, args) =>
-              if (sym.isAliasType) loop(tp, pt.normalize)
+              if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
               else {
                 val len = args.length - 1
@@ -528,18 +528,15 @@ trait Implicits {
      *  to a final true or false.
      */
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
-      case tr1 @ TypeRef(_, sym1, _) =>
-        // We can only rule out a subtype relationship if the left hand
-        // side is a class, else we may not know enough.
-        sym1.isClass && (tp2.normalize.widen match {
-          case TypeRef(_, sym2, _) =>
-             sym2.isClass && !(sym1 isWeakSubClass sym2)
-          case RefinedType(parents, decls) =>
-            decls.nonEmpty &&
-            tr1.member(decls.head.name) == NoSymbol
-          case _ => false
-        })
+    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.dealiasWiden match {
+      // We can only rule out a subtype relationship if the left hand
+      // side is a class, else we may not know enough.
+      case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
+        tp2.dealiasWiden match {
+          case TypeRef(_, sym2, _)         => sym2.isClass && !(sym1 isWeakSubClass sym2)
+          case RefinedType(parents, decls) => decls.nonEmpty && tr1.member(decls.head.name) == NoSymbol
+          case _                           => false
+        }
       case _ => false
     }
 
@@ -1010,7 +1007,7 @@ trait Implicits {
                 args foreach (getParts(_))
               }
             } else if (sym.isAliasType) {
-              getParts(tp.normalize)
+              getParts(tp.dealias)
             } else if (sym.isAbstractType) {
               getParts(tp.bounds.hi)
             }
@@ -1168,7 +1165,7 @@ trait Implicits {
         implicit def wrapResult(tree: Tree): SearchResult =
           if (tree == EmptyTree) SearchFailure else new SearchResult(tree, if (from.isEmpty) EmptyTreeTypeSubstituter else new TreeTypeSubstituter(from, to))
 
-        val tp1 = tp0.normalize
+        val tp1 = tp0.dealias
         tp1 match {
           case ThisType(_) | SingleType(_, _) =>
             // can't generate a reference to a value that's abstracted over by an existential
