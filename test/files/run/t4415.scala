@@ -39,7 +39,7 @@ class SecondProperty extends TopProperty
 class SubclassSecondProperty extends StandardProperty
 
 trait MyProp[T]
-case class MyPropImpl[T] extends MyProp[T]
+case class MyPropImpl[T]() extends MyProp[T]
 
 object SubclassMatch {
 
