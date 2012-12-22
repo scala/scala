@@ -4218,7 +4218,13 @@ trait Typers extends Modes with Adaptations with Tags {
       def typedNew(tree: New) = {
         val tpt = tree.tpt
         val tpt1 = {
-          val tpt0 = typedTypeConstructor(tpt)
+          // This way typedNew always returns a dealiased type. This used to happen by accident
+          // for instantiations without type arguments due to ad hoc code in typedTypeConstructor,
+          // and annotations depended on it (to the extent that they worked, which they did
+          // not when given a parameterized type alias which dealiased to an annotation.)
+          // typedTypeConstructor dealiases nothing now, but it makes sense for a "new" to always be
+          // given a dealiased type.
+          val tpt0 = typedTypeConstructor(tpt) modifyType (_.dealias)
           if (checkStablePrefixClassType(tpt0))
             if (tpt0.hasSymbolField && !tpt0.symbol.typeParams.isEmpty) {
               context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
