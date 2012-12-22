@@ -112,6 +112,10 @@ trait Typers extends Modes with Adaptations with Tags {
       }
     }
 
+    private def mkNamedArg(tree: Tree, name: Name): Tree = {
+      atPos(tree.pos)(new AssignOrNamedArg(Ident(name), tree))
+    }
+
     /** Find implicit arguments and pass them to given tree.
      */
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
@@ -123,7 +127,6 @@ trait Typers extends Modes with Adaptations with Tags {
         var paramFailed = false
 
         def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
-        def mkNamedArg(argTree: Tree, paramName: Name) = atPos(argTree.pos)(new AssignOrNamedArg(Ident(paramName), (argTree)))
         var mkArg: (Tree, Name) => Tree = mkPositionalArg
 
         // DEPMETTODO: instantiate type vars that depend on earlier implicit args (see adapt (4.1))
@@ -3462,10 +3465,10 @@ trait Typers extends Modes with Adaptations with Tags {
           } else if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           } else {
-            val args =
-              if (argss.head.length == 1 && !isNamed(argss.head.head))
-                List(new AssignOrNamedArg(Ident(nme.value), argss.head.head))
-              else argss.head
+            val args = argss match {
+              case (arg :: Nil) :: Nil if !isNamed(arg) => mkNamedArg(arg, nme.value) :: Nil
+              case args :: Nil                          => args
+            }
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
