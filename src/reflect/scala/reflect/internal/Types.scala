@@ -3707,21 +3707,6 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  /** Repeatedly apply .widen and .dealias to the given type
-   *  until neither accomplishes anything. This compensates for
-   *  the fact that type aliases can hide beneath singleton
-   *  types and singleton types can hide inside type aliases.
-   */
-  def dropAliasesAndSingleTypes(tp: Type): Type = {
-    val tp1 = tp.dealias
-    if (tp ne tp1) dropAliasesAndSingleTypes(tp1)
-    else {
-      val tp1 = tp.widen
-      if (tp ne tp1) dropAliasesAndSingleTypes(tp1)
-      else tp
-    }
-  }
-
   /** Remove any occurrence of type <singleton> from this type and its parents */
   object dropSingletonType extends TypeMap {
     def apply(tp: Type): Type = {
