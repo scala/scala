@@ -2915,11 +2915,18 @@ trait Types extends api.Types { self: SymbolTable =>
     else existentialAbstraction(existentialsInType(tp), tp)
   )
 
-  def containsExistential(tpe: Type) =
-    tpe exists typeIsExistentiallyBound
+  def containsDummyTypeArg(tp: Type) = tp exists isDummyTypeArg
+  def isDummyTypeArg(tp: Type) = tp.typeSymbol.isTypeParameter
+  def isDummyAppliedType(tp: Type) = tp match {
+    case TypeRef(_, _, args) if args.nonEmpty => args exists isDummyTypeArg
+    case _                                    => false
+  }
 
   def existentialsInType(tpe: Type) =
     tpe withFilter typeIsExistentiallyBound map (_.typeSymbol)
+
+  def containsExistential(tpe: Type) =
+    tpe exists typeIsExistentiallyBound
 
   /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
    */

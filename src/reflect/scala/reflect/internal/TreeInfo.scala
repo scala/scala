@@ -605,6 +605,12 @@ abstract class TreeInfo {
       }
       loop(tree)
     }
+
+    override def toString = {
+      val tstr = if (targs.isEmpty) "" else targs.mkString("[", ", ", "]")
+      val astr = argss map (args => args.mkString("(", ", ", ")")) mkString ""
+      s"$core$tstr$astr"
+    }
   }
 
   /** Returns a wrapper that knows how to destructure and analyze applications.
