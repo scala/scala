@@ -1,0 +1,10 @@
+t6083.scala:6: warning: Implementation restriction: subclassing Classfile does not
+make your annotation visible at runtime.  If that is what
+you want, you must write the annotation class in Java.
+class annot(value: String) extends annotation.ClassfileAnnotation
+      ^
+t6083.scala:7: error: annotation argument needs to be a constant; found: conv.i2s(101)
+@annot(101) class C
+       ^
+one warning found
+one error found
