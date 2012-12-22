@@ -1251,7 +1251,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
     def adaptToMember(qual: Tree, searchTemplate: Type, reportAmbiguous: Boolean = true, saveErrors: Boolean = true): Tree = {
       if (isAdaptableWithView(qual)) {
-        dropAliasesAndSingleTypes(qual.tpe) match {
+        qual.tpe.dealiasWiden match {
           case et: ExistentialType =>
             qual setType et.skolemizeExistential(context.owner, qual) // open the existential
           case _ =>

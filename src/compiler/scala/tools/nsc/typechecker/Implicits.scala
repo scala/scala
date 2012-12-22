@@ -528,11 +528,11 @@ trait Implicits {
      *  to a final true or false.
      */
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type) = dropAliasesAndSingleTypes(tp1) match {
+    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.dealiasWiden match {
       // We can only rule out a subtype relationship if the left hand
       // side is a class, else we may not know enough.
       case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
-        dropAliasesAndSingleTypes(tp2) match {
+        tp2.dealiasWiden match {
           case TypeRef(_, sym2, _)         => sym2.isClass && !(sym1 isWeakSubClass sym2)
           case RefinedType(parents, decls) => decls.nonEmpty && tr1.member(decls.head.name) == NoSymbol
           case _                           => false

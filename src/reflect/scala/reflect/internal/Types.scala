@@ -563,6 +563,26 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Expands type aliases. */
     def dealias = this
 
+    /** Repeatedly apply widen and dealias until they have no effect.
+     *  This compensates for the fact that type aliases can hide beneath
+     *  singleton types and singleton types can hide inside type aliases.
+     */
+    def dealiasWiden: Type = (
+      if (this ne widen) widen.dealiasWiden
+      else if (this ne dealias) dealias.dealiasWiden
+      else this
+    )
+
+    /** All the types encountered in the course of dealiasing/widening,
+     *  including each intermediate beta reduction step (whereas calling
+     *  dealias applies as many as possible.)
+     */
+    def dealiasWidenChain: List[Type] = this :: (
+      if (this ne widen) widen.dealiasWidenChain
+      else if (this ne betaReduce) betaReduce.dealiasWidenChain
+      else Nil
+    )
+
     def etaExpand: Type = this
 
     /** Performs a single step of beta-reduction on types.
