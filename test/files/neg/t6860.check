@@ -1,0 +1,7 @@
+t6860.scala:4: error: Bippy[T] requires explicit type arguments
+  def f1: Int @Bippy("hi") = 1
+               ^
+t6860.scala:7: error: throws[T] requires explicit type arguments
+  @throws("what do I throw?") def f3 = throw new RuntimeException
+   ^
+two errors found

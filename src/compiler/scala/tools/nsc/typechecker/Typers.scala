@@ -3456,6 +3456,18 @@ trait Typers extends Modes with Adaptations with Tags {
         val typedFun @ Select(New(tpt), _) = typed(fun, forFunMode(mode), WildcardType)
         val annType = tpt.tpe
 
+        // Until now an annotation like 'class Bippy[T](value: T)'
+        // would be correct given `Int @Bippy[String]("hi")` but when
+        // given `Int @Bippy("hi")` it would happily include 'T' in the
+        // resulting type. I don't know whether there's some reason
+        // it's impossible for annotations to go through the normal
+        // channels to have their type parameters inferred, but until
+        // such time as that is sorted out, it would be far better to
+        // issue an error requiring explicit type application.
+        // !!! Can annotations experience type inference? If not, why not?
+        for (dummy <- annType find isDummyAppliedType)
+          reportAnnotationError(AnnotationRequiresTypeArgs(tpt, dummy))
+
         if (typedFun.isErroneous) annotationError
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
