@@ -423,6 +423,9 @@ trait ContextErrors {
       def UnexpectedTreeAnnotation(tree: Tree) =
         NormalTypeError(tree, "unexpected tree in annotation: "+ tree)
 
+      def AnnotationRequiresTypeArgs(tree: Tree, unapplied: Type) =
+        NormalTypeError(tree, s"$unapplied requires explicit type arguments")
+
       def AnnotationTypeMismatchError(tree: Tree, expected: Type, found: Type) =
         NormalTypeError(tree, "expected annotation of type " + expected + ", found " + found)
 
