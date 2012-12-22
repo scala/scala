@@ -52,7 +52,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   import log.logreplay
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
   debugLog("classpath: "+classPath)
-  Console.err.println("\n ======= CHECK THREAD ACCESS compiler build ========\n")
 
   private var curTime = System.nanoTime
   private def timeStep = {
