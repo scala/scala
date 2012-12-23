@@ -2714,13 +2714,8 @@ trait Typers extends Modes with Adaptations with Tags {
         val att = templ.attachments.get[CompoundTypeTreeOriginalAttachment].getOrElse(CompoundTypeTreeOriginalAttachment(Nil, Nil))
         templ.removeAttachment[CompoundTypeTreeOriginalAttachment]
         templ updateAttachment att.copy(stats = stats1)
-        for (stat <- stats1 if stat.isDef) {
-          val member = stat.symbol
-          if (!(context.owner.ancestors forall
-                (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))) {
-                  member setFlag OVERRIDE
-                }
-        }
+        for (stat <- stats1 if stat.isDef && stat.symbol.isOverridingSymbol)
+          stat.symbol setFlag OVERRIDE
       }
     }
 

@@ -686,6 +686,21 @@ trait Definitions extends api.StandardDefinitions {
 
     def ClassType(arg: Type) = if (phase.erasedTypes) ClassClass.tpe else appliedType(ClassClass, arg)
 
+    /** Can we tell by inspecting the symbol that it will never
+     *  at any phase have type parameters?
+     */
+    def neverHasTypeParameters(sym: Symbol) = sym match {
+      case _: RefinementClassSymbol => true
+      case _: ModuleClassSymbol     => true
+      case _: ImplClassSymbol       => true
+      case _                        =>
+        (
+             sym.isPrimitiveValueClass
+          || sym.isAnonymousClass
+          || sym.initialize.isMonomorphicType
+        )
+    }
+
     def EnumType(sym: Symbol) =
       // given (in java): "class A { enum E { VAL1 } }"
       //  - sym: the symbol of the actual enumeration value (VAL1)
