@@ -117,6 +117,8 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
   def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
     if (isDefinedAt(x)) apply(x) else default(x)
 
+  def applyOrElse[B1 >: B](x: A, default: B1): B1 = applyOrElse(x, (y: A) => default)
+
   /** Composes this partial function with an action function which
    *  gets applied to results of this partial function.
    *  The action function is invoked only for its side effects; its result is ignored.
