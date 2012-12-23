@@ -1,3 +1,4 @@
+Warning: class not found: t6446.Ploogin
     phase name  id  description
     ----------  --  -----------
         parser   1  parse source into ASTs, perform simple desugaring
@@ -28,4 +29,3 @@ inlinehandlers  24  optimization: inline exception handlers
            dce  26  optimization: eliminate dead code
            jvm  27  generate JVM bytecode
       terminal  28  The last phase in the compiler chain
-

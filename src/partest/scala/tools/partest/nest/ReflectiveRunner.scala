@@ -81,6 +81,9 @@ class ReflectiveRunner {
     val newClasspath = ClassPath.join(paths: _*)
 
     setProp("java.class.path", newClasspath)
+
+    // don't let partest find pluginsdir; in ant build, standard plugin has dedicated test suite
+    //setProp("scala.home", latestLibFile.parent.parent.path)
     setProp("scala.home", "")
 
     if (isPartestDebug)
