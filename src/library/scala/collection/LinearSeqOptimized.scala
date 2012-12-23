@@ -255,10 +255,9 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
       var i = 0
       val it = iterator
       while (it.hasNext) {
-	if (i == len)
-	  return if (it.hasNext) 1 else 0
-	it.next()
-	i += 1
+        if (i == len) return if (it.hasNext) 1 else 0
+        it.next()
+        i += 1
       }
       i - len
     }
