@@ -5264,7 +5264,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def typedDocDef(docdef: DocDef) = {
         if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
-          val comment = docdef.comment          
+          val comment = docdef.comment
           docComments(sym) = comment
           comment.defineVariables(sym)
           val typer1 = newTyper(context.makeNewScope(tree, context.owner))
@@ -5595,12 +5595,18 @@ trait Typers extends Modes with Adaptations with Tags {
               "context.owner"    -> context.owner
             )
           )
-          val tree1 = typed1(tree, mode, dropExistential(pt))
+          typed1(tree, mode, dropExistential(pt))
+        }
+        // Can happen during erroneous compilation - error(s) have been
+        // reported, but we need to avoid causing an NPE with this tree
+        if (tree1.tpe eq null)
+          return setError(tree)
+
+        if (!alreadyTyped) {
           printTyping("typed %s: %s%s".format(
             ptTree(tree1), tree1.tpe,
             if (isSingleType(tree1.tpe)) " with underlying "+tree1.tpe.widen else "")
           )
-          tree1
         }
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)

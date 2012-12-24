@@ -1,0 +1,5 @@
+t6788.scala:6: error: not found: value foo
+Error occurred in an application involving default arguments.
+  s.copy(b = foo)
+             ^
+one error found
