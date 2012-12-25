@@ -37,7 +37,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   def absolute = this
 
   /** Returns null. */
-  final def file: JFile = null
+  def file: JFile = null
 
   override def sizeOption: Option[Int] = Some(content.size)
 
@@ -56,6 +56,9 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false
+
+  /** @inheritdoc */
+  override def isVirtual: Boolean = true
 
   /** Returns the time that this abstract file was last modified. */
   private var _lastModified: Long = 0

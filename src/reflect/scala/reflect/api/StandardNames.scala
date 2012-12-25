@@ -84,6 +84,11 @@ trait StandardNames {
      */
     val ROOTPKG: NameType
 
+    /** The term name `<empty>`.
+     *  Represents the empty package.
+     */
+    val EMPTY_PACKAGE_NAME: NameType
+
     /** The string " " (a single whitespace).
      *  `LOCAL_SUFFIX_STRING` is appended to the names of local identifiers,
      *  when it's necessary to prevent a naming conflict. For example, underlying fields
