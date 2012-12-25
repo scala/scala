@@ -422,7 +422,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = tpe match {
     case TypeRef(pre, sym, args) =>
-      if (sym.isAliasType)
+      if (sym.isAliasType && !sym.isMacroType)
         specializedTypeVars(tpe.normalize)
       else if (sym.isTypeParameter && sym.isSpecialized || (sym.isTypeSkolem && sym.deSkolemize.isSpecialized))
         Set(sym)
