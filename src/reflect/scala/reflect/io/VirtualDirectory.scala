@@ -26,6 +26,7 @@ extends AbstractFile {
 
   def container = maybeContainer.get
   def isDirectory = true
+  override def isVirtual = true
   val lastModified: Long = System.currentTimeMillis
 
   override def file = null
