@@ -1,0 +1,17 @@
+Macros_Test_2.scala:25: error: overriding type T in trait T1 with bounds <: C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  trait T2 extends T1 { override type T() = macro impl1 }
+                                      ^
+Macros_Test_2.scala:30: error: overriding type T in class C1 with bounds <: C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  class C2 extends C1 { override type T() = macro impl1 }
+                                      ^
+Macros_Test_2.scala:35: error: overriding type T in trait T1 with bounds <: C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  trait T2 extends T1 { override type T[U] = macro impl }
+                                      ^
+Macros_Test_2.scala:40: error: overriding type T in class C1 with bounds <: C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  class C2 extends C1 { override type T[U] = macro impl }
+                                      ^
+four errors found

@@ -1,0 +1,4 @@
+Macros_Test_2.scala:5: error: Foo is already defined as macro type Foo
+  type Foo = Int
+       ^
+one error found

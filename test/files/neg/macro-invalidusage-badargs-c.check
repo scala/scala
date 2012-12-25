@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: Int does not take parameters
+  val s: String = foo(2)(3)
+                        ^
+one error found

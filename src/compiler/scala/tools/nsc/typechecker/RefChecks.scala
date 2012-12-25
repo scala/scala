@@ -224,7 +224,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
      *    1.6. If O is a type alias, then M is an alias of O.
      *    1.7. If O is an abstract type then
      *       1.7.1 either M is an abstract type, and M's bounds are sharper than O's bounds.
-     *             or M is a type alias or class which conforms to O's bounds.
+     *             or M is a type alias or a type macro or a class which conforms to O's bounds.
      *       1.7.2 higher-order type arguments must respect bounds on higher-order type parameters  -- @M
      *              (explicit bounds and those implied by variance annotations) -- @see checkKindBounds
      *    1.8. If O and M are values, then
@@ -233,6 +233,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
      *    1.8.3  M is of type ()S, O is of type []T and S <: T, or
      *    1.9.  If M is a macro def, O cannot be deferred.
      *    1.10. If M is not a macro def, O cannot be a macro def.
+     *    1.10. If M is not a macro type, O cannot be a macro type.
      *  2. Check that only abstract classes have deferred members
      *  3. Check that concrete classes do not have deferred definitions
      *     that are not implemented in a subclass.
@@ -274,6 +275,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
            else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
            else if (sym1.isModule) ""
+           else if (sym1.isTypeMacro && sym1.paramss.isEmpty) " with nullary signature"
+           else if (sym1.isTypeMacro && sym1.paramss == ListOfNil) " with empty signature"
+           else if (sym1.isTypeMacro) " with signature " + self.memberInfo(sym1).toString.stripSuffix("Nothing")
            else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
            else "")
          else "")
@@ -337,6 +341,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           overrideError("has weaker access privileges; it should be "+ (if (otherAccess == "") "public" else "at least "+otherAccess))
         }
 
+        def overrideMacroTypeError() {
+          overrideError("needs to define a nullary overload with matching type parameters and having `override' modifier")
+        }
+
         //Console.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
 
         // return if we already checked this combination elsewhere
@@ -387,6 +395,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             overrideError("cannot be used here - class definitions cannot be overridden");
           } else if (!other.isDeferred && member.isClass) {
             overrideError("cannot be used here - classes can only override abstract types");
+          } else if (other.isMacroType && !member.isMacroType) { // (1.11)
+            overrideError("cannot be used here - only type macros can override type macros");
+          } else if (other.isMacroType && member.isMacroType) {
+            // do nothing, because macro type to macro type overriding is resolved on per-method basis
+            // even if we forgot to provide an `override` specifier, this will get back at us in a different `checkOverride` session
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member");
           } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) { // (*)
@@ -398,8 +411,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
                     + infoStringWithLocation(other) + "  and\n  " + infoStringWithLocation(member)
                     + "\n(Note: this can be resolved by declaring an override in " + clazz + ".)"
                 )
-              else
-                overrideError("needs `override' modifier")
+              else {
+                if (member.isMacroType && member.nullaryTypeMacro == NoSymbol)
+                  overrideMacroTypeError()
+                else
+                  overrideError("needs `override' modifier")
+              }
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
           }
@@ -439,7 +456,21 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
 
         def checkOverrideTypes() {
-          if (other.isAliasType) {
+          if (member.isMacroType && !other.isMacroType) {
+            // Cannot statically check that a type macro conforms to bounds imposed by a type member.
+            // This check is done on per-expansion basis in `MacroTypeExpander`.
+            //
+            // What we can check is that there's a corresponding type macro with a nullary parameter list and the same number of type parameters.
+            // Speaking of type parameters, they have three things that also need checking: 1) variance, 2) bounds, 3) kinds.
+            //
+            // There is no way we could check variance - that would imply guaranteeing that for all inputs for a certain type parameter,
+            // a type macro expands into types which conform to some variance restriction.
+            //
+            // However it's totally possible to verify kinds and bounds of type macro's type parameters by simply looking into the signature
+            // of the corresponding type macro. We should also do that, but I leave it as a TODO with a test case, since I don't have much time.
+            if (member.nullaryTypeMacro == NoSymbol || member.nullaryTypeMacro.typeParams.length != other.typeParams.length)
+              overrideMacroTypeError();
+          } else if (other.isAliasType) {
             //if (!member.typeParams.isEmpty) (1.5)  @MAT
             //  overrideError("may not be parameterized");
             //if (!other.typeParams.isEmpty)  (1.5)   @MAT
@@ -771,7 +802,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def classDecls   = inclazz.info.nonPrivateDecl(member.name)
         def matchingSyms = classDecls filter (sym => isSignatureMatch(sym) && javaAccessCheck(sym))
 
-        (inclazz != clazz) && (matchingSyms != NoSymbol)
+        (inclazz != clazz) && ((matchingSyms != NoSymbol) ||
+                               (member.isTypeMacro && member.paramss.isEmpty && hasMatchingSym(inclazz, member.macroType)))
       }
 
       // 4. Check that every defined member with an `override` modifier overrides some other member.
@@ -786,7 +818,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               issueError("")
             case ms =>
               val superSigs = ms.map(m => m.defStringSeenAs(clazz.tpe memberType m)).mkString("\n")
-              issueError(s".\nNote: the super classes of ${member.owner} contain the following, non final members named ${member.name}:\n${superSigs}")
+              val prettyName = if (member.isTypeMacro) member.originalName else member.name
+              issueError(s".\nNote: the super classes of ${member.owner} contain the following, non final members named $prettyName:\n${superSigs}")
           }
           member resetFlag (OVERRIDE | ABSOVERRIDE)  // Any Override
         }
@@ -1331,6 +1364,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
       case Import(_, _)                                                                       => Nil
       case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => Nil
+      case TypeDef(mods, _, _, _)      if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => Nil
       case _                                                                                  => transform(tree) :: Nil
     }
 

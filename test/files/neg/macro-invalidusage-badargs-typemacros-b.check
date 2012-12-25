@@ -1,0 +1,7 @@
+Macros_Test_2.scala:8: error: macros cannot be partially applied
+  val x: Foo = 2
+         ^
+Macros_Test_2.scala:7: error: macros cannot be partially applied
+  class D extends Foo
+                  ^
+two errors found

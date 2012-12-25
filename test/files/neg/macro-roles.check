@@ -1,0 +1,18 @@
+Test_2.scala:6: warning: app = Macros.Foo, role = TYPE_ROLE
+  val x1: Foo = new Foo
+          ^
+Test_2.scala:4: warning: app = Foo, role = PARENT_ROLE
+  class D1 extends Foo
+                   ^
+Test_2.scala:5: warning: app = Macros.Bar(), role = APPLIED_TYPE_ROLE
+  type T = Bar()[Int]
+           ^
+Test_2.scala:6: warning: app = new Foo(), role = NEW_ROLE
+  val x1: Foo = new Foo
+                ^
+Test_2.scala:7: warning: app = new Foo(), role = ANNOTATION_ROLE
+  @Foo class D2
+   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

@@ -1,0 +1,4 @@
+Macros_Test_2.scala:8: error: type macros cannot be abstract
+  abstract override type T = macro impl
+  ^
+one error found

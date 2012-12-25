@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: wrong number of type parameters for macro method foo: [T](x: Int)Int
+  val s: String = foo[String, String](42)
+                     ^
+one error found

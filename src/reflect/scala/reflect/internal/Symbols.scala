@@ -303,6 +303,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newAliasType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AliasTypeSymbol =
       createAliasTypeSymbol(name, pos, newFlags)
 
+    /** Symbol of a macro type  type T = macro ...
+     *  Note that macro types and type macros are two different things. Read up comments to `MacroTypeSymbol` for more info.
+     */
+    final def newMacroType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): MacroTypeSymbol =
+      createMacroTypeSymbol(name, pos, newFlags)
+
     /** Symbol of an abstract type  type T >: ... <: ...
      */
     final def newAbstractType(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): AbstractTypeSymbol =
@@ -493,6 +499,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAliasType    = false
     def isAbstractType = false
     def isSkolem       = false
+    def isMacroType    = false // note that macro types and type macros are two different things
+                               // read up comments to `MacroTypeSymbol` for more info
 
     /** A Type, but not a Class. */
     def isNonClassType = false
@@ -548,6 +556,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isVariable          = false
     override def hasDefault = false
     def isTermMacro         = false
+    def isTypeMacro         = false // note that macro types and type macros are two different things
+                                    // read up comments to `MacroTypeSymbol` for more info
 
     /** Qualities of MethodSymbols, always false for TypeSymbols
      *  and other TermSymbols.
@@ -975,7 +985,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
-    def originalName: Name = nme.originalName(nme.dropLocalSuffix(name))
+    def originalName: Name = nme.originalName(nme.stripTypeMacroSuffix(nme.dropLocalSuffix(name)))
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
@@ -1039,6 +1049,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def createAliasTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AliasTypeSymbol =
       new AliasTypeSymbol(this, pos, name) initFlags newFlags
+
+    protected def createMacroTypeSymbol(name: TypeName, pos: Position, newFlags: Long): MacroTypeSymbol =
+      new MacroTypeSymbol(this, pos, name) initFlags newFlags
 
     protected def createTypeSkolemSymbol(name: TypeName, origin: AnyRef, pos: Position, newFlags: Long): TypeSkolem =
       new TypeSkolem(this, pos, name, origin) initFlags newFlags
@@ -1105,7 +1118,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def newNonClassSymbol(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): TypeSymbol = {
-      if ((newFlags & DEFERRED) != 0)
+      if ((newFlags & MACRO) != 0)
+        createMacroTypeSymbol(name, pos, newFlags)
+      else if ((newFlags & DEFERRED) != 0)
         createAbstractTypeSymbol(name, pos, newFlags)
       else
         createAliasTypeSymbol(name, pos, newFlags)
@@ -1805,6 +1820,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this is an accessor, the accessed symbol.  Otherwise, this symbol. */
     def accessedOrSelf: Symbol = if (hasAccessorFlag) accessed else this
 
+    /** For a macro type, its underlying type macro, possibly overloaded. Otherwise, no symbol. */
+    def typeMacro: Symbol = if (this != NoSymbol) owner.info.declaration(nme.typeMacroName(name)) else NoSymbol
+
+    /** For a macro type, its underlying type macro with nullary parameter list if exists. Otherwise, no symbol.
+     *  This is a very exotic use case, but it still warrants a separate method, because it plays an important role in overriding checks.
+     */
+    def nullaryTypeMacro: Symbol = typeMacro.filter(alt => alt.paramss.isEmpty)
+
+    /** For a type macro, its emissary macro type. Otherwise, no symbol. */
+    def macroType: Symbol = if (this != NoSymbol) owner.info.declaration(nme.stripTypeMacroSuffix(name).toTypeName) else NoSymbol
+
     /** For an outer accessor: The class from which the outer originates.
      *  For all other symbols: NoSymbol
      */
@@ -2221,10 +2247,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (isJavaInterface) "interface"
       else if (isTrait && !isImplClass) "trait"
       else if (isClass) "class"
+      else if (isMacroType) "macro type"
       else if (isType && !isParameter) "type"
       else if (isVariable) "var"
       else if (isPackage) "package"
       else if (isModule) "object"
+      else if (isTypeMacro) "macro type"
       else if (isSourceMethod) "def"
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
@@ -2233,6 +2261,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def symbolKind: SymbolKind = {
       var kind =
         if (isTermMacro) ("term macro", "macro method", "MACM")
+        else if (isTypeMacro) ("type macro", "macro type", "MACT")
         else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
         else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
         else if (isPackage) ("package", "package", "PK")
@@ -2250,6 +2279,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isImplClass) ("implementation class", "class", "IMPL")
         else if (isTrait) ("trait", "trait", "TRT")
         else if (isClass) ("class", "class", "CLS")
+        else if (isMacroType) ("macro type", "macro type", "TPEMAC")
         else if (isType) ("type", "type", "TPE")
         else if (isClassConstructor && isPrimaryConstructor) ("primary constructor", "constructor", "PCTOR")
         else if (isClassConstructor) ("constructor", "constructor", "CTOR")
@@ -2356,10 +2386,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       )
       else if (isModule) "" //  avoid "object X of type X.type"
       else tp match {
-        case PolyType(tparams, res)  => typeParamsString(tp) + infoString(res)
-        case NullaryMethodType(res)  => infoString(res)
-        case MethodType(params, res) => valueParamsString(tp) + infoString(res)
-        case _                       => ": " + tp
+        case PolyType(tparams, res)                 => typeParamsString(tp) + infoString(res)
+        case NullaryMethodType(res) if isTypeMacro  => ""
+        case NullaryMethodType(res)                 => infoString(res)
+        case MethodType(params, res) if isTypeMacro => valueParamsString(tp)
+        case MethodType(params, res)                => valueParamsString(tp) + infoString(res)
+        case _                                      => ": " + tp
       }
     }
 
@@ -2422,7 +2454,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     override def isValue     = !(isModule && hasFlag(PACKAGE | JAVA))
     override def isVariable  = isMutable && !isMethod
-    override def isTermMacro = hasFlag(MACRO)
+    override def isTermMacro = hasFlag(MACRO) && !isTypeMacro
+    override def isTypeMacro = hasFlag(MACRO) && nme.isTypeMacroName(name)
 
     // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     override def isCapturedVariable = hasAllFlags(MUTABLE | CAPTURED) && !hasFlag(METHOD)
@@ -2627,6 +2660,29 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
     final override def isAliasType = true
+    override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
+      owner.newNonClassSymbol(name, pos, newFlags)
+  }
+
+  /** Symbol that represents a family of overloaded type macros in the realm of types.
+   *
+   *    type T = macro impl
+   *
+   *  gets parsed into:
+   *
+   *    <macro> def T$macro = macro impl // this symbol is called "type macro"
+   *                                     // it is represented by a regular MethodSymbol
+   *
+   *  When a desugared type macro tree shown above gets entered in Namer,
+   *  the namer synthesizes a macro type:
+   *
+   *    <macro> type T = Nothing         // this symbol is called "macro type"
+   *                                     // it gets a dedicated MacroTypeSymbol symbol class
+   */
+  class MacroTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
+  extends TypeSymbol(initOwner, initPos, initName) {
+    type TypeOfClonedSymbol = TypeSymbol
+    final override def isMacroType = true
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
   }

@@ -1,0 +1,11 @@
+Macros_Test_2.scala:8: error: type mismatch;
+ found   : String("2")
+ required: Int
+  val x: Foo("2") = 2
+             ^
+Macros_Test_2.scala:7: error: type mismatch;
+ found   : String("2")
+ required: Int
+  class D extends Foo("2")
+                      ^
+two errors found

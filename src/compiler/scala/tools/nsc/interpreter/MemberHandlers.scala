@@ -48,10 +48,12 @@ trait MemberHandlers {
     }
   }
 
-  private def isTermMacro(ddef: DefDef): Boolean = ddef.mods.isMacro
+  private def isTermMacro(ddef: DefDef): Boolean = ddef.mods.isMacro && !isTypeMacro(ddef)
+  private def isTypeMacro(ddef: DefDef): Boolean = ddef.mods.isMacro && nme.isTypeMacroName(ddef.name)
 
   def chooseHandler(member: Tree): MemberHandler = member match {
     case member: DefDef if isTermMacro(member) => new TermMacroHandler(member)
+    case member: DefDef if isTypeMacro(member) => new TypeMacroHandler(member)
     case member: DefDef                        => new DefHandler(member)
     case member: ValDef                        => new ValHandler(member)
     case member: ModuleDef                     => new ModuleHandler(member)
@@ -140,6 +142,26 @@ trait MemberHandlers {
 
   class TermMacroHandler(member: DefDef) extends MacroHandler(member) {
     def notification(req: Request) = s"defined term macro $name: ${req.typeOf(name)}"
+  }
+
+  class TypeMacroHandler(member: DefDef) extends MacroHandler(member) {
+    private def typeName = nme.stripTypeMacroSuffix(name).toTypeName
+    override def definesType: Option[TypeName] = Some(typeName)
+    private def macroType: Symbol = {
+      if ((symbol eq NoSymbol) || (symbol.owner eq NoSymbol)) NoSymbol
+      else {
+        val macroType = symbol.owner.info.declaration(typeName)
+        if ((macroType ne NoSymbol) && macroType.isMacroType) macroType else NoSymbol
+      }
+    }
+    override def definedSymbols = List(symbol, macroType) filter (_ ne NoSymbol)
+    override def path = intp.originalPath(macroType)
+    def notification(req: Request) = {
+      val signature = req.typeOf(name)
+      assert(signature.endsWith("Nothing"), signature)
+      val signature1 = signature.stripSuffix("Nothing").trim.stripSuffix(":")
+      s"defined type macro $typeName$signature1"
+    }
   }
 
   class AssignHandler(member: Assign) extends MemberHandler(member) {
