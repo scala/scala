@@ -6,6 +6,9 @@ trait Enclosures {
 
   import universe._
 
+  type MacroRole = analyzer.MacroRole
+  def APPLY_ROLE = analyzer.APPLY_ROLE
+
   private def site       = callsiteTyper.context
   private def enclTrees  = site.enclosingContextChain map (_.tree)
   private def enclPoses  = enclosingMacros map (_.macroApplication.pos) filterNot (_ eq NoPosition)
