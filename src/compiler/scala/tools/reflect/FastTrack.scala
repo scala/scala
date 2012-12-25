@@ -40,6 +40,10 @@ trait FastTrack {
     make(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
     make(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
     make(            StringContext_f) { case Applied(Select(Apply(_, ps), _), _, args)  => c => c.macro_StringInterpolation_f(ps, args.flatten, c.expandee.pos) },
+    make(    QuasiQuoteClass_q_apply) { case _                                          => c0 => (new { val c: c0.type = c0 } with Quasiquotes).applyQ },
+    make(  QuasiQuoteClass_q_unapply) { case _                                          => c0 => (new { val c: c0.type = c0 } with Quasiquotes).unapplyQ },
+    make(   QuasiQuoteClass_tq_apply) { case _                                          => c0 => (new { val c: c0.type = c0 } with Quasiquotes).applyTq },
+    make( QuasiQuoteClass_tq_unapply) { case _                                          => c0 => (new { val c: c0.type = c0 } with Quasiquotes).unapplyTq },
     make(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree }
   )
 }

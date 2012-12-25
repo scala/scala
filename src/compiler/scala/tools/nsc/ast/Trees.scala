@@ -169,7 +169,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
  // --- subcomponents --------------------------------------------------
 
-  object treeInfo extends {
+  override object treeInfo extends {
     val global: Trees.this.type = self
   } with TreeInfo
 

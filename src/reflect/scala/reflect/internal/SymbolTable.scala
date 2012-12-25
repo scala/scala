@@ -44,6 +44,7 @@ abstract class SymbolTable extends macros.Universe
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
   lazy val treeBuild = gen
+  val treeInfo = new TreeInfo { val global: SymbolTable.this.type = SymbolTable.this }
 
   def log(msg: => AnyRef): Unit
   def warning(msg: String): Unit     = Console.err.println(msg)

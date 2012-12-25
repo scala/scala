@@ -72,5 +72,35 @@ private[reflect] trait BuildUtils { self: Universe =>
     def setType[T <: Tree](tree: T, tpe: Type): T
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T
+
+    val FlagsAsBits: FlagsAsBitsExtractor
+
+    trait FlagsAsBitsExtractor {
+      def unapply(flags: Long): Option[Long]
+    }
+
+    val EmptyValDefLike: EmptyValDefExtractor
+
+    trait EmptyValDefExtractor {
+      def unapply(t: Tree): Boolean
+    }
+
+    val PendingSuperCallLike: PendingSuperCallExtractor
+
+    trait PendingSuperCallExtractor {
+      def unapply(t: Tree): Boolean
+    }
+
+    val Applied: AppliedExtractor
+
+    trait AppliedExtractor {
+      def unapply(tree: Tree): Option[(Tree, List[Tree], List[List[Tree]])]
+    }
+
+    val Applied2: Applied2Extractor
+
+    trait Applied2Extractor {
+      def unapply(tree: Tree): Option[(Tree, List[List[Tree]])]
+    }
   }
 }
