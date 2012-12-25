@@ -2140,6 +2140,10 @@ trait Types extends api.Types { self: SymbolTable =>
       if (isHigherKinded) etaExpand else super.normalizeImpl
   }
 
+  trait MacroTypeRef extends TypeRef {
+    require(sym.isMacroType, sym)
+  }
+
   trait ClassTypeRef extends TypeRef {
     // !!! There are scaladoc-created symbols arriving which violate this require.
     // require(sym.isClass, sym)
@@ -2190,7 +2194,7 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   trait AliasTypeRef extends NonClassTypeRef {
-    require(sym.isAliasType, sym)
+    require(sym.isAliasTypeNoKidding, sym)
 
     override def dealias    = if (typeParamsMatchArgs) betaReduce.dealias else super.dealias
     override def isStable   = normalize.isStable
@@ -2463,7 +2467,7 @@ trait Types extends api.Types { self: SymbolTable =>
         }
         else if (isTupleType(this))
           targs.mkString("(", ", ", if (hasLength(targs, 1)) ",)" else ")")
-        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne this.normalize))
+        else if (sym.isAliasTypeNoKidding && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne this.normalize))
           "" + normalize
         else
           ""
@@ -2491,17 +2495,19 @@ trait Types extends api.Types { self: SymbolTable =>
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
       if (args.nonEmpty) {
-        if (sym.isAliasType)              new ArgsTypeRef(pre, sym, args) with AliasTypeRef
-        else if (sym.isAbstractType)      new ArgsTypeRef(pre, sym, args) with AbstractTypeRef
-        else                              new ArgsTypeRef(pre, sym, args) with ClassTypeRef
+        if (sym.isMacroType)               new ArgsTypeRef(pre, sym, args) with MacroTypeRef
+        else if (sym.isAliasTypeNoKidding) new ArgsTypeRef(pre, sym, args) with AliasTypeRef
+        else if (sym.isAbstractType)       new ArgsTypeRef(pre, sym, args) with AbstractTypeRef
+        else                               new ArgsTypeRef(pre, sym, args) with ClassTypeRef
       }
       else {
-        if (sym.isAliasType)              new NoArgsTypeRef(pre, sym) with AliasTypeRef
-        else if (sym.isAbstractType)      new NoArgsTypeRef(pre, sym) with AbstractTypeRef
-        else if (sym.isRefinementClass)   new RefinementTypeRef(pre, sym)
-        else if (sym.isPackageClass)      new PackageTypeRef(pre, sym)
-        else if (sym.isModuleClass)       new ModuleTypeRef(pre, sym)
-        else                              new NoArgsTypeRef(pre, sym) with ClassTypeRef
+        if (sym.isMacroType)               new NoArgsTypeRef(pre, sym) with MacroTypeRef
+        else if (sym.isAliasTypeNoKidding) new NoArgsTypeRef(pre, sym) with AliasTypeRef
+        else if (sym.isAbstractType)       new NoArgsTypeRef(pre, sym) with AbstractTypeRef
+        else if (sym.isRefinementClass)    new RefinementTypeRef(pre, sym)
+        else if (sym.isPackageClass)       new PackageTypeRef(pre, sym)
+        else if (sym.isModuleClass)        new ModuleTypeRef(pre, sym)
+        else                               new NoArgsTypeRef(pre, sym) with ClassTypeRef
       }
     })
   }
@@ -3516,7 +3522,7 @@ trait Types extends api.Types { self: SymbolTable =>
     val sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym
     // don't expand cyclical type alias
     // we require that object is initialized, thus info.typeParams instead of typeParams.
-    if (sym1.isAliasType && sameLength(sym1.info.typeParams, args) && !sym1.lockOK)
+    if (sym1.isAliasTypeNoKidding && sameLength(sym1.info.typeParams, args) && !sym1.lockOK)
       throw new RecoverableCyclicReference(sym1)
 
     val pre1 = pre match {
@@ -3532,7 +3538,7 @@ trait Types extends api.Types { self: SymbolTable =>
   // Optimization to avoid creating unnecessary new typerefs.
   def copyTypeRef(tp: Type, pre: Type, sym: Symbol, args: List[Type]): Type = tp match {
     case TypeRef(pre0, sym0, _) if pre == pre0 && sym0.name == sym.name =>
-      if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
+      if (sym.isAliasTypeNoKidding && sameLength(sym.info.typeParams, args) && !sym.lockOK)
         throw new RecoverableCyclicReference(sym)
 
       TypeRef(pre, sym, args)
@@ -3694,13 +3700,9 @@ trait Types extends api.Types { self: SymbolTable =>
       newExistentialType(tparams1, tpe1)
     }
 
-  /** Normalize any type aliases within this type (@see Type#normalize).
-   *  Note that this depends very much on the call to "normalize", not "dealias",
-   *  so it is no longer carries the too-stealthy name "deAlias".
-   */
   object normalizeAliases extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeRef(_, sym, _) if sym.isAliasType =>
+      case TypeRef(_, sym, _) if sym.isAliasTypeNoKidding =>
         def msg = if (tp.isHigherKinded) s"Normalizing type alias function $tp" else s"Dealiasing type alias $tp"
         mapOver(logResult(msg)(tp.normalize))
       case _                                     => mapOver(tp)
@@ -3729,7 +3731,7 @@ trait Types extends api.Types { self: SymbolTable =>
   def abstractTypesToBounds(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
     case TypeRef(_, sym, _) if sym.isAbstractType =>
       abstractTypesToBounds(tp.bounds.hi)
-    case TypeRef(_, sym, _) if sym.isAliasType =>
+    case TypeRef(_, sym, _) if sym.isAliasTypeNoKidding =>
       abstractTypesToBounds(tp.normalize)
     case rtp @ RefinedType(parents, decls) =>
       copyRefinedType(rtp, parents mapConserve abstractTypesToBounds, decls)
@@ -4052,7 +4054,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  if necessary when the symbol is an alias.
      */
     private def applyToSymbolInfo(sym: Symbol): Type = {
-      if (trackVariance && !variance.isInvariant && sym.isAliasType)
+      if (trackVariance && !variance.isInvariant && sym.isAliasTypeNoKidding)
         withVariance(Invariant)(this(sym.info))
       else
         this(sym.info)
@@ -4645,7 +4647,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case tp1 @ TypeRef(SingleType(NoPrefix, Arg(pid)), sym, targs) =>
         val arg = actuals(pid)
         val res = typeRef(arg, sym, targs)
-        if (res.typeSymbolDirect.isAliasType) res.dealias else tp1
+        if (res.typeSymbolDirect.isAliasTypeNoKidding) res.dealias else tp1
       // don't return the original `tp`, which may be different from `tp1`,
       // due to dropping annotations
       case tp1 => tp1
@@ -4869,7 +4871,7 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true) orElse {
-          if (sym.isAliasType) throw missingAliasException
+          if (sym.isAliasTypeNoKidding) throw missingAliasException
           devWarning(s"$pre.$sym no longer exist at phase $phase")
           throw new MissingTypeControl // For build manager and presentation compiler purposes
         }
@@ -5853,7 +5855,7 @@ trait Types extends api.Types { self: SymbolTable =>
             info2.bounds.containsType(memberTp1) &&
             kindsConform(List(sym2), List(memberTp1), tp1, sym1.owner)
         }
-      || sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
+      || sym2.isAliasTypeNoKidding && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
     )
   }
 

@@ -934,7 +934,7 @@ trait Definitions extends api.StandardDefinitions {
 
     def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
       // Trying to allow for deprecated locations
-      sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
+      sym.isAliasTypeNoKidding && isMetaAnnotation(sym.info.typeSymbol)
     )
     lazy val metaAnnotations = Set[Symbol](
       FieldTargetClass, ParamTargetClass,

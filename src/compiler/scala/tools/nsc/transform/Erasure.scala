@@ -251,7 +251,7 @@ abstract class Erasure extends AddInterfaces
             else ARRAY_TAG.toString+(args map (jsig(_))).mkString
           }
           else if (isTypeParameterInSig(sym, sym0)) {
-            assert(!sym.isAliasType, "Unexpected alias type: " + sym)
+            assert(!sym.isAliasTypeNoKidding, "Unexpected alias type: " + sym)
             "" + TVAR_TAG + sym.name + ";"
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)

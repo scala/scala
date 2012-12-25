@@ -88,7 +88,7 @@ trait Mirrors extends api.Mirrors {
 
     private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
       var result = sym
-      while (result.isAliasType) result = result.info.typeSymbol
+      while (result.isAliasTypeNoKidding) result = result.info.typeSymbol
       result match {
         case x: ClassSymbol => x
         case _              => MissingRequirementError.notFound("class " + fullname)
@@ -224,7 +224,7 @@ trait Mirrors extends api.Mirrors {
     // def getClass2(name1: Name, name2: Name) = {
     //   try {
     //     val result = getModuleOrClass(name1.toTypeName)
-    //     if (result.isAliasType) getClass(name2) else result
+    //     if (result.isAliasTypeNoKidding) getClass(name2) else result
     //   }
     //   catch { case ex1: FatalError =>
     //     try getModuleOrClass(name2.toTypeName)

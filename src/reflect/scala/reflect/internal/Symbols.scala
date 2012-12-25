@@ -494,11 +494,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ----- tests ----------------------------------------------------------------------
 
-    def isAliasType    = false
-    def isAbstractType = false
-    def isSkolem       = false
-    def isMacroType    = false // note that macro types and type macros are two different things
-                               // read up comments to `MacroTypeSymbol` for more info
+    def isAliasType           = false
+    def isAliasTypeNoKidding  = false // SI-6859: to soothe sbt macro types disguise themselves as alias types
+                                      // therefore we need a special function to distinguish real alias types
+    def isAbstractType        = false
+    def isSkolem              = false
+    def isMacroType           = false // note that macro types and type macros are two different things
+                                      // read up comments to `MacroTypeSymbol` for more info
 
     /** A Type, but not a Class. */
     def isNonClassType = false
@@ -903,7 +905,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (owner.isTerm) return false
       if (isLocalDummy) return false
 
-      if (isAliasType) return true
+      if (isAliasTypeNoKidding || isMacroType) return true
       if (isType && isNonClassType) return false
       if (isRefinementClass) return false
       return true
@@ -2390,7 +2392,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       )
       if (isType) typeParamsString(tp) + (
         if (isClass) " extends " + parents
-        else if (isAliasType) " = " + tp.resultType
+        else if (isAliasTypeNoKidding) " = " + tp.resultType
         else tp.resultType match {
           case rt @ TypeBounds(_, _) => "" + rt
           case rt                    => " <: " + rt
@@ -2675,6 +2677,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isContravariant = variance.isContravariant
     override def isCovariant     = variance.isCovariant
     final override def isAliasType = true
+    final override def isAliasTypeNoKidding = true
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
   }
@@ -2698,6 +2701,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
     final override def isMacroType = true
+    final override def isAliasType = true // SI-6859: compatibility with SBT
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
   }
@@ -2935,6 +2939,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final override def isNonClassType = false
     final override def isAbstractType = false
     final override def isAliasType = false
+    final override def isAliasTypeNoKidding = false
 
     override def isAbstractClass           = this hasFlag ABSTRACT
     override def isCaseClass               = this hasFlag CASE
