@@ -151,7 +151,8 @@ trait DestructureTypes {
 
     def symbolType(sym: Symbol) = (
       if (sym.isRefinementClass) "Refinement"
-      else if (sym.isAliasType) "Alias"
+      else if (sym.isMacroType) "MacroType"
+      else if (sym.isAliasTypeNoKidding) "Alias"
       else if (sym.isTypeSkolem) "TypeSkolem"
       else if (sym.isTypeParameter) "TypeParam"
       else if (sym.isAbstractType) "AbstractType"
@@ -160,7 +161,8 @@ trait DestructureTypes {
     )
     def typeRefType(sym: Symbol) = (
       if (sym.isRefinementClass) "RefinementTypeRef"
-      else if (sym.isAliasType) "AliasTypeRef"
+      else if (sym.isMacroType) "MacroTypeRef"
+      else if (sym.isAliasTypeNoKidding) "AliasTypeRef"
       else if (sym.isTypeSkolem) "SkolemTypeRef"
       else if (sym.isTypeParameter) "TypeParamTypeRef"
       else if (sym.isAbstractType) "AbstractTypeRef"

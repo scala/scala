@@ -930,7 +930,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       if (pre != EmptyTree) {
         pre.tpe.baseClasses.forall(base => {
           val overridden = tpt.symbol.macroType.overriddenSymbol(base)
-          if (overridden.isAliasType || overridden.isAbstractType) {
+          if (overridden.isAliasTypeNoKidding || overridden.isAbstractType) {
             val info = overridden.info.asSeenFrom(pre.tpe, overridden.owner)
             // TODO: unfortunately we also need to do some inference here, otherwise we're going to get errors like:
             // macro expansion C violates bounds  >: [U <: C]C <: [U <: C]C

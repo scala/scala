@@ -274,7 +274,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         sym1.toString() +
         (if (showLocation)
           sym1.locationString +
-          (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
+          (if (sym1.isAliasTypeNoKidding) ", which equals "+self.memberInfo(sym1)
            else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
            else if (sym1.isModule) ""
            else if (sym1.isTypeMacro && sym1.paramss.isEmpty) " with nullary signature"
@@ -472,7 +472,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             // of the corresponding type macro. We should also do that, but I leave it as a TODO with a test case, since I don't have much time.
             if (member.nullaryTypeMacro == NoSymbol || member.nullaryTypeMacro.typeParams.length != other.typeParams.length)
               overrideMacroTypeError();
-          } else if (other.isAliasType) {
+          } else if (other.isAliasTypeNoKidding) {
             //if (!member.typeParams.isEmpty) (1.5)  @MAT
             //  overrideError("may not be parameterized");
             //if (!other.typeParams.isEmpty)  (1.5)   @MAT
@@ -504,7 +504,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
             // check a type alias's RHS corresponds to its declaration
             // this overlaps somewhat with validateVariance
-            if(member.isAliasType) {
+            if(member.isAliasTypeNoKidding) {
               // println("checkKindBounds" + ((List(member), List(memberTp.dealiasWiden), self, member.owner)))
               val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.dealiasWiden), self, member.owner)
 

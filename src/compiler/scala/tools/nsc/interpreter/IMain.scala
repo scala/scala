@@ -521,10 +521,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     Right(buildRequest(line, trees))
   }
 
-  // dealias non-public types so we don't see protected aliases like Self
+  // normalize non-public types so we don't see protected aliases like Self
   def dealiasNonPublic(tp: Type) = tp match {
-    case TypeRef(_, sym, _) if sym.isAliasType && !sym.isPublic => tp.dealias
-    case _                                                      => tp
+    case TypeRef(_, sym, _) if sym.isAliasTypeNoKidding && !sym.isPublic => tp.dealias
+    case _                                                               => tp
   }
 
   /**

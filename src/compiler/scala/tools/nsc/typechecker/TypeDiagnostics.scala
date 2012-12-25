@@ -87,7 +87,7 @@ trait TypeDiagnostics {
     def apply(tp: Type): Type = tp match {
       // Avoid "explaining" that String is really java.lang.String,
       // while still dealiasing types from non-default namespaces.
-      case TypeRef(pre, sym, args) if sym.isAliasType && !sym.isInDefaultNamespace =>
+      case TypeRef(pre, sym, args) if sym.isAliasTypeNoKidding && !sym.isInDefaultNamespace =>
         mapOver(tp.dealias)
       case _ =>
         mapOver(tp)

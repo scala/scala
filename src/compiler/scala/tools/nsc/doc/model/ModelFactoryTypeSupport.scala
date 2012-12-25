@@ -200,7 +200,7 @@ trait ModelFactoryTypeSupport {
         case et@ExistentialType(quantified, underlying) =>
 
           def appendInfoStringReduced(sym: Symbol, tp: Type): Unit = {
-            if (sym.isType && !sym.isAliasType && !sym.isClass) {
+            if (sym.isType && !sym.isAliasTypeNoKidding && !sym.isClass) {
                 tp match {
                   case PolyType(tparams, _) =>
                     nameBuffer append "["

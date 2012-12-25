@@ -203,7 +203,7 @@ trait Implicits {
      case TypeRef(pre, sym, _) =>
        sym.isPackageClass ||
        sym.isModuleClass && isStable(pre) /*||
-       sym.isAliasType && isStable(tp.normalize)*/
+       sym.isAliasTypeNoKidding && isStable(tp.normalize)*/
      case _ => tp.isStable
     }
     def isStablePrefix = isStable(pre)
@@ -484,7 +484,7 @@ trait Implicits {
             loop(restpe, pt)
           else pt match {
             case tr @ TypeRef(pre, sym, args) =>
-              if (sym.isAliasType) loop(tp, pt.dealias)
+              if (sym.isAliasTypeNoKidding) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
               else {
                 val len = args.length - 1
@@ -1010,7 +1010,7 @@ trait Implicits {
                   getClassParts(tp)
                 args foreach (getParts(_))
               }
-            } else if (sym.isAliasType) {
+            } else if (sym.isAliasTypeNoKidding) {
               getParts(tp.dealias)
             } else if (sym.isAbstractType) {
               getParts(tp.bounds.hi)
@@ -1274,7 +1274,7 @@ trait Implicits {
             // hence we don't do `pt.dealias` as we did before, but rather do `pt.betaReduce`
             // unlike `dealias`, `betaReduce` performs at most one step of dealiasing
             // while dealias pops all aliases in a single invocation
-            case sym if sym.isAliasType => materializeImplicit(pt.betaReduce)
+            case sym if sym.isAliasTypeNoKidding => materializeImplicit(pt.betaReduce)
             case _ => SearchFailure
           }
         case _ =>
@@ -1364,7 +1364,7 @@ trait Implicits {
   object ImplicitNotFoundMsg {
     def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg match {
       case Some(m) => Some(new Message(sym, m))
-      case None if sym.isAliasType =>
+      case None if sym.isAliasTypeNoKidding =>
         // perform exactly one step of dealiasing
         // this is necessary because ClassManifests are now aliased to ClassTags
         // but we don't want to intimidate users by showing unrelated error messages
