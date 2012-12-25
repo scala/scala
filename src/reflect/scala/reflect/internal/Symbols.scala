@@ -894,7 +894,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (owner.isTerm) return false
       if (isLocalDummy) return false
 
-      if (isAliasType) return true
+      if (isAliasType || isMacroType) return true
       if (isType && isNonClassType) return false
       if (isRefinementClass) return false
       return true
@@ -2378,7 +2378,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       )
       if (isType) typeParamsString(tp) + (
         if (isClass) " extends " + parents
-        else if (isAliasType) " = " + tp.resultType
+        else if (isAliasType && !isMacroType) " = " + tp.resultType
         else tp.resultType match {
           case rt @ TypeBounds(_, _) => "" + rt
           case rt                    => " <: " + rt
@@ -2683,6 +2683,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
     final override def isMacroType = true
+    final override def isAliasType = true // compatibility with SBT
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
   }

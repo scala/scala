@@ -226,7 +226,7 @@ trait Typers extends Modes with Adaptations with Tags {
     def dropExistential(tp: Type): Type = tp match {
       case ExistentialType(tparams, tpe) =>
         new SubstWildcardMap(tparams).apply(tp)
-      case TypeRef(_, sym, _) if sym.isAliasType =>
+      case TypeRef(_, sym, _) if sym.isAliasType && !sym.isMacroType =>
         val tp0 = tp.dealias
         val tp1 = dropExistential(tp0)
         if (tp1 eq tp0) tp else tp1
@@ -411,7 +411,7 @@ trait Typers extends Modes with Adaptations with Tags {
             case TypeRef(_, sym, args) =>
               checkNoEscape(sym)
               if (!hiddenSymbols.isEmpty && hiddenSymbols.head == sym &&
-                  sym.isAliasType && sameLength(sym.typeParams, args)) {
+                  sym.isAliasType && !sym.isMacroType && sameLength(sym.typeParams, args)) {
                 hiddenSymbols = hiddenSymbols.tail
                 t.dealias
               } else t
@@ -1035,7 +1035,7 @@ trait Typers extends Modes with Adaptations with Tags {
           adapt(tree setType restpe, mode, pt, original)
         case TypeRef(_, ByNameParamClass, List(arg)) if ((mode & EXPRmode) != 0) => // (2)
           adapt(tree setType arg, mode, pt, original)
-        case tr @ TypeRef(_, sym, _) if sym.isAliasType && tr.dealias.isInstanceOf[ExistentialType] &&
+        case tr @ TypeRef(_, sym, _) if sym.isAliasType && !sym.isMacroType && tr.dealias.isInstanceOf[ExistentialType] &&
           ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
           adapt(tree setType tr.dealias.skolemizeExistential(context.owner, tree), mode, pt, original)
         case et @ ExistentialType(_, _) if ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
@@ -3699,7 +3699,7 @@ trait Typers extends Modes with Adaptations with Tags {
       val normalizeLocals = new TypeMap {
         def apply(tp: Type): Type = tp match {
           case TypeRef(pre, sym, args) =>
-            if (sym.isAliasType && containsLocal(tp)) apply(tp.dealias)
+            if (sym.isAliasType && !sym.isMacroType && containsLocal(tp)) apply(tp.dealias)
             else {
               if (pre.isVolatile)
                 InferTypeWithVolatileTypeSelectionError(tree, pre)

@@ -272,7 +272,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         sym1.toString() +
         (if (showLocation)
           sym1.locationString +
-          (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
+          (if (sym1.isAliasType && !sym1.isMacroType) ", which equals "+self.memberInfo(sym1)
            else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
            else if (sym1.isModule) ""
            else if (sym1.isTypeMacro && sym1.paramss.isEmpty) " with nullary signature"
@@ -470,7 +470,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             // of the corresponding type macro. We should also do that, but I leave it as a TODO with a test case, since I don't have much time.
             if (member.nullaryTypeMacro == NoSymbol || member.nullaryTypeMacro.typeParams.length != other.typeParams.length)
               overrideMacroTypeError();
-          } else if (other.isAliasType) {
+          } else if (other.isAliasType && !other.isMacroType) {
             //if (!member.typeParams.isEmpty) (1.5)  @MAT
             //  overrideError("may not be parameterized");
             //if (!other.typeParams.isEmpty)  (1.5)   @MAT
@@ -502,7 +502,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
             // check a type alias's RHS corresponds to its declaration
             // this overlaps somewhat with validateVariance
-            if(member.isAliasType) {
+            if(member.isAliasType && !member.isMacroType) {
               // println("checkKindBounds" + ((List(member), List(memberTp.normalize), self, member.owner)))
               val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize), self, member.owner)
 
@@ -918,7 +918,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               // return AnyVariance if `sym` is local to a term
               // or is private[this] or protected[this]
               state = AnyVariance
-            } else if (sym.isAliasType) {
+            } else if (sym.isAliasType && !sym.isMacroType) {
               // return AnyVariance if `sym` is an alias type
               // that does not override anything. This is OK, because we always
               // expand aliases for variance checking.
@@ -948,7 +948,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             validateVariance(pre, variance)
           case TypeRef(pre, sym, args) =>
 //            println("validate "+sym+" at "+relativeVariance(sym))
-            if (sym.isAliasType/* && relativeVariance(sym) == AnyVariance*/)
+            if (sym.isAliasType && !sym.isMacroType /* && relativeVariance(sym) == AnyVariance*/)
               validateVariance(tp.normalize, variance)
             else if (sym.variance != NoVariance) {
               val v = relativeVariance(sym)
@@ -977,7 +977,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             val saved = inRefinement
             inRefinement = true
             for (sym <- decls)
-              validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
+              validateVariance(sym.info, if (sym.isAliasType && !sym.isMacroType) NoVariance else variance)
             inRefinement = saved
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
