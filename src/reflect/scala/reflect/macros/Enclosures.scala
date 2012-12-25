@@ -17,6 +17,19 @@ trait Enclosures {
    */
   def macroApplication: Tree
 
+  /** The semantic role that `macroApplication` plays in the code.
+   */
+  type MacroRole
+
+  /** The role that represents an application of a term macro,
+   *  e.g. `M(2)(3)` in `val x = M(2)(3)` or `M(a, b)` in `x match { case x @ M(a, b) => }`.
+   */
+  def APPLY_ROLE: MacroRole
+
+  /** The semantic role that `macroApplication` plays in the code.
+   */
+  def macroRole: MacroRole
+
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
    *
