@@ -419,6 +419,9 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case AppliedTypeTree(tp, args) =>
           print(tp); printRow(args, "[", ", ", "]")
 
+        case DependentTypeTree(tp, args) =>
+          print(tp); printRow(args, "(", ", ", ")")
+
         case TypeBoundsTree(lo, hi) =>
           printOpt(" >: ", lo); printOpt(" <: ", hi)
 

@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: macro in type role can only expand into Ident, Select, TypTrees except for TypeBoundsTree, and their Annotated versions
+  val x: Foo(2) = new C(2)
+         ^
+one error found

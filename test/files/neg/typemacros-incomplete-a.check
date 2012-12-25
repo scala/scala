@@ -1,0 +1,10 @@
+typemacros-incomplete-a.scala:2: error: `=' expected
+  type Foo(x: Int);
+                  ^
+typemacros-incomplete-a.scala:3: error: `=' expected
+  type Bar()
+            ^
+typemacros-incomplete-a.scala:4: error: `macro' expected
+  type Baz() = Int
+               ^
+three errors found

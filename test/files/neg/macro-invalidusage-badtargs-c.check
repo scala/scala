@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: String takes no type parameters, expected: one
+  val s: String = foo[String](42)
+                      ^
+one error found
