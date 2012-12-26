@@ -621,6 +621,8 @@ abstract class TreeInfo {
    *  For advanced use, call `dissectApplied` explicitly and use its methods instead of pattern matching.
    */
   object Applied {
+    def apply(tree: Tree): Applied = new Applied(tree)
+
     def unapply(applied: Applied): Option[(Tree, List[Tree], List[List[Tree]])] =
       Some((applied.core, applied.targs, applied.argss))
 

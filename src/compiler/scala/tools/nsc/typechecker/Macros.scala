@@ -546,6 +546,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   /** Calculate the arguments to pass to a macro implementation when expanding the provided tree.
    */
   case class MacroArgs(c: MacroContext, others: List[Any])
+
   private def macroArgs(typer: Typer, expandee: Tree): MacroArgs = {
     val macroDef   = expandee.symbol
     val prefixTree = expandee.collect{ case Select(qual, name) => qual }.headOption.getOrElse(EmptyTree)
@@ -574,9 +575,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     val preparedArgss: List[List[Any]] =
       if (fastTrack contains macroDef) {
-        if (fastTrack(macroDef) validate context) argss
+        // Take a dry run of the fast track implementation
+        if (fastTrack(macroDef) validate expandee) argss
         else typer.TyperErrorGen.MacroPartialApplicationError(expandee)
-      } else {
+      }
+      else {
         // if paramss have typetag context bounds, add an arglist to argss if necessary and instantiate the corresponding evidences
         // consider the following example:
         //
