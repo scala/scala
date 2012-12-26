@@ -793,6 +793,12 @@ trait Contexts { self: Analyzer =>
           case _                                => LookupSucceeded(qual, sym)
         }
       )
+      def finishDefSym(sym: Symbol, pre0: Type): NameLookup =
+        if (requiresQualifier(sym))
+          finish(gen.mkAttributedQualifier(pre0), sym)
+        else
+          finish(EmptyTree, sym)
+
       def isPackageOwnedInDifferentUnit(s: Symbol) = (
         s.isDefinedInPackage && (
              !currentRun.compiles(s)
@@ -816,17 +822,36 @@ trait Contexts { self: Analyzer =>
 
         found1
       }
+
+      def lookupInScope(scope: Scope) =
+        (scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
+
+      def newOverloaded(owner: Symbol, pre: Type, entries: List[ScopeEntry]) =
+        logResult(s"!!! lookup overloaded")(owner.newOverloaded(pre, entries map (_.sym)))
+
+      // Constructor lookup should only look in the decls of the enclosing class
+      // not in the self-type, nor in the enclosing context, nor in imports (SI-4460, SI-6745)
+      if (name == nme.CONSTRUCTOR) return {
+        val enclClassSym = cx.enclClass.owner
+        val scope = cx.enclClass.prefix.baseType(enclClassSym).decls
+        val constructorSym = lookupInScope(scope) match {
+          case Nil       => NoSymbol
+          case hd :: Nil => hd.sym
+          case entries   => newOverloaded(enclClassSym, cx.enclClass.prefix, entries)
+        }
+        finishDefSym(constructorSym, cx.enclClass.prefix)
+      }
+
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
       while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
-        pre         = cx.enclClass.prefix
-        val entries = (cx.scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
-        defSym      = entries match {
-          case Nil       => searchPrefix
-          case hd :: tl  =>
+        pre    = cx.enclClass.prefix
+        defSym = lookupInScope(cx.scope) match {
+          case Nil                  => searchPrefix
+          case entries @ (hd :: tl) =>
             // we have a winner: record the symbol depth
             symbolDepth = (cx.depth - cx.scope.nestingLevel) + hd.depth
             if (tl.isEmpty) hd.sym
-            else logResult(s"!!! lookup overloaded")(cx.owner.newOverloaded(pre, entries map (_.sym)))
+            else newOverloaded(cx.owner, pre, entries)
         }
         if (!defSym.exists)
           cx = cx.outer // push further outward
@@ -864,12 +889,8 @@ trait Contexts { self: Analyzer =>
       }
 
       // At this point only one or the other of defSym and impSym might be set.
-      if (defSym.exists) {
-        if (requiresQualifier(defSym))
-          finish(gen.mkAttributedQualifier(pre), defSym)
-        else
-          finish(EmptyTree, defSym)
-      }
+      if (defSym.exists)
+        finishDefSym(defSym, pre)
       else if (impSym.exists) {
         // We continue walking down the imports as long as the tail is non-empty, which gives us:
         //   imports  ==  imp1 :: imp2 :: _
