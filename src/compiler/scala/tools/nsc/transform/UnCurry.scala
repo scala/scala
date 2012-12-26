@@ -211,16 +211,11 @@ abstract class UnCurry extends InfoTransform
      *    }
      *    new $anon()
      *
-     * If `settings.XoldPatmat.value`, also synthesized AbstractPartialFunction subclasses (see synthPartialFunction).
-     *
      */
     def transformFunction(fun: Function): Tree =
       deEta(fun) match {
         // nullary or parameterless
         case fun1 if fun1 ne fun => fun1
-        case _ if fun.tpe.typeSymbol == PartialFunctionClass =>
-          // only get here when running under -Xoldpatmat
-          synthPartialFunction(fun)
         case _ =>
           val parents = (
             if (isFunctionType(fun.tpe)) addSerializable(abstractFunctionForFunctionType(fun.tpe))
@@ -258,131 +253,6 @@ abstract class UnCurry extends InfoTransform
           }
 
       }
-
-    /** Transform a function node (x => body) of type PartialFunction[T, R] where
-     *    body = expr match { case P_i if G_i => E_i }_i=1..n
-     *  to (assuming none of the cases is a default case):
-     *
-     *    class $anon() extends AbstractPartialFunction[T, R] with Serializable {
-     *      def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 = (expr: @unchecked) match {
-     *        case P_1 if G_1 => E_1
-     *        ...
-     *        case P_n if G_n => E_n
-     *        case _ => default(expr)
-     *      }
-     *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {
-     *        case P_1 if G_1 => true
-     *        ...
-     *        case P_n if G_n => true
-     *        case _ => false
-     *      }
-     *    }
-     *    new $anon()
-     *
-     *  If there's a default case, the original match is used for applyOrElse, and isDefinedAt returns `true`
-     */
-    def synthPartialFunction(fun: Function) = {
-      if (!settings.XoldPatmat.value)
-        devWarning("Under the new pattern matching scheme, PartialFunction should have been synthesized during typers.")
-
-      val targs             = fun.tpe.typeArgs
-      val (formals, restpe) = (targs.init, targs.last)
-
-      val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
-      val parents   = addSerializable(appliedType(AbstractPartialFunctionClass, targs: _*))
-      anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-
-      // duplicate before applyOrElseMethodDef is run so that it does not mess up our trees and label symbols (we have a fresh set)
-      // otherwise `TreeSymSubstituter(fun.vparams map (_.symbol), params)` won't work as the subst has been run already
-      val bodyForIDA = {
-        val duped   = fun.body.duplicate
-        val oldParams = new mutable.ListBuffer[Symbol]()
-        val newParams = new mutable.ListBuffer[Symbol]()
-
-        val oldSyms0 =
-          duped filter {
-            case l@LabelDef(_, params, _) =>
-              params foreach {p =>
-                val oldSym = p.symbol
-                p.symbol = oldSym.cloneSymbol
-                oldParams += oldSym
-                newParams += p.symbol
-              }
-              true
-            case _ => false
-          } map (_.symbol)
-        val oldSyms = oldParams.toList ++ oldSyms0
-        val newSyms = newParams.toList ++ (oldSyms0 map (_.cloneSymbol))
-        // println("duping "+ oldSyms +" --> "+ (newSyms map (_.ownerChain)))
-
-        val substLabels = new TreeSymSubstituter(oldSyms, newSyms)
-
-        substLabels(duped)
-      }
-
-      // def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
-      val applyOrElseMethodDef = {
-        val methSym = anonClass.newMethod(nme.applyOrElse, fun.pos, newFlags = FINAL | OVERRIDE | SYNTHETIC)
-
-        val List(argtpe)            = formals
-        val A1                      = methSym newTypeParameter(newTypeName("A1")) setInfo TypeBounds.upper(argtpe)
-        val B1                      = methSym newTypeParameter(newTypeName("B1")) setInfo TypeBounds.lower(restpe)
-        val methFormals             = List(A1.tpe, functionType(List(A1.tpe), B1.tpe))
-        val params@List(x, default) = methSym newSyntheticValueParams methFormals
-        methSym setInfoAndEnter polyType(List(A1, B1), MethodType(params, B1.tpe))
-
-        val substParam = new TreeSymSubstituter(fun.vparams map (_.symbol), List(x))
-        val body = localTyper.typedPos(fun.pos) { import CODE._
-          def defaultAction(scrut: Tree) = REF(default) APPLY (REF(x))
-
-          substParam(fun.body) match {
-            case orig@Match(selector, cases) =>
-              if (cases exists treeInfo.isDefaultCase) orig
-              else {
-                val defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, defaultAction(selector.duplicate))
-                Match(/*gen.mkUnchecked*/(selector), cases :+ defaultCase)
-              }
-
-          }
-        }
-        body.changeOwner(fun.symbol -> methSym)
-
-        val methDef = DefDef(methSym, body)
-
-        // Have to repack the type to avoid mismatches when existentials
-        // appear in the result - see SI-4869.
-        methDef.tpt setType localTyper.packedType(body, methSym)
-        methDef
-      }
-
-      val isDefinedAtMethodDef = {
-        val methSym = anonClass.newMethod(nme.isDefinedAt, fun.pos, FINAL | SYNTHETIC)
-        val params  = methSym newSyntheticValueParams formals
-        methSym setInfoAndEnter MethodType(params, BooleanClass.tpe)
-
-        val substParam = new TreeSymSubstituter(fun.vparams map (_.symbol), params)
-        def doSubst(x: Tree) = substParam(resetLocalAttrsKeepLabels(x)) // see pos/t1761 for why `resetLocalAttrs`, but must keep label symbols around
-
-        val body = bodyForIDA match {
-          case Match(selector, cases) =>
-            if (cases exists treeInfo.isDefaultCase) TRUE
-            else
-              doSubst(Match(/*gen.mkUnchecked*/(selector),
-                        (cases map (c => deriveCaseDef(c)(x => TRUE))) :+ (
-                        DEFAULT ==> FALSE)))
-
-        }
-        body.changeOwner(fun.symbol -> methSym)
-
-        DefDef(methSym, body)
-      }
-
-      localTyper.typedPos(fun.pos) {
-        Block(
-          List(ClassDef(anonClass, NoMods, ListOfNil, List(applyOrElseMethodDef, isDefinedAtMethodDef), fun.pos)),
-          Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
-      }
-    }
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
       val isJava = fun.isJavaDefined
@@ -674,35 +544,6 @@ abstract class UnCurry extends InfoTransform
 
       def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
 
-      def postTransformTry(tree: Try) = {
-        val body = tree.block
-        val catches = tree.catches
-        val finalizer = tree.finalizer
-        if (!settings.XoldPatmat.value) {
-          if (catches exists (cd => !treeInfo.isCatchCase(cd)))
-            devWarning("VPM BUG - illegal try/catch " + catches)
-          tree
-        } else if (catches forall treeInfo.isCatchCase) {
-          tree
-        } else {
-          val exname = unit.freshTermName("ex$")
-          val cases =
-            if ((catches exists treeInfo.isDefaultCase) || isDefaultCatch(catches.last)) catches
-            else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
-          val catchall =
-            atPos(tree.pos) {
-              CaseDef(
-                Bind(exname, Ident(nme.WILDCARD)),
-                EmptyTree,
-                Match(Ident(exname), cases))
-            }
-          debuglog("rewrote try: " + catches + " ==> " + catchall);
-          val catches1 = localTyper.typedCases(
-            List(catchall), ThrowableClass.tpe, WildcardType)
-          treeCopy.Try(tree, body, catches1, finalizer)
-        }
-      }
-
       tree match {
         /* Some uncurry post transformations add members to templates.
          *
@@ -734,7 +575,9 @@ abstract class UnCurry extends InfoTransform
           addJavaVarargsForwarders(dd, flatdd)
 
         case tree: Try =>
-          postTransformTry(tree)
+          if (tree.catches exists (cd => !treeInfo.isCatchCase(cd)))
+            devWarning("VPM BUG - illegal try/catch " + tree.catches)
+          tree
 
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)

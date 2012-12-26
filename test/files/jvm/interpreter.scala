@@ -2,7 +2,7 @@ import scala.tools.nsc._
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
-  override def extraSettings = "-deprecation -Xoldpatmat"
+  override def extraSettings = "-deprecation"
   def code = <code>
 // basics
 3+4

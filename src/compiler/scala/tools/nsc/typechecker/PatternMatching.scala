@@ -67,9 +67,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
   }
 
-  def newTransformer(unit: CompilationUnit): Transformer =
-    if (!settings.XoldPatmat.value) new MatchTransformer(unit)
-    else noopTransformer
+  def newTransformer(unit: CompilationUnit): Transformer = new MatchTransformer(unit)
 
   // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)
   private lazy val MarkerCPSAdaptPlus  = rootMirror.getClassIfDefined("scala.util.continuations.cpsPlus")

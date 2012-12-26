@@ -44,7 +44,6 @@ abstract class MutableSettings extends AbsSettings {
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
   def Xexperimental: BooleanSetting
-  def XoldPatmat: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting
   def XfullLubs: BooleanSetting
   def breakCycles: BooleanSetting
