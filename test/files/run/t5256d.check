@@ -22,7 +22,7 @@ scala> println(c.fullName)
 $line8.$read.$iw.$iw.$iw.$iw.A
 
 scala> println(c.typeSignature)
-java.lang.Object {
+scala.AnyRef {
   def <init>(): A
   def foo: scala.Nothing
 }
