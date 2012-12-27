@@ -953,7 +953,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    */
   def tryTwice(op: => Symbol): Symbol = exitingTyper(op) orElse exitingFlatten(op)
 
-  def symbolOfIdent(id: String): Symbol  = symbolOfTerm(id) orElse symbolOfType(id)
+  def symbolOfIdent(id: String): Symbol  = symbolOfType(id) orElse symbolOfTerm(id)
   def symbolOfType(id: String): Symbol   = tryTwice(replScope lookup (id: TypeName))
   def symbolOfTerm(id: String): Symbol   = tryTwice(replScope lookup (id: TermName))
   def symbolOfName(id: Name): Symbol     = replScope lookup id
