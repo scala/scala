@@ -162,11 +162,13 @@ object ManifestFactory {
   private val NullTYPE = classOf[scala.runtime.Null$]
 
   val Any: Manifest[scala.Any] = new PhantomManifest[scala.Any](ObjectTYPE, "Any") {
+    override def newArray(len: Int) = new Array[scala.Any](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     private def readResolve(): Any = Manifest.Any
   }
 
   val Object: Manifest[java.lang.Object] = new PhantomManifest[java.lang.Object](ObjectTYPE, "Object") {
+    override def newArray(len: Int) = new Array[java.lang.Object](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.Object
   }
@@ -174,17 +176,20 @@ object ManifestFactory {
   val AnyRef: Manifest[scala.AnyRef] = Object.asInstanceOf[Manifest[scala.AnyRef]]
 
   val AnyVal: Manifest[scala.AnyVal] = new PhantomManifest[scala.AnyVal](ObjectTYPE, "AnyVal") {
+    override def newArray(len: Int) = new Array[scala.AnyVal](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.AnyVal
   }
 
   val Null: Manifest[scala.Null] = new PhantomManifest[scala.Null](NullTYPE, "Null") {
+    override def newArray(len: Int) = new Array[scala.Null](len)
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     private def readResolve(): Any = Manifest.Null
   }
 
   val Nothing: Manifest[scala.Nothing] = new PhantomManifest[scala.Nothing](NothingTYPE, "Nothing") {
+    override def newArray(len: Int) = new Array[scala.Nothing](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     private def readResolve(): Any = Manifest.Nothing
   }
