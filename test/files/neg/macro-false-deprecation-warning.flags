@@ -1,1 +1,1 @@
--language:experimental.macros
+-language:experimental.macros -deprecation
