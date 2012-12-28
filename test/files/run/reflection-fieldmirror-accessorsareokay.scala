@@ -25,5 +25,5 @@ object Test extends App {
   }
 
   test(cs.typeSignature.declaration(newTermName("x")).asTerm)
-  test(cs.typeSignature.declaration(newTermName("x_$eq")).asTerm)
+  test(cs.typeSignature.declaration(newTermName("x_=")).asTerm)
 }

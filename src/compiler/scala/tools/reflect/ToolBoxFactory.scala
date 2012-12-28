@@ -119,7 +119,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
         // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
         var (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = false)
-        val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
+        val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("???"))) }.toList
         expr = Block(dummies, wrapIntoTerm(expr))
 
         // [Eugene] how can we implement that?

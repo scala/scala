@@ -24,7 +24,7 @@ object Impls {
         val cond = makeBinop(iref, "$less", href)
         val body = Block(
             List(makeApply(f.tree, List(iref))),
-            Assign(iref, makeBinop(iref, "$plus", Literal(Constant(1)))))
+            Assign(iref, makeBinop(iref, "+", Literal(Constant(1)))))
         val generated =
         Block(
           List(

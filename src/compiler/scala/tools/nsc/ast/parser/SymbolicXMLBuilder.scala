@@ -50,7 +50,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     val __Text: NameType    = "Text"
     val _buf: NameType      = "$buf"
     val _md: NameType       = "$md"
-    val _plus: NameType     = "$amp$plus"
+    val _plus: NameType     = "&+"
     val _scope: NameType    = "$scope"
     val _tmpscope: NameType = "$tmpscope"
     val _xml: NameType      = "xml"
