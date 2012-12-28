@@ -12,6 +12,7 @@ import generic._
 import mutable.ListBuffer
 import immutable.List
 import scala.util.control.Breaks._
+import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`  which optimizes
  *  the implementation of several methods under the assumption of fast linear access.
@@ -248,19 +249,16 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
 
   override /*SeqLike*/
   def lengthCompare(len: Int): Int = {
-    // TODO: Remove this method when incrementing a major revision
-    // This method is the same as in SeqLike, no need to redefine it
-    if (len < 0) 1
-    else {
-      var i = 0
-      val it = iterator
-      while (it.hasNext) {
-        if (i == len) return if (it.hasNext) 1 else 0
-        it.next()
-        i += 1
-      }
-      i - len
+    @tailrec def loop(i: Int, xs: Repr): Int = {
+      if (i == len)
+        if (xs.isEmpty) 0 else 1
+      else if (xs.isEmpty)
+        -1
+      else
+        loop(i + 1, xs.tail)
     }
+    if (len < 0) 1
+    else loop(0, this)
   }
 
   override /*SeqLike*/
