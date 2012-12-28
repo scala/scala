@@ -37,7 +37,7 @@ trait CompletionOutput {
     val pkg       = method.ownerChain find (_.isPackageClass) map (_.fullName) getOrElse ""
 
     def relativize(str: String): String = quietString(str stripPrefix (pkg + "."))
-    def relativize(tp: Type): String    = relativize(tp.normalize.toString)
+    def relativize(tp: Type): String    = relativize(tp.dealiasWiden.toString)
 
     def braceList(tparams: List[String]) = if (tparams.isEmpty) "" else (tparams map relativize).mkString("[", ", ", "]")
     def parenList(params: List[Any])  = params.mkString("(", ", ", ")")
@@ -55,8 +55,8 @@ trait CompletionOutput {
       }
     )
 
-    def tupleString(tp: Type) = parenList(tp.normalize.typeArgs map relativize)
-    def functionString(tp: Type) = tp.normalize.typeArgs match {
+    def tupleString(tp: Type) = parenList(tp.dealiasWiden.typeArgs map relativize)
+    def functionString(tp: Type) = tp.dealiasWiden.typeArgs match {
       case List(t, r) => t + " => " + r
       case xs         => parenList(xs.init) + " => " + xs.last
     }
@@ -64,7 +64,7 @@ trait CompletionOutput {
     def tparamsString(tparams: List[Symbol])  = braceList(tparams map (_.defString))
     def paramsString(params: List[Symbol])    = {
       def paramNameString(sym: Symbol)  = if (sym.isSynthetic) "" else sym.nameString + ": "
-      def paramString(sym: Symbol)      = paramNameString(sym) + typeToString(sym.info.normalize)
+      def paramString(sym: Symbol)      = paramNameString(sym) + typeToString(sym.info.dealiasWiden)
 
       val isImplicit = params.nonEmpty && params.head.isImplicit
       val strs = (params map paramString) match {
