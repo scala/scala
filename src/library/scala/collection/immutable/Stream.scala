@@ -625,7 +625,7 @@ self =>
    *
    * @example {{{
    * $naturalsEx
-   * naturalsFrom(1) zip naturalsFrom(2) zip take 5 foreach println
+   * naturalsFrom(1) zip naturalsFrom(2) take 5 foreach println
    * // prints
    * // (1,2)
    * // (2,3)
