@@ -1,12 +1,12 @@
 class A1
 Test.A1
-Object {
+AnyRef {
   def <init>(): Test.A1
   def foo: Nothing
 }
 class A2
 Test.A2
-Object {
+AnyRef {
   def <init>(): Test.this.A2
   def foo: Nothing
 }

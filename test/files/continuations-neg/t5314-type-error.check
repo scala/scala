@@ -1,6 +1,6 @@
 t5314-type-error.scala:7: error: type mismatch;
- found   : Int @util.continuations.cps[Int]
- required: Int @util.continuations.cps[String]
+ found   : Int @scala.util.continuations.cpsParam[Int,Int]
+ required: Int @scala.util.continuations.cpsParam[String,String]
   def bar(x:Int): Int @cps[String] = return foo(x)
                                                ^
 one error found

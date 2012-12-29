@@ -6,8 +6,8 @@ an overriding object must conform to the overridden object's class bound;
                     ^
 override-object-no.scala:21: error: overriding object Bar in trait Quux1 with object Bar in trait Quux2:
 an overriding object must conform to the overridden object's class bound;
- found   : Object{def g: String}
- required: Object{def g: Int}
+ found   : AnyRef{def g: String}
+ required: AnyRef{def g: Int}
   trait Quux2 extends Quux1 { override object Bar { def g = "abc" } } // err
                                               ^
 override-object-no.scala:25: error: overriding object Bar in trait Quux3;

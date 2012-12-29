@@ -439,8 +439,8 @@ trait Implicits {
       val start = if (Statistics.canEnable) Statistics.startTimer(matchesPtNanos) else null
       val result = normSubType(tp, pt) || isView && {
         pt match {
-          case TypeRef(_, Function1.Sym, args) =>
-            matchesPtView(tp, args.head, args.tail.head, undet)
+          case TypeRef(_, Function1.Sym, arg1 :: arg2 :: Nil) =>
+            matchesPtView(tp, arg1, arg2, undet)
           case _ =>
             false
         }
@@ -484,7 +484,7 @@ trait Implicits {
             loop(restpe, pt)
           else pt match {
             case tr @ TypeRef(pre, sym, args) =>
-              if (sym.isAliasType) loop(tp, pt.normalize)
+              if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
               else {
                 val len = args.length - 1
@@ -528,18 +528,15 @@ trait Implicits {
      *  to a final true or false.
      */
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
-      case tr1 @ TypeRef(_, sym1, _) =>
-        // We can only rule out a subtype relationship if the left hand
-        // side is a class, else we may not know enough.
-        sym1.isClass && (tp2.normalize.widen match {
-          case TypeRef(_, sym2, _) =>
-             sym2.isClass && !(sym1 isWeakSubClass sym2)
-          case RefinedType(parents, decls) =>
-            decls.nonEmpty &&
-            tr1.member(decls.head.name) == NoSymbol
-          case _ => false
-        })
+    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.dealiasWiden match {
+      // We can only rule out a subtype relationship if the left hand
+      // side is a class, else we may not know enough.
+      case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
+        tp2.dealiasWiden match {
+          case TypeRef(_, sym2, _)         => sym2.isClass && !(sym1 isWeakSubClass sym2)
+          case RefinedType(parents, decls) => decls.nonEmpty && tr1.member(decls.head.name) == NoSymbol
+          case _                           => false
+        }
       case _ => false
     }
 
@@ -1010,7 +1007,7 @@ trait Implicits {
                 args foreach (getParts(_))
               }
             } else if (sym.isAliasType) {
-              getParts(tp.normalize)
+              getParts(tp.dealias)
             } else if (sym.isAbstractType) {
               getParts(tp.bounds.hi)
             }
@@ -1040,88 +1037,6 @@ trait Implicits {
       )
       infoMap
     }
-
-    /** The parts of a type is the smallest set of types that contains
-     *    - the type itself
-     *    - the parts of its immediate components (prefix and argument)
-     *    - the parts of its base types
-     *    - for alias types and abstract types, we take instead the parts
-     *    - of their upper bounds.
-     *  @return For those parts that refer to classes with companion objects that
-     *  can be accessed with unambiguous stable prefixes, the implicits infos
-     *  which are members of these companion objects.
-
-    private def companionImplicits(tp: Type): Infoss = {
-      val partMap = new LinkedHashMap[Symbol, Type]
-      val seen = mutable.HashSet[Type]()  // cycle detection
-
-      /** Enter all parts of `tp` into `parts` set.
-       *  This method is performance critical: about 2-4% of all type checking is spent here
-       */
-      def getParts(tp: Type) {
-        if (seen(tp))
-          return
-        seen += tp
-        tp match {
-          case TypeRef(pre, sym, args) =>
-            if (sym.isClass) {
-              if (!((sym.name == tpnme.REFINE_CLASS_NAME) ||
-                    (sym.name startsWith tpnme.ANON_CLASS_NAME) ||
-                    (sym.name == tpnme.ROOT)))
-                partMap get sym match {
-                  case Some(pre1) =>
-                    if (!(pre =:= pre1)) partMap(sym) = NoType // ambiguous prefix - ignore implicit members
-                  case None =>
-                    if (pre.isStable) partMap(sym) = pre
-                    val bts = tp.baseTypeSeq
-                    var i = 1
-                    while (i < bts.length) {
-                      getParts(bts(i))
-                      i += 1
-                    }
-                    getParts(pre)
-                    args foreach getParts
-                }
-            } else if (sym.isAliasType) {
-              getParts(tp.normalize)
-            } else if (sym.isAbstractType) {
-              getParts(tp.bounds.hi)
-            }
-          case ThisType(_) =>
-            getParts(tp.widen)
-          case _: SingletonType =>
-            getParts(tp.widen)
-          case RefinedType(ps, _) =>
-            for (p <- ps) getParts(p)
-          case AnnotatedType(_, t, _) =>
-            getParts(t)
-          case ExistentialType(_, t) =>
-            getParts(t)
-          case PolyType(_, t) =>
-            getParts(t)
-          case _ =>
-        }
-      }
-
-      getParts(tp)
-
-      val buf = new ListBuffer[Infos]
-      for ((clazz, pre) <- partMap) {
-        if (pre != NoType) {
-          val companion = clazz.companionModule
-          companion.moduleClass match {
-            case mc: ModuleClassSymbol =>
-              buf += (mc.implicitMembers map (im =>
-                new ImplicitInfo(im.name, singleType(pre, companion), im)))
-            case _ =>
-          }
-        }
-      }
-      //println("companion implicits of "+tp+" = "+buf.toList) // DEBUG
-      buf.toList
-    }
-
-*/
 
     /** The implicits made available by type `pt`.
      *  These are all implicits found in companion objects of classes C
@@ -1250,7 +1165,7 @@ trait Implicits {
         implicit def wrapResult(tree: Tree): SearchResult =
           if (tree == EmptyTree) SearchFailure else new SearchResult(tree, if (from.isEmpty) EmptyTreeTypeSubstituter else new TreeTypeSubstituter(from, to))
 
-        val tp1 = tp0.normalize
+        val tp1 = tp0.dealias
         tp1 match {
           case ThisType(_) | SingleType(_, _) =>
             // can't generate a reference to a value that's abstracted over by an existential
