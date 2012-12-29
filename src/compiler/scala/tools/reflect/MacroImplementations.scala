@@ -37,7 +37,7 @@ abstract class MacroImplementations {
     val argsStack = Stack(args : _*)
 
     def defval(value: Tree, tpe: Type): Unit = {
-      val freshName = newTermName(c.fresh("arg$"))
+      val freshName = newTermName(c.freshName("arg$"))
       evals += ValDef(Modifiers(), freshName, TypeTree(tpe) setPos value.pos.focus, value) setPos value.pos
       ids += Ident(freshName)
     }
