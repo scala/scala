@@ -228,13 +228,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // of assert and require (but for now I've reproduced them here,
   // because there are a million to fix.)
   @inline final def assert(assertion: Boolean, message: => Any) {
-    Predef.assert(assertion, supplementErrorMessage("" + message))
+    if (!assertion)
+      throw new java.lang.AssertionError("assertion failed: "+ supplementErrorMessage("" + message))
   }
   @inline final def assert(assertion: Boolean) {
     assert(assertion, "")
   }
   @inline final def require(requirement: Boolean, message: => Any) {
-    Predef.require(requirement, supplementErrorMessage("" + message))
+    if (!requirement)
+      throw new IllegalArgumentException("requirement failed: "+ supplementErrorMessage("" + message))
   }
   @inline final def require(requirement: Boolean) {
     require(requirement, "")
