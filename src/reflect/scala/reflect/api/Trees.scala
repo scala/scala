@@ -89,6 +89,12 @@ trait Trees { self: Universe =>
      */
     def isEmpty: Boolean
 
+    /** Is this tree one of the empty trees?
+     *
+     *  @see `isEmpty`
+     */
+    def nonEmpty: Boolean
+
     /** Can this tree carry attributes (i.e. symbols, types or positions)?
      *  Typically the answer is yes, except for the `EmptyTree` null object and
      *  two special singletons: `emptyValDef` and `pendingSuperCall`.
