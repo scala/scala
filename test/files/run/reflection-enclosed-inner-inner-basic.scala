@@ -28,7 +28,7 @@ object Test extends App {
   def testInnerClass(name: String) = {
     val sym = b.typeSignature.declaration(TypeName(name)).asClass
     println(sym)
-    val ctor = sym.typeSignature.declaration(TermName("<init>")).asMethod
+    val ctor = sym.typeSignature.declaration(nme.CONSTRUCTOR).asMethod
     val outer1 = new B
     val outer2 = new outer1.BB
     val ctorMirror = cm.reflect(outer2).reflectClass(sym).reflectConstructor(ctor)

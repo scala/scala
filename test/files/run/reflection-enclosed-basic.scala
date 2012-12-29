@@ -20,7 +20,7 @@ object Test extends App {
   def testNestedClass(name: String) = {
     val sym = cm.staticClass(name)
     println(sym)
-    val ctor = sym.typeSignature.declaration(TermName("<init>")).asMethod
+    val ctor = sym.typeSignature.declaration(nme.CONSTRUCTOR).asMethod
     val ctorMirror = cm.reflectClass(sym).reflectConstructor(ctor)
     val instance = ctorMirror()
     println(instance)

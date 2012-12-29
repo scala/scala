@@ -54,7 +54,7 @@ object Test extends App {
   println("it's important to print the list of AnyVal's members")
   println("if some of them change (possibly, adding and/or removing magic symbols), we must update this test")
   typeOf[AnyVal].declarations.toList.sortBy(key).foreach(sym => println(key(sym)))
-  test(typeOf[AnyVal], null, "<init>")
+  test(typeOf[AnyVal], null, nme.CONSTRUCTOR.toString)
   test(typeOf[AnyVal], 2, "getClass")
 
   println("============\nAnyRef")
