@@ -6,9 +6,9 @@
       ()
     };
     @new ann(bar = "5a") @new ann(bar = "5b") def f(x: Int @ann(bar = "6a") @ann(bar = "6b")) = {
-      @new ann(bar = "7a") @new ann(bar = "7b") val r = x.$plus(3): @ann(bar = "8a"): @ann(bar = "8b");
+      @new ann(bar = "7a") @new ann(bar = "7b") val r = x.+(3): @ann(bar = "8a"): @ann(bar = "8b");
       val s = (4: Int @ann(bar = "9a") @ann(bar = "9b"));
-      r.$plus(s)
+      r.+(s)
     }
   };
   ()

@@ -244,12 +244,12 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
-    if (m.isAccessor && n.endsWith("_$eq")) return
+    if (m.isAccessor && n.endsWith("_=")) return
     indent()
     printModifiers(m)
     if (m.isAccessor) {
       val indexOfSetter = m.parent.get.children.indexWhere(x => x.isInstanceOf[MethodSymbol] &&
-              x.asInstanceOf[MethodSymbol].name == n + "_$eq")
+              x.asInstanceOf[MethodSymbol].name == n + "_=")
       print(if (indexOfSetter > 0) "var " else "val ")
     } else {
       print("def ")
@@ -408,13 +408,10 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (params.isEmpty) ""
     else params.map(toString).mkString("[", ", ", "]")
 
-  val _syms = Map("\\$bar" -> "|", "\\$tilde" -> "~",
-    "\\$bang" -> "!", "\\$up" -> "^", "\\$plus" -> "+",
-    "\\$minus" -> "-", "\\$eq" -> "=", "\\$less" -> "<",
-    "\\$times" -> "*", "\\$div" -> "/", "\\$bslash" -> "\\\\",
-    "\\$greater" -> ">", "\\$qmark" -> "?", "\\$percent" -> "%",
-    "\\$amp" -> "&", "\\$colon" -> ":", "\\$u2192" -> "→",
-    "\\$hash" -> "#")
+  val _syms = Map(
+    "\\$dot" -> ".", "\\$comma" -> ",", "\\$colon" -> ":",
+    "\\$semicolon" -> ";", "\\$div" -> "/", "\\$bslash" -> "\\\\",
+    "\\$less" -> "<", "\\$greater" -> ">", "\\$u2192" -> "→")
   val pattern = Pattern.compile(_syms.keys.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
   val placeholderPattern = "_\\$(\\d)+"
 

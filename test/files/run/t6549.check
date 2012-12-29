@@ -4,7 +4,7 @@ Type :help for more information.
 scala> 
 
 scala> case class `X"`(var xxx: Any)
-defined class X$u0022
+defined class X$quot
 
 scala> val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
 m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), 's -> X"("))

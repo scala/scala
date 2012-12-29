@@ -5,7 +5,7 @@
       [15]()
     };
     [23:39]val name: [33:39]String;
-    [46:76]val msg = [56:76][56:72][56:71]"How are you, ".$plus([72:76]name)
+    [46:76]val msg = [56:76][56:72][56:71]"How are you, ".+([72:76]name)
   };
   [87:209]class C extends [94:209][151:159]Greeting {
     [119:139]val nameElse = _;

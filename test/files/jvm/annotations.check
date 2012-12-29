@@ -56,7 +56,7 @@ public Test4$Foo10(java.lang.String)
 private final java.lang.String Test4$Foo11.name
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=on param 3)
-public void Test4$Foo12.name_$eq(java.lang.String)
+public void Test4$Foo12.name_=(java.lang.String)
 
 0
 99

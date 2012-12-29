@@ -10,7 +10,7 @@ class Test {
   
   @deprecated("no longer!", "") class Inner {
     @deprecated("uncool", "") def f: Int = 1
-    @deprecated("this one as well!", "") var g = -1
+    @beans.BeanProperty @deprecated("this one as well!", "") var g = -1
   }
 }
 
