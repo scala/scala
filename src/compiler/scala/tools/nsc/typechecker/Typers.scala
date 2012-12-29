@@ -112,6 +112,10 @@ trait Typers extends Modes with Adaptations with Tags {
       }
     }
 
+    private def mkNamedArg(tree: Tree, name: Name): Tree = {
+      atPos(tree.pos)(new AssignOrNamedArg(Ident(name), tree))
+    }
+
     /** Find implicit arguments and pass them to given tree.
      */
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
@@ -123,7 +127,6 @@ trait Typers extends Modes with Adaptations with Tags {
         var paramFailed = false
 
         def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
-        def mkNamedArg(argTree: Tree, paramName: Name) = atPos(argTree.pos)(new AssignOrNamedArg(Ident(paramName), (argTree)))
         var mkArg: (Tree, Name) => Tree = mkPositionalArg
 
         // DEPMETTODO: instantiate type vars that depend on earlier implicit args (see adapt (4.1))
@@ -3369,7 +3372,10 @@ trait Typers extends Modes with Adaptations with Tags {
        *  floats and literals in particular) are not yet folded.
        */
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
-        val const: Constant = typed(constfold(tr), EXPRmode, pt) match {
+        // The typed tree may be relevantly different than the tree `tr`,
+        // e.g. it may have encountered an implicit conversion.
+        val ttree = typed(constfold(tr), EXPRmode, pt)
+        val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
             case ConstantType(c)  => c
@@ -3378,7 +3384,7 @@ trait Typers extends Modes with Adaptations with Tags {
         }
 
         if (const == null) {
-          reportAnnotationError(AnnotationNotAConstantError(tr)); None
+          reportAnnotationError(AnnotationNotAConstantError(ttree)); None
         } else if (const.value == null) {
           reportAnnotationError(AnnotationArgNullError(tr)); None
         } else
@@ -3428,38 +3434,35 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       // begin typedAnnotation
-      val (fun, argss) = {
-        def extract(fun: Tree, outerArgss: List[List[Tree]]):
-          (Tree, List[List[Tree]]) = fun match {
-            case Apply(f, args) =>
-              extract(f, args :: outerArgss)
-            case Select(New(tpt), nme.CONSTRUCTOR) =>
-              (fun, outerArgss)
-            case _ =>
-              reportAnnotationError(UnexpectedTreeAnnotation(fun))
-              (setError(fun), outerArgss)
-          }
-        extract(ann, List())
-      }
+      val treeInfo.Applied(fun0, targs, argss) = treeInfo.dissectApplied(ann)
+      val typedFun0 = typed(fun0, forFunMode(mode), WildcardType)
+      val typedFunPart = (
+        // If there are dummy type arguments in typeFun part, it suggests we
+        // must type the actual constructor call, not only the select. The value
+        // arguments are how the type arguments will be inferred.
+        if (targs.isEmpty && typedFun0.exists(t => isDummyAppliedType(t.tpe)))
+          logResult(s"Retyped $typedFun0 to find type args")(typed(argss.foldLeft(fun0)(Apply(_, _))))
+        else
+          typedFun0
+      )
+      val typedFun @ Select(New(annTpt), _) = treeInfo.dissectApplied(typedFunPart).core
+      val annType = annTpt.tpe
 
-      val res = if (fun.isErroneous) annotationError
+      val res = if (typedFun.isErroneous) annotationError
       else {
-        val typedFun @ Select(New(tpt), _) = typed(fun, forFunMode(mode), WildcardType)
-        val annType = tpt.tpe
-
         if (typedFun.isErroneous) annotationError
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
           val isJava = typedFun.symbol.owner.isJavaDefined
           if (!annType.typeSymbol.isNonBottomSubClass(annClass)) {
-            reportAnnotationError(AnnotationTypeMismatchError(tpt, annClass.tpe, annType))
+            reportAnnotationError(AnnotationTypeMismatchError(annTpt, annType, annType))
           } else if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           } else {
-            val args =
-              if (argss.head.length == 1 && !isNamed(argss.head.head))
-                List(new AssignOrNamedArg(Ident(nme.value), argss.head.head))
-              else argss.head
+            val args = argss match {
+              case (arg :: Nil) :: Nil if !isNamed(arg) => mkNamedArg(arg, nme.value) :: Nil
+              case args :: Nil                          => args
+            }
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
@@ -3501,7 +3504,7 @@ trait Typers extends Modes with Adaptations with Tags {
           val typedAnn = if (selfsym == NoSymbol) {
             // local dummy fixes SI-5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
-            localTyper.typed(ann, mode, annClass.tpe)
+            localTyper.typed(ann, mode, annType)
           }
           else {
             // Since a selfsym is supplied, the annotation should have an extra
@@ -3515,7 +3518,7 @@ trait Typers extends Modes with Adaptations with Tags {
             // sometimes does. The problem is that "self" ident's within
             // annot.constr will retain the old symbol from the previous typing.
             val func     = Function(funcparm :: Nil, ann.duplicate)
-            val funcType = appliedType(FunctionClass(1), selfsym.info, annClass.tpe_*)
+            val funcType = appliedType(FunctionClass(1), selfsym.info, annType)
             val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
 
             rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
