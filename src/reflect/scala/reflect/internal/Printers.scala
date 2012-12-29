@@ -672,7 +672,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     case nme.CONSTRUCTOR => "nme.CONSTRUCTOR"
     case nme.ROOTPKG => "nme.ROOTPKG"
     case _ =>
-      val prefix = if (name.isTermName) "newTermName(\"" else "newTypeName(\""
+      val prefix = if (name.isTermName) "TermName(\"" else "TypeName(\""
       prefix + name.toString + "\")"
   }
 

@@ -28,7 +28,7 @@ object Test extends App {
         val ctor = tpe.declaration(nme.CONSTRUCTOR).asMethod
         cm.reflectClass(ctor.owner.asClass).reflectConstructor(ctor)(args: _*)
       } else {
-        val meth = tpe.declaration(newTermName(method).encodedName.toTermName).asMethod
+        val meth = tpe.declaration(TermName(method).encodedName.toTermName).asMethod
         cm.reflect(receiver).reflectMethod(meth)(args: _*)
       }
     })
@@ -54,7 +54,7 @@ object Test extends App {
   println("it's important to print the list of AnyVal's members")
   println("if some of them change (possibly, adding and/or removing magic symbols), we must update this test")
   typeOf[AnyVal].declarations.toList.sortBy(key).foreach(sym => println(key(sym)))
-  test(typeOf[AnyVal], null, "<init>")
+  test(typeOf[AnyVal], null, nme.CONSTRUCTOR.toString)
   test(typeOf[AnyVal], 2, "getClass")
 
   println("============\nAnyRef")
