@@ -645,7 +645,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
 
     final def isMethodWithExtension =
-      isMethod && owner.isDerivedValueClass && !isParamAccessor && !isConstructor && !hasFlag(SUPERACCESSOR) && !isTermMacro
+      isMethod && owner.isDerivedValueClass && !isParamAccessor && !isConstructor && !hasFlag(SUPERACCESSOR) && !isMacro
 
     final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
@@ -2222,7 +2222,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
     private def symbolKind: SymbolKind = {
       var kind =
-        if (isTermMacro) ("macro method", "macro method", "MAC")
+        if (isTermMacro) ("term macro", "macro method", "MACM")
         else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
         else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
         else if (isPackage) ("package", "package", "PK")
