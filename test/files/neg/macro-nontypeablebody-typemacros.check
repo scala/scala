@@ -1,0 +1,7 @@
+Macros_Test_2.scala:2: error: value foo2 is not a member of object Impls
+  val macros = new { type Foo(x: Int) = macro Impls.foo2 }
+                                                    ^
+Macros_Test_2.scala:6: error: value foo2 is not a member of object Impls
+  type Foo(x: Int) = macro Impls.foo2
+                                 ^
+two errors found

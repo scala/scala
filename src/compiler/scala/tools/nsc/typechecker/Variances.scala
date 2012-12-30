@@ -32,7 +32,7 @@ trait Variances {
 
   /** Compute variance of type parameter `tparam` in type of symbol `sym`. */
   def varianceInSym(sym: Symbol)(tparam: Symbol): Int =
-    if (sym.isAliasType) cut(varianceInType(sym.info)(tparam))
+    if (sym.isAliasType && !sym.isMacroType) cut(varianceInType(sym.info)(tparam))
     else varianceInType(sym.info)(tparam)
 
   /** Compute variance of type parameter `tparam` in all types `tps`. */

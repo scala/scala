@@ -1,0 +1,47 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala>   import scala.reflect.macros.Context
+import scala.reflect.macros.Context
+
+scala> import language.experimental.macros
+import language.experimental.macros
+
+scala> 
+
+scala> def impl1(c: Context) = c.universe.Ident(c.universe.TypeName("Int"))
+impl1: (c: scala.reflect.macros.Context)c.universe.Ident
+
+scala> type Foo1 = macro impl1
+defined type macro Foo1
+
+scala> val x1: Foo1 = 1
+x1: Int = 1
+
+scala> 
+
+scala> def impl2(c: Context)() = c.universe.Ident(c.universe.TypeName("Int"))
+impl2: (c: scala.reflect.macros.Context)()c.universe.Ident
+
+scala> type Foo2() = macro impl2
+defined type macro Foo2()
+
+scala> val x2: Foo2() = 2
+x2: Int = 2
+
+scala> 
+
+scala> def impl3(c: Context)(x: c.Expr[Int])(y: c.Expr[Int]) = c.universe.Ident(c.universe.TypeName("Int"))
+impl3: (c: scala.reflect.macros.Context)(x: c.Expr[Int])(y: c.Expr[Int])c.universe.Ident
+
+scala> type Foo3(x: Int)(y: Int) = macro impl3
+defined type macro Foo3(x: Int)(y: Int)
+
+scala> val x3: Foo3(2)(3) = 3
+x3: Int = 3
+
+scala> 
+
+scala> 

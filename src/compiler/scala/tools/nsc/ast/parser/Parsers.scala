@@ -523,11 +523,14 @@ self =>
 
     def warning(msg: String) { warning(in.offset, msg) }
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit =
+      syntaxErrorOrIncomplete(in.offset, msg, skipIt)
+
+    def syntaxErrorOrIncomplete(offset: Int, msg: String, skipIt: Boolean) {
       if (in.token == EOF)
         incompleteInputError(msg)
       else
-        syntaxError(in.offset, msg, skipIt)
+        syntaxError(offset, msg, skipIt)
     }
 
     def expectedMsg(token: Int): String =
@@ -897,7 +900,11 @@ self =>
       }
       def simpleTypeRest(t: Tree): Tree = in.token match {
         case HASH     => simpleTypeRest(typeProjection(t))
-        case LBRACKET => simpleTypeRest(atPos(t.pos.startOrPoint, t.pos.point)(AppliedTypeTree(t, typeArgs())))
+        case LPAREN |
+             LBRACKET =>
+          val factory = if (in.token == LPAREN) (DependentTypeTree.apply _) else (AppliedTypeTree.apply _)
+          val args = if (in.token == LPAREN) argumentExprs() else typeArgs()
+          simpleTypeRest(atPos(t.pos.startOrPoint, t.pos.point)(factory(t, args)))
         case _        => t
       }
 
@@ -2069,8 +2076,8 @@ self =>
 
     def annotationExpr(): Tree = atPos(in.offset) {
       val t = exprSimpleType()
-      if (in.token == LPAREN) New(t, multipleArgumentExprs())
-      else New(t, Nil)
+      // see comments for `templateParents` for an explanation of this hack
+      treeInfo.repackDeptypeTreeAsNew(t)
     }
 
 /* -------- PARAMETERS ------------------------------------------- */
@@ -2585,7 +2592,7 @@ self =>
 
     /** {{{
      *  TypeDef ::= type Id [TypeParamClause] `=' Type
-     *            | FunSig `=' Expr
+     *            | type Id [TypeParamClause] FunSig [nl] `=' `macro' Expr
      *  TypeDcl ::= type Id [TypeParamClause] TypeBounds
      *  }}}
      */
@@ -2595,13 +2602,43 @@ self =>
       atPos(start, in.offset) {
         val name = identForType()
         // @M! a type alias as well as an abstract type may declare type parameters
-        val tparams = typeParamClauseOpt(name, null)
+        val contextBoundBuf = new ListBuffer[Tree]
+        val tparams = typeParamClauseOpt(name, contextBoundBuf)
+        def typeDefOrDcl(isDef: Boolean) = {
+          if (contextBoundBuf.nonEmpty) syntaxError(contextBoundBuf(0).pos, "only type macros, not regular types, can have context bounds", false)
+          if (isDef) TypeDef(mods, name, tparams, typ())
+          else TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
+        }
+        def typeMacro(onlyNeedToReadBody: Boolean) = {
+          val vparamss = if (onlyNeedToReadBody) Nil else paramClauses(name.toTermName, contextBoundBuf.toList, ofCaseClass = false)
+          def readRhs() = {
+            val offender = tparams find (_.mods hasFlag Flags.COVARIANT | Flags.CONTRAVARIANT)
+            offender foreach (tparam => syntaxError(tparam.pos, "type parameters of type macros cannot have variance annotations", false))
+            if (mods hasFlag Flags.ABSOVERRIDE) syntaxError(start, "type macros cannot be abstract")
+            val rhs = expr()
+            DefDef(mods | Flags.MACRO, nme.typeMacroName(name), tparams, vparamss, scalaDot(tpnme.Nothing), rhs)
+          }
+          if (onlyNeedToReadBody) readRhs()
+          else in.token match {
+            case EQUALS =>
+              in.nextTokenAllow(nme.MACROkw)
+              if (in.token == IDENTIFIER && in.name == nme.MACROkw) { in.nextToken(); readRhs() }
+              else { syntaxErrorOrIncomplete("`macro' expected", true); EmptyTree }
+            case _ =>
+              val offset = if (in.token == NEWLINE || in.token == NEWLINES) in.lastOffset else in.offset
+              syntaxErrorOrIncomplete(offset, "`=' expected", true)
+              EmptyTree
+          }
+        }
         in.token match {
           case EQUALS =>
-            in.nextToken()
-            TypeDef(mods, name, tparams, typ())
+            in.nextTokenAllow(nme.MACROkw)
+            if (in.token == IDENTIFIER && in.name == nme.MACROkw) { in.nextToken(); typeMacro(onlyNeedToReadBody = true) }
+            else typeDefOrDcl(isDef = true)
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-            TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
+            typeDefOrDcl(isDef = false)
+          case LPAREN =>
+            typeMacro(onlyNeedToReadBody = false)
           case _ =>
             syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
             EmptyTree
@@ -2710,8 +2747,17 @@ self =>
       def readAppliedParent() = {
         val start = in.offset
         val parent = startAnnotType()
-        val argss = if (in.token == LPAREN) multipleArgumentExprs() else Nil
-        parents += atPos(start)((parent /: argss)(Apply.apply))
+        // since the introduction of type macros, applications of types to values, such as:
+        //   `class C extends B(2)`
+        //   `@ann(2)(3) class C`
+        //   `new B(2)`
+        // are uniformly parsed as DependentTypeTrees
+        // this all generic and shiny, but incompatible with what we already have in the parser
+        // therefore here we to repack these new-style applications into vanilla Apply nodes
+        // most likely this can be solved by a parser flag, so that we emit old-school nodes when necessary
+        // instead of doing something wrong and trying to undo this something later on
+        // but I'm running out of time and leaving this as a TODO for later
+        parents += atPos(start)(treeInfo.repackDeptypeTreeAsApply(parent))
       }
       readAppliedParent()
       while (in.token == WITH) { in.nextToken(); readAppliedParent() }

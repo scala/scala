@@ -1,0 +1,7 @@
+Macros_Test_2.scala:8: error: String takes no type parameters, expected: one
+  val x: Foo[String](2) = new C
+             ^
+Macros_Test_2.scala:7: error: String takes no type parameters, expected: one
+  class D extends Foo[String](2)
+                      ^
+two errors found

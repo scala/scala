@@ -1,0 +1,7 @@
+Macros_Test_2.scala:8: error: macro type Foo(x: Int) does not take type parameters.
+  val x: Foo[String](2) = new C
+         ^
+Macros_Test_2.scala:7: error: macro type Foo(x: Int) does not take type parameters.
+  class D extends Foo[String](2)
+                  ^
+two errors found

@@ -124,6 +124,9 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   /** Is this abstract file a directory? */
   def isDirectory: Boolean
 
+  /** Does this abstract file correspond to something on-disk? */
+  def isVirtual: Boolean = false
+
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long
 

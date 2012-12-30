@@ -48,16 +48,21 @@ trait MemberHandlers {
     }
   }
 
+  private def isTermMacro(ddef: DefDef): Boolean = ddef.mods.isMacro && !isTypeMacro(ddef)
+  private def isTypeMacro(ddef: DefDef): Boolean = ddef.mods.isMacro && nme.isTypeMacroName(ddef.name)
+
   def chooseHandler(member: Tree): MemberHandler = member match {
-    case member: DefDef        => new DefHandler(member)
-    case member: ValDef        => new ValHandler(member)
-    case member: ModuleDef     => new ModuleHandler(member)
-    case member: ClassDef      => new ClassHandler(member)
-    case member: TypeDef       => new TypeAliasHandler(member)
-    case member: Assign        => new AssignHandler(member)
-    case member: Import        => new ImportHandler(member)
-    case DocDef(_, documented) => chooseHandler(documented)
-    case member                => new GenericHandler(member)
+    case member: DefDef if isTermMacro(member) => new TermMacroHandler(member)
+    case member: DefDef if isTypeMacro(member) => new TypeMacroHandler(member)
+    case member: DefDef                        => new DefHandler(member)
+    case member: ValDef                        => new ValHandler(member)
+    case member: ModuleDef                     => new ModuleHandler(member)
+    case member: ClassDef                      => new ClassHandler(member)
+    case member: TypeDef                       => new TypeAliasHandler(member)
+    case member: Assign                        => new AssignHandler(member)
+    case member: Import                        => new ImportHandler(member)
+    case DocDef(_, documented)                 => chooseHandler(documented)
+    case member                                => new GenericHandler(member)
   }
 
   sealed abstract class MemberDefHandler(override val member: MemberDef) extends MemberHandler(member) {
@@ -122,12 +127,41 @@ trait MemberHandlers {
   }
 
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
-    private def vparamss = member.vparamss
-    private def isMacro = member.symbol hasFlag MACRO
-    // true if not a macro and 0-arity
-    override def definesValue = !isMacro && flattensToEmpty(vparamss)
+    override def definesValue = flattensToEmpty(member.vparamss) // true if 0-arity
     override def resultExtractionCode(req: Request) =
       if (mods.isPublic) codegenln(name, ": ", req.typeOf(name)) else ""
+  }
+
+  abstract class MacroHandler(member: DefDef) extends MemberDefHandler(member) {
+    override def definesValue = false
+    override def definesTerm: Option[TermName] = Some(name.toTermName)
+    override def definesType: Option[TypeName] = None
+    override def resultExtractionCode(req: Request) = if (mods.isPublic) codegenln(notification(req)) else ""
+    def notification(req: Request): String
+  }
+
+  class TermMacroHandler(member: DefDef) extends MacroHandler(member) {
+    def notification(req: Request) = s"defined term macro $name: ${req.typeOf(name)}"
+  }
+
+  class TypeMacroHandler(member: DefDef) extends MacroHandler(member) {
+    private def typeName = nme.stripTypeMacroSuffix(name).toTypeName
+    override def definesType: Option[TypeName] = Some(typeName)
+    private def macroType: Symbol = {
+      if ((symbol eq NoSymbol) || (symbol.owner eq NoSymbol)) NoSymbol
+      else {
+        val macroType = symbol.owner.info.declaration(typeName)
+        if ((macroType ne NoSymbol) && macroType.isMacroType) macroType else NoSymbol
+      }
+    }
+    override def definedSymbols = List(symbol, macroType) filter (_ ne NoSymbol)
+    override def path = intp.originalPath(macroType)
+    def notification(req: Request) = {
+      val signature = req.typeOf(name)
+      assert(signature.endsWith("Nothing"), signature)
+      val signature1 = signature.stripSuffix("Nothing").trim.stripSuffix(":")
+      s"defined type macro $typeName$signature1"
+    }
   }
 
   class AssignHandler(member: Assign) extends MemberHandler(member) {

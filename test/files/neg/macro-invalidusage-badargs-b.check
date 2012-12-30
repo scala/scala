@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: macros cannot be partially applied
+  val s: String = foo
+                  ^
+one error found

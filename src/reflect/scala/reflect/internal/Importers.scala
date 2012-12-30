@@ -417,6 +417,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
           new CompoundTypeTree(importTemplate(templ))
         case from.AppliedTypeTree(tpt, args) =>
           new AppliedTypeTree(importTree(tpt), args map importTree)
+        case from.DependentTypeTree(tpt, args) =>
+          new DependentTypeTree(importTree(tpt), args map importTree)
         case from.TypeBoundsTree(lo, hi) =>
           new TypeBoundsTree(importTree(lo), importTree(hi))
         case from.ExistentialTypeTree(tpt, whereClauses) =>
