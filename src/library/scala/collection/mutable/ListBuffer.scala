@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
@@ -178,8 +176,11 @@ final class ListBuffer[A]
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type =
-    if (xs.asInstanceOf[AnyRef] eq this) ++= (this take size) else super.++=(xs)
+  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
+    case x: AnyRef if x eq this      => this ++= (this take size)
+    case _                           => super.++=(xs)
+
+  }
 
   override def ++=:(xs: TraversableOnce[A]): this.type =
     if (xs.asInstanceOf[AnyRef] eq this) ++=: (this take size) else super.++=:(xs)

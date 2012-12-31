@@ -46,8 +46,13 @@ trait Members {
 
     def touched = _touched
     def touched_=(b: Boolean): Unit = {
-      if (b)
-        blocks foreach (_.touched = true)
+      @annotation.tailrec def loop(xs: List[BasicBlock]) {
+        xs match {
+          case Nil     =>
+          case x :: xs => x.touched = true ; loop(xs)
+        }
+      }
+      if (b) loop(blocks.toList)
 
       _touched = b
     }

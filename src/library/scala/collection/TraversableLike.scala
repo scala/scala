@@ -252,18 +252,21 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
+  private def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
+    val b = newBuilder
+    for (x <- this)
+      if (p(x) != isFlipped) b += x
+
+    b.result
+  }
+
   /** Selects all elements of this $coll which satisfy a predicate.
    *
    *  @param p     the predicate used to test elements.
    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
-  def filter(p: A => Boolean): Repr = {
-    val b = newBuilder
-    for (x <- this)
-      if (p(x)) b += x
-    b.result
-  }
+  def filter(p: A => Boolean): Repr = filterImpl(p, isFlipped = false)
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
    *
@@ -271,7 +274,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
-  def filterNot(p: A => Boolean): Repr = filter(!p(_))
+  def filterNot(p: A => Boolean): Repr = filterImpl(p, isFlipped = true)
 
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)

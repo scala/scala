@@ -928,8 +928,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def withPosition(flag: Long, position: Position) =
       copy() setPositions positions + (flag -> position)
 
-    override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
-      Modifiers(flags, privateWithin, f(annotations)) setPositions positions
+    override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers = {
+      val newAnns = f(annotations)
+      if (annotations == newAnns) this
+      else Modifiers(flags, privateWithin, newAnns) setPositions positions
+    }
 
     override def toString = "Modifiers(%s, %s, %s)".format(flagString, annotations mkString ", ", positions)
   }
