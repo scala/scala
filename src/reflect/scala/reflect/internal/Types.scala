@@ -4102,8 +4102,13 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Called by mapOver to determine whether the original symbols can
      *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
      */
-    protected def noChangeToSymbols(origSyms: List[Symbol]) =
-      origSyms forall (sym => sym.info eq this(sym.info))
+    protected def noChangeToSymbols(origSyms: List[Symbol]): Boolean = {
+      @tailrec def loop(syms: List[Symbol]): Boolean = syms match {
+        case Nil     => true
+        case x :: xs => (x.info eq this(x.info)) && loop(xs)
+      }
+      loop(origSyms)
+    }
 
     /** Map this function over given scope */
     def mapOver(scope: Scope): Scope = {
@@ -5038,41 +5043,9 @@ trait Types extends api.Types { self: SymbolTable =>
     else if (bd <= 7) td max (bd - 2)
     else (td - 1) max (bd - 3)
 
-  /** The maximum depth of type `tp` */
-  def typeDepth(tp: Type): Int = tp match {
-    case TypeRef(pre, sym, args) =>
-      typeDepth(pre) max typeDepth(args) + 1
-    case RefinedType(parents, decls) =>
-      typeDepth(parents) max typeDepth(decls.toList.map(_.info)) + 1
-    case TypeBounds(lo, hi) =>
-      typeDepth(lo) max typeDepth(hi)
-    case MethodType(paramtypes, result) =>
-      typeDepth(result)
-    case NullaryMethodType(result) =>
-      typeDepth(result)
-    case PolyType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
-    case ExistentialType(tparams, result) =>
-      typeDepth(result) max typeDepth(tparams map (_.info)) + 1
-    case _ =>
-      1
-  }
-
-  private def maxDepth(tps: List[Type], by: Type => Int): Int = {
-    //OPT replaced with tailrecursive function to save on #closures
-    // was:
-    //    var d = 0
-    //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
-    //    d
-    def loop(tps: List[Type], acc: Int): Int = tps match {
-      case tp :: rest => loop(rest, acc max by(tp))
-      case _ => acc
-    }
-    loop(tps, 0)
-  }
-
-  private def typeDepth(tps: List[Type]): Int = maxDepth(tps, typeDepth)
-  private def baseTypeSeqDepth(tps: List[Type]): Int = maxDepth(tps, _.baseTypeSeqDepth)
+  private def symTypeDepth(syms: List[Symbol]): Int  = typeDepth(syms map (_.info))
+  private def typeDepth(tps: List[Type]): Int        = maxDepth(tps)
+  private def baseTypeSeqDepth(tps: List[Type]): Int = maxBaseTypeSeqDepth(tps)
 
   /** Is intersection of given types populated? That is,
    *  for all types tp1, tp2 in intersection
@@ -7019,6 +6992,45 @@ trait Types extends api.Types { self: SymbolTable =>
   private[scala] val typeIsNothing = (tp: Type) => tp.typeSymbolDirect eq NothingClass
   private[scala] val typeIsAny = (tp: Type) => tp.typeSymbolDirect eq AnyClass
   private[scala] val typeIsHigherKinded = (tp: Type) => tp.isHigherKinded
+
+  /** The maximum depth of type `tp` */
+  def typeDepth(tp: Type): Int = tp match {
+    case TypeRef(pre, sym, args) =>
+      math.max(typeDepth(pre), typeDepth(args) + 1)
+    case RefinedType(parents, decls) =>
+      math.max(typeDepth(parents), symTypeDepth(decls.toList) + 1)
+    case TypeBounds(lo, hi) =>
+      math.max(typeDepth(lo), typeDepth(hi))
+    case MethodType(paramtypes, result) =>
+      typeDepth(result)
+    case NullaryMethodType(result) =>
+      typeDepth(result)
+    case PolyType(tparams, result) =>
+      math.max(typeDepth(result), symTypeDepth(tparams) + 1)
+    case ExistentialType(tparams, result) =>
+      math.max(typeDepth(result), symTypeDepth(tparams) + 1)
+    case _ =>
+      1
+  }
+  //OPT replaced with tailrecursive function to save on #closures
+  // was:
+  //    var d = 0
+  //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
+  //    d
+  private[scala] def maxDepth(tps: List[Type]): Int = {
+    @tailrec def loop(tps: List[Type], acc: Int): Int = tps match {
+      case tp :: rest => loop(rest, math.max(acc, typeDepth(tp)))
+      case _          => acc
+    }
+    loop(tps, 0)
+  }
+  private[scala] def maxBaseTypeSeqDepth(tps: List[Type]): Int = {
+    @tailrec def loop(tps: List[Type], acc: Int): Int = tps match {
+      case tp :: rest => loop(rest, math.max(acc, tp.baseTypeSeqDepth))
+      case _          => acc
+    }
+    loop(tps, 0)
+  }
 
   @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
     case tp :: rest => (tp contains sym) || typesContain(rest, sym)

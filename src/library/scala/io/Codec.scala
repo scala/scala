@@ -43,42 +43,37 @@ class Codec(val charSet: Charset) {
   override def toString = name
 
   // these methods can be chained to configure the variables above
-  def onMalformedInput(newAction: Action): this.type = { _onMalformedInput = newAction ; this }
-  def onUnmappableCharacter(newAction: Action): this.type = { _onUnmappableCharacter = newAction ; this }
-  def decodingReplaceWith(newReplacement: String): this.type = { _decodingReplacement = newReplacement ; this }
+  def onMalformedInput(newAction: Action): this.type              = { _onMalformedInput = newAction ; this }
+  def onUnmappableCharacter(newAction: Action): this.type         = { _onUnmappableCharacter = newAction ; this }
+  def decodingReplaceWith(newReplacement: String): this.type      = { _decodingReplacement = newReplacement ; this }
   def encodingReplaceWith(newReplacement: Array[Byte]): this.type = { _encodingReplacement = newReplacement ; this }
-  def onCodingException(handler: Handler): this.type = { _onCodingException = handler ; this }
+  def onCodingException(handler: Handler): this.type              = { _onCodingException = handler ; this }
 
   def name = charSet.name
-  def encoder =
-    applyFunctions[CharsetEncoder](charSet.newEncoder(),
-      (_ onMalformedInput _onMalformedInput, _onMalformedInput != null),
-      (_ onUnmappableCharacter _onUnmappableCharacter, _onUnmappableCharacter != null),
-      (_ replaceWith _encodingReplacement, _encodingReplacement != null)
-    )
-
-  def decoder =
-    applyFunctions[CharsetDecoder](charSet.newDecoder(),
-      (_ onMalformedInput _onMalformedInput, _onMalformedInput != null),
-      (_ onUnmappableCharacter _onUnmappableCharacter, _onUnmappableCharacter != null),
-      (_ replaceWith _decodingReplacement, _decodingReplacement != null)
-    )
+  def encoder: CharsetEncoder = {
+    val enc = charSet.newEncoder()
+    if (_onMalformedInput ne null) enc onMalformedInput _onMalformedInput
+    if (_onUnmappableCharacter ne null) enc onUnmappableCharacter _onUnmappableCharacter
+    if (_encodingReplacement ne null) enc replaceWith _encodingReplacement
+    enc
+  }
+  def decoder: CharsetDecoder = {
+    val dec = charSet.newDecoder()
+    if (_onMalformedInput ne null) dec onMalformedInput _onMalformedInput
+    if (_onUnmappableCharacter ne null) dec onUnmappableCharacter _onUnmappableCharacter
+    if (_decodingReplacement ne null) dec replaceWith _decodingReplacement
+    dec
+  }
 
   def wrap(body: => Int): Int =
     try body catch { case e: CharacterCodingException => _onCodingException(e) }
-
-  // call a series of side effecting methods on an object, finally returning the object
-  private def applyFunctions[T](x: T, fs: Configure[T]*) =
-    fs.foldLeft(x)((x, pair) => pair match {
-      case (f, cond) => if (cond) f(x) else x
-    })
 }
 
 trait LowPriorityCodecImplicits {
   self: Codec.type =>
 
   /** The Codec of Last Resort. */
-  implicit def fallbackSystemCodec: Codec = defaultCharsetCodec
+  implicit lazy val fallbackSystemCodec: Codec = defaultCharsetCodec
 }
 
 object Codec extends LowPriorityCodecImplicits {
@@ -90,9 +85,9 @@ object Codec extends LowPriorityCodecImplicits {
    *  the fact that you can influence anything at all via -Dfile.encoding
    *  as an accident, with any anomalies considered "not a bug".
    */
-  def defaultCharsetCodec                   = apply(Charset.defaultCharset)
-  def fileEncodingCodec                     = apply(scala.util.Properties.encodingString)
-  def default                               = defaultCharsetCodec
+  def defaultCharsetCodec = apply(Charset.defaultCharset)
+  def fileEncodingCodec   = apply(scala.util.Properties.encodingString)
+  def default             = defaultCharsetCodec
 
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)
   def apply(charSet: Charset): Codec        = new Codec(charSet)
@@ -130,7 +125,7 @@ object Codec extends LowPriorityCodecImplicits {
     bytes
   }
 
-  implicit def string2codec(s: String) = apply(s)
-  implicit def charset2codec(c: Charset) = apply(c)
-  implicit def decoder2codec(cd: CharsetDecoder) = apply(cd)
+  implicit def string2codec(s: String): Codec           = apply(s)
+  implicit def charset2codec(c: Charset): Codec         = apply(c)
+  implicit def decoder2codec(cd: CharsetDecoder): Codec = apply(cd)
 }

@@ -10,6 +10,7 @@ import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
 import scala.language.postfixOps
 import scala.language.existentials
+import scala.annotation.tailrec
 
 /** Specialize code on types.
  *
@@ -403,11 +404,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                    => false
   })
   def specializedTypeVars(tpes: List[Type]): immutable.Set[Symbol] = {
-    if (tpes.isEmpty) immutable.Set.empty else {
-      val buf = Set.newBuilder[Symbol]
-      tpes foreach (tp => buf ++= specializedTypeVars(tp))
-      buf.result
+    @tailrec def loop(result: immutable.Set[Symbol], xs: List[Type]): immutable.Set[Symbol] = {
+      if (xs.isEmpty) result
+      else loop(result ++ specializedTypeVars(xs.head), xs.tail)
     }
+    loop(immutable.Set.empty, tpes)
   }
   def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = (
     if (definitions.neverHasTypeParameters(sym)) immutable.Set.empty
