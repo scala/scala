@@ -43,7 +43,7 @@ Export-Package:
  scala.reflect.internal.pickling,
  scala.reflect.internal.settings,
  scala.reflect.internal.util,
- scala.reflect.makro,
+ scala.reflect.macros,
  scala.reflect.runtime,
  scala.reflect.internal.transform,
  scala.reflect.api,
