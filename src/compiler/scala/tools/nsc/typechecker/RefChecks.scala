@@ -38,7 +38,7 @@ import scala.language.postfixOps
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform with scala.reflect.internal.transform.RefChecks with Variances {
+abstract class RefChecks extends InfoTransform with scala.reflect.internal.transform.RefChecks {
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -844,7 +844,16 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   // Variance Checking --------------------------------------------------------
 
-    val varianceValidator = new VarianceValidator
+    object varianceValidator extends VarianceValidator {
+      private def tpString(tp: Type) = tp match {
+        case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
+        case _                                => "type "+tp
+      }
+      override def issueVarianceError(base: Symbol, sym: Symbol, required: Variance) {
+        currentRun.currentUnit.error(base.pos,
+          s"${sym.variance} $sym occurs in $required position in ${tpString(base.info)} of $base")
+      }
+    }
 
 // Forward reference checking ---------------------------------------------------
 

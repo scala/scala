@@ -3,21 +3,24 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
-package typechecker
+package scala.reflect
+package internal
 
-import scala.reflect.internal.Variance, scala.reflect.internal.Variance._
+import Variance._
 import scala.collection.{ mutable, immutable }
 
 /** See comments at scala.reflect.internal.Variance.
  */
 trait Variances {
-  val global: Global
-  import global._
-  import definitions.uncheckedVarianceClass
+  self: SymbolTable =>
 
+  /** Used in Refchecks.
+   *  TODO - eliminate duplication with varianceInType
+   */
   class VarianceValidator extends Traverser {
     val escapedPrivateLocals = mutable.HashSet[Symbol]()
+
+    protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = ()
 
     /** Validate variance of info of symbol `base` */
     private def validateVariance(base: Symbol) {
@@ -82,18 +85,10 @@ trait Variances {
             validateVariance(tp.normalize, variance)
           else if (!sym.variance.isInvariant) {
             val v = relativeVariance(sym)
+            val requiredVariance = v * variance
 
-            if (!v.isBivariant && sym.variance != v * variance) {
-              //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
-              def tpString(tp: Type) = tp match {
-                case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
-                case _ => "type "+tp
-              }
-              currentRun.currentUnit.error(base.pos,
-                         sym.variance + " " + sym +
-                         " occurs in " + (v * variance) +
-                         " position in " + tpString(base.info) + " of " + base);
-            }
+            if (!v.isBivariant && sym.variance != requiredVariance)
+              issueVarianceError(base, sym, requiredVariance)
           }
           validateVariance(pre, variance)
           // @M for higher-kinded typeref, args.isEmpty
@@ -126,7 +121,7 @@ trait Variances {
           validateVariances(tparams map (_.info), variance)
           validateVariance(result, variance)
         case AnnotatedType(annots, tp, selfsym) =>
-          if (!annots.exists(_ matches uncheckedVarianceClass))
+          if (!annots.exists(_ matches definitions.uncheckedVarianceClass))
             validateVariance(tp, variance)
       }
 
