@@ -382,6 +382,8 @@ object Float extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxToFloat`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+   *
    *  @param  x   the Float to be boxed
    *  @return     a java.lang.Float offering `x` as its underlying value.
    */
@@ -390,6 +392,8 @@ object Float extends AnyValCompanion {
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Float.
+   *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxToFloat`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
    *
    *  @param  x   the java.lang.Float to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Float
