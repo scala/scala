@@ -388,6 +388,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
               } finally {
                 popMacroContext()
               }
+            case Delay(delayed) =>
+              typer.instantiate(delayed, EXPRmode, WildcardType)
             case Fallback(fallback) =>
               typer.typed1(fallback, EXPRmode, WildcardType)
             case Other(result) =>
@@ -652,9 +654,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
   private sealed abstract class MacroExpansionResult
   private case class Success(expanded: Tree) extends MacroExpansionResult
+  private case class Delay(delayed: Tree) extends MacroExpansionResult
   private case class Fallback(fallback: Tree) extends MacroExpansionResult { currentRun.seenMacroExpansionsFallingBack = true }
   private case class Other(result: Tree) extends MacroExpansionResult
-  private def Delay(expanded: Tree) = Other(expanded)
   private def Skip(expanded: Tree) = Other(expanded)
   private def Cancel(expandee: Tree) = Other(expandee)
   private def Failure(expandee: Tree) = Other(expandee)
@@ -706,6 +708,54 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           } finally {
             popMacroContext()
           }
+        case Delay(delayed) =>
+          // =========== THE SITUATION ===========
+          //
+          // If we've been delayed (i.e. bailed out of the expansion because of undetermined type params present in the expandee),
+          // then there are two possible situations we're in:
+          //
+          // 1) We're in POLYmode, when the typer tests the waters wrt type inference
+          // (e.g. as in typedArgToPoly in doTypedApply).
+          //
+          // 2) We're out of POLYmode, which means that the typer is out of tricks to infer our type
+          // (e.g. if we're an argument to a function call, then this means that no previous argument lists
+          // can determine our type variables for us).
+          //
+          // Situation #1 is okay for us, since there's no pressure. In POLYmode we're just verifying that
+          // there's nothing outrageously wrong with our undetermined type params (from what I understand!).
+          //
+          // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
+          // the undetermined type params. Therefore we need to do something ourselves or otherwise this
+          // expandee will forever remaing not expanded (see SI-5692).
+          //
+          // A traditional way out of this conundrum is to call `instantiate` and let the inferencer
+          // try to find the way out. It works for simple cases, but sometimes, if the inferencer lacks
+          // information, it will be forced to approximate.
+          //
+          // =========== THE PROBLEM ===========
+          //
+          // Consider the following example (thanks, Miles!):
+          //
+          //   // Iso represents an isomorphism between two datatypes:
+          //   // 1) An arbitrary one (e.g. a random case class)
+          //   // 2) A uniform representation for all datatypes (e.g. an HList)
+          //   trait Iso[T, U] {
+          //     def to(t : T) : U
+          //     def from(u : U) : T
+          //   }
+          //   implicit def materializeIso[T, U]: Iso[T, U] = macro ???
+          //
+          //   case class Foo(i: Int, s: String, b: Boolean)
+          //   def foo[C, L](c: C)(implicit iso: Iso[C, L]): L = iso.to(c)
+          //   foo(Foo(23, "foo", true))
+          //
+          // In the snippet above, even though we know that there's a fundep going from T to U
+          // (in a sense that a datatype's uniform representation is unambiguously determined by the datatype,
+          // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
+          // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
+          val shouldInstantiate = typer.context.undetparams.nonEmpty && !inPolyMode(mode)
+          if (shouldInstantiate) typer.instantiatePossiblyExpectingUnit(delayed, mode, pt)
+          else delayed
         case Fallback(fallback) =>
           typer.context.withImplicitsEnabled(typer.typed(fallback, EXPRmode, pt))
         case Other(result) =>
