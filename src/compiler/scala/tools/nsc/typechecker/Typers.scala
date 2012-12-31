@@ -1061,6 +1061,7 @@ trait Typers extends Modes with Adaptations with Tags {
           instantiateToMethodType(mt)
 
         case _ =>
+        def vanillaAdapt(tree: Tree) = {
           def shouldInsertApply(tree: Tree) = inAllModes(mode, EXPRmode | FUNmode) && (tree.tpe match {
             case _: MethodType | _: OverloadedType | _: PolyType => false
             case _                                               => applyPossible
@@ -1076,8 +1077,6 @@ trait Typers extends Modes with Adaptations with Tags {
           }
           if (tree.isType)
             adaptType()
-          else if (inExprModeButNot(mode, FUNmode) && treeInfo.isMacroApplication(tree))
-            macroExpandApply(this, tree, mode, pt)
           else if (inAllModes(mode, PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (shouldInsertApply(tree))
@@ -1206,6 +1205,9 @@ trait Typers extends Modes with Adaptations with Tags {
             }
             fallBack
           }
+        }
+        val tree1 = if (inExprModeButNot(mode, FUNmode) && treeInfo.isMacroApplication(tree)) macroExpandApply(this, tree, mode, pt) else tree
+        if (tree == tree1) vanillaAdapt(tree1) else tree1
       }
     }
 
