@@ -1149,12 +1149,9 @@ trait Typers extends Modes with Adaptations with Tags {
             adaptConstrPattern()
           else if (shouldInsertApply(tree))
             insertApply()
-          else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
+          else if (context.undetparams.nonEmpty && !inPolyMode(mode)) { // (9)
             assert(!inHKMode(mode), modeString(mode)) //@M
-            if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
-              instantiateExpectingUnit(tree, mode)
-            else
-              instantiate(tree, mode, pt)
+            instantiatePossiblyExpectingUnit(tree, mode, pt)
           } else if (tree.tpe <:< pt) {
             tree
           } else {
@@ -1300,6 +1297,13 @@ trait Typers extends Modes with Adaptations with Tags {
           val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
+    }
+
+    def instantiatePossiblyExpectingUnit(tree: Tree, mode: Int, pt: Type): Tree = {
+      if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
+        instantiateExpectingUnit(tree, mode)
+      else
+        instantiate(tree, mode, pt)
     }
 
     private def isAdaptableWithView(qual: Tree) = {
