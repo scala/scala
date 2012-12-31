@@ -938,7 +938,7 @@ trait Typers extends Modes with Adaptations with Tags {
           val unapply = unapplyMember(extractor.tpe)
           val clazz = unapplyParameterType(unapply)
 
-          if (unapply.isCase && clazz.isCase && !(clazz.ancestors exists (_.isCase))) {
+          if (unapply.isCase && clazz.isCase) {
             // convert synthetic unapply of case class to case class constructor
             val prefix = tree.tpe.prefix
             val tree1 = TypeTree(clazz.primaryConstructor.tpe.asSeenFrom(prefix, clazz.owner))
@@ -947,8 +947,9 @@ trait Typers extends Modes with Adaptations with Tags {
             val skolems = new mutable.ListBuffer[TypeSymbol]
             object variantToSkolem extends VariantTypeMap {
               def apply(tp: Type) = mapOver(tp) match {
-                case TypeRef(NoPrefix, tpSym, Nil) if variance != 0 && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
-                  val bounds = if (variance == 1) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
+                // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see SI-5189
+                case TypeRef(NoPrefix, tpSym, Nil) if !variance.isInvariant && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
+                  val bounds = if (variance.isPositive) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
                   // origin must be the type param so we can deskolemize
                   val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
                   // println("mapping "+ tpSym +" to "+ skolem + " : "+ bounds +" -- pt= "+ pt +" in "+ context.owner +" at "+ context.tree )

@@ -12,6 +12,7 @@ import util.{ Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -165,10 +166,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def debugFlagString: String           = flagString(AllFlags)
 
     /** String representation of symbol's variance */
-    def varianceString: String =
-      if (variance == 1) "+"
-      else if (variance == -1) "-"
-      else ""
+    def varianceString: String = variance.symbolicString
 
     override def flagMask =
       if (settings.debug.value && !isAbstractType) AllFlags
@@ -890,11 +888,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       return true
     }
 
-    /** The variance of this symbol as an integer */
-    final def variance: Int =
-      if (isCovariant) 1
-      else if (isContravariant) -1
-      else 0
+    /** The variance of this symbol. */
+    final def variance: Variance =
+      if (isCovariant) Covariant
+      else if (isContravariant) Contravariant
+      else Invariant
 
     /** The sequence number of this parameter symbol among all type
      *  and value parameters of symbol's owner. -1 if symbol does not
@@ -3288,7 +3286,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
 
   private[scala] final val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
-  private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance == 0
+  private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance.isInvariant
 
   @tailrec private[scala] final
   def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {

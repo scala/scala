@@ -198,7 +198,7 @@ trait Infer extends Checkable {
    *  @throws NoInstance
    */
   def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
-                  variances: List[Int], upper: Boolean, depth: Int): List[Type] = {
+                  variances: List[Variance], upper: Boolean, depth: Int): List[Type] = {
 
     if (tvars.nonEmpty)
       printInference("[solve types] solving for " + tparams.map(_.name).mkString(", ") + " in " + tvars.mkString(", "))
@@ -488,7 +488,7 @@ trait Infer extends Checkable {
                       pt: Type): List[Type] = {
       /** Map type variable to its instance, or, if `variance` is covariant/contravariant,
        *  to its upper/lower bound */
-      def instantiateToBound(tvar: TypeVar, variance: Int): Type = try {
+      def instantiateToBound(tvar: TypeVar, variance: Variance): Type = {
         lazy val hiBounds = tvar.constr.hiBounds
         lazy val loBounds = tvar.constr.loBounds
         lazy val upper = glb(hiBounds)
@@ -501,23 +501,21 @@ trait Infer extends Checkable {
         //Console.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
         if (tvar.constr.inst != NoType)
           instantiate(tvar.constr.inst)
-        else if ((variance & COVARIANT) != 0 && hiBounds.nonEmpty)
-          setInst(upper)
-        else if ((variance & CONTRAVARIANT) != 0 && loBounds.nonEmpty)
+        else if (loBounds.nonEmpty && variance.isContravariant)
           setInst(lower)
-        else if (hiBounds.nonEmpty && loBounds.nonEmpty && upper <:< lower)
+        else if (hiBounds.nonEmpty && (variance.isPositive || loBounds.nonEmpty && upper <:< lower))
           setInst(upper)
         else
           WildcardType
-      } catch {
-        case ex: NoInstance => WildcardType
       }
       val tvars = tparams map freshVar
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         map2(tparams, tvars)((tparam, tvar) =>
-          instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
+          try instantiateToBound(tvar, varianceInTypes(formals)(tparam))
+          catch { case ex: NoInstance => WildcardType }
+        )
       else
-        tvars map (tvar => WildcardType)
+        tvars map (_ => WildcardType)
     }
 
     /** [Martin] Can someone comment this please? I have no idea what it's for
@@ -571,8 +569,8 @@ trait Infer extends Checkable {
 
       foreach3(tparams, tvars, targs) { (tparam, tvar, targ) =>
         val retract = (
-              targ.typeSymbol == NothingClass                                         // only retract Nothings
-          && (restpe.isWildcard || (varianceInType(restpe)(tparam) & COVARIANT) == 0) // don't retract covariant occurrences
+              targ.typeSymbol == NothingClass                                   // only retract Nothings
+          && (restpe.isWildcard || !varianceInType(restpe)(tparam).isPositive)  // don't retract covariant occurrences
         )
 
         buf += ((tparam,
@@ -1316,7 +1314,7 @@ trait Infer extends Checkable {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
       // So we should come back to this and investigate.
-      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (x => COVARIANT), false)
+      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), false)
     }
 
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params (see #3692, where the type param T's bounds were set to >: T <: T, so that parts looped)

@@ -508,4 +508,4 @@ class Flags extends ModifierFlags {
   final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 }
 
-object Flags extends Flags { }
+object Flags extends Flags

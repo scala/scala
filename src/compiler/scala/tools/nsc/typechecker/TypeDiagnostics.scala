@@ -169,11 +169,6 @@ trait TypeDiagnostics {
     case xs   => " where " + (disambiguate(xs map (_.existentialToString)) mkString ", ")
   }
 
-  def varianceWord(sym: Symbol): String =
-    if (sym.variance == 1) "covariant"
-    else if (sym.variance == -1) "contravariant"
-    else "invariant"
-
   def explainAlias(tp: Type) = {
     // Don't automatically normalize standard aliases; they still will be
     // expanded if necessary to disambiguate simple identifiers.
@@ -223,7 +218,7 @@ trait TypeDiagnostics {
                 )
                 val explainDef = {
                   val prepend = if (isJava) "Java-defined " else ""
-                  "%s%s is %s in %s.".format(prepend, reqsym, varianceWord(param), param)
+                  "%s%s is %s in %s.".format(prepend, reqsym, param.variance, param)
                 }
                 // Don't suggest they change the class declaration if it's somewhere
                 // under scala.* or defined in a java class, because attempting either
@@ -243,7 +238,7 @@ trait TypeDiagnostics {
                 || ((arg <:< reqArg) && param.isCovariant)
                 || ((reqArg <:< arg) && param.isContravariant)
               )
-              val invariant = param.variance == 0
+              val invariant = param.variance.isInvariant
 
               if (conforms)                             Some("")
               else if ((arg <:< reqArg) && invariant)   mkMsg(true)   // covariant relationship

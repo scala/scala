@@ -11,6 +11,7 @@ import scala.collection.{ mutable, immutable }
 import transform.InfoTransform
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
+import scala.reflect.internal.Variance._
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -844,10 +845,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   // Variance Checking --------------------------------------------------------
 
-    private val NoVariance = 0
-    private val CoVariance = 1
-    private val AnyVariance = 2
-
     private val escapedPrivateLocals = new mutable.HashSet[Symbol]
 
     val varianceValidator = new Traverser {
@@ -858,41 +855,36 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // need to be checked.
         var inRefinement = false
 
-        def varianceString(variance: Int): String =
-          if (variance == 1) "covariant"
-          else if (variance == -1) "contravariant"
-          else "invariant";
-
         /** The variance of a symbol occurrence of `tvar`
          *  seen at the level of the definition of `base`.
          *  The search proceeds from `base` to the owner of `tvar`.
          *  Initially the state is covariant, but it might change along the search.
          */
-        def relativeVariance(tvar: Symbol): Int = {
+        def relativeVariance(tvar: Symbol): Variance = {
           val clazz = tvar.owner
           var sym = base
-          var state = CoVariance
-          while (sym != clazz && state != AnyVariance) {
+          var state: Variance = Covariant
+          while (sym != clazz && state != Bivariant) {
             //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
             // Flip occurrences of type parameters and parameters, unless
             //  - it's a constructor, or case class factory or extractor
             //  - it's a type parameter of tvar's owner.
             if (sym.isParameter && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
                 !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
-                  tvar.owner == sym.owner)) state = -state;
+                  tvar.owner == sym.owner)) state = state.flip
             else if (!sym.owner.isClass ||
                      sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor /* super accessors are implicitly local #4345*/) && !(escapedPrivateLocals contains sym))) {
               // return AnyVariance if `sym` is local to a term
               // or is private[this] or protected[this]
-              state = AnyVariance
+              state = Bivariant
             } else if (sym.isAliasType) {
-              // return AnyVariance if `sym` is an alias type
+              // return Bivariant if `sym` is an alias type
               // that does not override anything. This is OK, because we always
               // expand aliases for variance checking.
               // However, if `sym` does override a type in a base class
-              // we have to assume NoVariance, as there might then be
+              // we have to assume Invariant, as there might then be
               // references to the type parameter that are not variance checked.
-              state = if (sym.isOverridingSymbol) NoVariance else AnyVariance
+              state = if (sym.isOverridingSymbol) Invariant else Bivariant
             }
             sym = sym.owner
           }
@@ -902,7 +894,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         /** Validate that the type `tp` is variance-correct, assuming
          *  the type occurs itself at variance position given by `variance`
          */
-        def validateVariance(tp: Type, variance: Int): Unit = tp match {
+        def validateVariance(tp: Type, variance: Variance): Unit = tp match {
           case ErrorType =>
           case WildcardType =>
           case BoundedWildcardType(bounds) =>
@@ -915,19 +907,19 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             validateVariance(pre, variance)
           case TypeRef(pre, sym, args) =>
 //            println("validate "+sym+" at "+relativeVariance(sym))
-            if (sym.isAliasType/* && relativeVariance(sym) == AnyVariance*/)
+            if (sym.isAliasType/* && relativeVariance(sym) == Bivariant*/)
               validateVariance(tp.normalize, variance)
-            else if (sym.variance != NoVariance) {
+            else if (!sym.variance.isInvariant) {
               val v = relativeVariance(sym)
-              if (v != AnyVariance && sym.variance != v * variance) {
+              if (!v.isBivariant && sym.variance != v * variance) {
                 //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
                 def tpString(tp: Type) = tp match {
                   case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
                   case _ => "type "+tp
                 }
                 unit.error(base.pos,
-                           varianceString(sym.variance) + " " + sym +
-                           " occurs in " + varianceString(v * variance) +
+                           sym.variance + " " + sym +
+                           " occurs in " + (v * variance) +
                            " position in " + tpString(base.info) + " of " + base);
               }
             }
@@ -944,14 +936,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             val saved = inRefinement
             inRefinement = true
             for (sym <- decls)
-              validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
+              validateVariance(sym.info, if (sym.isAliasType) Invariant else variance)
             inRefinement = saved
           case TypeBounds(lo, hi) =>
-            validateVariance(lo, -variance)
+            validateVariance(lo, variance.flip)
             validateVariance(hi, variance)
           case mt @ MethodType(formals, result) =>
             if (inRefinement)
-              validateVariances(mt.paramTypes, -variance)
+              validateVariances(mt.paramTypes, variance.flip)
             validateVariance(result, variance)
           case NullaryMethodType(result) =>
             validateVariance(result, variance)
@@ -966,15 +958,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               validateVariance(tp, variance)
         }
 
-        def validateVariances(tps: List[Type], variance: Int) {
+        def validateVariances(tps: List[Type], variance: Variance) {
           tps foreach (tp => validateVariance(tp, variance))
         }
 
-        def validateVarianceArgs(tps: List[Type], variance: Int, tparams: List[Symbol]) {
+        def validateVarianceArgs(tps: List[Type], variance: Variance, tparams: List[Symbol]) {
           foreach2(tps, tparams)((tp, tparam) => validateVariance(tp, variance * tparam.variance))
         }
 
-        validateVariance(base.info, CoVariance)
+        validateVariance(base.info, Covariant)
       }
 
       override def traverse(tree: Tree) {
