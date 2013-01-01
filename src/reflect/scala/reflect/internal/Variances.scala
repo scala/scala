@@ -14,82 +14,11 @@ import scala.collection.{ mutable, immutable }
 trait Variances {
   self: SymbolTable =>
 
-  /** Used by ExistentialExtrapolation and adaptConstrPattern().
-   *  TODO - eliminate duplication with all the rest.
-   */
-  trait VariantTypeMap extends TypeMap {
-    private[this] var _variance: Variance = Covariant
-
-    override def variance = _variance
-    def variance_=(x: Variance) = _variance = x
-
-    override protected def noChangeToSymbols(origSyms: List[Symbol]) =
-      //OPT inline from forall to save on #closures
-      origSyms match {
-        case sym :: rest =>
-          val v = variance
-          if (sym.isAliasType) variance = Invariant
-          val result = this(sym.info)
-          variance = v
-          (result eq sym.info) && noChangeToSymbols(rest)
-        case _ =>
-          true
-      }
-
-    override protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams) { (arg, tparam) =>
-        val saved = variance
-        variance *= tparam.variance
-        try this(arg) finally variance = saved
-      }
-
-    /** Map this function over given type */
-    override def mapOver(tp: Type): Type = tp match {
-      case MethodType(params, result) =>
-        variance = variance.flip
-        val params1 = mapOver(params)
-        variance = variance.flip
-        val result1 = this(result)
-        if ((params1 eq params) && (result1 eq result)) tp
-        else copyMethodType(tp, params1, result1.substSym(params, params1))
-      case PolyType(tparams, result) =>
-        variance = variance.flip
-        val tparams1 = mapOver(tparams)
-        variance = variance.flip
-        val result1 = this(result)
-        if ((tparams1 eq tparams) && (result1 eq result)) tp
-        else PolyType(tparams1, result1.substSym(tparams, tparams1))
-      case TypeBounds(lo, hi) =>
-        variance = variance.flip
-        val lo1 = this(lo)
-        variance = variance.flip
-        val hi1 = this(hi)
-        if ((lo1 eq lo) && (hi1 eq hi)) tp
-        else TypeBounds(lo1, hi1)
-      case tr @ TypeRef(pre, sym, args) =>
-        val pre1 = this(pre)
-        val args1 =
-          if (args.isEmpty)
-            args
-          else if (variance.isInvariant) // fast & safe path: don't need to look at typeparams
-            args mapConserve this
-          else {
-            val tparams = sym.typeParams
-            if (tparams.isEmpty) args
-            else mapOverArgs(args, tparams)
-          }
-        if ((pre1 eq pre) && (args1 eq args)) tp
-        else copyTypeRef(tp, pre1, tr.coevolveSym(pre1), args1)
-      case _ =>
-        super.mapOver(tp)
-    }
-  }
-
   /** Used in Refchecks.
    *  TODO - eliminate duplication with varianceInType
    */
   class VarianceValidator extends Traverser {
-    val escapedPrivateLocals = mutable.HashSet[Symbol]()
+    val escapedLocals = mutable.HashSet[Symbol]()
 
     protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = ()
 
@@ -104,10 +33,10 @@ trait Variances {
     )
     // return Bivariant if `sym` is local to a term
     // or is private[this] or protected[this]
-    private def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
+    def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
          sym.isTerm
       && (sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor) // super accessors are implicitly local #4345
-      && !escapedPrivateLocals(sym)
+      && !escapedLocals(sym)
     )
 
     /** Validate variance of info of symbol `base` */
@@ -126,20 +55,18 @@ trait Variances {
        *  because there may be references to the type parameter that are not checked.
        */
       def relativeVariance(tvar: Symbol): Variance = {
-        val clazz = tvar.owner
-        var sym = base
-        var state: Variance = Covariant
-        while (sym != clazz && !state.isBivariant) {
-          if (isFlipped(sym, tvar))
-            state = state.flip
-          else if (isLocalOnly(sym))
-            state = Bivariant
-          else if (sym.isAliasType)
-            state = if (sym.isOverridingSymbol) Invariant else Bivariant
-
-          sym = sym.owner
-        }
-        state
+        def nextVariance(sym: Symbol, v: Variance): Variance = (
+          if (isFlipped(sym, tvar)) v.flip
+          else if (isLocalOnly(sym)) Bivariant
+          else if (!sym.isAliasType) v
+          else if (sym.isOverridingSymbol) Invariant
+          else Bivariant
+        )
+        def loop(sym: Symbol, v: Variance): Variance = (
+          if (sym == tvar.owner || v.isBivariant) v
+          else loop(sym.owner, nextVariance(sym, v))
+        )
+        loop(base, Covariant)
       }
 
       /** Validate that the type `tp` is variance-correct, assuming
@@ -156,15 +83,17 @@ trait Variances {
         case ConstantType(_) =>
         case SingleType(pre, sym) =>
           validateVariance(pre, variance)
+        case TypeRef(_, sym, _) if sym.isAliasType => validateVariance(tp.normalize, variance)
+
         case TypeRef(pre, sym, args) =>
-//            println("validate "+sym+" at "+relativeVariance(sym))
-          if (sym.isAliasType/* && relativeVariance(sym) == Bivariant*/)
-            validateVariance(tp.normalize, variance)
-          else if (!sym.variance.isInvariant) {
-            val v = relativeVariance(sym)
-            val requiredVariance = v * variance
-            if (!v.isBivariant && sym.variance != requiredVariance)
-              issueVarianceError(base, sym, requiredVariance)
+          if (!sym.variance.isInvariant) {
+            val relative = relativeVariance(sym)
+            val required = relative * variance
+            if (!relative.isBivariant) {
+              log(s"verifying $sym (${sym.variance}${sym.locationString}) is $required at $base in ${base.owner}")
+              if (sym.variance != required)
+                issueVarianceError(base, sym, required)
+            }
           }
           validateVariance(pre, variance)
           // @M for higher-kinded typeref, args.isEmpty
@@ -213,18 +142,18 @@ trait Variances {
     }
 
     override def traverse(tree: Tree) {
-      // def local = tree.symbol.hasLocalFlag
+      def local = tree.symbol.hasLocalFlag
       tree match {
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(tree.symbol)
           super.traverse(tree)
         // ModuleDefs need not be considered because they have been eliminated already
         case ValDef(_, _, _, _) =>
-          if (!tree.symbol.hasLocalFlag)
+          if (!local)
             validateVariance(tree.symbol)
         case DefDef(_, _, tparams, vparamss, _, _) =>
           // No variance check for object-private/protected methods/values.
-          if (!tree.symbol.hasLocalFlag) {
+          if (!local) {
             validateVariance(tree.symbol)
             traverseTrees(tparams)
             traverseTreess(vparamss)

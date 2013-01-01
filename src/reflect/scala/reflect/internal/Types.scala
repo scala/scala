@@ -3932,18 +3932,25 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** A prototype for mapping a function over all possible types
    */
-  abstract class TypeMap extends (Type => Type) {
+  abstract class TypeMap(isTrackingVariance: Boolean) extends (Type => Type) {
+    def this() = this(isTrackingVariance = false)
     def apply(tp: Type): Type
 
-    /** Mix in VariantTypeMap if you want variances to be significant.
-     */
-    def variance: Variance = Invariant
+    private[this] var _variance: Variance = if (isTrackingVariance) Covariant else Invariant
+
+    def variance_=(x: Variance) = { assert(isTrackingVariance, this) ; _variance = x }
+    def variance = _variance
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case tr @ TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        val args1 = args mapConserve this
+        val args1 = (
+          if (isTrackingVariance && args.nonEmpty && !variance.isInvariant && sym.typeParams.nonEmpty)
+            mapOverArgs(args, sym.typeParams)
+          else
+            args mapConserve this
+        )
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, tr.coevolveSym(pre1), args1)
       case ThisType(_) => tp
@@ -3955,12 +3962,12 @@ trait Types extends api.Types { self: SymbolTable =>
           else singleType(pre1, sym)
         }
       case MethodType(params, result) =>
-        val params1 = mapOver(params)
+        val params1 = flipped(mapOver(params))
         val result1 = this(result)
         if ((params1 eq params) && (result1 eq result)) tp
         else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
-        val tparams1 = mapOver(tparams)
+        val tparams1 = flipped(mapOver(tparams))
         val result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
@@ -3975,7 +3982,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
         else SuperType(thistp1, supertp1)
       case TypeBounds(lo, hi) =>
-        val lo1 = this(lo)
+        val lo1 = flipped(this(lo))
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
@@ -3998,7 +4005,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else OverloadedType(pre1, alts)
       case AntiPolyType(pre, args) =>
         val pre1 = this(pre)
-        val args1 = args mapConserve (this)
+        val args1 = args mapConserve this
         if ((pre1 eq pre) && (args1 eq args)) tp
         else AntiPolyType(pre1, args1)
       case tv@TypeVar(_, constr) =>
@@ -4026,8 +4033,33 @@ trait Types extends api.Types { self: SymbolTable =>
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      args mapConserve this
+    private def flip() = if (isTrackingVariance) variance = variance.flip
+    @inline final def flipped[T](body: => T): T = {
+      flip()
+      try body finally flip()
+    }
+    @inline final def varyOn(tparam: Symbol)(body: => Type): Type = {
+      val saved = variance
+      variance *= tparam.variance
+      try body finally variance = saved
+    }
+    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
+      if (isTrackingVariance)
+        map2Conserve(args, tparams)((arg, tparam) => varyOn(tparam)(this(arg)))
+      else
+        args mapConserve this
+    )
+    private def isInfoUnchanged(sym: Symbol) = {
+      val forceInvariance = isTrackingVariance && !variance.isInvariant && sym.isAliasType
+      val result = if (forceInvariance) {
+        val saved = variance
+        variance = Invariant
+        try this(sym.info) finally variance = saved
+      }
+      else this(sym.info)
+
+      (sym.info eq result)
+    }
 
     /** Called by mapOver to determine whether the original symbols can
      *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
@@ -4035,7 +4067,7 @@ trait Types extends api.Types { self: SymbolTable =>
     protected def noChangeToSymbols(origSyms: List[Symbol]): Boolean = {
       @tailrec def loop(syms: List[Symbol]): Boolean = syms match {
         case Nil     => true
-        case x :: xs => (x.info eq this(x.info)) && loop(xs)
+        case x :: xs => isInfoUnchanged(x) && loop(xs)
       }
       loop(origSyms)
     }
@@ -4189,7 +4221,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** Used by existentialAbstraction.
    */
-  class ExistentialExtrapolation(tparams: List[Symbol]) extends VariantTypeMap {
+  class ExistentialExtrapolation(tparams: List[Symbol]) extends TypeMap(isTrackingVariance = true) {
     private val occurCount = mutable.HashMap[Symbol, Int]()
     private def countOccs(tp: Type) = {
       tp foreach {
@@ -4208,16 +4240,29 @@ trait Types extends api.Types { self: SymbolTable =>
       apply(tpe)
     }
 
+    /** If these conditions all hold:
+     *   1) we are in covariant (or contravariant) position
+     *   2) this type occurs exactly once in the existential scope
+     *   3) the widened upper (or lower) bound of this type contains no references to tparams
+     *  Then we replace this lone occurrence of the type with the widened upper (or lower) bound.
+     *  All other types pass through unchanged.
+     */
     def apply(tp: Type): Type = {
       val tp1 = mapOver(tp)
       if (variance.isInvariant) tp1
       else tp1 match {
         case TypeRef(pre, sym, args) if tparams contains sym =>
           val repl = if (variance.isPositive) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
-          //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
-          if (!repl.typeSymbol.isBottomClass && occurCount(sym) == 1 && !(tparams exists (repl.contains)))
-            repl
-          else tp1
+          val count = occurCount(sym)
+          val containsTypeParam = tparams exists (repl contains _)
+          def msg = {
+            val word = if (variance.isPositive) "upper" else "lower"
+            s"Widened lone occurrence of $tp1 inside existential to $word bound"
+          }
+          if (!repl.typeSymbol.isBottomClass && count == 1 && !containsTypeParam)
+            logResult(msg)(repl)
+          else
+            tp1
         case _ =>
           tp1
       }
@@ -5954,7 +5999,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  `f` maps all elements to themselves.
    */
   def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
-    if (xs.isEmpty) xs
+    if (xs.isEmpty || ys.isEmpty) xs
     else {
       val x1 = f(xs.head, ys.head)
       val xs1 = map2Conserve(xs.tail, ys.tail)(f)

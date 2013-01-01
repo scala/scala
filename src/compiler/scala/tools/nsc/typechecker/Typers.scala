@@ -945,7 +945,7 @@ trait Typers extends Modes with Adaptations with Tags {
               .setOriginal(tree)
 
             val skolems = new mutable.ListBuffer[TypeSymbol]
-            object variantToSkolem extends VariantTypeMap {
+            object variantToSkolem extends TypeMap(isTrackingVariance = true) {
               def apply(tp: Type) = mapOver(tp) match {
                 // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see SI-5189
                 case TypeRef(NoPrefix, tpSym, Nil) if !variance.isInvariant && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>

@@ -1459,7 +1459,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           hidden = o.isTerm || o.isPrivateLocal
           o = o.owner
         }
-        if (!hidden) varianceValidator.escapedPrivateLocals += sym
+        if (!hidden) varianceValidator.escapedLocals += sym
       }
 
       def checkSuper(mix: Name) =

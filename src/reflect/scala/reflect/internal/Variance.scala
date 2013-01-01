@@ -74,6 +74,11 @@ final class Variance private (val flags: Int) extends AnyVal {
 }
 
 object Variance {
+  implicit class SbtCompat(val v: Variance) {
+    def < (other: Int) = v.flags < other
+    def > (other: Int) = v.flags > other
+  }
+
   def fold(variances: List[Variance]): Variance = (
     if (variances.isEmpty) Bivariant
     else variances reduceLeft (_ & _)
