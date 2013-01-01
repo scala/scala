@@ -38,12 +38,9 @@ trait Variances {
 
     override protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
       map2Conserve(args, tparams) { (arg, tparam) =>
-        val v = variance
-        if (tparam.isContravariant) variance = variance.flip
-        else if (!tparam.isCovariant) variance = Invariant
-        val arg1 = this(arg)
-        variance = v
-        arg1
+        val saved = variance
+        variance *= tparam.variance
+        try this(arg) finally variance = saved
       }
 
     /** Map this function over given type */
@@ -96,44 +93,50 @@ trait Variances {
 
     protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = ()
 
+    // Flip occurrences of type parameters and parameters, unless
+    //  - it's a constructor, or case class factory or extractor
+    //  - it's a type parameter of tvar's owner.
+    private def isFlipped(sym: Symbol, tvar: Symbol) = (
+         sym.isParameter
+      && !sym.owner.isConstructor
+      && !sym.owner.isCaseApplyOrUnapply
+      && !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem && tvar.owner == sym.owner)
+    )
+    // return Bivariant if `sym` is local to a term
+    // or is private[this] or protected[this]
+    private def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
+         sym.isTerm
+      && (sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor) // super accessors are implicitly local #4345
+      && !escapedPrivateLocals(sym)
+    )
+
     /** Validate variance of info of symbol `base` */
     private def validateVariance(base: Symbol) {
       // A flag for when we're in a refinement, meaning method parameter types
       // need to be checked.
       var inRefinement = false
 
-      /** The variance of a symbol occurrence of `tvar`
-       *  seen at the level of the definition of `base`.
+      /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.
        *  Initially the state is covariant, but it might change along the search.
+       *
+       *  An alias which does not override anything is treated as Bivariant;
+       *  this is OK because we always expand aliases for variance checking.
+       *  However if it does override a type in a base class, we must assume Invariant
+       *  because there may be references to the type parameter that are not checked.
        */
       def relativeVariance(tvar: Symbol): Variance = {
         val clazz = tvar.owner
         var sym = base
         var state: Variance = Covariant
         while (sym != clazz && !state.isBivariant) {
-          //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
-          // Flip occurrences of type parameters and parameters, unless
-          //  - it's a constructor, or case class factory or extractor
-          //  - it's a type parameter of tvar's owner.
-          if (sym.isParameter && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
-              !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
-                tvar.owner == sym.owner)) state = state.flip
-          else if (!sym.owner.isClass ||
-                   sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor /* super accessors are implicitly local #4345*/) && !(escapedPrivateLocals contains sym))) {
-            // return Bivariant if `sym` is local to a term
-            // or is private[this] or protected[this]
+          if (isFlipped(sym, tvar))
+            state = state.flip
+          else if (isLocalOnly(sym))
             state = Bivariant
-          }
-          else if (sym.isAliasType) {
-            // return Bivariant if `sym` is an alias type
-            // that does not override anything. This is OK, because we always
-            // expand aliases for variance checking.
-            // However, if `sym` does override a type in a base class
-            // we have to assume Invariant, as there might then be
-            // references to the type parameter that are not variance checked.
+          else if (sym.isAliasType)
             state = if (sym.isOverridingSymbol) Invariant else Bivariant
-          }
+
           sym = sym.owner
         }
         state
@@ -160,7 +163,6 @@ trait Variances {
           else if (!sym.variance.isInvariant) {
             val v = relativeVariance(sym)
             val requiredVariance = v * variance
-
             if (!v.isBivariant && sym.variance != requiredVariance)
               issueVarianceError(base, sym, requiredVariance)
           }
@@ -211,6 +213,7 @@ trait Variances {
     }
 
     override def traverse(tree: Tree) {
+      // def local = tree.symbol.hasLocalFlag
       tree match {
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(tree.symbol)
