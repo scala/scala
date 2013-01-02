@@ -23,6 +23,11 @@ trait Variances {
     // A flag for when we're in a refinement, meaning method parameter types
     // need to be checked.
     private var inRefinement = false
+    @inline private def withinRefinement(body: => Type): Type = {
+      val saved = inRefinement
+      inRefinement = true
+      try body finally inRefinement = saved
+    }
 
     /** Is every symbol in the owner chain between `site` and the owner of `sym`
      *  either a term symbol or private[this]? If not, add `sym` to the set of
@@ -54,8 +59,9 @@ trait Variances {
       && !escapedLocals(sym)
     )
 
-    /** Validate variance of info of symbol `base` */
-    private def validateVariance(base: Symbol) {
+    private object ValidateVarianceMap extends TypeMap(isTrackingVariance = true) {
+      private var base: Symbol = _
+
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.
        *  Initially the state is covariant, but it might change along the search.
@@ -79,74 +85,50 @@ trait Variances {
         )
         loop(base, Covariant)
       }
-
       def isUncheckedVariance(tp: Type) = tp match {
         case AnnotatedType(annots, _, _) => annots exists (_ matches definitions.uncheckedVarianceClass)
         case _                           => false
       }
 
-      /** Validate that the type `tp` is variance-correct, assuming
-       *  the type occurs itself at variance position given by `variance`
+      private def checkVarianceOfSymbol(sym: Symbol) {
+        val relative = relativeVariance(sym)
+        val required = relative * variance
+        if (!relative.isBivariant) {
+          log(s"verifying $sym (${sym.variance}${sym.locationString}) is $required at $base in ${base.owner}")
+          if (sym.variance != required)
+            issueVarianceError(base, sym, required)
+        }
+      }
+      override def mapOver(decls: Scope): Scope = {
+        decls foreach (sym => withVariance(if (sym.isAliasType) Invariant else variance)(this(sym.info)))
+        decls
+      }
+      /** For PolyTypes, type parameters are skipped because they are defined
+       *  explicitly (their TypeDefs will be passed here.) For MethodTypes, the
+       *  same is true of the parameters (ValDefs) unless we are inside a
+       *  refinement, in which case they are checked from here.
        */
-      def validateVariance(tp: Type, variance: Variance): Unit = if (!isUncheckedVariance(tp)) tp.withoutAnnotations match {
-        case ErrorType =>
-        case WildcardType =>
-        case NoType =>
-        case NoPrefix =>
-        case ThisType(_) =>
-        case ConstantType(_) =>
-        case BoundedWildcardType(bounds) =>
-          validateVariance(bounds, variance)
-        case SingleType(pre, sym) =>
-          validateVariance(pre, variance)
-        case TypeRef(_, sym, _) if sym.isAliasType => validateVariance(tp.normalize, variance)
-
-        case TypeRef(pre, sym, args) =>
-          if (!sym.variance.isInvariant) {
-            val relative = relativeVariance(sym)
-            val required = relative * variance
-            if (!relative.isBivariant) {
-              log(s"verifying $sym (${sym.variance}${sym.locationString}) is $required at $base in ${base.owner}")
-              if (sym.variance != required)
-                issueVarianceError(base, sym, required)
-            }
-          }
-          validateVariance(pre, variance)
-          validateVarianceArgs(args, variance, sym.typeParams)
-        case ClassInfoType(parents, decls, symbol) =>
-          validateVariances(parents, variance)
-        case RefinedType(parents, decls) =>
-          validateVariances(parents, variance)
-          val saved = inRefinement
-          inRefinement = true
-          try decls foreach (sym => validateVariance(sym.info, if (sym.isAliasType) Invariant else variance))
-          finally inRefinement = saved
-        case TypeBounds(lo, hi) =>
-          validateVariance(lo, variance.flip)
-          validateVariance(hi, variance)
-        case mt @ MethodType(formals, result) =>
-          if (inRefinement)
-            validateVariances(mt.paramTypes, variance.flip)
-          validateVariance(result, variance)
-        case NullaryMethodType(result) =>
-          validateVariance(result, variance)
-        case PolyType(tparams, result) =>
-          // type parameters will be validated separately, because they are defined explicitly.
-          validateVariance(result, variance)
-        case ExistentialType(tparams, result) =>
-          validateVariances(tparams map (_.info), variance)
-          validateVariance(result, variance)
+      def apply(tp: Type): Type = tp match {
+        case _ if isUncheckedVariance(tp)                    => tp
+        case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
+        case ClassInfoType(parents, _, _)                    => parents foreach this ; tp
+        case TypeRef(_, sym, _) if sym.isAliasType           => this(tp.normalize)
+        case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
+        case mt @ MethodType(_, result)                      => if (inRefinement) flipped(mt.paramTypes foreach this) ; this(result)
+        case PolyType(_, result)                             => this(result)
+        case _                                               => mapOver(tp)
       }
-
-      def validateVariances(tps: List[Type], variance: Variance) {
-        tps foreach (tp => validateVariance(tp, variance))
+      def validateDefinition(base: Symbol) {
+        val saved = this.base
+        this.base = base
+        try apply(base.info)
+        finally this.base = saved
       }
+    }
 
-      def validateVarianceArgs(tps: List[Type], variance: Variance, tparams: List[Symbol]) {
-        foreach2(tps, tparams)((tp, tparam) => validateVariance(tp, variance * tparam.variance))
-      }
-
-      validateVariance(base.info, Covariant)
+    /** Validate variance of info of symbol `base` */
+    private def validateVariance(base: Symbol) {
+      ValidateVarianceMap validateDefinition base
     }
 
     override def traverse(tree: Tree) {

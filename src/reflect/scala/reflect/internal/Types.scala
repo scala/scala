@@ -4032,41 +4032,39 @@ trait Types extends api.Types { self: SymbolTable =>
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    private def flip() = if (isTrackingVariance) variance = variance.flip
-    @inline final def flipped[T](body: => T): T = {
-      flip()
-      try body finally flip()
-    }
-    @inline final def varyOn(tparam: Symbol)(body: => Type): Type = {
+    def withVariance[T](v: Variance)(body: => T): T = {
       val saved = variance
-      variance *= tparam.variance
+      variance = v
       try body finally variance = saved
+    }
+    @inline final def flipped[T](body: => T): T = {
+      if (isTrackingVariance) variance = variance.flip
+      try body
+      finally if (isTrackingVariance) variance = variance.flip
     }
     protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
       if (isTrackingVariance)
-        map2Conserve(args, tparams)((arg, tparam) => varyOn(tparam)(this(arg)))
+        map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
       else
         args mapConserve this
     )
-    private def isInfoUnchanged(sym: Symbol) = {
-      val forceInvariance = isTrackingVariance && !variance.isInvariant && sym.isAliasType
-      val result = if (forceInvariance) {
-        val saved = variance
-        variance = Invariant
-        try this(sym.info) finally variance = saved
-      }
-      else this(sym.info)
-
-      (sym.info eq result)
+    /** Applies this map to the symbol's info, setting variance = Invariant
+     *  if necessary when the symbol is an alias.
+     */
+    private def applyToSymbolInfo(sym: Symbol): Type = {
+      if (isTrackingVariance && !variance.isInvariant && sym.isAliasType)
+        withVariance(Invariant)(this(sym.info))
+      else
+        this(sym.info)
     }
 
     /** Called by mapOver to determine whether the original symbols can
-     *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
+     *  be returned, or whether they must be cloned.
      */
     protected def noChangeToSymbols(origSyms: List[Symbol]): Boolean = {
       @tailrec def loop(syms: List[Symbol]): Boolean = syms match {
         case Nil     => true
-        case x :: xs => isInfoUnchanged(x) && loop(xs)
+        case x :: xs => (x.info eq applyToSymbolInfo(x)) && loop(xs)
       }
       loop(origSyms)
     }
