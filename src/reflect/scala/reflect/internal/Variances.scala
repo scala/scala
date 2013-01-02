@@ -47,8 +47,6 @@ trait Variances {
     //  - it's a type parameter of tvar's owner.
     def shouldFlip(sym: Symbol, tvar: Symbol) = (
          sym.isParameter
-      && !sym.owner.isConstructor
-      && !sym.owner.isCaseApplyOrUnapply
       && !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem && tvar.owner == sym.owner)
     )
     // return Bivariant if `sym` is local to a term
@@ -103,6 +101,12 @@ trait Variances {
         decls foreach (sym => withVariance(if (sym.isAliasType) Invariant else variance)(this(sym.info)))
         decls
       }
+      private def resultTypeOnly(tp: Type) = tp match {
+        case mt: MethodType => !inRefinement
+        case pt: PolyType   => true
+        case _              => false
+      }
+
       /** For PolyTypes, type parameters are skipped because they are defined
        *  explicitly (their TypeDefs will be passed here.) For MethodTypes, the
        *  same is true of the parameters (ValDefs) unless we are inside a
@@ -110,12 +114,12 @@ trait Variances {
        */
       def apply(tp: Type): Type = tp match {
         case _ if isUncheckedVariance(tp)                    => tp
-        case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
-        case ClassInfoType(parents, _, _)                    => parents foreach this ; tp
+        case _ if resultTypeOnly(tp)                         => this(tp.resultType)
         case TypeRef(_, sym, _) if sym.isAliasType           => this(tp.normalize)
         case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
-        case mt @ MethodType(_, result)                      => if (inRefinement) flipped(mt.paramTypes foreach this) ; this(result)
-        case PolyType(_, result)                             => this(result)
+        case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
+        case ClassInfoType(parents, _, _)                    => parents foreach this ; tp
+        case mt @ MethodType(_, result)                      => flipped(mt.paramTypes foreach this) ; this(result)
         case _                                               => mapOver(tp)
       }
       def validateDefinition(base: Symbol) {
@@ -132,22 +136,27 @@ trait Variances {
     }
 
     override def traverse(tree: Tree) {
-      def local = tree.symbol.hasLocalFlag
+      def sym = tree.symbol
+      // No variance check for object-private/protected methods/values.
+      // Or constructors, or case class factory or extractor.
+      def skip = (
+           sym.hasLocalFlag
+        || sym.owner.isConstructor
+        || sym.owner.isCaseApplyOrUnapply
+      )
       tree match {
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
-          validateVariance(tree.symbol)
+          validateVariance(sym)
           super.traverse(tree)
         // ModuleDefs need not be considered because they have been eliminated already
+        case defn: ValOrDefDef if skip =>
+          log(s"Skipping variance check of $sym")
         case ValDef(_, _, _, _) =>
-          if (!local)
-            validateVariance(tree.symbol)
+          validateVariance(sym)
         case DefDef(_, _, tparams, vparamss, _, _) =>
-          // No variance check for object-private/protected methods/values.
-          if (!local) {
-            validateVariance(tree.symbol)
-            traverseTrees(tparams)
-            traverseTreess(vparamss)
-          }
+          validateVariance(sym)
+          traverseTrees(tparams)
+          traverseTreess(vparamss)
         case Template(_, _, _) =>
           super.traverse(tree)
         case _ =>

@@ -6991,6 +6991,10 @@ trait Types extends api.Types { self: SymbolTable =>
     case _ =>
       1
   }
+
+  def withUncheckedVariance(tp: Type): Type =
+    tp withAnnotation (AnnotationInfo marker uncheckedVarianceClass.tpe)
+
   //OPT replaced with tailrecursive function to save on #closures
   // was:
   //    var d = 0
