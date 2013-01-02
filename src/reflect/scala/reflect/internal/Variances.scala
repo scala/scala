@@ -20,6 +20,9 @@ trait Variances {
    */
   class VarianceValidator extends Traverser {
     private val escapedLocals = mutable.HashSet[Symbol]()
+    // A flag for when we're in a refinement, meaning method parameter types
+    // need to be checked.
+    private var inRefinement = false
 
     /** Is every symbol in the owner chain between `site` and the owner of `sym`
      *  either a term symbol or private[this]? If not, add `sym` to the set of
@@ -47,16 +50,12 @@ trait Variances {
     // or is private[this] or protected[this]
     def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
          sym.isTerm
-      && (sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor) // super accessors are implicitly local #4345
+      && (sym.hasLocalFlag || sym.isSuperAccessor) // super accessors are implicitly local #4345
       && !escapedLocals(sym)
     )
 
     /** Validate variance of info of symbol `base` */
     private def validateVariance(base: Symbol) {
-      // A flag for when we're in a refinement, meaning method parameter types
-      // need to be checked.
-      var inRefinement = false
-
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.
        *  Initially the state is covariant, but it might change along the search.
@@ -81,18 +80,23 @@ trait Variances {
         loop(base, Covariant)
       }
 
+      def isUncheckedVariance(tp: Type) = tp match {
+        case AnnotatedType(annots, _, _) => annots exists (_ matches definitions.uncheckedVarianceClass)
+        case _                           => false
+      }
+
       /** Validate that the type `tp` is variance-correct, assuming
        *  the type occurs itself at variance position given by `variance`
        */
-      def validateVariance(tp: Type, variance: Variance): Unit = tp match {
+      def validateVariance(tp: Type, variance: Variance): Unit = if (!isUncheckedVariance(tp)) tp.withoutAnnotations match {
         case ErrorType =>
         case WildcardType =>
-        case BoundedWildcardType(bounds) =>
-          validateVariance(bounds, variance)
         case NoType =>
         case NoPrefix =>
         case ThisType(_) =>
         case ConstantType(_) =>
+        case BoundedWildcardType(bounds) =>
+          validateVariance(bounds, variance)
         case SingleType(pre, sym) =>
           validateVariance(pre, variance)
         case TypeRef(_, sym, _) if sym.isAliasType => validateVariance(tp.normalize, variance)
@@ -108,20 +112,15 @@ trait Variances {
             }
           }
           validateVariance(pre, variance)
-          // @M for higher-kinded typeref, args.isEmpty
-          // However, these args respect variances by construction anyway
-          // -- the interesting case is in type application, see checkKindBounds in Infer
-          if (args.nonEmpty)
-            validateVarianceArgs(args, variance, sym.typeParams)
+          validateVarianceArgs(args, variance, sym.typeParams)
         case ClassInfoType(parents, decls, symbol) =>
           validateVariances(parents, variance)
         case RefinedType(parents, decls) =>
           validateVariances(parents, variance)
           val saved = inRefinement
           inRefinement = true
-          for (sym <- decls)
-            validateVariance(sym.info, if (sym.isAliasType) Invariant else variance)
-          inRefinement = saved
+          try decls foreach (sym => validateVariance(sym.info, if (sym.isAliasType) Invariant else variance))
+          finally inRefinement = saved
         case TypeBounds(lo, hi) =>
           validateVariance(lo, variance.flip)
           validateVariance(hi, variance)
@@ -137,9 +136,6 @@ trait Variances {
         case ExistentialType(tparams, result) =>
           validateVariances(tparams map (_.info), variance)
           validateVariance(result, variance)
-        case AnnotatedType(annots, tp, selfsym) =>
-          if (!annots.exists(_ matches definitions.uncheckedVarianceClass))
-            validateVariance(tp, variance)
       }
 
       def validateVariances(tps: List[Type], variance: Variance) {
