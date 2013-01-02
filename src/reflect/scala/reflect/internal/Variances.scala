@@ -8,6 +8,7 @@ package internal
 
 import Variance._
 import scala.collection.{ mutable, immutable }
+import scala.annotation.tailrec
 
 /** See comments at scala.reflect.internal.Variance.
  */
@@ -18,14 +19,25 @@ trait Variances {
    *  TODO - eliminate duplication with varianceInType
    */
   class VarianceValidator extends Traverser {
-    val escapedLocals = mutable.HashSet[Symbol]()
+    private val escapedLocals = mutable.HashSet[Symbol]()
+
+    /** Is every symbol in the owner chain between `site` and the owner of `sym`
+     *  either a term symbol or private[this]? If not, add `sym` to the set of
+     *  esacped locals.
+     *  @pre  sym.hasLocalFlag
+     */
+    @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {
+      if (site == sym.owner || site == sym.owner.moduleClass || site.isPackage) () // done
+      else if (site.isTerm || site.isPrivateLocal) checkForEscape(sym, site.owner) // ok - recurse to owner
+      else escapedLocals += sym
+    }
 
     protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = ()
 
     // Flip occurrences of type parameters and parameters, unless
     //  - it's a constructor, or case class factory or extractor
     //  - it's a type parameter of tvar's owner.
-    private def isFlipped(sym: Symbol, tvar: Symbol) = (
+    def shouldFlip(sym: Symbol, tvar: Symbol) = (
          sym.isParameter
       && !sym.owner.isConstructor
       && !sym.owner.isCaseApplyOrUnapply
@@ -56,7 +68,7 @@ trait Variances {
        */
       def relativeVariance(tvar: Symbol): Variance = {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
-          if (isFlipped(sym, tvar)) v.flip
+          if (shouldFlip(sym, tvar)) v.flip
           else if (isLocalOnly(sym)) Bivariant
           else if (!sym.isAliasType) v
           else if (sym.isOverridingSymbol) Invariant

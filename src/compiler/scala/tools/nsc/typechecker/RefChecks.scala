@@ -1449,18 +1449,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         checkMigration(sym, tree.pos)
       checkCompileTimeOnly(sym, tree.pos)
 
-      if (sym eq NoSymbol) {
-        unit.warning(tree.pos, "Select node has NoSymbol! " + tree + " / " + tree.tpe)
-      }
-      else if (currentClass != sym.owner && sym.hasLocalFlag) {
-        var o = currentClass
-        var hidden = false
-        while (!hidden && o != sym.owner && o != sym.owner.moduleClass && !o.isPackage) {
-          hidden = o.isTerm || o.isPrivateLocal
-          o = o.owner
-        }
-        if (!hidden) varianceValidator.escapedLocals += sym
-      }
+      if (sym eq NoSymbol)
+        devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
+      else if (sym.hasLocalFlag)
+        varianceValidator.checkForEscape(sym, currentClass)
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
