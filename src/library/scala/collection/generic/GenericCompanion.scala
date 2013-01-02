@@ -24,7 +24,7 @@ import scala.language.higherKinds
  */
 abstract class GenericCompanion[+CC[X] <: GenTraversable[X]] {
   /** The underlying collection type with unknown element type */
-  type Coll = CC[_]
+  protected[this] type Coll = CC[_]
 
   /** The default builder for `$Coll` objects.
    *  @tparam A      the type of the ${coll}'s elements

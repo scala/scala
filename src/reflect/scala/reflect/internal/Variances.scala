@@ -73,9 +73,8 @@ trait Variances {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
           if (shouldFlip(sym, tvar)) v.flip
           else if (isLocalOnly(sym)) Bivariant
-          else if (!sym.isAliasType) v
-          else if (sym.isOverridingSymbol) Invariant
-          else Bivariant
+          else if (sym.isAliasType) Invariant
+          else v
         )
         def loop(sym: Symbol, v: Variance): Variance = (
           if (sym == tvar.owner || v.isBivariant) v
@@ -145,12 +144,12 @@ trait Variances {
         || sym.owner.isCaseApplyOrUnapply
       )
       tree match {
+        case defn: MemberDef if skip =>
+          log(s"Skipping variance check of ${sym.defString}")
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(sym)
           super.traverse(tree)
         // ModuleDefs need not be considered because they have been eliminated already
-        case defn: ValOrDefDef if skip =>
-          log(s"Skipping variance check of $sym")
         case ValDef(_, _, _, _) =>
           validateVariance(sym)
         case DefDef(_, _, tparams, vparamss, _, _) =>

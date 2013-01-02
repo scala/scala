@@ -900,7 +900,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** The variance of this symbol. */
-    final def variance: Variance =
+    def variance: Variance =
       if (isCovariant) Covariant
       else if (isContravariant) Contravariant
       else Invariant
@@ -2635,6 +2635,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
+    override def variance = if (hasLocalFlag) Bivariant else info.typeSymbol.variance
+    override def isContravariant = variance.isContravariant
+    override def isCovariant     = variance.isCovariant
     final override def isAliasType = true
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
