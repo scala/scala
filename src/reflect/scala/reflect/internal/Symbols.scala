@@ -574,6 +574,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def isEffectiveRoot = false
 
+    /** Can this symbol only be subclassed by bottom classes? This is assessed
+     *  to be the case if it is final, and any type parameters are invariant.
+     */
+    def hasOnlyBottomSubclasses = {
+      def loop(tparams: List[Symbol]): Boolean = tparams match {
+        case Nil     => true
+        case x :: xs => x.variance.isInvariant && loop(xs)
+      }
+      isClass && isFinal && loop(typeParams)
+    }
+
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
     final def isOverridableMember  = !(isClass || isEffectivelyFinal) && (this ne NoSymbol) && owner.isClass
 
@@ -3286,7 +3297,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
 
   private[scala] final val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
-  private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance.isInvariant
 
   @tailrec private[scala] final
   def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
