@@ -67,7 +67,7 @@ object Versions {
     IO.write(f, "version.number = "+versions.canonical+"\n"+
                 "osgi.number = "+versions.osgi+"\n"+
                 "maven.number = "+versions.maven+"\n"+
-                "copyright.string = Copyright 2002-2012, LAMP/EPFL")
+                "copyright.string = Copyright 2002-2013, LAMP/EPFL")
 
   def makeCanonicalVersion(isRelease: Boolean, mvnVersion: String, base: BaseBuildNumber, gitDate: String, gitSha: String): String =
     if(isRelease) mvnVersion
