@@ -108,7 +108,7 @@ class ScalaTool extends ScalaMatchingTask {
    *  for general purpose scripts, as this does not assume all elements are
    *  relative to the Ant `basedir`.  Additionally, the platform specific
    *  demarcation of any script variables (e.g. `${SCALA_HOME}` or
-   * `%SCALA_HOME%`) can be specified in a platform independant way (e.g.
+   * `%SCALA_HOME%`) can be specified in a platform independent way (e.g.
    * `@SCALA_HOME@`) and automatically translated for you.
    */
   def setClassPath(input: String) {
