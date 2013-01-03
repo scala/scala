@@ -80,7 +80,9 @@ trait Importers extends api.Importers { self: SymbolTable =>
               case x: from.ModuleSymbol =>
                 linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
               case x: from.FreeTermSymbol =>
-                newFreeTermSymbol(importName(x.name).toTermName, x.value, x.flags, x.origin) setInfo importType(x.info)
+                val mysym = newFreeTermSymbol(importName(x.name).toTermName, x.value, x.flags, x.origin)
+                symMap.weakUpdate(x, mysym)
+                mysym setInfo importType(x.info)
               case x: from.FreeTypeSymbol =>
                 newFreeTypeSymbol(importName(x.name).toTypeName, x.flags, x.origin)
               case x: from.TermSymbol =>
