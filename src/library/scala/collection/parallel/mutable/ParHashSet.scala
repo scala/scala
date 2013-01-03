@@ -60,18 +60,18 @@ extends ParSet[T]
   override def seq = new scala.collection.mutable.HashSet(hashTableContents)
 
   def +=(elem: T) = {
-    addEntry(elem)
+    addElem(elem)
     this
   }
 
   def -=(elem: T) = {
-    removeEntry(elem)
+    removeElem(elem)
     this
   }
 
   override def stringPrefix = "ParHashSet"
 
-  def contains(elem: T) = containsEntry(elem)
+  def contains(elem: T) = containsElem(elem)
 
   def splitter = new ParHashSetIterator(0, table.length, size)
 
@@ -117,22 +117,23 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 
 
 private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFactor: Int)
-extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
+extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], AnyRef, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
 with scala.collection.mutable.FlatHashTable.HashUtils[T] {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   private val nonmasklen = ParHashSetCombiner.nonmasklength
   private val seedvalue = 27
 
   def +=(elem: T) = {
+    val entry = elemToEntry(elem)
     sz += 1
-    val hc = improve(elemHashCode(elem), seedvalue)
+    val hc = improve(entry.hashCode, seedvalue)
     val pos = hc >>> nonmasklen
     if (buckets(pos) eq null) {
       // initialize bucket
-      buckets(pos) = new UnrolledBuffer[Any]
+      buckets(pos) = new UnrolledBuffer[AnyRef]
     }
     // add to bucket
-    buckets(pos) += elem
+    buckets(pos) += entry
     this
   }
 
@@ -146,7 +147,7 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
     val table = new AddingFlatHashTable(size, tableLoadFactor, seedvalue)
     val (inserted, leftovers) = combinerTaskSupport.executeAndWaitResult(new FillBlocks(buckets, table, 0, buckets.length))
     var leftinserts = 0
-    for (elem <- leftovers) leftinserts += table.insertEntry(0, table.tableLength, elem.asInstanceOf[T])
+    for (entry <- leftovers) leftinserts += table.insertEntry(0, table.tableLength, entry)
     table.setSize(leftinserts + inserted)
     table.hashTableContents
   }
@@ -160,8 +161,8 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
       for {
         buffer <- buckets;
         if buffer ne null;
-        elem <- buffer
-      } addEntry(elem.asInstanceOf[T])
+        entry <- buffer
+      } addEntry(entry)
     }
     tbl.hashTableContents
   }
@@ -188,7 +189,7 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
     def setSize(sz: Int) = tableSize = sz
 
     /**
-     *  The elements are added using the `insertEntry` method. This method accepts three
+     *  The elements are added using the `insertElem` method. This method accepts three
      *  arguments:
      *
      *  @param insertAt      where to add the element (set to -1 to use its hashcode)
@@ -205,17 +206,17 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
      *  If the element is already present in the hash table, it is not added, and this method
      *  returns 0. If the element is added, it returns 1.
      */
-    def insertEntry(insertAt: Int, comesBefore: Int, elem: T): Int = {
+    def insertEntry(insertAt: Int, comesBefore: Int, newEntry : AnyRef): Int = {
       var h = insertAt
-      if (h == -1) h = index(elemHashCode(elem))
-      var entry = table(h)
-      while (null != entry) {
-        if (entry == elem) return 0
+      if (h == -1) h = index(newEntry.hashCode)
+      var curEntry = table(h)
+      while (null != curEntry) {
+        if (curEntry == newEntry) return 0
         h = h + 1 // we *do not* do `(h + 1) % table.length` here, because we'll never overflow!!
         if (h >= comesBefore) return -1
-        entry = table(h)
+        curEntry = table(h)
       }
-      table(h) = elem.asInstanceOf[AnyRef]
+      table(h) = newEntry
 
       // this is incorrect since we set size afterwards anyway and a counter
       // like this would not even work:
@@ -232,13 +233,13 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
 
   /* tasks */
 
-  class FillBlocks(buckets: Array[UnrolledBuffer[Any]], table: AddingFlatHashTable, val offset: Int, val howmany: Int)
-  extends Task[(Int, UnrolledBuffer[Any]), FillBlocks] {
-    var result = (Int.MinValue, new UnrolledBuffer[Any]);
-    def leaf(prev: Option[(Int, UnrolledBuffer[Any])]) {
+  class FillBlocks(buckets: Array[UnrolledBuffer[AnyRef]], table: AddingFlatHashTable, val offset: Int, val howmany: Int)
+  extends Task[(Int, UnrolledBuffer[AnyRef]), FillBlocks] {
+    var result = (Int.MinValue, new UnrolledBuffer[AnyRef]);
+    def leaf(prev: Option[(Int, UnrolledBuffer[AnyRef])]) {
       var i = offset
       var totalinserts = 0
-      var leftover = new UnrolledBuffer[Any]()
+      var leftover = new UnrolledBuffer[AnyRef]()
       while (i < (offset + howmany)) {
         val (inserted, intonextblock) = fillBlock(i, buckets(i), leftover)
         totalinserts += inserted
@@ -250,11 +251,11 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
     private val blocksize = table.tableLength >> ParHashSetCombiner.discriminantbits
     private def blockStart(block: Int) = block * blocksize
     private def nextBlockStart(block: Int) = (block + 1) * blocksize
-    private def fillBlock(block: Int, elems: UnrolledBuffer[Any], leftovers: UnrolledBuffer[Any]): (Int, UnrolledBuffer[Any]) = {
+    private def fillBlock(block: Int, elems: UnrolledBuffer[AnyRef], leftovers: UnrolledBuffer[AnyRef]): (Int, UnrolledBuffer[AnyRef]) = {
       val beforePos = nextBlockStart(block)
 
       // store the elems
-      val (elemsIn, elemsLeft) = if (elems != null) insertAll(-1, beforePos, elems) else (0, UnrolledBuffer[Any]())
+      val (elemsIn, elemsLeft) = if (elems != null) insertAll(-1, beforePos, elems) else (0, UnrolledBuffer[AnyRef]())
 
       // store the leftovers
       val (leftoversIn, leftoversLeft) = insertAll(blockStart(block), beforePos, leftovers)
@@ -262,8 +263,8 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
       // return the no. of stored elements tupled with leftovers
       (elemsIn + leftoversIn, elemsLeft concat leftoversLeft)
     }
-    private def insertAll(atPos: Int, beforePos: Int, elems: UnrolledBuffer[Any]): (Int, UnrolledBuffer[Any]) = {
-      val leftovers = new UnrolledBuffer[Any]
+    private def insertAll(atPos: Int, beforePos: Int, elems: UnrolledBuffer[AnyRef]): (Int, UnrolledBuffer[AnyRef]) = {
+      val leftovers = new UnrolledBuffer[AnyRef]
       var inserted = 0
 
       var unrolled = elems.headPtr
@@ -273,10 +274,10 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
         val chunkarr = unrolled.array
         val chunksz = unrolled.size
         while (i < chunksz) {
-          val elem = chunkarr(i)
-          val res = t.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
+          val entry = chunkarr(i)
+          val res = t.insertEntry(atPos, beforePos, entry)
           if (res >= 0) inserted += res
-          else leftovers += elem
+          else leftovers += entry
           i += 1
         }
         i = 0
