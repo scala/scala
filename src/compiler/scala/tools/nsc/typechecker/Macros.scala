@@ -538,6 +538,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
       val expandee = expandeeTree
+      val macroRole = APPLY_ROLE
     } with UnaffiliatedMacroContext {
       val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
       override def toString = "MacroContext(%s@%s +%d)".format(expandee.symbol.name, expandee.pos, enclosingMacros.length - 1 /* exclude myself */)
@@ -644,6 +645,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private def pushMacroContext(c: MacroContext) = _openMacros ::= c
   private def popMacroContext() = _openMacros = _openMacros.tail
   def enclosingMacroPosition = openMacros map (_.macroApplication.pos) find (_ ne NoPosition) getOrElse NoPosition
+
+  /** Describes the role that the macro expandee is performing.
+   */
+  type MacroRole = String
+  final def APPLY_ROLE: MacroRole = "APPLY_ROLE"
+  private val roleNames = Map(APPLY_ROLE -> "apply")
 
   private sealed abstract class MacroExpansionResult
   private case class Success(expanded: Tree) extends MacroExpansionResult
