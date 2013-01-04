@@ -13,15 +13,23 @@
 <     92	JUMP 2
 <     
 <   2: 
-370c369
+247c246
+<   blocks: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18]
+---
+>   blocks: [1,2,3,4,5,6,8,10,11,12,13,14,15,16,17,18]
+258,260d256
+<     92	JUMP 7
+<     
+<   7: 
+395c391
 <   locals: value args, variable result, value ex6, value x4, value x5, value message, value x
 ---
 >   locals: value args, variable result, value ex6, value x4, value x5, value x
-372c371
+397c393
 <   blocks: [1,2,3,4,5,8,11,13,14,16]
 ---
 >   blocks: [1,2,3,5,8,11,13,14,16,17]
-396c395,404
+421c417,426
 <     103	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
@@ -34,25 +42,25 @@
 >     106	LOAD_LOCAL(value x4)
 >     106	IS_INSTANCE REF(class MyException)
 >     106	CZJUMP (BOOL)NE ? 5 : 11
-409,411d416
+434,436d438
 <     101	JUMP 4
 <     
 <   4: 
-425,428d429
+450,453d451
 <     106	LOAD_LOCAL(value x5)
 <     106	CALL_METHOD MyException.message (dynamic)
 <     106	STORE_LOCAL(value message)
 <     106	SCOPE_ENTER value message
-430c431,432
+455c453,454
 <     106	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     106	CALL_METHOD MyException.message (dynamic)
-502c504
+527c526
 <   blocks: [1,2,3,4,6,7,8,9,10]
 ---
 >   blocks: [1,2,3,4,6,7,8,9,10,11,12,13]
-531c533,538
+556c555,560
 <     306	THROW(MyException)
 ---
 >     ?	JUMP 11
@@ -61,11 +69,11 @@
 >     ?	LOAD_LOCAL(variable monitor4)
 >     305	MONITOR_EXIT
 >     ?	JUMP 12
-537c544
+562c566
 <     ?	THROW(Throwable)
 ---
 >     ?	JUMP 12
-543c550,557
+568c572,579
 <     ?	THROW(Throwable)
 ---
 >     ?	STORE_LOCAL(value t)
@@ -76,7 +84,7 @@
 >     304	MONITOR_EXIT
 >     ?	STORE_LOCAL(value t)
 >     ?	JUMP 13
-558a573,584
+583a595,606
 >   13: 
 >     310	LOAD_MODULE object Predef
 >     310	CALL_PRIMITIVE(StartConcat)
@@ -89,34 +97,35 @@
 >     310	CALL_METHOD scala.Predef.println (dynamic)
 >     310	JUMP 2
 >     
-567c593
+592c615
 <     catch (Throwable) in ArrayBuffer(7, 8, 9, 10) starting at: 6
 ---
 >     catch (Throwable) in ArrayBuffer(7, 8, 9, 10, 11) starting at: 6
-570c596
+595c618
 <     catch (Throwable) in ArrayBuffer(4, 6, 7, 8, 9, 10) starting at: 3
 ---
 >     catch (Throwable) in ArrayBuffer(4, 6, 7, 8, 9, 10, 11, 12) starting at: 3
-602c628
+627c650
 <   blocks: [1,2,3,4,5,6,7,9,10]
 ---
 >   blocks: [1,2,3,4,5,6,7,9,10,11,12]
-626c652,658
+651c674,675
 <     78	THROW(IllegalArgumentException)
 ---
 >     ?	STORE_LOCAL(value e)
 >     ?	JUMP 11
->     
+652a677,681
 >   11: 
 >     81	LOAD_LOCAL(value e)
 >     ?	STORE_LOCAL(variable exc1)
 >     ?	JUMP 12
-655c687,688
+>     
+680c709,710
 <     81	THROW(Exception)
 ---
 >     ?	STORE_LOCAL(variable exc1)
 >     ?	JUMP 12
-671a705,717
+696a727,739
 >   12: 
 >     83	LOAD_MODULE object Predef
 >     83	CONSTANT("finally")
@@ -130,19 +139,19 @@
 >     84	LOAD_LOCAL(variable exc1)
 >     84	THROW(Throwable)
 >     
-677c723
+702c745
 <     catch (<none>) in ArrayBuffer(4, 6, 7, 9) starting at: 3
 ---
 >     catch (<none>) in ArrayBuffer(4, 6, 7, 9, 11) starting at: 3
-701c747
+726c769
 <   locals: value args, variable result, value ex6, variable exc2, value x4, value x5, value message, value x, value ex6, value x4, value x5, value message, value x
 ---
 >   locals: value args, variable result, value ex6, variable exc2, value x4, value x5, value x, value ex6, value x4, value x5, value x
-703c749
+728c771
 <   blocks: [1,2,3,4,5,6,9,12,14,17,18,19,22,25,27,28,30,31]
 ---
 >   blocks: [1,2,3,4,5,6,9,12,14,17,18,19,22,25,27,28,30,31,32,33,34]
-727c773,780
+752c795,802
 <     172	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
@@ -153,64 +162,64 @@
 >     170	STORE_LOCAL(value x4)
 >     170	SCOPE_ENTER value x4
 >     170	JUMP 18
-774,777d826
+799,802d848
 <     175	LOAD_LOCAL(value x5)
 <     175	CALL_METHOD MyException.message (dynamic)
 <     175	STORE_LOCAL(value message)
 <     175	SCOPE_ENTER value message
-779c828,829
+804c850,851
 <     176	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     176	CALL_METHOD MyException.message (dynamic)
-783c833,834
+808c855,856
 <     177	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     177	CALL_METHOD MyException.message (dynamic)
-785c836,837
+810c858,859
 <     177	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 33
-789c841,842
+814c863,864
 <     170	THROW(Throwable)
 ---
 >     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 33
-798a852,857
+823a874,879
 >   33: 
 >     169	LOAD_LOCAL(value ex6)
 >     169	STORE_LOCAL(value x4)
 >     169	SCOPE_ENTER value x4
 >     169	JUMP 5
 >     
-813,816d871
+838,841d893
 <     180	LOAD_LOCAL(value x5)
 <     180	CALL_METHOD MyException.message (dynamic)
 <     180	STORE_LOCAL(value message)
 <     180	SCOPE_ENTER value message
-818c873,874
+843c895,896
 <     181	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     181	CALL_METHOD MyException.message (dynamic)
-822c878,879
+847c900,901
 <     182	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     182	CALL_METHOD MyException.message (dynamic)
-824c881,882
+849c903,904
 <     182	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(variable exc2)
 >     ?	JUMP 34
-828c886,887
+853c908,909
 <     169	THROW(Throwable)
 ---
 >     ?	STORE_LOCAL(variable exc2)
 >     ?	JUMP 34
-844a904,916
+869a926,938
 >   34: 
 >     184	LOAD_MODULE object Predef
 >     184	CONSTANT("finally")
@@ -224,23 +233,23 @@
 >     185	LOAD_LOCAL(variable exc2)
 >     185	THROW(Throwable)
 >     
-850c922
+875c944
 <     catch (Throwable) in ArrayBuffer(17, 18, 19, 22, 25, 27, 28, 30) starting at: 4
 ---
 >     catch (Throwable) in ArrayBuffer(17, 18, 19, 22, 25, 27, 28, 30, 32) starting at: 4
-853c925
+878c947
 <     catch (<none>) in ArrayBuffer(4, 5, 6, 9, 12, 17, 18, 19, 22, 25, 27, 28, 30) starting at: 3
 ---
 >     catch (<none>) in ArrayBuffer(4, 5, 6, 9, 12, 17, 18, 19, 22, 25, 27, 28, 30, 32, 33) starting at: 3
-877c949
+902c971
 <   locals: value args, variable result, value e, value ex6, value x4, value x5, value message, value x
 ---
 >   locals: value args, variable result, value e, value ex6, value x4, value x5, value x
-879c951
+904c973
 <   blocks: [1,2,3,6,7,8,11,14,16,17,19]
 ---
 >   blocks: [1,2,3,6,7,8,11,14,16,17,19,20]
-903c975,982
+928c997,1004
 <     124	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
@@ -251,29 +260,29 @@
 >     122	STORE_LOCAL(value x4)
 >     122	SCOPE_ENTER value x4
 >     122	JUMP 7
-932,935d1010
+957,960d1032
 <     127	LOAD_LOCAL(value x5)
 <     127	CALL_METHOD MyException.message (dynamic)
 <     127	STORE_LOCAL(value message)
 <     127	SCOPE_ENTER value message
-937c1012,1013
+962c1034,1035
 <     127	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     127	CALL_METHOD MyException.message (dynamic)
-966c1042
+991c1064
 <     catch (IllegalArgumentException) in ArrayBuffer(6, 7, 8, 11, 14, 16, 17, 19) starting at: 3
 ---
 >     catch (IllegalArgumentException) in ArrayBuffer(6, 7, 8, 11, 14, 16, 17, 19, 20) starting at: 3
-990c1066
+1015c1088
 <   locals: value args, variable result, value ex6, value x4, value x5, value message, value x, value e
 ---
 >   locals: value args, variable result, value ex6, value x4, value x5, value x, value e
-992c1068
+1017c1090
 <   blocks: [1,2,3,4,5,8,11,15,16,17,19]
 ---
 >   blocks: [1,2,3,5,8,11,15,16,17,19,20]
-1016c1092,1101
+1041c1114,1123
 <     148	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
@@ -286,49 +295,50 @@
 >     154	LOAD_LOCAL(value x4)
 >     154	IS_INSTANCE REF(class MyException)
 >     154	CZJUMP (BOOL)NE ? 5 : 11
-1037,1039d1121
+1062,1064d1143
 <     145	JUMP 4
 <     
 <   4: 
-1053,1056d1134
+1078,1081d1156
 <     154	LOAD_LOCAL(value x5)
 <     154	CALL_METHOD MyException.message (dynamic)
 <     154	STORE_LOCAL(value message)
 <     154	SCOPE_ENTER value message
-1058c1136,1137
+1083c1158,1159
 <     154	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     154	CALL_METHOD MyException.message (dynamic)
-1275c1354
+1300c1376
 <   blocks: [1,2,3,4,5,7]
 ---
 >   blocks: [1,2,3,4,5,7,8]
-1299c1378,1385
+1324c1400,1401
 <     38	THROW(IllegalArgumentException)
 ---
 >     ?	STORE_LOCAL(value e)
 >     ?	JUMP 8
->     
+1325a1403,1408
 >   8: 
 >     42	LOAD_MODULE object Predef
 >     42	CONSTANT("IllegalArgumentException")
 >     42	CALL_METHOD scala.Predef.println (dynamic)
 >     42	JUMP 2
-1346c1432
+>     
+1371c1454
 <   locals: value args, variable result, value ex6, value x4, value x5, value message, value x
 ---
 >   locals: value args, variable result, value ex6, value x4, value x5, value x
-1348c1434
+1373c1456
 <   blocks: [1,2,3,4,5,8,11,13,14,16,17,19]
 ---
 >   blocks: [1,2,3,5,8,11,13,14,16,17,19,20]
-1372c1458,1459
+1397c1480,1481
 <     203	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
 >     ?	JUMP 20
-1392c1479,1488
+1417c1501,1510
 <     209	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value ex6)
@@ -341,41 +351,41 @@
 >     212	LOAD_LOCAL(value x4)
 >     212	IS_INSTANCE REF(class MyException)
 >     212	CZJUMP (BOOL)NE ? 5 : 11
-1405,1407d1500
+1430,1432d1522
 <     200	JUMP 4
 <     
 <   4: 
-1421,1424d1513
+1446,1449d1535
 <     212	LOAD_LOCAL(value x5)
 <     212	CALL_METHOD MyException.message (dynamic)
 <     212	STORE_LOCAL(value message)
 <     212	SCOPE_ENTER value message
-1426c1515,1516
+1451c1537,1538
 <     213	LOAD_LOCAL(value message)
 ---
 >     ?	LOAD_LOCAL(value x5)
 >     213	CALL_METHOD MyException.message (dynamic)
-1470c1560
+1495c1582
 <   blocks: [1,2,3,4,5,7]
 ---
 >   blocks: [1,2,3,4,5,7,8]
-1494c1584,1585
+1519c1606,1607
 <     58	THROW(IllegalArgumentException)
 ---
 >     ?	STORE_LOCAL(value e)
 >     ?	JUMP 8
-1495a1587,1592
+1520a1609,1614
 >   8: 
 >     62	LOAD_MODULE object Predef
 >     62	CONSTANT("RuntimeException")
 >     62	CALL_METHOD scala.Predef.println (dynamic)
 >     62	JUMP 2
 >     
-1543c1640
+1568c1662
 <   blocks: [1,2,3,4]
 ---
 >   blocks: [1,2,3,4,5]
-1563c1660,1665
+1588c1682,1687
 <     229	THROW(MyException)
 ---
 >     ?	JUMP 5
@@ -384,19 +394,19 @@
 >     ?	LOAD_LOCAL(variable monitor1)
 >     228	MONITOR_EXIT
 >     228	THROW(Throwable)
-1569c1671
+1594c1693
 <     ?	THROW(Throwable)
 ---
 >     228	THROW(Throwable)
-1597c1699
+1622c1721
 <   locals: value args, variable result, variable monitor2, variable monitorResult1
 ---
 >   locals: value exception$1, value args, variable result, variable monitor2, variable monitorResult1
-1599c1701
+1624c1723
 <   blocks: [1,2,3,4]
 ---
 >   blocks: [1,2,3,4,5]
-1622c1724,1732
+1647c1746,1754
 <     245	THROW(MyException)
 ---
 >     ?	STORE_LOCAL(value exception$1)
@@ -408,7 +418,7 @@
 >     ?	LOAD_LOCAL(variable monitor2)
 >     244	MONITOR_EXIT
 >     244	THROW(Throwable)
-1628c1738
+1653c1760
 <     ?	THROW(Throwable)
 ---
 >     244	THROW(Throwable)
