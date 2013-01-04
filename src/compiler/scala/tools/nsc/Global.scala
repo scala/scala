@@ -228,6 +228,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // of assert and require (but for now I've reproduced them here,
   // because there are a million to fix.)
   @inline final def assert(assertion: Boolean, message: => Any) {
+    // calling Predef.assert would send a freshly allocated closure wrapping the one received as argument.
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ supplementErrorMessage("" + message))
   }
@@ -235,6 +236,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     assert(assertion, "")
   }
   @inline final def require(requirement: Boolean, message: => Any) {
+    // calling Predef.require would send a freshly allocated closure wrapping the one received as argument.
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ supplementErrorMessage("" + message))
   }
