@@ -352,6 +352,11 @@ trait Mirrors { self: Universe =>
      *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def set(value: Any): Unit
+
+    /** Creates a new mirror which uses the same symbol, but is bound to a different receiver.
+     *  This is significantly faster than recreating the mirror from scratch.
+     */
+    def bind(newReceiver: Any): FieldMirror
   }
 
   /** A mirror that reflects a method.
@@ -373,6 +378,11 @@ trait Mirrors { self: Universe =>
      *  with invoking the corresponding method or constructor.
      */
     def apply(args: Any*): Any
+
+    /** Creates a new mirror which uses the same symbol, but is bound to a different receiver.
+     *  This is significantly faster than recreating the mirror from scratch.
+     */
+    def bind(newReceiver: Any): MethodMirror
   }
 
   /** A mirror that reflects the instance or static parts of a runtime class.
