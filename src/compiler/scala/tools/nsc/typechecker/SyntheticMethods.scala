@@ -157,11 +157,23 @@ trait SyntheticMethods extends ast.TreeDSL {
         Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
     }
 
-    /** (that.isInstanceOf[this.C])
-     *  where that is the given methods first parameter.
+    /** that match { case _: this.C => true ; case _ => false }
+     *  where `that` is the given method's first parameter.
+     *
+     *  An isInstanceOf test is insufficient because it has weaker
+     *  requirements than a pattern match. Given an inner class Foo and
+     *  two different instantiations of the container, an x.Foo and and a y.Foo
+     *  are both .isInstanceOf[Foo], but the one does not match as the other.
      */
-    def thatTest(eqmeth: Symbol): Tree =
-      gen.mkIsInstanceOf(Ident(eqmeth.firstParam), classExistentialType(clazz), true, false)
+    def thatTest(eqmeth: Symbol): Tree = {
+      Match(
+        Ident(eqmeth.firstParam),
+        List(
+          CaseDef(Typed(Ident(nme.WILDCARD), TypeTree(clazz.tpe)), EmptyTree, TRUE),
+          CaseDef(WILD.empty, EmptyTree, FALSE)
+        )
+      )
+    }
 
     /** (that.asInstanceOf[this.C])
      *  where that is the given methods first parameter.
