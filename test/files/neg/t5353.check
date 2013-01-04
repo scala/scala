@@ -1,4 +1,0 @@
-t5353.scala:2: error: macro has not been expanded
-  def f(x: Boolean) = if (x) Array("abc") else Array()
-                                                    ^
-one error found
