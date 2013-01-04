@@ -164,6 +164,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def substituteThis(clazz: Symbol, to: Tree): Tree =
       new ThisSubstituter(clazz, to) transform this
 
+    def replace(from: Tree, to: Tree): Tree =
+      new TreeReplacer(from, to, positionAware = false) transform this
+
     def hasSymbolWhich(f: Symbol => Boolean) =
       (symbol ne null) && (symbol ne NoSymbol) && f(symbol)
 
@@ -1381,6 +1384,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
       if (tree eq orig) super.transform(tree)
       else tree
   }
+
+  /** A transformer that replaces tree `from` with tree `to` in a given tree */
+  class TreeReplacer(from: Tree, to: Tree, positionAware: Boolean) extends Transformer {
+    override def transform(t: Tree): Tree = {
+      if (t == from) to
+      else if (!positionAware || (t.pos includes from.pos) || t.pos.isTransparent) super.transform(t)
+      else t
+    }
+  }
+
   // Create a readable string describing a substitution.
   private def substituterString(fromStr: String, toStr: String, from: List[Any], to: List[Any]): String = {
     "subst[%s, %s](%s)".format(fromStr, toStr, (from, to).zipped map (_ + " -> " + _) mkString ", ")

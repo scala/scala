@@ -426,7 +426,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           } else if (other.isDeferred && member.isTermMacro) { // (1.9)
             overrideError("cannot override an abstract method")
           } else if (other.isTermMacro && !member.isTermMacro) { // (1.10)
-            overrideError("cannot override a macro")
+            overrideError("cannot be used here - only term macros can override term macros")
           } else {
             checkOverrideTypes()
             checkOverrideDeprecated()
