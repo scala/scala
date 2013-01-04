@@ -1587,7 +1587,11 @@ trait Typers extends Modes with Adaptations with Tags {
           else
             map2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt setType ldef.symbol.tpe)
 
-          if (superCall1 == cunit) EmptyTree else cbody2
+          if (superCall1 == cunit) EmptyTree
+          else cbody2 match {
+            case Block(_, expr) => expr
+            case tree => tree
+          }
         case _ =>
           EmptyTree
       }
