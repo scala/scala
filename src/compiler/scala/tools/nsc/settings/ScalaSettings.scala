@@ -134,6 +134,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
   val Xdce            = BooleanSetting    ("-Ydead-code", "Perform dead code elimination.")
+  val YdceModuleLoad  = BooleanSetting    ("-Ydead-code-module-load", "Dead code elimination, if enabled, may eliminate initialization of outer modules. (For compatibility with Scala 2.10.0)")
   val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
   //val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")
   val termConflict    = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts", List("package", "object", "error"), "error")

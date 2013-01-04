@@ -49,7 +49,7 @@ abstract class Erasure extends AddInterfaces
             if (sym == ArrayClass) args foreach traverse
             else if (sym.isTypeParameterOrSkolem || sym.isExistentiallyBound || !args.isEmpty) result = true
             else if (sym.isClass) traverse(rebindInnerClass(pre, sym)) // #2585
-            else if (!sym.owner.isPackageClass) traverse(pre)
+            else if (!sym.isTopLevel) traverse(pre)
           case PolyType(_, _) | ExistentialType(_, _) =>
             result = true
           case RefinedType(parents, _) =>
