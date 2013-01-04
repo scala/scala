@@ -878,7 +878,7 @@ trait Namers extends MethodSynthesis {
         else tpt.tpe
       }
 
-      val parents = typer.parentTypes(templ) map checkParent
+      val parents = typer.typedParentTypes(templ) map checkParent
 
       enterSelf(templ.self)
 

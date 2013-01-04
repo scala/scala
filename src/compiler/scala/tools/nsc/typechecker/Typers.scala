@@ -1630,7 +1630,7 @@ trait Typers extends Modes with Adaptations with Tags {
         )
     }
 
-    def parentTypes(templ: Template): List[Tree] = templ.parents match {
+    def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefClass.tpe)))
       case first :: rest =>
         try {
@@ -1652,7 +1652,7 @@ trait Typers extends Modes with Adaptations with Tags {
           case ex: TypeError =>
             // fallback in case of cyclic errors
             // @H none of the tests enter here but I couldn't rule it out
-            // upd. @E when a definitions inherits itself, we end up here
+            // upd. @E when a definition inherits itself, we end up here
             // because `typedParentType` triggers `initialize` for parent types symbols
             log("Type error calculating parents in template " + templ)
             log("Error: " + ex)
@@ -1763,7 +1763,7 @@ trait Typers extends Modes with Adaptations with Tags {
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
       val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
-        _.typedTemplate(cdef.impl, parentTypes(cdef.impl))
+        _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
@@ -1803,7 +1803,7 @@ trait Typers extends Modes with Adaptations with Tags {
       )
       val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
         _.typedTemplate(mdef.impl, {
-          parentTypes(mdef.impl) ++ (
+          typedParentTypes(mdef.impl) ++ (
             if (noSerializable) Nil
             else {
               clazz.makeSerializable()
