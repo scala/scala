@@ -1,0 +1,9 @@
+Macros_Test_2.scala:2: error: macro definition needs to be enabled
+by making the implicit value language.experimental.macros visible.
+This can be achieved by adding the import clause 'import scala.language.experimental.macros'
+or by setting the compiler option -language:experimental.macros.
+See the Scala docs for value scala.language.experimental.macros for a discussion
+why the feature needs to be explicitly enabled.
+  type Foo(x: Int) = macro Impls.foo
+       ^
+one error found

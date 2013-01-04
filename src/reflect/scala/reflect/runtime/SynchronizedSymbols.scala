@@ -62,6 +62,9 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createAliasTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AliasTypeSymbol =
       new AliasTypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
 
+    override protected def createMacroTypeSymbol(name: TypeName, pos: Position, newFlags: Long): MacroTypeSymbol =
+      new MacroTypeSymbol(this, pos, name) with SynchronizedTypeSymbol initFlags newFlags
+
     override protected def createTypeSkolemSymbol(name: TypeName, origin: AnyRef, pos: Position, newFlags: Long): TypeSkolem =
       new TypeSkolem(this, pos, name, origin) with SynchronizedTypeSymbol initFlags newFlags
 

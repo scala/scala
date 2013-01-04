@@ -629,14 +629,56 @@ trait Namers extends MethodSynthesis {
     def enterDefDef(tree: DefDef): Unit = tree match {
       case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
         assignAndEnterFinishedSymbol(tree)
-      case DefDef(mods, name, tparams, _, _, _) =>
+      case DefDef(mods, name, tparams, vparamss, _, _) =>
         val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
         val sym = assignAndEnterSymbol(tree) setFlag bridgeFlag
 
         if (name == nme.copy && sym.isSynthetic)
           enterCopyMethod(tree, tparams)
-        else
+        else {
+          if (nme.isTypeMacroName(name)) {
+            // type macros are DefDefs, i.e. terms, but they need emissaries to represent themselves in the realm of types
+            // this should be an easy procedure of creating and entering a synthetic, but overloading messes everything up
+            // for one, overloaded type macros might each carry different mods
+            //
+            // to find out whether this is going to be a problem, I went to ModifierFlags and looked through flags there
+            // the flags that a type macro can carry are: MACRO, FINAL, PRIVATE, PROTECTED, LOCAL, OVERRIDE, ABSOVERRIDE
+            // the first one is uniform across the underlying macros, the last one is ruled out by the parser
+            // let's discuss the rest:
+            //
+            // FINAL & OVERRIDE: we should distinguish two flavors of overriding that macro types can be involved in
+            // 1) macro type to macro type overriding. this one gets resolved on per-method basis
+            // and the emissary doesn't need to get involved in it
+            // 2) macro type to regular type overriding. to participate in this kind of relationships, the emissary
+            // must inherit the flag from its instances. but which one should it pick? the one with a nullary parameter list,
+            // since it's the only one that can override a regular type (e.g. an abstract type in a base class)
+            // note that we don't need to inherit the FINAL flag, because no type is allowed override a macro type anyways,
+            // whereas type macros get check on per-method basis
+            //
+            // PRIVATE, PROTECTED, LOCAL: doesn't need to be propagated to the emissary, because usages of macro types
+            // always end up being desugared into applications of its instances, which are going to be access checked separately
+            //
+            // verdict:
+            //   1) reset FINAL, PRIVATE, PROTECTED, LOCAL, OVERRIDE
+            //   2) inherit OVERRIDE but only from a nullary type macro (if any)
+            val emissaryName = nme.stripTypeMacroSuffix(name).toTypeName
+            val existing = context.scope.lookupEntry(emissaryName)
+            val emissary =
+              if ((existing ne null) && existing.owner == context.scope && existing.sym.isMacroType) existing.sym
+              else {
+                // unfortunately we create the synthetic tree once and for all, and mods are immutable
+                // this means we can't guarantee that it will have the correct FINAL and OVERRIDE flags set if its nullary type macro comes not first
+                // therefore I'm always erasing the corresponding flag bits to be consistent
+                // that's not a big problem though, because the underlying symbol will have correct flags
+                val emissaryDef = TypeDef(mods & ~FINAL & ~PRIVATE & ~PROTECTED & ~LOCAL & ~OVERRIDE, emissaryName, Nil, TypeTree(NothingClass.tpe))
+                // TODO: position of the emissary now always points to the first one in the list of its overloads
+                enterSyntheticSym(atPos(tree.pos.makeTransparent)(emissaryDef))
+              }
+            if (vparamss.isEmpty && (mods hasFlag FINAL)) emissary setFlag FINAL
+            if (vparamss.isEmpty && (mods hasFlag OVERRIDE)) emissary setFlag OVERRIDE
+          }
           sym setInfo completerOf(tree, tparams)
+        }
     }
 
     def enterClassDef(tree: ClassDef) {
@@ -835,6 +877,7 @@ trait Namers extends MethodSynthesis {
       // compute result type from rhs
       val typedBody =
         if (tree.symbol.isTermMacro) defnTyper.computeMacroDefType(tree, pt)
+        else if (tree.symbol.isTypeMacro) abort(s"type macro must have had its tpt assigned when it was synthesized: $tree")
         else defnTyper.computeType(tree.rhs, pt)
 
       val typedDefn = widenIfNecessary(tree.symbol, typedBody, pt)
@@ -872,13 +915,23 @@ trait Namers extends MethodSynthesis {
     }
 
     private def templateSig(templ: Template): Type = {
-      val clazz = context.owner
-      def checkParent(tpt: Tree): Type = {
-        if (tpt.tpe.isError) AnyRefClass.tpe
-        else tpt.tpe
+      // when a parent type happens to be a macro type which expands into a template
+      // macro engine will return Ident(AnyRefClass) with an attachment carrying the actual expansion
+      // here we detect this situation and replace the original template with a new one
+      val parentTrees = typer.typedParentTypes(templ)
+      val expansions = flatCollect(parentTrees) { case ExpandedIntoTemplate(templ1) => Some(templ1) }
+      expansions match {
+        case templ1 :: _ =>
+          linkExpandeeAndExpanded(templ, templ1)
+          templateSig(templ1)
+        case _ =>
+          val parentTypes = parentTrees map (_.tpe) map (tpe => if (tpe.isError) AnyRefClass.tpe else tpe)
+          templateSig1(templ, parentTypes)
       }
+    }
 
-      val parents = typer.parentTypes(templ) map checkParent
+    private def templateSig1(templ: Template, parents: List[Type]): Type = {
+      val clazz = context.owner
 
       enterSelf(templ.self)
 
@@ -1054,7 +1107,7 @@ trait Namers extends MethodSynthesis {
       // because @macroImpl annotation only gets assigned during typechecking
       // otherwise macro defs wouldn't be able to robustly coexist with their clients
       // because a client could be typechecked before a macro def that it uses
-      if (ddef.symbol.isTermMacro) {
+      if (ddef.symbol.isMacro) {
         val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
         typer.computeMacroDefType(ddef, pt)
       }

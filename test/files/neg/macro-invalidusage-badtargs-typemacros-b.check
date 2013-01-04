@@ -1,0 +1,7 @@
+Macros_Test_2.scala:8: error: wrong number of type parameters for macro type Foo[T](x: Int)
+  val x: Foo[String, String](2) = new C
+         ^
+Macros_Test_2.scala:7: error: wrong number of type parameters for macro type Foo[T](x: Int)
+  class D extends Foo[String, String](2)
+                  ^
+two errors found

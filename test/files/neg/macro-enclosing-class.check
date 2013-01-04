@@ -1,0 +1,18 @@
+Test_2.scala:6: warning: role = TYPE_ROLE, template = Test
+  val x1: Foo = new Foo
+          ^
+Test_2.scala:4: warning: role = PARENT_ROLE, template = D1
+  class D1 extends Foo
+                   ^
+Test_2.scala:5: warning: role = APPLIED_TYPE_ROLE, template = Test
+  type T = Bar()[Int]
+           ^
+Test_2.scala:6: warning: role = NEW_ROLE, template = Test
+  val x1: Foo = new Foo
+                ^
+Test_2.scala:7: warning: role = ANNOTATION_ROLE, template = Test
+  @Foo class D2
+   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

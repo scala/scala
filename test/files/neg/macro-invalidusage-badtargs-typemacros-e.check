@@ -1,0 +1,7 @@
+Macros_Test_2.scala:10: error: macro has not been expanded
+  val x1: Foo = new C
+          ^
+Macros_Test_2.scala:9: error: macro has not been expanded
+  class D1 extends Foo
+                   ^
+two errors found

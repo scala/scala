@@ -1,0 +1,6 @@
+prefix = Expr[Nothing](Test.this.prefix1)
+it works
+prefix = Expr[Nothing](Test.this.prefix1)
+it works
+prefix = Expr[Nothing](Test.this.prefix1)
+it works

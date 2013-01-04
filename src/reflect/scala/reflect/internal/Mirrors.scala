@@ -207,7 +207,7 @@ trait Mirrors extends api.Mirrors {
       erasureString(classTag[T].runtimeClass)
     }
 
-   @inline private def wrapMissing(body: => Symbol): Symbol =
+   @inline final def wrapMissing(body: => Symbol): Symbol =
       try body
       catch { case _: MissingRequirementError => NoSymbol }
 

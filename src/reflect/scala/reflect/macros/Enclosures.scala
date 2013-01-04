@@ -17,6 +17,41 @@ trait Enclosures {
    */
   def macroApplication: Tree
 
+  /** The semantic role that `macroApplication` plays in the code.
+   */
+  type MacroRole
+
+  /** The role that represents an application of a term macro,
+   *  e.g. `M(2)(3)` in `val x = M(2)(3)` or `M(a, b)` in `x match { case x @ M(a, b) => }`.
+   */
+  def APPLY_ROLE: MacroRole
+
+  /** The role that represents a macro type in type position, e.g. `TM(2)(3)` in `def x: TM(2)(3) = ???`.
+   */
+  def TYPE_ROLE: MacroRole
+
+  /** The role that represents a macro type in applied type position, e.g. `TM(2)(3)` in `TM(2)(3)[Int]`.
+   */
+  def APPLIED_TYPE_ROLE: MacroRole
+
+  /** The role that represents a macro type used as a parent, e.g. `TM(2)(3)` in `class C extends TM(2)(3)` or `new TM(2)(3){}`.
+   */
+  def PARENT_ROLE: MacroRole
+
+  /** The role that represents a macro type used to instantiate an object, e.g. `TM(2)(3)` in `new TM(2)(3)`.
+   *  Contrast this role with parent role as in `new TM(2)(3){}`. In the former case, we get a New node,
+   *  while in the latter case we get a Template for an anonymous class + a trivial New node.
+   */
+  def NEW_ROLE: MacroRole
+
+  /** The role that represents a macro typed used as an annotation, e.g. `TM(2)(3)` in `@TM(2)(3) class C`.
+   */
+  def ANNOTATION_ROLE: MacroRole
+
+  /** The semantic role that `macroApplication` plays in the code.
+   */
+  def macroRole: MacroRole
+
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
    *

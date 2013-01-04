@@ -414,7 +414,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     override def isDocTemplate = true
     private[this] lazy val companionSymbol =
-      if (sym.isAliasType || sym.isAbstractType) {
+      if (sym.isAliasType && !sym.isMacroType || sym.isAbstractType) {
         inTpl.sym.info.member(sym.name.toTermName) match {
           case NoSymbol => NoSymbol
           case s =>
@@ -637,7 +637,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
       def createDocTemplate(bSym: Symbol, inTpl: DocTemplateImpl): DocTemplateImpl = {
         assert(!modelFinished, (bSym, inTpl)) // only created BEFORE the model is finished
-        if (bSym.isAliasType && bSym != AnyRefClass)
+        if (bSym.isAliasType && !bSym.isMacroType && bSym != AnyRefClass)
           new DocTemplateImpl(bSym, inTpl) with AliasImpl with AliasType { override def isAliasType = true }
         else if (bSym.isAbstractType)
           new DocTemplateImpl(bSym, inTpl) with TypeBoundsImpl with AbstractType { override def isAbstractType = true }
@@ -708,11 +708,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       // Code is duplicate because the anonymous classes are created statically
       def createNoDocMemberTemplate(bSym: Symbol, inTpl: DocTemplateImpl): MemberTemplateImpl = {
         assert(modelFinished) // only created AFTER the model is finished
-        if (bSym.isModule || (bSym.isAliasType && bSym.tpe.typeSymbol.isModule))
+        if (bSym.isModule || (bSym.isAliasType && !bSym.isMacroType && bSym.tpe.typeSymbol.isModule))
           new MemberTemplateImpl(bSym, inTpl) with Object {}
-        else if (bSym.isTrait || (bSym.isAliasType && bSym.tpe.typeSymbol.isTrait))
+        else if (bSym.isTrait || (bSym.isAliasType && !bSym.isMacroType && bSym.tpe.typeSymbol.isTrait))
           new MemberTemplateImpl(bSym, inTpl) with Trait {}
-        else if (bSym.isClass || (bSym.isAliasType && bSym.tpe.typeSymbol.isClass))
+        else if (bSym.isClass || (bSym.isAliasType && !bSym.isMacroType && bSym.tpe.typeSymbol.isClass))
           new MemberTemplateImpl(bSym, inTpl) with Class {}
         else
           sys.error("'" + bSym + "' isn't a class, trait or object thus cannot be built as a member template.")
@@ -784,7 +784,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         Some(new MemberTemplateImpl(bSym, inTpl) with TypeBoundsImpl with AbstractType {
           override def isAbstractType = true
         })
-      else if (bSym.isAliasType && !typeShouldDocument(bSym, inTpl))
+      else if (bSym.isAliasType && !bSym.isMacroType && !typeShouldDocument(bSym, inTpl))
         Some(new MemberTemplateImpl(bSym, inTpl) with AliasImpl with AliasType {
           override def isAliasType = true
         })
@@ -1035,7 +1035,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   // whether or not to create a page for an {abstract,alias} type
   def typeShouldDocument(bSym: Symbol, inTpl: DocTemplateImpl) =
     (settings.docExpandAllTypes.value && (bSym.sourceFile != null)) ||
-    (bSym.isAliasType || bSym.isAbstractType) &&
+    (bSym.isAliasType && !bSym.isMacroType || bSym.isAbstractType) &&
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
 }
