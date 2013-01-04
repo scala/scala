@@ -282,6 +282,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
+      def bind(newReceiver: Any) = new JavaFieldMirror(newReceiver, symbol)
       override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
     }
 
@@ -329,7 +330,16 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private def mkJavaMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): JavaMethodMirror = {
       if (isBytecodelessMethod(symbol)) new JavaBytecodelessMethodMirror(receiver, symbol)
       else if (symbol.paramss.flatten exists (p => isByNameParamType(p.info))) new JavaByNameMethodMirror(receiver, symbol)
-      else new JavaVanillaMethodMirror(receiver, symbol)
+      else {
+        symbol.paramss.flatten.length match {
+          case 0 => new JavaVanillaMethodMirror0(receiver, symbol)
+          case 1 => new JavaVanillaMethodMirror1(receiver, symbol)
+          case 2 => new JavaVanillaMethodMirror2(receiver, symbol)
+          case 3 => new JavaVanillaMethodMirror3(receiver, symbol)
+          case 4 => new JavaVanillaMethodMirror4(receiver, symbol)
+          case _ => new JavaVanillaMethodMirror(receiver, symbol)
+        }
+      }
     }
 
     private abstract class JavaMethodMirror(val symbol: MethodSymbol)
@@ -340,8 +350,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         jmeth
       }
 
+      def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+
       def jinvoke(jmeth: jMethod, receiver: Any, args: Seq[Any]): Any = {
-        val result = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+        val result = jinvokeraw(jmeth, receiver, args)
         if (jmeth.getReturnType == java.lang.Void.TYPE) ()
         else result
       }
@@ -351,11 +363,43 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     private class JavaVanillaMethodMirror(val receiver: Any, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
+      def bind(newReceiver: Any) = new JavaVanillaMethodMirror(newReceiver, symbol)
       def apply(args: Any*): Any = jinvoke(jmeth, receiver, args)
+    }
+
+    private class JavaVanillaMethodMirror0(receiver: Any, symbol: MethodSymbol)
+            extends JavaVanillaMethodMirror(receiver, symbol) {
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror0(newReceiver, symbol)
+      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver)
+    }
+
+    private class JavaVanillaMethodMirror1(receiver: Any, symbol: MethodSymbol)
+            extends JavaVanillaMethodMirror(receiver, symbol) {
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror1(newReceiver, symbol)
+      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef])
+    }
+
+    private class JavaVanillaMethodMirror2(receiver: Any, symbol: MethodSymbol)
+            extends JavaVanillaMethodMirror(receiver, symbol) {
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror2(newReceiver, symbol)
+      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
+    }
+
+    private class JavaVanillaMethodMirror3(receiver: Any, symbol: MethodSymbol)
+            extends JavaVanillaMethodMirror(receiver, symbol) {
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror3(newReceiver, symbol)
+      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
+    }
+
+    private class JavaVanillaMethodMirror4(receiver: Any, symbol: MethodSymbol)
+            extends JavaVanillaMethodMirror(receiver, symbol) {
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror4(newReceiver, symbol)
+      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
     }
 
     private class JavaByNameMethodMirror(val receiver: Any, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
+      def bind(newReceiver: Any) = new JavaByNameMethodMirror(newReceiver, symbol)
       def apply(args: Any*): Any = {
         val transformed = map2(args.toList, symbol.paramss.flatten)((arg, param) => if (isByNameParamType(param.info)) () => arg else arg)
         jinvoke(jmeth, receiver, transformed)
@@ -364,6 +408,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     private class JavaBytecodelessMethodMirror[T: ClassTag](val receiver: T, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
+       def bind(newReceiver: Any) = new JavaBytecodelessMethodMirror(newReceiver.asInstanceOf[T], symbol)
        def apply(args: Any*): Any = {
         // checking type conformance is too much of a hassle, so we don't do it here
         // actually it's not even necessary, because we manually dispatch arguments below
@@ -420,6 +465,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     private class JavaConstructorMirror(val outer: AnyRef, val symbol: MethodSymbol)
             extends MethodMirror {
+      def bind(newReceiver: Any) = new JavaConstructorMirror(newReceiver.asInstanceOf[AnyRef], symbol)
       override val receiver = outer
       lazy val jconstr = {
         val jconstr = constructorToJava(symbol)
