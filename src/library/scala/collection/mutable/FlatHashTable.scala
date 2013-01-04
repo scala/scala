@@ -108,10 +108,12 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Finds an entry in the hash table if such an element exists. */
-  protected def findEntry(elem: A): Option[A] = {
-    val entry = findElemImpl(elem)
-    if (null == entry) None else Some(entryToElem(entry))
-  }
+  protected def findEntry(elem: A): Option[A] = 
+    findElemImpl(elem) match {
+      case null => None
+      case entry => Some(entryToElem(entry))
+    }
+
 
   /** Checks whether an element is contained in the hash table. */
   protected def containsElem(elem: A): Boolean = {
@@ -119,7 +121,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   private def findElemImpl(elem: A): AnyRef = {
-    var searchEntry = elemToEntry(elem)
+    val searchEntry = elemToEntry(elem)
     var h = index(searchEntry.hashCode)
     var curEntry = table(h)
     while (null != curEntry && curEntry != searchEntry) {
@@ -371,8 +373,9 @@ private[collection] object FlatHashTable {
     override def initialValue = new scala.util.Random
   }
   
-  val NullSentinel = new AnyRef {
+  private object NullSentinel {
     override def hashCode = 0
+    override def toString = "NullSentinel"
   }
 
   /** The load factor for the hash table; must be < 500 (0.5)
@@ -428,7 +431,7 @@ private[collection] object FlatHashTable {
      * Does the inverse translation of elemToEntry
      */
     protected final def entryToElem(entry : AnyRef) : A = 
-      (if (NullSentinel eq entry) null else entry).asInstanceOf[A]
+      (if (entry.isInstanceOf[NullSentinel.type]) null else entry).asInstanceOf[A]
   }
 
 }
