@@ -17,7 +17,6 @@ package mutable
  *  hash table as an implementation.
  *
  *  @define coll flat hash table
- *  @define cannotStoreNull '''Note''': A $coll cannot store `null` elements.
  *  @since 2.3
  *  @tparam A   the type of the elements contained in the $coll.
  */
@@ -87,9 +86,9 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
     var index = 0
     while (index < size) {
-      val elem = in.readObject().asInstanceOf[A]
+      val elem = entryToElem(in.readObject())
       f(elem)
-      addEntry(elem)
+      addElem(elem)
       index += 1
     }
   }
@@ -109,61 +108,75 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Finds an entry in the hash table if such an element exists. */
-  protected def findEntry(elem: A): Option[A] = {
-    val entry = findEntryImpl(elem)
-    if (null == entry) None else Some(entry.asInstanceOf[A])
-  }
+  protected def findEntry(elem: A): Option[A] = 
+    findElemImpl(elem) match {
+      case null => None
+      case entry => Some(entryToElem(entry))
+    }
+
 
   /** Checks whether an element is contained in the hash table. */
-  protected def containsEntry(elem: A): Boolean = {
-    null != findEntryImpl(elem)
+  protected def containsElem(elem: A): Boolean = {
+    null != findElemImpl(elem)
   }
 
-  private def findEntryImpl(elem: A): AnyRef = {
-    var h = index(elemHashCode(elem))
-    var entry = table(h)
-    while (null != entry && entry != elem) {
+  private def findElemImpl(elem: A): AnyRef = {
+    val searchEntry = elemToEntry(elem)
+    var h = index(searchEntry.hashCode)
+    var curEntry = table(h)
+    while (null != curEntry && curEntry != searchEntry) {
       h = (h + 1) % table.length
-      entry = table(h)
+      curEntry = table(h)
     }
-    entry
+    curEntry
   }
 
-  /** Add entry if not yet in table.
-   *  @return Returns `true` if a new entry was added, `false` otherwise.
+  /** Add elem if not yet in table.
+   *  @return Returns `true` if a new elem was added, `false` otherwise.
    */
-  protected def addEntry(elem: A) : Boolean = {
-    var h = index(elemHashCode(elem))
-    var entry = table(h)
-    while (null != entry) {
-      if (entry == elem) return false
+  protected def addElem(elem: A) : Boolean = {
+    addEntry(elemToEntry(elem))
+  }
+  
+  /**
+   * Add an entry (an elem converted to an entry via elemToEntry) if not yet in
+   * table. 
+   *  @return Returns `true` if a new elem was added, `false` otherwise.
+   */
+  protected def addEntry(newEntry : AnyRef) : Boolean = {
+    var h = index(newEntry.hashCode)
+    var curEntry = table(h)
+    while (null != curEntry) {
+      if (curEntry == newEntry) return false
       h = (h + 1) % table.length
-      entry = table(h)
+      curEntry = table(h)
       //Statistics.collisions += 1
     }
-    table(h) = elem.asInstanceOf[AnyRef]
+    table(h) = newEntry
     tableSize = tableSize + 1
     nnSizeMapAdd(h)
     if (tableSize >= threshold) growTable()
     true
+    
   }
 
-  /** Removes an entry from the hash table, returning an option value with the element, or `None` if it didn't exist. */
-  protected def removeEntry(elem: A) : Option[A] = {
+  /** Removes an elem from the hash table, returning an option value with the element, or `None` if it didn't exist. */
+  protected def removeElem(elem: A) : Option[A] = {
     if (tableDebug) checkConsistent()
     def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
       if (i <= j) j - i < d
       else i - j > d
     }
-    var h = index(elemHashCode(elem))
-    var entry = table(h)
-    while (null != entry) {
-      if (entry == elem) {
+    val removalEntry = elemToEntry(elem)
+    var h = index(removalEntry.hashCode)
+    var curEntry = table(h)
+    while (null != curEntry) {
+      if (curEntry == removalEntry) {
         var h0 = h
         var h1 = (h0 + 1) % table.length
         while (null != table(h1)) {
-          val h2 = index(elemHashCode(table(h1).asInstanceOf[A]))
+          val h2 = index(table(h1).hashCode)
           //Console.println("shift at "+h1+":"+table(h1)+" with h2 = "+h2+"? "+(h2 != h1)+precedes(h2, h0)+table.length)
           if (h2 != h1 && precedes(h2, h0)) {
             //Console.println("shift "+h1+" to "+h0+"!")
@@ -176,10 +189,10 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
         tableSize -= 1
         nnSizeMapRemove(h0)
         if (tableDebug) checkConsistent()
-        return Some(entry.asInstanceOf[A])
+        return Some(entryToElem(curEntry))
       }
       h = (h + 1) % table.length
-      entry = table(h)
+      curEntry = table(h)
     }
     None
   }
@@ -191,7 +204,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
       i < table.length
     }
     def next(): A =
-      if (hasNext) { i += 1; table(i - 1).asInstanceOf[A] }
+      if (hasNext) { i += 1; entryToElem(table(i - 1)) }
       else Iterator.empty.next
   }
 
@@ -205,7 +218,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     var i = 0
     while (i < oldtable.length) {
       val entry = oldtable(i)
-      if (null != entry) addEntry(entry.asInstanceOf[A])
+      if (null != entry) addEntry(entry)
       i += 1
     }
     if (tableDebug) checkConsistent()
@@ -213,9 +226,10 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
   private def checkConsistent() {
     for (i <- 0 until table.length)
-      if (table(i) != null && !containsEntry(table(i).asInstanceOf[A]))
+      if (table(i) != null && !containsElem(entryToElem(table(i))))
         assert(false, i+" "+table(i)+" "+table.mkString)
   }
+ 
 
   /* Size map handling code */
 
@@ -358,6 +372,11 @@ private[collection] object FlatHashTable {
   final def seedGenerator = new ThreadLocal[scala.util.Random] {
     override def initialValue = new scala.util.Random
   }
+  
+  private object NullSentinel {
+    override def hashCode = 0
+    override def toString = "NullSentinel"
+  }
 
   /** The load factor for the hash table; must be < 500 (0.5)
    */
@@ -386,10 +405,6 @@ private[collection] object FlatHashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected def elemHashCode(elem: A) =
-      if (elem == null) throw new IllegalArgumentException("Flat hash tables cannot contain null elements.")
-      else elem.hashCode()
-
     protected final def improve(hcode: Int, seed: Int) = {
       //var h: Int = hcode + ~(hcode << 9)
       //h = h ^ (h >>> 14)
@@ -404,6 +419,19 @@ private[collection] object FlatHashTable {
       val rotated = (improved >>> rotation) | (improved << (32 - rotation))
       rotated
     }
+         
+    /**
+     * Elems have type A, but we store AnyRef in the table. Plus we need to deal with
+     * null elems, which need to be stored as NullSentinel
+     */
+    protected final def elemToEntry(elem : A) : AnyRef = 
+      if (null == elem) NullSentinel else elem.asInstanceOf[AnyRef]
+    
+    /**
+     * Does the inverse translation of elemToEntry
+     */
+    protected final def entryToElem(entry : AnyRef) : A = 
+      (if (entry.isInstanceOf[NullSentinel.type]) null else entry).asInstanceOf[A]
   }
 
 }
