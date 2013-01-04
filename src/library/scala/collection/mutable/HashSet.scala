@@ -16,8 +16,6 @@ import scala.collection.parallel.mutable.ParHashSet
 
 /** This class implements mutable sets using a hashtable.
  *
- *  $cannotStoreNull
- *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006

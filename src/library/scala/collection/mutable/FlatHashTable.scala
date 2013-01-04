@@ -17,7 +17,6 @@ package mutable
  *  hash table as an implementation.
  *
  *  @define coll flat hash table
- *  @define cannotStoreNull '''Note''': A $coll cannot store `null` elements.
  *  @since 2.3
  *  @tparam A   the type of the elements contained in the $coll.
  */
