@@ -1109,12 +1109,14 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
+    require(start >= 0 && start < xs.length, s"start $start out of range ${xs.length}")
     var i = start
-    val end = start + math.min(len, xs.length)
-    while (hasNext && i < end) {
+    val end = start + math.min(len, xs.length - start)
+    while (i < end && hasNext) {
       xs(i) = next()
       i += 1
     }
+    // TODO: return i - start so the caller knows how many values read?
   }
 
   /** Tests if another iterator produces the same values as this one.
