@@ -27,19 +27,25 @@ abstract class TreeBuilder {
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree
 
   /** Builds a typed reference to given symbol with given stable prefix. */
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree
+  def mkAttributedRef(pre: Type, sym: Symbol): RefTree
 
   /** Builds a typed reference to given symbol. */
-  def mkAttributedRef(sym: Symbol): Tree
+  def mkAttributedRef(sym: Symbol): RefTree
+
+  /** Builds an untyped reference to given symbol. Requires the symbol to be static. */
+  def mkUnattributedRef(sym: Symbol): RefTree
+
+  /** Builds an untyped reference to symbol with given name. Requires the symbol to be static. */
+  def mkUnattributedRef(fullName: Name): RefTree
 
   /** Builds a typed This reference to given symbol. */
-  def mkAttributedThis(sym: Symbol): Tree
+  def mkAttributedThis(sym: Symbol): This
 
   /** Builds a typed Ident with an underlying symbol. */
-  def mkAttributedIdent(sym: Symbol): Tree
+  def mkAttributedIdent(sym: Symbol): RefTree
 
   /** Builds a typed Select with an underlying symbol. */
-  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree
+  def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree
 
   /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
    *  There are a number of variations.

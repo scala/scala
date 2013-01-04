@@ -1,0 +1,9 @@
+Macros_Test_2.scala:5: error: overriding macro type T in trait T1;
+ class T cannot be used here - classes can only override abstract types
+  trait T2 extends T1 { class T extends C }
+                              ^
+Macros_Test_2.scala:10: error: overriding macro type T in class C1;
+ class T cannot be used here - classes can only override abstract types
+  class C2 extends C1 { class T extends C }
+                              ^
+two errors found

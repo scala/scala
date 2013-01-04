@@ -12,7 +12,7 @@ import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
-import scala.tools.nsc.io.{ AbstractFile }
+import scala.reflect.io.{ AbstractFile, NoAbstractFile }
 
 /** This class ...
  *
@@ -250,7 +250,7 @@ abstract class SymbolLoaders {
     protected def doComplete(root: Symbol) {
       val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
       classfileParser.parse(classfile, root)
-      if (root.associatedFile eq null) {
+      if (root.associatedFile eq NoAbstractFile) {
         root match {
           // In fact, the ModuleSymbol forwards its setter to the module class
           case _: ClassSymbol | _: ModuleSymbol =>

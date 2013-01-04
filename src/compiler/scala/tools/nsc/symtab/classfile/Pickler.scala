@@ -77,11 +77,7 @@ abstract class Pickler extends SubComponent {
         }
 
         if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro) {
-          unit.error(t.pos, t.symbol.typeParams.length match {
-            case 0 => "macro has not been expanded"
-            case 1 => "this type parameter must be specified"
-            case _ => "these type parameters must be specified"
-          })
+          unit.error(t.pos, "macro has not been expanded")
           return
         }
       }
@@ -440,6 +436,10 @@ abstract class Pickler extends SubComponent {
           putTree(templ)
 
         case AppliedTypeTree(tpt, args) =>
+          putTree(tpt)
+          putTrees(args)
+
+        case DependentTypeTree(tpt, args) =>
           putTree(tpt)
           putTrees(args)
 
@@ -987,6 +987,13 @@ abstract class Pickler extends SubComponent {
 
         case tree@AppliedTypeTree(tpt, args) =>
           writeNat(APPLIEDTYPEtree)
+          writeRef(tree.tpe)
+          writeRef(tpt)
+          writeRefs(args)
+          TREE
+
+        case tree@DependentTypeTree(tpt, args) =>
+          writeNat(DEPENDENTTYPEtree)
           writeRef(tree.tpe)
           writeRef(tpt)
           writeRefs(args)

@@ -88,7 +88,7 @@ trait MemberLookupBase {
         // (4) if we still haven't found anything, create a tooltip
         Tooltip(query)
       case List(l) => l
-      case links => 
+      case links =>
         val chosen = chooseLink(links)
         def linkToString(link: LinkTo) = {
           val chosenInfo =
@@ -203,11 +203,11 @@ trait MemberLookupBase {
   def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = {
     val sym1 =
       if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
-      else if (sym.isPackage) 
+      else if (sym.isPackage)
         /* Get package object which has associatedFile ne null */
         sym.info.member(newTermName("package"))
       else sym
-    Option(sym1.associatedFile) flatMap (_.underlyingSource) flatMap { src =>
+    sym1.associatedFile.underlyingSource flatMap { src =>
       val path = src.path
       settings.extUrlMapping get path map { url =>
         LinkToExternal(name, url + "#" + name)

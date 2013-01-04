@@ -1,0 +1,8 @@
+typemacros-incomplete-b.scala:3: error: not found: value x
+  (x: Int)
+   ^
+typemacros-incomplete-b.scala:3: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  (x: Int)
+    ^
+one warning found
+one error found

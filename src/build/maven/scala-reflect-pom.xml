@@ -1,8 +1,8 @@
 <project
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.scala-lang</groupId>
+	<groupId>org.scala-lang.macro-paradise</groupId>
 	<artifactId>scala-reflect</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
@@ -33,7 +33,7 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.scala-lang</groupId>
+			<groupId>org.scala-lang.macro-paradise</groupId>
 			<artifactId>scala-library</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
