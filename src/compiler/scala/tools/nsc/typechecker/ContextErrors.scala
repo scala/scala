@@ -562,11 +562,13 @@ trait ContextErrors {
 
       //adapt
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
-        issueNormalTypeError(tree,
-          "missing arguments for " + meth.fullLocationString + (
+        val message =
+          if (meth.isMacro) MacroPartialApplicationErrorMessage
+          else "missing arguments for " + meth.fullLocationString + (
             if (meth.isConstructor) ""
             else ";\nfollow this method with `_' if you want to treat it as a partially applied function"
-          ))
+          )
+        issueNormalTypeError(tree, message)
         setError(tree)
       }
 
@@ -670,6 +672,10 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def MacroTooManyArgumentListsError(expandee: Tree, fun: Symbol) = {
+        NormalTypeError(expandee, "too many argument lists for " + fun)
+      }
+
       // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
@@ -681,10 +687,11 @@ trait ContextErrors {
         throw MacroExpansionException
       }
 
+      def MacroPartialApplicationErrorMessage = "macros cannot be partially applied"
       def MacroPartialApplicationError(expandee: Tree) = {
         // macroExpansionError won't work => swallows positions, hence needed to do issueTypeError
         // kinda contradictory to the comment in `macroExpansionError`, but this is how it works
-        issueNormalTypeError(expandee, "macros cannot be partially applied")
+        issueNormalTypeError(expandee, MacroPartialApplicationErrorMessage)
         setError(expandee)
         throw MacroExpansionException
       }

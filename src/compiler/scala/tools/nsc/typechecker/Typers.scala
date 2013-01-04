@@ -3226,7 +3226,8 @@ trait Typers extends Modes with Adaptations with Tags {
           doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
         case _ =>
-          duplErrorTree(ApplyWithoutArgsError(tree, fun))
+          if (treeInfo.isMacroApplication(tree)) duplErrorTree(MacroTooManyArgumentListsError(tree, fun.symbol))
+          else duplErrorTree(ApplyWithoutArgsError(tree, fun))
       }
     }
 
