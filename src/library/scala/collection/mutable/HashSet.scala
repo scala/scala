@@ -16,8 +16,6 @@ import scala.collection.parallel.mutable.ParHashSet
 
 /** This class implements mutable sets using a hashtable.
  *
- *  $cannotStoreNull
- *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
@@ -55,17 +53,17 @@ extends AbstractSet[A]
 
   override def size: Int = tableSize
 
-  def contains(elem: A): Boolean = containsEntry(elem)
+  def contains(elem: A): Boolean = containsElem(elem)
 
-  def += (elem: A): this.type = { addEntry(elem); this }
+  def += (elem: A): this.type = { addElem(elem); this }
 
-  def -= (elem: A): this.type = { removeEntry(elem); this }
+  def -= (elem: A): this.type = { removeElem(elem); this }
 
   override def par = new ParHashSet(hashTableContents)
 
-  override def add(elem: A): Boolean = addEntry(elem)
+  override def add(elem: A): Boolean = addElem(elem)
 
-  override def remove(elem: A): Boolean = removeEntry(elem).isDefined
+  override def remove(elem: A): Boolean = removeElem(elem).isDefined
 
   override def clear() { clearTable() }
 
@@ -75,8 +73,8 @@ extends AbstractSet[A]
     var i = 0
     val len = table.length
     while (i < len) {
-      val elem = table(i)
-      if (elem ne null) f(elem.asInstanceOf[A])
+      val curEntry = table(i)
+      if (curEntry ne null) f(entryToElem(curEntry))
       i += 1
     }
   }
