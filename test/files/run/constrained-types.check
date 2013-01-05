@@ -37,7 +37,7 @@ scala> object Stuff {
   val x = "hello"
   val y : Int @Annot(x) = 10
 }
-defined module Stuff
+defined object Stuff
 
 scala> 
 
@@ -127,7 +127,7 @@ defined class rep
 scala> 
 
 scala> object A { val x = "hello" : String @ rep }
-defined module A
+defined object A
 warning: previously defined class A is not a companion to object A.
 Companions must be defined together; you may wish to use :paste mode for this.
 

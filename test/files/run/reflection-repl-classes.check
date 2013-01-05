@@ -22,7 +22,7 @@ scala> object defs {
   val method = im.symbol.typeSignature.member(u.TermName("foo")).asMethod
   val mm = im.reflectMethod(method)
 }
-defined module defs
+defined object defs
 
 scala> import defs._
 import defs._
