@@ -1,0 +1,6 @@
+remove 0 should be false, was false
+contains 1 should be true, was true
+remove 1 should be true, was true
+contains 1 should be false, was false
+remove 1 should be false, was false
+contains 1 should be false, was false

@@ -160,8 +160,11 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     
   }
 
-  /** Removes an elem from the hash table, returning an option value with the element, or `None` if it didn't exist. */
-  protected def removeElem(elem: A) : Option[A] = {
+  /** 
+   * Removes an elem from the hash table returning true if the element was found (and thus removed)
+   * or false if it didn't exist.
+   */
+  protected def removeElem(elem: A) : Boolean = {
     if (tableDebug) checkConsistent()
     def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
@@ -189,12 +192,12 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
         tableSize -= 1
         nnSizeMapRemove(h0)
         if (tableDebug) checkConsistent()
-        return Some(entryToElem(curEntry))
+        return true
       }
       h = (h + 1) % table.length
       curEntry = table(h)
     }
-    None
+    false
   }
 
   protected def iterator: Iterator[A] = new AbstractIterator[A] {

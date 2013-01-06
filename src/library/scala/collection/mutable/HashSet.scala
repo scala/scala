@@ -63,7 +63,7 @@ extends AbstractSet[A]
 
   override def add(elem: A): Boolean = addElem(elem)
 
-  override def remove(elem: A): Boolean = removeElem(elem).isDefined
+  override def remove(elem: A): Boolean = removeElem(elem)
 
   override def clear() { clearTable() }
 
