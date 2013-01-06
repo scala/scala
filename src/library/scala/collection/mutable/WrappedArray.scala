@@ -62,7 +62,7 @@ extends AbstractSeq[T]
   override def par = ParArray.handoff(array)
 
   private def elementClass: Class[_] =
-    arrayElementClass(repr.getClass)
+    arrayElementClass(array.getClass)
 
   override def toArray[U >: T : ClassTag]: Array[U] = {
     val thatElementClass = arrayElementClass(implicitly[ClassTag[U]])
