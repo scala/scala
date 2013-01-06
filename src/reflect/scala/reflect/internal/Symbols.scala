@@ -11,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 import util.{ Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
-import scala.reflect.io.AbstractFile
+import scala.reflect.io.{ AbstractFile, NoAbstractFile }
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -1916,8 +1916,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
          (this.rawInfo ne NoType)
       && (this.effectiveOwner == that.effectiveOwner)
       && (   !this.effectiveOwner.isPackageClass
-          || (this.associatedFile eq null)
-          || (that.associatedFile eq null)
+          || (this.associatedFile eq NoAbstractFile)
+          || (that.associatedFile eq NoAbstractFile)
           || (this.associatedFile.path == that.associatedFile.path)  // Cheap possibly wrong check, then expensive normalization
           || (this.associatedFile.canonicalPath == that.associatedFile.canonicalPath)
          )
@@ -2176,17 +2176,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case _      => NoSymbol
     }
 
-    /** Desire to re-use the field in ClassSymbol which stores the source
-     *  file to also store the classfile, but without changing the behavior
-     *  of sourceFile (which is expected at least in the IDE only to
-     *  return actual source code.) So sourceFile has classfiles filtered out.
+    // Desire to re-use the field in ClassSymbol which stores the source
+    // file to also store the classfile, but without changing the behavior
+    // of sourceFile (which is expected at least in the IDE only to
+    // return actual source code.) So sourceFile has classfiles filtered out.
+    final def sourceFile: AbstractFile =
+      if ((associatedFile eq NoAbstractFile) || (associatedFile.path endsWith ".class")) null else associatedFile
+
+    /** Overridden in ModuleSymbols to delegate to the module class.
+     *  Never null; if there is no associated file, returns NoAbstractFile.
      */
-    private def sourceFileOnly(file: AbstractFile): AbstractFile =
-      if ((file eq null) || (file.path endsWith ".class")) null else file
-
-    final def sourceFile: AbstractFile = sourceFileOnly(associatedFile)
-
-    /** Overridden in ModuleSymbols to delegate to the module class. */
     def associatedFile: AbstractFile = enclosingTopLevelClass.associatedFile
     def associatedFile_=(f: AbstractFile) { abort("associatedFile_= inapplicable for " + this) }
 
@@ -2932,7 +2931,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (c.isOverloaded) c.alternatives.head else c
     }
 
-    override def associatedFile = if (owner.isPackageClass) _associatedFile else super.associatedFile
+    override def associatedFile = (
+      if (!owner.isPackageClass) super.associatedFile
+      else if (_associatedFile eq null) NoAbstractFile // guarantee not null, but save cost of initializing the var
+      else _associatedFile
+    )
     override def associatedFile_=(f: AbstractFile) { _associatedFile = f }
 
     override def reset(completer: Type): this.type = {
@@ -2981,9 +2984,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         clone.typeOfThis = typeOfThis
         clone.thisSym setName thisSym.name
       }
-      if (_associatedFile ne null)
-        clone.associatedFile = _associatedFile
-
+      clone.associatedFile = _associatedFile
       clone
     }
 
@@ -3169,7 +3170,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclosingTopLevelClass: Symbol = this
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
-    override def associatedFile = null
+    override def associatedFile = NoAbstractFile
     override def ownerChain: List[Symbol] = List()
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()

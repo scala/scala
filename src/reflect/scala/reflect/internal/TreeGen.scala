@@ -113,7 +113,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   }
 
   /** Builds a reference to given symbol with given stable prefix. */
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
+  def mkAttributedRef(pre: Type, sym: Symbol): RefTree = {
     val qual = mkAttributedQualifier(pre)
     qual match {
       case EmptyTree                                  => mkAttributedIdent(sym)
@@ -123,9 +123,16 @@ abstract class TreeGen extends macros.TreeBuilder {
   }
 
   /** Builds a reference to given symbol. */
-  def mkAttributedRef(sym: Symbol): Tree =
+  def mkAttributedRef(sym: Symbol): RefTree =
     if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
     else mkAttributedIdent(sym)
+
+  def mkUnattributedRef(sym: Symbol): RefTree = mkUnattributedRef(sym.fullNameAsName('.'))
+
+  def mkUnattributedRef(fullName: Name): RefTree = {
+    val hd :: tl = nme.segments(fullName.toString, assumeTerm = fullName.isTermName)
+    tl.foldLeft(Ident(hd): RefTree)(Select(_,_))
+  }
 
   /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = stableTypeFor(tree) match {
@@ -153,13 +160,13 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkAttributedStableRef(sym: Symbol): Tree =
     stabilize(mkAttributedRef(sym))
 
-  def mkAttributedThis(sym: Symbol): Tree =
+  def mkAttributedThis(sym: Symbol): This =
     This(sym.name.toTypeName) setSymbol sym setType sym.thisType
 
-  def mkAttributedIdent(sym: Symbol): Tree =
+  def mkAttributedIdent(sym: Symbol): RefTree =
     Ident(sym.name) setSymbol sym setType sym.tpeHK
 
-  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree = {
+  def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree = {
     // Tests involving the repl fail without the .isEmptyPackage condition.
     if (qual.symbol != null && (qual.symbol.isEffectiveRoot || qual.symbol.isEmptyPackage))
       mkAttributedIdent(sym)
@@ -282,5 +289,9 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkRuntimeUniverseRef: Tree = {
     assert(ReflectRuntimeUniverse != NoSymbol)
     mkAttributedRef(ReflectRuntimeUniverse) setType singleType(ReflectRuntimeUniverse.owner.thisPrefix, ReflectRuntimeUniverse)
+  }
+
+  def mkPackageDef(packageName: String, stats: List[Tree]): PackageDef = {
+    PackageDef(mkUnattributedRef(newTermName(packageName)), stats)
   }
 }
