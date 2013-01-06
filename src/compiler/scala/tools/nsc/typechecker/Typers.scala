@@ -996,6 +996,7 @@ trait Typers extends Modes with Adaptations with Tags {
             object variantToSkolem extends VariantTypeMap {
               def apply(tp: Type) = mapOver(tp) match {
                 case TypeRef(NoPrefix, tpSym, Nil) if variance != 0 && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
+                  tpSym.initialize // must initialize or tpSym.tpe might see random type params!! TODO: why is that??
                   val bounds = if (variance == 1) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
                   // origin must be the type param so we can deskolemize
                   val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
@@ -2683,7 +2684,15 @@ trait Typers extends Modes with Adaptations with Tags {
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
           paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), cases, mode, ptRes)
+          // SI-6925: subsume type of the selector to `argTp`
+          // we don't want/need the match to see the `A1` type that we must use for variance reasons in the method signature
+          // the cast is safe: it's an upcast -- the cast is needed because `(x: A1): A` doesn't always type check, even though `A1 <: A`
+          // specifically, it's needed when dealing with singleton types due to limitations/bugs? with SingletonClass
+          // (I first tried to use singletonBounds for A1's info when argTp.iStable -- didn't work)
+          // I decided to always do the cast, as posterasure will detect it's redundant and remove it
+          val selectorSubsumed =
+            Typed(gen.mkAsInstanceOf(selector, argTp.withoutAnnotations, true, false), TypeTree(argTp)) // TODO: factor this out -- mkCastTyped?
+          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selectorSubsumed), cases, mode, ptRes)
           val resTp = match_.tpe
 
           anonClass setInfo ClassInfoType(parentsPartial(List(argTp, resTp)), newScope, anonClass)
