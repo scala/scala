@@ -6801,7 +6801,10 @@ trait Types extends api.Types { self: SymbolTable =>
             else lubBase
           }
         }
-      existentialAbstraction(tparams, lubType)
+      // dropRepeatedParamType is a localized fix for SI-6897. We should probably
+      // integrate that transformation at a lower level in master, but lubs are
+      // the likely and maybe only spot they escape, so fixing here for 2.10.1.
+      existentialAbstraction(tparams, dropRepeatedParamType(lubType))
     }
     if (printLubs) {
       println(indent + "lub of " + ts + " at depth "+depth)//debug
