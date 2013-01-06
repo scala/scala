@@ -2559,7 +2559,9 @@ trait Typers extends Modes with Adaptations with Tags {
           val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
           paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), cases, mode, ptRes)
+          // SI-6925: subsume type of the selector to `argTp`
+          // we don't want/need the match to see the `A1` type that we must use for variance reasons in the method signature 
+          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(Typed(selector, TypeTree(argTp))), cases, mode, ptRes)
           val resTp = match_.tpe
 
           anonClass setInfo ClassInfoType(parentsPartial(List(argTp, resTp)), newScope, anonClass)
