@@ -13,6 +13,7 @@ import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.NonFatal
 import scala.tools.nsc.util.stackTraceString
+import scala.reflect.io.NoAbstractFile
 
 trait ContextErrors {
   self: Analyzer =>
@@ -642,7 +643,7 @@ trait ContextErrors {
         val addendums = List(
           if (sym0.associatedFile eq sym1.associatedFile)
             Some("conflicting symbols both originated in file '%s'".format(sym0.associatedFile.canonicalPath))
-          else if ((sym0.associatedFile ne null) && (sym1.associatedFile ne null))
+          else if ((sym0.associatedFile ne NoAbstractFile) && (sym1.associatedFile ne NoAbstractFile))
             Some("conflicting symbols originated in files '%s' and '%s'".format(sym0.associatedFile.canonicalPath, sym1.associatedFile.canonicalPath))
           else None ,
           if (isBug) Some("Note: this may be due to a bug in the compiler involving wildcards in package objects") else None
