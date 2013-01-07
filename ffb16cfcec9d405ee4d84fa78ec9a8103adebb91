@@ -1,0 +1,11 @@
+{
+  "built_on": "master",
+  "duration": 1116.57,
+  "full_display_name": "scala-pull-requests #11",
+  "id": "2013-01-07_05-46-57",
+  "number": 11,
+  "result": "FAILURE",
+  "status_message": "?",
+  "time": "2013-01-07 05:46:57 -0800",
+  "url": "job/scala-pull-requests/11/"
+}
