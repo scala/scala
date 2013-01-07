@@ -996,7 +996,10 @@ trait Typers extends Modes with Adaptations with Tags {
             object variantToSkolem extends VariantTypeMap {
               def apply(tp: Type) = mapOver(tp) match {
                 case TypeRef(NoPrefix, tpSym, Nil) if variance != 0 && tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
-                  tpSym.initialize // must initialize or tpSym.tpe might see random type params!! TODO: why is that??
+                  // must initialize or tpSym.tpe might see random type params!!
+                  // without this, we'll get very weird types inferred in test/scaladoc/run/SI-5933.scala
+                  // TODO: why is that??
+                  tpSym.initialize
                   val bounds = if (variance == 1) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
                   // origin must be the type param so we can deskolemize
                   val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
@@ -1019,7 +1022,7 @@ trait Typers extends Modes with Adaptations with Tags {
             newTyper(ctorContext).infer.inferConstructorInstance(tree1, clazz.typeParams, ptSafe)
 
             // simplify types without losing safety,
-            // so that error messages don't unnecessarily refer to skolems
+            // so that we get rid of unnecessary type slack, and so that error messages don't unnecessarily refer to skolems
             val extrapolate = new ExistentialExtrapolation(freeVars) extrapolate (_: Type)
             val extrapolated = tree1.tpe match {
               case MethodType(ctorArgs, res) => // ctorArgs are actually in a covariant position, since this is the type of the subpatterns of the pattern represented by this Apply node
@@ -2586,181 +2589,173 @@ trait Typers extends Modes with Adaptations with Tags {
         match_ // will be translated in phase `patmat`
     }
 
-    // synthesize and type check a PartialFunction implementation based on a match specified by `cases`
-    // Match(EmptyTree, cases) ==> new PartialFunction { def apply<OrElse>(params) = `translateMatch('`(param1,...,paramN)` match { cases }')` }
-    // for fresh params, the selector of the match we'll translated simply gathers those in a tuple
-    // NOTE: restricted to PartialFunction -- leave Function trees if the expected type does not demand a partial function
-    class MatchFunTyper(tree: Tree, cases: List[CaseDef], mode: Int, pt0: Type)  {
-      // TODO: remove FunctionN support -- this is currently designed so that it can emit FunctionN and PartialFunction subclasses
-      // however, we should leave Function nodes until Uncurry so phases after typer can still detect normal Function trees
-      // we need to synthesize PartialFunction impls, though, to avoid nastiness in Uncurry in transforming&duplicating generated pattern matcher trees
-      // TODO: remove PartialFunction support from UnCurry
-      private val pt    = deskolemizeGADTSkolems(pt0)
-      private val targs = pt.normalize.typeArgs
-      private val arity = if (isFunctionType(pt)) targs.length - 1 else 1 // TODO pt should always be a (Partial)Function, right?
-      private val ptRes = if (targs.isEmpty) WildcardType else targs.last // may not be fully defined
+    /** synthesize and type check a PartialFunction implementation based on the match in `tree`
+     *
+     *  `param => sel match { cases }` becomes:
+     *
+     *  new AbstractPartialFunction[$argTp, $matchResTp] {
+     *    def applyOrElse[A1 <: $argTp, B1 >: $matchResTp]($param: A1, default: A1 => B1): B1 =
+     *       $selector match { $cases }
+     *    def isDefinedAt(x: $argTp): Boolean =
+     *       $selector match { $casesTrue }
+     *  }
+     *
+     * TODO: it would be nicer to generate the tree specified above at once and type it as a whole,
+     * there are two gotchas:
+     *    - matchResTp may not be known until we've typed the match (can only use resTp when it's fully defined),
+     *       - if we typed the match in isolation first, you'd know its result type, but would have to re-jig the owner structure
+     *       - could we use a type variable for matchResTp and backpatch it?
+     *    - occurrences of `this` in `cases` or `sel` must resolve to the this of the class originally enclosing the match,
+     *      not of the anonymous partial function subclass
+     *
+     * an alternative TODO: add partial function AST node or equivalent and get rid of this synthesis --> do everything in uncurry (or later)
+     * however, note that pattern matching codegen is designed to run *before* uncurry
+     */
+    def synthesizePartialFunction(paramName: TermName, paramPos: Position, tree: Tree, mode: Int, pt0: Type): Tree = {
+      assert(pt0.typeSymbol == PartialFunctionClass)
 
-      private val isPartial = pt.typeSymbol == PartialFunctionClass
-      assert(isPartial)
+      val pt    = deskolemizeGADTSkolems(pt0)
+      val targs = pt.normalize.typeArgs
 
-      private val anonClass = context.owner.newAnonymousFunctionClass(tree.pos)
-      private val funThis   = This(anonClass)
+      // if targs.head isn't fully defined, we can't translate --> error
+      if (targs.isEmpty || !isFullyDefined(targs.head)) {
+        MissingParameterTypeAnonMatchError(tree, pt)
+        return setError(tree)
+      }
 
-      anonClass addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
+      val argTp = targs.head
 
-      def deriveFormals =
-        if (targs.isEmpty) Nil
-        else targs.init
+      // NOTE: targs.last still might not be fully defined
+      val resTp = targs.last
 
-      def mkParams(methodSym: Symbol, formals: List[Type] = deriveFormals) =
-        if (formals.isEmpty || !formals.forall(isFullyDefined)) { MissingParameterTypeAnonMatchError(tree, pt); Nil }
-        else methodSym newSyntheticValueParams formals
+      // targs must conform to Any for us to synthesize an applyOrElse (fallback to apply otherwise -- typically for @cps annotated targs)
+      val targsValidParams = targs forall (_ <:< AnyClass.tpe)
 
-      def mkSel(params: List[Symbol]) =
-        if (params.isEmpty) EmptyTree
-        else {
-          val ids = params map (p => Ident(p.name))
-          atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
-        }
+      val anonClass = (context.owner
+        newAnonymousFunctionClass tree.pos
+        addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List()))
 
       import CODE._
 
+      val Match(sel, cases) = tree
+
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
-      val casesTrue = if (isPartial) cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE_typed)).duplicate.asInstanceOf[CaseDef]) else Nil
-      // println("casesTrue "+ casesTrue)
-      def parentsPartial(targs: List[Type]) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, targs))
+      val casesTrue = cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE_typed)).duplicate.asInstanceOf[CaseDef])
 
-      def applyMethod = {
-        // rig the show so we can get started typing the method body -- later we'll correct the infos...
-        anonClass setInfo ClassInfoType(addSerializable(ObjectClass.tpe, pt), newScope, anonClass)
-        val methodSym = anonClass.newMethod(nme.apply, tree.pos, if(isPartial) (FINAL | OVERRIDE) else FINAL)
-        val paramSyms = mkParams(methodSym)
-        val selector  = mkSel(paramSyms)
+      // must generate a new tree every time
+      def selector: Tree = gen.mkUnchecked(
+        if (sel != EmptyTree) sel.duplicate
+        else atPos(tree.pos.focusStart)(
+          // SI-6925: subsume type of the selector to `argTp`
+          // we don't want/need the match to see the `A1` type that we must use for variance reasons in the method signature
+          //
+          // this failed: replace `selector` by `Typed(selector, TypeTree(argTp))` -- as it's an upcast, this should never fail,
+          //   `(x: A1): A` doesn't always type check, even though `A1 <: A`, due to singleton types
+          // hence the cast, which will be erased in posterasure
+          Typed(gen.mkAsInstanceOf(Ident(paramName), argTp.withoutAnnotations, true, false), TypeTree(argTp)))
+        )
 
-        if (selector eq EmptyTree) EmptyTree
-        else {
-          methodSym setInfoAndEnter MethodType(paramSyms, AnyClass.tpe)
+      def mkParam(methodSym: Symbol, tp: Type = argTp) =
+        methodSym.newValueParameter(paramName, paramPos.focus, SYNTHETIC) setInfo tp
 
-          val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-          paramSyms foreach (methodBodyTyper.context.scope enter _)
-
-          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), cases, mode, ptRes)
-          val resTp = match_.tpe
-
-          val methFormals = paramSyms map (_.tpe)
-          val parents = (
-            if (isPartial) parentsPartial(List(methFormals.head, resTp))
-            else addSerializable(abstractFunctionType(methFormals, resTp))
-          )
-          anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-          methodSym setInfoAndEnter MethodType(paramSyms, resTp)
-
-          DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, resTp))
-        }
-      }
-
-      // def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
+      // `def applyOrElse[A1 <: $argTp, B1 >: $matchResTp](x: A1, default: A1 => B1): B1 =
+      //  ${`$selector match { $cases }` updateAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x)))}`
       def applyOrElseMethodDef = {
-        // rig the show so we can get started typing the method body -- later we'll correct the infos...
-        // targs were type arguments for PartialFunction, so we know they will work for AbstractPartialFunction as well
-        anonClass setInfo ClassInfoType(parentsPartial(targs), newScope, anonClass)
         val methodSym = anonClass.newMethod(nme.applyOrElse, tree.pos, FINAL | OVERRIDE)
 
         // create the parameter that corresponds to the function's parameter
-        val List(argTp)       = deriveFormals
-        val A1                = methodSym newTypeParameter(newTypeName("A1")) setInfo TypeBounds.upper(argTp)
-        val paramSyms@List(x) = mkParams(methodSym, List(A1.tpe))
-        val selector          = mkSel(paramSyms)
+        val A1 = methodSym newTypeParameter (newTypeName("A1")) setInfo TypeBounds.upper(argTp)
+        val x = mkParam(methodSym, A1.tpe)
 
-        if (selector eq EmptyTree) EmptyTree
-        else {
-          // applyOrElse's default parameter:
-          val B1        = methodSym newTypeParameter(newTypeName("B1")) setInfo TypeBounds.empty //lower(resTp)
-          val default   = methodSym newValueParameter(newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
+        // applyOrElse's default parameter:
+        val B1 = methodSym newTypeParameter (newTypeName("B1")) setInfo TypeBounds.empty //lower(resTp)
+        val default = methodSym newValueParameter (newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
 
-          val paramSyms = List(x, default)
-          methodSym setInfoAndEnter polyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
+        val paramSyms = List(x, default)
+        methodSym setInfo polyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
 
-          val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-          paramSyms foreach (methodBodyTyper.context.scope enter _)
+        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
+        // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+        paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-          // SI-6925: subsume type of the selector to `argTp`
-          // we don't want/need the match to see the `A1` type that we must use for variance reasons in the method signature
-          // the cast is safe: it's an upcast -- the cast is needed because `(x: A1): A` doesn't always type check, even though `A1 <: A`
-          // specifically, it's needed when dealing with singleton types due to limitations/bugs? with SingletonClass
-          // (I first tried to use singletonBounds for A1's info when argTp.iStable -- didn't work)
-          // I decided to always do the cast, as posterasure will detect it's redundant and remove it
-          val selectorSubsumed =
-            Typed(gen.mkAsInstanceOf(selector, argTp.withoutAnnotations, true, false), TypeTree(argTp)) // TODO: factor this out -- mkCastTyped?
-          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selectorSubsumed), cases, mode, ptRes)
-          val resTp = match_.tpe
+        val match_ = methodBodyTyper.typedMatch(selector, cases, mode, resTp)
 
-          anonClass setInfo ClassInfoType(parentsPartial(List(argTp, resTp)), newScope, anonClass)
-          B1 setInfo TypeBounds.lower(resTp)
-          anonClass.info.decls enter methodSym // methodSym's info need not change (B1's bound has been updated instead)
+        val matchResTp = match_.tpe
+        B1 setInfo TypeBounds.lower(matchResTp) // patch info
 
-          match_ setType B1.tpe
+        match_ setType B1.tpe
 
-          // the default uses applyOrElse's first parameter since the scrut's type has been widened
-          val body = methodBodyTyper.virtualizedMatch(match_ updateAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x))), mode, B1.tpe)
-
-          DefDef(methodSym, body)
-        }
+        // the default uses applyOrElse's first parameter since the scrut's type has been widened
+        val matchWithDefault = match_ updateAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x)))
+        (DefDef(methodSym, methodBodyTyper.virtualizedMatch(matchWithDefault, mode, B1.tpe)), matchResTp)
       }
 
+      // `def isDefinedAt(x: $argTp): Boolean = ${`$selector match { $casesTrue ` updateAttachment DefaultOverrideMatchAttachment(FALSE_typed)}`
       def isDefinedAtMethod = {
         val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos.makeTransparent, FINAL)
-        val paramSyms = mkParams(methodSym)
-        val selector  = mkSel(paramSyms)
+        val paramSym = mkParam(methodSym)
 
-        if (selector eq EmptyTree) EmptyTree
-        else {
-          val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-          paramSyms foreach (methodBodyTyper.context.scope enter _)
-          methodSym setInfoAndEnter MethodType(paramSyms, BooleanClass.tpe)
+        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+        methodBodyTyper.context.scope enter paramSym
+        methodSym setInfo MethodType(List(paramSym), BooleanClass.tpe)
 
-          val match_ = methodBodyTyper.typedMatch(gen.mkUnchecked(selector), casesTrue, mode, BooleanClass.tpe)
-          val body   = methodBodyTyper.virtualizedMatch(match_ updateAttachment DefaultOverrideMatchAttachment(FALSE_typed), mode, BooleanClass.tpe)
+        val match_ = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
 
-          DefDef(methodSym, body)
-        }
+        val matchWithDefault = match_ updateAttachment DefaultOverrideMatchAttachment(FALSE_typed)
+        DefDef(methodSym, methodBodyTyper.virtualizedMatch(matchWithDefault, mode, BooleanClass.tpe))
       }
 
-      lazy val members = if (isPartial) {
-        // somehow @cps annotations upset the typer when looking at applyOrElse's signature, but not apply's
-        // TODO: figure out the details (T @cps[U] is not a subtype of Any, but then why does it work for the apply method?)
-        if (targs forall (_ <:< AnyClass.tpe)) List(applyOrElseMethodDef, isDefinedAtMethod)
-        else List(applyMethod, isDefinedAtMethod)
-      } else List(applyMethod)
+      // only used for @cps annotated partial functions
+      def applyMethod = {
+        val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL | OVERRIDE)
+        val paramSym = mkParam(methodSym)
 
-      def translated =
-        if (members.head eq EmptyTree) setError(tree)
-        else {
-          val typedBlock = typedPos(tree.pos, mode, pt) {
-            Block(ClassDef(anonClass, NoMods, ListOfNil, members, tree.pos.focus), atPos(tree.pos.focus)(New(anonClass.tpe)))
-          }
-          // Don't leak implementation details into the type, see SI-6575
-          if (isPartial && !typedBlock.isErrorTyped)
-            typedPos(tree.pos, mode, pt) {
-              Typed(typedBlock, TypeTree(typedBlock.tpe baseType PartialFunctionClass))
-            }
-          else typedBlock
+        methodSym setInfo MethodType(List(paramSym), AnyClass.tpe)
+
+        val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
+        // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
+        methodBodyTyper.context.scope enter paramSym
+
+        val match_ = methodBodyTyper.typedMatch(selector, cases, mode, resTp)
+
+        val matchResTp = match_.tpe
+        methodSym setInfo MethodType(List(paramSym), matchResTp) // patch info
+
+        (DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, matchResTp)), matchResTp)
+      }
+
+      def parents(resTp: Type) = addSerializable(appliedType(AbstractPartialFunctionClass.typeConstructor, List(argTp, resTp)))
+
+      val members = {
+        val (applyMeth, matchResTp) = {
+          // rig the show so we can get started typing the method body -- later we'll correct the infos...
+          // targs were type arguments for PartialFunction, so we know they will work for AbstractPartialFunction as well
+          anonClass setInfo ClassInfoType(parents(resTp), newScope, anonClass)
+
+          // somehow @cps annotations upset the typer when looking at applyOrElse's signature, but not apply's
+          // TODO: figure out the details (T @cps[U] is not a subtype of Any, but then why does it work for the apply method?)
+          if (targsValidParams) applyOrElseMethodDef
+          else applyMethod
+        }
+
+        // patch info to the class's definitive info
+        anonClass setInfo ClassInfoType(parents(matchResTp), newScope, anonClass)
+        List(applyMeth, isDefinedAtMethod)
+      }
+
+      members foreach (m => anonClass.info.decls enter m.symbol)
+
+      val typedBlock = typedPos(tree.pos, mode, pt) {
+        Block(ClassDef(anonClass, NoMods, ListOfNil, members, tree.pos.focus), atPos(tree.pos.focus)(New(anonClass.tpe)))
+      }
+
+      if (typedBlock.isErrorTyped) typedBlock
+      else // Don't leak implementation details into the type, see SI-6575
+        typedPos(tree.pos, mode, pt) {
+          Typed(typedBlock, TypeTree(typedBlock.tpe baseType PartialFunctionClass))
         }
     }
 
-    // Function(params, Match(sel, cases)) ==> new <Partial>Function { def apply<OrElse>(params) = `translateMatch('sel match { cases }')` }
-    class MatchFunTyperBetaReduced(fun: Function, sel: Tree, cases: List[CaseDef], mode: Int, pt: Type) extends MatchFunTyper(fun, cases, mode, pt)  {
-      override def deriveFormals =
-        fun.vparams map { p => if(p.tpt.tpe == null) typedType(p.tpt).tpe else p.tpt.tpe }
-
-      // the only difference from the super class is that we must preserve the names of the parameters
-      override def mkParams(methodSym: Symbol, formals: List[Type] = deriveFormals) =
-        (fun.vparams, formals).zipped map { (p, tp) =>
-          methodSym.newValueParameter(p.name, p.pos.focus, SYNTHETIC) setInfo tp
-        }
-
-      override def mkSel(params: List[Symbol]) = sel.duplicate
-    }
 
     /**
      *  @param fun  ...
@@ -2813,14 +2808,17 @@ trait Typers extends Modes with Adaptations with Tags {
         }
 
         fun.body match {
-          // later phase indicates scaladoc is calling (where shit is messed up, I tell you)
-          //  -- so fall back to old patmat, which is more forgiving
+          // translate `x => x match { <cases> }` : PartialFunction to
+          // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
           case Match(sel, cases) if (sel ne EmptyTree) && newPatternMatching && (pt.typeSymbol == PartialFunctionClass) =>
             // go to outer context -- must discard the context that was created for the Function since we're discarding the function
             // thus, its symbol, which serves as the current context.owner, is not the right owner
             // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
             val outerTyper = newTyper(context.outer)
-            (new outerTyper.MatchFunTyperBetaReduced(fun, sel, cases, mode, pt)).translated
+            val p = fun.vparams.head
+            if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
+
+            outerTyper.synthesizePartialFunction(p.name, p.pos, fun.body, mode, pt)
           case _ =>
             val vparamSyms = fun.vparams map { vparam =>
               enterSym(context, vparam)
@@ -4353,7 +4351,8 @@ trait Typers extends Modes with Adaptations with Tags {
         val selector = tree.selector
         val cases = tree.cases
         if (selector == EmptyTree) {
-          if (newPatternMatching && (pt.typeSymbol == PartialFunctionClass)) (new MatchFunTyper(tree, cases, mode, pt)).translated
+          if (newPatternMatching && (pt.typeSymbol == PartialFunctionClass))
+            synthesizePartialFunction(newTermName(context.unit.fresh.newName("x")), tree.pos, tree, mode, pt)
           else {
             val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
             val params = for (i <- List.range(0, arity)) yield
