@@ -144,6 +144,8 @@ abstract class DeadCodeElimination extends SubComponent {
                 }
               }
               if (necessary) worklist += ((bb, idx))
+            case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
+              worklist += ((bb, idx)) // SI-4859 Module initialization might side-effect.
             case _ => ()
           }
           rd = rdef.interpret(bb, idx, rd)

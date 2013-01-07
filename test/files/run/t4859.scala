@@ -15,7 +15,7 @@ object Outer {
 
 object Test {
   def main(args: Array[String]) {
-    Outer.Inner.i // we still don't initiialize Outer here (but should we?)
+    Outer.Inner.i // we still don't initialize Outer here (but should we?)
 
     {println("About to reference Inner.i"); Outer}.Inner.i // Outer will be initialized.
 
