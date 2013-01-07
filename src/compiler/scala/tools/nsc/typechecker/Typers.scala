@@ -1919,7 +1919,7 @@ trait Typers extends Adaptations with Tags {
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
 
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
+      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
         unit.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
@@ -4788,7 +4788,7 @@ trait Typers extends Adaptations with Tags {
             else if (isPredefMemberNamed(sym, nme.classOf) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty)
             typedClassOf(tree, TypeTree(pt.typeArgs.head))
           else {
-              val pre1  = if (sym.owner.isPackageClass) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
+              val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
               val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
             // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid

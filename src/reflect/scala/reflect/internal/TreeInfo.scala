@@ -467,7 +467,7 @@ abstract class TreeInfo {
 
       tp match {
         case TypeRef(pre, sym, args) =>
-          args.isEmpty && (sym.owner.isPackageClass || isSimple(pre))
+          args.isEmpty && (sym.isTopLevel || isSimple(pre))
         case NoPrefix =>
           true
         case _ =>

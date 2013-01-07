@@ -134,7 +134,7 @@ trait Namers extends MethodSynthesis {
       sym reset NoType setFlag newFlags setPos pos
       sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
 
-      if (sym.owner.isPackageClass) {
+      if (sym.isTopLevel) {
         companionSymbolOf(sym, context) andAlso { companion =>
           val assignNoType = companion.rawInfo match {
             case _: SymLoader => true
@@ -163,7 +163,7 @@ trait Namers extends MethodSynthesis {
     protected def conflict(newS: Symbol, oldS: Symbol) = (
        (   !oldS.isSourceMethod
         || nme.isSetterName(newS.name)
-        || newS.owner.isPackageClass
+        || newS.isTopLevel
        ) &&
       !(   // @M: allow repeated use of `_` for higher-order type params
            (newS.owner.isTypeParameter || newS.owner.isAbstractType)
@@ -174,7 +174,7 @@ trait Namers extends MethodSynthesis {
     )
 
     private def allowsOverload(sym: Symbol) = (
-      sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass
+      sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel
     )
 
     private def inCurrentScope(m: Symbol): Boolean = {
@@ -352,7 +352,7 @@ trait Namers extends MethodSynthesis {
       val existing = context.scope.lookup(tree.name)
       val isRedefinition = (
            existing.isType
-        && existing.owner.isPackageClass
+        && existing.isTopLevel
         && context.scope == existing.owner.info.decls
         && currentRun.canRedefine(existing)
       )
@@ -365,8 +365,8 @@ trait Namers extends MethodSynthesis {
         else assignAndEnterSymbol(tree) setFlag inConstructorFlag
       }
       clazz match {
-        case csym: ClassSymbol if csym.owner.isPackageClass => enterClassSymbol(tree, csym)
-        case _                                              => clazz
+        case csym: ClassSymbol if csym.isTopLevel => enterClassSymbol(tree, csym)
+        case _                                    => clazz
       }
     }
 
@@ -425,7 +425,7 @@ trait Namers extends MethodSynthesis {
         m.moduleClass setFlag moduleClassFlags(moduleFlags)
         setPrivateWithin(tree, m.moduleClass)
       }
-      if (m.owner.isPackageClass && !m.isPackage) {
+      if (m.isTopLevel && !m.isPackage) {
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
@@ -1446,7 +1446,7 @@ trait Namers extends MethodSynthesis {
           fail(ImplicitConstr)
         if (!(sym.isTerm || (sym.isClass && !sym.isTrait)))
           fail(ImplicitNotTermOrClass)
-        if (sym.owner.isPackageClass)
+        if (sym.isTopLevel)
           fail(ImplicitAtToplevel)
       }
       if (sym.isClass) {

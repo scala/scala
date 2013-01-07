@@ -507,7 +507,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def erasure = symbol.moduleClass.asClass
       def isStatic = true
       def instance = {
-        if (symbol.owner.isPackageClass)
+        if (symbol.isTopLevel)
           staticSingletonInstance(classLoader, symbol.fullName)
         else
           if (outer == null) staticSingletonInstance(classToJava(symbol.moduleClass.asClass))
@@ -1156,11 +1156,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         valueClassToJavaType(clazz)
       else if (clazz == ArrayClass)
         noClass
-      else if (clazz.owner.isPackageClass)
+      else if (clazz.isTopLevel)
         javaClass(clazz.javaClassName)
       else if (clazz.owner.isClass) {
         val childOfClass = !clazz.owner.isModuleClass
-        val childOfTopLevel = clazz.owner.owner.isPackageClass
+        val childOfTopLevel = clazz.owner.isTopLevel
         val childOfTopLevelObject = clazz.owner.isModuleClass && childOfTopLevel
 
         // suggested in https://issues.scala-lang.org/browse/SI-4023?focusedCommentId=54759#comment-54759

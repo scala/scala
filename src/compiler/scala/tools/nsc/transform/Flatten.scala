@@ -116,7 +116,7 @@ abstract class Flatten extends InfoTransform {
         case ClassDef(_, _, _, _) if sym.isNestedClass =>
           liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
-        case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
+        case Select(qual, name) if sym.isStaticModule && !sym.isTopLevel =>
           exitingFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
         case _ =>
           tree

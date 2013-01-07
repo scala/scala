@@ -58,7 +58,7 @@ abstract class Taggers {
     val result =
       tpe match {
         case coreTpe if coreTags contains coreTpe =>
-          val ref = if (tagModule.owner.isPackageClass) Ident(tagModule) else Select(prefix, tagModule.name)
+          val ref = if (tagModule.isTopLevel) Ident(tagModule) else Select(prefix, tagModule.name)
           Select(ref, coreTags(coreTpe))
         case _ =>
           translatingReificationErrors(materializer)

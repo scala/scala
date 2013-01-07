@@ -1620,7 +1620,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         result match {
           case ClassDef(_, _, _, _)
              | TypeDef(_, _, _, _) =>
-            if (result.symbol.isLocal || result.symbol.owner.isPackageClass)
+            if (result.symbol.isLocal || result.symbol.isTopLevel)
               varianceValidator.traverse(result)
           case _ =>
         }
