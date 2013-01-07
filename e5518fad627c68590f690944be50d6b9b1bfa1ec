@@ -1,11 +1,11 @@
 {
   "built_on": "master",
-  "duration": 14.484,
-  "full_display_name": "scala-pull-requests #4",
-  "id": "2013-01-07_03-42-27",
-  "number": 4,
+  "duration": 14.031,
+  "full_display_name": "scala-pull-requests #5",
+  "id": "2013-01-07_03-43-47",
+  "number": 5,
   "result": "FAILURE",
   "status_message": "?",
-  "time": "2013-01-07 03:42:27 -0800",
-  "url": "job/scala-pull-requests/4/"
+  "time": "2013-01-07 03:43:47 -0800",
+  "url": "job/scala-pull-requests/5/"
 }
