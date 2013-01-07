@@ -1,6 +1,6 @@
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.model._
-import scala.tools.nsc.doc.html.page.Index
+import scala.tools.nsc.doc.html.page.{Index, ReferenceIndex}
 import scala.tools.partest.ScaladocModelTest
 
 object Test extends ScaladocModelTest {
@@ -14,8 +14,11 @@ object Test extends ScaladocModelTest {
     model match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
+        // Because "STAR" and "Star" are different
+        assert(index.firstLetterIndex('s').keys.toSeq.length == 2)
 
         val indexPage = new Index(universe, index)
+        // Because both are starting with "s"
         assert(indexPage.letters.length == 1)
       }
       case _ => assert(false)
