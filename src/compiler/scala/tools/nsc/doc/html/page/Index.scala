@@ -46,10 +46,22 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
       </div>
     </body>
 
+  def letters: NodeSeq = {
+    val xs = index.firstLetterIndex.keys.toSeq
+    xs.sorted map {
+      c => <a target="template" href={ "index/index-" + c + ".html" }>{
+        if (c == '_') '#' else c.toUpper
+      }</a>
+    }
+  }
+
   def browser =
     <div id="browser" class="ui-layout-west">
       <div class="ui-west-center">
-      <div id="filter"></div>
+      <div id="filter">
+          <div id="textfilter"></div>
+          <div id="letters">{ letters }</div>
+      </div>
       <div class="pack" id="tpl">{
         def packageElem(pack: model.Package): NodeSeq = {
           <xml:group>
