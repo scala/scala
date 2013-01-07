@@ -821,6 +821,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
          )
     )
 
+    /** Is this symbol owned by a package? */
+    final def isTopLevel = owner.isPackageClass
+
     /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
     final def isLocal: Boolean = owner.isTerm
 
