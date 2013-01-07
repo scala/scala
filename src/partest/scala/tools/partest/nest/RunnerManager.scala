@@ -472,6 +472,16 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
         diffCheck(file, compareOutput(dir, logFile))
       })
 
+    def findScalacheckParams(file: File): Seq[String] = {
+      val paramsFilePath = file.getPath.stripSuffix(".scala") + ".scalacheck"
+      val paramsFile = new File(paramsFilePath)
+      if (paramsFile.exists) {
+        file2String(paramsFile).split("\\s+").filter(_ != "")
+      } else {
+        Nil
+      }
+    }
+
     def processSingleFile(file: File): (Boolean, LogContext) = kind match {
       case "scalacheck" =>
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
@@ -479,10 +489,11 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
 
           val outURL    = outDir.getAbsoluteFile.toURI.toURL
           val logWriter = new PrintStream(new FileOutputStream(logFile), true)
+          val scalacheckParams = findScalacheckParams(file)
 
           Output.withRedirected(logWriter) {
             // this classloader is test specific: its parent contains library classes and others
-            ScalaClassLoader.fromURLs(List(outURL), params.scalaCheckParentClassLoader).run("Test", Nil)
+            ScalaClassLoader.fromURLs(List(outURL), params.scalaCheckParentClassLoader).run("Test", scalacheckParams)
           }
 
           NestUI.verbose(file2String(logFile))
