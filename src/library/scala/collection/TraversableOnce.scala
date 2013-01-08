@@ -148,6 +148,20 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def foldRight[B](z: B)(op: (A, B) => B): B =
     reversed.foldLeft(z)((x, y) => op(y, x))
 
+  /** Applies a binary operator to all elements of this $coll,
+   *  going left to right.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
+   *           going left to right:
+   *           {{{
+   *             op( op( ... op(x_1, x_2) ..., x_{n-1}), x_n)
+   *           }}}
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+   *  @throws `UnsupportedOperationException` if this $coll is empty.   */
   def reduceLeft[B >: A](op: (B, A) => B): B = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.reduceLeft")
