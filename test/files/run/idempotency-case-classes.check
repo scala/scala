@@ -29,7 +29,10 @@ C(2,3)
       Statics.this.finalizeHash(acc, 2)
     };
     override <synthetic> def toString(): String = ScalaRunTime.this._toString(C.this);
-    override <synthetic> def equals(x$1: Any): Boolean = C.this.eq(x$1.asInstanceOf[Object]).||(x$1.isInstanceOf[C].&&({
+    override <synthetic> def equals(x$1: Any): Boolean = C.this.eq(x$1.asInstanceOf[Object]).||(x$1 match {
+  case (_: C) => true
+  case _ => false
+}.&&({
       <synthetic> val C$1: C = x$1.asInstanceOf[C];
       C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y)).&&(C$1.canEqual(C.this))
     }))
