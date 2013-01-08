@@ -10,6 +10,8 @@ package scala.collection
 
 import mutable.ListBuffer
 import immutable.List
+import scala.util.control.Breaks._
+import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`  which optimizes
  *  the implementation of several methods under the assumption of fast linear access.
@@ -89,7 +91,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     false
   }
-
+  
   override /*IterableLike*/
   def find(p: A => Boolean): Option[A] = {
     var these = this
@@ -110,7 +112,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     acc
   }
-
+  
   override /*IterableLike*/
   def foldRight[B](z: B)(f: (A, B) => B): B =
     if (this.isEmpty) z
@@ -245,14 +247,17 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   override /*SeqLike*/
-  def lengthCompare(len: Int): Int =  {
-    var i = 0
-    var these = self
-    while (!these.isEmpty && i <= len) {
-      i += 1
-      these = these.tail
+  def lengthCompare(len: Int): Int = {
+    @tailrec def loop(i: Int, xs: Repr): Int = {
+      if (i == len)
+        if (xs.isEmpty) 0 else 1
+      else if (xs.isEmpty)
+        -1
+      else
+        loop(i + 1, xs.tail)
     }
-    i - len
+    if (len < 0) 1
+    else loop(0, this)
   }
 
   override /*SeqLike*/

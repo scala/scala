@@ -14,6 +14,7 @@ import scala.reflect.internal.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
 import java.net.MalformedURLException
+import java.util.regex.PatternSyntaxException
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -34,8 +35,11 @@ object ClassPath {
     if (pattern == "*") lsDir(Directory("."))
     else if (pattern endsWith wildSuffix) lsDir(Directory(pattern dropRight 2))
     else if (pattern contains '*') {
-      val regexp = ("^%s$" format pattern.replaceAll("""\*""", """.*""")).r
-      lsDir(Directory(pattern).parent, regexp findFirstIn _ isDefined)
+      try {
+        val regexp = ("^" + pattern.replaceAllLiterally("""\*""", """.*""") + "$").r
+        lsDir(Directory(pattern).parent, regexp findFirstIn _ isDefined)
+      }
+      catch { case _: PatternSyntaxException => List(pattern) }
     }
     else List(pattern)
   }
