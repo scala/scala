@@ -27,9 +27,9 @@ trait ScannersCommon {
 
   trait ScannerCommon extends CommonTokenData {
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
-    def error  (off: Int, msg: String): Unit
+    def error               (off: Int, msg: String): Unit
     def incompleteInputError(off: Int, msg: String): Unit
-    def deprecationWarning(off: Int, msg: String): Unit
+    def deprecationWarning  (off: Int, msg: String): Unit
   }
 
   def createKeywordArray(keywords: Seq[(Name, Int)], defaultToken: Int): (Int, Array[Int]) = {
@@ -71,17 +71,19 @@ trait Scanners extends ScannersCommon {
     var base: Int = 0
 
     def copyFrom(td: TokenData) = {
-      this.token = td.token
-      this.offset = td.offset
+      this.token      = td.token
+      this.offset     = td.offset
       this.lastOffset = td.lastOffset
-      this.name = td.name
-      this.strVal = td.strVal
-      this.base = td.base
+      this.name       = td.name
+      this.strVal     = td.strVal
+      this.base       = td.base
     }
   }
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
+    
+    var isInSubScript = false
 
     def isAtEnd = charOffset >= buf.length
 
@@ -120,18 +122,14 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Clear buffer and set string */
-    private def setStrVal() {
-      strVal = cbuf.toString
-      cbuf.clear()
-    }
+    private def setStrVal() {strVal = cbuf.toString; cbuf.clear()}
 
     /** Should doc comments be built? */
     def buildDocs: Boolean = forScaladoc
 
-    /** buffer for the documentation comment
-     */
+    /** buffer for the documentation comment */
     var docBuffer: StringBuilder = null
-    var docPos: Position = null
+    var docPos   : Position      = null
 
     /** Return current docBuffer and set docBuffer to null */
     def flushDoc: DocComment = {
@@ -140,13 +138,10 @@ trait Scanners extends ScannersCommon {
       ret
     }
 
-    /** add the given character to the documentation buffer
-     */
-    protected def putDocChar(c: Char) {
-      if (docBuffer ne null) docBuffer.append(c)
-    }
+    /** add the given character to the documentation buffer */
+    protected def putDocChar(c: Char) {if (docBuffer ne null) docBuffer.append(c)}
 
-    protected def foundComment(value: String, start: Int, end: Int) = ()
+    protected def    foundComment(value: String, start: Int, end: Int) = ()
     protected def foundDocComment(value: String, start: Int, end: Int) = ()
 
     private class TokenData0 extends TokenData
@@ -173,35 +168,23 @@ trait Scanners extends ScannersCommon {
 
     /** Are we directly in a string interpolation expression?
      */
-    private def inStringInterpolation =
-      sepRegions.nonEmpty && sepRegions.head == STRINGLIT
+    private def inStringInterpolation = sepRegions.nonEmpty && sepRegions.head == STRINGLIT
 
     /** Are we directly in a multiline string interpolation expression?
      *  @pre inStringInterpolation
      */
-    private def inMultiLineInterpolation =
-      inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
+    private def inMultiLineInterpolation = inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
 
-    /** read next token and return last offset
-     */
-    def skipToken(): Offset = {
-      val off = offset
-      nextToken()
-      off
-    }
+    /** read next token and return last offset*/
+    def skipToken(): Offset = {val off = offset; nextToken(); off}
 
     /** Allow an otherwise deprecated ident here */
     private var allowIdent: Name = nme.EMPTY
 
     /** Get next token, and allow the otherwise deprecated ident `name`  */
     def nextTokenAllow(name: Name) = {
-      val prev = allowIdent
-      allowIdent = name
-      try {
-        nextToken()
-      } finally {
-        allowIdent = prev
-      }
+      val prev = allowIdent;     allowIdent = name
+      try {nextToken()} finally {allowIdent = prev}
     }
 
     /** Produce next token, filling TokenData fields of Scanner.
@@ -210,17 +193,12 @@ trait Scanners extends ScannersCommon {
       val lastToken = token
       // Adapt sepRegions according to last token
       (lastToken: @switch) match {
-        case LPAREN =>
-          sepRegions = RPAREN :: sepRegions
-        case LBRACKET =>
-          sepRegions = RBRACKET :: sepRegions
-        case LBRACE =>
-          sepRegions = RBRACE :: sepRegions
-        case CASE =>
-          sepRegions = ARROW :: sepRegions
-        case RBRACE =>
-          while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
-            sepRegions = sepRegions.tail
+        case LPAREN   => sepRegions = RPAREN   :: sepRegions
+        case LBRACKET => sepRegions = RBRACKET :: sepRegions
+        case LBRACE   => sepRegions = RBRACE   :: sepRegions
+        case CASE     => sepRegions = ARROW    :: sepRegions
+        case RBRACE   => while   (!sepRegions.isEmpty && sepRegions.head != RBRACE)
+                                   sepRegions = sepRegions.tail
           if (!sepRegions.isEmpty) sepRegions = sepRegions.tail
           docBuffer = null
         case RBRACKET | RPAREN =>
@@ -231,10 +209,8 @@ trait Scanners extends ScannersCommon {
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
         case STRINGLIT =>
-          if (inMultiLineInterpolation)
-            sepRegions = sepRegions.tail.tail
-          else if (inStringInterpolation)
-            sepRegions = sepRegions.tail
+          if (  inMultiLineInterpolation) sepRegions = sepRegions.tail.tail
+          else if (inStringInterpolation) sepRegions = sepRegions.tail
         case _ =>
       }
 
@@ -246,10 +222,8 @@ trait Scanners extends ScannersCommon {
         }
         if (inStringInterpolation) fetchStringPart() else fetchToken()
         if(token == ERROR) {
-          if (inMultiLineInterpolation)
-            sepRegions = sepRegions.tail.tail
-          else if (inStringInterpolation)
-            sepRegions = sepRegions.tail
+          if (  inMultiLineInterpolation) sepRegions = sepRegions.tail.tail
+          else if (inStringInterpolation) sepRegions = sepRegions.tail
         }
       } else {
         this copyFrom next
@@ -266,7 +240,7 @@ trait Scanners extends ScannersCommon {
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         next copyFrom this
         offset = if (lineStartOffset <= offset) lineStartOffset else lastLineStartOffset
-        token = if (pastBlankLine()) NEWLINES else NEWLINE
+        token  = if (pastBlankLine()) NEWLINES else NEWLINE
       }
 
       // Join CASE + CLASS => CASECLASS, CASE + OBJECT => CASEOBJECT, SEMI + ELSE => ELSE
@@ -275,16 +249,12 @@ trait Scanners extends ScannersCommon {
         val nextLastOffset = charOffset - 1
         fetchToken()
         def resetOffset() {
-          offset = prev.offset
+          offset     = prev.offset
           lastOffset = prev.lastOffset
         }
-        if (token == CLASS) {
-          token = CASECLASS
-          resetOffset()
-        } else if (token == OBJECT) {
-          token = CASEOBJECT
-          resetOffset()
-        } else {
+        if      (token == CLASS ) {token = CASECLASS ; resetOffset()} 
+        else if (token == OBJECT) {token = CASEOBJECT; resetOffset()} 
+        else {
           lastOffset = nextLastOffset
           next copyFrom this
           this copyFrom prev
@@ -322,7 +292,7 @@ trait Scanners extends ScannersCommon {
 //              println("blank line found at "+lastOffset+":"+(lastOffset to idx).map(buf(_)).toList)
               return true
             }
-	    if (idx == end) return false
+            if (idx == end) return false
           } while (ch <= ' ')
         }
         idx += 1; ch = buf(idx)
@@ -336,9 +306,7 @@ trait Scanners extends ScannersCommon {
       offset = charOffset - 1
       (ch: @switch) match {
 
-        case ' ' | '\t' | CR | LF | FF =>
-          nextChar()
-          fetchToken()
+        case ' ' | '\t' | CR | LF | FF => nextChar(); fetchToken()
         case 'A' | 'B' | 'C' | 'D' | 'E' |
              'F' | 'G' | 'H' | 'I' | 'J' |
              'K' | 'L' | 'M' | 'N' | 'O' |
@@ -370,9 +338,25 @@ trait Scanners extends ScannersCommon {
             }
           }
           fetchLT
-        case '~' | '!' | '@' | '#' | '%' |
-             '^' | '*' | '+' | '-' | /*'<' | */
-             '>' | '?' | ':' | '=' | '&' |
+        case '!' | '^' | '*' | '?' =>
+          val chOld = ch
+          nextChar()
+          if (isInSubScript && ch==RBRACE) {
+            nextChar()
+            token = chOld match {
+              case '!' => RBRACE_EMARK
+              case '^' => RBRACE_CARET
+              case '*' => RBRACE_ASTERISK
+              case '?' => RBRACE_QMARK
+            }
+          }
+          else {
+            putChar(chOld)
+            getOperatorRest()
+          }
+        case '~' | '@' | '#' | '%' |
+             '+' | '-' | /*'<' | */
+             '>' | ':' | '=' | '&' |
              '|' | '\\' =>
           putChar(ch)
           nextChar()
@@ -410,8 +394,7 @@ trait Scanners extends ScannersCommon {
         case '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           base = 10
           getNumber()
-        case '`' =>
-          getBackquotedIdent()
+        case '`'  => getBackquotedIdent()
         case '\"' =>
           def fetchDoubleQuote() = {
             if (token == INTERPOLATIONID) {
@@ -451,10 +434,9 @@ trait Scanners extends ScannersCommon {
         case '\'' =>
           def fetchSingleQuote() = {
             nextChar()
-            if (isIdentifierStart(ch))
-              charLitOr(getIdentRest)
-            else if (isOperatorPart(ch) && (ch != '\\'))
-              charLitOr(getOperatorRest)
+            if   (isIdentifierStart(ch)) charLitOr(getIdentRest)
+            else if (isOperatorPart(ch) 
+                 && (ch != '\\'))        charLitOr(getOperatorRest)
             else {
               getLitChar()
               if (ch == '\'') {
@@ -469,27 +451,38 @@ trait Scanners extends ScannersCommon {
           fetchSingleQuote
         case '.' =>
           nextChar()
-          if ('0' <= ch && ch <= '9') {
-            putChar('.'); getFraction()
-          } else {
-            token = DOT
+          if ('0' <= ch && ch <= '9') {putChar('.'); getFraction()}
+          else                   {            token = DOT }
+          if (isInSubScript) {
+                 if  (ch == '}') {nextChar(); token = RBRACE_DOT}
+            else if  (ch == '.') {nextChar()
+                  if (ch == '.') {nextChar()
+                   if(ch == '}') {nextChar(); token = RBRACE_DOT3}
+                   else          {            token = DOT3}}
+                  else           {            token = DOT2}}
+          } 
+        case '{' => nextChar(); token = LBRACE
+          if (isInSubScript) {
+            (ch: @switch) match {
+              case '?' => nextChar(); token = LBRACE_QMARK
+              case '!' => nextChar(); token = LBRACE_EMARK
+              case '*' => nextChar(); token = LBRACE_ASTERISK
+              case '^' => nextChar(); token = LBRACE_CARET
+              case '.' => nextChar(); token = LBRACE_DOT
+                          if  (ch=='.') {nextChar(); 
+                            if(ch=='.') {nextChar(); token = LBRACE_DOT3 }
+                            else {syntaxError("'.' expected")}
+                          }
+              case  _  =>
+            }
           }
-        case ';' =>
-          nextChar(); token = SEMI
-        case ',' =>
-          nextChar(); token = COMMA
-        case '(' =>
-          nextChar(); token = LPAREN
-        case '{' =>
-          nextChar(); token = LBRACE
-        case ')' =>
-          nextChar(); token = RPAREN
-        case '}' =>
-          nextChar(); token = RBRACE
-        case '[' =>
-          nextChar(); token = LBRACKET
-        case ']' =>
-          nextChar(); token = RBRACKET
+        case '(' => nextChar(); token = LPAREN
+        case ')' => nextChar(); token = RPAREN
+        case ';' => nextChar(); token = SEMI
+        case ',' => nextChar(); token = COMMA
+        case '}' => nextChar(); token = RBRACE
+        case '[' => nextChar(); token = LBRACKET
+        case ']' => nextChar(); token = RBRACKET
         case SU =>
           if (isAtEnd) token = EOF
           else {
@@ -498,19 +491,12 @@ trait Scanners extends ScannersCommon {
           }
         case _ =>
           def fetchOther() = {
-            if (ch == '\u21D2') {
-              nextChar(); token = ARROW
-            } else if (ch == '\u2190') {
-              nextChar(); token = LARROW
-            } else if (Character.isUnicodeIdentifierStart(ch)) {
-              putChar(ch)
-              nextChar()
-              getIdentRest()
-            } else if (isSpecial(ch)) {
-              putChar(ch)
-              nextChar()
-              getOperatorRest()
-            } else {
+            if      (ch == '\u21D2') {nextChar(); token =  ARROW} 
+            else if (ch == '\u2190') {nextChar(); token = LARROW} 
+            else if (Character.isUnicodeIdentifierStart(ch)) {
+                                     putChar(ch); nextChar(); getIdentRest   ()}
+            else if (isSpecial(ch)) {putChar(ch); nextChar(); getOperatorRest()}
+            else {
               syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch: Int)) + "'")
               nextChar()
             }
@@ -534,8 +520,7 @@ trait Scanners extends ScannersCommon {
         } else {
           docBuffer = null
           var openComments = 1
-          appendToComment()
-          nextChar()
+          appendToComment(); nextChar()
           appendToComment()
           var buildingDocComment = false
           if (ch == '*' && buildDocs) {
@@ -545,22 +530,14 @@ trait Scanners extends ScannersCommon {
           while (openComments > 0) {
             do {
               do {
-                if (ch == '/') {
-                  nextChar(); putDocChar(ch); appendToComment()
-                  if (ch == '*') {
-                    nextChar(); putDocChar(ch); appendToComment()
-                    openComments += 1
-                  }
+                if    (ch == '/') {            nextChar(); putDocChar(ch); appendToComment()
+                  if  (ch == '*') {            nextChar(); putDocChar(ch); appendToComment(); openComments += 1}
                 }
-                if (ch != '*' && ch != SU) {
-                  nextChar(); putDocChar(ch); appendToComment()
-                }
+                if    (ch != '*' && ch != SU) {nextChar(); putDocChar(ch); appendToComment()}
               } while (ch != '*' && ch != SU)
-              while (ch == '*') {
-                nextChar(); putDocChar(ch); appendToComment()
-              }
-            } while (ch != '/' && ch != SU)
-            if (ch == '/') nextChar()
+              while   (ch == '*')             {nextChar(); putDocChar(ch); appendToComment()}
+            } while   (ch != '/' && ch != SU)
+            if        (ch == '/') nextChar()
             else incompleteInputError("unclosed comment")
             openComments -= 1
           }
@@ -626,53 +603,39 @@ trait Scanners extends ScannersCommon {
            'u' | 'v' | 'w' | 'x' | 'y' |
            'z' |
            '0' | '1' | '2' | '3' | '4' |
-           '5' | '6' | '7' | '8' | '9' =>
-        putChar(ch)
-        nextChar()
-        getIdentRest()
-      case '_' =>
-        putChar(ch)
-        nextChar()
-        getIdentOrOperatorRest()
-      case SU => // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
-        finishNamed()
-      case _ =>
-        if (Character.isUnicodeIdentifierPart(ch)) {
-          putChar(ch)
-          nextChar()
-          getIdentRest()
-        } else {
-          finishNamed()
-        }
+           '5' | '6' | '7' | '8' | '9' 
+               => putChar(ch); nextChar(); getIdentRest()
+      case '_' => putChar(ch); nextChar(); getIdentOrOperatorRest()
+      case SU  => finishNamed() // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
+      case  _  => if (Character.isUnicodeIdentifierPart(ch)) {
+                   putChar(ch); nextChar(); getIdentRest()
+                  } else {
+                    finishNamed()
+                  }
     }
 
     private def getOperatorRest(): Unit = (ch: @switch) match {
-      case '~' | '!' | '@' | '#' | '%' |
-           '^' | '*' | '+' | '-' | '<' |
-           '>' | '?' | ':' | '=' | '&' |
-           '|' | '\\' =>
-        putChar(ch); nextChar(); getOperatorRest()
       case '/' =>
         nextChar()
         if (skipComment()) finishNamed()
         else { putChar('/'); getOperatorRest() }
-      case _ =>
-        if (isSpecial(ch)) { putChar(ch); nextChar(); getOperatorRest() }
-        else finishNamed()
+      case '~' | '!' | '@' | '#' | '%' |
+           '^' | '*' | '+' | '-' | '<' |
+           '>' | '?' | ':' | '=' | '&' |
+           '|' | '\\' =>            putChar(ch); nextChar(); getOperatorRest()
+      case _ => if (isSpecial(ch)) {putChar(ch); nextChar(); getOperatorRest()}
+               else finishNamed()
     }
 
     private def getIdentOrOperatorRest() {
-      if (isIdentifierPart(ch))
-        getIdentRest()
+      if (isIdentifierPart(ch)) getIdentRest()
       else ch match {
         case '~' | '!' | '@' | '#' | '%' |
              '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
-             '|' | '\\' | '/' =>
-          getOperatorRest()
-        case _ =>
-          if (isSpecial(ch)) getOperatorRest()
-          else finishNamed()
+             '|' | '\\' | '/' =>     getOperatorRest()
+        case _ => if (isSpecial(ch)) getOperatorRest()
+                  else finishNamed()
       }
     }
 
@@ -681,21 +644,15 @@ trait Scanners extends ScannersCommon {
 
     private def getStringLit() = {
       getLitChars('"')
-      if (ch == '"') {
-        setStrVal()
-        nextChar()
-        token = STRINGLIT
-      } else syntaxError("unclosed string literal")
+      if (ch == '"') {setStrVal(); nextChar(); token = STRINGLIT}
+      else syntaxError("unclosed string literal")
     }
 
     private def getRawStringLit(): Unit = {
       if (ch == '\"') {
         nextRawChar()
-        if (isTripleQuote()) {
-          setStrVal()
-          token = STRINGLIT
-        } else
-          getRawStringLit()
+        if (isTripleQuote()) {setStrVal(); token = STRINGLIT} 
+        else getRawStringLit()
       } else if (ch == SU) {
         incompleteInputError("unclosed multi-line string literal")
       } else {
@@ -845,39 +802,20 @@ trait Scanners extends ScannersCommon {
      */
     protected def getFraction() {
       token = DOUBLELIT
-      while ('0' <= ch && ch <= '9') {
-        putChar(ch)
-        nextChar()
-      }
+      while ('0' <= ch && ch <= '9') {putChar(ch); nextChar()}
       if (ch == 'e' || ch == 'E') {
         val lookahead = lookaheadReader
         lookahead.nextChar()
-        if (lookahead.ch == '+' || lookahead.ch == '-') {
-          lookahead.nextChar()
-        }
+        if (lookahead.ch == '+' || lookahead.ch == '-') {lookahead.nextChar()}
         if ('0' <= lookahead.ch && lookahead.ch <= '9') {
-          putChar(ch)
-          nextChar()
-          if (ch == '+' || ch == '-') {
-            putChar(ch)
-            nextChar()
-          }
-          while ('0' <= ch && ch <= '9') {
-            putChar(ch)
-            nextChar()
-          }
+                                          putChar(ch); nextChar()
+          if    (ch == '+' || ch == '-') {putChar(ch); nextChar()}
+          while ('0' <= ch && ch <= '9') {putChar(ch); nextChar()}
         }
         token = DOUBLELIT
       }
-      if (ch == 'd' || ch == 'D') {
-        putChar(ch)
-        nextChar()
-        token = DOUBLELIT
-      } else if (ch == 'f' || ch == 'F') {
-        putChar(ch)
-        nextChar()
-        token = FLOATLIT
-      }
+      if      (ch == 'd' || ch == 'D') {putChar(ch); nextChar(); token = DOUBLELIT} 
+      else if (ch == 'f' || ch == 'F') {putChar(ch); nextChar(); token =  FLOATLIT}
       checkNoLetter()
       setStrVal()
     }
@@ -970,29 +908,20 @@ trait Scanners extends ScannersCommon {
       token = INTLIT
 
       /** When we know for certain it's a number after using a touch of lookahead */
-      def restOfNumber() = {
-        putChar(ch)
-        nextChar()
-        getFraction()
-      }
+      def restOfNumber() = {putChar(ch); nextChar(); getFraction()}
       def restOfUncertainToken() = {
         def isEfd = ch match { case 'e' | 'E' | 'f' | 'F' | 'd' | 'D' => true ; case _ => false }
         def isL   = ch match { case 'l' | 'L' => true ; case _ => false }
 
-        if (base <= 10 && isEfd)
-          getFraction()
+        if (base <= 10 && isEfd) getFraction()
         else {
           setStrVal()
-          if (isL) {
-            nextChar()
-            token = LONGLIT
-          }
+          if (isL) {nextChar(); token = LONGLIT}
           else checkNoLetter()
         }
       }
 
-      if (base > 10 || ch != '.')
-        restOfUncertainToken()
+      if (base > 10 || ch != '.') restOfUncertainToken()
       else {
         val lookahead = lookaheadReader
         val c = lookahead.getc()
@@ -1000,30 +929,23 @@ trait Scanners extends ScannersCommon {
         /** As of scala 2.11, it isn't a number unless c here is a digit, so
          *  settings.future.value excludes the rest of the logic.
          */
-        if (settings.future.value && !isDigit(c))
-          return setStrVal()
+        if (settings.future.value && !isDigit(c)) return setStrVal()
 
         val isDefinitelyNumber = (c: @switch) match {
           /** Another digit is a giveaway. */
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
-            true
+          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  => true
 
           /** Backquoted idents like 22.`foo`. */
-          case '`' =>
-            return setStrVal()  /** Note the early return */
+          case '`'       => return setStrVal()  /** Note the early return */
 
-          /** These letters may be part of a literal, or a method invocation on an Int.
-           */
-          case 'd' | 'D' | 'f' | 'F' =>
-            !isIdentifierPart(lookahead.getc())
+          /** These letters may be part of a literal, or a method invocation on an Int */
+          case 'd' | 'D' 
+             | 'f' | 'F' => !isIdentifierPart(lookahead.getc())
 
           /** A little more special handling for e.g. 5e7 */
-          case 'e' | 'E' =>
-            val ch = lookahead.getc()
-            !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
-
-          case x  =>
-            !isIdentifierStart(x)
+          case 'e' | 'E' => val ch = lookahead.getc()
+                            !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
+          case x         => !isIdentifierStart(x)
         }
         if (isDefinitelyNumber) restOfNumber()
         else restOfUncertainToken()
@@ -1051,10 +973,7 @@ trait Scanners extends ScannersCommon {
 
     /** generate an error at the given offset
     */
-    def syntaxError(off: Offset, msg: String) {
-      error(off, msg)
-      token = ERROR
-    }
+    def syntaxError(off: Offset, msg: String) {error(off, msg); token = ERROR}
 
     /** generate an error at the current token offset
     */
@@ -1063,40 +982,24 @@ trait Scanners extends ScannersCommon {
     def deprecationWarning(msg: String): Unit = deprecationWarning(offset, msg)
 
     /** signal an error where the input ended in the middle of a token */
-    def incompleteInputError(msg: String) {
-      incompleteInputError(offset, msg)
-      token = EOF
-    }
+    def incompleteInputError(msg: String) {incompleteInputError(offset, msg); token = EOF}
 
     override def toString() = token match {
-      case IDENTIFIER | BACKQUOTED_IDENT =>
-        "id(" + name + ")"
-      case CHARLIT =>
-        "char(" + intVal + ")"
-      case INTLIT =>
-        "int(" + intVal + ")"
-      case LONGLIT =>
-        "long(" + intVal + ")"
-      case FLOATLIT =>
-        "float(" + floatVal + ")"
-      case DOUBLELIT =>
-        "double(" + floatVal + ")"
-      case STRINGLIT =>
-        "string(" + strVal + ")"
-      case STRINGPART =>
-        "stringpart(" + strVal + ")"
-      case INTERPOLATIONID =>
-        "interpolationid(" + name + ")"
-      case SEMI =>
-        ";"
-      case NEWLINE =>
-        ";"
-      case NEWLINES =>
-        ";;"
-      case COMMA =>
-        ","
-      case _ =>
-        token2string(token)
+      case IDENTIFIER 
+        | BACKQUOTED_IDENT =>              "id(" +     name + ")"
+      case CHARLIT         =>            "char(" +   intVal + ")"
+      case INTLIT          =>             "int(" +   intVal + ")"
+      case LONGLIT         =>            "long(" +   intVal + ")"
+      case FLOATLIT        =>           "float(" + floatVal + ")"
+      case DOUBLELIT       =>          "double(" + floatVal + ")"
+      case STRINGLIT       =>          "string(" +   strVal + ")"
+      case STRINGPART      =>      "stringpart(" +   strVal + ")"
+      case INTERPOLATIONID => "interpolationid(" +     name + ")"
+      case SEMI            => ";"
+      case NEWLINE         => ";"
+      case NEWLINES        => ";;"
+      case COMMA           => ","
+      case _               => token2string(token)
     }
 
     // ------------- brace counting and healing ------------------------------
@@ -1113,12 +1016,8 @@ trait Scanners extends ScannersCommon {
     /** overridden in UnitScanners */
     def healBraces(): List[BracePatch] = List()
 
-    /** Initialization method: read first char, then first token
-     */
-    def init() {
-      nextChar()
-      nextToken()
-    }
+    /** Initialization method: read first char, then first token */
+    def init() {nextChar(); nextToken()}
   } // end Scanner
 
   // ------------- keyword configuration -----------------------------------
@@ -1175,7 +1074,10 @@ trait Scanners extends ScannersCommon {
     nme.HASHkw      -> HASH,
     nme.ATkw        -> AT,
     nme.MACROkw     -> IDENTIFIER,
-    nme.THENkw      -> IDENTIFIER)
+    nme.THENkw      -> IDENTIFIER
+    
+  //nme.SCRIPTkw    -> SCRIPT
+    )
 
   private var kwOffset: Int = -1
   private val kwArray: Array[Int] = {
@@ -1190,29 +1092,58 @@ trait Scanners extends ScannersCommon {
 
   /** Returns the string representation of given token. */
   def token2string(token: Int): String = (token: @switch) match {
-    case IDENTIFIER | BACKQUOTED_IDENT => "identifier"
-    case CHARLIT => "character literal"
-    case INTLIT => "integer literal"
-    case LONGLIT => "long literal"
-    case FLOATLIT => "float literal"
-    case DOUBLELIT => "double literal"
-    case STRINGLIT | STRINGPART | INTERPOLATIONID => "string literal"
-    case SYMBOLLIT => "symbol literal"
-    case LPAREN => "'('"
-    case RPAREN => "')'"
-    case LBRACE => "'{'"
-    case RBRACE => "'}'"
-    case LBRACKET => "'['"
-    case RBRACKET => "']'"
-    case EOF => "eof"
-    case ERROR => "something"
-    case SEMI => "';'"
-    case NEWLINE => "';'"
-    case NEWLINES => "';'"
-    case COMMA => "','"
-    case CASECLASS => "case class"
-    case CASEOBJECT => "case object"
-    case XMLSTART => "$XMLSTART$<"
+    case IDENTIFIER
+    | BACKQUOTED_IDENT => "identifier"
+    case CHARLIT       => "character literal"
+    case INTLIT        => "integer literal"
+    case LONGLIT       => "long literal"
+    case FLOATLIT      => "float literal"
+    case DOUBLELIT     => "double literal"
+    case STRINGLIT
+       | STRINGPART 
+    | INTERPOLATIONID  => "string literal"
+    case SYMBOLLIT     => "symbol literal"
+    case LPAREN        => "'('"
+    case RPAREN        => "')'"
+    case LBRACE        => "'{'"
+    case RBRACE        => "'}'"
+    case LBRACKET      => "'['"
+    case RBRACKET      => "']'"
+    case EOF           => "eof"
+    case ERROR         => "something"
+    case SEMI          => "';'"
+    case NEWLINE       => "';'"
+    case NEWLINES      => "';'"
+    case COMMA         => "','"
+    case CASECLASS     => "case class"
+    case CASEOBJECT    => "case object"
+    case XMLSTART      => "$XMLSTART$<"
+      
+    // SubScript tokens:  
+    case LBRACE_DOT               => "{."   
+    case LBRACE_DOT3              => "{..."
+    case LBRACE_QMARK             => "{?"
+    case LBRACE_EMARK             => "{!"
+    case LBRACE_ASTERISK          => "{*"
+    case LBRACE_CARET             => "{^"
+    case RBRACE_DOT               => ".}"
+    case RBRACE_DOT3              => "...}"
+    case RBRACE_QMARK             => "?}"
+    case RBRACE_EMARK             => "!}"
+    case RBRACE_ASTERISK          => "*}"
+    case RBRACE_CARET             => "^}"
+    case DOT2                     => ".."
+    case DOT3                     => "..."
+    case MINUS_SEMI               => "-;"
+    case BAR_SEMI                 => "|;"
+    case BAR2_SEMI                => "||;"
+    case BAR_SEMI_BAR             => "|;|"
+    case PERCENT_SEMI             => "%;"
+    case LPAREN_PLUS_RPAREN       => "(+)"
+    case LPAREN_MINUS_RPAREN      => "(-)"
+    case LPAREN_PLUS_MINUS_RPAREN => "(+-)"
+    case LPAREN_SEMI_RPAREN       => "(;)"
+    
     case _ =>
       (token2name get token) match {
         case Some(name) => "'" + name + "'"
@@ -1230,8 +1161,8 @@ trait Scanners extends ScannersCommon {
     override val decodeUni: Boolean = !settings.nouescape.value
 
     // suppress warnings, throw exception on errors
-    def deprecationWarning(off: Offset, msg: String): Unit = ()
-    def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
+    def deprecationWarning  (off: Offset, msg: String): Unit = ()
+    def error               (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
   }
 
@@ -1240,8 +1171,8 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def deprecationWarning(off: Offset, msg: String)   = unit.deprecationWarning(unit.position(off), msg)
-    override def error  (off: Offset, msg: String)              = unit.error(unit.position(off), msg)
+    override def deprecationWarning  (off: Offset, msg: String) = unit.deprecationWarning  (unit.position(off), msg)
+    override def error               (off: Offset, msg: String) = unit.error               (unit.position(off), msg)
     override def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
@@ -1254,14 +1185,8 @@ trait Scanners extends ScannersCommon {
       var patches: List[BracePatch] = List()
       if (!parensAnalyzer.tabSeen) {
         var bal = parensAnalyzer.balance(RBRACE)
-        while (bal < 0) {
-          patches = new ParensAnalyzer(unit, patches).insertRBrace()
-          bal += 1
-        }
-        while (bal > 0) {
-          patches = new ParensAnalyzer(unit, patches).deleteRBrace()
-          bal -= 1
-        }
+        while (bal < 0) {patches = new ParensAnalyzer(unit, patches).insertRBrace(); bal += 1}
+        while (bal > 0) {patches = new ParensAnalyzer(unit, patches).deleteRBrace(); bal -= 1}
       }
       patches
     }
@@ -1273,32 +1198,24 @@ trait Scanners extends ScannersCommon {
         val patch = bracePatches.head
         bracePatches = bracePatches.tail
 //        println("applying brace patch "+offset)//DEBUG
-        if (patch.inserted) {
-          next copyFrom this
-          error(offset, "Missing closing brace `}' assumed here")
-          token = RBRACE
-          true
-        } else {
-          error(offset, "Unmatched closing brace '}' ignored here")
-          fetchToken()
-          false
-        }
+        if (patch.inserted) {next copyFrom this; error(offset,   "Missing closing brace `}' assumed here"); token = RBRACE; true}
+        else                {                    error(offset, "Unmatched closing brace '}' ignored here");  fetchToken(); false}
       }
     }
 
-    override def foundComment(value: String, start: Int, end: Int) {
-      val pos = new RangePosition(unit.source, start, start, end)
-      unit.comment(pos, value)
-    }
-
-    override def foundDocComment(value: String, start: Int, end: Int) {
-      docPos = new RangePosition(unit.source, start, start, end)
-      unit.comment(docPos, value)
-    }
+    override def    foundComment(value: String, start: Int, end: Int) {val pos = new RangePosition(unit.source, start, start, end); unit.comment(   pos, value)}
+    override def foundDocComment(value: String, start: Int, end: Int) { docPos = new RangePosition(unit.source, start, start, end); unit.comment(docPos, value)}
   }
 
   class ParensAnalyzer(unit: CompilationUnit, patches: List[BracePatch]) extends UnitScanner(unit, patches) {
-    val balance = mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+    val balance = mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0,
+                                // SubScript specials:
+								RBRACE_DOT      -> 0, 
+								RBRACE_DOT3     -> 0, 
+								RBRACE_QMARK    -> 0, 
+								RBRACE_EMARK    -> 0, 
+								RBRACE_ASTERISK -> 0, 
+								RBRACE_CARET    -> 0)
 
     init()
 
@@ -1328,9 +1245,9 @@ trait Scanners extends ScannersCommon {
             // reset indentation unless there are new opening brackets or
             // braces since last ident line and at the same time there
             // are no new braces.
-            if (balance(RPAREN) >= oldBalance(RPAREN) &&
+            if (balance(RPAREN  ) >= oldBalance(RPAREN  ) &&
                 balance(RBRACKET) >= oldBalance(RBRACKET) ||
-                balance(RBRACE) != oldBalance(RBRACE)) {
+                balance(RBRACE  ) != oldBalance(RBRACE  )   ) {
               indent = column(offset)
               markBalance()
             }
@@ -1338,32 +1255,22 @@ trait Scanners extends ScannersCommon {
         }
 
         token match {
-          case LPAREN =>
-            balance(RPAREN) -= 1; nextToken(); scan(bpbuf)
-          case LBRACKET =>
-            balance(RBRACKET) -= 1; nextToken(); scan(bpbuf)
-          case RPAREN =>
-            balance(RPAREN) += 1; nextToken(); scan(bpbuf)
-          case RBRACKET =>
-            balance(RBRACKET) += 1; nextToken(); scan(bpbuf)
-          case LBRACE =>
-            balance(RBRACE) -= 1
-            val lc = lineCount
-            val loff = offset
-            val lindent = indent
-            val bpbuf1 = new ListBuffer[BracePair]
-            nextToken()
-            val (roff, rindent) = scan(bpbuf1)
-            if (lc != lineCount)
-              bpbuf += BracePair(loff, lindent, roff, rindent, bpbuf1.toList)
-            scan(bpbuf)
-          case RBRACE =>
-            balance(RBRACE) += 1
-            val off = offset; nextToken(); (off, indent)
-          case EOF =>
-            (-1, -1)
-          case _ =>
-            nextToken(); scan(bpbuf)
+          case LPAREN   => balance(RPAREN  ) -= 1; nextToken(); scan(bpbuf)
+          case LBRACKET => balance(RBRACKET) -= 1; nextToken(); scan(bpbuf)
+          case RPAREN   => balance(RPAREN  ) += 1; nextToken(); scan(bpbuf)
+          case RBRACKET => balance(RBRACKET) += 1; nextToken(); scan(bpbuf)
+          case LBRACE   => balance(RBRACE)   -= 1;  val lc = lineCount
+										            val loff = offset
+										            val lindent = indent
+										            val bpbuf1 = new ListBuffer[BracePair]
+										            nextToken()
+										            val (roff, rindent) = scan(bpbuf1)
+										            if (lc != lineCount)
+										              bpbuf += BracePair(loff, lindent, roff, rindent, bpbuf1.toList)
+										            scan(bpbuf)
+          case RBRACE   => balance(RBRACE  ) += 1;  val off = offset; nextToken(); (off, indent)
+          case EOF      => (-1, -1)
+          case _        => nextToken(); scan(bpbuf)
         }
       }
 
@@ -1380,9 +1287,7 @@ trait Scanners extends ScannersCommon {
       def printBP(bp: BracePair, indent: Int) {
         println(" "*indent+line(bp.loff)+":"+bp.lindent+" to "+line(bp.roff)+":"+bp.rindent)
         if (bp.nested.nonEmpty)
-          for (bp1 <- bp.nested) {
-            printBP(bp1, indent + 2)
-          }
+          for (bp1 <- bp.nested) {printBP(bp1, indent + 2)}
       }
 //      println("lineStart = "+lineStart)//DEBUG
 //      println("bracepairs = ")

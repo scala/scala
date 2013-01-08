@@ -125,4 +125,36 @@ object Tokens extends Tokens {
   final val WHITESPACE = 105
   final val IGNORE = 106
   final val ESCAPE = 109
+  
+  final val LBRACE_DOT      = 130
+  final val LBRACE_DOT3     = 131
+  final val LBRACE_QMARK    = 132
+  final val LBRACE_EMARK    = 133
+  final val LBRACE_ASTERISK = 134
+  final val LBRACE_CARET    = 135
+
+  final val RBRACE_DOT      = 141
+  final val RBRACE_DOT3     = 142
+  final val RBRACE_QMARK    = 143
+  final val RBRACE_EMARK    = 144
+  final val RBRACE_ASTERISK = 145
+  final val RBRACE_CARET    = 146
+
+  final val DOT2            = 150
+  final val DOT3            = 151
+  
+  final val MINUS_SEMI      = 152
+  final val BAR_SEMI        = 153
+  final val BAR2_SEMI       = 154
+  final val BAR_SEMI_BAR    = 155
+  final val PERCENT_SEMI    = 156
+  
+  final val LPAREN_PLUS_RPAREN       = 160
+  final val LPAREN_MINUS_RPAREN      = 161
+  final val LPAREN_PLUS_MINUS_RPAREN = 162
+  final val LPAREN_SEMI_RPAREN       = 163
+
+  
+  
+  
 }

@@ -603,6 +603,7 @@ self =>
     }
     def isDclIntro: Boolean = in.token match {
       case VAL | VAR | DEF | TYPE => true
+      //case IDENTIFIER if isScriptIdent => true
       case _ => false
     }
 
@@ -617,6 +618,7 @@ self =>
     def isRawBar  = isIdent && in.name == raw.BAR
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
+//    def isScriptIdent = in.token == IDENTIFIER && in.name.decoded == "script"
 
     def isLiteralToken(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
@@ -2388,6 +2390,8 @@ self =>
           List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
         case TYPE =>
           List(typeDefOrDcl(pos, mods withPosition(TYPE, tokenRange(in))))
+        //case IDENTIFIER if isScriptIdent =>
+        //  List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
         case _ =>
           List(tmplDef(pos, mods))
       }

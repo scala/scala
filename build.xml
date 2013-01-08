@@ -2458,6 +2458,21 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
+  <target name="test.subscript" depends="pack.done">
+    <property name="partest.srcdir" value="files" />
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="2400000"
+             srcdir="${partest.srcdir}"
+             scalacopts="${scalac.args.optimise}">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <postests  dir="${partest.dir}/${partest.srcdir}/subscript" includes="*.scala"/>
+    </partest>
+  </target>
+
   <target name="test.continuations.suite" depends="pack.done">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
