@@ -77,10 +77,10 @@ scala> :type -v List(1,2,3) filter _
 
 // Internal Type structure
 TypeRef(
-  TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+  TypeSymbol(abstract trait Function1[-T1, +R] extends AnyRef)
   args = List(
     TypeRef(
-      TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+      TypeSymbol(abstract trait Function1[-T1, +R] extends AnyRef)
       args = List(
         TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
         TypeRef(
@@ -147,7 +147,7 @@ Int => Iterator[List[Nothing]]
 
 // Internal Type structure
 TypeRef(
-  TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+  TypeSymbol(abstract trait Function1[-T1, +R] extends AnyRef)
   args = List(
     TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
     TypeRef(
@@ -180,7 +180,7 @@ PolyType(
   typeParams = List(TypeParam(T <: AnyVal))
   resultType = NullaryMethodType(
     TypeRef(
-      TypeSymbol(abstract trait Function1[-T1, +R] extends Object)
+      TypeSymbol(abstract trait Function1[-T1, +R] extends AnyRef)
       args = List(
         TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
         TypeRef(
