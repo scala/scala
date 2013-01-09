@@ -3931,13 +3931,13 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** A prototype for mapping a function over all possible types
    */
-  abstract class TypeMap(isTrackingVariance: Boolean) extends (Type => Type) {
-    def this() = this(isTrackingVariance = false)
+  abstract class TypeMap(trackVariance: Boolean) extends (Type => Type) {
+    def this() = this(trackVariance = false)
     def apply(tp: Type): Type
 
-    private[this] var _variance: Variance = if (isTrackingVariance) Covariant else Invariant
+    private[this] var _variance: Variance = if (trackVariance) Covariant else Invariant
 
-    def variance_=(x: Variance) = { assert(isTrackingVariance, this) ; _variance = x }
+    def variance_=(x: Variance) = { assert(trackVariance, this) ; _variance = x }
     def variance = _variance
 
     /** Map this function over given type */
@@ -3945,7 +3945,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case tr @ TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
         val args1 = (
-          if (isTrackingVariance && args.nonEmpty && !variance.isInvariant && sym.typeParams.nonEmpty)
+          if (trackVariance && args.nonEmpty && !variance.isInvariant && sym.typeParams.nonEmpty)
             mapOverArgs(args, sym.typeParams)
           else
             args mapConserve this
@@ -4038,12 +4038,12 @@ trait Types extends api.Types { self: SymbolTable =>
       try body finally variance = saved
     }
     @inline final def flipped[T](body: => T): T = {
-      if (isTrackingVariance) variance = variance.flip
+      if (trackVariance) variance = variance.flip
       try body
-      finally if (isTrackingVariance) variance = variance.flip
+      finally if (trackVariance) variance = variance.flip
     }
     protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
-      if (isTrackingVariance)
+      if (trackVariance)
         map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
       else
         args mapConserve this
@@ -4052,7 +4052,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  if necessary when the symbol is an alias.
      */
     private def applyToSymbolInfo(sym: Symbol): Type = {
-      if (isTrackingVariance && !variance.isInvariant && sym.isAliasType)
+      if (trackVariance && !variance.isInvariant && sym.isAliasType)
         withVariance(Invariant)(this(sym.info))
       else
         this(sym.info)
@@ -4218,7 +4218,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** Used by existentialAbstraction.
    */
-  class ExistentialExtrapolation(tparams: List[Symbol]) extends TypeMap(isTrackingVariance = true) {
+  class ExistentialExtrapolation(tparams: List[Symbol]) extends TypeMap(trackVariance = true) {
     private val occurCount = mutable.HashMap[Symbol, Int]()
     private def countOccs(tp: Type) = {
       tp foreach {

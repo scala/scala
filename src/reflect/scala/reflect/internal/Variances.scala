@@ -57,7 +57,7 @@ trait Variances {
       && !escapedLocals(sym)
     )
 
-    private object ValidateVarianceMap extends TypeMap(isTrackingVariance = true) {
+    private object ValidateVarianceMap extends TypeMap(trackVariance = true) {
       private var base: Symbol = _
 
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
