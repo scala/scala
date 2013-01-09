@@ -78,17 +78,19 @@ trait GenJVMASM {
           failNoForwarder("companion is a trait")
         // Now either succeeed, or issue some additional warnings for things which look like
         // attempts to be java main methods.
-        else possibles exists { m =>
-          m.info match {
-            case PolyType(_, _) =>
-              fail("main methods cannot be generic.")
-            case MethodType(params, res) =>
-              if (res.typeSymbol :: params exists (_.isAbstractType))
-                fail("main methods cannot refer to type parameters or abstract types.", m.pos)
-              else
-                isJavaMainMethod(m) || fail("main method must have exact signature (Array[String])Unit", m.pos)
-            case tp =>
-              fail("don't know what this is: " + tp, m.pos)
+        else (possibles exists isJavaMainMethod) || {
+          possibles exists { m =>
+            m.info match {
+              case PolyType(_, _) =>
+                fail("main methods cannot be generic.")
+              case MethodType(params, res) =>
+                if (res.typeSymbol :: params exists (_.isAbstractType))
+                  fail("main methods cannot refer to type parameters or abstract types.", m.pos)
+                else
+                  isJavaMainMethod(m) || fail("main method must have exact signature (Array[String])Unit", m.pos)
+              case tp =>
+                fail("don't know what this is: " + tp, m.pos)
+            }
           }
         }
       }

@@ -41,7 +41,6 @@ class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends Co
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
   def this(cp: String) = this(cp, _ => ())
 
-  deprecation.value = true
   nowarnings.value  = false
   encoding.value    = "UTF-8"
   classpath.value   = cp
