@@ -1440,6 +1440,22 @@ trait Trees extends api.Trees { self: SymbolTable =>
       if (tree.hasSymbol) {
         subst(from, to)
         tree match {
+          case _: DefTree =>
+            val newInfo = symSubst(tree.symbol.info)
+            if (!(newInfo =:= tree.symbol.info)) {
+              debuglog(sm"""
+                |TreeSymSubstituter: updated info of symbol ${tree.symbol}
+                |  Old: ${showRaw(tree.symbol.info, printTypes = true, printIds = true)}
+                |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
+              tree.symbol updateInfo newInfo
+            }
+          case _          =>
+            // no special handling is required for Function or Import nodes here.
+            // as they don't have interesting infos attached to their symbols.
+            // Subsitution of the referenced symbol of Return nodes is handled
+            // in .ChangeOwnerTraverser
+        }
+        tree match {
           case Ident(name0) if tree.symbol != NoSymbol =>
             treeCopy.Ident(tree, tree.symbol.name)
           case Select(qual, name0) if tree.symbol != NoSymbol =>

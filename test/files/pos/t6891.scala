@@ -9,6 +9,13 @@ object O {
       @annotation.tailrec def loop(x: value.type): Unit = loop(x)
       ()
     }
+
+    def beppy[C](c: => C) = {
+      () => c
+      @annotation.tailrec def loop(x: value.type): Unit = loop(x)
+        () => c
+      ()
+    }
   }
   // uncaught exception during compilation: Types$TypeError("type mismatch;
   //  found   : A(in method bippy$extension)
