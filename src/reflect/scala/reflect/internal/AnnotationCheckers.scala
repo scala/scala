@@ -39,14 +39,14 @@ trait AnnotationCheckers {
     /** Decide whether this annotation checker can adapt a tree
      *  that has an annotated type to the given type tp, taking
      *  into account the given mode (see method adapt in trait Typers).*/
-    def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = false
+    def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = false
 
     /** Adapt a tree that has an annotated type to the given type tp,
      *  taking into account the given mode (see method adapt in trait Typers).
      *  An implementation cannot rely on canAdaptAnnotations being called
      *  before. If the implementing class cannot do the adaptiong, it
      *  should return the tree unchanged.*/
-    def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = tree
+    def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = tree
 
     /** Adapt the type of a return expression. The decision of an annotation checker
      *  whether the type should be adapted is based on the type of the expression
@@ -113,7 +113,7 @@ trait AnnotationCheckers {
 
   /** Find out whether any annotation checker can adapt a tree
    *  to a given type. Called by Typers.adapt. */
-  def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = {
+  def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = {
     annotationCheckers.exists(_.canAdaptAnnotations(tree, mode, pt))
   }
 
@@ -121,7 +121,7 @@ trait AnnotationCheckers {
    *  to a given type (called by Typers.adapt). Annotation checkers
    *  that cannot do the adaption should pass the tree through
    *  unchanged. */
-  def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
+  def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = {
     annotationCheckers.foldLeft(tree)((tree, checker) =>
       checker.adaptAnnotations(tree, mode, pt))
   }
@@ -129,7 +129,7 @@ trait AnnotationCheckers {
   /** Let a registered annotation checker adapt the type of a return expression.
    *  Annotation checkers that cannot do the adaptation should simply return
    *  the `default` argument.
-   *  
+   *
    *  Note that the result is undefined if more than one annotation checker
    *  returns an adapted type which is not a subtype of `default`.
    */

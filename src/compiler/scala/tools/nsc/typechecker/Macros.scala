@@ -676,7 +676,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *    the expandee with an error marker set   if the expansion has been cancelled due malformed arguments or implementation
    *    the expandee with an error marker set   if there has been an error
    */
-  def macroExpand(typer: Typer, expandee: Tree, mode: Int = EXPRmode, pt: Type = WildcardType): Tree = {
+  def macroExpand(typer: Typer, expandee: Tree, mode: Mode = EXPRmode, pt: Type = WildcardType): Tree = {
     val start = if (Statistics.canEnable) Statistics.startTimer(macroExpandNanos) else null
     if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
     try {

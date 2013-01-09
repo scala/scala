@@ -1,6 +1,8 @@
 package scala.reflect.macros
 package runtime
 
+import scala.reflect.internal.Mode
+
 trait Typers {
   self: Context =>
 
@@ -22,7 +24,7 @@ trait Typers {
     // typechecking uses silent anyways (e.g. in typedSelect), so you'll only waste your time
     // I'd advise fixing the root cause: finding why the context is not set to report errors
     // (also see reflect.runtime.ToolBoxes.typeCheckExpr for a workaround that might work for you)
-    wrapper(callsiteTyper.silent(_.typed(tree, universe.analyzer.EXPRmode, pt)) match {
+    wrapper(callsiteTyper.silent(_.typed(tree, Mode.EXPRmode, pt)) match {
       case universe.analyzer.SilentResultValue(result) =>
         macroLogVerbose(result)
         result
