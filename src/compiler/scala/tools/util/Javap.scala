@@ -61,11 +61,11 @@ class JavapClass(
   def apply(args: Seq[String]): List[JpResult] = {
     val (options, claases) = args partition (s => (s startsWith "-") && s.length > 1)
     val (flags, upgraded) = upgrade(options)
-    if (flags.help || claases.isEmpty) List(JpResult(JavapTool.helper(printWriter)))
-    else {
-      val targets = if (flags.fun) FunFinder(loader, intp).funs(claases) else claases
-      tool(flags.raw, upgraded)(targets map (claas => claas -> bytesFor(claas, flags.app)))
-    }
+    import flags.{ app, fun, help, raw }
+    val targets = if (fun && !help) FunFinder(loader, intp).funs(claases) else claases
+    if (help || claases.isEmpty) List(JpResult(JavapTool.helper(printWriter)))
+    else if (targets.isEmpty) List(JpResult("No anonfuns found."))
+    else tool(raw, upgraded)(targets map (claas => claas -> bytesFor(claas, app)))
   }
 
   /** Cull our tool options. */
@@ -74,10 +74,14 @@ class JavapClass(
     case (t,s)                => (t, JavapTool.DefaultOptions)
   }
 
-  /** Find bytes. Handle "-", "-app", "Foo#bar" (by ignoring member). */
+  /** Find bytes. Handle "-", "-app", "Foo#bar" (by ignoring member), "#bar" (by taking "bar"). */
   private def bytesFor(path: String, app: Boolean) = Try {
     def last = intp.get.mostRecentVar  // fail if no intp
-    def req = if (path == "-") last else path.splitHashMember._1
+    def req = if (path == "-") last else {
+      val s = path.splitHashMember
+      if (s._1.nonEmpty) s._1
+      else s._2 getOrElse "#"
+    }
     def asAppBody(s: String) = {
       val (cls, fix) = s.splitSuffix
       s"${cls}$$delayedInit$$body${fix}"
@@ -146,16 +150,70 @@ class JavapClass(
     load(q)
   }
 
+  /** Base class for javap tool adapters for java 6 and 7. */
   abstract class JavapTool {
     type ByteAry = Array[Byte]
     type Input = Pair[String, Try[ByteAry]]
+
+    /** Run the tool. */
     def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult]
+
     // Since the tool is loaded by reflection, check for catastrophic failure.
     protected def failed: Boolean
     implicit protected class Failer[A](a: =>A) {
       def orFailed[B >: A](b: =>B) = if (failed) b else a
     }
     protected def noToolError = new JpError(s"No javap tool available: ${getClass.getName} failed to initialize.")
+
+    // output filtering support
+    val writer = new CharArrayWriter
+    def written = {
+      writer.flush()
+      val w = writer.toString
+      writer.reset()
+      w
+    }
+
+    /** Create a Showable with output massage.
+     *  @param raw show ugly repl names
+     *  @param target attempt to filter output to show region of interest
+     *  @param preamble other messages to output
+     */
+    def showWithPreamble(raw: Boolean, target: String, preamble: String = ""): Showable = new Showable {
+      // ReplStrippingWriter clips and scrubs on write(String)
+      // circumvent it by write(mw, 0, mw.length) or wrap it in withoutUnwrapping
+      def show() =
+        if (raw && intp.isDefined) intp.get withoutUnwrapping { writeLines() }
+        else writeLines()
+      private def writeLines() {
+        // take Foo# as Foo#apply for purposes of filtering. Useful for -fun Foo#;
+        // if apply is added here, it's for other than -fun: javap Foo#, perhaps m#?
+        val filterOn = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
+        var filtering = false   // true if in region matching filter
+        // true to output
+        def checkFilter(line: String) = if (filterOn.isEmpty) true else {
+          // cheap heuristic, todo maybe parse for the java sig.
+          // method sigs end in paren semi
+          def isAnyMethod = line.endsWith(");")
+          def isOurMethod = {
+            val lparen = line.lastIndexOf('(')
+            val blank = line.lastIndexOf(' ', lparen)
+            (blank >= 0 && line.substring(blank+1, lparen) == filterOn.get)
+          }
+          filtering = if (filtering) {
+            // next blank line terminates section
+            // for -public, next line is next method, more or less
+            line.trim.nonEmpty && !isAnyMethod
+          } else {
+            isAnyMethod && isOurMethod
+          }
+          filtering
+        }
+        for (line <- Source.fromString(preamble + written).getLines; if checkFilter(line))
+          printWriter write line+lineSeparator
+        printWriter.flush()
+      }
+    }
   }
 
   class JavapTool6 extends JavapTool {
@@ -165,10 +223,13 @@ class JavapClass(
     override protected def failed = (EnvClass eq null) || (PrinterClass eq null)
 
     val PrinterCtr = PrinterClass.getConstructor(classOf[InputStream], classOf[PrintWriter], EnvClass) orFailed null
+    val printWrapper = new PrintWriter(writer)
     def newPrinter(in: InputStream, env: FakeEnvironment): FakePrinter =
-      PrinterCtr.newInstance(in, printWriter, env) orFailed null
-    def showable(fp: FakePrinter) = new Showable {
-      def show() = fp.asInstanceOf[{ def print(): Unit }].print()
+      PrinterCtr.newInstance(in, printWrapper, env) orFailed null
+    def showable(raw: Boolean, target: String, fp: FakePrinter): Showable = {
+      fp.asInstanceOf[{ def print(): Unit }].print()      // run tool and flush to buffer
+      printWrapper.flush()  // just in case
+      showWithPreamble(raw, target)
     }
 
     lazy val parser = new JpOptions
@@ -187,8 +248,8 @@ class JavapClass(
 
     override def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult] =
       (inputs map {
-        case (_, Success(ba)) => JpResult(showable(newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
-        case (_, Failure(e))  => JpResult(e.toString)
+        case (claas, Success(ba)) => JpResult(showable(raw, claas, newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
+        case (_, Failure(e))      => JpResult(e.toString)
       }).toList orFailed List(noToolError)
   }
 
@@ -284,50 +345,11 @@ class JavapClass(
           case _          => false
         }
     }
-    val writer = new CharArrayWriter
     def fileManager(inputs: Seq[Input]) = new JavapFileManager(inputs)()
-    def showable(raw: Boolean, target: String): Showable = {
-      val written = {
-        writer.flush()
-        val w = writer.toString
-        writer.reset()
-        w
-      }
-      val msgs = reporter.reportable(raw)
-      new Showable {
-        val mw = msgs + written
-        // ReplStrippingWriter clips and scrubs on write(String)
-        // circumvent it by write(mw, 0, mw.length) or wrap it in withoutUnwrapping
-        def show() =
-          if (raw && intp.isDefined) intp.get withoutUnwrapping { writeLines() }
-          else writeLines()
-        private def writeLines() {
-          // take Foo# as Foo#apply for purposes of filtering. Useful for -fun Foo#
-          val filterOn = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
-          var filtering = false   // true if in region matching filter
-          // true to output
-          def checkFilter(line: String) = if (filterOn.isEmpty) true else {
-            def isOurMethod = {
-              val lparen = line.lastIndexOf('(')
-              val blank = line.lastIndexOf(' ', lparen)
-              (blank >= 0 && line.substring(blank+1, lparen) == filterOn.get)
-            }
-            filtering = if (filtering) {
-              // next blank line terminates section
-              line.trim.nonEmpty
-            } else {
-              // cheap heuristic, todo maybe parse for the java sig.
-              // method sigs end in paren semi
-              line.endsWith(");") && isOurMethod
-            }
-            filtering
-          }
-          for (line <- Source.fromString(mw).getLines; if checkFilter(line))
-            printWriter write line+lineSeparator
-          printWriter.flush()
-        }
-      }
-    }
+
+    // show tool messages and tool output, with output massage
+    def showable(raw: Boolean, target: String): Showable = showWithPreamble(raw, target, reporter.reportable(raw))
+
     // eventually, use the tool interface
     def task(options: Seq[String], claases: Seq[String], inputs: Seq[Input]): Task = {
       //ServiceLoader.load(classOf[javax.tools.DisassemblerTool]).
@@ -529,7 +551,11 @@ object JavapClass {
     /* only the file location from which the given class is loaded */
     def locate(k: String): Option[Path] = {
       Try {
-        (cl loadClass k).getProtectionDomain.getCodeSource.getLocation
+        val claas = try cl loadClass k catch {
+          case _: NoClassDefFoundError => null    // let it snow
+        }
+        // cf ScalaClassLoader.originOfClass
+        claas.getProtectionDomain.getCodeSource.getLocation
       } match {
         case Success(null)              => None
         case Success(loc) if loc.isFile => Some(Path(new JFile(loc.toURI)))
@@ -588,28 +614,37 @@ object JavapClass {
       (new Jar(f) map maybe).flatten
     }
     def loadable(name: String) = loader resourceable name
-    // translated class, optional member, whether it is repl output
-    def translate(s: String): (String, Option[String], Boolean) = {
+    // translated class, optional member, opt member to filter on, whether it is repl output
+    def translate(s: String): (String, Option[String], Option[String], Boolean) = {
       val (k0, m0) = s.splitHashMember
+      val k = k0.asClassName
       val member = m0 filter (_.nonEmpty)  // take Foo# as no member, not ""
+      val filter = m0 flatMap { case "" => Some("apply") case _ => None }   // take Foo# as filter on apply
       // class is either something replish or available to loader
       // $line.$read$$etc$Foo#member
-      ((intp flatMap (_ translatePath k0) filter (loadable) map ((_, member, true)))
-      // s = "f" and $line.$read$$etc$#f is what we're after, ignoring any #member
-      orElse (intp flatMap (_ translateEnclosingClass k0) map ((_, Some(s), true)))
-      getOrElse (k0, member, false))
+      ((intp flatMap (_ translatePath k) filter (loadable) map ((_, member, filter, true)))
+      // s = "f" and $line.$read$$etc$#f is what we're after,
+      // ignoring any #member (except take # as filter on #apply)
+      orElse (intp flatMap (_ translateEnclosingClass k) map ((_, Some(k), filter, true)))
+      getOrElse (k, member, filter, false))
     }
     /** Find the classnames of anonfuns associated with k,
      *  where k may be an available class or a symbol in scope.
      */
     def funsOf(k0: String): Seq[String] = {
       // class is either something replish or available to loader
-      val (k, member, isReplish) = translate(k0)
+      val (k, member, filter, isReplish) = translate(k0)
       val splat   = k split "\\."
       val name    = splat.last
       val prefix  = if (splat.length > 1) splat.init mkString "/" else ""
       val pkg     = if (splat.length > 1) splat.init mkString "." else ""
-      def packaged(s: String) = if (pkg.isEmpty) s else s"$pkg.$s"
+      // reconstitute an anonfun with a package
+      // if filtered, add the hash back, e.g. pkg.Foo#bar, pkg.Foo$anon$1#apply
+      def packaged(s: String) = {
+        val p = if (pkg.isEmpty) s else s"$pkg.$s"
+        val pm = filter map (p + "#" + _)
+        pm getOrElse p
+      }
       // is this translated path in (usually virtual) repl outdir? or loadable from filesystem?
       val fs = if (isReplish) {
         def outed(d: AbstractFile, p: Seq[String]): Option[AbstractFile] = {
@@ -628,7 +663,7 @@ object JavapClass {
       }
       fs match {
         case Some(xs) => xs.to[Seq]     // maybe empty
-        case None     => Seq(k0)        // just bail on fail
+        case None     => Seq()          // nothing found, e.g., junk input
       }
     }
     def funs(ks: Seq[String]) = ks flatMap funsOf _
