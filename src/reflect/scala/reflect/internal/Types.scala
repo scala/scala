@@ -16,6 +16,7 @@ import scala.annotation.tailrec
 import util.Statistics
 import scala.runtime.ObjectRef
 import util.ThreeValues._
+import Variance._
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -364,8 +365,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  This is assessed to be the case if the class is final,
      *  and all type parameters (if any) are invariant.
      */
-    def isFinalType =
-      typeSymbol.isFinal && (typeSymbol.typeParams forall symbolIsNonVariant)
+    def isFinalType = typeSymbol.hasOnlyBottomSubclasses
 
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true
@@ -2807,7 +2807,7 @@ trait Types extends api.Types { self: SymbolTable =>
       val tvars = quantifiedFresh map (tparam => TypeVar(tparam))
       val underlying1 = underlying.instantiateTypeParams(quantified, tvars) // fuse subst quantified -> quantifiedFresh -> tvars
       op(underlying1) && {
-        solve(tvars, quantifiedFresh, quantifiedFresh map (x => 0), false, depth) &&
+        solve(tvars, quantifiedFresh, quantifiedFresh map (_ => Invariant), false, depth) &&
         isWithinBounds(NoPrefix, NoSymbol, quantifiedFresh, tvars map (_.constr.inst))
       }
     }
@@ -3927,93 +3927,29 @@ trait Types extends api.Types { self: SymbolTable =>
     def keepAnnotation(annot: AnnotationInfo) = annot matches TypeConstraintClass
   }
 
-  trait VariantTypeMap extends TypeMap {
-    private[this] var _variance = 1
-
-    override def variance = _variance
-    def variance_=(x: Int) = _variance = x
-
-    override protected def noChangeToSymbols(origSyms: List[Symbol]) =
-      //OPT inline from forall to save on #closures
-      origSyms match {
-        case sym :: rest =>
-          val v = variance
-          if (sym.isAliasType) variance = 0
-          val result = this(sym.info)
-          variance = v
-          (result eq sym.info) && noChangeToSymbols(rest)
-        case _ =>
-          true
-      }
-
-    override protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams) { (arg, tparam) =>
-        val v = variance
-        if (tparam.isContravariant) variance = -variance
-        else if (!tparam.isCovariant) variance = 0
-        val arg1 = this(arg)
-        variance = v
-        arg1
-      }
-
-    /** Map this function over given type */
-    override def mapOver(tp: Type): Type = tp match {
-      case MethodType(params, result) =>
-        variance = -variance
-        val params1 = mapOver(params)
-        variance = -variance
-        val result1 = this(result)
-        if ((params1 eq params) && (result1 eq result)) tp
-        else copyMethodType(tp, params1, result1.substSym(params, params1))
-      case PolyType(tparams, result) =>
-        variance = -variance
-        val tparams1 = mapOver(tparams)
-        variance = -variance
-        val result1 = this(result)
-        if ((tparams1 eq tparams) && (result1 eq result)) tp
-        else PolyType(tparams1, result1.substSym(tparams, tparams1))
-      case TypeBounds(lo, hi) =>
-        variance = -variance
-        val lo1 = this(lo)
-        variance = -variance
-        val hi1 = this(hi)
-        if ((lo1 eq lo) && (hi1 eq hi)) tp
-        else TypeBounds(lo1, hi1)
-      case tr @ TypeRef(pre, sym, args) =>
-        val pre1 = this(pre)
-        val args1 =
-          if (args.isEmpty)
-            args
-          else if (variance == 0) // fast & safe path: don't need to look at typeparams
-            args mapConserve this
-          else {
-            val tparams = sym.typeParams
-            if (tparams.isEmpty) args
-            else mapOverArgs(args, tparams)
-          }
-        if ((pre1 eq pre) && (args1 eq args)) tp
-        else copyTypeRef(tp, pre1, tr.coevolveSym(pre1), args1)
-      case _ =>
-        super.mapOver(tp)
-    }
-  }
-
   // todo. move these into scala.reflect.api
 
   /** A prototype for mapping a function over all possible types
    */
-  abstract class TypeMap extends (Type => Type) {
+  abstract class TypeMap(trackVariance: Boolean) extends (Type => Type) {
+    def this() = this(trackVariance = false)
     def apply(tp: Type): Type
 
-    /** Mix in VariantTypeMap if you want variances to be significant.
-     */
-    def variance = 0
+    private[this] var _variance: Variance = if (trackVariance) Covariant else Invariant
+
+    def variance_=(x: Variance) = { assert(trackVariance, this) ; _variance = x }
+    def variance = _variance
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
       case tr @ TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        val args1 = args mapConserve this
+        val args1 = (
+          if (trackVariance && args.nonEmpty && !variance.isInvariant && sym.typeParams.nonEmpty)
+            mapOverArgs(args, sym.typeParams)
+          else
+            args mapConserve this
+        )
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, tr.coevolveSym(pre1), args1)
       case ThisType(_) => tp
@@ -4025,12 +3961,12 @@ trait Types extends api.Types { self: SymbolTable =>
           else singleType(pre1, sym)
         }
       case MethodType(params, result) =>
-        val params1 = mapOver(params)
+        val params1 = flipped(mapOver(params))
         val result1 = this(result)
         if ((params1 eq params) && (result1 eq result)) tp
         else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
-        val tparams1 = mapOver(tparams)
+        val tparams1 = flipped(mapOver(tparams))
         val result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
@@ -4045,7 +3981,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
         else SuperType(thistp1, supertp1)
       case TypeBounds(lo, hi) =>
-        val lo1 = this(lo)
+        val lo1 = flipped(this(lo))
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
@@ -4068,7 +4004,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else OverloadedType(pre1, alts)
       case AntiPolyType(pre, args) =>
         val pre1 = this(pre)
-        val args1 = args mapConserve (this)
+        val args1 = args mapConserve this
         if ((pre1 eq pre) && (args1 eq args)) tp
         else AntiPolyType(pre1, args1)
       case tv@TypeVar(_, constr) =>
@@ -4096,16 +4032,39 @@ trait Types extends api.Types { self: SymbolTable =>
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      args mapConserve this
+    def withVariance[T](v: Variance)(body: => T): T = {
+      val saved = variance
+      variance = v
+      try body finally variance = saved
+    }
+    @inline final def flipped[T](body: => T): T = {
+      if (trackVariance) variance = variance.flip
+      try body
+      finally if (trackVariance) variance = variance.flip
+    }
+    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
+      if (trackVariance)
+        map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
+      else
+        args mapConserve this
+    )
+    /** Applies this map to the symbol's info, setting variance = Invariant
+     *  if necessary when the symbol is an alias.
+     */
+    private def applyToSymbolInfo(sym: Symbol): Type = {
+      if (trackVariance && !variance.isInvariant && sym.isAliasType)
+        withVariance(Invariant)(this(sym.info))
+      else
+        this(sym.info)
+    }
 
     /** Called by mapOver to determine whether the original symbols can
-     *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
+     *  be returned, or whether they must be cloned.
      */
     protected def noChangeToSymbols(origSyms: List[Symbol]): Boolean = {
       @tailrec def loop(syms: List[Symbol]): Boolean = syms match {
         case Nil     => true
-        case x :: xs => (x.info eq this(x.info)) && loop(xs)
+        case x :: xs => (x.info eq applyToSymbolInfo(x)) && loop(xs)
       }
       loop(origSyms)
     }
@@ -4259,7 +4218,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   /** Used by existentialAbstraction.
    */
-  class ExistentialExtrapolation(tparams: List[Symbol]) extends VariantTypeMap {
+  class ExistentialExtrapolation(tparams: List[Symbol]) extends TypeMap(trackVariance = true) {
     private val occurCount = mutable.HashMap[Symbol, Int]()
     private def countOccs(tp: Type) = {
       tp foreach {
@@ -4278,16 +4237,29 @@ trait Types extends api.Types { self: SymbolTable =>
       apply(tpe)
     }
 
+    /** If these conditions all hold:
+     *   1) we are in covariant (or contravariant) position
+     *   2) this type occurs exactly once in the existential scope
+     *   3) the widened upper (or lower) bound of this type contains no references to tparams
+     *  Then we replace this lone occurrence of the type with the widened upper (or lower) bound.
+     *  All other types pass through unchanged.
+     */
     def apply(tp: Type): Type = {
       val tp1 = mapOver(tp)
-      if (variance == 0) tp1
+      if (variance.isInvariant) tp1
       else tp1 match {
         case TypeRef(pre, sym, args) if tparams contains sym =>
-          val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
-          //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
-          if (!repl.typeSymbol.isBottomClass && occurCount(sym) == 1 && !(tparams exists (repl.contains)))
-            repl
-          else tp1
+          val repl = if (variance.isPositive) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
+          val count = occurCount(sym)
+          val containsTypeParam = tparams exists (repl contains _)
+          def msg = {
+            val word = if (variance.isPositive) "upper" else "lower"
+            s"Widened lone occurrence of $tp1 inside existential to $word bound"
+          }
+          if (!repl.typeSymbol.isBottomClass && count == 1 && !containsTypeParam)
+            logResult(msg)(repl)
+          else
+            tp1
         case _ =>
           tp1
       }
@@ -5059,17 +5031,19 @@ trait Types extends api.Types { self: SymbolTable =>
     def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2, (sym1, sym2))
-        pre1 =:= pre2 &&
-        forall3(args1, args2, sym1.typeParams)((arg1, arg2, tparam) =>
-          if (tparam.variance == 0) arg1 =:= arg2
-          // if left-hand argument is a typevar, make it compatible with variance
-          // this is for more precise pattern matching
-          // todo: work this in the spec of this method
-          // also: think what happens if there are embedded typevars?
-          else arg1 match {
-            case _: TypeVar => if (tparam.variance < 0) arg1 <:< arg2 else arg2 <:< arg1
-            case _          => true
-          }
+        (    pre1 =:= pre2
+          && forall3(args1, args2, sym1.typeParams) { (arg1, arg2, tparam) =>
+               // if left-hand argument is a typevar, make it compatible with variance
+               // this is for more precise pattern matching
+               // todo: work this in the spec of this method
+               // also: think what happens if there are embedded typevars?
+               if (tparam.variance.isInvariant)
+                 arg1 =:= arg2
+               else !arg1.isInstanceOf[TypeVar] || {
+                 if (tparam.variance.isContravariant) arg1 <:< arg2
+                 else arg2 <:< arg1
+               }
+             }
         )
       case (et: ExistentialType, _) =>
         et.withTypeVars(isConsistent(_, tp2))
@@ -5639,9 +5613,11 @@ trait Types extends api.Types { self: SymbolTable =>
     }))
 
   def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol], depth: Int): Boolean = {
-    def isSubArg(t1: Type, t2: Type, variance: Int) =
-      (variance > 0 || isSubType(t2, t1, depth)) &&
-      (variance < 0 || isSubType(t1, t2, depth))
+    def isSubArg(t1: Type, t2: Type, variance: Variance) = (
+         (variance.isContravariant || isSubType(t1, t2, depth))
+      && (variance.isCovariant || isSubType(t2, t1, depth))
+    )
+
     corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
   }
 
@@ -6020,7 +5996,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  `f` maps all elements to themselves.
    */
   def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
-    if (xs.isEmpty) xs
+    if (xs.isEmpty || ys.isEmpty) xs
     else {
       val x1 = f(xs.head, ys.head)
       val xs1 = map2Conserve(xs.tail, ys.tail)(f)
@@ -6037,15 +6013,15 @@ trait Types extends api.Types { self: SymbolTable =>
    *  @param upper      When `true` search for max solution else min.
    */
   def solve(tvars: List[TypeVar], tparams: List[Symbol],
-            variances: List[Int], upper: Boolean): Boolean =
+            variances: List[Variance], upper: Boolean): Boolean =
      solve(tvars, tparams, variances, upper, AnyDepth)
 
   def solve(tvars: List[TypeVar], tparams: List[Symbol],
-            variances: List[Int], upper: Boolean, depth: Int): Boolean = {
+            variances: List[Variance], upper: Boolean, depth: Int): Boolean = {
 
-    def solveOne(tvar: TypeVar, tparam: Symbol, variance: Int) {
+    def solveOne(tvar: TypeVar, tparam: Symbol, variance: Variance) {
       if (tvar.constr.inst == NoType) {
-        val up = if (variance != CONTRAVARIANT) upper else !upper
+        val up = if (variance.isContravariant) !upper else upper
         tvar.constr.inst = null
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
         //Console.println("solveOne0(tv, tp, v, b)="+(tvar, tparam, variance, bound))
@@ -6228,7 +6204,7 @@ trait Types extends api.Types { self: SymbolTable =>
             else t
           }
           val tails = tsBts map (_.tail)
-          mergePrefixAndArgs(elimSub(ts1, depth) map elimHigherOrderTypeParam, 1, depth) match {
+          mergePrefixAndArgs(elimSub(ts1, depth) map elimHigherOrderTypeParam, Covariant, depth) match {
             case Some(tp) => loop(tp :: pretypes, tails)
             case _        => loop(pretypes, tails)
           }
@@ -6711,18 +6687,18 @@ trait Types extends api.Types { self: SymbolTable =>
     finally foreach2(tvs, saved)(_.suspended = _)
   }
 
-  /** Compute lub (if `variance == 1`) or glb (if `variance == -1`) of given list
+  /** Compute lub (if `variance == Covariant`) or glb (if `variance == Contravariant`) of given list
    *  of types `tps`. All types in `tps` are typerefs or singletypes
    *  with the same symbol.
    *  Return `Some(x)` if the computation succeeds with result `x`.
    *  Return `None` if the computation fails.
    */
-  def mergePrefixAndArgs(tps: List[Type], variance: Int, depth: Int): Option[Type] = tps match {
+  def mergePrefixAndArgs(tps: List[Type], variance: Variance, depth: Int): Option[Type] = tps match {
     case List(tp) =>
       Some(tp)
     case TypeRef(_, sym, _) :: rest =>
       val pres = tps map (_.prefix) // prefix normalizes automatically
-      val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
+      val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
       val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
       val capturedParams = new ListBuffer[Symbol]
       try {
@@ -6760,7 +6736,7 @@ trait Types extends api.Types { self: SymbolTable =>
               }
               else {
                 if (tparam.variance == variance) lub(as, decr(depth))
-                else if (tparam.variance == -variance) glb(as, decr(depth))
+                else if (tparam.variance == variance.flip) glb(as, decr(depth))
                 else {
                   val l = lub(as, decr(depth))
                   val g = glb(as, decr(depth))
@@ -6784,7 +6760,7 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (_.prefix)
-      val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
+      val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
       try {
         Some(singleType(pre, sym))
       } catch {
@@ -7015,6 +6991,10 @@ trait Types extends api.Types { self: SymbolTable =>
     case _ =>
       1
   }
+
+  def withUncheckedVariance(tp: Type): Type =
+    tp withAnnotation (AnnotationInfo marker uncheckedVarianceClass.tpe)
+
   //OPT replaced with tailrecursive function to save on #closures
   // was:
   //    var d = 0

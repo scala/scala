@@ -12,6 +12,7 @@ import util.{ Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -165,10 +166,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def debugFlagString: String           = flagString(AllFlags)
 
     /** String representation of symbol's variance */
-    def varianceString: String =
-      if (variance == 1) "+"
-      else if (variance == -1) "-"
-      else ""
+    def varianceString: String = variance.symbolicString
 
     override def flagMask =
       if (settings.debug.value && !isAbstractType) AllFlags
@@ -576,6 +574,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def isEffectiveRoot = false
 
+    /** Can this symbol only be subclassed by bottom classes? This is assessed
+     *  to be the case if it is final, and any type parameters are invariant.
+     */
+    def hasOnlyBottomSubclasses = {
+      def loop(tparams: List[Symbol]): Boolean = tparams match {
+        case Nil     => true
+        case x :: xs => x.variance.isInvariant && loop(xs)
+      }
+      isClass && isFinal && loop(typeParams)
+    }
+
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
     final def isOverridableMember  = !(isClass || isEffectivelyFinal) && (this ne NoSymbol) && owner.isClass
 
@@ -890,11 +899,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       return true
     }
 
-    /** The variance of this symbol as an integer */
-    final def variance: Int =
-      if (isCovariant) 1
-      else if (isContravariant) -1
-      else 0
+    /** The variance of this symbol. */
+    def variance: Variance =
+      if (isCovariant) Covariant
+      else if (isContravariant) Contravariant
+      else Invariant
 
     /** The sequence number of this parameter symbol among all type
      *  and value parameters of symbol's owner. -1 if symbol does not
@@ -2626,6 +2635,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
+    override def variance = if (hasLocalFlag) Bivariant else info.typeSymbol.variance
+    override def isContravariant = variance.isContravariant
+    override def isCovariant     = variance.isCovariant
     final override def isAliasType = true
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSymbol =
       owner.newNonClassSymbol(name, pos, newFlags)
@@ -3288,7 +3300,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
 
   private[scala] final val symbolIsPossibleInRefinement = (sym: Symbol) => sym.isPossibleInRefinement
-  private[scala] final val symbolIsNonVariant = (sym: Symbol) => sym.variance == 0
 
   @tailrec private[scala] final
   def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
