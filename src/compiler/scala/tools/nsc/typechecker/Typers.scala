@@ -2612,21 +2612,21 @@ trait Typers extends Modes with Adaptations with Tags {
      * however, note that pattern matching codegen is designed to run *before* uncurry
      */
     def synthesizePartialFunction(paramName: TermName, paramPos: Position, tree: Tree, mode: Int, pt0: Type): Tree = {
-      assert(pt0.typeSymbol == PartialFunctionClass)
+      assert(pt0.typeSymbol == PartialFunctionClass, s"PartialFunction synthesis for match in $tree requires PartialFunction expected type, but got $pt0.")
 
       val pt    = deskolemizeGADTSkolems(pt0)
       val targs = pt.normalize.typeArgs
 
-      // if targs.head isn't fully defined, we can't translate --> error
-      if (targs.isEmpty || !isFullyDefined(targs.head)) {
-        MissingParameterTypeAnonMatchError(tree, pt)
-        return setError(tree)
+      // if targs.head isn't fully defined, we can translate --> error
+      targs match {
+        case argTp :: _ if isFullyDefined(argTp) => // ok
+        case _ => // uh-oh
+          MissingParameterTypeAnonMatchError(tree, pt)
+          return setError(tree)
       }
 
-      val argTp = targs.head
-
-      // NOTE: targs.last still might not be fully defined
-      val resTp = targs.last
+      // NOTE: resTp still might not be fully defined
+      val argTp :: resTp :: Nil = targs
 
       // targs must conform to Any for us to synthesize an applyOrElse (fallback to apply otherwise -- typically for @cps annotated targs)
       val targsValidParams = targs forall (_ <:< AnyClass.tpe)
@@ -2650,10 +2650,12 @@ trait Typers extends Modes with Adaptations with Tags {
           // we don't want/need the match to see the `A1` type that we must use for variance reasons in the method signature
           //
           // this failed: replace `selector` by `Typed(selector, TypeTree(argTp))` -- as it's an upcast, this should never fail,
-          //   `(x: A1): A` doesn't always type check, even though `A1 <: A`, due to singleton types
+          //   `(x: A1): A` doesn't always type check, even though `A1 <: A`, due to singleton types (test/files/pos/t4269.scala)
           // hence the cast, which will be erased in posterasure
-          Typed(gen.mkAsInstanceOf(Ident(paramName), argTp.withoutAnnotations, true, false), TypeTree(argTp)))
-        )
+          // (the cast originally caused  extremely weird types to show up
+          //  in test/scaladoc/run/SI-5933.scala because `variantToSkolem` was missing `tpSym.initialize`)
+          gen.mkCastPreservingAnnotations(Ident(paramName), argTp)
+        ))
 
       def mkParam(methodSym: Symbol, tp: Type = argTp) =
         methodSym.newValueParameter(paramName, paramPos.focus, SYNTHETIC) setInfo tp
@@ -2706,6 +2708,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       // only used for @cps annotated partial functions
+      // `def apply(x: $argTp): $matchResTp = $selector match { $cases }`
       def applyMethod = {
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL | OVERRIDE)
         val paramSym = mkParam(methodSym)
