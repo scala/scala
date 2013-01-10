@@ -12,15 +12,18 @@ import scala.tools.nsc.interpreter.IMain
 import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, InputStream,
                  PrintWriter, Writer }
 import java.util.{ Locale }
+import java.util.regex.Pattern
 import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
                      ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
                      SimpleJavaFileObject, StandardLocation }
-import scala.tools.nsc.io.File
+import scala.reflect.io.{ AbstractFile, Directory, File, Path }
+import java.io.{File => JFile}
 import scala.io.Source
 import scala.util.{ Try, Success, Failure }
 import scala.util.Properties.lineSeparator
 import scala.collection.JavaConverters
 import scala.collection.generic.Clearable
+import java.net.URL
 import scala.language.reflectiveCalls
 
 import Javap._
@@ -47,6 +50,7 @@ class JavapClass(
   intp: Option[IMain] = None
 ) extends Javap {
   import JavapTool.ToolArgs
+  import JavapClass._
 
   lazy val tool = JavapTool()
 
@@ -58,7 +62,10 @@ class JavapClass(
     val (options, claases) = args partition (s => (s startsWith "-") && s.length > 1)
     val (flags, upgraded) = upgrade(options)
     if (flags.help || claases.isEmpty) List(JpResult(JavapTool.helper(printWriter)))
-    else tool(flags.raw, upgraded)(claases map (claas => claas -> bytesFor(claas)))
+    else {
+      val targets = if (flags.fun) FunFinder(loader, intp).funs(claases) else claases
+      tool(flags.raw, upgraded)(targets map (claas => claas -> bytesFor(claas, flags.app)))
+    }
   }
 
   /** Cull our tool options. */
@@ -67,9 +74,16 @@ class JavapClass(
     case (t,s)                => (t, JavapTool.DefaultOptions)
   }
 
-  private def bytesFor(path: String) = Try {
+  /** Find bytes. Handle "-", "-app", "Foo#bar" (by ignoring member). */
+  private def bytesFor(path: String, app: Boolean) = Try {
     def last = intp.get.mostRecentVar  // fail if no intp
-    val bytes = findBytes(if (path == "-") last else path)
+    def req = if (path == "-") last else path.splitHashMember._1
+    def asAppBody(s: String) = {
+      val (cls, fix) = s.splitSuffix
+      s"${cls}$$delayedInit$$body${fix}"
+    }
+    def todo = if (app) asAppBody(req) else req
+    val bytes = findBytes(todo)
     if (bytes.isEmpty) throw new FileNotFoundException(s"Could not find class bytes for '${path}'")
     else bytes
   }
@@ -79,30 +93,57 @@ class JavapClass(
   /** Assume the string is a path and try to find the classfile
    *  it represents.
    */
-  def tryFile(path: String): Option[Array[Byte]] = {
-    val file =
-      if (path.endsWith(".class")) path
-      else path.replace('.', '/') + ".class"
-    (Try (File(file)) filter (_.exists) map (_.toByteArray)).toOption
-  }
+  def tryFile(path: String): Option[Array[Byte]] =
+    (Try (File(path.asClassResource)) filter (_.exists) map (_.toByteArray)).toOption
+
   /** Assume the string is a fully qualified class name and try to
    *  find the class object it represents.
+   *  There are other symbols of interest, too:
+   *  - a definition that is wrapped in an enclosing class
+   *  - a synthetic that is not in scope but its associated class is
    */
   def tryClass(path: String): Array[Byte] = {
-    def pathology(p: String) =
-      if (p endsWith ".class") (p dropRight 6).replace('/', '.')
-      else p
-    def load(name: String) = loader classBytes pathology(name)
+    def load(name: String) = loader classBytes name
+    def loadable(name: String) = loader resourceable name
+    // if path has an interior dollar, take it as a synthetic
+    // if the prefix up to the dollar is a symbol in scope,
+    // result is the translated prefix + suffix
+    def desynthesize(s: String) = {
+      val i = s indexOf '$'
+      if (0 until s.length - 1 contains i) {
+        val name = s substring (0, i)
+        val sufx = s substring i
+        val tran = intp flatMap (_ translatePath name)
+        def loadableOrNone(strip: Boolean) = {
+          def suffix(strip: Boolean)(x: String) =
+            (if (strip && (x endsWith "$")) x.init else x) + sufx
+          val res = tran map (suffix(strip) _)
+          if (res.isDefined && loadable(res.get)) res else None
+        }
+        // try loading translated+suffix
+        val res = loadableOrNone(false)
+        // some synthetics lack a dollar, (e.g., suffix = delayedInit$body)
+        // so as a hack, if prefix$$suffix fails, also try prefix$suffix
+        if (res.isDefined) res else loadableOrNone(true)
+      } else None
+    }
+    val p = path.asClassName   // scrub any suffix
     // if repl, translate the name to something replish
-    if (intp.isDefined) {
-      val claas = load(intp.get.translatePath(path) getOrElse path)
-      if (!claas.isEmpty) claas
+    // (for translate, would be nicer to get the sym and ask .isClass,
+    // instead of translatePath and then asking did I get a class back)
+    val q = if (intp.isEmpty) p else (
+      // only simple names get the scope treatment
+      Some(p) filter (_ contains '.')
+      // take path as a Name in scope
+      orElse (intp flatMap (_ translatePath p) filter loadable)
       // take path as a Name in scope and find its enclosing class
-      else intp.get.translateEnclosingClass(path) match {
-        case Some(encl) => load(encl)
-        case _          => claas      // empty
-      }
-    } else load(path)
+      orElse (intp flatMap (_ translateEnclosingClass p) filter loadable)
+      // take path as a synthetic derived from some Name in scope
+      orElse desynthesize(p)
+      // just try it plain
+      getOrElse p
+    )
+    load(q)
   }
 
   abstract class JavapTool {
@@ -245,7 +286,7 @@ class JavapClass(
     }
     val writer = new CharArrayWriter
     def fileManager(inputs: Seq[Input]) = new JavapFileManager(inputs)()
-    def showable(raw: Boolean): Showable = {
+    def showable(raw: Boolean, target: String): Showable = {
       val written = {
         writer.flush()
         val w = writer.toString
@@ -261,7 +302,28 @@ class JavapClass(
           if (raw && intp.isDefined) intp.get withoutUnwrapping { writeLines() }
           else writeLines()
         private def writeLines() {
-          for (line <- Source.fromString(mw).getLines) printWriter write line+lineSeparator
+          // take Foo# as Foo#apply for purposes of filtering. Useful for -fun Foo#
+          val filterOn = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
+          var filtering = false   // true if in region matching filter
+          // true to output
+          def checkFilter(line: String) = if (filterOn.isEmpty) true else {
+            def isOurMethod = {
+              val lparen = line.lastIndexOf('(')
+              val blank = line.lastIndexOf(' ', lparen)
+              (blank >= 0 && line.substring(blank+1, lparen) == filterOn.get)
+            }
+            filtering = if (filtering) {
+              // next blank line terminates section
+              line.trim.nonEmpty
+            } else {
+              // cheap heuristic, todo maybe parse for the java sig.
+              // method sigs end in paren semi
+              line.endsWith(");") && isOurMethod
+            }
+            filtering
+          }
+          for (line <- Source.fromString(mw).getLines; if checkFilter(line))
+            printWriter write line+lineSeparator
           printWriter.flush()
         }
       }
@@ -279,7 +341,7 @@ class JavapClass(
       Try {
         task(options, Seq(claas), inputs).call()
       } map {
-        case true => JpResult(showable(raw))
+        case true => JpResult(showable(raw, claas))
         case _    => JpResult(reporter.reportable(raw))
       } recoverWith {
         case e: java.lang.reflect.InvocationTargetException => e.getCause match {
@@ -345,11 +407,13 @@ class JavapClass(
       }
     }
 
-    case class ToolArgs(raw: Boolean = false, help: Boolean = false)
+    case class ToolArgs(raw: Boolean = false, help: Boolean = false, app: Boolean = false, fun: Boolean = false)
 
     object ToolArgs {
       def fromArgs(args: Seq[String]): (ToolArgs, Seq[String]) = ((ToolArgs(), Seq[String]()) /: (args flatMap massage)) {
         case ((t,others), s) => s match {
+          case "-fun"   => (t copy (fun=true), others)
+          case "-app"   => (t copy (app=true), others)
           case "-help"  => (t copy (help=true), others)
           case "-raw"   => (t copy (raw=true), others)
           case _        => (t, others :+ s)
@@ -361,6 +425,8 @@ class JavapClass(
       "usage"       -> ":javap [opts] [path or class or -]...",
       "-help"       -> "Prints this help message",
       "-raw"        -> "Don't unmangle REPL names",
+      "-app"        -> "Show the DelayedInit body of Apps",
+      "-fun"        -> "Show anonfuns for class or Class#method",
       "-verbose/-v" -> "Stack size, number of locals, method args",
       "-private/-p" -> "Private classes and members",
       "-package"    -> "Package-private classes and members",
@@ -428,6 +494,145 @@ object JavapClass {
     printWriter: PrintWriter = new PrintWriter(System.out, true),
     intp: Option[IMain] = None
   ) = new JavapClass(loader, printWriter, intp)
+
+  // We enjoy flexibility in specifying either a fully-qualified class name com.acme.Widget
+  // or a resource path com/acme/Widget.class; but not widget.out
+  implicit class MaybeClassLike(val s: String) extends AnyVal {
+    /* private[this] final val suffix = ".class" */
+    private def suffix = ".class"
+    def asClassName = (s stripSuffix suffix).replace('/', '.')
+    def asClassResource = if (s endsWith suffix) s else s.replace('.', '/') + suffix
+    def splitSuffix: (String, String) = if (s endsWith suffix) (s dropRight suffix.length, suffix) else (s, "")
+    def strippingSuffix(f: String => String): String =
+      if (s endsWith suffix) f(s dropRight suffix.length) else s
+    // e.g. Foo#bar. Foo# yields zero-length member part.
+    def splitHashMember: (String, Option[String]) = {
+      val i = s lastIndexOf '#'
+      if (i < 0) (s, None)
+      //else if (i >= s.length - 1) (s.init, None)
+      else (s take i, Some(s drop i+1))
+    }
+  }
+  implicit class ClassLoaderOps(val cl: ClassLoader) extends AnyVal {
+    private def parentsOf(x: ClassLoader): List[ClassLoader] = if (x == null) Nil else x :: parentsOf(x.getParent)
+    def parents: List[ClassLoader] = parentsOf(cl)
+    /* all file locations */
+    def locations = {
+      def alldirs = parents flatMap (_ match {
+        case ucl: ScalaClassLoader.URLClassLoader => ucl.classPathURLs
+        case jcl: java.net.URLClassLoader         => jcl.getURLs
+        case _ => Nil
+      })
+      val dirs = for (d <- alldirs; if d.getProtocol == "file") yield Path(new JFile(d.toURI))
+      dirs
+    }
+    /* only the file location from which the given class is loaded */
+    def locate(k: String): Option[Path] = {
+      Try {
+        (cl loadClass k).getProtectionDomain.getCodeSource.getLocation
+      } match {
+        case Success(null)              => None
+        case Success(loc) if loc.isFile => Some(Path(new JFile(loc.toURI)))
+        case _                          => None
+      }
+    }
+    /* would classBytes succeed with a nonempty array */
+    def resourceable(className: String): Boolean = cl.getResource(className.asClassResource) != null
+  }
+  implicit class PathOps(val p: Path) extends AnyVal {
+    import scala.tools.nsc.io.Jar
+    def isJar = Jar isJarOrZip p
+  }
+  implicit class URLOps(val url: URL) extends AnyVal {
+    def isFile: Boolean = url.getProtocol == "file"
+  }
+  object FunFinder {
+    def apply(loader: ScalaClassLoader, intp: Option[IMain]) = new FunFinder(loader, intp)
+  }
+  class FunFinder(loader: ScalaClassLoader, intp: Option[IMain]) {
+
+    // class k, candidate f without prefix
+    def isFunOfClass(k: String, f: String) = {
+      val p = (s"${Pattern quote k}\\$$+anonfun").r
+      (p findPrefixOf f).nonEmpty
+    }
+    // class k, candidate f without prefix, method m
+    def isFunOfMethod(k: String, m: String, f: String) = {
+      val p = (s"${Pattern quote k}\\$$+anonfun\\$$${Pattern quote m}\\$$").r
+      (p findPrefixOf f).nonEmpty
+    }
+    def isFunOfTarget(k: String, m: Option[String], f: String) =
+      if (m.isEmpty) isFunOfClass(k, f)
+      else isFunOfMethod(k, m.get, f)
+    def listFunsInAbsFile(k: String, m: Option[String], d: AbstractFile) = {
+      for (f <- d; if !f.isDirectory && isFunOfTarget(k, m, f.name)) yield f.name
+    }
+    // path prefix p, class k, dir d
+    def listFunsInDir(p: String, k: String, m: Option[String])(d: Directory) = {
+      val subdir  = Path(p)
+      for (f <- (d / subdir).toDirectory.list; if f.isFile && isFunOfTarget(k, m, f.name))
+        yield f.name
+    }
+    // path prefix p, class k, jar file f
+    def listFunsInJar(p: String, k: String, m: Option[String])(f: File) = {
+      import java.util.jar.JarEntry
+      import scala.tools.nsc.io.Jar
+      def maybe(e: JarEntry) = {
+        val (path, name) = {
+          val parts = e.getName split "/"
+          if (parts.length < 2) ("", e.getName)
+          else (parts.init mkString "/", parts.last)
+        }
+        if (path == p && isFunOfTarget(k, m, name)) Some(name) else None
+      }
+      (new Jar(f) map maybe).flatten
+    }
+    def loadable(name: String) = loader resourceable name
+    // translated class, optional member, whether it is repl output
+    def translate(s: String): (String, Option[String], Boolean) = {
+      val (k0, m0) = s.splitHashMember
+      val member = m0 filter (_.nonEmpty)  // take Foo# as no member, not ""
+      // class is either something replish or available to loader
+      // $line.$read$$etc$Foo#member
+      ((intp flatMap (_ translatePath k0) filter (loadable) map ((_, member, true)))
+      // s = "f" and $line.$read$$etc$#f is what we're after, ignoring any #member
+      orElse (intp flatMap (_ translateEnclosingClass k0) map ((_, Some(s), true)))
+      getOrElse (k0, member, false))
+    }
+    /** Find the classnames of anonfuns associated with k,
+     *  where k may be an available class or a symbol in scope.
+     */
+    def funsOf(k0: String): Seq[String] = {
+      // class is either something replish or available to loader
+      val (k, member, isReplish) = translate(k0)
+      val splat   = k split "\\."
+      val name    = splat.last
+      val prefix  = if (splat.length > 1) splat.init mkString "/" else ""
+      val pkg     = if (splat.length > 1) splat.init mkString "." else ""
+      def packaged(s: String) = if (pkg.isEmpty) s else s"$pkg.$s"
+      // is this translated path in (usually virtual) repl outdir? or loadable from filesystem?
+      val fs = if (isReplish) {
+        def outed(d: AbstractFile, p: Seq[String]): Option[AbstractFile] = {
+          if (p.isEmpty) Option(d)
+          else Option(d.lookupName(p.head, true)) flatMap (f => outed(f, p.tail))
+        }
+        outed(intp.get.replOutput.dir, splat.init) map { d =>
+          listFunsInAbsFile(name, member, d) map packaged
+        }
+      } else {
+        loader locate k map { w =>
+          if (w.isDirectory) listFunsInDir(prefix, name, member)(w.toDirectory) map packaged
+          else if (w.isJar) listFunsInJar(prefix, name, member)(w.toFile) map packaged
+          else Nil
+        }
+      }
+      fs match {
+        case Some(xs) => xs.to[Seq]     // maybe empty
+        case None     => Seq(k0)        // just bail on fail
+      }
+    }
+    def funs(ks: Seq[String]) = ks flatMap funsOf _
+  }
 }
 
 object Javap {
