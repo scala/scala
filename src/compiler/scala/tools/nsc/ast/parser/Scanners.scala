@@ -197,11 +197,29 @@ trait Scanners extends ScannersCommon {
         case LBRACKET => sepRegions = RBRACKET :: sepRegions
         case LBRACE   => sepRegions = RBRACE   :: sepRegions
         case CASE     => sepRegions = ARROW    :: sepRegions
+        
+        // subscript tokens
+        case LBRACE_DOT      => sepRegions = RBRACE_DOT     :: sepRegions
+        case LBRACE_DOT3     => sepRegions = RBRACE_DOT3    :: sepRegions
+        case LBRACE_QMARK    => sepRegions = RBRACE_QMARK   :: sepRegions
+        case LBRACE_EMARK    => sepRegions = RBRACE_EMARK   :: sepRegions
+        case LBRACE_ASTERISK => sepRegions = RBRACE_ASTERISK:: sepRegions
+        case LBRACE_CARET    => sepRegions = RBRACE_CARET   :: sepRegions
+       
         case RBRACE   => while   (!sepRegions.isEmpty && sepRegions.head != RBRACE)
                                    sepRegions = sepRegions.tail
           if (!sepRegions.isEmpty) sepRegions = sepRegions.tail
           docBuffer = null
-        case RBRACKET | RPAREN =>
+        case RBRACKET | RPAREN 
+           | RBRACE_DOT       // subscript tokens
+           | RBRACE_DOT3    
+           | RBRACE_QMARK   
+           | RBRACE_EMARK   
+           | RBRACE_ASTERISK
+           | RBRACE_CARET   
+        
+          =>
+            
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
           docBuffer = null
@@ -341,7 +359,11 @@ trait Scanners extends ScannersCommon {
         case '!' | '^' | '*' | '?' =>
           val chOld = ch
           nextChar()
-          if (isInSubScript && ch==RBRACE) {
+          if (isInSubScript && ch!=RBRACE && chOld=='?') {
+            if (ch=='?) {nextChar(); token = QMARK2}
+            else        {            token = QMARK}
+          }
+          else if (isInSubScript && ch==RBRACE) {
             nextChar()
             token = chOld match {
               case '!' => RBRACE_EMARK
@@ -477,6 +499,27 @@ trait Scanners extends ScannersCommon {
             }
           }
         case '(' => nextChar(); token = LPAREN
+          if (isInSubScript) { // (+)  (-)  (+-)  (;)
+            var isSpecialOperand = false            
+            val lookahead = lookaheadReader
+            lookahead.nextChar()
+            if   (lookahead.ch == '+') {lookahead.nextChar();
+              if (lookahead.ch == '-') {lookahead.nextChar()}
+              isSpecialOperand = lookahead.ch == ')'
+            }
+            else if (lookahead.ch == '-' 
+                 ||  lookahead.ch == ';') {lookahead.nextChar();
+                isSpecialOperand = lookahead.ch == ')'
+            }
+            if (isSpecialOperand) {
+              if   (ch == '+') {nextChar(); token = LPAREN_PLUS_RPAREN
+                if (ch == '-') {nextChar(); token = LPAREN_PLUS_MINUS_RPAREN
+              }}
+              else if (lookahead.ch == '-')  {nextChar(); token = LPAREN_MINUS_RPAREN}
+              else if (lookahead.ch == ';')  {nextChar(); token = LPAREN_SEMI_RPAREN}
+              nextChar();
+            }
+          }          
         case ')' => nextChar(); token = RPAREN
         case ';' => nextChar(); token = SEMI
         case ',' => nextChar(); token = COMMA

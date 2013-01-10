@@ -603,7 +603,7 @@ self =>
     }
     def isDclIntro: Boolean = in.token match {
       case VAL | VAR | DEF | TYPE => true
-      //case IDENTIFIER if isScriptIdent => true
+      case IDENTIFIER if isScriptIdent => true
       case _ => false
     }
 
@@ -617,9 +617,9 @@ self =>
     def isRawStar = isIdent && in.name == raw.STAR
     def isRawBar  = isIdent && in.name == raw.BAR
 
-    def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
-//    def isScriptIdent = in.token == IDENTIFIER && in.name.decoded == "script"
-
+    def isIdent       = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
+    def isScriptIdent = in.token == IDENTIFIER && in.name.toString  == "script"
+    
     def isLiteralToken(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
            STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL => true
@@ -2112,6 +2112,15 @@ self =>
         val nameOffset = in.offset
         val name = ident()
         var bynamemod = 0
+        if (in.isInSubScript) {
+          val Flags_OUTPUT_PARAM      = Flags.OVERRIDE   // TBD move to ModifierFlags
+          val Flags_CONSTRAINED_PARAM = Flags.PROTECTED
+          in.token match {
+            case QMARK  => in.nextToken(); mods |= Flags_OUTPUT_PARAM
+            case QMARK2 => in.nextToken(); mods |= Flags_CONSTRAINED_PARAM
+            case _ =>
+          }
+        }
         val tpt =
           if (settings.YmethodInfer.value && !owner.isTypeName && in.token != COLON) {
             TypeTree()
@@ -2382,18 +2391,13 @@ self =>
       if (mods.isLazy && in.token != VAL)
         syntaxError("lazy not allowed here. Only vals can be lazy", false)
       in.token match {
-        case VAL =>
-          patDefOrDcl(pos, mods withPosition(VAL, tokenRange(in)))
-        case VAR =>
-          patDefOrDcl(pos, (mods | Flags.MUTABLE) withPosition (VAR, tokenRange(in)))
-        case DEF =>
-          List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
-        case TYPE =>
-          List(typeDefOrDcl(pos, mods withPosition(TYPE, tokenRange(in))))
-        //case IDENTIFIER if isScriptIdent =>
-        //  List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
-        case _ =>
-          List(tmplDef(pos, mods))
+        case VAL  =>       patDefOrDcl(pos,  mods                  withPosition(VAL , tokenRange(in)))
+        case VAR  =>       patDefOrDcl(pos, (mods | Flags.MUTABLE) withPosition(VAR , tokenRange(in)))
+        case DEF  => List( funDefOrDcl(pos,  mods                  withPosition(DEF , tokenRange(in))))
+        case TYPE => List(typeDefOrDcl(pos,  mods                  withPosition(TYPE, tokenRange(in))))
+        case IDENTIFIER if isScriptIdent =>
+                      scriptDefsOrDcls(pos,  mods                  withPosition(DEF , tokenRange(in)))
+        case _    => List(tmplDef     (pos, mods))
       }
     }
 
@@ -2481,6 +2485,49 @@ self =>
     }
      */
 
+     
+    def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
+      in.isInSubScript = true
+      val result = new ListBuffer[Tree]
+      val doMultipleScripts = in.token == DOT2
+      if (doMultipleScripts) {
+        in.nextToken()
+        while (in.token==NEWLINE) {
+          in.nextToken()
+        }
+      }
+      val nameOffset = in.offset
+      val name = ident()
+      
+      val scriptDef = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+        val Flags_SCRIPT = Flags.CASEACCESSOR // TBD
+        var newmods = mods | Flags_SCRIPT
+        // contextBoundBuf is for context bounded type parameters of the form
+        // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
+        // i.e. (B[T] or T => B)
+        val contextBoundBuf = new ListBuffer[Tree]
+        val tparams         = typeParamClauseOpt(name, contextBoundBuf)
+        val vparamss        = paramClauses(name, contextBoundBuf.toList, ofCaseClass = false)
+        newLineOptWhenFollowedBy(EQUALS)
+        var restype = fromWithinReturnType(typedOpt())
+        val rhs =
+          if (isStatSep || in.token == RBRACE) {
+            if (restype.isEmpty) restype = scalaUnitConstr
+            newmods |= Flags.DEFERRED
+            EmptyTree
+          } else {
+            if (in.token == EQUALS) {in.nextToken()} 
+            else {accept(EQUALS)}
+            expr()
+          }
+        DefDef(newmods, name, tparams, vparamss, restype, rhs)
+      }
+      signalParseProgress(scriptDef.pos)
+      result+=scriptDef
+      in.isInSubScript = false
+      result.toList
+    }
+    
     /** {{{
      *  FunDef ::= FunSig [`:' Type] `=' [`macro'] Expr
      *          |  FunSig [nl] `{' Block `}'

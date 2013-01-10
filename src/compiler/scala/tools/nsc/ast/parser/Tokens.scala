@@ -143,11 +143,14 @@ object Tokens extends Tokens {
   final val DOT2            = 150
   final val DOT3            = 151
   
-  final val MINUS_SEMI      = 152
-  final val BAR_SEMI        = 153
-  final val BAR2_SEMI       = 154
-  final val BAR_SEMI_BAR    = 155
-  final val PERCENT_SEMI    = 156
+  final val QMARK           = 152
+  final val QMARK2          = 153
+  
+  final val MINUS_SEMI      = 154
+  final val BAR_SEMI        = 155
+  final val BAR2_SEMI       = 156
+  final val BAR_SEMI_BAR    = 157
+  final val PERCENT_SEMI    = 158
   
   final val LPAREN_PLUS_RPAREN       = 160
   final val LPAREN_MINUS_RPAREN      = 161
