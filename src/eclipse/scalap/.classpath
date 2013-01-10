@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="lib/ant/ant.jar"/>
 	<classpathentry kind="lib" path="lib/jline.jar"/>
 	<classpathentry kind="lib" path="lib/msil.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
 	<classpathentry kind="output" path="build-quick-scalap"/>
 </classpath>
