@@ -9,6 +9,9 @@ package object nsc {
   type Phase = scala.reflect.internal.Phase
   val NoPhase = scala.reflect.internal.NoPhase
 
+  type Variance = scala.reflect.internal.Variance
+  val Variance = scala.reflect.internal.Variance
+
   type FatalError = scala.reflect.internal.FatalError
   val FatalError = scala.reflect.internal.FatalError
 

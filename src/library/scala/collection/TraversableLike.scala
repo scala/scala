@@ -77,7 +77,7 @@ trait TraversableLike[+A, +Repr] extends Any
   import Traversable.breaks._
 
   /** The type implementing this traversable */
-  protected type Self = Repr
+  protected[this] type Self = Repr
 
   /** The collection of type $coll underlying this `TraversableLike` object.
    *  By default this is implemented as the `TraversableLike` object itself,

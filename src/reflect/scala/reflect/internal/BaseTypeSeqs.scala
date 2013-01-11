@@ -64,7 +64,7 @@ trait BaseTypeSeqs {
             //Console.println("compute closure of "+this+" => glb("+variants+")")
             pending += i
             try {
-              mergePrefixAndArgs(variants, -1, lubDepth(variants)) match {
+              mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
                 case Some(tp0) =>
                   pending(i) = false
                   elems(i) = tp0

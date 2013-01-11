@@ -15,6 +15,7 @@ abstract class SymbolTable extends macros.Universe
                               with Names
                               with Symbols
                               with Types
+                              with Variances
                               with Kinds
                               with ExistentialsAndSkolems
                               with FlagSets

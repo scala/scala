@@ -844,159 +844,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   // Variance Checking --------------------------------------------------------
 
-    private val NoVariance = 0
-    private val CoVariance = 1
-    private val AnyVariance = 2
-
-    private val escapedPrivateLocals = new mutable.HashSet[Symbol]
-
-    val varianceValidator = new Traverser {
-
-      /** Validate variance of info of symbol `base` */
-      private def validateVariance(base: Symbol) {
-        // A flag for when we're in a refinement, meaning method parameter types
-        // need to be checked.
-        var inRefinement = false
-
-        def varianceString(variance: Int): String =
-          if (variance == 1) "covariant"
-          else if (variance == -1) "contravariant"
-          else "invariant";
-
-        /** The variance of a symbol occurrence of `tvar`
-         *  seen at the level of the definition of `base`.
-         *  The search proceeds from `base` to the owner of `tvar`.
-         *  Initially the state is covariant, but it might change along the search.
-         */
-        def relativeVariance(tvar: Symbol): Int = {
-          val clazz = tvar.owner
-          var sym = base
-          var state = CoVariance
-          while (sym != clazz && state != AnyVariance) {
-            //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
-            // Flip occurrences of type parameters and parameters, unless
-            //  - it's a constructor, or case class factory or extractor
-            //  - it's a type parameter of tvar's owner.
-            if (sym.isParameter && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
-                !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
-                  tvar.owner == sym.owner)) state = -state;
-            else if (!sym.owner.isClass ||
-                     sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor /* super accessors are implicitly local #4345*/) && !(escapedPrivateLocals contains sym))) {
-              // return AnyVariance if `sym` is local to a term
-              // or is private[this] or protected[this]
-              state = AnyVariance
-            } else if (sym.isAliasType) {
-              // return AnyVariance if `sym` is an alias type
-              // that does not override anything. This is OK, because we always
-              // expand aliases for variance checking.
-              // However, if `sym` does override a type in a base class
-              // we have to assume NoVariance, as there might then be
-              // references to the type parameter that are not variance checked.
-              state = if (sym.isOverridingSymbol) NoVariance else AnyVariance
-            }
-            sym = sym.owner
-          }
-          state
-        }
-
-        /** Validate that the type `tp` is variance-correct, assuming
-         *  the type occurs itself at variance position given by `variance`
-         */
-        def validateVariance(tp: Type, variance: Int): Unit = tp match {
-          case ErrorType =>
-          case WildcardType =>
-          case BoundedWildcardType(bounds) =>
-            validateVariance(bounds, variance)
-          case NoType =>
-          case NoPrefix =>
-          case ThisType(_) =>
-          case ConstantType(_) =>
-          case SingleType(pre, sym) =>
-            validateVariance(pre, variance)
-          case TypeRef(pre, sym, args) =>
-//            println("validate "+sym+" at "+relativeVariance(sym))
-            if (sym.isAliasType/* && relativeVariance(sym) == AnyVariance*/)
-              validateVariance(tp.normalize, variance)
-            else if (sym.variance != NoVariance) {
-              val v = relativeVariance(sym)
-              if (v != AnyVariance && sym.variance != v * variance) {
-                //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
-                def tpString(tp: Type) = tp match {
-                  case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
-                  case _ => "type "+tp
-                }
-                unit.error(base.pos,
-                           varianceString(sym.variance) + " " + sym +
-                           " occurs in " + varianceString(v * variance) +
-                           " position in " + tpString(base.info) + " of " + base);
-              }
-            }
-            validateVariance(pre, variance)
-            // @M for higher-kinded typeref, args.isEmpty
-            // However, these args respect variances by construction anyway
-            // -- the interesting case is in type application, see checkKindBounds in Infer
-            if (args.nonEmpty)
-              validateVarianceArgs(args, variance, sym.typeParams)
-          case ClassInfoType(parents, decls, symbol) =>
-            validateVariances(parents, variance)
-          case RefinedType(parents, decls) =>
-            validateVariances(parents, variance)
-            val saved = inRefinement
-            inRefinement = true
-            for (sym <- decls)
-              validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
-            inRefinement = saved
-          case TypeBounds(lo, hi) =>
-            validateVariance(lo, -variance)
-            validateVariance(hi, variance)
-          case mt @ MethodType(formals, result) =>
-            if (inRefinement)
-              validateVariances(mt.paramTypes, -variance)
-            validateVariance(result, variance)
-          case NullaryMethodType(result) =>
-            validateVariance(result, variance)
-          case PolyType(tparams, result) =>
-            // type parameters will be validated separately, because they are defined explicitly.
-            validateVariance(result, variance)
-          case ExistentialType(tparams, result) =>
-            validateVariances(tparams map (_.info), variance)
-            validateVariance(result, variance)
-          case AnnotatedType(annots, tp, selfsym) =>
-            if (!annots.exists(_ matches uncheckedVarianceClass))
-              validateVariance(tp, variance)
-        }
-
-        def validateVariances(tps: List[Type], variance: Int) {
-          tps foreach (tp => validateVariance(tp, variance))
-        }
-
-        def validateVarianceArgs(tps: List[Type], variance: Int, tparams: List[Symbol]) {
-          foreach2(tps, tparams)((tp, tparam) => validateVariance(tp, variance * tparam.variance))
-        }
-
-        validateVariance(base.info, CoVariance)
+    object varianceValidator extends VarianceValidator {
+      private def tpString(tp: Type) = tp match {
+        case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
+        case _                                => "type "+tp
       }
-
-      override def traverse(tree: Tree) {
-        tree match {
-          case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
-            validateVariance(tree.symbol)
-            super.traverse(tree)
-          // ModuleDefs need not be considered because they have been eliminated already
-          case ValDef(_, _, _, _) =>
-            if (!tree.symbol.hasLocalFlag)
-              validateVariance(tree.symbol)
-          case DefDef(_, _, tparams, vparamss, _, _) =>
-            // No variance check for object-private/protected methods/values.
-            if (!tree.symbol.hasLocalFlag) {
-              validateVariance(tree.symbol)
-              traverseTrees(tparams)
-              traverseTreess(vparamss)
-            }
-          case Template(_, _, _) =>
-            super.traverse(tree)
-          case _ =>
-        }
+      override def issueVarianceError(base: Symbol, sym: Symbol, required: Variance) {
+        currentRun.currentUnit.error(base.pos,
+          s"${sym.variance} $sym occurs in $required position in ${tpString(base.info)} of $base")
       }
     }
 
@@ -1594,18 +1449,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         checkMigration(sym, tree.pos)
       checkCompileTimeOnly(sym, tree.pos)
 
-      if (sym eq NoSymbol) {
-        unit.warning(tree.pos, "Select node has NoSymbol! " + tree + " / " + tree.tpe)
-      }
-      else if (currentClass != sym.owner && sym.hasLocalFlag) {
-        var o = currentClass
-        var hidden = false
-        while (!hidden && o != sym.owner && o != sym.owner.moduleClass && !o.isPackage) {
-          hidden = o.isTerm || o.isPrivateLocal
-          o = o.owner
-        }
-        if (!hidden) escapedPrivateLocals += sym
-      }
+      if (sym eq NoSymbol)
+        devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
+      else if (sym.hasLocalFlag)
+        varianceValidator.checkForEscape(sym, currentClass)
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
