@@ -73,7 +73,6 @@ object NestUI {
     println("    --run           run interpreter and backend tests")
     println("    --jvm           run JVM backend tests")
     println("    --res           run resident compiler tests")
-    println("    --buildmanager  run Build Manager tests")
     println("    --scalacheck    run ScalaCheck tests")
     println("    --script        run script runner tests")
     println("    --shootout      run shootout tests")
