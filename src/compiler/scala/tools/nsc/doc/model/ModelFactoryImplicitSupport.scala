@@ -170,7 +170,7 @@ trait ModelFactoryImplicitSupport {
         val newContext = context.makeImplicit(context.ambiguousErrors)
         newContext.macrosEnabled = false
         val newTyper = global.analyzer.newTyper(newContext)
-          newTyper.silent(_.typed(appliedTree, global.analyzer.EXPRmode, WildcardType), false) match {
+          newTyper.silent(_.typed(appliedTree, EXPRmode, WildcardType), false) match {
 
           case global.analyzer.SilentResultValue(t: Tree) => t
           case global.analyzer.SilentTypeError(err) =>

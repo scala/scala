@@ -189,7 +189,7 @@ abstract class TreeCheckers extends Analyzer {
       if (t.symbol == NoSymbol)
         errorFn(t.pos, "no symbol: " + treestr(t))
 
-    override def typed(tree: Tree, mode: Int, pt: Type): Tree = returning(tree) {
+    override def typed(tree: Tree, mode: Mode, pt: Type): Tree = returning(tree) {
       case EmptyTree | TypeTree() => ()
       case _ if tree.tpe != null  =>
         tpeOfTree.getOrElseUpdate(tree, try tree.tpe finally tree.clearType())

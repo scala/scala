@@ -10,6 +10,7 @@ import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
 import Flags._
+import scala.reflect.internal.Mode._
 
 abstract class Erasure extends AddInterfaces
                           with scala.reflect.internal.transform.Erasure
@@ -801,12 +802,12 @@ abstract class Erasure extends AddInterfaces
 
     /** A replacement for the standard typer's adapt method.
      */
-    override protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree =
+    override protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree =
       adaptToType(tree, pt)
 
     /** A replacement for the standard typer's `typed1` method.
      */
-    override def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
+    override def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
       val tree1 = try {
         tree match {
           case InjectDerivedValue(arg) =>

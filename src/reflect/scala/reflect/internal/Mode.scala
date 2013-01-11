@@ -3,75 +3,76 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
-package typechecker
+package scala.reflect
+package internal
 
-/** Mode constants.
- */
-trait Modes {
+object Mode {
+  private implicit def liftIntBitsToMode(bits: Int): Mode = apply(bits)
+  def apply(bits: Int): Mode = new Mode(bits)
+
   /** NOmode, EXPRmode and PATTERNmode are mutually exclusive.
    */
-  final val NOmode        = 0x000
-  final val EXPRmode      = 0x001
-  final val PATTERNmode   = 0x002
+  final val NOmode: Mode        = 0x000
+  final val EXPRmode: Mode      = 0x001
+  final val PATTERNmode: Mode   = 0x002
 
   /** TYPEmode needs a comment. <-- XXX.
    */
-  final val TYPEmode      = 0x004
+  final val TYPEmode: Mode      = 0x004
 
   /** SCCmode is orthogonal to above. When set we are
    *  in the this or super constructor call of a constructor.
    */
-  final val SCCmode       = 0x008
+  final val SCCmode: Mode       = 0x008
 
   /** FUNmode is orthogonal to above.
    *  When set we are looking for a method or constructor.
    */
-  final val FUNmode       = 0x010
+  final val FUNmode: Mode       = 0x010
 
   /** POLYmode is orthogonal to above.
    *  When set expression types can be polymorphic.
    */
-  final val POLYmode      = 0x020
+  final val POLYmode: Mode      = 0x020
 
   /** QUALmode is orthogonal to above. When set
    *  expressions may be packages and Java statics modules.
    */
-  final val QUALmode      = 0x040
+  final val QUALmode: Mode      = 0x040
 
   /** TAPPmode is set for the function/type constructor
    *  part of a type application. When set we do not decompose PolyTypes.
    */
-  final val TAPPmode      = 0x080
+  final val TAPPmode: Mode      = 0x080
 
   /** SUPERCONSTRmode is set for the super
    *  in a superclass constructor call super.<init>.
    */
-  final val SUPERCONSTRmode = 0x100
+  final val SUPERCONSTRmode: Mode = 0x100
 
   /** SNDTRYmode indicates that an application is typed for the 2nd time.
    *  In that case functions may no longer be coerced with implicit views.
    */
-  final val SNDTRYmode    = 0x200
+  final val SNDTRYmode: Mode    = 0x200
 
   /** LHSmode is set for the left-hand side of an assignment.
    */
-  final val LHSmode       = 0x400
+  final val LHSmode: Mode       = 0x400
 
   /** STARmode is set when star patterns are allowed.
    *  (This was formerly called REGPATmode.)
    */
-  final val STARmode      = 0x1000
+  final val STARmode: Mode      = 0x1000
 
   /** ALTmode is set when we are under a pattern alternative.
    */
-  final val ALTmode       = 0x2000
+  final val ALTmode: Mode       = 0x2000
 
   /** HKmode is set when we are typing a higher-kinded type.
    *  adapt should then check kind-arity based on the prototypical type's
    *  kind arity.  Type arguments should not be inferred.
    */
-  final val HKmode        = 0x4000 // @M: could also use POLYmode | TAPPmode
+  final val HKmode: Mode        = 0x4000 // @M: could also use POLYmode | TAPPmode
 
   /** BYVALmode is set when we are typing an expression
    *  that occurs in a by-value position. An expression e1 is in by-value
@@ -80,39 +81,17 @@ trait Modes {
    *  arguments or the conditional of an if-then-else clause.
    *  This mode has been added to support continuations.
    */
-  final val BYVALmode     = 0x8000
+  final val BYVALmode: Mode     = 0x8000
 
   /** TYPEPATmode is set when we are typing a type in a pattern.
    */
-  final val TYPEPATmode   = 0x10000
+  final val TYPEPATmode: Mode   = 0x10000
 
   /** RETmode is set when we are typing a return expression.
    */
-  final val RETmode       = 0x20000
+  final val RETmode: Mode       = 0x20000
 
-  final private val StickyModes   = EXPRmode | PATTERNmode | TYPEmode | ALTmode
-
-  final def onlyStickyModes(mode: Int) =
-    mode & StickyModes
-
-  final def forFunMode(mode: Int) =
-    mode & (StickyModes | SCCmode) | FUNmode | POLYmode | BYVALmode
-
-  final def forTypeMode(mode: Int) =
-    if (inAnyMode(mode, PATTERNmode | TYPEPATmode)) TYPEmode | TYPEPATmode
-    else TYPEmode
-
-  final def inAllModes(mode: Int, required: Int)  = (mode & required) == required
-  final def inAnyMode(mode: Int, required: Int)   = (mode & required) != 0
-  final def inNoModes(mode: Int, prohibited: Int) = (mode & prohibited) == 0
-  final def inHKMode(mode: Int)                   = (mode & HKmode) != 0
-  final def inFunMode(mode: Int)                  = (mode & FUNmode) != 0
-  final def inPolyMode(mode: Int)                 = (mode & POLYmode) != 0
-  final def inPatternMode(mode: Int)              = (mode & PATTERNmode) != 0
-  final def inPatternNotFunMode(mode: Int)        = inPatternMode(mode) && !inFunMode(mode)
-  final def inExprModeOr(mode: Int, others: Int)  = (mode & (EXPRmode | others)) != 0
-  final def inExprModeButNot(mode: Int, prohibited: Int) =
-    (mode & (EXPRmode | prohibited)) == EXPRmode
+  final private val StickyModes: Mode = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 
   /** Translates a mask of mode flags into something readable.
    */
@@ -134,8 +113,37 @@ trait Modes {
     (1 << 14) -> "HKmode",
     (1 << 15) -> "BYVALmode",
     (1 << 16) -> "TYPEPATmode"
-  )
-  def modeString(mode: Int): String =
-    if (mode == 0) "NOmode"
-    else (modeNameMap filterKeys (bit => inAllModes(mode, bit))).values mkString " "
+  ).map({ case (k, v) => Mode(k) -> v })
+}
+import Mode._
+
+final class Mode private (val bits: Int) extends AnyVal {
+  def &(other: Mode): Mode = new Mode(bits & other.bits)
+  def |(other: Mode): Mode = new Mode(bits | other.bits)
+  def &~(other: Mode): Mode = new Mode(bits & ~(other.bits))
+
+  def onlySticky = this & Mode.StickyModes
+  def forFunMode = this & (Mode.StickyModes | SCCmode) | FUNmode | POLYmode | BYVALmode
+  def forTypeMode =
+    if (inAny(PATTERNmode | TYPEPATmode)) TYPEmode | TYPEPATmode
+    else TYPEmode
+
+  def inAll(required: Mode)              = (this & required) == required
+  def inAny(required: Mode)              = (this & required) !=NOmode
+  def inNone(prohibited: Mode)           = (this & prohibited) == NOmode
+  def inHKMode                           = inAll(HKmode)
+  def inFunMode                          = inAll(FUNmode)
+  def inPolyMode                         = inAll(POLYmode)
+  def inPatternMode                      = inAll(PATTERNmode)
+  def inExprMode                         = inAll(EXPRmode)
+  def inByValMode                        = inAll(BYVALmode)
+  def inRetMode                          = inAll(RETmode)
+
+  def inPatternNotFunMode                = inPatternMode && !inFunMode
+  def inExprModeOr(others: Mode)         = inAny(EXPRmode | others)
+  def inExprModeButNot(prohibited: Mode) = inAll(EXPRmode) && inNone(prohibited)
+
+  override def toString =
+    if (bits == 0) "NOmode"
+    else (modeNameMap filterKeys inAll).values.toList.sorted mkString " "
 }

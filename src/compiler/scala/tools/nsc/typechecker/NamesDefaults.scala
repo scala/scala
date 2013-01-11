@@ -104,7 +104,7 @@ trait NamesDefaults { self: Analyzer =>
    *  @return the transformed application (a Block) together with the NamedApplyInfo.
    *     if isNamedApplyBlock(tree), returns the existing context.namedApplyBlockInfo
    */
-  def transformNamedApplication(typer: Typer, mode: Int, pt: Type)
+  def transformNamedApplication(typer: Typer, mode: Mode, pt: Type)
                                (tree: Tree, argPos: Int => Int): Tree = {
     import typer._
     import typer.infer._
