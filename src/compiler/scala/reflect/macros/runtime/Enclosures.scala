@@ -8,6 +8,10 @@ trait Enclosures {
 
   import universe._
 
+  type MacroRole = analyzer.MacroRole
+  def APPLY_ROLE = analyzer.APPLY_ROLE
+  def macroRole: MacroRole
+
   private lazy val site       = callsiteTyper.context
   private lazy val enclTrees  = site.enclosingContextChain map (_.tree)
   private lazy val enclPoses  = enclosingMacros map (_.macroApplication.pos) filterNot (_ eq NoPosition)

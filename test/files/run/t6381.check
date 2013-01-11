@@ -9,7 +9,7 @@ scala> def pos_impl(c: reflect.macros.Context): c.Expr[String] =
 pos_impl: (c: scala.reflect.macros.Context)c.Expr[String]
 
 scala> def pos = macro pos_impl
-pos: String
+defined term macro pos: String
 
 scala> pos
 res0: String = class scala.reflect.internal.util.RangePosition
