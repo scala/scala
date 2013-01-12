@@ -547,7 +547,7 @@ trait TypeDiagnostics {
       }
 
       // The checkDead call from typedArg is more selective.
-      def inMode(mode: Int, tree: Tree): Tree = {
+      def inMode(mode: Mode, tree: Tree): Tree = {
         val modeOK = (mode & (EXPRmode | BYVALmode | POLYmode)) == (EXPRmode | BYVALmode)
         if (modeOK) apply(tree)
         else tree
