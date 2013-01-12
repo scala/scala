@@ -1,4 +1,4 @@
-abstract class AbstractClass extends java.lang.Object {
+abstract class AbstractClass extends scala.AnyRef {
   def this() = { /* compiled code */ }
   def foo : scala.Predef.String
 }

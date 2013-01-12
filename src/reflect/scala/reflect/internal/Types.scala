@@ -593,6 +593,26 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Expands type aliases. */
     def dealias = this
 
+    /** Repeatedly apply widen and dealias until they have no effect.
+     *  This compensates for the fact that type aliases can hide beneath
+     *  singleton types and singleton types can hide inside type aliases.
+     */
+    def dealiasWiden: Type = (
+      if (this ne widen) widen.dealiasWiden
+      else if (this ne dealias) dealias.dealiasWiden
+      else this
+    )
+
+    /** All the types encountered in the course of dealiasing/widening,
+     *  including each intermediate beta reduction step (whereas calling
+     *  dealias applies as many as possible.)
+     */
+    def dealiasWidenChain: List[Type] = this :: (
+      if (this ne widen) widen.dealiasWidenChain
+      else if (this ne betaReduce) betaReduce.dealiasWidenChain
+      else Nil
+    )
+
     def etaExpand: Type = this
 
     /** Performs a single step of beta-reduction on types.
@@ -3173,23 +3193,20 @@ trait Types extends api.Types { self: SymbolTable =>
        *  Checks subtyping of higher-order type vars, and uses variances as defined in the
        *  type parameter we're trying to infer (the result will be sanity-checked later).
        */
-      def unifyFull(tpe: Type) = {
-        // The alias/widen variations are often no-ops.
-        val tpes = (
-          if (isLowerBound) List(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias).distinct
-          else List(tpe)
-        )
-        tpes exists { tp =>
-          val lhs = if (isLowerBound) tp.typeArgs else typeArgs
-          val rhs = if (isLowerBound) typeArgs else tp.typeArgs
-
-          sameLength(lhs, rhs) && {
+      def unifyFull(tpe: Type): Boolean = {
+        def unifySpecific(tp: Type) = {
+          sameLength(typeArgs, tp.typeArgs) && {
+            val lhs = if (isLowerBound) tp.typeArgs else typeArgs
+            val rhs = if (isLowerBound) typeArgs else tp.typeArgs
             // this is a higher-kinded type var with same arity as tp.
             // side effect: adds the type constructor itself as a bound
             addBound(tp.typeConstructor)
             isSubArgs(lhs, rhs, params, AnyDepth)
           }
         }
+        // The type with which we can successfully unify can be hidden
+        // behind singleton types and type aliases.
+        tpe.dealiasWidenChain exists unifySpecific
       }
 
       // There's a <: test taking place right now, where tp is a concrete type and this is a typevar
@@ -3282,7 +3299,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (constr.instValid) constr.inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
-      else if (isHigherKinded) typeFun(params, applyArgs(params map (_.typeConstructor)))
+      else if (isHigherKinded) logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
       else super.normalize
     )
     override def typeSymbol = origin.typeSymbol
@@ -3754,7 +3771,7 @@ trait Types extends api.Types { self: SymbolTable =>
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type =
     if (tparams.isEmpty) tpe0
     else {
-      val tpe      = deAlias(tpe0)
+      val tpe      = normalizeAliases(tpe0)
       val tpe1     = new ExistentialExtrapolation(tparams) extrapolate tpe
       var tparams0 = tparams
       var tparams1 = tparams0 filter tpe1.contains
@@ -3768,13 +3785,16 @@ trait Types extends api.Types { self: SymbolTable =>
       newExistentialType(tparams1, tpe1)
     }
 
-  /** Remove any occurrences of type aliases from this type */
-  object deAlias extends TypeMap {
-    def apply(tp: Type): Type = mapOver {
-      tp match {
-        case TypeRef(pre, sym, args) if sym.isAliasType => tp.normalize
-        case _ => tp
-      }
+  /** Normalize any type aliases within this type (@see Type#normalize).
+   *  Note that this depends very much on the call to "normalize", not "dealias",
+   *  so it is no longer carries the too-stealthy name "deAlias".
+   */
+  object normalizeAliases extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(_, sym, _) if sym.isAliasType =>
+        def msg = if (tp.isHigherKinded) s"Normalizing type alias function $tp" else s"Dealiasing type alias $tp"
+        mapOver(logResult(msg)(tp.normalize))
+      case _                                     => mapOver(tp)
     }
   }
 

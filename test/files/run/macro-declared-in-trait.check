@@ -1,5 +1,5 @@
 prefix = Expr[Nothing]({
-  final class $anon extends Object with Base {
+  final class $anon extends AnyRef with Base {
     def <init>(): anonymous class $anon = {
       $anon.super.<init>();
       ()

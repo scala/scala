@@ -1,8 +1,8 @@
-trait TraitObject extends java.lang.Object {
+trait TraitObject extends scala.AnyRef {
   def $init$() : scala.Unit = { /* compiled code */ }
   def foo : scala.Int = { /* compiled code */ }
 }
-object TraitObject extends java.lang.Object {
+object TraitObject extends scala.AnyRef {
   def this() = { /* compiled code */ }
   def bar : scala.Int = { /* compiled code */ }
 }
