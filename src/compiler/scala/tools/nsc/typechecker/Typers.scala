@@ -830,7 +830,7 @@ trait Typers extends Adaptations with Tags {
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        if (!meth.isConstructor && !meth.isTermMacro && isFunctionType(pt)) { // (4.2)
+        if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
           debuglog("eta-expanding " + tree + ":" + tree.tpe + " to " + pt)
           checkParamsConvertible(tree, tree.tpe)
           val tree0 = etaExpand(context.unit, tree, this)
@@ -1059,10 +1059,11 @@ trait Typers extends Adaptations with Tags {
           adaptToImplicitMethod(mt)
 
         case mt: MethodType if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
-          (context.undetparams.isEmpty || mode.inPolyMode)) && !(tree.symbol != null && tree.symbol.isTermMacro) =>
+          (context.undetparams.isEmpty || mode.inPolyMode)) && !treeInfo.isMacroApplicationOrBlock(tree) =>
           instantiateToMethodType(mt)
 
         case _ =>
+        def vanillaAdapt(tree: Tree) = {
           def shouldInsertApply(tree: Tree) = mode.inAll(EXPRmode | FUNmode) && (tree.tpe match {
             case _: MethodType | _: OverloadedType | _: PolyType => false
             case _                                               => applyPossible
@@ -1078,11 +1079,6 @@ trait Typers extends Adaptations with Tags {
           }
           if (tree.isType)
             adaptType()
-          else if (
-              mode.inExprModeButNot(FUNmode) && !tree.isDef &&   // typechecking application
-              tree.symbol != null && tree.symbol.isTermMacro &&   // of a macro
-              !tree.attachments.get[SuppressMacroExpansionAttachment.type].isDefined)
-            macroExpand(this, tree, mode, pt)
           else if (mode.inAll(PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (shouldInsertApply(tree))
@@ -1211,6 +1207,9 @@ trait Typers extends Adaptations with Tags {
             }
             fallBack
           }
+        }
+        val tree1 = if (mode.inExprModeButNot(FUNmode) && treeInfo.isMacroApplication(tree)) macroExpandApply(this, tree, mode, pt) else tree
+        if (tree == tree1) vanillaAdapt(tree1) else tree1
       }
     }
 
@@ -1589,7 +1588,11 @@ trait Typers extends Adaptations with Tags {
           else
             map2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt setType ldef.symbol.tpe)
 
-          if (superCall1 == cunit) EmptyTree else cbody2
+          if (superCall1 == cunit) EmptyTree
+          else cbody2 match {
+            case Block(_, expr) => expr
+            case tree => tree
+          }
         case _ =>
           EmptyTree
       }
@@ -1632,7 +1635,7 @@ trait Typers extends Adaptations with Tags {
         )
     }
 
-    def parentTypes(templ: Template): List[Tree] = templ.parents match {
+    def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefClass.tpe)))
       case first :: rest =>
         try {
@@ -1654,7 +1657,7 @@ trait Typers extends Adaptations with Tags {
           case ex: TypeError =>
             // fallback in case of cyclic errors
             // @H none of the tests enter here but I couldn't rule it out
-            // upd. @E when a definitions inherits itself, we end up here
+            // upd. @E when a definition inherits itself, we end up here
             // because `typedParentType` triggers `initialize` for parent types symbols
             log("Type error calculating parents in template " + templ)
             log("Error: " + ex)
@@ -1765,7 +1768,7 @@ trait Typers extends Adaptations with Tags {
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
       val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
-        _.typedTemplate(cdef.impl, parentTypes(cdef.impl))
+        _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
@@ -1805,7 +1808,7 @@ trait Typers extends Adaptations with Tags {
       )
       val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
         _.typedTemplate(mdef.impl, {
-          parentTypes(mdef.impl) ++ (
+          typedParentTypes(mdef.impl) ++ (
             if (noSerializable) Nil
             else {
               clazz.makeSerializable()
@@ -2205,7 +2208,7 @@ trait Typers extends Adaptations with Tags {
                meth.owner.isAnonOrRefinementClass))
             InvalidConstructorDefError(ddef)
           typed(ddef.rhs)
-        } else if (meth.isTermMacro) {
+        } else if (meth.isMacro) {
           // typechecking macro bodies is sort of unconventional
           // that's why we employ our custom typing scheme orchestrated outside of the typer
           transformedOr(ddef.rhs, typedMacroBody(this, ddef))
@@ -2912,7 +2915,6 @@ trait Typers extends Adaptations with Tags {
             else BYVALmode
           )
           var tree = typedArg(args.head, mode, typedMode, adapted.head)
-          if (hasPendingMacroExpansions) tree = macroExpandAll(this, tree)
           // formals may be empty, so don't call tail
           tree :: loop(args.tail, formals drop 1, adapted.tail)
         }
@@ -3078,7 +3080,7 @@ trait Typers extends Adaptations with Tags {
             val lencmp = compareLengths(args, formals)
 
             def checkNotMacro() = {
-              if (fun.symbol != null && fun.symbol.filter(sym => sym != null && sym.isTermMacro && !sym.isErroneous) != NoSymbol)
+              if (treeInfo.isMacroApplication(fun))
                 tryTupleApply getOrElse duplErrorTree(NamedAndDefaultArgumentsNotSupportedForMacros(tree, fun))
             }
 
@@ -3249,7 +3251,8 @@ trait Typers extends Adaptations with Tags {
           doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
         case _ =>
-          duplErrorTree(ApplyWithoutArgsError(tree, fun))
+          if (treeInfo.isMacroApplication(tree)) duplErrorTree(MacroTooManyArgumentListsError(tree, fun.symbol))
+          else duplErrorTree(ApplyWithoutArgsError(tree, fun))
       }
     }
 
@@ -4972,9 +4975,9 @@ trait Typers extends Adaptations with Tags {
             // that typecheck must not trigger macro expansions, so we explicitly prohibit them
             // however we cannot do `context.withMacrosDisabled`
             // because `expr` might contain nested macro calls (see SI-6673)
-            val exprTyped = typed1(expr updateAttachment SuppressMacroExpansionAttachment, mode, pt)
+            val exprTyped = typed1(suppressMacroExpansion(expr), mode, pt)
             exprTyped match {
-              case macroDef if macroDef.symbol != null && macroDef.symbol.isTermMacro && !macroDef.symbol.isErroneous =>
+              case macroDef if treeInfo.isMacroApplication(macroDef) =>
                 MacroEtaError(exprTyped)
               case _ =>
                 typedEta(checkDead(exprTyped))
@@ -5227,7 +5230,12 @@ trait Typers extends Adaptations with Tags {
         }
 
         tree1 modifyType (addAnnotations(tree1, _))
-        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, tree)
+        val result =
+          if (tree1.isEmpty) tree1
+          else {
+            val result = adapt(tree1, mode, pt, tree)
+            if (hasPendingMacroExpansions) macroExpandAll(this, result) else result
+          }
 
         if (!alreadyTyped) {
           printTyping("adapted %s: %s to %s, %s".format(
@@ -5360,7 +5368,7 @@ trait Typers extends Adaptations with Tags {
 
     def computeType(tree: Tree, pt: Type): Type = {
       // macros employ different logic of `computeType`
-      assert(!context.owner.isTermMacro, context.owner)
+      assert(!context.owner.isMacro, context.owner)
       val tree1 = typed(tree, pt)
       transformed(tree) = tree1
       val tpe = packedType(tree1, context.owner)
@@ -5369,8 +5377,8 @@ trait Typers extends Adaptations with Tags {
     }
 
     def computeMacroDefType(tree: Tree, pt: Type): Type = {
-      assert(context.owner.isTermMacro, context.owner)
-      assert(tree.symbol.isTermMacro, tree.symbol)
+      assert(context.owner.isMacro, context.owner)
+      assert(tree.symbol.isMacro, tree.symbol)
       assert(tree.isInstanceOf[DefDef], tree.getClass)
       val ddef = tree.asInstanceOf[DefDef]
 
