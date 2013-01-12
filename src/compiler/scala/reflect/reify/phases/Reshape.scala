@@ -89,8 +89,8 @@ trait Reshape {
     }
 
     private def undoMacroExpansion(tree: Tree): Tree =
-      tree.attachments.get[MacroExpansionAttachment] match {
-        case Some(MacroExpansionAttachment(original)) =>
+      tree.attachments.get[analyzer.MacroExpansionAttachment] match {
+        case Some(analyzer.MacroExpansionAttachment(original, _)) =>
           original match {
             // this hack is necessary until I fix implicit macros
             // so far tag materialization is implemented by sneaky macros hidden in scala-compiler.jar
