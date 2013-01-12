@@ -1310,15 +1310,16 @@ self =>
     }
 
     // TBD: prefix ops; infix ops; parameters: output&constraints
+    // end scripts sections & script definitions appropriately
     def scriptExpr0(location: Int): Tree = {
       // prefix ops... 
 
       val base = opstack
       var top = scriptTerm()
       
-      // check for ',', '+' and white space expressions
+      // check for ',', '+' and white space separated expressions
       while (isIdent) {
-        top = reduceStack(isExpr = true, base, top, precedence(in.name), leftAssoc = treeInfo.isLeftAssoc(in.name))
+        top = reduceScriptOperatorStack(isExpr = true, base, top, precedence(in.name))
         val op = in.name
         opstack = OpInfo(top, op, in.offset) :: opstack
         ident()
@@ -1327,40 +1328,24 @@ self =>
       }
       stripParens(top)
     }
-    
-    /** {{{
-     *  PostfixExpr   ::= InfixExpr [Id [nl]]
-     *  InfixExpr     ::= PrefixExpr
-     *                  | InfixExpr Id [nl] InfixExpr
-     *  }}}
-     */
-    
-    def scriptPostfixExpr(): Tree = {
-      val base = opstack
-      var top = scriptPrefixExpr()
 
-      while (isIdent) {
-        top = reduceStack(isExpr = true, base, top, precedence(in.name), leftAssoc = treeInfo.isLeftAssoc(in.name))
-        val op = in.name
-        opstack = OpInfo(top, op, in.offset) :: opstack
-        ident()
-        newLineOptWhenFollowing(isExprIntroToken)
-        if (isExprIntro) {
-          val next = scriptPrefixExpr()
-          if (next == EmptyTree)
-            return reduceStack(isExpr = true, base, top, 0, leftAssoc = true)
-          top = next
-        } else {
-          // postfix expression
-          val topinfo = opstack.head
-          opstack = opstack.tail
-          val od = stripParens(reduceStack(isExpr = true, base, topinfo.operand, 0, leftAssoc = true))
-          return atPos(od.pos.startOrPoint, topinfo.offset) {
-            new PostfixSelect(od, topinfo.operator.encode)
-          }
-        }
+    def reduceScriptOperatorStack(isExpr: Boolean, base: List[OpInfo], top0: Tree, prec: Int): Tree = {
+      var top = top0
+      val leftAssoc = false
+      if (opstack != base && precedence(opstack.head.operator) == prec)
+        checkAssoc(opstack.head.offset, opstack.head.operator, leftAssoc)
+      while (opstack != base &&
+             (prec < precedence(opstack.head.operator) ||
+              leftAssoc && prec == precedence(opstack.head.operator))) {
+        val opinfo = opstack.head
+        opstack    = opstack.tail
+        val opPos  = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length); val lPos = opinfo.operand.pos
+        val start  = if (lPos.isDefined) lPos.startOrPoint else opPos.startOrPoint;           val rPos = top.pos
+        val end    = if (rPos.isDefined) rPos.  endOrPoint else opPos.endOrPoint
+
+        top = atPos(start, opinfo.offset, end) {makeBinop(isExpr, opinfo.operand, opinfo.operator.toTermName, top, opPos)}
       }
-      reduceStack(isExpr = true, base, top, 0, leftAssoc = true)
+      top
     }
 
  
