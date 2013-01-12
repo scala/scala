@@ -83,7 +83,8 @@ trait Scanners extends ScannersCommon {
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
     
-    var isInSubScript = false
+    var isInSubScript        = false
+    var isInSubScript_header = false
 
     def isAtEnd = charOffset >= buf.length
 
@@ -421,13 +422,11 @@ trait Scanners extends ScannersCommon {
           def fetchDoubleQuote() = {
             if (token == INTERPOLATIONID) {
               nextRawChar()
-              if (ch == '\"') {
-                nextRawChar()
-                if (ch == '\"') {
-                  nextRawChar()
+              if   (ch == '\"') {nextRawChar()
+                if (ch == '\"') {nextRawChar()
                   getStringPart(multiLine = true)
                   sepRegions = STRINGPART :: sepRegions // indicate string part
-                  sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
+                  sepRegions = STRINGLIT  :: sepRegions // once more to indicate multi line string part
                 } else {
                   token = STRINGLIT
                   strVal = ""
@@ -438,18 +437,11 @@ trait Scanners extends ScannersCommon {
               }
             } else {
               nextChar()
-              if (ch == '\"') {
-                nextChar()
-                if (ch == '\"') {
-                  nextRawChar()
-                  getRawStringLit()
-                } else {
-                  token = STRINGLIT
-                  strVal = ""
-                }
-              } else {
-                getStringLit()
-              }
+              if   (ch == '\"') {nextChar()
+                if (ch == '\"') {nextRawChar(); getRawStringLit()}
+                else {token = STRINGLIT; strVal = ""}
+              } 
+              else {getStringLit()}
             }
           }
           fetchDoubleQuote
@@ -461,13 +453,8 @@ trait Scanners extends ScannersCommon {
                  && (ch != '\\'))        charLitOr(getOperatorRest)
             else {
               getLitChar()
-              if (ch == '\'') {
-                nextChar()
-                token = CHARLIT
-                setStrVal()
-              } else {
-                syntaxError("unclosed character literal")
-              }
+              if (ch == '\'') {nextChar(); token = CHARLIT; setStrVal()}
+              else {syntaxError("unclosed character literal")}
             }
           }
           fetchSingleQuote
@@ -624,12 +611,10 @@ trait Scanners extends ScannersCommon {
       if (ch == '`') {
         nextChar()
         finishNamed(BACKQUOTED_IDENT)
-        if (name.length == 0)
-          syntaxError("empty quoted identifier")
-        else if (name == nme.WILDCARD)
-          syntaxError("wildcard invalid as backquoted identifier")
+        if      (name.length ==            0) syntaxError("empty quoted identifier")
+        else if (name        == nme.WILDCARD) syntaxError("wildcard invalid as backquoted identifier")
       }
-      else syntaxError("unclosed quoted identifier")
+      else                                    syntaxError("unclosed quoted identifier")
     }
 
     private def getIdentRest(): Unit = (ch: @switch) match {
@@ -652,12 +637,33 @@ trait Scanners extends ScannersCommon {
       case SU  => finishNamed() // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
       case  _  => if (Character.isUnicodeIdentifierPart(ch)) {
                    putChar(ch); nextChar(); getIdentRest()
-                  } else {
-                    finishNamed()
                   }
+                  else if (isInSubScript) {
+                    ch match {
+                      case '?' if (cbuf.toString=="if") => putChar(ch); nextChar(); name = newTermName(cbuf.toString); token = IF_QMARK
+                      case ';' => cbuf.toString match { //   |;   ||;   |;|   %;
+                        case "%"  => putChar(ch); nextChar(); name = newTermName(cbuf.toString); token = PERCENT_SEMI                                  
+                        case "||" => putChar(ch); nextChar(); name = newTermName(cbuf.toString); token = BAR2_SEMI                                  
+                        case "|"  => putChar(ch); nextChar() 
+                                     if (ch=='|') {putChar(ch); nextChar(); token = BAR_SEMI_BAR}
+                                     else         {                         token = BAR_SEMI}
+                                     name = newTermName(cbuf.toString)
+                        case _    => finishNamed()
+                      }
+                      case _ =>  finishNamed()                                 
+                    }
+                    cbuf.clear()   
+                  }
+                  else finishNamed()
     }
 
-    private def getOperatorRest(): Unit = (ch: @switch) match {
+    private def getOperatorRest(): Unit = 
+      if (isInSubScript_header) { // after seeing += and = for header definitions, stop there to allow prefix operators as in x =|| y z
+        val cbuf_toString = cbuf.toString
+        if (cbuf_toString=="="
+        ||  cbuf_toString=="+=") {finishNamed(); return}
+      }
+      (ch: @switch) match {
       case '/' =>
         nextChar()
         if (skipComment()) finishNamed()
