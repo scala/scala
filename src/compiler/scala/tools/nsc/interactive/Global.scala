@@ -1031,15 +1031,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   // ---------------- Helper classes ---------------------------
 
-  /** A transformer that replaces tree `from` with tree `to` in a given tree */
-  class TreeReplacer(from: Tree, to: Tree) extends Transformer {
-    override def transform(t: Tree): Tree = {
-      if (t == from) to
-      else if ((t.pos includes from.pos) || t.pos.isTransparent) super.transform(t)
-      else t
-    }
-  }
-
   /** The typer run */
   class TyperRun extends Run {
     // units is always empty
