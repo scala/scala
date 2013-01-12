@@ -2070,57 +2070,60 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
       debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
+      val pending = ListBuffer[AbsTypeError]()
+
+      // !!! This method is redundant with other, less buggy ones.
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
         case Apply(fn, args) =>
-          val (superConstr, args1) = decompose(fn)
+          // an object cannot be allowed to pass a reference to itself to a superconstructor
+          // because of initialization issues; SI-473, SI-3913, SI-6928.
+          foreachSubTreeBoundTo(args, clazz) { tree =>
+            if (tree.symbol.isModule)
+              pending += SuperConstrReferenceError(tree)
+            tree match {
+              case This(qual) =>
+                pending += SuperConstrArgsThisReferenceError(tree)
+              case _ => ()
+            }
+          }
+          val (superConstr, preArgs) = decompose(fn)
           val params = fn.tpe.params
-          val args2 = if (params.isEmpty || !isRepeatedParamType(params.last.tpe)) args
-                      else args.take(params.length - 1) :+ EmptyTree
-          assert(sameLength(args2, params) || call.isErrorTyped, "mismatch " + clazz + " " + (params map (_.tpe)) + " " + args2)//debug
-          (superConstr, args1 ::: args2)
-        case Block(stats, expr) if !stats.isEmpty =>
-          decompose(stats.last)
+          // appending a dummy tree to represent Nil for an empty varargs (is this really necessary?)
+          val applyArgs = if (args.length < params.length) args :+ EmptyTree else args take params.length
+
+          assert(sameLength(applyArgs, params) || call.isErrorTyped,
+            s"arity mismatch but call is not error typed: $clazz (params=$params, args=$applyArgs)")
+
+          (superConstr, preArgs ::: applyArgs)
+        case Block(_ :+ superCall, _) =>
+          decompose(superCall)
         case _ =>
-          (call, List())
+          (call, Nil)
       }
       val (superConstr, superArgs) = decompose(rhs)
       assert(superConstr.symbol ne null, superConstr)//debug
+      def superClazz = superConstr.symbol.owner
+      def superParamAccessors = superClazz.constrParamAccessors
 
-      val pending = ListBuffer[AbsTypeError]()
-      // an object cannot be allowed to pass a reference to itself to a superconstructor
-      // because of initialization issues; bug #473
-      foreachSubTreeBoundTo(superArgs, clazz) { tree =>
-        if (tree.symbol.isModule)
-          pending += SuperConstrReferenceError(tree)
-        tree match {
-          case This(qual) =>
-            pending += SuperConstrArgsThisReferenceError(tree)
-          case _ => ()
-        }
-      }
-
-      if (superConstr.symbol.isPrimaryConstructor) {
-        val superClazz = superConstr.symbol.owner
-        if (!superClazz.isJavaDefined) {
-          val superParamAccessors = superClazz.constrParamAccessors
-          if (sameLength(superParamAccessors, superArgs)) {
-            for ((superAcc, superArg @ Ident(name)) <- superParamAccessors zip superArgs) {
-              if (vparamss.exists(_.exists(_.symbol == superArg.symbol))) {
-                var alias = superAcc.initialize.alias
-                if (alias == NoSymbol)
-                  alias = superAcc.getter(superAcc.owner)
-                if (alias != NoSymbol &&
-                    superClazz.info.nonPrivateMember(alias.name) != alias)
-                  alias = NoSymbol
-                if (alias != NoSymbol) {
-                  var ownAcc = clazz.info.decl(name).suchThat(_.isParamAccessor)
-                  if ((ownAcc hasFlag ACCESSOR) && !ownAcc.isDeferred)
-                    ownAcc = ownAcc.accessed
-                  if (!ownAcc.isVariable && !alias.accessed.isVariable) {
-                    debuglog("" + ownAcc + " has alias "+alias.fullLocationString) //debug
-                    ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
-                  }
-                }
+      // associate superclass paramaccessors with their aliases
+      if (superConstr.symbol.isPrimaryConstructor && !superClazz.isJavaDefined && sameLength(superParamAccessors, superArgs)) {
+        for ((superAcc, superArg @ Ident(name)) <- superParamAccessors zip superArgs) {
+          if (mexists(vparamss)(_.symbol == superArg.symbol)) {
+            val alias = (
+              superAcc.initialize.alias
+                orElse (superAcc getter superAcc.owner)
+                filter (alias => superClazz.info.nonPrivateMember(alias.name) != alias)
+            )
+            if (alias.exists && !alias.accessed.isVariable) {
+              val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
+                case acc if !acc.isDeferred && acc.hasAccessorFlag => acc.accessed
+                case acc                                           => acc
+              }
+              ownAcc match {
+                case acc: TermSymbol if !acc.isVariable =>
+                  debuglog(s"$acc has alias ${alias.fullLocationString}")
+                  acc setAlias alias
+                case _ =>
               }
             }
           }
