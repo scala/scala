@@ -7,6 +7,7 @@ package scala.tools.nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
+import java.util.UUID._
 import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
@@ -14,6 +15,7 @@ import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
+import scala.reflect.io.VirtualFile
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
@@ -1603,6 +1605,25 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           enteringPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit))
         refreshProgress
       }
+    }
+
+    // TODO: provide a way to specify a pretty name for debugging purposes
+    private def randomFileName() = (
+      "compileLateSynthetic-" + randomUUID().toString.replace("-", "") + ".scala"
+    )
+
+    def compileLate(code: PackageDef) {
+      // compatibility with SBT
+      // on the one hand, we need to specify some jfile here, otherwise sbt crashes with an NPE (SI-6870)
+      // on the other hand, we can't specify the obvious enclosingUnit, because then sbt somehow fails to run tests using type macros
+      // okay, now let's specify a guaranteedly non-existent file in an existing directory (so that we don't run into permission problems)
+      val syntheticFileName = randomFileName()
+      val fakeJfile = new java.io.File(syntheticFileName)
+      val virtualFile = new VirtualFile(syntheticFileName) { override def file = fakeJfile }
+      val sourceFile = new BatchSourceFile(virtualFile, code.toString)
+      val unit = new CompilationUnit(sourceFile)
+      unit.body = code
+      compileLate(unit)
     }
 
     /** Reset package class to state at typer (not sure what this
