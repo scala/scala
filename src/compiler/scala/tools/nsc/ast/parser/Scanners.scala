@@ -116,7 +116,10 @@ trait Scanners extends ScannersCommon {
         val idx = name.start - kwOffset
         if (idx >= 0 && idx < kwArray.length) {
           token = kwArray(idx)
-          if (token == IDENTIFIER && allowIdent != name)
+          if (token == IDENTIFIER 
+          && allowIdent   != name 
+          && nme.SCRIPTkw != name  // Note: only used in SubScript; do not warn
+          && nme.BREAKkw  != name) // Note: only used in SubScript; do not warn
             deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
         }
       }
@@ -218,18 +221,11 @@ trait Scanners extends ScannersCommon {
            | RBRACE_EMARK   
            | RBRACE_ASTERISK
            | RBRACE_CARET   
-        
-          =>
-            
-          if (!sepRegions.isEmpty && sepRegions.head == lastToken)
-            sepRegions = sepRegions.tail
-          docBuffer = null
-        case ARROW =>
-          if (!sepRegions.isEmpty && sepRegions.head == lastToken)
-            sepRegions = sepRegions.tail
-        case STRINGLIT =>
-          if (  inMultiLineInterpolation) sepRegions = sepRegions.tail.tail
-          else if (inStringInterpolation) sepRegions = sepRegions.tail
+       
+                       => if (!sepRegions.isEmpty && sepRegions.head == lastToken) sepRegions = sepRegions.tail;   docBuffer = null
+        case ARROW     => if (!sepRegions.isEmpty && sepRegions.head == lastToken) sepRegions = sepRegions.tail
+        case STRINGLIT => if (        inMultiLineInterpolation                   ) sepRegions = sepRegions.tail.tail
+                     else if (           inStringInterpolation                   ) sepRegions = sepRegions.tail
         case _ =>
       }
 
@@ -239,7 +235,11 @@ trait Scanners extends ScannersCommon {
         if (lastOffset > 0 && buf(lastOffset) == '\n' && buf(lastOffset - 1) == '\r') {
           lastOffset -= 1
         }
-        if (inStringInterpolation) fetchStringPart() else fetchToken()
+        if (inStringInterpolation) fetchStringPart() 
+        else                       fetchToken()
+
+println("fetched:  "+this+"        name: "+name)        
+
         if(token == ERROR) {
           if (  inMultiLineInterpolation) sepRegions = sepRegions.tail.tail
           else if (inStringInterpolation) sepRegions = sepRegions.tail
@@ -279,12 +279,14 @@ trait Scanners extends ScannersCommon {
           this copyFrom prev
         }
       } else if (token == SEMI) {
+println("SEMI-pre :  "+next+"        next.name: "+next.name)        
         prev copyFrom this
         fetchToken()
         if (token != ELSE) {
           next copyFrom this
           this copyFrom prev
         }
+println("SEMI-post:  "+next+"        next.name: "+next.name)        
       }
 
 //      print("["+this+"]")
@@ -361,8 +363,8 @@ trait Scanners extends ScannersCommon {
           val chOld = ch
           nextChar()
           if (isInSubScript && ch!=RBRACE && chOld=='?') {
-            if (ch=='?) {nextChar(); token = QMARK2}
-            else        {            token = QMARK}
+            if (ch=='?') {nextChar(); token = QMARK2}
+            else         {            token = QMARK}
           }
           else if (isInSubScript && ch==RBRACE) {
             nextChar()
@@ -640,40 +642,39 @@ trait Scanners extends ScannersCommon {
                   }
                   else if (isInSubScript) {
                     ch match {
-                      case '?' if (cbuf.toString=="if") => putChar(ch); nextChar(); name = newTermName(cbuf.toString); token = IF_QMARK
+                      //case '?' if (cbuf.toString=="if") => putChar(ch); nextChar(); finishNamed(IF_QMARK)
                       case ';' => cbuf.toString match { //   |;   ||;   |;|   %;
-                        case "%"  => putChar(ch); nextChar(); name = newTermName(cbuf.toString); token = PERCENT_SEMI                                  
-                        case "||" => putChar(ch); nextChar(); name = newTermName(cbuf.toString); token = BAR2_SEMI                                  
-                        case "|"  => putChar(ch); nextChar() 
-                                     if (ch=='|') {putChar(ch); nextChar(); token = BAR_SEMI_BAR}
-                                     else         {                         token = BAR_SEMI}
-                                     name = newTermName(cbuf.toString)
-                        case _    => finishNamed()
+                        case "%"    => putChar(ch); nextChar(); finishNamed(PERCENT_SEMI)                                  
+                        case "||"   => putChar(ch); nextChar(); finishNamed(   BAR2_SEMI)                                  
+                        case "|"    => putChar(ch); nextChar() 
+                          if(ch=='|') {putChar(ch); nextChar(); finishNamed(BAR_SEMI_BAR)}
+                          else        {                         finishNamed(BAR_SEMI    )}
+                        case _      => finishNamed()
                       }
                       case _ =>  finishNamed()                                 
                     }
-                    cbuf.clear()   
                   }
                   else finishNamed()
     }
 
-    private def getOperatorRest(): Unit = 
+    private def getOperatorRest(): Unit = {
       if (isInSubScript_header) { // after seeing += and = for header definitions, stop there to allow prefix operators as in x =|| y z
         val cbuf_toString = cbuf.toString
         if (cbuf_toString=="="
         ||  cbuf_toString=="+=") {finishNamed(); return}
       }
       (ch: @switch) match {
-      case '/' =>
-        nextChar()
-        if (skipComment()) finishNamed()
-        else { putChar('/'); getOperatorRest() }
-      case '~' | '!' | '@' | '#' | '%' |
-           '^' | '*' | '+' | '-' | '<' |
-           '>' | '?' | ':' | '=' | '&' |
-           '|' | '\\' =>            putChar(ch); nextChar(); getOperatorRest()
-      case _ => if (isSpecial(ch)) {putChar(ch); nextChar(); getOperatorRest()}
-               else finishNamed()
+        case '/' =>
+          nextChar()
+          if (skipComment()) finishNamed()
+          else { putChar('/'); getOperatorRest() }
+        case '~' | '!' | '@' | '#' | '%' |
+             '^' | '*' | '+' | '-' | '<' |
+             '>' | '?' | ':' | '=' | '&' |
+             '|' | '\\' =>            putChar(ch); nextChar(); getOperatorRest()
+        case _ => if (isSpecial(ch)) {putChar(ch); nextChar(); getOperatorRest()}
+                 else finishNamed()
+      }
     }
 
     private def getIdentOrOperatorRest() {
@@ -1123,9 +1124,9 @@ trait Scanners extends ScannersCommon {
     nme.HASHkw      -> HASH,
     nme.ATkw        -> AT,
     nme.MACROkw     -> IDENTIFIER,
-    nme.THENkw      -> IDENTIFIER
+    nme.THENkw      -> IDENTIFIER,
     
-  //nme.SCRIPTkw    -> SCRIPT
+    nme.SCRIPTkw    -> SCRIPT
     )
 
   private var kwOffset: Int = -1

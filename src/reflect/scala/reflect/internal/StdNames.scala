@@ -189,6 +189,9 @@ trait StdNames {
     final val HASHkw: TermName      = kw("#")
     final val ATkw: TermName        = kw("@")
 
+    final val SCRIPTkw: TermName    = kw("script")
+    final val  BREAKkw: TermName    = kw("break")
+    
     final val keywords = kw.result
   } with CommonNames {
     final val javaKeywords = new JavaKeywords()

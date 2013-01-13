@@ -126,6 +126,8 @@ object Tokens extends Tokens {
   final val IGNORE = 106
   final val ESCAPE = 109
   
+  final val SCRIPT          = 120
+  
   final val LBRACE_DOT      = 130
   final val LBRACE_DOT3     = 131
   final val LBRACE_QMARK    = 132
