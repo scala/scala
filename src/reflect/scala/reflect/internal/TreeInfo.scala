@@ -291,10 +291,6 @@ abstract class TreeInfo {
       tree match {
         case Bind(name, pat)  => isVarPatternDeep0(pat)
         case Ident(name)      => isVarPattern(tree)
-        case Apply(sel, args) =>
-          (    isReferenceToScalaMember(sel, TupleClass(args.size).name.toTermName)
-            && (args forall isVarPatternDeep0)
-            )
         case _                => false
       }
     }
