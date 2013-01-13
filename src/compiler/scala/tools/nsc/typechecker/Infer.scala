@@ -73,7 +73,7 @@ trait Infer extends Checkable {
    *   n > 1 and unapply’s result type is Option[(T1, ..., Tn)], for some types T1, ..., Tn.
    *     the argument patterns p1, ..., pn are typed in turn with expected types T1, ..., Tn
    */
-  def extractorFormalTypes(resTp: Type, nbSubPats: Int, unappSym: Symbol): (List[Type], List[Type]) = {
+  def extractorFormalTypes(pos: Position, resTp: Type, nbSubPats: Int, unappSym: Symbol): (List[Type], List[Type]) = {
     val isUnapplySeq     = unappSym.name == nme.unapplySeq
     val booleanExtractor = resTp.typeSymbolDirect == BooleanClass
 
@@ -87,11 +87,18 @@ trait Infer extends Checkable {
       if (nbSubPats == 0 && booleanExtractor && !isUnapplySeq)  Nil
       else resTp.baseType(OptionClass).typeArgs match {
         case optionTArg :: Nil =>
-          if (nbSubPats == 1)
+          def productArgs = getProductArgs(optionTArg)
+          if (nbSubPats == 1) {
             if (isUnapplySeq) List(seqToRepeatedChecked(optionTArg))
-            else List(optionTArg)
+            else {
+              val productArity = productArgs.size
+              if (productArity > 1 && settings.lint.value)
+                global.currentUnit.warning(pos, s"extractor pattern binds a single value to a Product${productArity} of type ${optionTArg}")
+              List(optionTArg)
+            }
+          }
           // TODO: update spec to reflect we allow any ProductN, not just TupleN
-          else getProductArgs(optionTArg) match {
+          else productArgs match {
             case Nil if isUnapplySeq => List(seqToRepeatedChecked(optionTArg))
             case tps if isUnapplySeq => tps.init :+ seqToRepeatedChecked(tps.last)
             case tps => tps
