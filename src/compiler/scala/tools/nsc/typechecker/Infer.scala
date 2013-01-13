@@ -1512,6 +1512,13 @@ trait Infer extends Checkable {
         } else if (!competing.isEmpty) {
           if (noAlternatives) NoBestExprAlternativeError(tree, pt, isSecondTry)
           else if (!pt.isErroneous) AmbiguousExprAlternativeError(tree, pre, best, competing.head, pt, isSecondTry)
+          else {
+            // SI-6912 Don't give up and leave an OverloadedType on the tree.
+            //         Originally I wrote this as `if (secondTry) ... `, but `tryTwice` won't attempt the second try
+            //         unless an error is issued. We're not issuing an error, in the assumption that it would be
+            //         spurious in light of the erroneous expected type
+            setError(tree)
+          }
         } else {
 //          val applicable = alts1 filter (alt =>
 //            global.typer.infer.isWeaklyCompatible(pre.memberType(alt), pt))
