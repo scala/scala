@@ -29,4 +29,11 @@ trait Quasiquotes { self: Universe =>
       universe.Ident(value.asInstanceOf[universe.Symbol])
     }
   }
+
+  implicit object liftExpr extends Liftable[Expr[_]] {
+    def apply(universe: Universe, value: Expr[_]): universe.Tree = {
+      require(universe eq self, s"Can't lift Expr ${showRaw(value)} from universe ${showRaw(universe)} using liftExpr defined for ${showRaw(self)}.")
+      value.tree.asInstanceOf[universe.Tree]
+    }
+  }
 }
