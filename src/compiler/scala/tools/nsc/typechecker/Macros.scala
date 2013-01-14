@@ -42,7 +42,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
   import global._
   import definitions._
-  import treeInfo.{isRepeatedParamType => _, _}
+  import treeInfo.{isRepeatedParamType => _, isUntypedType => _, _}
   import MacrosStats._
   def globalSettings = global.settings
 
@@ -79,6 +79,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     // flattens the macro impl's parameter lists having symbols replaced with their fingerprints
     // currently fingerprints are calculated solely from types of the symbols:
     //   * c.Expr[T] => IMPLPARAM_EXPR
+    //   * c.Tree => IMPLPARAM_TREE
     //   * c.WeakTypeTag[T] => index of the type parameter corresponding to that type tag
     //   * everything else (e.g. scala.reflect.macros.Context) => IMPLPARAM_OTHER
     // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: Context)(x: c.Expr[T], y: c.Tree): (U, V) = ???
@@ -91,6 +92,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private final val IMPLPARAM_TAG = 0 // actually it's zero and above, this is just a lower bound for >= checks
   private final val IMPLPARAM_OTHER = -1
   private final val IMPLPARAM_EXPR = -2
+  private final val IMPLPARAM_TREE = -3
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
@@ -147,6 +149,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         def fingerprint(tpe: Type): Int = tpe.dealias match {
           case TypeRef(_, RepeatedParamClass, underlying :: Nil) => fingerprint(underlying)
           case ExprClassOf(_) => IMPLPARAM_EXPR
+          case TreeType() => IMPLPARAM_TREE
           case _ => IMPLPARAM_OTHER
         }
 
@@ -249,21 +252,25 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
   /** Increases metalevel of the type, i.e. transforms:
    *    * T to c.Expr[T]
+   *    * <untyped> to c.Tree
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
   private def increaseMetalevel(c: Symbol, tp: Type): Type = dealiasAndRewrap(tp) {
+    case TypeRef(_, UntypedClass, Nil) => typeRef(SingleType(NoPrefix, c), MacroContextTreeType, Nil)
     case tp => typeRef(SingleType(NoPrefix, c), MacroContextExprClass, List(tp))
   }
 
   /** Decreases metalevel of the type, i.e. transforms:
    *    * c.Expr[T] to T
+   *    * c.Tree to <untyped>
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
   private def decreaseMetalevel(tp: Type): Type = dealiasAndRewrap(tp) {
+    case TreeType() => UntypedClass.tpe
     case ExprClassOf(runtimeType) => runtimeType
-    case _ => AnyClass.tpe // so that macro impls with rhs = ??? don't screw up our inference
+    case _ => UntypedClass.tpe // so that macro impls with rhs = ??? don't screw up our inference
   }
 
   def computeMacroDefTypeFromMacroImpl(macroDdef: DefDef, macroImplSig: MacroImplSig): Type = {
@@ -658,6 +665,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             val fingerprint = implParams(min(j, implParams.length - 1))
             fingerprint match {
               case IMPLPARAM_EXPR => context.Expr[Nothing](arg)(TypeTag.Nothing) // TODO: SI-5752
+              case IMPLPARAM_TREE => arg
               case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                               s"corresponding to arg $arg in $argss")
             }
@@ -867,7 +875,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
         // therefore we need to re-enable the conversions back temporarily
         if (macroDebugVerbose) println(s"typecheck #1 (against expectedTpe = $expectedTpe): $expanded")
-        val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, expectedTpe))
+        val expanded1 =
+          if (isUntypedType(expectedTpe)) expanded
+          else typer.context.withImplicitsEnabled(typer.typed(expanded, mode, expectedTpe))
         if (expanded1.isErrorTyped) {
           if (macroDebugVerbose) println(s"typecheck #1 has failed: ${typer.context.errBuffer}")
           expanded1
@@ -1131,8 +1141,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             Success(atPos(enclosingMacroPosition.focus)(expanded))
           }
           expanded match {
-            case expanded: Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
-            case expanded: Tree if expandee.symbol.isTypeMacro => validateResultingTree(expanded)
+            case expanded: Expr[_] => validateResultingTree(expanded.tree)
+            case expanded: Tree => validateResultingTree(expanded)
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }
         } catch {
@@ -1187,11 +1197,13 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
     delayed.get(expandee).getOrElse {
       val calculated = scala.collection.mutable.Set[Symbol]()
-      expandee foreach (sub => {
+      val treeInfo.Applied(core, _, argss) = expandee
+      val traversalRoots = if (isUntypedMacroApplication(core)) argss.flatten else List(expandee)
+      traversalRoots foreach (_ foreach (sub => {
         def traverse(sym: Symbol) = if (sym != null && (undetparams contains sym.id)) calculated += sym
         if (sub.symbol != null) traverse(sub.symbol)
         if (sub.tpe != null) sub.tpe foreach (sub => traverse(sub.typeSymbol))
-      })
+      }))
       macroLogVerbose("calculateUndetparams: %s".format(calculated))
       calculated map (_.id)
     }

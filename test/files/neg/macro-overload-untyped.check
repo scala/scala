@@ -1,0 +1,22 @@
+Impls_Macros_1.scala:6: error: macros with untyped parameters cannot be overloaded
+  def notOk1(x: _, y: String) = macro impl
+      ^
+Impls_Macros_1.scala:9: error: macros with untyped parameters cannot be overloaded
+  def notOk2(x: _, y: String) = macro impl
+      ^
+Impls_Macros_1.scala:10: error: macros with untyped parameters cannot be overloaded
+  def notOk2(x: _, y: Int) = macro impl
+      ^
+Impls_Macros_1.scala:12: error: macros with untyped parameters cannot be overloaded
+  def notOk3(x: _, y: String) = macro impl
+      ^
+Impls_Macros_1.scala:24: error: macros with untyped parameters cannot be overloaded
+  type NotOk4(x: _, y: String) = macro impl
+       ^
+Impls_Macros_1.scala:27: error: macros with untyped parameters cannot be overloaded
+  type NotOk5(x: _, y: String) = macro impl
+       ^
+Impls_Macros_1.scala:28: error: macros with untyped parameters cannot be overloaded
+  type NotOk5(x: _, y: Int) = macro impl
+       ^
+7 errors found

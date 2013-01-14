@@ -158,8 +158,8 @@ trait MemberHandlers {
     override def path = intp.originalPath(macroType)
     def notification(req: Request) = {
       val signature = req.typeOf(name)
-      assert(signature.endsWith("Nothing"), signature)
-      val signature1 = signature.stripSuffix("Nothing").trim.stripSuffix(":")
+      assert(signature.endsWith("_"), signature)
+      val signature1 = signature.stripSuffix("_").trim.stripSuffix(":")
       s"defined type macro $typeName$signature1"
     }
   }

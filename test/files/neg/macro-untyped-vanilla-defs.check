@@ -1,0 +1,16 @@
+macro-untyped-vanilla-defs.scala:2: error: only macros be untyped
+  def foo1(x: _) = ???
+              ^
+macro-untyped-vanilla-defs.scala:3: error: only macros be untyped
+  def foo2(x: _*) = ???
+              ^
+macro-untyped-vanilla-defs.scala:4: error: only macros be untyped
+  def foo3: _ = ???
+            ^
+macro-untyped-vanilla-defs.scala:5: error: '=' expected but identifier found.
+  def foo4: _* = ???
+             ^
+macro-untyped-vanilla-defs.scala:6: error: illegal start of simple expression
+}
+^
+5 errors found

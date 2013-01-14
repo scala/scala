@@ -469,8 +469,16 @@ self =>
     @inline private def fromWithinReturnType[T](body: => T): T = {
       val saved = inFunReturnType
       inFunReturnType = true
-      try body
+      try allowingUntypedType(body)
       finally inFunReturnType = saved
+    }
+
+    private var allowUntypedType = false
+    @inline private def allowingUntypedType[T](body: => T): T = {
+      val saved = allowUntypedType
+      allowUntypedType = true
+      try body
+      finally allowUntypedType = saved
     }
 
     protected def skip(targetToken: Int) {
@@ -576,6 +584,11 @@ self =>
         syntaxError(tpt.pos, "no by-name parameter type allowed here", false)
       else if (treeInfo isRepeatedParamType tpt)
         syntaxError(tpt.pos, "no * parameter type allowed here", false)
+    }
+
+    def checkNotUntyped(ownerMods: Modifiers, tpt: Tree) = {
+      if (((ownerMods.flags & Flag.MACRO) != Flag.MACRO) && (treeInfo isUntypedType tpt))
+        syntaxError(tpt.pos, "only macros be untyped", false)
     }
 
     /** Check that tree is a legal clause of a forSome. */
@@ -845,15 +858,20 @@ self =>
        *  }}}
        */
       def typ(): Tree = placeholderTypeBoundary {
-        val start = in.offset
-        val t =
-          if (in.token == LPAREN) tupleInfixType(start)
-          else infixType(InfixMode.FirstOp)
+        if (in.token == USCORE && allowUntypedType) atPos(in.offset, in.skipToken())(makeUntyped())
+        else {
+          allowUntypedType = false
 
-        in.token match {
-          case ARROW    => atPos(start, in.skipToken()) { makeFunctionTypeTree(List(t), typ()) }
-          case FORSOME  => atPos(start, in.skipToken()) { makeExistentialTypeTree(t) }
-          case _        => t
+          val start = in.offset
+          val t =
+            if (in.token == LPAREN) tupleInfixType(start)
+            else infixType(InfixMode.FirstOp)
+
+          in.token match {
+            case ARROW    => atPos(start, in.skipToken()) { makeFunctionTypeTree(List(t), typ()) }
+            case FORSOME  => atPos(start, in.skipToken()) { makeExistentialTypeTree(t) }
+            case _        => t
+          }
         }
       }
 
@@ -2138,7 +2156,7 @@ self =>
                   "implicit parameters may not be call-by-name", false)
               else bynamemod = Flags.BYNAMEPARAM
             }
-            paramType()
+            allowingUntypedType(paramType())
           }
         val default =
           if (in.token == EQUALS) {
@@ -2548,6 +2566,7 @@ self =>
             }
             expr()
           }
+        (vparamss.flatten.map(_.tpt) :+ restype) foreach (checkNotUntyped(newmods, _))
         DefDef(newmods, name, tparams, vparamss, restype, rhs)
       }
       signalParseProgress(result.pos)
@@ -2620,7 +2639,7 @@ self =>
             offender foreach (tparam => syntaxError(tparam.pos, "type parameters of type macros cannot have variance annotations", false))
             if (mods hasFlag Flags.ABSOVERRIDE) syntaxError(start, "type macros cannot be abstract")
             val rhs = expr()
-            DefDef(mods | Flags.MACRO, nme.typeMacroName(name), tparams, vparamss, scalaDot(tpnme.Nothing), rhs)
+            DefDef(mods | Flags.MACRO, nme.typeMacroName(name), tparams, vparamss, makeUntyped(), rhs)
           }
           if (onlyNeedToReadBody) readRhs()
           else in.token match {

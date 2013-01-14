@@ -518,8 +518,10 @@ trait ContextErrors {
       def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
 
-      def ApplyWithoutArgsError(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, fun.tpe+" does not take parameters")
+      def ApplyWithoutArgsError(tree: Tree, fun: Tree) = {
+        if (definitions.isUntypedType(fun.tpe)) NormalTypeError(tree, MacroTooManyArgumentListsMessage)
+        else NormalTypeError(tree, fun.tpe+" does not take parameters")
+      }
 
       // Dynamic
       def DynamicVarArgUnsupported(tree: Tree, name: Name) =
@@ -1305,6 +1307,9 @@ trait ContextErrors {
         def prematureOk() = { if (verbose) println(rtpe + " <: " + atpe + "?" + EOL + "true"); true }
         (rtpe, atpe) match {
           case _ if rtpe eq atpe => prematureOk()
+          case (TypeRef(_, RepeatedParamClass, rtpe :: Nil), TypeRef(_, RepeatedParamClass, atpe :: Nil)) => check(rtpe, atpe)
+          case (ExprClassOf(_), TreeType()) => prematureOk()
+          case (TreeType(), ExprClassOf(_)) => prematureOk()
           case _ => rtpe <:< atpe
         }
       }

@@ -4539,7 +4539,8 @@ trait Typers extends Adaptations with Tags {
                 && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
               )
               val res =
-                if (useTry) tryTypedApply(fun2, args)
+                if (treeInfo.isUntypedMacroApplication(fun2)) treeCopy.Apply(tree, fun2, args) setType UntypedClass.tpe
+                else if (useTry) tryTypedApply(fun2, args)
                 else doTypedApply(tree, fun2, args, mode, pt)
 
               if (fun2.symbol == Array_apply && !res.isErrorTyped) {

@@ -1,20 +1,39 @@
-===Macros1===
+===Macros1 typed===
 TypeTag[Int]
 TypeTag[Int]
 WeakTypeTag[String]
 TypeTag[Boolean]
-===Macros2===
+===Macros1 untyped===
+WeakTypeTag[U]
+WeakTypeTag[U]
+WeakTypeTag[U]
+WeakTypeTag[U]
+===Macros2 typed===
 TypeTag[Boolean] TypeTag[Int]
 TypeTag[Boolean] WeakTypeTag[String]
-===Macros3===
+===Macros2 untyped===
+TypeTag[Boolean] WeakTypeTag[U]
+TypeTag[Boolean] WeakTypeTag[U]
+===Macros3 typed===
 TypeTag[Int]
 WeakTypeTag[String]
 TypeTag[Boolean]
-===Macros4===
+===Macros3 untyped===
 TypeTag[Int]
 WeakTypeTag[String]
 TypeTag[Boolean]
-===Macros5===
+===Macros4 typed===
+TypeTag[Int]
+WeakTypeTag[String]
+TypeTag[Boolean]
+===Macros4 untyped===
+TypeTag[Int]
+WeakTypeTag[String]
+TypeTag[Boolean]
+===Macros5 typed and untyped===
+WeakTypeTag[T]
+WeakTypeTag[U]
+TypeTag[Boolean]
 WeakTypeTag[T]
 WeakTypeTag[U]
 TypeTag[Boolean]

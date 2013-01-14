@@ -21,7 +21,7 @@ object Impls2 {
 }
 
 object Impls345 {
-  def foo[T, U: c.WeakTypeTag, V](c: Context)(implicit T: c.WeakTypeTag[T], V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+  private def shared[T, U: c.WeakTypeTag, V](c: Context)(implicit T: c.WeakTypeTag[T], V: c.WeakTypeTag[V]): c.Expr[Unit] = {
     import c.universe._
     c.Expr(Block(List(
       Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(T.toString)))),
@@ -29,12 +29,16 @@ object Impls345 {
       Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(V.toString))))),
       Literal(Constant(()))))
   }
+
+  def foo[T, U: c.WeakTypeTag, V](c: Context)(implicit T: c.WeakTypeTag[T], V: c.WeakTypeTag[V]): c.Expr[Unit] = shared[T, U, V](c)
+  def bar[T, U: c.WeakTypeTag, V](c: Context)(x: c.Tree)(implicit T: c.WeakTypeTag[T], V: c.WeakTypeTag[V]): c.Expr[Unit] = shared[T, U, V](c)
 }
 
 object Macros4 {
   class D[T] {
     class C[U] {
       def foo[V] = macro Impls345.foo[T, U, V]
+      def bar[V](x: _) = macro Impls345.bar[T, U, V]
     }
   }
 }

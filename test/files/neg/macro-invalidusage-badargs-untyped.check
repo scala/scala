@@ -1,0 +1,13 @@
+Macros_Test_2.scala:6: error: too few argument lists for macro invocation
+  foo
+  ^
+Macros_Test_2.scala:7: error: too many argument lists for macro invocation
+  foo(4)(2)
+        ^
+Macros_Test_2.scala:8: error: too few arguments for macro invocation
+  foo()
+     ^
+Macros_Test_2.scala:9: error: too many arguments for macro invocation
+  foo(4, 2)
+     ^
+four errors found

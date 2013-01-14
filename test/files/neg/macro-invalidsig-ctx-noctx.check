@@ -1,5 +1,5 @@
 Macros_Test_2.scala:2: error: macro implementation has wrong shape:
- required: (c: scala.reflect.macros.Context)(x: c.Expr[Any]): c.Expr[Any]
+ required: (c: scala.reflect.macros.Context)(x: c.Expr[Any]): c.universe.Tree
  found   : (c: scala.reflect.macros.Context): Nothing
 number of parameter sections differ
   def foo(x: Any) = macro Impls.foo

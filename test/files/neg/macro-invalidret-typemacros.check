@@ -1,7 +1,13 @@
-Impls_Macros_1.scala:5: error: macro implementation has wrong shape:
+Macros_Test_2.scala:2: error: macro implementation has wrong shape:
  required: (c: scala.reflect.macros.Context): c.universe.Tree
- found   : (c: scala.reflect.macros.Context): c.universe.Expr[Int(2)]
-type mismatch for return type: c.Expr[Int(2)] does not conform to c.universe.Tree
-  type Foo = macro foo
-                   ^
-one error found
+ found   : (c: scala.reflect.macros.Context): Int
+type mismatch for return type: Int does not conform to c.universe.Tree
+  type Foo1 = macro Impls.foo1
+                          ^
+Macros_Test_2.scala:3: error: macro implementation has wrong shape:
+ required: (c: scala.reflect.macros.Context): c.universe.Tree
+ found   : (c: scala.reflect.macros.Context): reflect.runtime.universe.Literal
+type mismatch for return type: reflect.runtime.universe.Literal does not conform to c.universe.Tree
+  type Foo2 = macro Impls.foo2
+                          ^
+two errors found

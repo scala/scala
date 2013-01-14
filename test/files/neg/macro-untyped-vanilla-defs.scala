@@ -1,0 +1,6 @@
+object Test extends App {
+  def foo1(x: _) = ???
+  def foo2(x: _*) = ???
+  def foo3: _ = ???
+  def foo4: _* = ???
+}

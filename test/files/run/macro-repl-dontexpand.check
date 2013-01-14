@@ -7,6 +7,6 @@ scala> def bar(c: scala.reflect.macros.Context) = ???
 bar: (c: scala.reflect.macros.Context)Nothing
 
 scala> def foo = macro bar
-defined term macro foo: Any
+defined term macro foo: _
 
 scala> 

@@ -1,0 +1,19 @@
+macro method foo1
+(x: _)_
+=========
+value x: TypeRef(ThisType(scala), scala.<untyped>, List())
+=========
+TypeRef(ThisType(scala), scala.<untyped>, List())
+
+macro method foo2
+(x: _*)_
+=========
+value x: TypeRef(ThisType(scala), scala.<repeated>, List(TypeRef(ThisType(scala), scala.<untyped>, List())))
+=========
+TypeRef(ThisType(scala), scala.<untyped>, List())
+
+macro method foo3
+=> _
+=========
+TypeRef(ThisType(scala), scala.<untyped>, List())
+

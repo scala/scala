@@ -1,0 +1,25 @@
+Impls_Macros_1.scala:20: error: overriding macro method kindaUntyped in trait BaseMacros of type (x: Int)_;
+ macro method kindaUntyped has incompatible type
+  override def kindaUntyped(x: Int): Int = macro impl // ok!
+               ^
+Impls_Macros_1.scala:19: error: macro method untyped overrides nothing.
+Note: the super classes of trait Macros contain the following, non final members named untyped:
+def untyped(x: _): Int
+  override def untyped(x: Int) = macro impl
+               ^
+Impls_Macros_1.scala:21: error: macro method typed overrides nothing.
+Note: the super classes of trait Macros contain the following, non final members named typed:
+def typed(x: Int): Int
+  override def typed(x: _) = macro impl
+               ^
+Impls_Macros_1.scala:23: error: macro type Untyped overrides nothing.
+Note: the super classes of trait Macros contain the following, non final members named Untyped:
+macro type Untyped(x: _)
+  override type Untyped(x: Int) = macro timpl
+                ^
+Impls_Macros_1.scala:24: error: macro type Typed overrides nothing.
+Note: the super classes of trait Macros contain the following, non final members named Typed:
+macro type Typed(x: Int)
+  override type Typed(x: _) = macro timpl
+                ^
+5 errors found

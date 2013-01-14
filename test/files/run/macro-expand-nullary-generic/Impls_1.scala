@@ -12,4 +12,6 @@ object Impls {
   def fooEmpty[T: c.WeakTypeTag](c: Ctx)() = impl[T](c)("fooEmpty")
   def barNullary[T: c.WeakTypeTag](c: Ctx)(x: c.Expr[Int]) = impl[T](c)("barNullary")
   def barEmpty[T: c.WeakTypeTag](c: Ctx)(x: c.Expr[Int])() = impl[T](c)("barEmpty")
+  def bazNullary[T: c.WeakTypeTag](c: Ctx)(x: c.Expr[Int]) = impl[T](c)("bazNullary")
+  def bazEmpty[T: c.WeakTypeTag](c: Ctx)(x: c.Expr[Int])() = impl[T](c)("bazEmpty")
 }

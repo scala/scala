@@ -2,3 +2,7 @@ reflective compilation has failed:
 
 no `: _*' annotation allowed here
 (such annotations are only allowed in arguments to *-parameters)
+reflective compilation has failed: 
+
+no `: _*' annotation allowed here
+(such annotations are only allowed in arguments to *-parameters)

@@ -1,0 +1,11 @@
+macro-untyped-macro-defs.scala:14: warning: macro is now a reserved word; usage as an identifier is deprecated
+  def foo4: _* = macro impl4
+                 ^
+macro-untyped-macro-defs.scala:14: error: '=' expected but identifier found.
+  def foo4: _* = macro impl4
+             ^
+macro-untyped-macro-defs.scala:15: error: illegal start of simple expression
+}
+^
+one warning found
+two errors found

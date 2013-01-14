@@ -204,6 +204,7 @@ trait StdNames {
     final val LOCAL_CHILD: NameType                    = "<local child>"
     final val REFINE_CLASS_NAME: NameType              = "<refinement>"
     final val REPEATED_PARAM_CLASS_NAME: NameType      = "<repeated>"
+    final val UNTYPED_CLASS_NAME: NameType             = "<untyped>"
     final val WILDCARD_STAR: NameType                  = "_*"
     final val REIFY_TREECREATOR_PREFIX: NameType       = "$treecreator"
     final val REIFY_TYPECREATOR_PREFIX: NameType       = "$typecreator"

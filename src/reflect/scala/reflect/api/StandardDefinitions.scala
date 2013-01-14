@@ -195,6 +195,34 @@ trait StandardDefinitions {
      */
     def RepeatedParamClass: ClassSymbol
 
+    /** A dummy class symbol that is used to indicate
+     *  untyped parameters and return types of macroы.
+     *
+     *  {{{
+     *  scala> def impl(c: scala.reflect.macros.Context)(x: c.Tree) = ???
+     *  impl: (c: scala.reflect.macros.Context)(x: c.Tree)Nothing
+     *
+     *  scala> class C { def m(x: _): _ = macro impl }
+     *  defined class C
+     *
+     *  scala> import scala.reflect.runtime.universe._
+     *  import scala.reflect.runtime.universe._
+     *
+     *  scala> val m = typeOf[C].member(newTermName("m")).asMethod
+     *  m: reflect.runtime.universe.MethodSymbol = method m
+     *
+     *  scala> m.paramss(0)(0).typeSignature
+     *  res1: reflect.runtime.universe.Type = _
+     *
+     *  scala> showRaw(m.paramss(0)(0).typeSignature)
+     *  res2: String = TypeRef(
+     *      ThisType(scala),
+     *      scala.<untyped>, // <-- UntypedClass
+     *      List())
+     *  }}}
+     */
+    def UntypedClass: ClassSymbol
+
     /** The module symbol of module `scala.List`. */
     def ListModule: ModuleSymbol
 

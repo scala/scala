@@ -134,6 +134,18 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
       }
 
+
+      val macroMethods = clazz.info.findMembers(0L, MACRO)
+      if (macroMethods.nonEmpty) {
+        def isRelevantUntypedMacro(sym: Symbol) =
+          // if an untyped macro pretends to be an override, don't report an error here => let it fail the override refcheck
+          definitions.isUntypedMacro(sym) && sym.owner == clazz && !sym.isOverride
+        macroMethods.sorted.toList filter isRelevantUntypedMacro foreach (sym => {
+          val alts = clazz.info.findMember(sym.name, 0L, METHOD, stableOnly = false).alternatives
+          if (alts.length > 1) unit.error(sym.pos, "macros with untyped parameters cannot be overloaded")
+        })
+      }
+
       // Check for doomed attempt to overload applyDynamic
       if (clazz isSubClass DynamicClass) {
         for ((_, m1 :: m2 :: _) <- (clazz.info member nme.applyDynamic).alternatives groupBy (_.typeParams.length)) {
@@ -279,7 +291,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
            else if (sym1.isModule) ""
            else if (sym1.isTypeMacro && sym1.paramss.isEmpty) " with nullary signature"
            else if (sym1.isTypeMacro && sym1.paramss == ListOfNil) " with empty signature"
-           else if (sym1.isTypeMacro) " with signature " + self.memberInfo(sym1).toString.stripSuffix("Nothing")
+           else if (sym1.isTypeMacro) " with signature " + self.memberInfo(sym1).toString.stripSuffix("_")
            else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
            else "")
          else "")

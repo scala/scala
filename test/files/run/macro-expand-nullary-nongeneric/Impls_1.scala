@@ -12,4 +12,6 @@ object Impls {
   def fooEmpty(c: Ctx)() = impl(c)("fooEmpty")
   def barNullary(c: Ctx)(x: c.Expr[Int]) = impl(c)("barNullary")
   def barEmpty(c: Ctx)(x: c.Expr[Int])() = impl(c)("barEmpty")
+  def bazNullary(c: Ctx)(x: c.Expr[Int]) = impl(c)("bazNullary")
+  def bazEmpty(c: Ctx)(x: c.Expr[Int])() = impl(c)("bazEmpty")
 }

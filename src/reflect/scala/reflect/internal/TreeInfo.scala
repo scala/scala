@@ -382,6 +382,19 @@ abstract class TreeInfo {
     case t                          => t
   }
 
+  /** Is tpt a untyped parameter or return type?
+   *
+   *  The only two possible shapes untyped types might appear in are:
+   *    1) <untyped> as in `def foo(x: _): _ = macro impl`
+   *    2) <untyped>* as in `def foo(x: _*) = macro impl`
+   */
+  def isUntypedType(tpt: Tree): Boolean = tpt match {
+    case TypeTree()                          => !tpt.isEmpty && definitions.isUntypedType(tpt.tpe)
+    case AppliedTypeTree(_, tpt :: Nil)      => isUntypedType(tpt)
+    case Select(_, tpnme.UNTYPED_CLASS_NAME) => true
+    case _                                   => false
+  }
+
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name) = operator.nonEmpty && (operator.endChar != ':')
 
@@ -794,4 +807,7 @@ abstract class TreeInfo {
 
   def isNonTrivialMacroApplication(tree: Tree): Boolean =
     isMacroApplication(tree) && dissectApplied(tree).core != tree
+
+  def isUntypedMacroApplication(tree: Tree): Boolean =
+    isMacroApplication(tree) && definitions.isUntypedMacro(tree.symbol)
 }
