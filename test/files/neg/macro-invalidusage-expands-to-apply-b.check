@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: too many arguments for constructor C: (x: Int)C
+  class D extends Foo(2)
+                  ^
+one error found

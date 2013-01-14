@@ -1,0 +1,7 @@
+Macros_Test_2.scala:8: error: type arguments [Int] do not conform to macro type Foo's type parameter bounds [U <: String]
+  val x: Foo[Int] = new C
+         ^
+Macros_Test_2.scala:7: error: type arguments [Int] do not conform to macro type Foo's type parameter bounds [U <: String]
+  class D extends Foo[Int]
+                  ^
+two errors found

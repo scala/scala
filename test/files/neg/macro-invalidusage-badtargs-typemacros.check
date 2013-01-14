@@ -1,0 +1,35 @@
+Macros_Test_2.scala:13: error: macro type Foo1(x: Int) does not take type parameters.
+  val x1: Foo1[String](2) = new C
+          ^
+Macros_Test_2.scala:16: error: wrong number of type parameters for macro type Foo2[T](x: Int)
+  val x2: Foo2[String, String](2) = new C
+          ^
+Macros_Test_2.scala:19: error: wrong number of type parameters for macro type Foo3[T, U](x: Int)
+  val x3: Foo3[String](2) = new C
+          ^
+Macros_Test_2.scala:22: error: String takes no type parameters, expected: one
+  val x4: Foo4[String](2) = new C
+               ^
+Macros_Test_2.scala:25: error: kinds of the type arguments (List) do not conform to the expected kinds of the type parameters (type T).
+List's type parameters do not match type T's expected parameters:
+type A has no type parameters, but type U has one
+  val x5: Foo5[List](2) = new C
+          ^
+Macros_Test_2.scala:12: error: macro type Foo1(x: Int) does not take type parameters.
+  class D1 extends Foo1[String](2)
+                   ^
+Macros_Test_2.scala:15: error: wrong number of type parameters for macro type Foo2[T](x: Int)
+  class D2 extends Foo2[String, String](2)
+                   ^
+Macros_Test_2.scala:18: error: wrong number of type parameters for macro type Foo3[T, U](x: Int)
+  class D3 extends Foo3[String](2)
+                   ^
+Macros_Test_2.scala:21: error: String takes no type parameters, expected: one
+  class D4 extends Foo4[String](2)
+                        ^
+Macros_Test_2.scala:24: error: kinds of the type arguments (List) do not conform to the expected kinds of the type parameters (type T).
+List's type parameters do not match type T's expected parameters:
+type A has no type parameters, but type U has one
+  class D5 extends Foo5[List](2)
+                   ^
+10 errors found

@@ -489,6 +489,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 
+    lazy val TreesClass            = getClassIfDefined("scala.reflect.api.Trees") // defined in scala-reflect.jar, so we need to be careful
+    lazy val TreesTreeType         = if (TreesClass != NoSymbol) getTypeMember(TreesClass, tpnme.Tree) else NoSymbol
+    object TreeType {
+      def unapply(tpe: Type): Boolean = unapply(tpe.typeSymbol)
+      def unapply(sym: Symbol): Boolean = sym.overrideChain contains TreesTreeType
+    }
+
     lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
     lazy val ExprClass             = if (ExprsClass != NoSymbol) getMemberClass(ExprsClass, tpnme.Expr) else NoSymbol
          def ExprSplice            = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.splice) else NoSymbol

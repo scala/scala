@@ -26,6 +26,28 @@ trait Enclosures {
    */
   def APPLY_ROLE: MacroRole
 
+  /** The role that represents a macro type in type position, e.g. `TM(2)(3)` in `def x: TM(2)(3) = ???`.
+   */
+  def TYPE_ROLE: MacroRole
+
+  /** The role that represents a macro type in applied type position, e.g. `TM(2)(3)` in `TM(2)(3)[Int]`.
+   */
+  def APPLIED_TYPE_ROLE: MacroRole
+
+  /** The role that represents a macro type used as a parent, e.g. `TM(2)(3)` in `class C extends TM(2)(3)` or `new TM(2)(3){}`.
+   */
+  def PARENT_ROLE: MacroRole
+
+  /** The role that represents a macro type used to instantiate an object, e.g. `TM(2)(3)` in `new TM(2)(3)`.
+   *  Contrast this role with parent role as in `new TM(2)(3){}`. In the former case, we get a New node,
+   *  while in the latter case we get a Template for an anonymous class + a trivial New node.
+   */
+  def NEW_ROLE: MacroRole
+
+  /** The role that represents a macro typed used as an annotation, e.g. `TM(2)(3)` in `@TM(2)(3) class C`.
+   */
+  def ANNOTATION_ROLE: MacroRole
+
   /** The semantic role that `macroApplication` plays in the code.
    */
   def macroRole: MacroRole

@@ -1,0 +1,4 @@
+typemacros-in-refinements.scala:9: error: only declarations allowed here
+  type X = { type Foo = macro Impls.impl }
+                  ^
+one error found

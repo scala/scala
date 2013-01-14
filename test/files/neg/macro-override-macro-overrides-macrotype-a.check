@@ -1,0 +1,36 @@
+Macros_Test_2.scala:5: error: overriding macro type T in trait T1 with nullary signature;
+ macro type T needs `override' modifier
+  trait T2 extends T1 { type T = macro impl_c }
+                             ^
+Macros_Test_2.scala:10: error: overriding macro type T in class C1 with nullary signature;
+ macro type T needs `override' modifier
+  class C2 extends C1 { type T = macro impl_c }
+                             ^
+Macros_Test_2.scala:45: error: macro type T overrides nothing.
+Note: the super classes of trait T2 contain the following, non final members named T:
+macro type T(x: String)
+macro type T
+  trait T2 extends T1 { override type T(x: Int) = macro impl_c2 }
+                                      ^
+Macros_Test_2.scala:50: error: macro type T overrides nothing.
+Note: the super classes of class C2 contain the following, non final members named T:
+macro type T
+  class C2 extends C1 { override type T(x: Int) = macro impl_c2 }
+                                      ^
+Macros_Test_2.scala:55: error: overriding macro type T in trait T1 with nullary signature;
+ macro type T cannot override final member
+  trait T2 extends T1 { type T = macro impl_c }
+                             ^
+Macros_Test_2.scala:60: error: overriding macro type T in class C1 with nullary signature;
+ macro type T cannot override final member
+  class C2 extends C1 { type T = macro impl_c }
+                             ^
+Macros_Test_2.scala:65: error: overriding macro type T in trait T1 with nullary signature;
+ macro type T cannot override final member
+  trait T2 extends T1 { override type T = macro impl_c }
+                                      ^
+Macros_Test_2.scala:70: error: overriding macro type T in class C1 with nullary signature;
+ macro type T cannot override final member
+  class C2 extends C1 { override type T = macro impl_c }
+                                      ^
+8 errors found

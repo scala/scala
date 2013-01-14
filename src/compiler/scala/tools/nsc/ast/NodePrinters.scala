@@ -210,6 +210,7 @@ abstract class NodePrinters {
       showPosition(tree)
 
       tree match {
+        case DependentTypeTree(tpt, args) => applyCommon(tree, tpt, args)
         case ApplyDynamic(fun, args)      => applyCommon(tree, fun, args)
         case Apply(fun, args)             => applyCommon(tree, fun, args)
 
