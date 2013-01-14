@@ -238,7 +238,7 @@ trait Scanners extends ScannersCommon {
         if (inStringInterpolation) fetchStringPart() 
         else                       fetchToken()
 
-println("fetched:  "+this+"        name: "+name)        
+//println("fetched:  "+this)        
 
         if(token == ERROR) {
           if (  inMultiLineInterpolation) sepRegions = sepRegions.tail.tail
@@ -247,6 +247,7 @@ println("fetched:  "+this+"        name: "+name)
       } else {
         this copyFrom next
         next.token = EMPTY
+//println("Fetched:  "+this)        
       }
 
       /** Insert NEWLINE or NEWLINES if
@@ -278,15 +279,13 @@ println("fetched:  "+this+"        name: "+name)
           next copyFrom this
           this copyFrom prev
         }
-      } else if (token == SEMI) {
-println("SEMI-pre :  "+next+"        next.name: "+next.name)        
+      } else if (token == SEMI && !isInSubScript) {
         prev copyFrom this
         fetchToken()
         if (token != ELSE) {
           next copyFrom this
           this copyFrom prev
         }
-println("SEMI-post:  "+next+"        next.name: "+next.name)        
       }
 
 //      print("["+this+"]")
@@ -362,11 +361,7 @@ println("SEMI-post:  "+next+"        next.name: "+next.name)
         case '!' | '^' | '*' | '?' =>
           val chOld = ch
           nextChar()
-          if (isInSubScript && ch!=RBRACE && chOld=='?') {
-            if (ch=='?') {nextChar(); token = QMARK2}
-            else         {            token = QMARK}
-          }
-          else if (isInSubScript && ch==RBRACE) {
+          if (isInSubScript && ch==RBRACE) {
             nextChar()
             token = chOld match {
               case '!' => RBRACE_EMARK
@@ -1125,8 +1120,7 @@ println("SEMI-post:  "+next+"        next.name: "+next.name)
     nme.ATkw        -> AT,
     nme.MACROkw     -> IDENTIFIER,
     nme.THENkw      -> IDENTIFIER,
-    
-    nme.SCRIPTkw    -> SCRIPT
+    nme.SCRIPTkw    -> IDENTIFIER
     )
 
   private var kwOffset: Int = -1
@@ -1170,6 +1164,7 @@ println("SEMI-post:  "+next+"        next.name: "+next.name)
     case XMLSTART      => "$XMLSTART$<"
       
     // SubScript tokens:  
+    case IF_QMARK                 => "if?"   
     case LBRACE_DOT               => "{."   
     case LBRACE_DOT3              => "{..."
     case LBRACE_QMARK             => "{?"

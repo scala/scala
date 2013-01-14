@@ -279,8 +279,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
-  case class Apply(fun: Tree, args: List[Tree])
-       extends GenericApply with ApplyApi {
+  case class     Apply(fun: Tree, args: List[Tree])       extends GenericApply with ApplyApi {
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }

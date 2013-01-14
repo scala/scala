@@ -126,35 +126,30 @@ object Tokens extends Tokens {
   final val IGNORE = 106
   final val ESCAPE = 109
   
-  final val SCRIPT          = 120
+  final val SCRIPT                   = 130
+  final val IF_QMARK                 = 131
+  final val DOT2                     = 132
+  final val DOT3                     = 133
+  final val MINUS_SEMI               = 135
+  final val BAR_SEMI                 = 136
+  final val BAR2_SEMI                = 137
+  final val BAR_SEMI_BAR             = 138
+  final val PERCENT_SEMI             = 139
   
-  final val LBRACE_DOT      = 130
-  final val LBRACE_DOT3     = 131
-  final val LBRACE_QMARK    = 132
-  final val LBRACE_EMARK    = 133
-  final val LBRACE_ASTERISK = 134
-  final val LBRACE_CARET    = 135
-
-  final val RBRACE_DOT      = 141
-  final val RBRACE_DOT3     = 142
-  final val RBRACE_QMARK    = 143
-  final val RBRACE_EMARK    = 144
-  final val RBRACE_ASTERISK = 145
-  final val RBRACE_CARET    = 146
-
-  final val DOT2            = 150
-  final val DOT3            = 151
-  
-  final val IF_QMARK        = 152
-  final val QMARK           = 153
-  final val QMARK2          = 154
-  
-  final val MINUS_SEMI      = 155
-  final val BAR_SEMI        = 156
-  final val BAR2_SEMI       = 157
-  final val BAR_SEMI_BAR    = 158
-  final val PERCENT_SEMI    = 159
-  
+  final val LBRACE_DOT               = 140
+  final val LBRACE_DOT3              = 141
+  final val LBRACE_QMARK             = 142
+  final val LBRACE_EMARK             = 143
+  final val LBRACE_ASTERISK          = 144
+  final val LBRACE_CARET             = 145
+                                     
+  final val RBRACE_DOT               = 151
+  final val RBRACE_DOT3              = 152
+  final val RBRACE_QMARK             = 153
+  final val RBRACE_EMARK             = 154
+  final val RBRACE_ASTERISK          = 155
+  final val RBRACE_CARET             = 156
+                                     
   final val LPAREN_PLUS_RPAREN       = 160
   final val LPAREN_MINUS_RPAREN      = 161
   final val LPAREN_PLUS_MINUS_RPAREN = 162

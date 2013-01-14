@@ -189,8 +189,11 @@ trait StdNames {
     final val HASHkw: TermName      = kw("#")
     final val ATkw: TermName        = kw("@")
 
-    final val SCRIPTkw: TermName    = kw("script")
-    final val  BREAKkw: TermName    = kw("break")
+    final val   SCRIPTkw: TermName    = kw("script")
+    final val    BREAKkw: TermName    = kw("break")
+    final val IF_QMARKkw: TermName    = kw("if?")
+    final val    QMARKkw: TermName    = kw("?")
+    final val   QMARK2kw: TermName    = kw("??")
     
     final val keywords = kw.result
   } with CommonNames {
