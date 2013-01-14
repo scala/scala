@@ -1,0 +1,4 @@
+Macros_Test_2.scala:7: error: macro in parent role can only expand into Template, Apply, Ident, Select, class type TypTrees, and their Annotated versions
+  class D extends Foo(2)
+                  ^
+one error found

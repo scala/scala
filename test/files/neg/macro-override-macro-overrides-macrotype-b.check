@@ -1,0 +1,4 @@
+Macros_Test_2.scala:14: error: macro expansion B violates bounds  <: C of the overridden type T in trait T1
+  type T = M.T
+             ^
+one error found

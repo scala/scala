@@ -1,0 +1,7 @@
+typemacros-variance.scala:9: error: type parameters of type macros cannot have variance annotations
+  type Foo[+T] = macro Impls.impl
+            ^
+typemacros-variance.scala:10: error: type parameters of type macros cannot have variance annotations
+  type Bar[-T] = macro Impls.impl
+            ^
+two errors found

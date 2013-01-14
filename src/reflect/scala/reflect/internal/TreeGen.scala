@@ -203,6 +203,11 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
   }
 
+  def mkApply(fun: Tree, argss: List[List[Tree]]): Tree =
+    (fun /: argss)(Apply.apply)
+  def mkApply(fun: Tree, targs: List[Tree], argss: List[List[Tree]]): Tree =
+    mkApply(mkTypeApply(fun, targs), argss)
+
   /** Builds a type application node if args.nonEmpty, returns fun otherwise. */
   def mkTypeApply(fun: Tree, targs: List[Tree]): Tree =
     if (targs.isEmpty) fun else TypeApply(fun, targs)

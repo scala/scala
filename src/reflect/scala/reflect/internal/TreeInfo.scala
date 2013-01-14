@@ -542,11 +542,12 @@ abstract class TreeInfo {
    *    1) naked core: Ident(_) or Select(_, _) or basically anything else
    *    2) naked core with targs: TypeApply(core, targs) or AppliedTypeTree(core, targs)
    *    3) apply or several applies wrapping a core: Apply(core, _), or Apply(Apply(core, _), _), etc
+   *       same thing for DependentTypeTree(core, _), or DependentTypeTree(DependentTypeTree(core, _), _), etc
    *
    *  This class provides different ways to decompose applications and simplifies their analysis.
    *
    *  ***Examples***
-   *  (TypeApply in the examples can be replaced with AppliedTypeTree)
+   *  (Apply and TypeApply in the examples can be replaced with AppliedTypeTree and DependentTypeTree)
    *
    *    Ident(foo):
    *      * callee = Ident(foo)
@@ -584,8 +585,9 @@ abstract class TreeInfo {
      */
     def callee: Tree = {
       def loop(tree: Tree): Tree = tree match {
-        case Apply(fn, _) => loop(fn)
-        case tree         => tree
+        case Apply(fn, _)             => loop(fn)
+        case DependentTypeTree(fn, _) => loop(fn)
+        case tree                     => tree
       }
       loop(tree)
     }
@@ -613,8 +615,9 @@ abstract class TreeInfo {
      */
     def argss: List[List[Tree]] = {
       def loop(tree: Tree): List[List[Tree]] = tree match {
-        case Apply(fn, args) => loop(fn) :+ args
-        case _               => Nil
+        case Apply(fn, args)             => loop(fn) :+ args
+        case DependentTypeTree(fn, args) => loop(fn) :+ args
+        case _                           => Nil
       }
       loop(tree)
     }
@@ -624,10 +627,11 @@ abstract class TreeInfo {
      */
     def applyDepth: Int = {
       def loop(tree: Tree): Int = tree match {
-        case Apply(fn, _)           => 1 + loop(fn)
-        case TypeApply(fn, _)       => loop(fn)
-        case AppliedTypeTree(fn, _) => loop(fn)
-        case _                      => 0
+        case Apply(fn, _)             => 1 + loop(fn)
+        case TypeApply(fn, _)         => loop(fn)
+        case DependentTypeTree(fn, _) => 1 + loop(fn)
+        case AppliedTypeTree(fn, _)   => loop(fn)
+        case _                        => 0
       }
       loop(tree)
     }
@@ -767,6 +771,18 @@ abstract class TreeInfo {
       case tree: RefTree => true
       case _ => false
     })
+
+  def repackApplyAsNew(tree: Tree): Tree = {
+    def dissectApply(tree: Tree): (Tree, List[List[Tree]]) = tree match {
+      case Apply(fn, args) =>
+        val (core, argss) = dissectApply(fn)
+        (core, argss :+ args)
+      case _ =>
+        (tree, Nil)
+    }
+    val (core, argss) = dissectApply(tree)
+    New(core, argss)
+  }
 
   def isMacroApplication(tree: Tree): Boolean =
     !tree.isDef && tree.symbol != null && tree.symbol.isMacro && !tree.symbol.isErroneous

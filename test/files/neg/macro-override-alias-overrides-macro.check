@@ -1,0 +1,17 @@
+Macros_Test_2.scala:5: error: overriding macro type T in trait T1;
+ type T cannot be used here - only type macros can override type macros
+  trait T2 extends T1 { type T = C }
+                             ^
+Macros_Test_2.scala:10: error: overriding macro type T in class C1;
+ type T cannot be used here - only type macros can override type macros
+  class C2 extends C1 { type T = C }
+                             ^
+Macros_Test_2.scala:15: error: overriding macro type T in trait T1;
+ type T cannot be used here - only type macros can override type macros
+  trait T2 extends T1 { override type T = C }
+                                      ^
+Macros_Test_2.scala:20: error: overriding macro type T in class C1;
+ type T cannot be used here - only type macros can override type macros
+  class C2 extends C1 { override type T = C }
+                                      ^
+four errors found

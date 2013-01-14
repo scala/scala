@@ -1,0 +1,5 @@
+Macros_Test_2.scala:7: error: not enough arguments for constructor C: (x: Int)C.
+Unspecified value parameter x.
+  class D extends Foo(2)
+                  ^
+one error found

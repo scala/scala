@@ -1,0 +1,7 @@
+Macros_Test_2.scala:8: error: not found: value zzz
+  val x: Foo(zzz) = null
+             ^
+Macros_Test_2.scala:7: error: not found: value zzz
+  class D extends Foo(zzz)
+                      ^
+two errors found

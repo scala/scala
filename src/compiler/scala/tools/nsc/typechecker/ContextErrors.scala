@@ -224,6 +224,12 @@ trait ContextErrors {
         setError(tree)
       }
 
+      // typedDependentTypeTree
+      def DependentTypeNoParametersError(tree: Tree, errTpe: Type) = {
+        issueNormalTypeError(tree, errTpe + " does not take parameters")
+        setError(tree)
+      }
+
       // typedTypeDef
       def LowerBoundError(tree: TypeDef, lowB: Type, highB: Type) =
         issueNormalTypeError(tree, "lower bound "+lowB+" does not conform to upper bound "+highB)
@@ -680,6 +686,14 @@ trait ContextErrors {
         issueNormalTypeError(expandee, s"macro in $role role can only expand into $allowedExpansions")
       }
 
+      def MacroTypeHasntBeenExpandedError(expandee: Tree) = {
+        issueNormalTypeError(expandee, "macro has not been expanded")
+      }
+
+      def MacroTypeExpansionViolatesOverriddenBounds(expandee: Tree, result: Type, overridden: Symbol, bounds: Type) = {
+        issueNormalTypeError(expandee, s"macro expansion $result violates bounds $bounds of the overridden $overridden in ${overridden.owner}")
+      }
+
       // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
@@ -771,8 +785,10 @@ trait ContextErrors {
       }
 
       def MacroExpansionHasInvalidTypeError(expandee: Tree, expanded: Any) = {
-        val expected = "expr"
-        val isPathMismatch = expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+        val expected = if (expandee.symbol.isTermMacro) "expr" else "tree"
+        val isPathMismatch =
+          if (expandee.symbol.isTermMacro) expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+          else expanded != null && expanded.isInstanceOf[scala.reflect.internal.Trees#Tree]
         macroExpansionError(expandee,
           s"macro must return a compiler-specific $expected; returned value is " + (
             if (expanded == null) "null"

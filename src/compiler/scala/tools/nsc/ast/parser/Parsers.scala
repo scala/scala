@@ -523,11 +523,14 @@ self =>
 
     def warning(msg: String) { warning(in.offset, msg) }
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit =
+      syntaxErrorOrIncomplete(in.offset, msg, skipIt)
+
+    def syntaxErrorOrIncomplete(offset: Int, msg: String, skipIt: Boolean) {
       if (in.token == EOF)
         incompleteInputError(msg)
       else
-        syntaxError(in.offset, msg, skipIt)
+        syntaxError(offset, msg, skipIt)
     }
 
     def expectedMsg(token: Int): String =
@@ -821,7 +824,7 @@ self =>
               compoundTypeRest(
                 annotTypeRest(
                   simpleTypeRest(
-                    tuple))),
+                    tuple, allowDeptypes = true))),
               InfixMode.FirstOp
             )
           }
@@ -864,7 +867,7 @@ self =>
        *  AnnotType        ::=  SimpleType {Annotation}
        *  }}}
        */
-      def annotType(): Tree = placeholderTypeBoundary { annotTypeRest(simpleType()) }
+      def annotType(allowDeptypes: Boolean): Tree = placeholderTypeBoundary { annotTypeRest(simpleType(allowDeptypes)) }
 
       /** {{{
        *  SimpleType       ::=  SimpleType TypeArgs
@@ -875,7 +878,7 @@ self =>
        *                     |  WildcardType
        *  }}}
        */
-      def simpleType(): Tree = {
+      def simpleType(allowDeptypes: Boolean): Tree = {
         val start = in.offset
         simpleTypeRest(in.token match {
           case LPAREN   => atPos(start)(makeTupleType(inParens(types()), flattenUnary = true))
@@ -885,7 +888,7 @@ self =>
               case r @ SingletonTypeTree(_) => r
               case r => convertToTypeId(r)
             }
-        })
+        }, allowDeptypes)
       }
 
       private def typeProjection(t: Tree): Tree = {
@@ -895,10 +898,21 @@ self =>
         val point      = if (name == tpnme.ERROR) hashOffset else nameOffset
         atPos(t.pos.startOrPoint, point)(SelectFromTypeTree(t, name))
       }
-      def simpleTypeRest(t: Tree): Tree = in.token match {
-        case HASH     => simpleTypeRest(typeProjection(t))
-        case LBRACKET => simpleTypeRest(atPos(t.pos.startOrPoint, t.pos.point)(AppliedTypeTree(t, typeArgs())))
-        case _        => t
+      private def appliedType(t: Tree, allowDeptypes: Boolean) = {
+        if (in.token == LPAREN && !allowDeptypes) t
+        else {
+          val factory = if (in.token == LPAREN) (DependentTypeTree.apply _) else (AppliedTypeTree.apply _)
+          val args = if (in.token == LPAREN) argumentExprs() else typeArgs()
+          atPos(t.pos.startOrPoint, t.pos.point)(factory(t, args))
+        }
+      }
+      def simpleTypeRest(t: Tree, allowDeptypes: Boolean): Tree = {
+        in.token match {
+          case HASH                     => simpleTypeRest(typeProjection(t), allowDeptypes)
+          case LPAREN if !allowDeptypes => t
+          case LPAREN | LBRACKET        => simpleTypeRest(appliedType(t, allowDeptypes), allowDeptypes)
+          case _                        => t
+        }
       }
 
       /** {{{
@@ -908,14 +922,14 @@ self =>
        */
       def compoundType(): Tree = compoundTypeRest(
         if (in.token == LBRACE) atPos(o2p(in.offset))(scalaAnyRefConstr)
-        else annotType()
+        else annotType(allowDeptypes = true)
       )
 
       def compoundTypeRest(t: Tree): Tree = {
         val ts = new ListBuffer[Tree] += t
         while (in.token == WITH) {
           in.nextToken()
-          ts += annotType()
+          ts += annotType(allowDeptypes = true)
         }
         newLineOptWhenFollowedBy(LBRACE)
         atPos(t.pos.startOrPoint) {
@@ -1936,11 +1950,11 @@ self =>
     /** These are default entry points into the pattern context sensitive methods:
      *  they are all initiated from non-pattern context.
      */
-    def typ(): Tree      = outPattern.typ()
-    def startInfixType() = outPattern.infixType(InfixMode.FirstOp)
-    def startAnnotType() = outPattern.annotType()
-    def exprTypeArgs()   = outPattern.typeArgs()
-    def exprSimpleType() = outPattern.simpleType()
+    def typ(): Tree                            = outPattern.typ()
+    def startInfixType()                       = outPattern.infixType(InfixMode.FirstOp)
+    def startAnnotType(allowDeptypes: Boolean) = outPattern.annotType(allowDeptypes)
+    def exprTypeArgs()                         = outPattern.typeArgs()
+    def exprSimpleType(allowDeptypes: Boolean) = outPattern.simpleType(allowDeptypes)
 
     /** Default entry points into some pattern contexts. */
     def pattern(): Tree = noSeq.pattern()
@@ -2059,11 +2073,11 @@ self =>
       t
     }
     def constructorAnnotations(): List[Tree] = readAnnots {
-      atPos(in.offset)(New(exprSimpleType(), List(argumentExprs())))
+      atPos(in.offset)(New(exprSimpleType(allowDeptypes = false), List(argumentExprs())))
     }
 
     def annotationExpr(): Tree = atPos(in.offset) {
-      val t = exprSimpleType()
+      val t = exprSimpleType(allowDeptypes = false)
       if (in.token == LPAREN) New(t, multipleArgumentExprs())
       else New(t, Nil)
     }
@@ -2580,7 +2594,7 @@ self =>
 
     /** {{{
      *  TypeDef ::= type Id [TypeParamClause] `=' Type
-     *            | FunSig `=' Expr
+     *            | type Id [TypeParamClause] FunSig [nl] `=' `macro' Expr
      *  TypeDcl ::= type Id [TypeParamClause] TypeBounds
      *  }}}
      */
@@ -2590,13 +2604,43 @@ self =>
       atPos(start, in.offset) {
         val name = identForType()
         // @M! a type alias as well as an abstract type may declare type parameters
-        val tparams = typeParamClauseOpt(name, null)
+        val contextBoundBuf = new ListBuffer[Tree]
+        val tparams = typeParamClauseOpt(name, contextBoundBuf)
+        def typeDefOrDcl(isDef: Boolean) = {
+          if (contextBoundBuf.nonEmpty) syntaxError(contextBoundBuf(0).pos, "only type macros, not regular types, can have context bounds", false)
+          if (isDef) TypeDef(mods, name, tparams, typ())
+          else TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
+        }
+        def typeMacro(onlyNeedToReadBody: Boolean) = {
+          val vparamss = if (onlyNeedToReadBody) Nil else paramClauses(name.toTermName, contextBoundBuf.toList, ofCaseClass = false)
+          def readRhs() = {
+            val offender = tparams find (_.mods hasFlag Flags.COVARIANT | Flags.CONTRAVARIANT)
+            offender foreach (tparam => syntaxError(tparam.pos, "type parameters of type macros cannot have variance annotations", false))
+            if (mods hasFlag Flags.ABSOVERRIDE) syntaxError(start, "type macros cannot be abstract")
+            val rhs = expr()
+            DefDef(mods | Flags.MACRO, nme.typeMacroName(name), tparams, vparamss, scalaDot(tpnme.Nothing), rhs)
+          }
+          if (onlyNeedToReadBody) readRhs()
+          else in.token match {
+            case EQUALS =>
+              in.nextTokenAllow(nme.MACROkw)
+              if (in.token == IDENTIFIER && in.name == nme.MACROkw) { in.nextToken(); readRhs() }
+              else { syntaxErrorOrIncomplete("`macro' expected", true); EmptyTree }
+            case _ =>
+              val offset = if (in.token == NEWLINE || in.token == NEWLINES) in.lastOffset else in.offset
+              syntaxErrorOrIncomplete(offset, "`=' expected", true)
+              EmptyTree
+          }
+        }
         in.token match {
           case EQUALS =>
-            in.nextToken()
-            TypeDef(mods, name, tparams, typ())
+            in.nextTokenAllow(nme.MACROkw)
+            if (in.token == IDENTIFIER && in.name == nme.MACROkw) { in.nextToken(); typeMacro(onlyNeedToReadBody = true) }
+            else typeDefOrDcl(isDef = true)
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-            TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
+            typeDefOrDcl(isDef = false)
+          case LPAREN =>
+            typeMacro(onlyNeedToReadBody = false)
           case _ =>
             syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
             EmptyTree
@@ -2704,7 +2748,7 @@ self =>
       val parents = new ListBuffer[Tree]
       def readAppliedParent() = {
         val start = in.offset
-        val parent = startAnnotType()
+        val parent = startAnnotType(allowDeptypes = false)
         val argss = if (in.token == LPAREN) multipleArgumentExprs() else Nil
         parents += atPos(start)((parent /: argss)(Apply.apply))
       }

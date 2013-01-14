@@ -145,6 +145,7 @@ trait TypeDiagnostics {
     def exprMessage       = "expression of type " + tree.tpe
     def overloadedMessage = s"overloaded method $sym with alternatives:\n" + alternativesString(tree)
     def moduleMessage     = "" + sym
+    def typeMacroMessage  = moduleMessage + tree.tpe.toString.stripSuffix("Nothing")
     def defaultMessage    = moduleMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
@@ -154,6 +155,7 @@ trait TypeDiagnostics {
     }
     else if (sym.isOverloaded) overloadedMessage
     else if (sym.isModule) moduleMessage
+    else if (sym.isTypeMacro) typeMacroMessage
     else if (sym.name == nme.apply) applyMessage
     else defaultMessage
   }
