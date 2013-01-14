@@ -1,6 +1,18 @@
-Macros_Test_2.scala:7: error: type mismatch;
+Macros_Test_2.scala:5: error: type mismatch;
  found   : String("42")
  required: Int
-  val s: String = foo("42")
-                      ^
-one error found
+  foo("42")
+      ^
+Macros_Test_2.scala:6: error: too few argument lists for macro invocation
+  foo
+  ^
+Macros_Test_2.scala:7: error: Int does not take parameters
+  foo(4)(2)
+        ^
+Macros_Test_2.scala:8: error: macro applications do not support named and/or default arguments
+  foo()
+     ^
+Macros_Test_2.scala:9: error: too many arguments for macro method foo: (x: Int)Int
+  foo(4, 2)
+     ^
+5 errors found

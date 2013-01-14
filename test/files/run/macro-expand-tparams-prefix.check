@@ -1,0 +1,20 @@
+===Macros1===
+TypeTag[Int]
+TypeTag[Int]
+WeakTypeTag[String]
+TypeTag[Boolean]
+===Macros2===
+TypeTag[Boolean] TypeTag[Int]
+TypeTag[Boolean] WeakTypeTag[String]
+===Macros3===
+TypeTag[Int]
+WeakTypeTag[String]
+TypeTag[Boolean]
+===Macros4===
+TypeTag[Int]
+WeakTypeTag[String]
+TypeTag[Boolean]
+===Macros5===
+WeakTypeTag[T]
+WeakTypeTag[U]
+TypeTag[Boolean]
