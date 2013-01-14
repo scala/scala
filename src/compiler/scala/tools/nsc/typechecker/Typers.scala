@@ -3672,15 +3672,18 @@ trait Typers extends Modes with Adaptations with Tags {
           } else if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           } else {
-            val args =
-              if (argss.head.length == 1 && !isNamed(argss.head.head))
-                List(new AssignOrNamedArg(Ident(nme.value), argss.head.head))
-              else argss.head
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
+            def hasValue = names exists (_.name == nme.value)
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
+            val args = argss match {
+              case List(List(arg)) if !isNamed(arg) && hasValue =>
+                List(new AssignOrNamedArg(Ident(nme.value), arg))
+              case as :: _ => as
+            }
+
             val nvPairs = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>
                 val sym = if (isJava) annScope.lookup(name)
