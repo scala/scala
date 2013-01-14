@@ -179,11 +179,12 @@ trait MethodSynthesis {
       val targetClass   = defaultAnnotationTarget(tree)
       val retained      = deriveAnnotations(annotations, targetClass, keepClean = true)
 
-      annotations filterNot (retained contains _) foreach (ann => issueAnnotationWarning(ann, targetClass))
+      annotations filterNot (retained contains _) foreach (ann => issueAnnotationWarning(tree, ann, targetClass))
     }
-    private def issueAnnotationWarning(ann: AnnotationInfo, defaultTarget: Symbol) {
+    private def issueAnnotationWarning(tree: Tree, ann: AnnotationInfo, defaultTarget: Symbol) {
       global.reporter.warning(ann.pos,
-        s"Annotation is unused - it can be retained with a meta-annotation such as @($ann @${defaultTarget.name})")
+        s"no valid targets for annotation on ${tree.symbol} - it is discarded unused. " +
+        s"You may specify targets with meta-annotations, e.g. @($ann @${defaultTarget.name})")
     }
 
     def addDerivedTrees(typer: Typer, stat: Tree): List[Tree] = stat match {
@@ -203,7 +204,7 @@ trait MethodSynthesis {
         // well as fields of the class, etc.
         if (!mods.isParamAccessor) annotations foreach (ann =>
           if (!trees.exists(_.symbol hasAnnotation ann.symbol))
-            issueAnnotationWarning(ann, GetterTargetClass)
+            issueAnnotationWarning(vd, ann, GetterTargetClass)
         )
 
         trees
