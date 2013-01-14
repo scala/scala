@@ -1,10 +1,10 @@
-Macros_Test_2.scala:11: error: macro method foo1: (x: Int)Int does not take type parameters.
+Macros_Test_2.scala:11: error: macro method foo1: (x: _)Int does not take type parameters.
   foo1[String](42)
       ^
-Macros_Test_2.scala:12: error: wrong number of type parameters for macro method foo2: [T](x: Int)Int
+Macros_Test_2.scala:12: error: wrong number of type parameters for macro method foo2: [T](x: _)Int
   foo2[String, String](42)
       ^
-Macros_Test_2.scala:13: error: wrong number of type parameters for macro method foo3: [T, U](x: Int)Int
+Macros_Test_2.scala:13: error: wrong number of type parameters for macro method foo3: [T, U](x: _)Int
   foo3[String](42)
       ^
 Macros_Test_2.scala:14: error: String takes no type parameters, expected: one

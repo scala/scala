@@ -1,0 +1,44 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala>   import scala.reflect.macros.Context
+import scala.reflect.macros.Context
+
+scala> import language.experimental.macros
+import language.experimental.macros
+
+scala> 
+
+scala> def impl1(c: Context) = c.literalUnit
+impl1: (c: scala.reflect.macros.Context)c.Expr[Unit]
+
+scala> def foo1 = macro impl1
+defined term macro foo1: Unit
+
+scala> foo1
+
+scala> 
+
+scala> def impl2(c: Context)() = c.literalUnit
+impl2: (c: scala.reflect.macros.Context)()c.Expr[Unit]
+
+scala> def foo2() = macro impl2
+defined term macro foo2: ()Unit
+
+scala> foo2()
+
+scala> 
+
+scala> def impl3(c: Context)(x: c.Expr[Int])(y: c.Expr[Int]) = c.literalUnit
+impl3: (c: scala.reflect.macros.Context)(x: c.Expr[Int])(y: c.Expr[Int])c.Expr[Unit]
+
+scala> def foo3(x: Int)(y: Int) = macro impl3
+defined term macro foo3: (x: Int)(y: Int)Unit
+
+scala> foo3(2)(3)
+
+scala> 
+
+scala> 
