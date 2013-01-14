@@ -493,6 +493,13 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ExprClass             = if (ExprsClass != NoSymbol) getMemberClass(ExprsClass, tpnme.Expr) else NoSymbol
          def ExprSplice            = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.splice) else NoSymbol
          def ExprValue             = if (ExprsClass != NoSymbol) getMemberMethod(ExprClass, nme.value) else NoSymbol
+    object ExprClassOf {
+      def unapply(tpe: Type): Option[Type] = tpe.dealias match {
+        case ExistentialType(_, underlying) => unapply(underlying)
+        case TypeRef(_, ExprClass, t :: Nil) => Some(t)
+        case _ => None
+      }
+    }
 
     lazy val ClassTagModule         = requiredModule[scala.reflect.ClassTag[_]]
     lazy val ClassTagClass          = requiredClass[scala.reflect.ClassTag[_]]
@@ -518,6 +525,9 @@ trait Definitions extends api.StandardDefinitions {
          def MacroContextPrefix                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.prefix) else NoSymbol
          def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getTypeMember(MacroContextClass, tpnme.PrefixType) else NoSymbol
          def MacroContextUniverse                = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.universe) else NoSymbol
+         def MacroContextExprClass               = if (MacroContextClass != NoSymbol) getTypeMember(MacroContextClass, tpnme.Expr) else NoSymbol
+         def MacroContextWeakTypeTagClass        = if (MacroContextClass != NoSymbol) getTypeMember(MacroContextClass, tpnme.WeakTypeTag) else NoSymbol
+         def MacroContextTreeType                = if (MacroContextClass != NoSymbol) getTypeMember(MacroContextClass, tpnme.Tree) else NoSymbol
     lazy val MacroImplAnnotation                 = requiredClass[scala.reflect.macros.internal.macroImpl]
 
     lazy val StringContextClass                  = requiredClass[scala.StringContext]
