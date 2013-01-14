@@ -22,7 +22,7 @@ package generic
  *      final def filterMap[B, That](f: A => Option[B])(implicit cbf: CanBuildFrom[Repr, B, That]): That =
  *        r.flatMap(f(_).toSeq)
  *    }
- *    implicit def filterMap[Repr, A](r: Repr)(implicit fr: IsTraversableOnce[Repr]): FilterMapImpl[fr.A,Repr] =
+ *    implicit def filterMap[Repr, A](r: Repr)(implicit fr: IsTraversableLike[Repr]): FilterMapImpl[fr.A,Repr] =
  *      new FilterMapImpl(fr.conversion(r))
  *
  *    val l = List(1, 2, 3, 4, 5)
