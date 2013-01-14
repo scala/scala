@@ -134,6 +134,12 @@ trait FutureCallbacks extends TestBase {
         assert(false)
     }
   }
+
+  def testThatNestedCallbacksDoNotYieldStackOverflow(): Unit = {
+    val promise = Promise[Int]
+    (0 to 10000).map(Future(_)).foldLeft(promise.future)((f1, f2) => f2.flatMap(i => f1))
+    promise.success(-1)
+  }
   
   testOnSuccess()
   testOnSuccessWhenCompleted()
@@ -143,6 +149,7 @@ trait FutureCallbacks extends TestBase {
   // testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
   //TODO: this test is currently problematic, because NonFatal does not match InterruptedException
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
+  testThatNestedCallbacksDoNotYieldStackOverflow()
   testOnFailureWhenTimeoutException()
   
 }
