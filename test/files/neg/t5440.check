@@ -1,0 +1,5 @@
+t5440.scala:3: error: match may not be exhaustive.
+It would fail on the following inputs: (List(_), Nil), (Nil, List(_))
+    (list1, list2) match {
+    ^
+one error found
