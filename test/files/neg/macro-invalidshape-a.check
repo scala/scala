@@ -1,5 +1,0 @@
-Macros_Test_2.scala:2: error: macro body has wrong shape:
- required: macro [<implementation object>].<method name>[[<type args>]]
-  def foo(x: Any) = macro 2
-      ^
-one error found

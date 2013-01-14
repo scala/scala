@@ -1,0 +1,8 @@
+42
+reflective compilation has failed: 
+
+exception during macro expansion: 
+java.lang.Error: an implementation is missing
+	at Impls2$.foo(Impls_1.scala:9)
+
+42
