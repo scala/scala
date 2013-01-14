@@ -401,7 +401,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val RemoteExceptionClass  = requiredClass[java.rmi.RemoteException]
 
     lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyClass.tpe)
-    lazy val EqualsPatternClass     = specialPolyClass(tpnme.EQUALS_PATTERN_NAME, 0L)(_ => AnyClass.tpe)
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))
     lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.tpe))
 
@@ -1060,8 +1059,7 @@ trait Definitions extends api.StandardDefinitions {
       AnyValClass,
       NullClass,
       NothingClass,
-      SingletonClass,
-      EqualsPatternClass
+      SingletonClass
     )
     /** Lists core methods that don't have underlying bytecode, but are synthesized on-the-fly in every reflection universe */
     lazy val syntheticCoreMethods = List(
