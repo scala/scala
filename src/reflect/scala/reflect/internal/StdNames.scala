@@ -200,7 +200,6 @@ trait StdNames {
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
     final val BYNAME_PARAM_CLASS_NAME: NameType        = "<byname>"
-    final val EQUALS_PATTERN_NAME: NameType            = "<equals>"
     final val JAVA_REPEATED_PARAM_CLASS_NAME: NameType = "<repeated...>"
     final val LOCAL_CHILD: NameType                    = "<local child>"
     final val REFINE_CLASS_NAME: NameType              = "<refinement>"
