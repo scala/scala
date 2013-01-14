@@ -2552,11 +2552,7 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
-      val treeWithSkolems = treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
-
-      new TypeMapTreeSubstituter(deskolemizeGADTSkolems).traverse(treeWithSkolems)
-
-      treeWithSkolems // now without skolems, actually
+      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
     // undo adaptConstrPattern's evil deeds, as they confuse the old pattern matcher
@@ -2591,7 +2587,10 @@ trait Typers extends Modes with Adaptations with Tags {
 
       val casesAdapted = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, resTp))
 
-      treeCopy.Match(tree, selector1, casesAdapted) setType resTp
+      val matchTyped = treeCopy.Match(tree, selector1, casesAdapted) setType resTp
+      if (!newPatternMatching) // TODO: remove this in 2.11 -- only needed for old pattern matcher
+        new TypeMapTreeSubstituter(deskolemizeGADTSkolems).traverse(matchTyped)
+      matchTyped
     }
 
     // match has been typed -- virtualize it if we're feeling experimental
