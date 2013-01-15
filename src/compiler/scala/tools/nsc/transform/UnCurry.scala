@@ -621,11 +621,13 @@ abstract class UnCurry extends InfoTransform
           case Apply(fn, args) =>
             if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head))
               transform(treeCopy.Apply(tree, fn, List(liftTree(args.head))))
-            else
-              withNeedLift(true) {
+            else {
+              val needLift = needTryLift || !fn.symbol.isLabel // SI-6749, no need to lift in args to label jumps.
+              withNeedLift(needLift) {
                 val formals = fn.tpe.paramTypes
                 treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
               }
+            }
 
           case Assign(Select(_, _), _) =>
             withNeedLift(true) { super.transform(tree) }
