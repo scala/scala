@@ -4195,6 +4195,13 @@ trait Types extends api.Types { self: SymbolTable =>
     case _                    => false
   })
 
+  @deprecated("Use isRawType", "2.10.1") // presently used by sbt
+  def isRaw(sym: Symbol, args: List[Type]) = (
+       !phase.erasedTypes
+    && args.isEmpty
+    && isRawIfWithoutArgs(sym)
+  )
+
   /** The raw to existential map converts a ''raw type'' to an existential type.
    *  It is necessary because we might have read a raw type of a
    *  parameterized Java class from a class file. At the time we read the type
