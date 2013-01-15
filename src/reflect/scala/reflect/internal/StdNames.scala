@@ -211,6 +211,7 @@ trait StdNames {
 
     final val Any: NameType             = "Any"
     final val AnyVal: NameType          = "AnyVal"
+    final val MacroCompiler: NameType   = "MacroCompiler"
     final val Mirror: NameType          = "Mirror"
     final val Nothing: NameType         = "Nothing"
     final val Null: NameType            = "Null"
@@ -676,6 +677,7 @@ trait StdNames {
     val readResolve: NameType          = "readResolve"
     val reify : NameType               = "reify"
     val reflect: NameType              = "reflect"
+    val resolveMacroImpl: NameType     = "resolveMacroImpl"
     val rootMirror : NameType          = "rootMirror"
     val runtime: NameType              = "runtime"
     val runtimeClass: NameType         = "runtimeClass"

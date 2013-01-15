@@ -129,6 +129,33 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   def optManifest[T](implicit m: OptManifest[T])     = m
 
+  /** Type class which abstracts compilation of macro defs.
+   *
+   *  Previously macro defs were linked to macro impls using hardcoded logic in Macros.scala.
+   *  This logic took the right-hand side of a macro def, typechecked it as a reference to a static method
+   *  and then used that method as a corresponding macro implementation.
+   *
+   *  Now compilation of macro defs is fully extensible. Instead of using a hardcoded implementation to look up macro impls,
+   *  the macro engine performs an implicit search of a MacroCompiler in scope and then invokes its `resolveMacroImpl` method,
+   *  passing it the DefDef of a macro def and expecting a reference to a static method in return. Of course, `resolveMacroImpl`
+   *  should itself be a macro, namely an untyped one, for this to work.
+   *
+   *  Default instance of the type class, `Predef.DefaultMacroCompiler`, implements formerly hardcoded typechecking logic.
+   *  Alternative implementations could for instance provide lightweight syntax for macro defs, generation macro impls
+   *  on-the-fly using c.introduceToplevel.
+   */
+  trait MacroCompiler {
+    // The implementation is hardwired to `scala.tools.reflect.DefaultMacroCompiler.resolveMacroImpl`
+    // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
+    // def resolveMacroImpl(macroDef: _): _ = macro ???
+    def resolveMacroImpl(macroDef: Any): Any = ???
+  }
+
+  /** Default instance of the `MacroCompiler` type class.
+   *  Typechecks the right-hand side of a given macro def as a reference to a static method.
+   */
+  implicit val defaultMacroCompiler: MacroCompiler = new MacroCompiler{}
+
   // Minor variations on identity functions
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`

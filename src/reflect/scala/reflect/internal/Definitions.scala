@@ -347,12 +347,14 @@ trait Definitions extends api.StandardDefinitions {
     // Those modules and their module classes
     lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
 
-    lazy val PredefModule      = requiredModule[scala.Predef.type]
-      def Predef_classOf             = getMemberMethod(PredefModule, nme.classOf)
-      def Predef_wrapRefArray        = getMemberMethod(PredefModule, nme.wrapRefArray)
-      def Predef_wrapArray(tp: Type) = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
-      def Predef_???                 = getMemberMethod(PredefModule, nme.???)
-      def Predef_implicitly          = getMemberMethod(PredefModule, nme.implicitly)
+    lazy val PredefModule                = requiredModule[scala.Predef.type]
+      def Predef_classOf                 = getMemberMethod(PredefModule, nme.classOf)
+      def Predef_wrapRefArray            = getMemberMethod(PredefModule, nme.wrapRefArray)
+      def Predef_wrapArray(tp: Type)     = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
+      def Predef_???                     = getMemberMethod(PredefModule, nme.???)
+      def Predef_implicitly              = getMemberMethod(PredefModule, nme.implicitly)
+      def Predef_MacroCompiler           = getMemberClass(PredefModule, tpnme.MacroCompiler)
+      def Predef_defaultResolveMacroImpl = getMemberMethod(Predef_MacroCompiler, nme.resolveMacroImpl)
 
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
