@@ -1,0 +1,4 @@
+t6675-old-patmat.scala:10: error: extractor pattern binds a single value to a Product3 of type (Int, Int, Int)
+  "" match { case X(b) => b } // should warn under -Xlint. Not an error because of SI-6111
+                  ^
+one error found
