@@ -16,7 +16,6 @@ import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, B
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
-import dependencies.DependencyAnalysis
 import plugins.Plugins
 import ast._
 import ast.parser._
@@ -329,9 +328,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  if (!dependencyAnalysis.off)
-    dependencyAnalysis.loadDependencyAnalysis()
-
   if (settings.verbose.value || settings.Ylogcp.value) {
     // Uses the "do not truncate" inform
     informComplete("[search path for source files: " + classPath.sourcepaths.mkString(",") + "]")
@@ -605,14 +601,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsAfter = List("dce")
     val runsRightAfter = None
   } with GenASM
-
-  // This phase is optional: only added if settings.make option is given.
-  // phaseName = "dependencyAnalysis"
-  object dependencyAnalysis extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("jvm")
-    val runsRightAfter = None
-  } with DependencyAnalysis
 
   // phaseName = "terminal"
   object terminal extends {
@@ -1472,8 +1460,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
     /** Compile list of source files */
-    def compileSources(_sources: List[SourceFile]) {
-      val sources = dependencyAnalysis calculateFiles _sources.distinct
+    def compileSources(sources: List[SourceFile]) {
       // there is a problem already, e.g. a plugin was passed a bad option
       if (reporter.hasErrors)
         return
@@ -1567,10 +1554,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       reportCompileErrors()
       symSource.keys foreach (x => resetPackageClass(x.owner))
       informTime("total", startTime)
-
-      // record dependency data
-      if (!dependencyAnalysis.off)
-        dependencyAnalysis.saveDependencyAnalysis()
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()

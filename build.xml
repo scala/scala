@@ -2440,7 +2440,6 @@ BOOTRAPING TEST AND TEST SUITE
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
       <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
       <residenttests dir="${partest.dir}/${partest.srcdir}/res" includes="*.res"/>
-      <buildmanagertests dir="${partest.dir}/${partest.srcdir}/buildmanager" includes="*"/>
       <scalaptests dir="${partest.dir}/${partest.srcdir}/scalap" includes="**/*.scala"/>
       <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck">
         <include name="*.scala"/>

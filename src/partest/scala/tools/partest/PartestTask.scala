@@ -43,7 +43,6 @@ import org.apache.tools.ant.types.Commandline.Argument
  *  - `runtests`,
  *  - `jvmtests`,
  *  - `residenttests`,
- *  - `buildmanagertests`,
  *  - `shootouttests`,
  *  - `scalaptests`,
  *  - `scalachecktests`,
@@ -74,10 +73,6 @@ class PartestTask extends Task with CompilationPathProperty {
 
   def addConfiguredResidentTests(input: FileSet) {
     residentFiles = Some(input)
-  }
-
-  def addConfiguredBuildManagerTests(input: FileSet) {
-    buildManagerFiles = Some(input)
   }
 
   def addConfiguredScalacheckTests(input: FileSet) {
@@ -187,7 +182,6 @@ class PartestTask extends Task with CompilationPathProperty {
   private var runFiles: Option[FileSet] = None
   private var jvmFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
-  private var buildManagerFiles: Option[FileSet] = None
   private var scalacheckFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
   private var shootoutFiles: Option[FileSet] = None
@@ -244,7 +238,6 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getRunFiles          = getFilesAndDirs(runFiles)
   private def getJvmFiles          = getFilesAndDirs(jvmFiles)
   private def getResidentFiles     = getFiles(residentFiles)
-  private def getBuildManagerFiles = getFilesAndDirs(buildManagerFiles)
   private def getScalacheckFiles   = getFilesAndDirs(scalacheckFiles)
   private def getScriptFiles       = getFiles(scriptFiles)
   private def getShootoutFiles     = getFiles(shootoutFiles)
@@ -363,7 +356,6 @@ class PartestTask extends Task with CompilationPathProperty {
       (getRunFiles, "run", "Compiling and running files"),
       (getJvmFiles, "jvm", "Compiling and running files"),
       (getResidentFiles, "res", "Running resident compiler scenarii"),
-      (getBuildManagerFiles, "buildmanager", "Running Build Manager scenarii"),
       (getScalacheckFiles, "scalacheck", "Running scalacheck tests"),
       (getScriptFiles, "script", "Running script files"),
       (getShootoutFiles, "shootout", "Running shootout tests"),

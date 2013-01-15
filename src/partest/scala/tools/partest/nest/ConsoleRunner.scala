@@ -31,7 +31,6 @@ class ConsoleRunner extends DirectRunner {
       TestSet("run", stdFilter, "Testing interpreter and backend"),
       TestSet("jvm", stdFilter, "Testing JVM backend"),
       TestSet("res", x => x.isFile && (x hasExtension "res"), "Testing resident compiler"),
-      TestSet("buildmanager", _.isDirectory, "Testing Build Manager"),
       TestSet("shootout", stdFilter, "Testing shootout tests"),
       TestSet("script", stdFilter, "Testing script tests"),
       TestSet("scalacheck", stdFilter, "Testing ScalaCheck tests"),

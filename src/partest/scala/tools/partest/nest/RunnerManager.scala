@@ -19,7 +19,6 @@ import scala.tools.nsc.util.{ ClassPath, FakePos, ScalaClassLoader, stackTraceSt
 import ClassPath.{ join, split }
 import scala.tools.scalap.scalax.rules.scalasig.ByteCode
 import scala.collection.{ mutable, immutable }
-import scala.tools.nsc.interactive.{ BuildManager, RefinedBuildManager }
 import scala.sys.process._
 import java.util.concurrent.{ Executors, TimeUnit, TimeoutException }
 import PartestDefaults.{ javaCmd, javacCmd }
@@ -529,121 +528,6 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
 
       case "ant" =>
         runAntTest(file)
-
-      case "buildmanager" =>
-        val (swr, wr) = newTestWriters()
-        printInfoStart(file, wr)
-        val (outDir, testFile, changesDir) = {
-          if (!file.isDirectory)
-            (null, null, null)
-          else {
-            NestUI.verbose(this+" running test "+fileBase)
-            val outDir = createOutputDir()
-            val testFile = new File(file, fileBase + ".test")
-            val changesDir = new File(file, fileBase + ".changes")
-
-            if (changesDir.isFile || !testFile.isFile) {
-              // if changes exists then it has to be a dir
-              if (!testFile.isFile) NestUI.verbose("invalid build manager test file")
-              if (changesDir.isFile) NestUI.verbose("invalid build manager changes directory")
-              (null, null, null)
-            }
-            else {
-              copyTestFiles(file, outDir)
-              NestUI.verbose("outDir:  "+outDir)
-              NestUI.verbose("logFile: "+logFile)
-              (outDir, testFile, changesDir)
-            }
-          }
-        }
-        if (outDir == null)
-          return (false, LogContext(logFile))
-
-        // Pre-conditions satisfied
-        val sourcepath = outDir.getAbsolutePath+File.separator
-
-        // configure input/output files
-        val logWriter = new PrintStream(new FileOutputStream(logFile), true)
-        val testReader = new BufferedReader(new FileReader(testFile))
-        val logConsoleWriter = new PrintWriter(logWriter, true)
-
-        // create proper settings for the compiler
-        val settings = new Settings(workerError)
-        settings.outdir.value = outDir.getAbsoluteFile.getAbsolutePath
-        settings.sourcepath.value = sourcepath
-        settings.classpath.value = fileManager.CLASSPATH
-        settings.Ybuildmanagerdebug.value = true
-
-        // simulate Build Manager loop
-        val prompt = "builder > "
-        val reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
-        val bM: BuildManager =
-            new RefinedBuildManager(settings) {
-              override protected def newCompiler(settings: Settings) =
-                  new BuilderGlobal(settings, reporter)
-            }
-
-        def testCompile(line: String): Boolean = {
-          NestUI.verbose("compiling " + line)
-          val args = (line split ' ').toList
-          val command = new CompilerCommand(args, settings)
-          command.ok && {
-            bM.update(filesToSet(settings.sourcepath.value, command.files), Set.empty)
-            !reporter.hasErrors
-          }
-        }
-
-        val updateFiles = (line: String) => {
-          NestUI.verbose("updating " + line)
-          (line split ' ').toList forall (u =>
-            (u split "=>").toList match {
-                case origFileName::(newFileName::Nil) =>
-                  val newFile = new File(changesDir, newFileName)
-                  if (newFile.isFile) {
-                    val v = overwriteFileWith(new File(outDir, origFileName), newFile)
-                    if (!v)
-                      NestUI.verbose("'update' operation on " + u + " failed")
-                    v
-                  } else {
-                    NestUI.verbose("File " + newFile + " is invalid")
-                    false
-                  }
-                case a =>
-                  NestUI.verbose("Other =: " + a)
-                  false
-            }
-          )
-        }
-
-        def loop(): Boolean = {
-          testReader.readLine() match {
-            case null | ""    =>
-              NestUI.verbose("finished")
-              true
-            case s if s startsWith ">>update "  =>
-              updateFiles(s stripPrefix ">>update ") && loop()
-            case s if s startsWith ">>compile " =>
-              val files = s stripPrefix ">>compile "
-              logWriter.println(prompt + files)
-              // In the end, it can finish with an error
-              if (testCompile(files)) loop()
-              else {
-                val t = testReader.readLine()
-                (t == null) || (t == "")
-              }
-            case s =>
-              NestUI.verbose("wrong command in test file: " + s)
-              false
-          }
-        }
-
-        Output.withRedirected(logWriter) {
-          try loop()
-          finally testReader.close()
-        }
-        fileManager.mapFile(logFile, replaceSlashes(new File(sourcepath), _))
-
-        (diffCheck(file, compareOutput(file, logFile)), LogContext(logFile, swr, wr))
 
       case "res" => {
           // simulate resident compiler loop
