@@ -1786,12 +1786,16 @@ trait Typers extends Adaptations with Tags {
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
-      if ((clazz != ClassfileAnnotationClass) &&
-          (clazz isNonBottomSubClass ClassfileAnnotationClass))
-        restrictionWarning(cdef.pos, unit,
-          "subclassing Classfile does not\n"+
-          "make your annotation visible at runtime.  If that is what\n"+
-          "you want, you must write the annotation class in Java.")
+
+      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
+        if (!clazz.owner.isPackageClass)
+          unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+        else restrictionWarning(cdef.pos, unit,
+          """|subclassing Classfile does not
+             |make your annotation visible at runtime.  If that is what
+             |you want, you must write the annotation class in Java.""".stripMargin)
+      }
+
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionSymbolOf(clazz, context)
@@ -1923,9 +1927,6 @@ trait Typers extends Adaptations with Tags {
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
-
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
-        unit.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
@@ -3374,15 +3375,13 @@ trait Typers extends Adaptations with Tags {
           else None
 
         case _ => None
-    }
+      }
     }
 
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
-     *
-     * @param annClass the expected annotation class
      */
-    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode, selfsym: Symbol = NoSymbol, annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
+    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode, selfsym: Symbol = NoSymbol): AnnotationInfo = {
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
 
@@ -3423,7 +3422,14 @@ trait Typers extends Adaptations with Tags {
           reportAnnotationError(ArrayConstantsError(tree)); None
 
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          val annInfo = typedAnnotation(ann, mode, NoSymbol, pt.typeSymbol, true)
+          val annInfo = typedAnnotation(ann, mode, NoSymbol)
+          val annType = annInfo.tpe
+
+          if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
+            reportAnnotationError(AnnotationTypeMismatchError(tpt, annType, annType))
+          else if (!annType.typeSymbol.isSubClass(ClassfileAnnotationClass))
+            reportAnnotationError(NestedAnnotationError(ann, annType))
+
           if (annInfo.atp.isErroneous) { hasError = true; None }
           else Some(NestedAnnotArg(annInfo))
 
@@ -3478,20 +3484,21 @@ trait Typers extends Adaptations with Tags {
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
           val isJava = typedFun.symbol.owner.isJavaDefined
-          if (!annType.typeSymbol.isNonBottomSubClass(annClass)) {
-            reportAnnotationError(AnnotationTypeMismatchError(annTpt, annType, annType))
-          } else if (argss.length > 1) {
+          if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
-          } else {
-            val args = argss match {
-              case (arg :: Nil) :: Nil if !isNamedArg(arg) => gen.mkNamedArg(nme.value, arg) :: Nil
-              case args :: Nil                             => args
-            }
+          }
+          else {
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
+
+            def hasValue = names exists (_.name == nme.value)
+            val args = argss match {
+              case (arg :: Nil) :: Nil if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
+              case args :: Nil                                         => args
+            }
 
             val nvPairs = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>
@@ -3523,9 +3530,8 @@ trait Typers extends Adaptations with Tags {
             if (hasError) ErroneousAnnotation
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
           }
-        } else if (requireJava) {
-          reportAnnotationError(NestedAnnotationError(ann, annType))
-        } else {
+        }
+        else {
           val typedAnn = if (selfsym == NoSymbol) {
             // local dummy fixes SI-5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
