@@ -20,6 +20,7 @@ package scala.actors
  * @author Philipp Haller
  * @author Erik Engbrecht
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 case class UncaughtException(actor: InternalActor,
                              message: Option[Any],
                              sender: Option[OutputChannel[Any]],
