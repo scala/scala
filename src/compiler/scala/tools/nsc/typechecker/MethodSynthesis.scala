@@ -126,7 +126,7 @@ trait MethodSynthesis {
 
   /** There are two key methods in here.
    *
-   *   1) Enter methods such as enterGetterSetterare called
+   *   1) Enter methods such as enterGetterSetter are called
    *   from Namer with a tree which may generate further trees such as accessors or
    *   implicit wrappers. Some setup is performed.  In general this creates symbols
    *   and enters them into the scope of the owner.
@@ -171,14 +171,46 @@ trait MethodSynthesis {
       enterBeans(tree)
     }
 
+    /** This is called for those ValDefs which addDerivedTrees ignores, but
+     *  which might have a warnable annotation situation.
+     */
+    private def warnForDroppedAnnotations(tree: Tree) {
+      val annotations   = tree.symbol.initialize.annotations
+      val targetClass   = defaultAnnotationTarget(tree)
+      val retained      = deriveAnnotations(annotations, targetClass, keepClean = true)
+
+      annotations filterNot (retained contains _) foreach (ann => issueAnnotationWarning(tree, ann, targetClass))
+    }
+    private def issueAnnotationWarning(tree: Tree, ann: AnnotationInfo, defaultTarget: Symbol) {
+      global.reporter.warning(ann.pos,
+        s"no valid targets for annotation on ${tree.symbol} - it is discarded unused. " +
+        s"You may specify targets with meta-annotations, e.g. @($ann @${defaultTarget.name})")
+    }
+
     def addDerivedTrees(typer: Typer, stat: Tree): List[Tree] = stat match {
       case vd @ ValDef(mods, name, tpt, rhs) if !noFinishGetterSetter(vd) =>
         // If we don't save the annotations, they seem to wander off.
         val annotations = stat.symbol.initialize.annotations
-        ( allValDefDerived(vd)
+        val trees = (
+          allValDefDerived(vd)
                 map (acc => atPos(vd.pos.focus)(acc derive annotations))
           filterNot (_ eq EmptyTree)
         )
+        // Verify each annotation landed safely somewhere, else warn.
+        // Filtering when isParamAccessor is a necessary simplification
+        // because there's a bunch of unwritten annotation code involving
+        // the propagation of annotations - constructor parameter annotations
+        // may need to make their way to parameters of the constructor as
+        // well as fields of the class, etc.
+        if (!mods.isParamAccessor) annotations foreach (ann =>
+          if (!trees.exists(_.symbol hasAnnotation ann.symbol))
+            issueAnnotationWarning(vd, ann, GetterTargetClass)
+        )
+
+        trees
+      case vd: ValDef =>
+        warnForDroppedAnnotations(vd)
+        vd :: Nil
       case cd @ ClassDef(mods, _, _, _) if mods.isImplicit =>
         val annotations = stat.symbol.initialize.annotations
         // TODO: need to shuffle annotations between wrapper and class.
