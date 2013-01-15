@@ -12,7 +12,7 @@ import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
-  import treeInfo.isExprSafeToInline
+  import treeInfo.isQualifierSafeToElide
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
@@ -121,7 +121,7 @@ abstract class Flatten extends InfoTransform {
           exitingFlatten {
             atPos(tree.pos) {
               val ref = gen.mkAttributedRef(sym)
-              if (isExprSafeToInline(qual)) ref
+              if (isQualifierSafeToElide(qual)) ref
               else Block(List(qual), ref).setType(tree.tpe) // need to execute the qualifier but refer directly to the lifted module.
             }
           }

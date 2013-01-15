@@ -835,16 +835,16 @@ abstract class GenICode extends SubComponent  {
             generatedType = toTypeKind(sym.info)
             val hostClass = findHostClass(qualifier.tpe, sym)
             log(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
-            val qualSafeToInline = treeInfo isExprSafeToInline qualifier
+            val qualSafeToElide = treeInfo isQualifierSafeToElide qualifier
 
-            def genLoadQualUnlessInlinable: Context =
-              if (qualSafeToInline) ctx else genLoadQualifier(tree, ctx)
+            def genLoadQualUnlessElidable: Context =
+              if (qualSafeToElide) ctx else genLoadQualifier(tree, ctx)
 
             if (sym.isModule) {
-              genLoadModule(genLoadQualUnlessInlinable, tree)
+              genLoadModule(genLoadQualUnlessElidable, tree)
             }
             else if (sym.isStaticMember) {
-              val ctx1 = genLoadQualUnlessInlinable
+              val ctx1 = genLoadQualUnlessElidable
               ctx1.bb.emit(LOAD_FIELD(sym, true) setHostClass hostClass, tree.pos)
               ctx1
             } else {
