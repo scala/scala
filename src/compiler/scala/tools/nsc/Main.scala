@@ -7,7 +7,6 @@ package scala.tools.nsc
 
 import java.io.File
 import File.pathSeparator
-import scala.tools.nsc.interactive.{ RefinedBuildManager, SimpleBuildManager }
 import scala.tools.nsc.io.AbstractFile
 
 /** The main class for NSC, a compiler for the programming
@@ -40,23 +39,6 @@ object Main extends Driver with EvalLoop {
         case None => reporter.reset() // Causes other compiler errors to be ignored
       }
       askShutdown
-      false
-    }
-    else if (settings.Ybuilderdebug.value != "none") {
-      def fileSet(files : List[String]) = Set.empty ++ (files map AbstractFile.getFile)
-
-      val buildManager = settings.Ybuilderdebug.value match {
-        case "simple"   => new SimpleBuildManager(settings)
-        case _          => new RefinedBuildManager(settings)
-      }
-      buildManager.addSourceFiles(fileSet(command.files))
-
-      // enter resident mode
-      loop { line =>
-        val args = line.split(' ').toList
-        val command = new CompilerCommand(args.toList, settings)
-        buildManager.update(fileSet(command.files), Set.empty)
-      }
       false
     }
     else true

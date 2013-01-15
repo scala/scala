@@ -33,11 +33,10 @@ object partest {
   // What's fun here is that we want "*.scala" files *and* directories in the base directory...
   def partestResources(base: File, testType: String): PathFinder = testType match {
     case "res"          => base ** "*.res"
-    case "buildmanager" => base * "*"
     // TODO - Only allow directories that have "*.scala" children...
     case _              => base * "*" filter { f => !f.getName.endsWith(".obj") && (f.isDirectory || f.getName.endsWith(".scala")) }
   }
-  lazy val partestTestTypes = Seq("run", "jvm", "pos", "neg", "buildmanager", "res", "shootout", "scalap", "specialized", "presentation", "scalacheck")
+  lazy val partestTestTypes = Seq("run", "jvm", "pos", "neg", "res", "shootout", "scalap", "specialized", "presentation", "scalacheck")
 
   // TODO - Figure out how to specify only a subset of resources...
   def partestTestsTask(testDirs: ScopedSetting[Map[String,File]]): Project.Initialize[Task[Map[String, Seq[File]]]] =
