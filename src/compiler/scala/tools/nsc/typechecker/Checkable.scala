@@ -62,6 +62,9 @@ trait Checkable {
     bases foreach { bc =>
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
+      if (tps1.size != tps2.size)
+        devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
+
       (tps1, tps2).zipped foreach (_ =:= _)
       // Alternate, variance respecting formulation causes
       // neg/unchecked3.scala to fail (abstract types).  TODO -
@@ -78,7 +81,7 @@ trait Checkable {
 
     val resArgs = tparams zip tvars map {
       case (_, tvar) if tvar.instValid => tvar.constr.inst
-      case (tparam, _)                 => tparam.tpe
+      case (tparam, _)                 => tparam.tpeHK
     }
     appliedType(to, resArgs: _*)
   }
@@ -108,7 +111,7 @@ trait Checkable {
   private class CheckabilityChecker(val X: Type, val P: Type) {
     def Xsym = X.typeSymbol
     def Psym = P.typeSymbol
-    def XR   = propagateKnownTypes(X, Psym)
+    def XR   = if (Xsym == AnyClass) classExistentialType(Psym) else propagateKnownTypes(X, Psym)
     // sadly the spec says (new java.lang.Boolean(true)).isInstanceOf[scala.Boolean]
     def P1   = X matchesPattern P
     def P2   = !Psym.isPrimitiveValueClass && isNeverSubType(X, P)

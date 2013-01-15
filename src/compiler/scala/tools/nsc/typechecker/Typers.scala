@@ -3360,7 +3360,12 @@ trait Typers extends Adaptations with Tags {
     // return the corresponding extractor (an instance of ClassTag[`pt`])
     def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (isPastTyper) None else {
       // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
-      pt.normalize.typeConstructor match {
+      // but at least make a proper type before passing it elsewhere
+      val pt1 = pt.dealias match {
+        case tr @ TypeRef(pre, sym, args) if args.nonEmpty => copyTypeRef(tr, pre, sym, sym.typeParams map (_.tpeHK)) // replace actual type args with dummies
+        case pt1                                           => pt1
+      }
+      pt1 match {
         // if at least one of the types in an intersection is checkable, use the checkable ones
         // this avoids problems as in run/matchonseq.scala, where the expected type is `Coll with scala.collection.SeqLike`
         // Coll is an abstract type, but SeqLike of course is not
@@ -3706,7 +3711,8 @@ trait Typers extends Adaptations with Tags {
         else containsDef(owner, sym) || isRawParameter(sym) || isCapturedExistential(sym)
       def containsLocal(tp: Type): Boolean =
         tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
-      val normalizeLocals = new TypeMap {
+
+      val dealiasLocals = new TypeMap {
         def apply(tp: Type): Type = tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType && containsLocal(tp)) apply(tp.dealias)
@@ -3759,9 +3765,9 @@ trait Typers extends Adaptations with Tags {
         for (sym <- remainingSyms) addLocals(sym.existentialBound)
       }
 
-      val normalizedTpe = normalizeLocals(tree.tpe)
-      addLocals(normalizedTpe)
-      packSymbols(localSyms.toList, normalizedTpe)
+      val dealiasedType = dealiasLocals(tree.tpe)
+      addLocals(dealiasedType)
+      packSymbols(localSyms.toList, dealiasedType)
     }
 
     def typedClassOf(tree: Tree, tpt: Tree, noGen: Boolean = false) =

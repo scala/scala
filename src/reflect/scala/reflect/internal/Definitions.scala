@@ -714,7 +714,10 @@ trait Definitions extends api.StandardDefinitions {
      *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
      */
     def classExistentialType(clazz: Symbol): Type =
-      newExistentialType(clazz.typeParams, clazz.tpe_*)
+      existentialAbstraction(clazz.typeParams, clazz.tpe_*)
+
+    def unsafeClassExistentialType(clazz: Symbol): Type =
+      existentialAbstraction(clazz.unsafeTypeParams, clazz.tpe_*)
 
     // members of class scala.Any
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)

@@ -1222,8 +1222,6 @@ trait Infer extends Checkable {
         }
     }
 
-    def widen(tp: Type): Type = abstractTypesToBounds(tp)
-
     /** Substitute free type variables `undetparams` of type constructor
      *  `tree` in pattern, given prototype `pt`.
      *
@@ -1232,7 +1230,7 @@ trait Infer extends Checkable {
      *  @param pt          the expected result type of the instance
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
-      val pt       = widen(pt0)
+      val pt       = abstractTypesToBounds(pt0)
       val ptparams = freeTypeParamsOfTerms(pt)
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
@@ -1371,7 +1369,7 @@ trait Infer extends Checkable {
     }
 
     def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
-      val pt        = widen(pt0)
+      val pt        = abstractTypesToBounds(pt0)
       val ptparams  = freeTypeParamsOfTerms(pt)
       val tpparams  = freeTypeParamsOfTerms(pattp)
 
