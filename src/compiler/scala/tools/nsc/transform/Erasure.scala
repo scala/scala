@@ -341,7 +341,7 @@ abstract class Erasure extends AddInterfaces
     }
   }
   
-  // Each value class has its own getClass for ultra-precise class object typing.
+  // Each primitive value class has its own getClass for ultra-precise class object typing.
   private lazy val primitiveGetClassMethods = Set[Symbol](Any_getClass, AnyVal_getClass) ++ (
     ScalaValueClasses map (_.tpe member nme.getClass_)
   )
@@ -1159,10 +1159,14 @@ abstract class Erasure extends AddInterfaces
                 // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
                 global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
               } else if (primitiveGetClassMethods.contains(fn.symbol)) {
-                // if we got here then we're trying to send a primitive getClass method to 
-                // a) an Any, or
-                // b) a non-primitive, e.g. because the qualifier's type is a refinement type where part of the refinement is a primitive.
-                // if we use Object_getClass then things work out because we will call getClass on the boxed form of the Any or primitive
+                // if we got here then we're trying to send a primitive getClass method to either 
+                // a) an Any, in which cage Object_getClass works because Any erases to object. Or
+                //
+                // b) a non-primitive, e.g. because the qualifier's type is a refinement type where one parent
+                //    of the refinement is a primitive and another is AnyRef. In that case
+                //    we get a primitive form of _getClass trying to target a boxed value
+                //    so we need replace that method name with Object_getClass to get correct behavior.
+                //    See SI-5568.
                 tree setSymbol Object_getClass
               } else {
                 debugwarn(s"The symbol '${fn.symbol}' was interecepted but didn't match any cases, that means the intercepted methods set doesn't match the code")

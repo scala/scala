@@ -1,6 +1,4 @@
 object Test {
-  final val UNIT: AnyRef with Unit = ().asInstanceOf[AnyRef with Unit]
-  
   def main(args: Array[String]): Unit = {
     // these should give unboxed results
     println(().getClass)
