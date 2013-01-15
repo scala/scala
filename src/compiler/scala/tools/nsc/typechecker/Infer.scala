@@ -244,6 +244,8 @@ trait Infer extends Checkable {
    *  This method seems to be performance critical.
    */
   def normalize(tp: Type): Type = tp match {
+    case pt @ PolyType(tparams, restpe) =>
+      logResult(s"Normalizing $tp in infer")(normalize(restpe))
     case mt @ MethodType(params, restpe) if mt.isImplicit =>
       normalize(restpe)
     case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>

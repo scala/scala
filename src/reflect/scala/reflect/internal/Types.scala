@@ -5626,10 +5626,12 @@ trait Types extends api.Types { self: SymbolTable =>
             // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
         }
       } && annotationsConform(tp1.normalize, tp2.normalize)
+
+      case (PolyType(_, _), MethodType(params, _)) if params exists (_.tpe.isWildcard) =>
+        false   // don't warn on HasMethodMatching on right hand side
+
       case (ntp1, ntp2) =>
-        if (isDummyAppliedType(ntp1) || isDummyAppliedType(ntp2)) {
-          devWarning(s"isHKSubType0($tp1, $tp2, _) contains dummy typeref: ($ntp1, $ntp2)")
-        }
+        devWarning(s"isHKSubType0($tp1, $tp2, _) is ${tp1.getClass}, ${tp2.getClass}: ($ntp1, $ntp2)")
         false // @assume !tp1.isHigherKinded || !tp2.isHigherKinded
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
     }))
@@ -5650,11 +5652,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (tp1 eq NoPrefix) return (tp2 eq NoPrefix) || tp2.typeSymbol.isPackageClass // !! I do not see how the "isPackageClass" would be warranted by the spec
     if (tp2 eq NoPrefix) return tp1.typeSymbol.isPackageClass
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
-    if (tp1.isHigherKinded && tp2.isHigherKinded) return isHKSubType0(tp1, tp2, depth)
-    if (tp1.isHigherKinded || tp2.isHigherKinded) {
-      devWarning(s"isSubType2($tp1, $tp2, _) compares HK type with proper type")
-      return isHKSubType0(tp1, tp2, depth)
-    }
+    if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType0(tp1, tp2, depth)
 
     /** First try, on the right:
      *   - unwrap Annotated types, BoundedWildcardTypes,
