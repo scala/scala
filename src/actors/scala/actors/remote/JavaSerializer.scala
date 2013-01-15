@@ -39,6 +39,7 @@ extends ObjectInputStream(in) {
 /**
  *  @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.10.1")
 class JavaSerializer(serv: Service, cl: ClassLoader) extends Serializer(serv) {
   def serialize(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream()
