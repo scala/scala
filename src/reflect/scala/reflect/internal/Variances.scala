@@ -73,7 +73,7 @@ trait Variances {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
           if (shouldFlip(sym, tvar)) v.flip
           else if (isLocalOnly(sym)) Bivariant
-          else if (sym.isAliasType) Invariant
+          else if (sym.isAliasTypeNoKidding) Invariant
           else v
         )
         def loop(sym: Symbol, v: Variance): Variance = (
@@ -97,7 +97,7 @@ trait Variances {
         }
       }
       override def mapOver(decls: Scope): Scope = {
-        decls foreach (sym => withVariance(if (sym.isAliasType) Invariant else variance)(this(sym.info)))
+        decls foreach (sym => withVariance(if (sym.isAliasTypeNoKidding) Invariant else variance)(this(sym.info)))
         decls
       }
       private def resultTypeOnly(tp: Type) = tp match {
@@ -114,7 +114,7 @@ trait Variances {
       def apply(tp: Type): Type = tp match {
         case _ if isUncheckedVariance(tp)                    => tp
         case _ if resultTypeOnly(tp)                         => this(tp.resultType)
-        case TypeRef(_, sym, _) if sym.isAliasType           => this(tp.normalize)
+        case TypeRef(_, sym, _) if sym.isAliasTypeNoKidding  => this(tp.normalize)
         case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
         case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
         case ClassInfoType(parents, _, _)                    => parents foreach this ; tp
@@ -173,7 +173,7 @@ trait Variances {
     def inSyms(syms: List[Symbol]): Variance            = fold(syms map inSym)
     def inTypes(tps: List[Type]): Variance              = fold(tps map inType)
 
-    def inSym(sym: Symbol): Variance = if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
+    def inSym(sym: Symbol): Variance = if (sym.isAliasTypeNoKidding) inType(sym.info).cut else inType(sym.info)
     def inType(tp: Type): Variance   = tp match {
       case ErrorType | WildcardType | NoType | NoPrefix => Bivariant
       case ThisType(_) | ConstantType(_)                => Bivariant

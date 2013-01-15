@@ -10,6 +10,11 @@ trait Enclosures {
 
   type MacroRole = analyzer.MacroRole
   def APPLY_ROLE = analyzer.APPLY_ROLE
+  def TYPE_ROLE = analyzer.TYPE_ROLE
+  def APPLIED_TYPE_ROLE = analyzer.APPLIED_TYPE_ROLE
+  def PARENT_ROLE = analyzer.PARENT_ROLE
+  def NEW_ROLE = analyzer.NEW_ROLE
+  def ANNOTATION_ROLE = analyzer.ANNOTATION_ROLE
   def macroRole: MacroRole
 
   private lazy val site       = callsiteTyper.context
@@ -25,7 +30,7 @@ trait Enclosures {
   def enclosingPackage: PackageDef           = strictEnclosure[PackageDef]
   val enclosingClass: Tree                   = lenientEnclosure[ImplDef]
   def enclosingImpl: ImplDef                 = strictEnclosure[ImplDef]
-  def enclosingTemplate: Template            = strictEnclosure[Template]
+  def enclosingTemplate: Template            = analyzer.macroExpanderAttachment(expandee).enclosingTemplate getOrElse strictEnclosure[Template]
   val enclosingImplicits: List[(Type, Tree)] = site.openImplicits
   val enclosingMacros: List[Context]         = this :: universe.analyzer.openMacros // include self
   val enclosingMethod: Tree                  = lenientEnclosure[DefDef]

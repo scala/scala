@@ -50,7 +50,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def members     = exitingTyper((effectiveTp.nonPrivateMembers.toList ++ anyMembers) filter (_.isPublic))
     def methods     = members.toList filter (_.isMethod)
     def packages    = members.toList filter (_.isPackage)
-    def aliases     = members.toList filter (_.isAliasType)
+    def aliases     = members.toList filter (m => m.isAliasTypeNoKidding)
 
     def memberNames   = members map tos
     def methodNames   = methods map tos

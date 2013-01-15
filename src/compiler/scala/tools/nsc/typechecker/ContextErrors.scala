@@ -224,6 +224,12 @@ trait ContextErrors {
         setError(tree)
       }
 
+      // typedDependentTypeTree
+      def DependentTypeNoParametersError(tree: Tree, errTpe: Type) = {
+        issueNormalTypeError(tree, errTpe + " does not take parameters")
+        setError(tree)
+      }
+
       // typedTypeDef
       def LowerBoundError(tree: TypeDef, lowB: Type, highB: Type) =
         issueNormalTypeError(tree, "lower bound "+lowB+" does not conform to upper bound "+highB)
@@ -468,7 +474,7 @@ trait ContextErrors {
       // doTypeApply
       //tryNamesDefaults
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "macros application do not support named and/or default arguments")
+        NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
       def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
@@ -563,7 +569,7 @@ trait ContextErrors {
       //adapt
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
         val message =
-          if (meth.isMacro) MacroPartialApplicationErrorMessage
+          if (meth.isMacro) MacroTooFewArgumentListsMessage
           else "missing arguments for " + meth.fullLocationString + (
             if (meth.isConstructor) ""
             else ";\nfollow this method with `_' if you want to treat it as a partially applied function"
@@ -680,6 +686,14 @@ trait ContextErrors {
         issueNormalTypeError(expandee, s"macro in $role role can only expand into $allowedExpansions")
       }
 
+      def MacroTypeHasntBeenExpandedError(expandee: Tree) = {
+        issueNormalTypeError(expandee, "macro has not been expanded")
+      }
+
+      def MacroTypeExpansionViolatesOverriddenBounds(expandee: Tree, result: Type, overridden: Symbol, bounds: Type) = {
+        issueNormalTypeError(expandee, s"macro expansion $result violates bounds $bounds of the overridden $overridden in ${overridden.owner}")
+      }
+
       // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
@@ -691,14 +705,23 @@ trait ContextErrors {
         throw MacroExpansionException
       }
 
-      def MacroPartialApplicationErrorMessage = "macros cannot be partially applied"
-      def MacroPartialApplicationError(expandee: Tree) = {
+      private def macroExpansionError2(expandee: Tree, msg: String) = {
         // macroExpansionError won't work => swallows positions, hence needed to do issueTypeError
         // kinda contradictory to the comment in `macroExpansionError`, but this is how it works
-        issueNormalTypeError(expandee, MacroPartialApplicationErrorMessage)
+        issueNormalTypeError(expandee, msg)
         setError(expandee)
         throw MacroExpansionException
       }
+
+      def MacroTooFewArgumentListsMessage = "too few argument lists for macro invocation"
+      def MacroTooFewArgumentLists(expandee: Tree) = macroExpansionError2(expandee, MacroTooFewArgumentListsMessage)
+
+      def MacroTooManyArgumentListsMessage = "too many argument lists for macro invocation"
+      def MacroTooManyArgumentLists(expandee: Tree) = macroExpansionError2(expandee, MacroTooManyArgumentListsMessage)
+
+      def MacroTooFewArguments(expandee: Tree) = macroExpansionError2(expandee, "too few arguments for macro invocation")
+
+      def MacroTooManyArguments(expandee: Tree) = macroExpansionError2(expandee, "too many arguments for macro invocation")
 
       def MacroGeneratedAbort(expandee: Tree, ex: AbortMacroException) = {
         // errors have been reported by the macro itself, so we do nothing here
@@ -762,8 +785,10 @@ trait ContextErrors {
       }
 
       def MacroExpansionHasInvalidTypeError(expandee: Tree, expanded: Any) = {
-        val expected = "expr"
-        val isPathMismatch = expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+        val expected = if (expandee.symbol.isTermMacro) "expr" else "tree"
+        val isPathMismatch =
+          if (expandee.symbol.isTermMacro) expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+          else expanded != null && expanded.isInstanceOf[scala.reflect.internal.Trees#Tree]
         macroExpansionError(expandee,
           s"macro must return a compiler-specific $expected; returned value is " + (
             if (expanded == null) "null"
@@ -1269,11 +1294,20 @@ trait ContextErrors {
 
     // not exactly an error generator, but very related
     // and I dearly wanted to push it away from Macros.scala
-    private def checkSubType(slot: String, rtpe: Type, atpe: Type) = {
-      val ok = if (macroDebugVerbose || settings.explaintypes.value) {
-        if (rtpe eq atpe) println(rtpe + " <: " + atpe + "?" + EOL + "true")
-        withTypesExplained(rtpe <:< atpe)
-      } else rtpe <:< atpe
+    private def checkConforms(slot: String, rtpe: Type, atpe: Type) = {
+      val verbose = macroDebugVerbose || settings.explaintypes.value
+
+      def check(rtpe: Type, atpe: Type): Boolean = {
+        def prematureOk() = { if (verbose) println(rtpe + " <: " + atpe + "?" + EOL + "true"); true }
+        (rtpe, atpe) match {
+          case _ if rtpe eq atpe => prematureOk()
+          case _ => rtpe <:< atpe
+        }
+      }
+
+      val ok =
+        if (verbose) withTypesExplained(check(rtpe, atpe))
+        else check(rtpe, atpe)
       if (!ok) {
         compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, abbreviateCoreAliases(rtpe.toString), abbreviateCoreAliases(atpe.toString)))
       }
@@ -1347,9 +1381,9 @@ trait ContextErrors {
 
     def MacroImplMissingParamsError(aparams: List[Symbol], rparams: List[Symbol]) = compatibilityError(abbreviateCoreAliases(lengthMsg("value", "required", rparams(aparams.length))))
 
-    def checkMacroImplParamTypeMismatch(atpe: Type, rparam: Symbol) = checkSubType("parameter " + rparam.name, rparam.tpe, atpe)
+    def checkMacroImplParamTypeMismatch(atpe: Type, rparam: Symbol) = checkConforms("parameter " + rparam.name, rparam.tpe, atpe)
 
-    def checkMacroImplResultTypeMismatch(atpe: Type, rret: Type) = checkSubType("return type", atpe, rret)
+    def checkMacroImplResultTypeMismatch(atpe: Type, rret: Type) = checkConforms("return type", atpe, rret)
 
     def MacroImplParamNameMismatchError(aparam: Symbol, rparam: Symbol) = compatibilityError("parameter names differ: " + rparam.name + " != " + aparam.name)
 

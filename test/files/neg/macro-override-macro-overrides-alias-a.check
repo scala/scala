@@ -1,0 +1,41 @@
+Macros_Test_2.scala:5: error: overriding type T in trait T11, which equals C;
+ macro type T needs `override' modifier
+  trait T12 extends T11 { type T = macro impl }
+                               ^
+Macros_Test_2.scala:10: error: overriding type T in class C11, which equals C;
+ macro type T needs `override' modifier
+  class C12 extends C11 { type T = macro impl }
+                               ^
+Macros_Test_2.scala:25: error: overriding type T in trait T11, which equals C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  trait T12 extends T11 { override type T() = macro impl1 }
+                                        ^
+Macros_Test_2.scala:30: error: overriding type T in class C11, which equals C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  class C12 extends C11 { override type T() = macro impl1 }
+                                        ^
+Macros_Test_2.scala:35: error: overriding type T in trait T11, which equals C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  trait T12 extends T11 { override type T[U] = macro impl }
+                                        ^
+Macros_Test_2.scala:40: error: overriding type T in class C11, which equals C;
+ macro type T needs to define a nullary overload with matching type parameters and having `override' modifier
+  class C12 extends C11 { override type T[U] = macro impl }
+                                        ^
+Macros_Test_2.scala:45: error: overriding type T in trait T11, which equals C;
+ macro type T cannot override final member
+  trait T12 extends T11 { type T = macro impl }
+                               ^
+Macros_Test_2.scala:50: error: overriding type T in class C11, which equals C;
+ macro type T cannot override final member
+  class C12 extends C11 { type T = macro impl }
+                               ^
+Macros_Test_2.scala:55: error: overriding type T in trait T11, which equals C;
+ macro type T cannot override final member
+  trait T12 extends T11 { override type T = macro impl }
+                                        ^
+Macros_Test_2.scala:60: error: overriding type T in class C11, which equals C;
+ macro type T cannot override final member
+  class C12 extends C11 { override type T = macro impl }
+                                        ^
+10 errors found

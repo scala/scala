@@ -1,0 +1,4 @@
+typemacros-regular-types-contextbounds.scala:2: error: only type macros, not regular types, can have context bounds
+  type Foo[T: List] <: Int
+            ^
+one error found

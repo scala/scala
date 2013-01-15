@@ -1,0 +1,35 @@
+Macros_Test_2.scala:8: error: type mismatch;
+ found   : String("42")
+ required: Int
+  val x1: Foo("42") = 42
+              ^
+Macros_Test_2.scala:11: error: too few argument lists for macro invocation
+  val x2: Foo = 42
+          ^
+Macros_Test_2.scala:14: error: too many argument lists for macro type Foo
+  val x3: Foo(4)(2) = 42
+          ^
+Macros_Test_2.scala:17: error: macro applications do not support named and/or default arguments
+  val x4: Foo() = 42
+          ^
+Macros_Test_2.scala:20: error: too many arguments for macro type Foo(x: Int)
+  val x5: Foo(4, 2) = 42
+          ^
+Macros_Test_2.scala:7: error: type mismatch;
+ found   : String("42")
+ required: Int
+  class D1 extends Foo("42")
+                       ^
+Macros_Test_2.scala:10: error: too few argument lists for macro invocation
+  class D2 extends Foo
+                   ^
+Macros_Test_2.scala:13: error: too many argument lists for macro type Foo
+  class D3 extends Foo(4)(2)
+                   ^
+Macros_Test_2.scala:16: error: macro applications do not support named and/or default arguments
+  class D4 extends Foo()
+                   ^
+Macros_Test_2.scala:19: error: too many arguments for macro type Foo(x: Int)
+  class D5 extends Foo(4, 2)
+                   ^
+10 errors found

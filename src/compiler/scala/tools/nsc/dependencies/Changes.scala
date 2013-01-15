@@ -192,7 +192,7 @@ abstract class Changes {
       else {
         val newSym =
             o match {
-              case _:TypeSymbol if o.isAliasType =>
+              case _:TypeSymbol if o.isAliasTypeNoKidding =>
                 n.suchThat(ov => sameType(ov.info, o.info))
               case _                             =>
                 n.suchThat(ov => sameType(ov.tpe, o.tpe))

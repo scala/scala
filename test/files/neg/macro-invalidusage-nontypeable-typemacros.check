@@ -1,0 +1,7 @@
+Test_2.scala:1: error: not found: type IDoNotExist
+class C extends Macros.Foo {
+                       ^
+Test_2.scala:2: error: not found: type IDoNotExist
+  val x: Macros.Foo = null
+                ^
+two errors found
