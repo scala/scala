@@ -117,6 +117,10 @@ trait Typers extends Adaptations with Tags {
       }
     }
 
+    private def mkNamedArg(tree: Tree, name: Name): Tree = {
+      atPos(tree.pos)(new AssignOrNamedArg(Ident(name), tree))
+    }
+
     /** Find implicit arguments and pass them to given tree.
      */
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
@@ -128,7 +132,6 @@ trait Typers extends Adaptations with Tags {
         var paramFailed = false
 
         def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
-        def mkNamedArg(argTree: Tree, paramName: Name) = atPos(argTree.pos)(new AssignOrNamedArg(Ident(paramName), (argTree)))
         var mkArg: (Tree, Name) => Tree = mkPositionalArg
 
         // DEPMETTODO: instantiate type vars that depend on earlier implicit args (see adapt (4.1))
@@ -3459,7 +3462,7 @@ trait Typers extends Adaptations with Tags {
 
       // begin typedAnnotation
       val treeInfo.Applied(fun0, targs, argss) = treeInfo.dissectApplied(ann)
-      val typedFun0 = typed(fun0, forFunMode(mode), WildcardType)
+      val typedFun0 = typed(fun0, mode.forFunMode, WildcardType)
       val typedFunPart = (
         // If there are dummy type arguments in typeFun part, it suggests we
         // must type the actual constructor call, not only the select. The value
@@ -3486,13 +3489,11 @@ trait Typers extends Adaptations with Tags {
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
-            def hasValue = names exists (_.name == nme.value)
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
             val args = argss match {
-              case List(List(arg)) if !isNamed(arg) && hasValue =>
-                List(new AssignOrNamedArg(Ident(nme.value), arg))
-              case as :: _ => as
+              case (arg :: Nil) :: Nil if !isNamed(arg) => mkNamedArg(arg, nme.value) :: Nil
+              case args :: Nil                          => args
             }
 
             val nvPairs = args map {
