@@ -16,6 +16,7 @@ package scala.actors
  *
  * @define channel `InputChannel`
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.10.1")
 trait InputChannel[+Msg] {
 
   /**
