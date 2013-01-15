@@ -866,7 +866,7 @@ trait Infer extends Checkable {
               val (argtpes1, argPos, namesOK) = checkNames(argtpes0, params)
               // when using named application, the vararg param has to be specified exactly once
               (    namesOK
-                && (isIdentity(argPos) || sameLength(formals, params))
+                && (allArgsArePositional(argPos) || sameLength(formals, params))
                 && typesCompatible(reorderArgs(argtpes1, argPos)) // nb. arguments and names are OK, check if types are compatible
               )
             }

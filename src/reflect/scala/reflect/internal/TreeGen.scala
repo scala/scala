@@ -271,6 +271,10 @@ abstract class TreeGen extends macros.TreeBuilder {
     case _            => Constant(null)
   }
 
+  /** Wrap an expression in a named argument. */
+  def mkNamedArg(name: Name, tree: Tree): Tree = mkNamedArg(Ident(name), tree)
+  def mkNamedArg(lhs: Tree, rhs: Tree): Tree = atPos(rhs.pos)(AssignOrNamedArg(lhs, rhs))
+
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(Constant())

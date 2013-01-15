@@ -117,10 +117,6 @@ trait Typers extends Adaptations with Tags {
       }
     }
 
-    private def mkNamedArg(tree: Tree, name: Name): Tree = {
-      atPos(tree.pos)(new AssignOrNamedArg(Ident(name), tree))
-    }
-
     /** Find implicit arguments and pass them to given tree.
      */
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
@@ -130,9 +126,7 @@ trait Typers extends Adaptations with Tags {
         // paramFailed cannot be initialized with params.exists(_.tpe.isError) because that would
         // hide some valid errors for params preceding the erroneous one.
         var paramFailed = false
-
-        def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
-        var mkArg: (Tree, Name) => Tree = mkPositionalArg
+        var mkArg: (Name, Tree) => Tree = (_, tree) => tree
 
         // DEPMETTODO: instantiate type vars that depend on earlier implicit args (see adapt (4.1))
         //
@@ -147,9 +141,9 @@ trait Typers extends Adaptations with Tags {
           argResultsBuff += res
 
           if (res.isSuccess) {
-            argBuff += mkArg(res.tree, param.name)
+            argBuff += mkArg(param.name, res.tree)
           } else {
-            mkArg = mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
+            mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
               context.errBuffer.find(_.kind == ErrorKinds.Divergent) match {
                 case Some(divergentImplicit) =>
@@ -3104,10 +3098,10 @@ trait Typers extends Adaptations with Tags {
               val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
               if (namelessArgs exists (_.isErroneous)) {
                 duplErrTree
-              } else if (!isIdentity(argPos) && !sameLength(formals, params))
-                // !isIdentity indicates that named arguments are used to re-order arguments
+              } else if (!allArgsArePositional(argPos) && !sameLength(formals, params))
+                // !allArgsArePositional indicates that named arguments are used to re-order arguments
                 duplErrorTree(MultipleVarargError(tree))
-              else if (isIdentity(argPos) && !isNamedApplyBlock(fun)) {
+              else if (allArgsArePositional(argPos) && !isNamedApplyBlock(fun)) {
                 // if there's no re-ordering, and fun is not transformed, no need to transform
                 // more than an optimization, e.g. important in "synchronized { x = update-x }"
                 checkNotMacro()
@@ -3157,7 +3151,7 @@ trait Typers extends Adaptations with Tags {
           }
 
           if (!sameLength(formals, args) ||   // wrong nb of arguments
-              (args exists isNamed) ||        // uses a named argument
+              (args exists isNamedArg) ||     // uses a named argument
               isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
                                               // integrate this application into the block
             if (dyna.isApplyDynamicNamed(fun)) dyna.typedNamedApply(tree, fun, args, mode, pt)
@@ -3464,7 +3458,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       // begin typedAnnotation
-      val treeInfo.Applied(fun0, targs, argss) = treeInfo.dissectApplied(ann)
+      val treeInfo.Applied(fun0, targs, argss) = ann
       val typedFun0 = typed(fun0, mode.forFunMode, WildcardType)
       val typedFunPart = (
         // If there are dummy type arguments in typeFun part, it suggests we
@@ -3475,7 +3469,7 @@ trait Typers extends Adaptations with Tags {
         else
           typedFun0
       )
-      val typedFun @ Select(New(annTpt), _) = treeInfo.dissectApplied(typedFunPart).core
+      val treeInfo.Applied(typedFun @ Select(New(annTpt), _), _, _) = typedFunPart
       val annType = annTpt.tpe
 
       val res = if (typedFun.isErroneous) ErroneousAnnotation
@@ -3489,15 +3483,15 @@ trait Typers extends Adaptations with Tags {
           } else if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           } else {
+            val args = argss match {
+              case (arg :: Nil) :: Nil if !isNamedArg(arg) => gen.mkNamedArg(nme.value, arg) :: Nil
+              case args :: Nil                             => args
+            }
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
-            val args = argss match {
-              case (arg :: Nil) :: Nil if !isNamed(arg) => mkNamedArg(arg, nme.value) :: Nil
-              case args :: Nil                          => args
-            }
 
             val nvPairs = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>

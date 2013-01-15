@@ -41,11 +41,11 @@ trait NamesDefaults { self: Analyzer =>
     blockTyper: Typer
   ) { }
 
-  def nameOf(arg: Tree) = arg match {
-    case AssignOrNamedArg(Ident(name), rhs) => Some(name)
-    case _ => None
+  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case AssignOrNamedArg(Ident(name), _) => name }
+  def isNamedArg(arg: Tree) = arg match {
+    case AssignOrNamedArg(Ident(_), _) => true
+    case _                             => false
   }
-  def isNamed(arg: Tree) = nameOf(arg).isDefined
 
   /** @param pos maps indices from old to new */
   def reorderArgs[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
@@ -55,13 +55,13 @@ trait NamesDefaults { self: Analyzer =>
   }
 
   /** @param pos maps indices from new to old (!) */
-  def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
+  private def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
     (argsArray.indices map (i => argsArray(pos(i)))).toList
   }
 
   /** returns `true` if every element is equal to its index */
-  def isIdentity(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
+  def allArgsArePositional(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
 
   /**
    * Transform a function application into a Block, and assigns typer.context
@@ -359,7 +359,7 @@ trait NamesDefaults { self: Analyzer =>
     }
   }
 
-  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOf _): (List[Symbol], Boolean) = {
+  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOfNamedArg _): (List[Symbol], Boolean) = {
     val namedArgs = args.dropWhile(arg => {
       val n = argName(arg)
       n.isEmpty || params.forall(p => p.name != n.get)
