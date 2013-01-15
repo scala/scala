@@ -3402,7 +3402,10 @@ trait Typers extends Adaptations with Tags {
        *  floats and literals in particular) are not yet folded.
        */
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
-        val const: Constant = typed(constfold(tr), EXPRmode, pt) match {
+        // The typed tree may be relevantly different than the tree `tr`,
+        // e.g. it may have encountered an implicit conversion.
+        val ttree = typed(constfold(tr), EXPRmode, pt)
+        val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
             case ConstantType(c)  => c
@@ -3411,7 +3414,7 @@ trait Typers extends Adaptations with Tags {
         }
 
         if (const == null) {
-          reportAnnotationError(AnnotationNotAConstantError(tr)); None
+          reportAnnotationError(AnnotationNotAConstantError(ttree)); None
         } else if (const.value == null) {
           reportAnnotationError(AnnotationArgNullError(tr)); None
         } else
