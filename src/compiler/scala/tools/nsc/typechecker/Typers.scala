@@ -80,6 +80,7 @@ trait Typers extends Adaptations with Tags {
   case class SilentResultValue[+T](value: T) extends SilentResult[T] { }
 
   def newTyper(context: Context): Typer = new NormalTyper(context)
+
   private class NormalTyper(context : Context) extends Typer(context)
 
   // A transient flag to mark members of anonymous classes
@@ -104,6 +105,9 @@ trait Typers extends Adaptations with Tags {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
     import TyperErrorGen._
+
+    def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree =
+      typed(docDef.definition, mode, pt)
 
     val infer = new Inferencer(context0) {
       override def isCoercible(tp: Type, pt: Type): Boolean = undoLog undo { // #3281
@@ -2133,43 +2137,6 @@ trait Typers extends Adaptations with Tags {
       }
       if (resultType.typeSymbol.isDerivedValueClass)
         failStruct(ddef.tpt.pos, "a user-defined value class", where = "Result type")
-    }
-
-    def typedUseCase(useCase: UseCase) {
-      def stringParser(str: String): syntaxAnalyzer.Parser = {
-        val file = new BatchSourceFile(context.unit.source.file, str) {
-          override def positionInUltimateSource(pos: Position) = {
-            pos.withSource(context.unit.source, useCase.pos.start)
-          }
-        }
-        val unit = new CompilationUnit(file)
-        new syntaxAnalyzer.UnitParser(unit)
-      }
-      val trees = stringParser(useCase.body+";").nonLocalDefOrDcl
-      val enclClass = context.enclClass.owner
-      def defineAlias(name: Name) =
-        if (context.scope.lookup(name) == NoSymbol) {
-          lookupVariable(name.toString.substring(1), enclClass) foreach { repl =>
-            silent(_.typedTypeConstructor(stringParser(repl).typ())) map { tpt =>
-              val alias = enclClass.newAliasType(name.toTypeName, useCase.pos)
-              val tparams = cloneSymbolsAtOwner(tpt.tpe.typeSymbol.typeParams, alias)
-              val newInfo = genPolyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
-              alias setInfo newInfo
-              context.scope.enter(alias)
-            }
-          }
-        }
-      for (tree <- trees; t <- tree)
-        t match {
-          case Ident(name) if name startsWith '$' => defineAlias(name)
-          case _ =>
-        }
-      useCase.aliases = context.scope.toList
-      namer.enterSyms(trees)
-      typedStats(trees, NoSymbol)
-      useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
-      if (settings.debug.value)
-        useCase.defined foreach (sym => println("defined use cases: %s:%s".format(sym, sym.tpe)))
     }
 
     def typedDefDef(ddef: DefDef): DefDef = {
@@ -4875,28 +4842,6 @@ trait Typers extends Adaptations with Tags {
           .typedStats(pdef.stats, NoSymbol)
         treeCopy.PackageDef(tree, pid1, stats1) setType NoType
       }
-
-      def typedDocDef(docdef: DocDef) = {
-        if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
-          val comment = docdef.comment
-          docComments(sym) = comment
-          comment.defineVariables(sym)
-          val typer1 = newTyper(context.makeNewScope(tree, context.owner))
-          for (useCase <- comment.useCases) {
-            typer1.silent(_.typedUseCase(useCase)) match {
-              case SilentTypeError(err) =>
-                unit.warning(useCase.pos, err.errMsg)
-              case _ =>
-            }
-            for (useCaseSym <- useCase.defined) {
-              if (sym.name != useCaseSym.name)
-                unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
-            }
-          }
-        }
-        typed(docdef.definition, mode, pt)
-      }
-
       def defDefTyper(ddef: DefDef) = {
         val flag = ddef.mods.hasDefaultFlag && sym.owner.isModuleClass &&
             nme.defaultGetterToMethod(sym.name) == nme.CONSTRUCTOR
@@ -5154,7 +5099,7 @@ trait Typers extends Adaptations with Tags {
         case tree: TypeDef                      => typedTypeDef(tree)
         case tree: LabelDef                     => labelTyper(tree).typedLabelDef(tree)
         case tree: PackageDef                   => typedPackageDef(tree)
-        case tree: DocDef                       => typedDocDef(tree)
+        case tree: DocDef                       => typedDocDef(tree, mode, pt)
         case tree: Annotated                    => typedAnnotated(tree)
         case tree: SingletonTypeTree            => typedSingletonTypeTree(tree)
         case tree: SelectFromTypeTree           => typedSelectFromTypeTree(tree)

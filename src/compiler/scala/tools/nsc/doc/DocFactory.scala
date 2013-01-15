@@ -31,15 +31,7 @@ import scala.reflect.internal.util.BatchSourceFile
   * @author Gilles Dubochet */
 class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
   /** The unique compiler instance used by this processor and constructed from its `settings`. */
-  object compiler extends Global(settings, reporter) with interactive.RangePositions {
-    override protected def computeInternalPhases() {
-      phasesSet += syntaxAnalyzer
-      phasesSet += analyzer.namerFactory
-      phasesSet += analyzer.packageObjects
-      phasesSet += analyzer.typerFactory
-    }
-    override def forScaladoc = true
-  }
+  object compiler extends ScaladocGlobal(settings, reporter)
 
   /** Creates a scaladoc site for all symbols defined in this call's `source`,
     * as well as those defined in `sources` of previous calls to the same processor.
