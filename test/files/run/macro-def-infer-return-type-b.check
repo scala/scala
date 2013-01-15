@@ -1,6 +1,0 @@
-reflective compilation has failed: 
-
-exception during macro expansion: 
-java.lang.Error: an implementation is missing
-	at Impls$.foo(Impls_Macros_1.scala:5)
-

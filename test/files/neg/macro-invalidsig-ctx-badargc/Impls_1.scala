@@ -1,3 +1,0 @@
-object Impls {
-  def foo = ???
-}

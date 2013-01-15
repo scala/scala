@@ -1,4 +1,0 @@
-Impls_Macros_1.scala:8: error: macro implementation must be in statically accessible object
-  def foo(x: Any) = macro Impls.foo
-                                ^
-one error found
