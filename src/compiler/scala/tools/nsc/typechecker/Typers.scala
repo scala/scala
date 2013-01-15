@@ -2433,21 +2433,7 @@ trait Typers extends Adaptations with Tags {
       }
 
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
-      val treeWithSkolems = treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
-
-      new TypeMapTreeSubstituter(deskolemizeGADTSkolems).traverse(treeWithSkolems)
-
-      treeWithSkolems // now without skolems, actually
-    }
-
-    // undo adaptConstrPattern's evil deeds, as they confuse the old pattern matcher
-    // the flags are used to avoid accidentally deskolemizing unrelated skolems of skolems
-    object deskolemizeGADTSkolems extends TypeMap {
-      def apply(tp: Type): Type = mapOver(tp) match {
-        case TypeRef(pre, sym, args) if sym.isGADTSkolem =>
-          typeRef(NoPrefix, sym.deSkolemize, args)
-        case tp1 => tp1
-      }
+      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
@@ -2492,12 +2478,11 @@ trait Typers extends Adaptations with Tags {
     // Match(EmptyTree, cases) ==> new PartialFunction { def apply<OrElse>(params) = `translateMatch('`(param1,...,paramN)` match { cases }')` }
     // for fresh params, the selector of the match we'll translated simply gathers those in a tuple
     // NOTE: restricted to PartialFunction -- leave Function trees if the expected type does not demand a partial function
-    class MatchFunTyper(tree: Tree, cases: List[CaseDef], mode: Mode, pt0: Type)  {
+    class MatchFunTyper(tree: Tree, cases: List[CaseDef], mode: Mode, pt: Type)  {
       // TODO: remove FunctionN support -- this is currently designed so that it can emit FunctionN and PartialFunction subclasses
       // however, we should leave Function nodes until Uncurry so phases after typer can still detect normal Function trees
       // we need to synthesize PartialFunction impls, though, to avoid nastiness in Uncurry in transforming&duplicating generated pattern matcher trees
       // TODO: remove PartialFunction support from UnCurry
-      private val pt    = deskolemizeGADTSkolems(pt0)
       private val targs = pt.normalize.typeArgs
       private val arity = if (isFunctionType(pt)) targs.length - 1 else 1 // TODO pt should always be a (Partial)Function, right?
       private val ptRes = if (targs.isEmpty) WildcardType else targs.last // may not be fully defined
