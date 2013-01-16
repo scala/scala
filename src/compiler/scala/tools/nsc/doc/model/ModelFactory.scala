@@ -314,11 +314,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       inform("Creating doc template for " + sym)
 
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
-    def inSource =
-      if (sym.sourceFile != null && ! sym.isSynthetic)
-        Some((sym.sourceFile, sym.pos.line))
+
+    protected def inSourceFromSymbol(symbol: Symbol) =
+      if (symbol.sourceFile != null && ! symbol.isSynthetic)
+        Some((symbol.sourceFile, symbol.pos.line))
       else
         None
+
+    def inSource = inSourceFromSymbol(sym)
 
     def sourceUrl = {
       def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
@@ -508,11 +511,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   abstract class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
     override def inTemplate = inTpl
     override def toRoot: List[PackageImpl] = this :: inTpl.toRoot
-    override lazy val linearization = {
-      val symbol = sym.info.members.find {
+    override lazy val (inSource, linearization) = {
+      val representive = sym.info.members.find {
         s => s.isPackageObject
       } getOrElse sym
-      linearizationFromSymbol(symbol)
+      (inSourceFromSymbol(representive), linearizationFromSymbol(representive))
     }
     def packages = members collect { case p: PackageImpl if !(droppedPackages contains p) => p }
   }
