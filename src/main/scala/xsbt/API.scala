@@ -350,7 +350,7 @@ final class API(val global: CallbackGlobal) extends Compat
 			case tr @ TypeRef(pre, sym, args) =>
 				val base = projectionType(in, pre, sym)
 				if(args.isEmpty)
-					if(isRaw(sym, args))
+					if(isRawType(tr))
 						processType(in, rawToExistential(tr))
 					else
 						base
