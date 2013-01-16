@@ -6437,6 +6437,7 @@ trait Types extends api.Types { self: SymbolTable =>
             || sym.isConstructor
             || !sym.isPublic
             || isGetClass(sym)
+            || sym.isFinal
             || narrowts.exists(t => !refines(t, sym))
           )
           def lubsym(proto: Symbol): Symbol = {
