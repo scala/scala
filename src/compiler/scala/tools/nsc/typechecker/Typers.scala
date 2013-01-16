@@ -1740,8 +1740,8 @@ trait Typers extends Modes with Adaptations with Tags {
      */
     def validateParentClasses(parents: List[Tree], selfType: Type) {
       val pending = ListBuffer[AbsTypeError]()
-      def validateDynamicParent(parent: Symbol) =
-        if (parent == DynamicClass) checkFeature(parent.pos, DynamicsFeature)
+      def validateDynamicParent(parent: Symbol, parentPos: Position) =
+        if (parent == DynamicClass) checkFeature(parentPos, DynamicsFeature)
 
       def validateParentClass(parent: Tree, superclazz: Symbol) =
         if (!parent.isErrorTyped) {
@@ -1791,7 +1791,7 @@ trait Typers extends Modes with Adaptations with Tags {
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
             pending += ParentInheritedTwiceError(parent, psym)
 
-          validateDynamicParent(psym)
+          validateDynamicParent(psym, parent.pos)
         }
 
       if (!parents.isEmpty && parents.forall(!_.isErrorTyped)) {
