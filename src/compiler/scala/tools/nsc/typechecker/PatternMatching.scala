@@ -3497,7 +3497,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
       // The tree itself can be a literal, an ident, a selection, ...
       object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat.tpe match {
-        case ConstantType(const@Constant((_: Byte ) | (_: Short) | (_: Int  ) | (_: Char ))) =>
+        case ConstantType(const) if const.isIntRange =>
           Some(Literal(Constant(const.intValue))) // TODO: Java 7 allows strings in switches
         case _ => None
       }}
