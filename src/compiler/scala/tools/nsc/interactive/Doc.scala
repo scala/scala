@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  Eugene Vigdorchik
  */
 
@@ -14,10 +14,10 @@ sealed trait DocResult
 final case class UrlResult(url: String) extends DocResult
 final case class HtmlResult(comment: Comment) extends DocResult
 
-abstract class Doc(val settings: doc.Settings) extends MemberLookupBase with CommentFactoryBase {
+trait Doc extends MemberLookupBase with CommentFactoryBase { self: interactive.Global =>
+  override val settings: doc.Settings
 
-  override val global: interactive.Global
-  import global._
+  val global: this.type = this
  
   def chooseLink(links: List[LinkTo]): LinkTo
 
@@ -28,8 +28,7 @@ abstract class Doc(val settings: doc.Settings) extends MemberLookupBase with Com
       else
         if ((site.isClass || site.isModule) && site.info.members.toList.contains(sym))
           Some(LinkToMember(sym, site))
-        else
-          None
+        else None
     }
 
   override def toString(link: LinkTo) = ask { () =>
@@ -41,19 +40,39 @@ abstract class Doc(val settings: doc.Settings) extends MemberLookupBase with Com
     }
   }
 
-  def retrieve(sym: Symbol, site: Symbol): Option[DocResult] = {
-    val sig = ask { () => externalSignature(sym) }
-    findExternalLink(sym, sig) map { link => UrlResult(link.url) } orElse {
-      val resp = new Response[Tree]
-      // Ensure docComment tree is type-checked.
-      val pos = ask { () => docCommentPos(sym) }
-      askTypeAt(pos, resp)
-      resp.get.left.toOption flatMap { _ =>
-        ask { () =>
-          val comment = parseAtSymbol(expandedDocComment(sym), rawDocComment(sym), pos, Some(site))
-          Some(HtmlResult(comment))
-        }
+  def retrieve(sym: Symbol, site: Symbol): Option[DocResult] = ask { () =>
+    val fromLibrary = Option(sym.associatedFile) flatMap (_.underlyingSource map (_.isClassContainer)) getOrElse false
+    if (!fromLibrary) {
+      // Either typer has been run and we don't find DocDef,
+      // or we force the targeted typecheck here.
+      // In both cases doc comment maps should be filled for the subject symbol.
+      val du =
+        for(unit <- unitOfFile get sym.sourceFile;
+            dt <- unit.body find { t =>
+              t match {
+                case DocDef(cmt, defn) if defn.symbol == sym => true
+                case _ => false
+              }
+            }) yield (dt, unit)
+
+      for ((dt, unit) <- du) {
+        debugLog("Found DocDef tree")
+        val prevPos = unit.targetPos
+        try {
+          unit.targetPos = dt.pos
+          typeCheck(unit)
+        } finally
+          unit.targetPos = prevPos
       }
+
+      val expanded = expandedDocComment(sym, site)
+      if (!expanded.isEmpty) {
+        val comment = parseAtSymbol(expanded, rawDocComment(sym), docCommentPos(sym), Some(site))
+        Some(HtmlResult(comment))
+      } else None
+    } else {
+      val sig = externalSignature(sym)
+      findExternalLink(sym, sig) map { link => UrlResult(link.url) }
     }
   }
 }
