@@ -279,7 +279,7 @@ trait Scanners extends ScannersCommon {
           next copyFrom this
           this copyFrom prev
         }
-      } else if (token == SEMI && !isInSubScript) {
+      } else if (token == SEMI) {
         prev copyFrom this
         fetchToken()
         if (token != ELSE) {
@@ -505,7 +505,8 @@ trait Scanners extends ScannersCommon {
             }
           }          
         case ')' => nextChar(); token = RPAREN
-        case ';' => nextChar(); token = SEMI
+        case ';' => if (!isInSubScript) {nextChar(); token = SEMI}
+                    else   {putChar(ch); nextChar(); getOperatorRest()}
         case ',' => nextChar(); token = COMMA
         case '}' => nextChar(); token = RBRACE
         case '[' => nextChar(); token = LBRACKET
@@ -635,20 +636,6 @@ trait Scanners extends ScannersCommon {
       case  _  => if (Character.isUnicodeIdentifierPart(ch)) {
                    putChar(ch); nextChar(); getIdentRest()
                   }
-                  else if (isInSubScript) {
-                    ch match {
-                      //case '?' if (cbuf.toString=="if") => putChar(ch); nextChar(); finishNamed(IF_QMARK)
-                      case ';' => cbuf.toString match { //   |;   ||;   |;|   %;
-                        case "%"    => putChar(ch); nextChar(); finishNamed(PERCENT_SEMI)                                  
-                        case "||"   => putChar(ch); nextChar(); finishNamed(   BAR2_SEMI)                                  
-                        case "|"    => putChar(ch); nextChar() 
-                          if(ch=='|') {putChar(ch); nextChar(); finishNamed(BAR_SEMI_BAR)}
-                          else        {                         finishNamed(BAR_SEMI    )}
-                        case _      => finishNamed()
-                      }
-                      case _ =>  finishNamed()                                 
-                    }
-                  }
                   else finishNamed()
     }
 
@@ -666,9 +653,10 @@ trait Scanners extends ScannersCommon {
         case '~' | '!' | '@' | '#' | '%' |
              '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
-             '|' | '\\' =>            putChar(ch); nextChar(); getOperatorRest()
-        case _ => if (isSpecial(ch)) {putChar(ch); nextChar(); getOperatorRest()}
-                 else finishNamed()
+             '|' | '\\'                  =>      putChar(ch); nextChar(); getOperatorRest()
+        case _ => if (isSpecial(ch)
+                  ||  isInSubScript && ch==';') {putChar(ch); nextChar(); getOperatorRest()}
+                  else finishNamed()
       }
     }
 
@@ -1179,11 +1167,6 @@ trait Scanners extends ScannersCommon {
     case RBRACE_CARET             => "^}"
     case DOT2                     => ".."
     case DOT3                     => "..."
-    case MINUS_SEMI               => "-;"
-    case BAR_SEMI                 => "|;"
-    case BAR2_SEMI                => "||;"
-    case BAR_SEMI_BAR             => "|;|"
-    case PERCENT_SEMI             => "%;"
     case LPAREN_PLUS_RPAREN       => "(+)"
     case LPAREN_MINUS_RPAREN      => "(-)"
     case LPAREN_PLUS_MINUS_RPAREN => "(+-)"

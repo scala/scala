@@ -130,11 +130,6 @@ object Tokens extends Tokens {
   final val IF_QMARK                 = 131
   final val DOT2                     = 132
   final val DOT3                     = 133
-  final val MINUS_SEMI               = 135
-  final val BAR_SEMI                 = 136
-  final val BAR2_SEMI                = 137
-  final val BAR_SEMI_BAR             = 138
-  final val PERCENT_SEMI             = 139
   
   final val LBRACE_DOT               = 140
   final val LBRACE_DOT3              = 141

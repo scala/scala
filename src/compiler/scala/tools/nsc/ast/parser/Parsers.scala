@@ -713,11 +713,11 @@ self =>
       while (opstack != base &&
              (prec < precedence(opstack.head.operator) ||
               leftAssoc && prec == precedence(opstack.head.operator))) {
-        val opinfo = opstack.head
-        opstack    = opstack.tail
-        val opPos  = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length); val lPos = opinfo.operand.pos
-        val start  = if (lPos.isDefined) lPos.startOrPoint else opPos.startOrPoint;           val rPos = top.pos
-        val end    = if (rPos.isDefined) rPos.  endOrPoint else opPos.endOrPoint
+        val opinfo  = opstack.head
+            opstack = opstack.tail
+        val opPos   = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length); val lPos = opinfo.operand.pos
+        val start   = if (lPos.isDefined) lPos.startOrPoint else opPos.startOrPoint;           val rPos = top.pos
+        val end     = if (rPos.isDefined) rPos.  endOrPoint else opPos.endOrPoint
 
         top = atPos(start, opinfo.offset, end) {makeBinop(isExpr, opinfo.operand, opinfo.operator.toTermName, top, opPos)}
       }
@@ -1119,36 +1119,84 @@ self =>
 
 /* ----------- SUBSCRIPT -------------------------------------------- */
 
-    final val setSubScriptInfixOp       : Set[Name] = Set(raw.PLUS)
+    val NEWLINE_Name: Name = newTermName("NEWLINE")
+    val   SPACE_Name: Name = newTermName(" ")
+    val    SEMI_Name: Name = newTermName(";")
+    
+    final val raw_space = " "
+    final val raw_semi  = ";"
+    final val raw_bar   = "|"
+    final val raw_bar2  = "||"
+    final val raw_amp   = "&"
+    final val raw_amp2  = "&&"
+    final val raw_slash = "/"
+    final val raw_mathDot = "\u00B7"
+    final val setSubScriptInfixOp   : Set[Name] = Set(   raw.PLUS, 
+                                                        SEMI_Name, 
+                                                      newTermName(raw_bar), 
+                                                      newTermName(raw_bar2), 
+                                                      newTermName(raw_amp),  
+                                                      newTermName(raw_amp),
+                                                      newTermName(raw_slash),
+                                                      newTermName(raw_mathDot)
+                                                     )
+                                                     
+                                                     
+                                                     
     final val setSubScriptUnaryPrefixOp : Set[Name] = Set(raw.MINUS, raw.TILDE, raw.BANG)
     final val setSubScriptUnaryPostfixOp: Set[Name] = Set(raw.STAR)
 
     def isIdent(tokenData: TokenData) = tokenData.token == IDENTIFIER || tokenData.token == BACKQUOTED_IDENT
 
-    def isSubScriptUnaryPostfixOp       (tokenData: TokenData) = isIdent(tokenData) &&  setSubScriptUnaryPostfixOp(tokenData.name)
-    def isSubScriptUnaryPrefixOp_orMINUS(tokenData: TokenData) = isIdent(tokenData) && (setSubScriptInfixOp       (tokenData.name) ||  in.name == raw.MINUS)
-    def isSubScriptUnaryPrefixOp                               = isIdent(in)        && setSubScriptInfixOp       (in.name) && 
-      (   in.name != raw.MINUS // TBD: make this test work: next does not yet exist
-      ||  in.next.offset > in.offset + 1
-      || (in.next.token match {case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => false case _ => true}))
+    def isSubScriptUnaryPrefixOp (name     : Name     ): Boolean =                      setSubScriptUnaryPrefixOp (name)
+    def isSubScriptUnaryPostfixOp(name     : Name     ): Boolean =                      setSubScriptUnaryPostfixOp(name)
+    def isSubScriptUnaryPrefixOp (tokenData: TokenData): Boolean = isIdent(tokenData) && isSubScriptUnaryPrefixOp (tokenData.name)
+    def isSubScriptUnaryPostfixOp(tokenData: TokenData): Boolean = isIdent(tokenData) && isSubScriptUnaryPostfixOp(tokenData.name)
 
-    def isSubScriptInfixOp(tokenData: TokenData): Boolean = 
+    def isSubScriptInfixOp(name: Name): Boolean = setSubScriptInfixOp (name)
+    def isSubScriptInfixOp(tokenData: TokenData, areNewLinesSpecialSeparators: Boolean = false): Boolean = 
        tokenData.token match {
-       case IDENTIFIER => setSubScriptInfixOp (tokenData.name) 
-       case      SEMI
-       |   MINUS_SEMI  
-       |     BAR_SEMI    
-       |    BAR2_SEMI   
-       |     BAR_SEMI_BAR
-       | PERCENT_SEMI  => true
-       case _          => false
-     }  
+       case IDENTIFIER         => isSubScriptInfixOp (tokenData.name) 
+       case NEWLINE | NEWLINES => areNewLinesSpecialSeparators
+       case _                  => false
+    }  
+    def isSubScriptOperator(name: Name): Boolean = isSubScriptUnaryPrefixOp (name) ||
+                                                   isSubScriptUnaryPostfixOp(name) ||
+                                                   isSubScriptInfixOp       (name)
+    def isSubScriptOperator(tree: Tree): Boolean = tree match {
+      case Ident(name: Name) => isSubScriptOperator(name)
+      case _ => false
+    }
+    val nameSubScript = newTermName("subscript")
+    val nameDSL       = newTermName("DSL")
+    val nameVM        = newTermName("vm")
+    
+    val selectSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
+    val selectSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
+
+    def subScriptDSLFunForOperator(op: Tree, spaceOp: Name, newlineOp: Name): Tree = {
+      val operatorName      : Name = op match {case Apply(Ident(name:Name),_) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
+      val operatorDSLFunName: Name = mapOperatorNameToDSLFunName(operatorName) 
+      Select(selectSubScriptDSL, operatorDSLFunName)
+    }
+    val mapOperatorStringToDSLFunString = Map[String,String](
+        ";"  -> "seq",
+        "+"  -> "alt",
+        "&"  -> "par",
+        "&&" -> "par_and2",
+        "|"  -> "par_or",
+        "||" -> "par_or2",
+        "/"  -> "disrupt"
+    )
+    val mapOperatorNameToDSLFunName = mapOperatorStringToDSLFunString map {case(k,v) => (newTermName(k): Name, newTermName("_"+v): Name)}
+    
+    
+    
     def isScriptIdent = in.token == IDENTIFIER && in.name == nme.SCRIPTkw
     def isBreakIdent  = in.token == IDENTIFIER && in.name == nme.BREAKkw
     def isQMark       = in.token == IDENTIFIER && in.name == nme.QMARKkw
     def isQMark2      = in.token == IDENTIFIER && in.name == nme.QMARK2kw
     
-    def subScriptVMOp(token: TokenData): Tree = null // TBD: subscript.vm.DSL._seq etc
     
     def isSubScriptTermStarter(tokenData: TokenData): Boolean = in.token match {
       case VAL                      
@@ -1177,39 +1225,25 @@ self =>
          | LBRACE_ASTERISK          
          | LBRACE_CARET                                   => true 
       case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => true
-      case _                                              => isSubScriptUnaryPrefixOp_orMINUS(tokenData)  ||  // MINUS is allwaysOK, also for -1 etc
+      case _                                              => isSubScriptUnaryPrefixOp(tokenData)  ||  // MINUS is allways OK, also for -1 etc
                                                              isLiteralToken(tokenData.token)
     }
 
-    def subScriptInfixOpPrecedence(operator: TokenData): Int =
-      operator.token match {
-        case NEWLINE      => 0 
-        case SEMI         => 1
-        case MINUS_SEMI   => 8
-        case BAR_SEMI     
-           | BAR2_SEMI    
-           | BAR_SEMI_BAR => 2
-        case PERCENT_SEMI => 9        
-        case IDENTIFIER   =>  val name = operator.name
-                              if (name eq nme.ERROR) -1
-						      else {
-						        val firstCh = name.startChar
-						        if (isScalaLetter(firstCh)) 1
-						        else if (nme.isOpAssignmentName(name)) 0
-						        else firstCh match {
-						          case '|'             => 2
-						          case '^'             => 3
-						          case '&'             => 4
-						          case '=' | '!'       => 5
-						          case '<' | '>'       => 6
-						          case ':'             => 7
-						          case '+' | '-'       => 8
-						          case '*' | '/' | '%' => 9
-						          case _               => 10
-						        }
-						      }
+    def subScriptInfixOpPrecedence(operatorName: Name): Int =
+      if      (operatorName eq nme.ERROR) -1
+      else if (operatorName eq NEWLINE_Name) 0
+      else operatorName.startChar match {
+      case ';'             => 1
+      case '|'             => 2
+      case '^'             => 3
+      case '&'             => 4
+      case '=' | '!'       => 5
+      case '<' | '>'       => 6
+      case ':'             => 7
+      case '+' | '-'       => 8
+      case '*' | '/' | '%' => 9
+      case _               => 10
     }
-
     
 /* 
  * FTTB: no communication, channels, try, catch, throw, match, for, resultHandler
@@ -1353,60 +1387,74 @@ self =>
     }
 
     private class TokenData1 extends TokenData
+ 
+    case class ScriptOpInfo(operand: Tree, operatorName: Name, offset: Offset, length: Int)
     
-    // TBD: prefix ops; infix ops; parameters: output&constraints
-    // end scripts sections & script definitions appropriately
     def scriptExpr0(location: Int): Tree = {
+ 
+      var scriptOperatorStack: List[ScriptOpInfo] = Nil
+      val base = scriptOperatorStack
+      var top: Tree = null
+      
+      def operatorName(operator: TokenData): Name = operator.token match {
+        case  NEWLINE | NEWLINES => NEWLINE_Name
+        case IDENTIFIER => operator.name
+      }
+      def operatorLength(operator: TokenData): Int = operator.token match {
+        case  NEWLINE | NEWLINES => 1
+        case IDENTIFIER => operator.name.length
+      }
+      var polishOp1: Name = null
+      var polishOp2: Name = null
+
+      def reduceScriptOperatorStack(prec: Int): Unit = {
+        while (scriptOperatorStack != base && prec <= subScriptInfixOpPrecedence(scriptOperatorStack.head.operatorName)) {
+          val opinfo          = scriptOperatorStack.head
+          scriptOperatorStack = scriptOperatorStack.tail
+          
+          val opPos  = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.length)
+          val start  = opinfo.operand.pos.startOrPoint
+          val end    =            top.pos.  endOrPoint
+  
+         // top = atPos(start, opinfo.offset, end) {makeBinop(isExpr=true, opinfo.operand, opinfo.operatorName, top, opPos)} // TBD...
+        }
+      }
 
       var areSpacesCommas              = false
       var areNewLinesSpecialSeparators = false
       // prefix ops...
-      var polishOp1: TokenData = null
-      var polishOp2: TokenData = null
       if      (in.token == COMMA ) {areSpacesCommas = true; in.nextToken()}
-      else if (isSubScriptInfixOp(in)) {polishOp1 = new TokenData1; polishOp1.copyFrom(in); in.nextToken()}
-      if      (isSubScriptInfixOp(in)) {polishOp2 = new TokenData1; polishOp2.copyFrom(in); in.nextToken(); areNewLinesSpecialSeparators = true}
+      else if (isSubScriptInfixOp(in)) {polishOp1 = in.name; in.nextToken()}
+      if      (isSubScriptInfixOp(in)) {polishOp2 = in.name; in.nextToken(); areNewLinesSpecialSeparators = true}
       
-      val base = opstack // TBD
-      var top: Tree = null
       var moreTerms = true
       do {
-        top = scriptSpaceExpression(polishOp1, areSpacesCommas, areNewLinesSpecialSeparators)
-        if (isSubScriptInfixOp(in)) {
-           top = reduceScriptOperatorStack(base, top, subScriptInfixOpPrecedence(in))
-           val op = in.name
-           opstack = OpInfo(top, op, in.offset) :: opstack
+        top = scriptSpaceExpression(areSpacesCommas, areNewLinesSpecialSeparators)
+        if (isSubScriptInfixOp(in, areNewLinesSpecialSeparators)) {
+           reduceScriptOperatorStack(subScriptInfixOpPrecedence(operatorName(in)))
+           scriptOperatorStack = ScriptOpInfo(top, operatorName(in), in.offset, operatorLength(in)) :: scriptOperatorStack // TBD: new line
            in.nextToken() // eat the operator
            newLineOptWhenFollowing_TokenData(isSubScriptTermStarter)
         }
         else moreTerms = false
       } while (moreTerms)
-	  reduceScriptOperatorStack(base, top, 0)
-        
-      //if (ts.length == 1) ts.head
-      //else Apply(subScriptVMOp(null), ts.toList)
-      null
+	  reduceScriptOperatorStack(0)
+	  
+	  replaceOperatorsByFunctions(top, polishOp1, polishOp2)
     }
     
-    def reduceScriptOperatorStack(base: List[OpInfo], top0: Tree, prec: Int): Tree = {
-      var top = top0
-      val leftAssoc = false
-      while (opstack != base && prec <= precedence(opstack.head.operator)) {
-        val opinfo = opstack.head
-        opstack    = opstack.tail
-        val opPos  = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length); val lPos = opinfo.operand.pos
-        val start  = if (lPos.isDefined) lPos.startOrPoint else opPos.startOrPoint;           val rPos = top.pos
-        val end    = if (rPos.isDefined) rPos.  endOrPoint else opPos.endOrPoint
-
-        top = atPos(start, opinfo.offset, end) {makeBinop(isExpr=true, opinfo.operand, opinfo.operator.toTermName, top, opPos)}
+    def replaceOperatorsByFunctions(top: Tree, spaceOp: Name, newlineOp: Name): Tree = {
+      top match {
+        case Apply(fun: Tree, args: List[Tree]) if (isSubScriptOperator(fun)) => 
+             Apply(subScriptDSLFunForOperator(fun, spaceOp, newlineOp), args.map((f:Tree) => replaceOperatorsByFunctions(f, spaceOp, newlineOp)))
+          
+        case _            => stripParens(top)
       }
-      top
+      
     }
-
     
     
-    
-    def scriptSpaceExpression(spaceOperator: TokenData, areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
+    def scriptSpaceExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
       val ts  = new ListBuffer[Tree]
       var moreTerms = true
       do  {
@@ -1417,7 +1465,7 @@ self =>
       while (moreTerms)
         
       if (ts.length == 1)  ts.head
-      else Apply(subScriptVMOp(spaceOperator), ts.toList)
+      else  Apply(Ident(raw_space), ts.toList)
     }
 
     def scriptCommaExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
@@ -1432,29 +1480,10 @@ self =>
       while (moreTerms)
         
       if (ts.length == 1)  ts.head
-      else  Apply(subScriptVMOp(null), ts.toList)
+      else  Apply(Ident(","), ts.toList)
     }
 
  
-    /** {{{
-     *  PrefixExpr   ::= [`-' | `~' | `!'] SimpleExpr
-     *  }}}
-     */
-    def scriptPrefixExpr(): Tree = ???
-    /*
-    {
-      if (isUnaryOp) {
-        atPos(in.offset) {
-          val name = nme.toUnaryName(rawIdent().toTermName)
-          if (name == nme.UNARY_- && isNumericLit)
-            scriptSimpleExprRest(atPos(in.offset)(literal(isNegated = true)), canApply = true)
-          else
-            Select(stripParens(scriptSimpleExpr()), name)
-        }
-      }
-      else scriptSimpleExpr()
-    }
-*/
     def simpleNativeValueExpr(): Tree = {
       in.isInSubScript = false
       val ret = in.token match {
@@ -1522,6 +1551,7 @@ self =>
       while (isSubScriptUnaryPostfixOp(in)) {
         result = atPos(in.offset) {
           val name = nme.toUnaryName(rawIdent().toTermName)
+          in.nextToken()
           Select(stripParens(result), name)
         }
       }
@@ -1529,10 +1559,18 @@ self =>
     }
     
     def unaryPrefixScriptTerm (): Tree = 
-      if (isSubScriptUnaryPrefixOp) {
+      if (isSubScriptUnaryPrefixOp(in)) {
+        val oldOffset = in.offset
+        val name = in.name
+        //val name = nme.toUnaryName(rawIdent().toTermName)    ????
+        in.nextToken
         atPos(in.offset) {
-          val name = nme.toUnaryName(rawIdent().toTermName)
-          Select(stripParens(unaryPrefixScriptTerm()), name)
+          if (name == nme.UNARY_- && isNumericLit && in.offset==oldOffset+1) {
+            simpleScriptTerm(isNegated = true)
+          }
+          else {
+            Select(stripParens(unaryPrefixScriptTerm()), name)
+          }
         }
       }
       else (in.token: @scala.annotation.switch) match {
@@ -1621,7 +1659,7 @@ self =>
   parenthesizedExpression = "(" scalaExpression ")"
  
      */
-    def simpleScriptTerm (): Tree = 
+    def simpleScriptTerm (isNegated: Boolean = false): Tree = 
       
       in.token match {
       case IF =>
@@ -1665,7 +1703,7 @@ self =>
 	        case IDENTIFIER if (isQMark || isQMark2)  => ??? // parse constraint
 	        case _      => t
 	      }
-      case _ if (isLiteral) => atPos(in.offset)(literal())
+      case _ if (isLiteral) => atPos(in.offset)(literal(isNegated))
       case NEW    => ???
       case _      => syntaxErrorOrIncomplete("illegal start of simple expression", true); errorTermTree
     }
