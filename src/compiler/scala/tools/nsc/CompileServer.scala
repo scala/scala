@@ -194,6 +194,5 @@ object CompileServer extends StandardCompileServer {
     run()
 
     compileSocket deletePort port
-    sys exit 0
   }
 }
