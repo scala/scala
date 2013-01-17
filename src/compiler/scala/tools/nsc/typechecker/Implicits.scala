@@ -952,7 +952,7 @@ trait Implicits {
           infoMap get sym match {
             case Some(infos1) =>
               if (infos1.nonEmpty && !(pre =:= infos1.head.pre.prefix)) {
-                println("amb prefix: "+pre+"#"+sym+" "+infos1.head.pre.prefix+"#"+sym)
+                log(s"Ignoring implicit members of $pre#$sym as it is also visible via another prefix: ${infos1.head.pre.prefix}")
                 infoMap(sym) = List() // ambiguous prefix - ignore implicit members
               }
             case None =>

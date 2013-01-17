@@ -1,0 +1,13 @@
+t6082.scala:1: warning: Implementation restriction: subclassing Classfile does not
+make your annotation visible at runtime.  If that is what
+you want, you must write the annotation class in Java.
+class annot(notValue: String) extends annotation.ClassfileAnnotation
+      ^
+t6082.scala:2: error: classfile annotation arguments have to be supplied as named arguments
+@annot("") class C
+       ^
+t6082.scala:2: error: annotation annot is missing argument notValue
+@annot("") class C
+ ^
+one warning found
+two errors found
