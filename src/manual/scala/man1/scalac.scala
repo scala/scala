@@ -209,9 +209,6 @@ object scalac extends Command {
           CmdOption("Xmax-classfile-name", Argument("n")),
           "Maximum filename length for generated classes."),
         Definition(
-          CmdOption("Xmigration"),
-          "Warn about constructs whose behavior may have changed between 2.7 and 2.8."),
-        Definition(
           CmdOption("Xno-forwarders"),
           "Do not generate static forwarders in mirror classes."),
         Definition(
