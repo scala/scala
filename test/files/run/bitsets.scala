@@ -85,8 +85,8 @@ object TestImmutable {
   import scala.collection.immutable.BitSet
 
   val is0 = BitSet()
-  val is1 = BitSet.fromArray(Array())
-  val is2 = BitSet.fromArray(Array(4))
+  val is1 = BitSet.fromBitMask(Array())
+  val is2 = BitSet.fromBitMask(Array(4))
   val is3 = BitSet.empty
 
   Console.println("is0 = " + is0)
