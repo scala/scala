@@ -24,7 +24,7 @@ import convert._
  *  - `scala.collection.mutable.Buffer` <=> `java.util.List`
  *  - `scala.collection.mutable.Set` <=> `java.util.Set`
  *  - `scala.collection.mutable.Map` <=> `java.util.Map`
- *  - `scala.collection.mutable.ConcurrentMap` <=> `java.util.concurrent.ConcurrentMap`
+ *  - `scala.collection.mutable.concurrent.Map` <=> `java.util.concurrent.ConcurrentMap`
  *
  *  In all cases, converting from a source type to a target type and back
  *  again will return the original source object, e.g.

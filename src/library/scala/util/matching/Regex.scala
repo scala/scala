@@ -204,16 +204,6 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     else if (m.matcher.pattern == this.pattern) Some(1 to m.groupCount map m.group)
     else unapplySeq(m.matched)
 
-  @deprecated("Extracting a match result from anything but a CharSequence or Match is deprecated", "2.10.0")
-  def unapplySeq(target: Any): Option[List[String]] = target match {
-    case s: CharSequence =>
-      val m = pattern matcher s
-      if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
-      else None
-    case m: Match        => unapplySeq(m.matched)
-    case _               => None
-  }
-
   //  @see UnanchoredRegex
   protected def runMatcher(m: Matcher) = m.matches()
 

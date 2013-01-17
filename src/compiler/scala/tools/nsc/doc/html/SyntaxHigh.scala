@@ -29,8 +29,8 @@ private[html] object SyntaxHigh {
   /** Annotations, sorted alphabetically */
   val annotations = Array(
     "BeanProperty", "SerialVersionUID",
-    "beanGetter", "beanSetter", "bridge", "cloneable",
-    "deprecated", "deprecatedName",
+    "beanGetter", "beanSetter", "bridge",
+    "deprecated", "deprecatedName", "deprecatedOverriding", "deprecatedInheritance",
     "elidable", "field", "getter", "inline",
     "migration", "native", "noinline", "param",
     "remote", "setter", "specialized", "strictfp", "switch",

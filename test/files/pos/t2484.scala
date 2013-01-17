@@ -1,7 +1,9 @@
+import concurrent.ExecutionContext.Implicits.global
+
 class Admin extends javax.swing.JApplet {
   val jScrollPane = new javax.swing.JScrollPane (null, 0, 0)
   def t2484: Unit = {
-    scala.concurrent.ops.spawn {jScrollPane.synchronized {
+    scala.concurrent.future {jScrollPane.synchronized {
       def someFunction () = {}
       //scala.concurrent.ops.spawn {someFunction ()}
       jScrollPane.addComponentListener (new java.awt.event.ComponentAdapter {override def componentShown (e: java.awt.event.ComponentEvent) = {
