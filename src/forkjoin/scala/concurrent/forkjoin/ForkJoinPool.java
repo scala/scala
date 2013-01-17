@@ -1372,7 +1372,7 @@ public class ForkJoinPool extends AbstractExecutorService {
         }
 
         if (ex != null)                     // rethrow
-            U.throwException(ex);
+            ForkJoinTask.rethrow(ex);
     }
 
 

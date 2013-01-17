@@ -339,7 +339,7 @@ function configureTextFilter() {
         printAlphabet();
         var input = $("#textfilter input");
         resizeFilterBlock();
-        input.bind("keydown", function(event) {
+        input.bind('keyup', function(event) {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
             }
