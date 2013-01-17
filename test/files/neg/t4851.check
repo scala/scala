@@ -40,4 +40,10 @@ S.scala:10: error: Adapting argument list by inserting (): this is unlikely to b
  after adaptation: new J2((): Unit)
   val z2 = new J2()
            ^
-7 errors found
+S.scala:14: error: Adapting argument list by creating a 3-tuple: this may not be what you want.
+        signature: Test.anyId(a: Any): Any
+  given arguments: 1, 2, 3
+ after adaptation: Test.anyId((1, 2, 3): (Int, Int, Int))
+  val w1 = anyId(1, 2 ,3)
+                ^
+8 errors found

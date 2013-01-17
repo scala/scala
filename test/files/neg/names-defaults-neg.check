@@ -134,9 +134,17 @@ names-defaults-neg.scala:144: error: variable definition needs type because 'x' 
 names-defaults-neg.scala:147: error: variable definition needs type because 'x' is used as a named argument in its body.
   object t6 { var x = t.f(x = 1) }
                   ^
+names-defaults-neg.scala:147: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
+in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
+  object t6 { var x = t.f(x = 1) }
+                            ^
 names-defaults-neg.scala:150: error: variable definition needs type because 'x' is used as a named argument in its body.
   class t9 { var x = t.f(x = 1) }
                  ^
+names-defaults-neg.scala:150: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
+in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
+  class t9 { var x = t.f(x = 1) }
+                           ^
 names-defaults-neg.scala:164: error: variable definition needs type because 'x' is used as a named argument in its body.
   def u3 { var x = u.f(x = 1) }
                ^
@@ -156,5 +164,5 @@ in the current scope. The resulting type inference error (see above) can be fixe
 names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
-two warnings found
+four warnings found
 41 errors found
