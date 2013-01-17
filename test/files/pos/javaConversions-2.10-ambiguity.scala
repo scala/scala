@@ -5,6 +5,6 @@ import java.util.concurrent.{ConcurrentHashMap => CHM}
 object Bar {
   def assertType[T](t: T) = t
   val a = new CHM[String, String]() += (("", ""))
-  assertType[mutable.ConcurrentMap[String, String]](a)
+  assertType[concurrent.Map[String, String]](a)
 }
 // vim: set et:

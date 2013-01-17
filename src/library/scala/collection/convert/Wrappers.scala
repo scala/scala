@@ -276,28 +276,6 @@ private[collection] trait Wrappers {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
-  class ConcurrentMapDeprecatedWrapper[A, B](override val underlying: mutable.ConcurrentMap[A, B]) extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
-
-    def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
-      case Some(v) => v
-      case None => null.asInstanceOf[B]
-    }
-
-    def remove(k: AnyRef, v: AnyRef) = try {
-      underlying.remove(k.asInstanceOf[A], v.asInstanceOf[B])
-    } catch {
-      case ex: ClassCastException =>
-        false
-    }
-
-    def replace(k: A, v: B): B = underlying.replace(k, v) match {
-      case Some(v) => v
-      case None => null.asInstanceOf[B]
-    }
-
-    def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
-  }
-
   class ConcurrentMapWrapper[A, B](override val underlying: concurrent.Map[A, B]) extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
 
     def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
@@ -318,31 +296,6 @@ private[collection] trait Wrappers {
     }
 
     def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
-  }
-
-  case class JConcurrentMapDeprecatedWrapper[A, B](val underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapDeprecatedWrapper[A, B]] with mutable.ConcurrentMap[A, B] {
-    override def get(k: A) = {
-      val v = underlying get k
-      if (v != null) Some(v)
-      else None
-    }
-
-    override def empty = new JConcurrentMapDeprecatedWrapper(new juc.ConcurrentHashMap[A, B])
-
-    def putIfAbsent(k: A, v: B): Option[B] = {
-      val r = underlying.putIfAbsent(k, v)
-      if (r != null) Some(r) else None
-    }
-
-    def remove(k: A, v: B): Boolean = underlying.remove(k, v)
-
-    def replace(k: A, v: B): Option[B] = {
-      val prev = underlying.replace(k, v)
-      if (prev != null) Some(prev) else None
-    }
-
-    def replace(k: A, oldvalue: B, newvalue: B): Boolean =
-      underlying.replace(k, oldvalue, newvalue)
   }
 
   case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
