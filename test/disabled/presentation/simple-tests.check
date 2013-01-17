@@ -178,7 +178,6 @@ TypeMember(value Xexperimental,Tester.this.settings.BooleanSetting,false,true,<n
 TypeMember(value Xhelp,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value Xlinearizer,Tester.this.settings.ChoiceSetting,false,true,<none>)
 TypeMember(value XlogImplicits,Tester.this.settings.BooleanSetting,false,true,<none>)
-TypeMember(value Xmigration28,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value Xnojline,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value Xprint,Tester.this.settings.PhasesSetting,false,true,<none>)
 TypeMember(value Xprintpos,Tester.this.settings.BooleanSetting,false,true,<none>)
