@@ -21,7 +21,6 @@ import convert._
  *    scala.collection.mutable.Buffer <=> java.util.List
  *    scala.collection.mutable.Set <=> java.util.Set
  *    scala.collection.mutable.Map <=> java.util.{ Map, Dictionary }
- *    scala.collection.mutable.ConcurrentMap (deprecated since 2.10) <=> java.util.concurrent.ConcurrentMap
  *    scala.collection.concurrent.Map <=> java.util.concurrent.ConcurrentMap
  *}}}
  *    In all cases, converting from a source type to a target type and back
