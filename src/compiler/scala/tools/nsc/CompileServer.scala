@@ -92,10 +92,11 @@ class StandardCompileServer extends SocketServer {
 
     val args        = input.split("\0", -1).toList
     val newSettings = new FscSettings(fscError)
-    this.verbose    = newSettings.verbose.value
     val command     = newOfflineCompilerCommand(args, newSettings)
+    this.verbose    = newSettings.verbose.value
 
     info("Settings after normalizing paths: " + newSettings)
+    if (!command.files.isEmpty) info("Input files after normalizing paths: " + (command.files mkString ","))
     printMemoryStats()
 
     // Update the idle timeout if given
