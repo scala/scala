@@ -274,12 +274,4 @@ object MurmurHash3 extends MurmurHash3 {
     finalizeHash(h, n)
   }
   */
-
-  @deprecated("Use unorderedHash", "2.10.0")
-  final def symmetricHash[T](xs: scala.collection.GenTraversableOnce[T], seed: Int = symmetricSeed): Int =
-    unorderedHash(xs.seq, seed)
-
-  @deprecated("Use orderedHash", "2.10.0")
-  final def traversableHash[T](xs: scala.collection.GenTraversableOnce[T], seed: Int = traversableSeed): Int =
-    orderedHash(xs.seq, seed)
 }
