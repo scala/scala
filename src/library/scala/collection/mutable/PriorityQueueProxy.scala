@@ -75,14 +75,6 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    */
   override def head: A = self.head
 
-  /** Returns the element with the highest priority in the queue,
-   *  or throws an error if there is no element contained in the queue.
-   *
-   *  @return   the element with the highest priority.
-   */
-  @deprecated("Use `head` instead.", "2.9.0")
-  override def max: A = self.max
-
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
