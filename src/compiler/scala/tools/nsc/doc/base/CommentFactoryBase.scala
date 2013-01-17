@@ -100,26 +100,26 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
   }
 
-  protected val endOfText = '\u0003'
-  protected val endOfLine = '\u000A'
+  private val endOfText = '\u0003'
+  private val endOfLine = '\u000A'
 
   /** Something that should not have happened, happened, and Scaladoc should exit. */
-  protected def oops(msg: String): Nothing =
+  private def oops(msg: String): Nothing =
     throw FatalError("program logic: " + msg)
 
   /** The body of a line, dropping the (optional) start star-marker,
     * one leading whitespace and all trailing whitespace. */
-  protected val CleanCommentLine =
+  private val CleanCommentLine =
     new Regex("""(?:\s*\*\s?)?(.*)""")
 
   /** Dangerous HTML tags that should be replaced by something safer,
     * such as wiki syntax, or that should be dropped. */
-  protected val DangerousTags =
+  private val DangerousTags =
     new Regex("""<(/?(div|ol|ul|li|h[1-6]|p))( [^>]*)?/?>|<!--.*-->""")
 
   /** Maps a dangerous HTML tag to a safe wiki replacement, or an empty string
     * if it cannot be salvaged. */
-  protected def htmlReplacement(mtch: Regex.Match): String = mtch.group(1) match {
+  private def htmlReplacement(mtch: Regex.Match): String = mtch.group(1) match {
     case "p" | "div" => "\n\n"
     case "h1"  => "\n= "
     case "/h1" => " =\n"
@@ -135,11 +135,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
   /** Javadoc tags that should be replaced by something useful, such as wiki
     * syntax, or that should be dropped. */
-  protected val JavadocTags =
+  private val JavadocTags =
     new Regex("""\{\@(code|docRoot|inheritDoc|link|linkplain|literal|value)([^}]*)\}""")
 
   /** Maps a javadoc tag to a useful wiki replacement, or an empty string if it cannot be salvaged. */
-  protected def javadocReplacement(mtch: Regex.Match): String = mtch.group(1) match {
+  private def javadocReplacement(mtch: Regex.Match): String = mtch.group(1) match {
     case "code" => "`" + mtch.group(2) + "`"
     case "docRoot"  => ""
     case "inheritDoc" => ""
@@ -151,41 +151,41 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   }
 
   /** Safe HTML tags that can be kept. */
-  protected val SafeTags =
+  private val SafeTags =
     new Regex("""((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
-  protected val safeTagMarker = '\u000E'
+  private val safeTagMarker = '\u000E'
 
   /** A Scaladoc tag not linked to a symbol and not followed by text */
-  protected val SingleTag =
+  private val SingleTagRegex =
     new Regex("""\s*@(\S+)\s*""")
 
   /** A Scaladoc tag not linked to a symbol. Returns the name of the tag, and the rest of the line. */
-  protected val SimpleTag =
+  private val SimpleTagRegex =
     new Regex("""\s*@(\S+)\s+(.*)""")
 
   /** A Scaladoc tag linked to a symbol. Returns the name of the tag, the name
     * of the symbol, and the rest of the line. */
-  protected val SymbolTag =
+  private val SymbolTagRegex =
     new Regex("""\s*@(param|tparam|throws|groupdesc|groupname|groupprio)\s+(\S*)\s*(.*)""")
 
   /** The start of a scaladoc code block */
-  protected val CodeBlockStart =
+  private val CodeBlockStartRegex =
     new Regex("""(.*?)((?:\{\{\{)|(?:\u000E<pre(?: [^>]*)?>\u000E))(.*)""")
 
   /** The end of a scaladoc code block */
-  protected val CodeBlockEnd =
+  private val CodeBlockEndRegex =
     new Regex("""(.*?)((?:\}\}\})|(?:\u000E</pre>\u000E))(.*)""")
 
   /** A key used for a tag map. The key is built from the name of the tag and
     * from the linked symbol if the tag has one.
     * Equality on tag keys is structural. */
-  protected sealed abstract class TagKey {
+  private sealed abstract class TagKey {
     def name: String
   }
 
-  protected final case class SimpleTagKey(name: String) extends TagKey
-  protected final case class SymbolTagKey(name: String, symbol: String) extends TagKey
+  private final case class SimpleTagKey(name: String) extends TagKey
+  private final case class SymbolTagKey(name: String, symbol: String) extends TagKey
 
   /** Parses a raw comment string into a `Comment` object.
     * @param comment The expanded comment string (including start and end markers) to be parsed.
@@ -231,7 +231,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       inCodeBlock: Boolean
     ): Comment = remaining match {
 
-      case CodeBlockStart(before, marker, after) :: ls if (!inCodeBlock) =>
+      case CodeBlockStartRegex(before, marker, after) :: ls if (!inCodeBlock) =>
         if (!before.trim.isEmpty && !after.trim.isEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, false)
         else if (!before.trim.isEmpty)
@@ -250,7 +250,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, true)
         }
 
-      case CodeBlockEnd(before, marker, after) :: ls =>
+      case CodeBlockEndRegex(before, marker, after) :: ls =>
         if (!before.trim.isEmpty && !after.trim.isEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, true)
         if (!before.trim.isEmpty)
@@ -269,17 +269,17 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, false)
         }
 
-      case SymbolTag(name, sym, body) :: ls if (!inCodeBlock) =>
+      case SymbolTagRegex(name, sym, body) :: ls if (!inCodeBlock) =>
         val key = SymbolTagKey(name, sym)
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
-      case SimpleTag(name, body) :: ls if (!inCodeBlock) =>
+      case SimpleTagRegex(name, body) :: ls if (!inCodeBlock) =>
         val key = SimpleTagKey(name)
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
-      case SingleTag(name) :: ls if (!inCodeBlock) =>
+      case SingleTagRegex(name) :: ls if (!inCodeBlock) =>
         val key = SimpleTagKey(name)
         val value = "" :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
