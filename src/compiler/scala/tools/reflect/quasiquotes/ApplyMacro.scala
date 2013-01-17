@@ -15,7 +15,7 @@ trait ApplyMacro { self: Quasiquotes =>
 
     val (universe, args, parts) =
       c.macroApplication match {
-        case Apply(Select(Select(Apply(Select(universe, _), List(Apply(_, parts0))), _), _), args) =>
+        case q"$universe.QuasiQuote($stringContext.apply(..$parts0)).${_}.apply(..$args)" =>
           val parts = parts0.map{
             case Literal(Constant(s: String)) => s
             case part => c.abort(part.pos, "Quasiquotes can only be used with constant string arguments.")
@@ -58,16 +58,9 @@ trait ApplyMacro { self: Quasiquotes =>
 
     if (settings.Yquasiquotedebug.value) println(s"reified tree\n=${reified}\n=${showRaw(reified)}\n")
 
-    val result =
-      Block(
-        List(ValDef(Modifiers(),
-          nme.UNIVERSE_SHORT,
-          SingletonTypeTree(universe),
-          universe)),
-        reified)
-
-    if (settings.Yquasiquotedebug.value) println(s"result tree\n=${result}\n=${showRaw(result)}\n")
-
-    result
+    q"""{
+      val ${nme.UNIVERSE_SHORT}: $universe.type = $universe
+      $reified
+    }"""
   }
 }

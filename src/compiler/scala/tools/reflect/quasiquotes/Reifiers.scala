@@ -24,6 +24,8 @@ trait Reifiers { self: Quasiquotes =>
 
   } with ReflectReifier with Types {
 
+    val u = nme.UNIVERSE_SHORT
+
     override def reifyTree(tree: Tree) = reifyBasicTree(tree)
 
     // Extractor that matches simple identity-like trees which
@@ -63,11 +65,11 @@ trait Reifiers { self: Quasiquotes =>
           } else if (tree.tpe <:< iterableTreeType) {
             if (card != "..")
               throw new Exception(s"Incorrect cardinality, expected '..', but got '$card'")
-            Some((reifyIterableTree(tree), card))
+            Some((wrapIterable(tree), card))
           } else if (tree.tpe <:< iterableIterableTreeType) {
             if (card != "...")
               throw new Exception(s"Incorrect cardinality, expected '...', but got '$card'")
-            Some((reifyIterableIterableTree(tree), card))
+            Some((wrapIterable2(tree), card))
           } else {
             val liftType = appliedType(liftableType, List(tree.tpe))
             val lift = c.inferImplicitValue(liftType, silent = true)
@@ -80,10 +82,9 @@ trait Reifiers { self: Quasiquotes =>
           }
         }
 
-      def wrapLift(lift: Tree, tree: Tree) =
-        TypeApply(
-          Select(Apply(lift, List(universe, tree)), nme.asInstanceOf_),
-          List(Select(Ident(nme.UNIVERSE_SHORT), tpnme.Tree)))
+      def wrapLift(lift: Tree, tree: Tree) = q"$lift($universe, $tree).asInstanceOf[$u.Tree]"
+      def wrapIterable(tree: Tree) = q"$tree.toList"
+      def wrapIterable2(tree: Tree) = q"$tree.map { _.toList }.toList"
     }
 
     object SubsToNameTree {
@@ -94,7 +95,9 @@ trait Reifiers { self: Quasiquotes =>
 
     override def reifyBasicTree(tree: Tree): Tree = tree match {
       case SimpleTree(SubsToTree(tree, "")) => tree
-      case Apply(f, List(SimpleTree(SubsToTree(argss, "...")))) => reifyMultiApply(f, argss)
+      case Apply(f, List(SimpleTree(SubsToTree(argss, "...")))) =>
+        val f1 = reifyTree(f)
+        q"$argss.foldLeft[$u.Tree]($f1) { $u.Apply(_, _) }"
       case _ => super.reifyBasicTree(tree)
     }
 
@@ -115,34 +118,6 @@ trait Reifiers { self: Quasiquotes =>
           case x @ _ => mkList(List(reify(x)))
         }),
         nme.flatten)
-
-    def reifyMultiApply(f: Tree, argss: Tree) =
-      Apply(
-        Apply(
-          TypeApply(
-            Select(argss, nme.foldLeft),
-            List(Select(Ident(nme.UNIVERSE_SHORT), tpnme.Tree))),
-          List(reifyTree(f))),
-        List(
-          Function(
-            List(
-              ValDef(Modifiers(PARAM), nme.f, TypeTree(), EmptyTree),
-              ValDef(Modifiers(PARAM), nme.args, TypeTree(), EmptyTree)),
-            Apply(
-              Select(Ident(nme.UNIVERSE_SHORT), nme.Apply),
-              List(Ident(nme.f), Ident(nme.args))))))
-
-    def reifyIterableTree(tree: Tree) =
-      Select(tree, nme.toList)
-
-    def reifyIterableIterableTree(tree: Tree) =
-      reifyIterableTree(
-        Apply(
-          Select(tree, nme.map),
-          List(
-            Function(
-              List(ValDef(Modifiers(PARAM), nme.x_1, TypeTree(), EmptyTree)),
-              reifyIterableTree(Ident(nme.x_1))))))
   }
 
   class UnapplyReifier(universe: Tree, placeholders: Placeholders) extends QuasiquoteReifier(universe, placeholders) {
@@ -151,7 +126,7 @@ trait Reifiers { self: Quasiquotes =>
 
     override def reifyBasicTree(tree: Tree): Tree = tree match {
       case SimpleTree(name) =>
-        correspondingTypes(name) = treeTypeTree
+        correspondingTypes(name) = tq"$u.Tree"
         Bind(TermName(name), Ident(nme.WILDCARD))
       case Applied(fun, targs, argss) if fun != tree =>
         if (targs.length > 0)
@@ -173,7 +148,7 @@ trait Reifiers { self: Quasiquotes =>
       if (!placeholders.contains(name.toString))
         super.reifyName(name)
       else {
-        correspondingTypes(name.toString) = nameTypeTree
+        correspondingTypes(name.toString) = tq"$u.Name"
         Bind(TermName(name.toString), Ident(nme.WILDCARD))
       }
     }
@@ -184,13 +159,13 @@ trait Reifiers { self: Quasiquotes =>
       val last = if (xs.length > 0) xs.last else EmptyTree
       last match {
         case SimpleTree(name) if placeholders(name)._2 == ".." =>
-          correspondingTypes(name) = listTreeTypeTree
+          correspondingTypes(name) = tq"List[$u.Tree]"
           val bnd = Bind(TermName(name), Ident(nme.WILDCARD))
           xs.init.foldRight[Tree](bnd) { (el, rest) =>
             scalaFactoryCall("collection.immutable.$colon$colon", reify(el), rest)
           }
         case List(SimpleTree(name)) if placeholders(name)._2 == "..." =>
-          correspondingTypes(name) = listListTreeTypeTree
+          correspondingTypes(name) = tq"List[List[$u.Tree]]"
           val bnd = Bind(TermName(name), Ident(nme.WILDCARD))
           xs.init.foldRight[Tree](bnd) { (el, rest) =>
             scalaFactoryCall("collection.immutable.$colon$colon", reify(el), rest)
@@ -215,21 +190,6 @@ trait Reifiers { self: Quasiquotes =>
     lazy val iterableIterableTreeType = appliedType(IterableClass.toType, List(iterableTreeType))
     lazy val optionTreeType = appliedType(OptionClass.toType, List(treeType))
     lazy val optionNameType = appliedType(OptionClass.toType, List(nameType))
-
-    val termNameTypeTree = Select(Ident(nme.UNIVERSE_SHORT), tpnme.TermName)
-    val typeNameTypeTree = Select(Ident(nme.UNIVERSE_SHORT), tpnme.TypeName)
-    val nameTypeTree = Select(Ident(nme.UNIVERSE_SHORT), tpnme.Name)
-    val treeTypeTree = Select(Ident(nme.UNIVERSE_SHORT), tpnme.Tree)
-    val listTreeTypeTree =
-      AppliedTypeTree(
-        Ident(tpnme.List),
-        List(Select(Ident(nme.UNIVERSE_SHORT), tpnme.Tree)))
-    val listListTreeTypeTree =
-      AppliedTypeTree(
-        Ident(tpnme.List),
-        List(AppliedTypeTree(
-            Ident(tpnme.List),
-            List(Select(Ident(nme.UNIVERSE_SHORT), tpnme.Tree)))))
   }
 
   def memberType(thistype: Type, name: TypeName): Type = {
