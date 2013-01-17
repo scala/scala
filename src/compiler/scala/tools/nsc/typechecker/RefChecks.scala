@@ -1677,6 +1677,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
             checkAnyValSubclass(currentOwner)
+            if (currentOwner.isDerivedValueClass)
+              currentOwner.primaryConstructor makeNotPrivate NoSymbol // SI-6601, must be done *after* pickler!
             if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
           case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
