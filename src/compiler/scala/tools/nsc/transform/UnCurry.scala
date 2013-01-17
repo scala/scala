@@ -115,6 +115,12 @@ abstract class UnCurry extends InfoTransform
     /** Set of mutable local variables that are free in some inner method. */
     private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
 
+    /**
+     * Before doing the transform, determine what free vars are captured
+     * thus needing extra attention from try lifting.
+     * 
+     * This code was resurrected to fix SI-6863
+     */
     override def transformUnit(unit: CompilationUnit) {
       freeMutableVars.clear()
       freeLocalsTraverser(unit.body)
@@ -612,8 +618,9 @@ abstract class UnCurry extends InfoTransform
             }
           case ValDef(_, _, _, rhs) =>
             if (sym eq NoSymbol) throw new IllegalStateException("Encountered Valdef without symbol: "+ tree + " in "+ unit)
-            // a local variable that is mutable and free somewhere later should be lifted
+            // a local variable that is mutable and free somewhere later should be try-lifted
             // as lambda lifting (coming later) will wrap 'rhs' in an Ref object.
+            // This code was resurrected to fix SI-6863
             if (!sym.owner.isSourceMethod || (sym.isVariable && freeMutableVars(sym)))
               withNeedLift(true) { super.transform(tree) }
             else
@@ -889,6 +896,11 @@ abstract class UnCurry extends InfoTransform
     }
 
     /**
+     *  Look for vars that are captured and thus will need extra
+     *  attention from try lifting.
+     *  
+     *  This code was resurrected to fix SI-6863
+     *  
      * PP: There is apparently some degree of overlap between the CAPTURED
      *  flag and the role being filled here.  I think this is how this was able
      *  to go for so long looking only at DefDef and Ident nodes, as bugs
