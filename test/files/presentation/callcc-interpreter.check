@@ -3,7 +3,7 @@ reload: CallccInterpreter.scala
 askTypeCompletion at CallccInterpreter.scala(51,38)
 ================================================================================
 [response] aksTypeCompletion at (51,38)
-retrieved 64 members
+retrieved 63 members
 [accessible:  true] `class AddcallccInterpreter.Add`
 [accessible:  true] `class AppcallccInterpreter.App`
 [accessible:  true] `class CcccallccInterpreter.Ccc`
@@ -50,7 +50,6 @@ retrieved 64 members
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method x=> callccInterpreter.type`
 [accessible:  true] `method →[B](y: B)(callccInterpreter.type, B)`
 [accessible:  true] `object WrongcallccInterpreter.Wrong.type`
 [accessible:  true] `trait TermcallccInterpreter.Term`
