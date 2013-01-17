@@ -18,34 +18,6 @@ import scala.language.implicitConversions
  */
 object JavaConversions {
 
-  @deprecated("Use `asExecutionContext` instead.", "2.10.0")
-  implicit def asTaskRunner(exec: ExecutorService): FutureTaskRunner =
-    new ThreadPoolRunner {
-      override protected def executor =
-        exec
-
-      def shutdown() =
-        exec.shutdown()
-    }
-
-  @deprecated("Use `asExecutionContext` instead.", "2.10.0")
-  implicit def asTaskRunner(exec: Executor): TaskRunner =
-    new TaskRunner {
-      type Task[T] = Runnable
-
-      implicit def functionAsTask[T](fun: () => T): Task[T] = new Runnable {
-        def run() { fun() }
-      }
-
-      def execute[S](task: Task[S]) {
-        exec.execute(task)
-      }
-
-      def shutdown() {
-        // do nothing
-      }
-    }
-
   /**
    * Creates a new `ExecutionContext` which uses the provided `ExecutorService`.
    */
