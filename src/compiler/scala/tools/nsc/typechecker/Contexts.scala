@@ -144,6 +144,7 @@ trait Contexts { self: Analyzer =>
     def typingIndent = "  " * typingIndentLevel
 
     var buffer: Set[AbsTypeError] = _
+    var warningsBuffer: Set[(Position, String)] = _
 
     def enclClassOrMethod: Context =
       if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
@@ -165,6 +166,7 @@ trait Contexts { self: Analyzer =>
 
     def errBuffer = buffer
     def hasErrors = buffer.nonEmpty
+    def hasWarnings = warningsBuffer.nonEmpty
 
     def state: Int = mode
     def restoreState(state0: Int) = mode = state0
@@ -191,6 +193,11 @@ trait Contexts { self: Analyzer =>
     def flushAndReturnBuffer(): Set[AbsTypeError] = {
       val current = buffer.clone()
       buffer.clear()
+      current
+    }
+    def flushAndReturnWarningsBuffer(): Set[(Position, String)] = {
+      val current = warningsBuffer.clone()
+      warningsBuffer.clear()
       current
     }
 
@@ -282,6 +289,7 @@ trait Contexts { self: Analyzer =>
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
       c.buffer = if (this.buffer == null) LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
+      c.warningsBuffer = if (this.warningsBuffer == null) LinkedHashSet[(Position, String)]() else this.warningsBuffer
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
@@ -406,6 +414,7 @@ trait Contexts { self: Analyzer =>
     def warning(pos: Position, msg: String): Unit = warning(pos, msg, false)
     def warning(pos: Position, msg: String, force: Boolean) {
       if (reportErrors || force) unit.warning(pos, msg)
+      else if (bufferErrors) warningsBuffer += ((pos, msg))
     }
 
     def isLocal(): Boolean = tree match {

@@ -728,7 +728,15 @@ trait Typers extends Modes with Adaptations with Tags {
           if (context1.hasErrors) {
             stopStats()
             SilentTypeError(context1.errBuffer.head)
-          } else SilentResultValue(result)
+          } else {
+            // If we have a successful result, emit any warnings it created.
+            if (context1.hasWarnings) {
+              context1.flushAndReturnWarningsBuffer() foreach {
+                case (pos, msg) => unit.warning(pos, msg)
+              }
+            }
+            SilentResultValue(result)
+          }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
           withSavedContext(context){
