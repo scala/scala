@@ -2064,11 +2064,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     type FormulaBuilder = ArrayBuffer[Clause]
     def formulaBuilder  = ArrayBuffer[Clause]()
     def addFormula(buff: FormulaBuilder, f: Formula): Unit = buff ++= f
-    def toFormula(buff: FormulaBuilder): Formula = buff.toArray
+    def toFormula(buff: FormulaBuilder): Formula = buff
 
     // CNF: a formula is a conjunction of clauses
-    type Formula = Array[Clause]
-    def formula(c: Clause*): Formula = c.toArray
+    type Formula = FormulaBuilder
+    def formula(c: Clause*): Formula = ArrayBuffer(c: _*)
 
     type Clause  = Set[Lit]
     // a clause is a disjunction of distinct literals
