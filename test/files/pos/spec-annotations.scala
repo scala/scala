@@ -1,7 +1,7 @@
 class ann(i: Int) extends scala.annotation.Annotation
 
 // annotations on abstract types
-abstract class C1[@cloneable +T, U, V[_]]
+abstract class C1[@annotation.elidable(0) +T, U, V[_]]
 abstract class C2[@deprecated
                   @ann(1) T <: Number,
                   V]

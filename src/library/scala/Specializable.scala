@@ -11,7 +11,7 @@ package scala
 /** A common supertype for companions of specializable types.
  *  Should not be extended in user code.
  */
-trait Specializable extends SpecializableCompanion
+trait Specializable
 
 object Specializable {
   // No type parameter in @specialized annotation.

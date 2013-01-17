@@ -346,60 +346,6 @@ object ThreadPoolTasks {
   )
 }
 
-
-/** An implementation of tasks objects based on the Java thread pooling API and synchronization using futures. */
-@deprecated("This implementation is not used.", "2.10.0")
-trait FutureThreadPoolTasks extends Tasks {
-  import java.util.concurrent._
-
-  trait WrappedTask[R, +Tp] extends Runnable with super.WrappedTask[R, Tp] {
-    @volatile var future: Future[_] = null
-
-    def start() = {
-      executor.synchronized {
-        future = executor.submit(this)
-      }
-    }
-    def sync() = future.get
-    def tryCancel = false
-    def run = {
-      compute()
-    }
-  }
-
-  protected def newWrappedTask[R, Tp](b: Task[R, Tp]): WrappedTask[R, Tp]
-
-  val environment: AnyRef = FutureThreadPoolTasks.defaultThreadPool
-  def executor = environment.asInstanceOf[ThreadPoolExecutor]
-
-  def execute[R, Tp](task: Task[R, Tp]): () => R = {
-    val t = newWrappedTask(task)
-
-    // debuglog("-----------> Executing without wait: " + task)
-    t.start
-
-    () => {
-      t.sync
-      t.body.forwardThrowable
-      t.body.result
-    }
-  }
-
-  def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = {
-    val t = newWrappedTask(task)
-
-    // debuglog("-----------> Executing with wait: " + task)
-    t.start
-
-    t.sync
-    t.body.forwardThrowable
-    t.body.result
-  }
-
-  def parallelismLevel = FutureThreadPoolTasks.numCores
-
-}
-
 object FutureThreadPoolTasks {
   import java.util.concurrent._
 
