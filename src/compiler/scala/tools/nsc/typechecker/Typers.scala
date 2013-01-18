@@ -1781,12 +1781,6 @@ trait Typers extends Adaptations with Tags {
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
-      if ((clazz != ClassfileAnnotationClass) &&
-          (clazz isNonBottomSubClass ClassfileAnnotationClass))
-        restrictionWarning(cdef.pos, unit,
-          "subclassing Classfile does not\n"+
-          "make your annotation visible at runtime.  If that is what\n"+
-          "you want, you must write the annotation class in Java.")
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionSymbolOf(clazz, context)
