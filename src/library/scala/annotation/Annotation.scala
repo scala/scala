@@ -18,4 +18,4 @@ package scala.annotation
  *  @version 1.1, 2/02/2007
  *  @since 2.4
  */
-abstract class Annotation {}
+abstract class Annotation

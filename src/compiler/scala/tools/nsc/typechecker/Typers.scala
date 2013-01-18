@@ -1853,10 +1853,10 @@ trait Typers extends Adaptations with Tags {
       if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
         if (!clazz.owner.isPackageClass)
           unit.error(clazz.pos, "inner classes cannot be classfile annotations")
-        else restrictionWarning(cdef.pos, unit,
-          """|subclassing Classfile does not
-             |make your annotation visible at runtime.  If that is what
-             |you want, you must write the annotation class in Java.""".stripMargin)
+        else if (settings.developer)
+          restrictionWarning(cdef.pos, unit,
+            sm"""|subclassing ClassfileAnnotation does not make your annotation visible at runtime.
+                 |To make an annotation visible at runtime, the annotation class must be defined in Java.""")
       }
 
       if (!isPastTyper) {

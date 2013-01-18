@@ -1,8 +1,3 @@
-reify_classfileann_a.scala:6: warning: Implementation restriction: subclassing Classfile does not
-make your annotation visible at runtime.  If that is what
-you want, you must write the annotation class in Java.
-class ann(bar: String, quux: Array[String] = Array(), baz: ann = null) extends annotation.ClassfileAnnotation
-      ^
 {
   @new ann(bar = "1", quux = Array("2", "3"), baz = new ann(bar = "4")) class C extends AnyRef {
     def <init>() = {
