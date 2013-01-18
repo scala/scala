@@ -92,10 +92,11 @@ class StandardCompileServer extends SocketServer {
 
     val args        = input.split("\0", -1).toList
     val newSettings = new FscSettings(fscError)
-    this.verbose    = newSettings.verbose.value
     val command     = newOfflineCompilerCommand(args, newSettings)
+    this.verbose    = newSettings.verbose.value
 
     info("Settings after normalizing paths: " + newSettings)
+    if (!command.files.isEmpty) info("Input files after normalizing paths: " + (command.files mkString ","))
     printMemoryStats()
 
     // Update the idle timeout if given
@@ -177,7 +178,19 @@ object CompileServer extends StandardCompileServer {
     setter(new PrintStream((redirectDir / filename).createFile().bufferedOutput()))
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) = 
+    execute(() => (), args)
+  
+  /**
+   * Used for internal testing. The callback is called upon
+   * server start, notifying the caller that the server is
+   * ready to run. WARNING: the callback runs in the
+   * server's thread, blocking the server from doing any work
+   * until the callback is finished. Callbacks should be kept
+   * simple and clients should not try to interact with the
+   * server while the callback is processing.
+   */
+  def execute(startupCallback : () => Unit, args: Array[String]) {
     val debug = args contains "-v"
 
     if (debug) {
@@ -190,9 +203,9 @@ object CompileServer extends StandardCompileServer {
     System.err.println("...starting server on socket "+port+"...")
     System.err.flush()
     compileSocket setPort port
+    startupCallback()
     run()
 
     compileSocket deletePort port
-    sys exit 0
   }
 }
