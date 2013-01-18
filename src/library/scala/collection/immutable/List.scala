@@ -351,9 +351,10 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
     val currentCtrl = List.SerializeCtrl.tl.get
     if (currentCtrl == null) {
       val ctrl = new List.SerializeCtrl
-      List.SerializeCtrl.tl.set(ctrl)
-      try writeObject_2_10_1(out, ctrl)
-      finally List.SerializeCtrl.tl.set(null)
+      try {
+        List.SerializeCtrl.tl.set(ctrl)
+        writeObject_2_10_1(out, ctrl)
+      } finally List.SerializeCtrl.tl.set(null)
     } else writeObject_2_10_1(out, currentCtrl)
   }
 
@@ -376,9 +377,10 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
     val currentCtrl = List.SerializeCtrl.tl.get
     if (currentCtrl == null) {
       val ctrl = new List.SerializeCtrl
-      List.SerializeCtrl.tl.set(ctrl)
-      try readObject_2_10_1(in, ctrl)
-      finally List.SerializeCtrl.tl.set(null)
+      try {
+        List.SerializeCtrl.tl.set(ctrl)
+        readObject_2_10_1(in, ctrl)
+      } finally List.SerializeCtrl.tl.set(null)
     } else readObject_2_10_1(in, currentCtrl)
   }
 
