@@ -654,9 +654,6 @@ trait Namers extends MethodSynthesis {
       tree.symbol setInfo completerOf(tree)
 
       if (mods.isCase) {
-        if (primaryConstructorArity > MaxFunctionArity)
-          MaxParametersCaseClassError(tree)
-
         val m = ensureCompanionObject(tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
