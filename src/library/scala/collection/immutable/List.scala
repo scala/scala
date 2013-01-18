@@ -343,29 +343,126 @@ case object Nil extends List[Nothing] {
  */
 @SerialVersionUID(0L - 8476791151983527571L)
 final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extends List[B] {
-  override def head : B = hd
-  override def tail : List[B] = tl
+  override def head: B = hd
+  override def tail: List[B] = tl
   override def isEmpty: Boolean = false
 
+  /** There are several important considerations when serializing functional lists.
+   *  First, serializing the list should allow structural sharing.
+   *  Example:
+   *
+   *  {{{
+   *  class Foo(a: List[Int], b: List[Int])
+   *  val lst = 1 :: 2 :: Nil
+   *  val x = new Foo(lst, lst)
+   *  }}}
+   *
+   *  Both before and after serialization of `a`, it should be true that `x.a eq x.b`.
+   *
+   *  Prior to 2.10, an optimization was applied to lists -- list elements were simply
+   *  serialized directly, without serializing the list nodes themselves.
+   *  This violated structural sharing -- the same list referred to by the same
+   *  object was serialized multiple times, which is both slower and may affect program
+   *  semantics.
+   *
+   *  Second, lists can be very long and serializing list objects directly via
+   *  Java serialization can result in a stack overflow.
+   *  
+   *  To address these issues, we serialize complete list nodes into the stream, but
+   *  do so in a loop instead of calling `writeObject` recursively.
+   *  For each node in the list, we set a `loop` flag to `true` and invoke `writeObject`.
+   *  If `writeObject` detects that `loop` is `true`, it writes the node header and
+   *  the element stored in the node to the output stream, sets the `seen` flag to `true`
+   *  and then returns control to the enclosing loop without writing the tail of the list.
+   *  The enclosing loop then sees that `seen` is set to `true`, concludes that `Nil` was not
+   *  reached and continues writing the tail.
+   *  If `writeObject` detects that `loop` is `false`, then the entire list should be serialized
+   *  to the output stream, and we enter the loop again.
+   *
+   *  We create a list serialization control object and place it into a thread local variable.
+   *  This object holds the `loop` and `seen` flags.
+   *
+   *  See tickets #5374 and #6961.
+   *  For reference, we include the prior implementations of `writeObject` below.
+   */
   private def writeObject(out: ObjectOutputStream) {
+    List.SerializeControl.withControl { ctrl =>
+      writeObject_2_10_1(out, ctrl)
+    }
+  }
+
+  private def writeObject_2_10_1(out: ObjectOutputStream, ctrl: List.SerializeControl) {
+    if (ctrl.inLoop) {
+      ctrl.writeAsSeen(out, hd)
+    } else {
+      // needed to differentiate with the legacy `::` serialization
+      out.writeObject(ListSerializeStart_2_10_1)
+      out.writeObject(hd)
+      var current: List[B] = this
+      do {
+        current = current.tail
+        ctrl.writeInLoop(out, current)
+      } while (ctrl.seen)
+    }
+  }
+
+  /** See the comment with `writeObject`.
+   *
+   *  The implementation of `readObject` is similar, with the difference
+   *  that it can detect lists serialized prior to 2.10.1 and deserialize
+   *  them in a backwards-compatible way.
+   */
+  private def readObject(in: ObjectInputStream) {
+    List.SerializeControl.withControl { ctrl =>
+      readObject_2_10_1(in, ctrl)
+    }
+  }
+
+  private def readObject_2_10_1(in: ObjectInputStream, ctrl: List.SerializeControl) {
+    if (ctrl.inLoop) {
+      hd = ctrl.readAsSeen(in).asInstanceOf[B]
+    } else {
+      val obj = in.readObject
+      if (obj != ListSerializeStart_2_10_1) {
+        readObject_2_10_0(in, obj)
+      } else {
+        hd = in.readObject.asInstanceOf[B]
+        var current = this
+        do {
+          val currentTail = ctrl.readInLoop(in).asInstanceOf[List[B]]
+          current.tl = currentTail
+          current = if (ctrl.seen) currentTail.asInstanceOf[::[B]] else null
+        } while (current != null)
+      }
+    }
+  }
+
+  /** The oldReadObject method prior to SI-6961 is here for
+   *  deserialization of legacy objects.
+   */
+  private def readObject_2_10_0(in: ObjectInputStream, firstObject: AnyRef) {
+    if (firstObject == ListSerializeStart) {
+      this.hd = in.readObject().asInstanceOf[B]
+      this.tl = in.readObject().asInstanceOf[List[B]]
+    } else {
+      // otherwise, we switch back to 2.9.x deserialization
+      readObject_2_9_x(in, firstObject)
+    }
+  }
+
+  /** The old version of the writeObject method, prior to SI-6961.
+   */
+  private def writeObject_2_10_0(out: ObjectOutputStream) {
     out.writeObject(ListSerializeStart) // needed to differentiate with the legacy `::` serialization
     out.writeObject(this.hd)
     out.writeObject(this.tl)
-  }
-
-  private def readObject(in: ObjectInputStream) {
-    val obj = in.readObject()
-    if (obj == ListSerializeStart) {
-      this.hd = in.readObject().asInstanceOf[B]
-      this.tl = in.readObject().asInstanceOf[List[B]]
-    } else oldReadObject(in, obj)
   }
 
   /* The oldReadObject method exists here for compatibility reasons.
    * :: objects used to be serialized by serializing all the elements to
    * the output stream directly, but this was broken (see SI-5374).
    */
-  private def oldReadObject(in: ObjectInputStream, firstObject: AnyRef) {
+  private def readObject_2_9_x(in: ObjectInputStream, firstObject: AnyRef) {
     hd = firstObject.asInstanceOf[B]
     assert(hd != ListSerializeEnd)
     var current: ::[B] = this
@@ -379,6 +476,15 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
         current = list
     }
   }
+
+  /** The old version of the writeObject method, prior to SI-5374.
+   */
+  private def writeObject_2_9_x(out: ObjectOutputStream) {
+    var xs: List[B] = this
+    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
+    out.writeObject(ListSerializeEnd)
+  }
+
 }
 
 /** $factoryInfo
@@ -395,13 +501,67 @@ object List extends SeqFactory[List] {
   override def empty[A]: List[A] = Nil
 
   override def apply[A](xs: A*): List[A] = xs.toList
+
+  private[scala] object SerializeControl {
+    final val tl = new ThreadLocal[List.SerializeControl]
+
+    @inline def withControl[A](f: SerializeControl => A): A = {
+      tl.get match {
+        case null =>
+          val control = new List.SerializeControl
+          tl set control
+          try f(control) finally tl set null
+        case control => f(control)
+      }
+    }
+  }
+
+  private[scala] final class SerializeControl {
+    private var seen0: Boolean = false
+    private var inLoop0: Boolean = false
+ 
+    def seen = seen0
+ 
+    def inLoop = inLoop0
+ 
+    def writeInLoop(out: ObjectOutputStream, obj: AnyRef) {
+      seen0 = false
+      inLoop0 = true
+      try out.writeObject(obj)
+      finally inLoop0 = false
+    }
+ 
+    def writeAsSeen(out: ObjectOutputStream, obj: Any) {
+      inLoop0 = false
+      out.writeObject(obj)
+      seen0 = true
+    }
+ 
+    def readInLoop(in: ObjectInputStream): AnyRef = {
+      seen0 = false
+      inLoop0 = true
+      try in.readObject()
+      finally inLoop0 = false
+    }
+ 
+    def readAsSeen(in: ObjectInputStream): AnyRef = {
+      inLoop0 = false
+      val obj = in.readObject()
+      seen0 = true
+      obj
+    }
+  }
+
 }
 
-/** Only used for list serialization */
+/** Only used for list serialization in 2.10.0 */
 @SerialVersionUID(0L - 8287891243975527522L)
 private[scala] case object ListSerializeStart
 
-/** Only used for list serialization */
+/** Only used for list serialization from 2.10.1 */
+@SerialVersionUID(0L - 8392743892147938211L)
+private[scala] case object ListSerializeStart_2_10_1
+
+/** Only used for list serialization. */
 @SerialVersionUID(0L - 8476791151975527571L)
 private[scala] case object ListSerializeEnd
-
