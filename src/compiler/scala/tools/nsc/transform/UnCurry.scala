@@ -603,8 +603,6 @@ abstract class UnCurry extends InfoTransform
             }
           case ValDef(_, _, _, rhs) =>
             if (sym eq NoSymbol) throw new IllegalStateException("Encountered Valdef without symbol: "+ tree + " in "+ unit)
-            // a local variable that is mutable and free somewhere later should be lifted
-            // as lambda lifting (coming later) will wrap 'rhs' in an Ref object.
             if (!sym.owner.isSourceMethod)
               withNeedLift(true) { super.transform(tree) }
             else
