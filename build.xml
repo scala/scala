@@ -22,7 +22,7 @@ END-USER TARGETS
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
-  <target name="test" depends="test.done, osgi.test, bc.run"
+  <target name="test" depends="test.done, osgi.test"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
 
   <target name="test-opt"
