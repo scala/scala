@@ -5,7 +5,7 @@ import java.lang.Math.min
 import symtab.Flags._
 import scala.tools.nsc.util._
 import scala.reflect.runtime.ReflectionUtils
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map => MutableMap}
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
@@ -326,6 +326,13 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
    */
   private lazy val macroMirror: ru.JavaMirror = ru.runtimeMirror(macroClassloader)
 
+  /** Flavors of macro runtime, varying based on what the compiler wants from a macro.
+   */
+  type MacroRuntimeFlavor = Int
+  final val FLAVOR_EXPAND: MacroRuntimeFlavor = 1
+  final val FLAVOR_ONINFER: MacroRuntimeFlavor = 2
+  private val flavorNames = Map(FLAVOR_EXPAND -> "expand", FLAVOR_ONINFER -> "onInfer")
+
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.
    *    2) Loads its enclosing class from the macro classloader.
@@ -336,18 +343,27 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
    *          `null` otherwise.
    */
   type MacroRuntime = MacroArgs => Any
-  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]
-  private def macroRuntime(macroDef: Symbol): MacroRuntime = {
-    macroTraceVerbose("looking for macro implementation: ")(macroDef)
+  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MutableMap[MacroRuntimeFlavor, MacroRuntime]]
+  def macroRuntime(macroDef: Symbol, flavor: MacroRuntimeFlavor): MacroRuntime = {
+    macroTraceVerbose(s"looking for ${flavorNames(flavor)} macro runtime: ")(macroDef)
     if (fastTrack contains macroDef) {
-      macroLogVerbose("macro expansion is serviced by a fast track")
-      fastTrack(macroDef)
+      if (flavor == FLAVOR_EXPAND) {
+        macroLogVerbose("macro expansion is serviced by a fast track")
+        fastTrack(macroDef)
+      } else {
+        macroLogVerbose(s"${flavorNames(flavor)} for a fast track macro => ignoring")
+        null
+      }
     } else {
-      macroRuntimesCache.getOrElseUpdate(macroDef, {
+      val symbolRuntimesCache = macroRuntimesCache.getOrElseUpdate(macroDef, MutableMap())
+      symbolRuntimesCache.getOrElseUpdate(flavor, {
         val binding = loadMacroImplBinding(macroDef)
         val isBundle = binding.isBundle
         val className = binding.className
-        val methName = binding.methName
+        val methName =
+          if (flavor == FLAVOR_EXPAND) binding.methName
+          else if (flavor == FLAVOR_ONINFER) "onInfer"
+          else abort(s"${flavorNames(flavor)} $macroDef")
         macroLogVerbose(s"resolved implementation as $className.$methName")
 
         try {
@@ -392,14 +408,14 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
         } catch {
           case ex: Exception =>
             macroTraceVerbose(s"macro runtime failed to load: ")(ex.toString)
-            macroDef setFlag IS_ERROR
+            if (flavor == FLAVOR_EXPAND) macroDef setFlag IS_ERROR
             null
         }
       })
     }
   }
 
-  private def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext = {
+  def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext = {
     new {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
@@ -885,7 +901,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
         Cancel(typer.infer.setError(expandee))
       }
       else try {
-        val runtime = macroRuntime(expandee.symbol)
+        val runtime = macroRuntime(expandee.symbol, FLAVOR_EXPAND)
         if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
         else macroExpandWithoutRuntime(typer, expandee)
       } catch {

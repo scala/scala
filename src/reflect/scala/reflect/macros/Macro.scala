@@ -36,4 +36,9 @@ trait Macro {
    *  it can define the context next to the implementation, makes implementation signature more lightweight.
    */
   val c: Context
+
+  /** Callback triggered by the compiler whenever it tries to infer type arguments in an expression
+   *  which involves one of the macros in the bundle. See http://docs.scala-lang.org/overviews/macros/inference.html for documentation.
+   */
+  def onInfer(tc: c.TypeInferenceContext): Unit = tc.inferDefault()
 }

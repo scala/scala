@@ -37,7 +37,8 @@ trait Context extends Aliases
                  with Parsers
                  with Evals
                  with ExprUtils
-                 with Synthetics {
+                 with Synthetics
+                 with Infer {
 
   /** The compile-time universe. */
   val universe: Universe

@@ -1141,41 +1141,52 @@ trait Infer extends Checkable {
      * Substitute `tparams` to `targs` in `tree`, after adjustment by `adjustTypeArgs`, returning the type parameters that were not determined
      * If passed, infers against specified type `treeTp` instead of `tree.tp`.
      */
-    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, useWeaklyCompatible: Boolean = false): List[Symbol] = {
+    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, useWeaklyCompatible: Boolean = false, allowMacroHelpers: Boolean = true): List[Symbol] = {
       val treeTp = if(treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
-      val (targs, tvars) = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
-      printInference(
-        ptBlock("inferExprInstance",
-          "tree"    -> tree,
-          "tree.tpe"-> tree.tpe,
-          "tparams" -> tparams,
-          "pt"      -> pt,
-          "targs"   -> targs,
-          "tvars"   -> tvars
-        )
-      )
-
-      if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
-        substExpr(tree, tparams, targs, pt)
-        List()
+      if (allowMacroHelpers && treeInfo.isMacroApplication(tree)) {
+        val runtime = macroRuntime(tree.symbol, FLAVOR_ONINFER)
+        if (runtime != null) {
+          val c = macroContext(newTyper(context), EmptyTree, tree)
+          val tic = new c.InferExprInstanceContext(tree, tparams, pt, treeTp, keepNothings, useWeaklyCompatible)
+          runtime(MacroArgs(c, List(tic))).asInstanceOf[List[Symbol]]
+        } else {
+          inferExprInstance(tree, tparams, pt, treeTp0, keepNothings, useWeaklyCompatible, allowMacroHelpers = false)
+        }
       } else {
-        val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, tvars, targs)
+        val (targs, tvars) = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
         printInference(
-          ptBlock("inferExprInstance/AdjustedTypeArgs",
-            "okParams" -> okParams,
-            "okArgs" -> okArgs,
-            "leftUndet" -> leftUndet
+          ptBlock("inferExprInstance",
+            "tree"    -> tree,
+            "tree.tpe"-> tree.tpe,
+            "tparams" -> tparams,
+            "pt"      -> pt,
+            "targs"   -> targs,
+            "tvars"   -> tvars
           )
         )
-        substExpr(tree, okParams, okArgs, pt)
-        leftUndet
+
+        if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
+          substExpr(tree, tparams, targs, pt)
+          List()
+        } else {
+          val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, tvars, targs)
+          printInference(
+            ptBlock("inferExprInstance/AdjustedTypeArgs",
+              "okParams" -> okParams,
+              "okArgs" -> okArgs,
+              "leftUndet" -> leftUndet
+            )
+          )
+          substExpr(tree, okParams, okArgs, pt)
+          leftUndet
+        }
       }
     }
 
     /** Substitute free type variables `undetparams` of polymorphic argument
      *  expression `tree` to `targs`, Error if `targs` is null.
      */
-    private def substExpr(tree: Tree, undetparams: List[Symbol], targs: List[Type], pt: Type) {
+    def substExpr(tree: Tree, undetparams: List[Symbol], targs: List[Type], pt: Type) {
       if (targs eq null) {
         if (!tree.tpe.isErroneous && !pt.isErroneous)
           PolymorphicExpressionInstantiationError(tree, undetparams, pt)
@@ -1197,41 +1208,54 @@ trait Infer extends Checkable {
      *                     and that thus have not been substituted.
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
-                            args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
+                            args: List[Tree], pt0: Type,
+                            allowMacroHelpers: Boolean = true): List[Symbol] = fn.tpe match {
       case mt @ MethodType(params0, _) =>
         try {
-          val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
-          val formals = formalTypes(mt.paramTypes, args.length)
-          val argtpes  = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
-          val restpe  = fn.tpe.resultType(argtpes)
-
-          val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
-            methTypeArgs(undetparams, formals, restpe, argtpes, pt)
-
-          printInference("[infer method] solving for %s in %s based on (%s)%s (%s)".format(
-            undetparams.map(_.name).mkString(", "),
-            fn.tpe,
-            argtpes.mkString(", "),
-            restpe,
-            (okparams map (_.name), okargs).zipped.map(_ + "=" + _).mkString("solved: ", ", ", "")
-          ))
-
-          if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
-            val treeSubst = new TreeTypeSubstituter(okparams, okargs)
-            treeSubst traverseTrees fn :: args
-            notifyUndetparamsInferred(okparams, okargs)
-
-            leftUndet match {
-              case Nil  => Nil
-              case xs   =>
-                // #3890
-                val xs1 = treeSubst.typeMap mapOver xs
-                if (xs ne xs1)
-                  new TreeSymSubstTraverser(xs, xs1) traverseTrees fn :: args
-
-                xs1
+          val tree = Apply(fn, args)
+          if (allowMacroHelpers && treeInfo.isMacroApplication(tree)) {
+            val runtime = macroRuntime(tree.symbol, FLAVOR_ONINFER)
+            if (runtime != null) {
+              val c = macroContext(newTyper(context), EmptyTree, tree)
+              val tic = new c.InferMethodInstanceContext(tree, undetparams, pt0)
+              runtime(MacroArgs(c, List(tic))).asInstanceOf[List[Symbol]]
+            } else {
+              inferMethodInstance(fn, undetparams, args, pt0, allowMacroHelpers = false)
             }
-          } else Nil
+          } else {
+            val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
+            val formals = formalTypes(mt.paramTypes, args.length)
+            val argtpes  = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
+            val restpe  = fn.tpe.resultType(argtpes)
+
+            val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
+              methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+
+            printInference("[infer method] solving for %s in %s based on (%s)%s (%s)".format(
+              undetparams.map(_.name).mkString(", "),
+              fn.tpe,
+              argtpes.mkString(", "),
+              restpe,
+              (okparams map (_.name), okargs).zipped.map(_ + "=" + _).mkString("solved: ", ", ", "")
+            ))
+
+            if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
+              val treeSubst = new TreeTypeSubstituter(okparams, okargs)
+              treeSubst traverseTrees fn :: args
+              notifyUndetparamsInferred(okparams, okargs)
+
+              leftUndet match {
+                case Nil  => Nil
+                case xs   =>
+                  // #3890
+                  val xs1 = treeSubst.typeMap mapOver xs
+                  if (xs ne xs1)
+                    new TreeSymSubstTraverser(xs, xs1) traverseTrees fn :: args
+
+                  xs1
+              }
+            } else Nil
+          }
         }
         catch ifNoInstance { msg =>
           NoMethodInstanceError(fn, args, msg); List()
@@ -1527,7 +1551,7 @@ trait Infer extends Checkable {
         // todo: missing test case for bests.isEmpty
         bests match {
           case best :: Nil                              => tree setSymbol best setType (pre memberType best)
-          case best :: competing :: _ if alts0.nonEmpty => 
+          case best :: competing :: _ if alts0.nonEmpty =>
             // SI-6912 Don't give up and leave an OverloadedType on the tree.
             //         Originally I wrote this as `if (secondTry) ... `, but `tryTwice` won't attempt the second try
             //         unless an error is issued. We're not issuing an error, in the assumption that it would be
