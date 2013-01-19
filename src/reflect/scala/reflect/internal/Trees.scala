@@ -232,6 +232,19 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def name: Name
   }
 
+  object RefTree extends RefTreeExtractor {
+    def apply(qualifier: Tree, name: Name): RefTree = qualifier match {
+      case EmptyTree =>
+        Ident(name)
+      case qual if qual.isTerm =>
+        Select(qual, name)
+      case qual if qual.isType =>
+        assert(name.isTypeName, s"qual = $qual, name = $name")
+        SelectFromTypeTree(qual, name.toTypeName)
+    }
+    def unapply(refTree: RefTree): Option[(Tree, Name)] = Some((refTree.qualifier, refTree.name))
+  }
+
   abstract class DefTree extends SymTree with NameTree with DefTreeApi {
     def name: Name
     override def isDef = true

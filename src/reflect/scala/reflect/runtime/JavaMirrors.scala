@@ -990,8 +990,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             javaTypeToValueClass(jclazz) orElse lookupClass
 
         assert (cls.isType,
-          sm"""${if (cls == NoSymbol) "not a type: symbol" else "no symbol could be"}
-              | loaded from $jclazz in $owner with name $simpleName and classloader $classLoader""")
+          (if (cls != NoSymbol) s"not a type: symbol $cls" else "no symbol could be") +
+          s" loaded from $jclazz in $owner with name $simpleName and classloader $classLoader")
 
         cls.asClass
       }

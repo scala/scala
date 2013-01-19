@@ -3,5 +3,5 @@ t5689.scala:4: error: macro implementation has wrong shape:
  found   : (c: scala.reflect.macros.Context)(i: c.Expr[Double]): c.Expr[Int]
 type mismatch for return type: c.Expr[Int] does not conform to c.Expr[String]
   def returnsString(i: Double): String = macro returnsIntImpl
-                                               ^
+      ^
 one error found

@@ -535,6 +535,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val LiftableClass         = getClassIfDefined("scala.reflect.api.Liftable")    // defined in scala-reflect.jar, so we need to be careful
 
+    lazy val MacroClass                          = getClassIfDefined("scala.reflect.macros.Macro") // defined in scala-reflect.jar, so we need to be careful
     lazy val MacroContextClass                   = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix                  = if (MacroContextClass != NoSymbol) getMemberMethod(MacroContextClass, nme.prefix) else NoSymbol
          def MacroContextPrefixType              = if (MacroContextClass != NoSymbol) getTypeMember(MacroContextClass, tpnme.PrefixType) else NoSymbol
@@ -659,6 +660,12 @@ trait Definitions extends api.StandardDefinitions {
       case _ => false
     }
     def isTupleType(tp: Type) = isTupleTypeDirect(tp.dealiasWiden)
+
+    def isMacroBundleType(tp: Type) = {
+      val isNonTrivial = tp != ErrorType && tp != NothingTpe && tp != NullTpe
+      val isMacroCompatible = MacroClass != NoSymbol && tp <:< MacroClass.tpe
+      isNonTrivial && isMacroCompatible
+    }
 
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)

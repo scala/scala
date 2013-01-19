@@ -147,8 +147,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   trait MacroCompiler {
     // The implementation is hardwired to `scala.tools.reflect.DefaultMacroCompiler.resolveMacroImpl`
     // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
-    // def resolveMacroImpl(macroDef: _): _ = macro ???
-    def resolveMacroImpl(macroDef: Any): Any = ???
+    def resolveMacroImpl(macroDef: _): _ = macro ???
   }
 
   /** Default instance of the `MacroCompiler` type class.
