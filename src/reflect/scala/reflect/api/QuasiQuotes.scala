@@ -3,18 +3,6 @@ package api
 
 trait Quasiquotes { self: Universe =>
 
-  // TODO: remove after the new starr is deployed
-  trait QuasiQuote {
-    object q {
-      def apply(args: Any*): Any = ???
-      def unapply(tree: Any): Option[Any] = ???
-    }
-    object tq {
-      def apply(args: Any*): Any = ???
-      def unapply(tree: Any): Option[Any] = ???
-    }
-  }
-
   // implementation is hardwired to methods of `scala.tools.reflect.Quasiquotes`
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   implicit class Quasiquote(ctx: StringContext) {
