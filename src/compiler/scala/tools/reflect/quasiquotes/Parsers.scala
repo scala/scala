@@ -27,11 +27,11 @@ trait Parsers { self: Quasiquotes =>
 
     def parse(code: String, placeholders: Set[String]): Tree = {
       val file = new BatchSourceFile("<quasiquotes>", wrapCode(code))
-      val tree = new QuasiQuoteParser(file, placeholders).parse()
+      val tree = new QuasiquoteParser(file, placeholders).parse()
       unwrapTree(tree)
     }
 
-    class QuasiQuoteParser(source0: SourceFile, placeholders: Set[String]) extends SourceFileParser(source0) {
+    class QuasiquoteParser(source0: SourceFile, placeholders: Set[String]) extends SourceFileParser(source0) {
       // q"def foo($x)"
       override def allowTypelessParams = true
 
