@@ -65,7 +65,7 @@ trait ModelFactoryImplicitSupport {
    *     class A[T]
    *     class B extends A[Int]
    *     class C extends A[String]
-   *     implicit def pimpA[T: Numeric](a: A[T]): D
+   *     implicit def enrichA[T: Numeric](a: A[T]): D
    *  }}}
    *  For B, no constraints are generated as Numeric[Int] is already in the default scope. On the other hand, for the
    *  conversion from C to D, depending on -implicits-show-all, the conversion can:
@@ -121,13 +121,13 @@ trait ModelFactoryImplicitSupport {
    * What? in details:
    *  - say we start from a class A[T1, T2, T3, T4]
    *  - we have an implicit function (view) in scope:
-   *     def pimpA[T3 <: Long, T4](a: A[Int, Foo[Bar[X]], T3, T4])(implicit ev1: TypeTag[T4], ev2: Numeric[T4]): PimpedA
-   *  - A is converted to PimpedA ONLY if a couple of constraints are satisfied:
+   *     def enrichA[T3 <: Long, T4](a: A[Int, Foo[Bar[X]], T3, T4])(implicit ev1: TypeTag[T4], ev2: Numeric[T4]): EnrichedA
+   *  - A is converted to EnrichedA ONLY if a couple of constraints are satisfied:
    *     * T1 must be equal to Int
    *     * T2 must be equal to Foo[Bar[X]]
    *     * T3 must be upper bounded by Long
    *     * there must be evidence of Numeric[T4] and a TypeTag[T4] within scope
-   *  - the final type is PimpedA and A therefore inherits a couple of members from pimpedA
+   *  - the final type is EnrichedA and A therefore inherits a couple of members from enrichA
    *
    * How?
    * some notes:
@@ -495,11 +495,11 @@ trait ModelFactoryImplicitSupport {
    * returns the simplified type of the view
    *
    * for the example view:
-   *   implicit def pimpMyClass[T](a: MyClass[T])(implicit ev: Numeric[T]): PimpedMyClass[T]
+   *   implicit def enrichMyClass[T](a: MyClass[T])(implicit ev: Numeric[T]): EnrichedMyClass[T]
    * the implicit view result type is:
-   *   (a: MyClass[T])(implicit ev: Numeric[T]): PimpedMyClass[T]
+   *   (a: MyClass[T])(implicit ev: Numeric[T]): EnrichedMyClass[T]
    * and the simplified type will be:
-   *   MyClass[T] => PimpedMyClass[T]
+   *   MyClass[T] => EnrichedMyClass[T]
    */
   def removeImplicitParameters(viewType: Type): (Type, List[Type]) = {
 
