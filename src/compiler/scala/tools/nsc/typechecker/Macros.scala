@@ -351,23 +351,44 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
         macroLogVerbose(s"resolved implementation as $className.$methName")
 
         try {
+          // JAVA REFLECTION
+          // TODO: get rid of this when the Scala reflection-based version is fixed
+          // ==========
           macroTraceVerbose("loading implementation class: ")(className)
           macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroClassloader))
-          val implContainerSym = macroMirror.classSymbol(Class.forName(className, true, macroClassloader))
-          val implMethSym = implContainerSym.typeSignature.member(ru.TermName(methName)).asMethod
-          macroLogVerbose(s"successfully loaded macro impl as ($implContainerSym, $implMethSym)")
+          val implClass = Class.forName(className, true, macroClassloader)
+          val implMeths = implClass.getDeclaredMethods.find(_.getName == methName)
+          // relies on the fact that macro impls cannot be overloaded
+          // so every methName can resolve to at maximum one method
+          val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
+          macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implClass, implMeth))
           args => {
-            val implContainer =
-              if (isBundle) {
-                val implCtorSym = implContainerSym.typeSignature.member(ru.nme.CONSTRUCTOR).asMethod
-                macroMirror.reflectClass(implContainerSym).reflectConstructor(implCtorSym)(args.c)
-              } else {
-                macroMirror.reflectModule(implContainerSym.module.asModule).instance
-              }
-            val implMeth = macroMirror.reflect(implContainer).reflectMethod(implMethSym)
+            val implObj =
+              if (isBundle) implClass.getConstructor(classOf[scala.reflect.macros.Context]).newInstance(args.c)
+              else implClass.getField("MODULE$").get(null)
             val implArgs = if (isBundle) args.others else args.c +: args.others
-            implMeth(implArgs: _*)
+            implMeth.invoke(implObj, implArgs.asInstanceOf[Seq[AnyRef]]: _*)
           }
+          // SCALA REFLECTION
+          // TODO: make it work under partest, where thread-unsafety of reflection raises it's ugly head
+          // ==========
+          // macroTraceVerbose("loading implementation class: ")(className)
+          // macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroClassloader))
+          // val implContainerSym = macroMirror.classSymbol(Class.forName(className, true, macroClassloader))
+          // val implMethSym = implContainerSym.typeSignature.member(ru.TermName(methName)).asMethod
+          // macroLogVerbose(s"successfully loaded macro impl as ($implContainerSym, $implMethSym)")
+          // args => {
+          //   val implContainer =
+          //     if (isBundle) {
+          //       val implCtorSym = implContainerSym.typeSignature.member(ru.nme.CONSTRUCTOR).asMethod
+          //       macroMirror.reflectClass(implContainerSym).reflectConstructor(implCtorSym)(args.c)
+          //     } else {
+          //       macroMirror.reflectModule(implContainerSym.module.asModule).instance
+          //     }
+          //   val implMeth = macroMirror.reflect(implContainer).reflectMethod(implMethSym)
+          //   val implArgs = if (isBundle) args.others else args.c +: args.others
+          //   implMeth(implArgs: _*)
+          // }
         } catch {
           case ex: Exception =>
             macroTraceVerbose(s"macro runtime failed to load: ")(ex.toString)
