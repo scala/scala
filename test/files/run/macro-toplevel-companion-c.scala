@@ -45,7 +45,7 @@ object Test extends DirectTest {
       log("Compiling Test_2...")
       if (compileTest()) log("Success!") else log("Failed...")
     }
-    println("""macroSynthetic-.*?\.scala""".r.replaceAllIn(baos.toString, "<synthetic file name>"))
+    println("""(Found in|and) .*?compileLateSynthetic-.*?\.scala""".r.replaceAllIn(baos.toString, m => m.group(1) + " <synthetic file name>"))
     System.setErr(prevErr)
   }
 }

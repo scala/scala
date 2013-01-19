@@ -11,6 +11,8 @@ import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.macros.runtime.AbortMacroException
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.macros.compiler.DefaultMacroCompiler
 
 /**
  *  Code to deal with macros, namely with:
@@ -37,7 +39,7 @@ import scala.reflect.macros.runtime.AbortMacroException
  *    (Expr(elems))
  *    (TypeTag(Int))
  */
-trait Macros extends scala.tools.reflect.FastTrack with Traces {
+trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
   self: Analyzer =>
 
   import global._
@@ -76,6 +78,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  and various accounting information necessary when composing an argument list for the reflective invocation.
    */
   private case class MacroImplBinding(
+    // Is this macro impl a bundle (a trait extending Macro) or a vanilla def?
+    val isBundle: Boolean,
     // Java class name of the class that contains the macro implementation
     // is used to load the corresponding object with Java reflection
     className: String,
@@ -110,19 +114,21 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *
    *    @scala.reflect.macros.internal.macroImpl(
    *      `macro`(
+   *        "isBundle" = false,
    *        "signature" = List(-1),
    *        "methodName" = "impl",
    *        "versionFormat" = <current version format>,
    *        "className" = "Macros$"))
    */
   private object MacroImplBinding {
-    val versionFormat = 2
+    val versionFormat = 3
 
     def pickleAtom(obj: Any): Tree =
       obj match {
         case list: List[_] => Apply(Ident(ListModule), list map pickleAtom)
         case s: String => Literal(Constant(s))
         case i: Int => Literal(Constant(i))
+        case b: Boolean => Literal(Constant(b))
       }
 
     def unpickleAtom(tree: Tree): Any =
@@ -130,11 +136,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         case Apply(list @ Ident(_), args) if list.symbol == ListModule => args map unpickleAtom
         case Literal(Constant(s: String)) => s
         case Literal(Constant(i: Int)) => i
+        case Literal(Constant(b: Boolean)) => b
       }
 
     def pickle(macroImplRef: Tree): Tree = {
-      val MacroImplReference(owner, macroImpl, targs) = macroImplRef
-      val paramss = macroImpl.paramss
+      val MacroImplReference(isBundle, owner, macroImpl, targs) = macroImplRef
 
       // todo. refactor when fixing SI-5498
       def className: String = {
@@ -157,12 +163,13 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           case _ => IMPLPARAM_OTHER
         }
 
-        val transformed = transformTypeTagEvidenceParams(paramss, (param, tparam) => tparam)
+        val transformed = transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => tparam)
         mmap(transformed)(p => if (p.isTerm) fingerprint(p.info) else p.paramPos)
       }
 
       val payload = List[(String, Any)](
         "versionFormat" -> versionFormat,
+        "isBundle"      -> isBundle,
         "className"     -> className,
         "methodName"    -> macroImpl.name.toString,
         "signature"     -> signature
@@ -205,10 +212,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       val pickleVersionFormat = payload("versionFormat").asInstanceOf[Int]
       if (versionFormat != pickleVersionFormat) throw new Error(s"macro impl binding format mismatch: expected $versionFormat, actual $pickleVersionFormat")
 
+      val isBundle = payload("isBundle").asInstanceOf[Boolean]
       val className = payload("className").asInstanceOf[String]
       val methodName = payload("methodName").asInstanceOf[String]
       val signature = payload("signature").asInstanceOf[List[List[Int]]]
-      MacroImplBinding(className, methodName, signature, targs)
+      MacroImplBinding(isBundle, className, methodName, signature, targs)
     }
   }
 
@@ -222,330 +230,82 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     MacroImplBinding.unpickle(pickle)
   }
 
-  /** Transforms parameters lists of a macro impl.
-   *  The `transform` function is invoked only for WeakTypeTag evidence parameters.
-   *
-   *  The transformer takes two arguments: a value parameter from the parameter list
-   *  and a type parameter that is witnesses by the value parameter.
-   *
-   *  If the transformer returns a NoSymbol, the value parameter is not included from the result.
-   *  If the transformer returns something else, this something else is included in the result instead of the value parameter.
-   *
-   *  Despite of being highly esoteric, this function significantly simplifies signature analysis.
-   *  For example, it can be used to strip macroImpl.paramss from the evidences (necessary when checking def <-> impl correspondence)
-   *  or to streamline creation of the list of macro arguments.
-   */
-  private def transformTypeTagEvidenceParams(paramss: List[List[Symbol]], transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
-    if (paramss.isEmpty || paramss.last.isEmpty) return paramss // no implicit parameters in the signature => nothing to do
-    if (paramss.head.isEmpty || !(paramss.head.head.tpe <:< MacroContextClass.tpe)) return paramss // no context parameter in the signature => nothing to do
-    def transformTag(param: Symbol): Symbol = param.tpe.dealias match {
-      case TypeRef(SingleType(SingleType(NoPrefix, c), universe), WeakTypeTagClass, targ :: Nil)
-      if c == paramss.head.head && universe == MacroContextUniverse =>
-        transform(param, targ.typeSymbol)
-      case _ =>
-        param
-    }
-    val transformed = paramss.last map transformTag filter (_ ne NoSymbol)
-    if (transformed.isEmpty) paramss.init else paramss.init :+ transformed
-  }
+  def computeMacroDefTypeFromMacroImplRef(macroDdef: DefDef, macroImplRef: Tree): Type = {
+    macroImplRef match {
+      case MacroImplReference(_, _, macroImpl, targs) =>
+        // Step I. Transform c.Expr[T] to T and everything else to Any
+        var runtimeType = decreaseMetalevel(macroImpl.info.finalResultType)
 
-  private def dealiasAndRewrap(tp: Type)(fn: Type => Type): Type = {
-    if (isRepeatedParamType(tp)) scalaRepeatedType(fn(tp.typeArgs.head.dealias))
-    else fn(tp.dealias)
-  }
+        // Step II. Transform type parameters of a macro implementation into type arguments in a macro definition's body
+        runtimeType = runtimeType.substituteTypes(macroImpl.typeParams, targs map (_.tpe))
 
-  /** Increases metalevel of the type, i.e. transforms:
-   *    * T to c.Expr[T]
-   *
-   *  @see Metalevels.scala for more information and examples about metalevels
-   */
-  private def increaseMetalevel(c: Symbol, tp: Type): Type = dealiasAndRewrap(tp) {
-    case tp => typeRef(SingleType(NoPrefix, c), MacroContextExprClass, List(tp))
-  }
-
-  /** Decreases metalevel of the type, i.e. transforms:
-   *    * c.Expr[T] to T
-   *
-   *  @see Metalevels.scala for more information and examples about metalevels
-   */
-  private def decreaseMetalevel(tp: Type): Type = dealiasAndRewrap(tp) {
-    case ExprClassOf(runtimeType) => runtimeType
-    case _ => AnyClass.tpe // so that macro impls with rhs = ??? don't screw up our inference
-  }
-
-  def computeMacroDefTypeFromMacroImpl(macroDdef: DefDef, macroImplSig: MacroImplSig): Type = {
-    // Step I. Transform c.Expr[T] to T and c.Tree to <untyped>
-    var runtimeType = decreaseMetalevel(macroImplSig.ret)
-
-    // Step II. Transform type parameters of a macro implementation into type arguments in a macro definition's body
-    runtimeType = runtimeType.substituteTypes(macroImplSig.tparams, loadMacroImplBinding(macroDdef.symbol).targs.map(_.tpe))
-
-    // Step III. Transform c.prefix.value.XXX to this.XXX and implParam.value.YYY to defParam.YYY
-    def unsigma(tpe: Type): Type =
-      transformTypeTagEvidenceParams(macroImplSig.paramss, (param, tparam) => NoSymbol) match {
-        case (implCtxParam :: Nil) :: implParamss =>
-          val implToDef = flatMap2(implParamss, macroDdef.vparamss)(map2(_, _)((_, _))).toMap
-          object UnsigmaTypeMap extends TypeMap {
-            def apply(tp: Type): Type = tp match {
-              case TypeRef(pre, sym, args) =>
-                val pre1 = pre match {
-                  case SingleType(SingleType(SingleType(NoPrefix, c), prefix), value) if c == implCtxParam && prefix == MacroContextPrefix && value == ExprValue =>
-                    ThisType(macroDdef.symbol.owner)
-                  case SingleType(SingleType(NoPrefix, implParam), value) if value == ExprValue =>
-                    implToDef get implParam map (defParam => SingleType(NoPrefix, defParam.symbol)) getOrElse pre
+        // Step III. Transform c.prefix.value.XXX to this.XXX and implParam.value.YYY to defParam.YYY
+        def unsigma(tpe: Type): Type =
+          transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => NoSymbol) match {
+            case (implCtxParam :: Nil) :: implParamss =>
+              val implToDef = flatMap2(implParamss, macroDdef.vparamss)(map2(_, _)((_, _))).toMap
+              object UnsigmaTypeMap extends TypeMap {
+                def apply(tp: Type): Type = tp match {
+                  case TypeRef(pre, sym, args) =>
+                    val pre1 = pre match {
+                      case SingleType(SingleType(SingleType(NoPrefix, c), prefix), value) if c == implCtxParam && prefix == MacroContextPrefix && value == ExprValue =>
+                        ThisType(macroDdef.symbol.owner)
+                      case SingleType(SingleType(NoPrefix, implParam), value) if value == ExprValue =>
+                        implToDef get implParam map (defParam => SingleType(NoPrefix, defParam.symbol)) getOrElse pre
+                      case _ =>
+                        pre
+                    }
+                    val args1 = args map mapOver
+                    TypeRef(pre1, sym, args1)
                   case _ =>
-                    pre
+                    mapOver(tp)
                 }
-                val args1 = args map mapOver
-                TypeRef(pre1, sym, args1)
-              case _ =>
-                mapOver(tp)
-            }
+              }
+
+              UnsigmaTypeMap(tpe)
+            case _ =>
+              tpe
           }
 
-          UnsigmaTypeMap(tpe)
-        case _ =>
-          tpe
-      }
-
-    unsigma(runtimeType)
-  }
-
-  /** Signature of a macro implementation, used to check def <-> impl correspondence.
-   *
-   *  Technically it can be just an alias to MethodType, but promoting it to a first-class entity
-   *  provides better encapsulation and convenient syntax for pattern matching.
-   */
-  case class MacroImplSig(tparams: List[Symbol], paramss: List[List[Symbol]], ret: Type)
-
-  /** An actual macro implementation signature extracted from a macro implementation method.
-   *
-   *  In the example above for the following macro impl:
-   *    def fooBar[T: c.WeakTypeTag]
-   *           (c: scala.reflect.macros.Context)
-   *           (xs: c.Expr[List[T]])
-   *           : c.Expr[T] = ...
-   *
-   *  This function will return:
-   *    (c: scala.reflect.macros.Context)(xs: c.Expr[List[T]])c.Expr[T]
-   *
-   *  Note that type tag evidence parameters are not included into the result.
-   *  Type tag context bounds for macro impl tparams are optional.
-   *  Therefore compatibility checks ignore such parameters, and we don't need to bother about them here.
-   *
-   *  This method cannot be reduced to just macroImpl.info, because macro implementations might
-   *  come in different shapes. If the implementation is an apply method of a Macro-compatible object,
-   *  then it won't have (c: Context) in its parameters, but will rather refer to Macro.c.
-   *
-   *  @param macroImpl The macro implementation symbol
-   */
-  def macroImplSig(macroImpl: Symbol): MacroImplSig = {
-    val tparams = macroImpl.typeParams
-    val paramss = transformTypeTagEvidenceParams(macroImpl.paramss, (param, tparam) => NoSymbol)
-    val ret = macroImpl.info.finalResultType
-    MacroImplSig(tparams, paramss, ret)
-  }
-
-  /** A reference macro implementation signature extracted from a given macro definition.
-   *
-   *  In the example above for the following macro def:
-   *    def foo[T](xs: List[T]): T = macro fooBar
-   *
-   *  This function will return:
-   *    (c: scala.reflect.macros.Context)(xs: c.Expr[List[T]])c.Expr[T]
-   *
-   *  Note that type tag evidence parameters are not included into the result.
-   *  Type tag context bounds for macro impl tparams are optional.
-   *  Therefore compatibility checks ignore such parameters, and we don't need to bother about them here.
-   *
-   *  Also note that we need a DefDef, not the corresponding MethodSymbol, because that symbol would be of no use for us.
-   *  Macro signatures are verified when typechecking macro defs, which means that at that moment inspecting macroDef.info
-   *  means asking for cyclic reference errors.
-   *
-   *  We need macro implementation symbol as well, because the return type of the macro definition might be omitted,
-   *  and in that case we'd need to infer it from the return type of the macro implementation. Luckily for us, we can
-   *  use that symbol without a risk of running into cycles.
-   *
-   *  @param typer     Typechecker of `macroDdef`
-   *  @param macroDdef The macro definition tree
-   *  @param macroImpl The macro implementation symbol
-   */
-  def referenceMacroImplSig(typer: Typer, macroDdef: DefDef, macroImpl: Symbol): MacroImplSig = {
-    // had to move method's body to an object because of the recursive dependencies between sigma and param
-    object SigGenerator {
-      val cache    = scala.collection.mutable.Map[Symbol, Symbol]()
-      val macroDef = macroDdef.symbol
-      val ctxParam = makeParam(nme.macroContext, macroDdef.pos, MacroContextClass.tpe, SYNTHETIC)
-      val paramss  = List(ctxParam) :: mmap(macroDdef.vparamss)(param)
-      val macroDefRet =
-        if (!macroDdef.tpt.isEmpty) typer.typedType(macroDdef.tpt).tpe
-        else computeMacroDefTypeFromMacroImpl(macroDdef, macroImplSig(macroImpl))
-      val implReturnType = sigma(increaseMetalevel(ctxParam, macroDefRet))
-
-      object SigmaTypeMap extends TypeMap {
-        def mapPrefix(pre: Type) = pre match {
-          case ThisType(sym) if sym == macroDef.owner =>
-            singleType(singleType(singleType(NoPrefix, ctxParam), MacroContextPrefix), ExprValue)
-          case SingleType(NoPrefix, sym) =>
-            mfind(macroDdef.vparamss)(_.symbol == sym).fold(pre)(p => singleType(singleType(NoPrefix, param(p)), ExprValue))
-          case _ =>
-            mapOver(pre)
-        }
-        def apply(tp: Type): Type = tp match {
-          case TypeRef(pre, sym, args) =>
-            val pre1  = mapPrefix(pre)
-            val args1 = mapOverArgs(args, sym.typeParams)
-            if ((pre eq pre1) && (args eq args1)) tp
-            else typeRef(pre1, sym, args1)
-          case _ =>
-            mapOver(tp)
-        }
-      }
-      def sigma(tpe: Type): Type = SigmaTypeMap(tpe)
-
-      def makeParam(name: Name, pos: Position, tpe: Type, flags: Long) =
-        macroDef.newValueParameter(name.toTermName, pos, flags) setInfo tpe
-      def param(tree: Tree): Symbol = (
-        cache.getOrElseUpdate(tree.symbol, {
-          val sym = tree.symbol
-          assert(sym.isTerm, s"sym = $sym, tree = $tree")
-          makeParam(sym.name, sym.pos, sigma(increaseMetalevel(ctxParam, sym.tpe)), sym.flags)
-        })
-      )
+        unsigma(runtimeType)
+      case _ =>
+        ErrorType
     }
-
-    import SigGenerator._
-    val result = MacroImplSig(macroDdef.tparams map (_.symbol), paramss, implReturnType)
-    macroLogVerbose(sm"""
-      |generating macroImplSig for: $macroDdef
-      |result is: $result
-    """.trim)
-    result
   }
 
-  /** Verifies that the body of a macro def typechecks to a reference to a static public non-overloaded method,
+  /** Verifies that the body of a macro def typechecks to a reference to a static public non-overloaded method or a top-level macro bundle,
    *  and that that method is signature-wise compatible with the given macro definition.
    *
-   *  @return Typechecked rhs of the given macro definition if everything is okay.
+   *  @return Macro impl reference for the given macro definition if everything is okay.
    *          EmptyTree if an error occurs.
    */
-  def typedMacroBody(typer: Typer, macroDdef: DefDef): Tree =
-    try new MacroTyper(typer, macroDdef).typed
-    catch { case MacroBodyTypecheckException => EmptyTree }
-
-  class MacroTyper(val typer: Typer, val macroDdef: DefDef) extends MacroErrors {
-    private def typed1Expr(tree: Tree) = typer.typed1(tree, EXPRmode, WildcardType)
-
-    // Phase I: sanity checks
+  def typedMacroBody(typer: Typer, macroDdef: DefDef): Tree = {
     val macroDef = macroDdef.symbol
-    macroLogVerbose("typechecking macro def %s at %s".format(macroDef, macroDdef.pos))
     assert(macroDef.isMacro, macroDdef)
-    if (fastTrack contains macroDef) MacroDefIsFastTrack()
-    if (!typer.checkFeature(macroDdef.pos, MacrosFeature, immediate = true)) MacroFeatureNotEnabled()
 
-    // we use typed1 instead of typed, because otherwise adapt is going to mess us up
-    // if adapt sees <qualifier>.<method>, it will want to perform eta-expansion and will fail
-    // unfortunately, this means that we have to manually trigger macro expansion
-    // because it's adapt which is responsible for automatic expansion during typechecking
-    def typecheckRhs(rhs: Tree): Tree = {
-      try {
-        // interestingly enough, just checking isErroneous doesn't cut it
-        // e.g. a "type arguments [U] do not conform to method foo's type parameter bounds" error
-        // doesn't manifest itself as an error in the resulting tree
-        val prevNumErrors = reporter.ERROR.count
-        var rhs1 = typed1Expr(rhs)
-        def rhsNeedsMacroExpansion = rhs1.symbol != null && rhs1.symbol.isTermMacro && !rhs1.symbol.isErroneous
-        while (rhsNeedsMacroExpansion) {
-          rhs1 = macroExpand1(typer, rhs1) match {
-            case Success(expanded) =>
-              try {
-                val typechecked = typed1Expr(expanded)
-                macroLogVerbose("typechecked1:%n%s%n%s".format(typechecked, showRaw(typechecked)))
-                typechecked
-              } finally {
-                popMacroContext()
-              }
-            case Fallback(fallback) =>
-              typed1Expr(fallback)
-            case Delayed(delayed) =>
-              typer.instantiate(delayed, EXPRmode, WildcardType)
-            case Skipped(skipped) =>
-              skipped
-            case Failure(failure) =>
-              failure
-          }
-        }
-        val typecheckedWithErrors = (rhs1 exists (_.isErroneous)) || reporter.ERROR.count != prevNumErrors
-        if (typecheckedWithErrors) MacroDefUntypeableBodyError()
-        rhs1
-      } catch {
-        case ex: TypeError =>
-          typer.reportTypeError(context, rhs.pos, ex)
-          MacroDefUntypeableBodyError()
+    macroLogVerbose("typechecking macro def %s at %s".format(macroDef, macroDdef.pos))
+    if (fastTrack contains macroDef) {
+      macroLogVerbose("typecheck terminated unexpectedly: macro is fast track")
+      assert(!macroDdef.tpt.isEmpty, "fast track macros must provide result type")
+      EmptyTree
+    } else {
+      def fail() = { if (macroDef != null) macroDef setFlag IS_ERROR; macroDdef setType ErrorType; EmptyTree }
+      def success(macroImplRef: Tree) = { bindMacroImpl(macroDef, macroImplRef); macroImplRef }
+
+      if (!typer.checkFeature(macroDdef.pos, MacrosFeature, immediate = true)) {
+        macroLogVerbose("typecheck terminated unexpectedly: language.experimental.macros feature is not enabled")
+        fail()
+      } else {
+        val macroDdef1: macroDdef.type = macroDdef
+        val typer1: typer.type = typer
+        val macroCompiler = new {
+          val global: self.global.type = self.global
+          val typer: self.global.analyzer.Typer = typer1.asInstanceOf[self.global.analyzer.Typer]
+          val macroDdef: self.global.DefDef = macroDdef1
+        } with DefaultMacroCompiler
+        val macroImplRef = macroCompiler.resolveMacroImpl
+        if (macroImplRef.isEmpty) fail() else success(macroImplRef)
       }
-    }
-
-    // Phase II: typecheck the right-hand side of the macro def
-    val typed = typecheckRhs(macroDdef.rhs)
-    typed match {
-      case MacroImplReference(_, meth, _) if meth == Predef_??? =>
-        bindMacroImpl(macroDef, typed)
-        MacroDefIsQmarkQmarkQmark()
-      case MacroImplReference(owner, meth, targs) =>
-        if (!meth.isMethod) MacroDefInvalidBodyError()
-        if (!meth.isPublic) MacroImplNotPublicError()
-        if (meth.isOverloaded) MacroImplOverloadedError()
-        if (!owner.isStaticOwner && !owner.moduleClass.isStaticOwner) MacroImplNotStaticError()
-        if (meth.typeParams.length != targs.length) MacroImplWrongNumberOfTypeArgumentsError(typed)
-        bindMacroImpl(macroDef, typed)
-      case _ =>
-        MacroDefInvalidBodyError()
-    }
-
-    // Phase III: check compatibility between the macro def and its macro impl
-    // this check ignores type tag evidence parameters, because type tag context bounds are optional
-    // aXXX (e.g. aparamss) => characteristics of the actual macro impl signature extracted from the macro impl ("a" stands for "actual")
-    // rXXX (e.g. rparamss) => characteristics of the reference macro impl signature synthesized from the macro def ("r" stands for "reference")
-    val macroImpl = typed.symbol
-    val MacroImplSig(atparams, aparamss, aret) = macroImplSig(macroImpl)
-    val MacroImplSig(_, rparamss, rret) = referenceMacroImplSig(typer, macroDdef, macroImpl)
-    val atvars = atparams map freshVar
-    def atpeToRtpe(atpe: Type) = atpe.substSym(aparamss.flatten, rparamss.flatten).instantiateTypeParams(atparams, atvars)
-
-    // we only check correspondence between value parameterss
-    // type parameters of macro defs and macro impls don't have to coincide with each other
-    val implicitParams = aparamss.flatten filter (_.isImplicit)
-    if (implicitParams.nonEmpty) MacroImplNonTagImplicitParameters(implicitParams)
-    if (aparamss.length != rparamss.length) MacroImplParamssMismatchError()
-    map2(aparamss, rparamss)((aparams, rparams) => {
-      if (aparams.length < rparams.length) MacroImplMissingParamsError(aparams, rparams)
-      if (rparams.length < aparams.length) MacroImplExtraParamsError(aparams, rparams)
-    })
-
-    try {
-      // cannot fuse this map2 and the map2 above because if aparamss.flatten != rparamss.flatten
-      // then `atpeToRtpe` is going to fail with an unsound substitution
-      map2(aparamss.flatten, rparamss.flatten)((aparam, rparam) => {
-        if (aparam.name != rparam.name && !rparam.isSynthetic) MacroImplParamNameMismatchError(aparam, rparam)
-        if (isRepeated(aparam) ^ isRepeated(rparam)) MacroImplVarargMismatchError(aparam, rparam)
-        val aparamtpe = aparam.tpe.dealias match {
-          case RefinedType(List(tpe), Scope(sym)) if tpe =:= MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
-          case tpe => tpe
-        }
-        checkMacroImplParamTypeMismatch(atpeToRtpe(aparamtpe), rparam)
-      })
-
-      checkMacroImplResultTypeMismatch(atpeToRtpe(aret), rret)
-
-      val maxLubDepth = lubDepth(aparamss.flatten map (_.tpe)) max lubDepth(rparamss.flatten map (_.tpe))
-      val atargs = solvedTypes(atvars, atparams, atparams map varianceInType(aret), upper = false, depth = maxLubDepth)
-      val boundsOk = typer.silent(_.infer.checkBounds(macroDdef, NoPrefix, NoSymbol, atparams, atargs, ""))
-      boundsOk match {
-        case SilentResultValue(true) => // do nothing, success
-        case SilentResultValue(false) | SilentTypeError(_) => MacroImplTargMismatchError(atargs, atparams)
-      }
-    } catch {
-      case ex: NoInstance => MacroImplTparamInstantiationError(atparams, ex)
     }
   }
 
@@ -554,6 +314,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  Is also capable of detecting REPL and reusing its classloader.
    */
   lazy val macroClassloader: ClassLoader = findMacroClassLoader()
+
+  /** Reflective mirror built from `macroClassloader`.
+   */
+  private lazy val macroMirror: ru.JavaMirror = ru.runtimeMirror(macroClassloader)
 
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.
@@ -574,28 +338,32 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     } else {
       macroRuntimesCache.getOrElseUpdate(macroDef, {
         val binding = loadMacroImplBinding(macroDef)
+        val isBundle = binding.isBundle
         val className = binding.className
         val methName = binding.methName
         macroLogVerbose(s"resolved implementation as $className.$methName")
 
-        if (binding.className == Predef_???.owner.fullName.toString && binding.methName == Predef_???.name.encoded) {
+        if (binding.className == Predef_???.owner.javaClassName && binding.methName == Predef_???.name.encoded) {
           args => throw new AbortMacroException(args.c.enclosingPosition, "macro implementation is missing")
         } else {
-          // I don't use Scala reflection here, because it seems to interfere with JIT magic
-          // whenever you instantiate a mirror (and not do anything with in, just instantiate), performance drops by 15-20%
-          // I'm not sure what's the reason - for me it's pure voodoo
-          // upd. my latest experiments show that everything's okay
-          // it seems that in 2.10.1 we can easily switch to Scala reflection
           try {
             macroLogVerbose(s"loading implementation class: $className")
             macroLogVerbose(s"classloader is: ${ReflectionUtils.show(macroClassloader)}")
-            val implObj = ReflectionUtils.staticSingletonInstance(macroClassloader, className)
-            // relies on the fact that macro impls cannot be overloaded
-            // so every methName can resolve to at maximum one method
-            val implMeths = implObj.getClass.getDeclaredMethods.find(_.getName == methName)
-            val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
-            macroLogVerbose(s"successfully loaded macro impl as ($implObj, $implMeth)")
-            args => implMeth.invoke(implObj, ((args.c +: args.others) map (_.asInstanceOf[AnyRef])): _*)
+            val implContainerSym = macroMirror.classSymbol(Class.forName(className, true, macroClassloader))
+            val implMethSym = implContainerSym.typeSignature.member(ru.TermName(methName)).asMethod
+            macroLogVerbose(s"successfully loaded macro impl as ($implContainerSym, $implMethSym)")
+            args => {
+              val implContainer =
+                if (isBundle) {
+                  val implCtorSym = implContainerSym.typeSignature.member(ru.nme.CONSTRUCTOR).asMethod
+                  macroMirror.reflectClass(implContainerSym).reflectConstructor(implCtorSym)(args.c)
+                } else {
+                  macroMirror.reflectModule(implContainerSym.module.asModule).instance
+                }
+              val implMeth = macroMirror.reflect(implContainer).reflectMethod(implMethSym)
+              val implArgs = if (isBundle) args.others else args.c +: args.others
+              implMeth(implArgs: _*)
+            }
           } catch {
             case ex: Exception =>
               macroLogVerbose(s"macro runtime failed to load: ${ex.toString}")
@@ -640,31 +408,32 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     import typer.TyperErrorGen._
     val isNullaryArgsEmptyParams = argss.isEmpty && paramss == ListOfNil
-    if (paramss.length < argss.length) MacroTooManyArgumentLists(expandee)
-    if (paramss.length > argss.length && !isNullaryArgsEmptyParams) MacroTooFewArgumentLists(expandee)
+    if (paramss.length < argss.length) MacroTooManyArgumentListsError(expandee)
+    if (paramss.length > argss.length && !isNullaryArgsEmptyParams) MacroTooFewArgumentListsError(expandee)
 
     val macroImplArgs: List[Any] =
       if (fastTrack contains macroDef) {
         // Take a dry run of the fast track implementation
         if (fastTrack(macroDef) validate expandee) argss.flatten
-        else typer.TyperErrorGen.MacroTooFewArgumentLists(expandee)
+        else MacroTooFewArgumentListsError(expandee)
       }
       else {
         val binding = loadMacroImplBinding(macroDef)
-        if (binding.className == Predef_???.owner.fullName.toString && binding.methName == Predef_???.name.encoded) Nil
+        if (binding.className == Predef_???.owner.javaClassName && binding.methName == Predef_???.name.encoded) Nil
         else {
+          val signature = if (binding.isBundle) binding.signature else binding.signature.tail
           macroLogVerbose(s"binding: $binding")
 
           // STEP I: prepare value arguments of the macro expansion
           // wrap argss in c.Expr if necessary (i.e. if corresponding macro impl param is of type c.Expr[T])
           // expand varargs (nb! varargs can apply to any parameter section, not necessarily to the last one)
-          val trees = map3(argss, paramss, binding.signature.tail)((args, defParams, implParams) => {
+          val trees = map3(argss, paramss, signature)((args, defParams, implParams) => {
             val isVarargs = isVarArgsList(defParams)
             if (isVarargs) {
-              if (defParams.length > args.length + 1) MacroTooFewArguments(expandee)
+              if (defParams.length > args.length + 1) MacroTooFewArgumentsError(expandee)
             } else {
-              if (defParams.length < args.length) MacroTooManyArguments(expandee)
-              if (defParams.length > args.length) MacroTooFewArguments(expandee)
+              if (defParams.length < args.length) MacroTooManyArgumentsError(expandee)
+              if (defParams.length > args.length) MacroTooFewArgumentsError(expandee)
             }
 
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
@@ -700,7 +469,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           // then T and U need to be inferred from the lexical scope of the call using `asSeenFrom`
           // whereas V won't be resolved by asSeenFrom and need to be loaded directly from `expandee` which needs to contain a TypeApply node
           // also, macro implementation reference may contain a regular type as a type argument, then we pass it verbatim
-          val tags = binding.signature.flatten filter (_ >= IMPLPARAM_TAG) map (paramPos => {
+          val tags = signature.flatten filter (_ >= IMPLPARAM_TAG) map (paramPos => {
             val targ = binding.targs(paramPos).tpe.typeSymbol
             val tpe = if (targ.isTypeParameterOrSkolem) {
               if (targ.owner == macroDef) {

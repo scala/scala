@@ -1234,7 +1234,10 @@ trait Typers extends Adaptations with Tags {
       }
 
       // begin adapt
-      tree.tpe match {
+      if (isMacroImplRef(tree)) {
+        if (treeInfo.isMacroApplication(tree)) adapt(unmarkMacroImplRef(tree), mode, pt, original)
+        else tree
+      } else tree.tpe match {
         case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
         case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
@@ -5534,7 +5537,7 @@ trait Typers extends Adaptations with Tags {
 
       val isMacroBodyOkay = !tree.symbol.isErroneous && !(tree1 exists (_.isErroneous)) && tree1 != EmptyTree
       val shouldInheritMacroImplReturnType = ddef.tpt.isEmpty
-      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImpl(ddef, macroImplSig(tree1.symbol)) else AnyTpe
+      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImplRef(ddef, tree1) else AnyTpe
     }
 
     def transformedOr(tree: Tree, op: => Tree): Tree = transformed remove tree match {

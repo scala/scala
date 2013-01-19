@@ -8,6 +8,7 @@ package reflect
 package internal
 
 import java.security.MessageDigest
+import java.util.UUID.randomUUID
 import Chars.isOperatorPart
 import scala.annotation.switch
 import scala.language.implicitConversions
@@ -290,6 +291,9 @@ trait StdNames {
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
+    val MACRO_INVOKER_PACKAGE: NameType    = "scala.reflect.macros.synthetic"
+    // TODO: if I use dollars in MACRO_INVOKER_SUFFIX, as in "$Invoker$", then Scala reflection fails to load implementations
+    val MACRO_INVOKER_SUFFIX: NameType     = "Invoker"
     val UNIVERSE_BUILD_PREFIX: NameType    = "$u.build."
     val UNIVERSE_PREFIX: NameType          = "$u."
     val UNIVERSE_SHORT: NameType           = "$u"
@@ -584,6 +588,7 @@ trait StdNames {
     val box: NameType                  = "box"
     val build : NameType               = "build"
     val bytes: NameType                = "bytes"
+    val c: NameType                    = "c"
     val canEqual_ : NameType           = "canEqual"
     val checkInitialized: NameType     = "checkInitialized"
     val classOf: NameType              = "classOf"
