@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.automata
+package scala.xml.dtd.impl
 
-import scala.util.regexp.{ Base }
 import scala.collection.{ mutable, immutable }
 
 // todo: replace global variable pos with acc
@@ -18,7 +17,7 @@ import scala.collection.{ mutable, immutable }
   * position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
   */
 @deprecated("This class will be removed", "2.10.0")
-abstract class BaseBerrySethi {
+private[dtd] abstract class BaseBerrySethi {
   val lang: Base
   import lang.{ Alt, Eps, Meta, RegExp, Sequ, Star }
 

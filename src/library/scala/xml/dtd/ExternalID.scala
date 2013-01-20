@@ -14,8 +14,7 @@ package dtd
  *
  *  @author Burak Emir
  */
-abstract class ExternalID extends parsing.TokenTests
-{
+abstract class ExternalID extends parsing.TokenTests {
   def quoted(s: String) = {
     val c = if (s contains '"') '\'' else '"'
     c + s + c

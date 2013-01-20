@@ -6,12 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.automata
+package scala.xml.dtd.impl
 
 import scala.collection.{ mutable, immutable }
 
 @deprecated("This class will be removed", "2.10.0")
-class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
+private[dtd] class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
   import nfa.labels
 
   def selectTag(Q: immutable.BitSet, finals: Array[Int]) =

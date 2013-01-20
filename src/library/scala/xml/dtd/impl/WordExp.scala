@@ -8,7 +8,7 @@
 
 
 
-package scala.util.regexp
+package scala.xml.dtd.impl
 
 /**
  *  The class `WordExp` provides regular word expressions.
@@ -39,7 +39,7 @@ package scala.util.regexp
  *  @version 1.0
  */
 @deprecated("This class will be removed", "2.10.0")
-abstract class WordExp extends Base {
+private[dtd] abstract class WordExp extends Base {
 
   abstract class Label
 
