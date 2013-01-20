@@ -1488,6 +1488,15 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
+  trait TreeStackTraverser extends Traverser {
+    import collection.mutable
+    val path: mutable.Stack[Tree] = mutable.Stack()
+    abstract override def traverse(t: Tree) = {
+      path push t
+      try super.traverse(t) finally path.pop()
+    }
+  }
+
   private lazy val duplicator = new Transformer {
     override val treeCopy = newStrictTreeCopier
     override def transform(t: Tree) = {
