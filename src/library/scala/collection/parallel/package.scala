@@ -13,7 +13,8 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.mutable.ParArray
 import scala.collection.mutable.UnrolledBuffer
-import scala.annotation.unchecked.uncheckedVariance
+
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.language.implicitConversions
 
 /** Package object for parallel collections.
@@ -50,9 +51,10 @@ package object parallel {
 
   val defaultTaskSupport: TaskSupport = getTaskSupport
 
-  def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
+  def setTaskSupport[Coll](c: Coll, @deprecatedName('t) taskSupport: TaskSupport): Coll = {
     c match {
-      case pc: ParIterableLike[_, _, _] => pc.tasksupport = t
+      case pc: ParIterableLike[_, _, _] => pc.tasksupport = taskSupport
+      case cb: Combiner[_, _]           => cb.combinerTaskSupport = taskSupport
       case _ => // do nothing
     }
     c
@@ -209,7 +211,7 @@ package parallel {
   (private val bucketnumber: Int)
   extends Combiner[Elem, To] {
   //self: EnvironmentPassingCombiner[Elem, To] =>
-    protected var buckets: Array[UnrolledBuffer[Buck]] @uncheckedVariance = new Array[UnrolledBuffer[Buck]](bucketnumber)
+    protected var buckets: Array[UnrolledBuffer[Buck]] @uV = new Array[UnrolledBuffer[Buck]](bucketnumber)
     protected var sz: Int = 0
 
     def size = sz

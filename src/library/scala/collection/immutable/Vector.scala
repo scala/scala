@@ -6,15 +6,18 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala
-package collection
+package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
+
 import scala.compat.Platform
-import scala.collection.generic._
-import scala.collection.mutable.Builder
-import scala.collection.parallel.immutable.ParVector
+
+import generic._
+import mutable.Builder
+import parallel.TaskSupport
+import parallel.setTaskSupport
+import parallel.immutable.ParVector
 
 /** Companion object to the Vector class
  */
@@ -77,6 +80,9 @@ override def companion: GenericCompanion[Vector] = Vector
   def length = endIndex - startIndex
 
   override def par = new ParVector(this)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(new ParVector(this), taskSupport)
 
   override def toVector: Vector[A] = this
 

@@ -6,13 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala
-package collection
+package scala.collection
 package mutable
 
 import scala.compat.Platform.arraycopy
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
+
+import parallel.TaskSupport
+import parallel.setTaskSupport
 import parallel.mutable.ParArray
 
 /** This class serves as a wrapper for `Array`s with all the operations found in
@@ -67,6 +69,9 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
   }
 
   override def par = ParArray.handoff(repr)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(ParArray.handoff(repr), taskSupport)
 
   /** Flattens a two-dimensional array by concatenating all its rows
    *  into a single array.

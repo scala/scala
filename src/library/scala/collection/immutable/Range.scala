@@ -9,6 +9,8 @@
 
 package scala.collection.immutable
 
+import scala.collection.parallel.TaskSupport
+import scala.collection.parallel.setTaskSupport
 import scala.collection.parallel.immutable.ParRange
 
 /** The `Range` class represents integer values in range
@@ -48,6 +50,8 @@ extends scala.collection.AbstractSeq[Int]
    with Serializable
 {
   override def par = new ParRange(this)
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(new ParRange(this), taskSupport)
 
   private def gap           = end.toLong - start.toLong
   private def isExact       = gap % step == 0

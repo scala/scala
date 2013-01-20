@@ -8,13 +8,17 @@
 
 
 
-package scala
-package collection
+package scala.collection
 package immutable
 
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import generic._
-import scala.collection.parallel.immutable.ParHashSet
+import parallel.TaskSupport
+import parallel.setTaskSupport
+import parallel.immutable.ParHashSet
+
+
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
+
 
 /** This class implements immutable sets using a hash trie.
  *
@@ -42,6 +46,9 @@ class HashSet[A] extends AbstractSet[A]
   //class HashSet[A] extends Set[A] with SetLike[A, HashSet[A]] {
 
   override def par = ParHashSet.fromTrie(this)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(ParHashSet.fromTrie(this), taskSupport)
 
   override def size: Int = 0
 

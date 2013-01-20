@@ -12,7 +12,9 @@ package scala.collection
 package mutable
 
 import generic._
-import scala.collection.parallel.mutable.ParHashSet
+import parallel.TaskSupport
+import parallel.setTaskSupport
+import parallel.mutable.ParHashSet
 
 /** This class implements mutable sets using a hashtable.
  *
@@ -60,6 +62,9 @@ extends AbstractSet[A]
   def -= (elem: A): this.type = { removeElem(elem); this }
 
   override def par = new ParHashSet(hashTableContents)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(new ParHashSet(hashTableContents), taskSupport)
 
   override def add(elem: A): Boolean = addElem(elem)
 

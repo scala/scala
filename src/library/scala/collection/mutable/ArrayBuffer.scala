@@ -12,6 +12,8 @@ package scala.collection
 package mutable
 
 import generic._
+import parallel.TaskSupport
+import parallel.setTaskSupport
 import parallel.mutable.ParArray
 
 /** An implementation of the `Buffer` class using an array to
@@ -72,6 +74,9 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   }
 
   override def par = ParArray.handoff[A](array.asInstanceOf[Array[A]], size)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(ParArray.handoff[A](array.asInstanceOf[Array[A]], size), taskSupport)
 
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant amortized time.
