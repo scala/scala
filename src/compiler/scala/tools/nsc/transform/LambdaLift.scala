@@ -320,12 +320,24 @@ abstract class LambdaLift extends InfoTransform {
     private def memberRef(sym: Symbol) = {
       val clazz = sym.owner.enclClass
       //Console.println("memberRef from "+currentClass+" to "+sym+" in "+clazz)
-      val qual = if (clazz == currentClass) gen.mkAttributedThis(clazz)
-                 else {
-                   sym resetFlag(LOCAL | PRIVATE)
-                   if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
-                   else outerPath(outerValue, currentClass.outerClass, clazz)
-                 }
+      def prematureSelfReference() {
+        val what =
+          if (clazz.isStaticOwner) clazz.fullLocationString
+          else s"the unconstructed `this` of ${clazz.fullLocationString}"
+        val msg = s"Implementation restriction: access of ${sym.fullLocationString} from ${currentClass.fullLocationString}, would require illegal premature access to $what"
+        currentUnit.error(curTree.pos, msg)
+      }
+      val qual =
+        if (clazz == currentClass) gen.mkAttributedThis(clazz)
+        else {
+          sym resetFlag (LOCAL | PRIVATE)
+          if (selfOrSuperCalls exists (_.owner == clazz)) {
+            prematureSelfReference()
+            EmptyTree
+          }
+          else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
+          else outerPath(outerValue, currentClass.outerClass, clazz)
+        }
       Select(qual, sym) setType sym.tpe
     }
 
@@ -495,13 +507,25 @@ abstract class LambdaLift extends InfoTransform {
 
     private def preTransform(tree: Tree) = super.transform(tree) setType lifted(tree.tpe)
 
+    /** The stack of constructor symbols in which a call to this() or to the super
+      * constructor is active.
+      */
+    private val selfOrSuperCalls = mutable.Stack[Symbol]()
+    @inline private def inSelfOrSuperCall[A](sym: Symbol)(a: => A) = try {
+      selfOrSuperCalls push sym
+      a
+    } finally selfOrSuperCalls.pop()
+
     override def transform(tree: Tree): Tree = tree match {
       case Select(ReferenceToBoxed(idt), elem) if elem == nme.elem =>
         postTransform(preTransform(idt), isBoxedRef = false)
       case ReferenceToBoxed(idt) =>
         postTransform(preTransform(idt), isBoxedRef = true)
       case _ =>
-        postTransform(preTransform(tree))
+        def transformTree = postTransform(preTransform(tree))
+        if (treeInfo isSelfOrSuperConstrCall tree)
+          inSelfOrSuperCall(currentOwner)(transformTree)
+        else transformTree
     }
 
     /** Transform statements and add lifted definitions to them. */
