@@ -34,9 +34,6 @@ package object scala {
     override def toString = "object AnyRef"
   }
 
-  @deprecated("instead of `@cloneable class C`, use `class C extends Cloneable`", "2.10.0")
-  type cloneable = annotation.cloneable
-
   type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
 
   type Traversable[+A] = scala.collection.Traversable[A]
@@ -121,7 +118,6 @@ package object scala {
   // Annotations which we might move to annotation.*
 /*
   type SerialVersionUID = annotation.SerialVersionUID
-  type cloneable = annotation.cloneable
   type deprecated = annotation.deprecated
   type deprecatedName = annotation.deprecatedName
   type inline = annotation.inline

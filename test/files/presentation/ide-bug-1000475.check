@@ -3,7 +3,7 @@ reload: Foo.scala
 askTypeCompletion at Foo.scala(3,7)
 ================================================================================
 [response] aksTypeCompletion at (3,7)
-retrieved 36 members
+retrieved 35 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
 [accessible:  true] `method ##()Int`
@@ -29,7 +29,6 @@ retrieved 36 members
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method x=> Object`
 [accessible:  true] `method →[B](y: B)(Object, B)`
 [accessible:  true] `value __leftOfArrowObject`
 [accessible:  true] `value __resultOfEnsuringObject`
@@ -41,7 +40,7 @@ retrieved 36 members
 askTypeCompletion at Foo.scala(6,10)
 ================================================================================
 [response] aksTypeCompletion at (6,10)
-retrieved 36 members
+retrieved 35 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
 [accessible:  true] `method ##()Int`
@@ -67,7 +66,6 @@ retrieved 36 members
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method x=> Object`
 [accessible:  true] `method →[B](y: B)(Object, B)`
 [accessible:  true] `value __leftOfArrowObject`
 [accessible:  true] `value __resultOfEnsuringObject`
@@ -79,7 +77,7 @@ retrieved 36 members
 askTypeCompletion at Foo.scala(7,7)
 ================================================================================
 [response] aksTypeCompletion at (7,7)
-retrieved 36 members
+retrieved 35 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
 [accessible:  true] `method ##()Int`
@@ -105,7 +103,6 @@ retrieved 36 members
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method x=> Object`
 [accessible:  true] `method →[B](y: B)(Object, B)`
 [accessible:  true] `value __leftOfArrowObject`
 [accessible:  true] `value __resultOfEnsuringObject`

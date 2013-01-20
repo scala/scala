@@ -25,7 +25,7 @@ import scala.language.implicitConversions
  *  - `scala.collection.mutable.Buffer` <=> `java.util.List`
  *  - `scala.collection.mutable.Set` <=> `java.util.Set`
  *  - `scala.collection.mutable.Map` <=> `java.util.Map`
- *  - `scala.collection.mutable.ConcurrentMap` <=> `java.util.concurrent.ConcurrentMap`
+ *  - `scala.collection.mutable.concurrent.Map` <=> `java.util.concurrent.ConcurrentMap`
  *
  *  In all cases, converting from a source type to a target type and back
  *  again will return the original source object, e.g.
@@ -276,26 +276,6 @@ trait DecorateAsJava {
    */
   implicit def mapAsJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] =
     new AsJava(mapAsJavaMap(m))
-
-  /**
-   * Adds an `asJava` method that implicitly converts a Scala mutable
-   * `ConcurrentMap` to a Java `ConcurrentMap`.
-   *
-   * The returned Java `ConcurrentMap` is backed by the provided Scala
-   * `ConcurrentMap` and any side-effects of using it via the Java interface
-   * will be visible via the Scala interface and vice versa.
-   *
-   * If the Scala `ConcurrentMap` was previously obtained from an implicit or
-   * explicit call of `asConcurrentMap(java.util.concurrect.ConcurrentMap)`
-   * then the original Java `ConcurrentMap` will be returned.
-   *
-   * @param m The `ConcurrentMap` to be converted.
-   * @return An object with an `asJava` method that returns a Java
-   *         `ConcurrentMap` view of the argument.
-   */
-  @deprecated("Use `concurrent.Map` instead of `ConcurrentMap`.", "2.10.0")
-  implicit def asJavaConcurrentMapConverter[A, B](m: mutable.ConcurrentMap[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
-    new AsJava(asJavaConcurrentMap(m))
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable

@@ -56,14 +56,6 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
   def this() = this(0)
 
-  @deprecated("Names should be specified individually or discovered via reflection", "2.10.0")
-  def this(initial: Int, names: String*) = {
-    this(initial)
-    this.nextName = names.iterator
-  }
-  @deprecated("Names should be specified individually or discovered via reflection", "2.10.0")
-  def this(names: String*) = this(0, names: _*)
-
   /* Note that `readResolve` cannot be private, since otherwise
      the JVM does not invoke it when deserializing subclasses. */
   protected def readResolve(): AnyRef = thisenum.getClass.getField(MODULE_INSTANCE_NAME).get(null)
@@ -71,7 +63,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   /** The name of this enumeration.
    */
   override def toString =
-    ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split 
+    ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split
        Pattern.quote(NAME_JOIN_STRING)).last
 
   /** The mapping from the integer used to identify values to the actual
@@ -126,7 +118,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    *
    * @param  s an `Enumeration` name
    * @return   the `Value` of this `Enumeration` if its name matches `s`
-   * @throws   java.util.NoSuchElementException if no `Value` with a matching
+   * @throws   NoSuchElementException if no `Value` with a matching
    *           name is in this `Enumeration`
    */
   final def withName(s: String): Value = values.find(_.toString == s).get
