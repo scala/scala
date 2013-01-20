@@ -1,5 +1,5 @@
 package object foo {
-  implicit class PimpedInt(foo: Int) {
+  implicit class EnrichedInt(foo: Int) {
     def bar = ???
     def bippy = foo
   }

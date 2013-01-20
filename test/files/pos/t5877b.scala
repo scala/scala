@@ -7,7 +7,7 @@ object Test {
 }
 
 object `package` {
-  implicit class PimpedFoo2(value: Foo) {
+  implicit class EnrichedFoo2(value: Foo) {
     def huzzah = ""
   }
 }

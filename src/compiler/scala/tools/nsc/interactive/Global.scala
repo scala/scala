@@ -948,7 +948,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     for (sym <- ownerTpe.members)
       addTypeMember(sym, pre, sym.owner != ownerTpe.typeSymbol, NoSymbol)
     members.allMembers #:: {
-      //print("\nadd pimped")
+      //print("\nadd enrichment")
       val applicableViews: List[SearchResult] =
         if (ownerTpe.isErroneous) List()
         else new ImplicitSearch(
