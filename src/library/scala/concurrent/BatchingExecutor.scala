@@ -8,16 +8,8 @@
 
 package scala.concurrent
 
-import java.util.concurrent.{ Executor }
-import scala.concurrent._
+import java.util.concurrent.Executor
 import scala.annotation.tailrec
-
-/**
- * All Batchables are automatically batched when submitted to a BatchingExecutor
- */
-private[concurrent] trait Batchable extends Runnable {
-  def isBatchable: Boolean
-}
 
 /**
  * Mixin trait for an Executor
@@ -64,13 +56,13 @@ private[concurrent] trait BatchingExecutor extends Executor {
           parentBlockContext = prevBlockContext
 
           @tailrec def processBatch(batch: List[Runnable]): Unit = batch match {
-            case Nil ⇒ ()
-            case head :: tail ⇒
+            case Nil => ()
+            case head :: tail =>
               _tasksLocal set tail
               try {
                 head.run()
               } catch {
-                case t: Throwable ⇒
+                case t: Throwable =>
                   // if one task throws, move the
                   // remaining tasks to another thread
                   // so we can throw the exception
@@ -91,7 +83,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
       }
     }
 
-    override def blockOn[T](thunk: ⇒ T)(implicit permission: CanAwait): T = {
+    override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
       // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
       {
         val tasks = _tasksLocal.get
@@ -111,16 +103,15 @@ private[concurrent] trait BatchingExecutor extends Executor {
   override def execute(runnable: Runnable): Unit = {
     if (batchable(runnable)) { // If we can batch the runnable
       _tasksLocal.get match {
-        case null ⇒ unbatchedExecute(new Batch(List(runnable))) // If we aren't in batching mode yet, enqueue batch
-        case some ⇒ _tasksLocal.set(runnable :: some) // If we are already in batching mode, add to batch
+        case null => unbatchedExecute(new Batch(List(runnable))) // If we aren't in batching mode yet, enqueue batch
+        case some => _tasksLocal.set(runnable :: some) // If we are already in batching mode, add to batch
       }
     } else unbatchedExecute(runnable) // If not batchable, just delegate to underlying
   }
 
   /** Override this to define which runnables will be batched. */
   def batchable(runnable: Runnable): Boolean = runnable match {
-    case b: Batchable                           ⇒ b.isBatchable
-    case _: scala.concurrent.OnCompleteRunnable ⇒ true
-    case _                                      ⇒ false
+    case _: OnCompleteRunnable => true
+    case _                     => false
   }
 }

@@ -401,6 +401,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       <exclude name="scala/concurrent/Promise.scala"/>
       <exclude name="scala/concurrent/ExecutionContext.scala"/>
       <exclude name="scala/concurrent/BlockContext.scala"/>
+      <exclude name="scala/concurrent/BatchingExecutor.scala"/>
       <exclude name="scala/concurrent/impl/Future.scala"/>
       <exclude name="scala/concurrent/impl/Promise.scala"/>
       <exclude name="scala/concurrent/impl/ExecutionContextImpl.scala"/>
