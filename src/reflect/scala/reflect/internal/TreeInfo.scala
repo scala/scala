@@ -267,7 +267,7 @@ abstract class TreeInfo {
    * For instance:
    *
    * {{{
-   * (foo @ (bar @ _)) = 0
+   * (foo @ (bar @ _))
    * }}}
    *
    * is a not a variable pattern; if only binds names.

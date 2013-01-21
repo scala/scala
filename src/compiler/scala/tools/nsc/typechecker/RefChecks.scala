@@ -1556,16 +1556,32 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
     }
 
-    private def transformApply(tree: Apply): Tree = tree match {
-      case Apply(
-        Select(qual, nme.filter | nme.withFilter),
-        List(Function(
-          List(ValDef(_, pname, tpt, _)),
-          Match(_, CaseDef(pat1, _, _) :: _))))
-        if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
-            isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
+    private object FilterCheckIrrefutable {
+      import treeInfo.Applied
+      def unapply(t: Tree) = t match {
+        case Applied(Select(qual, nme.filter | nme.withFilter), _, List(Function(List(ValDef(_, pname, tpt, _)), matchOrTranslatedMatch)) :: Nil)
+          if pname startsWith nme.CHECK_IF_REFUTABLE_STRING =>
+          Some((qual, tpt, matchOrTranslatedMatch))
+        case _ => None
+      }
+    }
+    private object FilterIrrefutable {
+      def unapply(t: Tree) = t match {
+        // TODO only for -Xoldpatmat, remove on 2.11.x along with `isIrrefutable`.
+        case FilterCheckIrrefutable(qual, tpt, Match(_, CaseDef(pat1, _, _) :: _))
+          if isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< t.tpe) =>
+          Some(qual)
+        // virtpatmat performs the analysis, we use it to elide the `withFilter` call.
+        case FilterCheckIrrefutable(qual, tpt, tree)
+          if tree.attachments.get[patmat.IsIrrefutableAttachment.type].isDefined =>
+          Some(qual)
+        case _ => None
+      }
+    }
 
-          transform(qual)
+    private def transformApply(tree: Apply): Tree = tree match {
+      case FilterIrrefutable(qual) if qual.tpe =:= tree.tpe =>
+        transform(qual)
 
       case Apply(fn, args) =>
         // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability analyses in the pattern matcher

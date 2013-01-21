@@ -112,6 +112,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
   case class DefaultOverrideMatchAttachment(default: Tree)
 
+  /**
+   * Attached to the translated pattern if the pattern was created by for-comprehension
+   * desugaring in the argument to `filter` or `withFilter`, and if the first case of
+   * the pattern is irrefutable. A later compiler phase will use this to optimize away
+   * the filtering.
+   */
+  case object IsIrrefutableAttachment
+
   object vpmName {
     val one       = newTermName("one")
     val drop      = newTermName("drop")
@@ -910,8 +918,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 // the making of the trees
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   trait TreeMakers extends TypedSubstitution { self: CodegenCore =>
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) =
-      (cases, Nil)
+    final case class OptimizeCasesResult(cases: List[List[TreeMaker]], toHoist: List[Tree], isIrrefuble: Option[Boolean])
+
+    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type,
+                      unchecked: Boolean, checkIfRefutable: Boolean): OptimizeCasesResult =
+      OptimizeCasesResult(cases, Nil, None)
 
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
       None
@@ -1339,6 +1350,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               (false, false)
           }
 
+        val checkIfRefutable = scrut match {
+          case Typed(Ident(name), _) if name.startsWith(nme.CHECK_IF_REFUTABLE_STRING) => true
+          case _ => false
+        }
+
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked).getOrElse{
           if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
@@ -1346,9 +1362,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             // before optimizing, check casesNoSubstOnly for presence of a default case,
             // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
             // exhaustivity and reachability must be checked before optimization as well
-            // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
+            // TODO: improve notion of trivial -- a trivial type test before the body still makes for a default case
             //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
-            //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
             val synthCatchAll =
               if (casesNoSubstOnly.nonEmpty && {
                     val nonTrivLast = casesNoSubstOnly.last
@@ -1356,11 +1371,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                   }) None
               else matchFailGen
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, unchecked)
+            val OptimizeCasesResult(cases, toHoist, isIrrefutable) =
+              optimizeCases(scrutSym, casesNoSubstOnly, pt, unchecked, checkIfRefutable)
 
             val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 
-            if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
+            val tree = if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
+            isIrrefutable match {
+              case Some(true) => tree.updateAttachment(IsIrrefutableAttachment)
+              case _          => tree
+            }
           } else {
             codegen.matcher(scrut, scrutSym, pt)(Nil, matchFailGen)
           }
@@ -2628,7 +2648,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // the case is reachable if there is a model for -P /\ C,
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
-    def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
+    def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, modelNull: Boolean = true): Option[Int] = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
 
       // use the same approximator so we share variables,
@@ -2644,8 +2664,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       prepareNewAnalysis()
 
-      val propsCasesOk   = testCasesOk   map (t => symbolicCase(t, modelNull = true))
-      val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t, modelNull = true)))
+      val propsCasesOk   = testCasesOk   map (t => symbolicCase(t, modelNull))
+      val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t, modelNull)))
 
       try {
         val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
@@ -3722,14 +3742,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
   }
 
-
   trait MatchOptimizations extends CommonSubconditionElimination
                               with DeadCodeElimination
                               with SwitchEmission
                               with OptimizedCodegen
                               with SymbolicMatchAnalysis
                               with DPLLSolver { self: TreeMakers =>
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
+
+    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type,
+                               unchecked: Boolean, checkIfRefutable: Boolean): OptimizeCasesResult = {
       unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
         reportUnreachable(cases(caseIndex).last.pos)
       }
@@ -3739,12 +3760,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           reportMissingCases(prevBinder.pos, counterExamples)
       }
 
+      val irrefutable: Option[Boolean] = if (checkIfRefutable) {
+        Some(unreachableCase(prevBinder, cases, pt, modelNull = false) == Some(1)) // TODO only check if the scrutinee is named `check$ifrefutable$...`
+      } else None
+
       val optCases = doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
         ).flatten.flatten.toList
-      (optCases, toHoist)
+      OptimizeCasesResult(optCases, toHoist, irrefutable)
     }
   }
 }
