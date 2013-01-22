@@ -351,7 +351,8 @@ trait Symbols { self: Universe =>
     def asFreeType: FreeTypeSymbol = throw new ScalaReflectionException(s"$this is not a free type")
 
     /** @group Constructors */
-    def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol
+    def
+    newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol
     /** @group Constructors */
     def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol)
     /** @group Constructors */
