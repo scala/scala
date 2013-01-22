@@ -51,6 +51,7 @@ trait ParsersCommon extends ScannersCommon {
       accept(LPAREN); val ret = body
       accept(RPAREN); ret
     }
+     
     @inline final def inParensOrError[T](body: => T, alt: T): T =
       if (in.token == LPAREN) inParens(body)
       else { accept(LPAREN) ; alt }
@@ -499,7 +500,7 @@ self =>
       else                  syntaxError(in.offset, msg, skipIt)
     }
 
-    def expectedMsg(token: Int): String = {Thread.dumpStack();
+    def expectedMsg(token: Int): String = { //Thread.dumpStack();
       token2string(token) + " expected but " +token2string(in.token) + " found."
     }
 
@@ -1119,6 +1120,27 @@ self =>
 
 /* ----------- SUBSCRIPT -------------------------------------------- */
 
+    /*
+     * DONE:
+     * 
+     * reduce stack: make n-ary op...
+     * 
+     * TBD: 
+     * 
+     * end scripts sections & script definitions appropriately
+     *   script.. section ends when line indentation <= to "script.." indentation & appropriate token
+     *   else current script specification ends when line indentation < "=" & appropriate token  
+     * uniform AST for call: "," + params 
+     * formal parameters: box
+     * actual parameters: box & add constraints
+     * script method += script(name, params){body}: phase 1.5
+     * @, if, while, blocks, specials -> functions: phase 1.5?
+     * method resolution += "," resolution: phase 2
+     */
+    
+    var linePosOfScriptsSection  = 0 // in a "script.." section, the line position of "script" (or any modifier before it); often something like 4
+    var linePosOfScriptEqualsSym = 0 // in a script definition, the line position of "=" or "+="
+    
     val NEWLINE_Name: Name = newTermName("NEWLINE")
     val   SPACE_Name: Name = newTermName(" ")
     val    SEMI_Name: Name = newTermName(";")
@@ -1175,7 +1197,7 @@ self =>
     val selectSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
 
     def subScriptDSLFunForOperator(op: Tree, spaceOp: Name, newlineOp: Name): Tree = {
-      val operatorName      : Name = op match {case Apply(Ident(name:Name),_) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
+      val operatorName      : Name = op match {case Ident(name:Name) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
       val operatorDSLFunName: Name = mapOperatorNameToDSLFunName(operatorName) 
       Select(selectSubScriptDSL, operatorDSLFunName)
     }
@@ -1223,11 +1245,13 @@ self =>
          | LBRACE_QMARK             
          | LBRACE_EMARK             
          | LBRACE_ASTERISK          
-         | LBRACE_CARET                                   => true 
-      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => true
+         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
+      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
       case _                                              => isSubScriptUnaryPrefixOp(tokenData)  ||  // MINUS is allways OK, also for -1 etc
                                                              isLiteralToken(tokenData.token)
     }
+
+
 
     def subScriptInfixOpPrecedence(operatorName: Name): Int =
       if      (operatorName eq nme.ERROR) -1
@@ -1307,6 +1331,14 @@ self =>
   formalOutputMarker      = "?" + "??"
  
  */
+
+    var scriptExpressionParenthesesNestingLevel = 0
+    
+    @inline final def inScriptParens[T](body: => T): T = {
+      accept(LPAREN); scriptExpressionParenthesesNestingLevel += 1; val ret = body
+      accept(RPAREN); scriptExpressionParenthesesNestingLevel -= 1; ret
+    }
+    
     
     def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
       in.isInSubScript        = true
@@ -1320,35 +1352,54 @@ self =>
           in.nextToken()
         }
       }
-      val nameOffset = in.offset
-      val name = ident()
       
-      val scriptDef = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
-        val Flags_SCRIPT = Flags.CASEACCESSOR // TBD
-        var newmods = mods | Flags_SCRIPT
-        // contextBoundBuf is for context bounded type parameters of the form
-        // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
-        // i.e. (B[T] or T => B)
-        val contextBoundBuf = new ListBuffer[Tree]
-        val tparams         = typeParamClauseOpt(name, contextBoundBuf)
-        val vparamss        =     paramClauses  (name, contextBoundBuf.toList, ofCaseClass = false)
-        newLineOptWhenFollowedBy(EQUALS)
-        var restype = fromWithinReturnType(typedOpt())
-        val rhs =
-          if (isStatSep || in.token == RBRACE) {
-            if (restype.isEmpty) restype = scalaUnitConstr
-            newmods |= Flags.DEFERRED
-            EmptyTree
-          } else {
-            if (in.token == EQUALS) {in.nextToken()} 
-            else {accept(EQUALS)}
-            in.isInSubScript_header = false
-            scriptExpr()
-          }
-        DefDef(newmods, name, tparams, vparamss, restype, rhs)
+      // TBD: make a loop; exit when no ident or ident with line pos <= linePosOfScriptsSection
+      var mustExit = false
+      while (!mustExit)
+      {
+	      if (doMultipleScripts) {
+            val linePos = in.offset - in.lineStartOffset
+	        if (linePos <= linePosOfScriptsSection) mustExit = true
+	      }
+	      
+	      if (!mustExit) {
+		      val nameOffset = in.offset
+		      val name = ident()
+		      
+		      val scriptDef = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+		        val Flags_SCRIPT = Flags.CASEACCESSOR // TBD
+		        var newmods = mods | Flags_SCRIPT
+		        // contextBoundBuf is for context bounded type parameters of the form
+		        // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
+		        // i.e. (B[T] or T => B)
+		        val contextBoundBuf = new ListBuffer[Tree]
+		        val tparams         = typeParamClauseOpt(name, contextBoundBuf)
+		        val vparamss        =     paramClauses  (name, contextBoundBuf.toList, ofCaseClass = false)
+		        newLineOptWhenFollowedBy(EQUALS)
+		        var restype = fromWithinReturnType(typedOpt())
+		        val rhs =
+		          if (isStatSep || in.token == RBRACE) {
+		            if (restype.isEmpty) restype = scalaUnitConstr
+		            newmods |= Flags.DEFERRED
+		            EmptyTree
+		          } else {
+		            if (in.token == EQUALS) {
+		              linePosOfScriptEqualsSym = in.offset - in.lineStartOffset
+		              in.nextToken()
+		            } 
+		            else {accept(EQUALS)}
+		            in.isInSubScript_header = false
+		            scriptExpr()
+		          }
+		        DefDef(newmods, name, tparams, vparamss, restype, rhs)
+		      }
+	          signalParseProgress(scriptDef.pos)
+	          result+=scriptDef
+	      }
+	      
+	      if (!doMultipleScripts) mustExit = true
       }
-      signalParseProgress(scriptDef.pos)
-      result+=scriptDef
+      
       in.isInSubScript = false
       result.toList
     }
@@ -1412,11 +1463,20 @@ self =>
           val opinfo          = scriptOperatorStack.head
           scriptOperatorStack = scriptOperatorStack.tail
           
-          val opPos  = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.length)
-          val start  = opinfo.operand.pos.startOrPoint
-          val end    =            top.pos.  endOrPoint
+          //val start  = opinfo.operand.pos.startOrPoint
+          //val end    =            top.pos.  endOrPoint
+          val opPos = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operatorName.length); 
+          val lPos  = opinfo.operand.pos
+          val rPos  = top.pos
+          val start = if (lPos.isDefined) lPos.startOrPoint else opPos.startOrPoint;               
+          val end   = if (rPos.isDefined) rPos.  endOrPoint else opPos.endOrPoint
   
-         // top = atPos(start, opinfo.offset, end) {makeBinop(isExpr=true, opinfo.operand, opinfo.operatorName, top, opPos)} // TBD...
+          var newArgsBut1: List[Tree] = null
+          opinfo.operand match {
+            case apply @ Apply(Ident(opinfo.operatorName), args: List[Tree]) => newArgsBut1 = args // ??? also affect start and end ???
+            case _                                                           => newArgsBut1 = List(opinfo.operand)
+          }
+          top = atPos(start, opinfo.offset, end) {Apply(Ident(opinfo.operatorName), newArgsBut1:::List(top))} // TBD: set positions better
         }
       }
 
@@ -1687,7 +1747,7 @@ self =>
          | DOT2                             
          | DOT3                         => Apply(Literal(Constant(in.token)), Nil)  
       case IDENTIFIER if (isBreakIdent) => Apply(Literal(Constant(in.token)), Nil)
-      case LPAREN                       => atPos(in.offset)(inParens(scriptExpr()))
+      case LPAREN                       => atPos(in.offset)(inScriptParens(scriptExpr()))
       case LBRACE           
          | LBRACE_DOT              
          | LBRACE_DOT3         
@@ -1711,8 +1771,8 @@ self =>
     def scriptBlockExpr(): Tree = {
       in.isInSubScript = false
       val startBrace = in.token
-      val   endBrace = bracePairs(startBrace); in.nextToken()
-      accept(startBrace);                      val ret = Annotated(Literal(Constant(startBrace)), block())
+      val   endBrace = scriptBracePairs(startBrace);
+      accept(startBrace); val ret = Annotated(Literal(Constant(startBrace)), block()) // TBD: transform here?
       accept(  endBrace)
       in.isInSubScript = true
       ret
@@ -2829,8 +2889,10 @@ self =>
         case VAR    =>       patDefOrDcl (pos, (mods | Flags.MUTABLE) withPosition(VAR , tokenRange(in)))
         case DEF    => 
                   in.nextTokenAllow(nme.SCRIPTkw)
-                  if (isScriptIdent)
+                  if (isScriptIdent) {
+                         linePosOfScriptsSection = pos - in.lineStartOffset
                          scriptDefsOrDcls(pos,  mods                  withPosition(DEF , tokenRange(in)))
+                  }
                   else List( funDefOrDcl (pos,  mods                  withPosition(DEF , tokenRange(in))))
         case TYPE   => List(typeDefOrDcl (pos,  mods                  withPosition(TYPE, tokenRange(in))))
         case _      => List(tmplDef      (pos, mods))

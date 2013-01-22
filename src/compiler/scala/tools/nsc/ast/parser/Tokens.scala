@@ -150,7 +150,8 @@ object Tokens extends Tokens {
   final val LPAREN_PLUS_MINUS_RPAREN = 162
   final val LPAREN_SEMI_RPAREN       = 163
 
-  final val bracePairs = Map (
+  final val scriptBracePairs = Map (
+    LBRACE          -> RBRACE         ,
     LBRACE_DOT      -> RBRACE_DOT     ,
     LBRACE_DOT3     -> RBRACE_DOT3    ,  
     LBRACE_QMARK    -> RBRACE_QMARK   ,  
