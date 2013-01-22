@@ -2070,6 +2070,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     import scala.collection.mutable.ArrayBuffer
     type FormulaBuilder = ArrayBuffer[Clause]
     def formulaBuilder  = ArrayBuffer[Clause]()
+    def formulaBuilderSized(init: Int)  = new ArrayBuffer[Clause](init)
     def addFormula(buff: FormulaBuilder, f: Formula): Unit = buff ++= f
     def toFormula(buff: FormulaBuilder): Formula = buff
 
@@ -2223,13 +2224,18 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     private def withLit(res: Model, l: Lit): Model = if (res eq NoModel) NoModel else res + (l.sym -> l.pos)
-    private def dropUnit(f: Formula, unitLit: Lit) = {
+    private def dropUnit(f: Formula, unitLit: Lit): Formula = {
       val negated = -unitLit
       // drop entire clauses that are trivially true
       // (i.e., disjunctions that contain the literal we're making true in the returned model),
       // and simplify clauses by dropping the negation of the literal we're making true
       // (since False \/ X == X)
-      f.filterNot(_.contains(unitLit)).map(_ - negated)
+      val dropped = formulaBuilderSized(f.size)
+      for {
+        clause <- f
+        if !(clause contains unitLit)
+      } dropped += (clause - negated)
+      dropped
     }
 
     def findModelFor(f: Formula): Model = {
