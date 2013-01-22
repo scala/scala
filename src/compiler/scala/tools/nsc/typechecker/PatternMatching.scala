@@ -1897,16 +1897,23 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case object False extends Prop
 
     // symbols are propositions
-    case class Sym(val variable: Var, val const: Const) extends Prop {
-      private[this] val id = nextSymId
+    abstract case class Sym(val variable: Var, val const: Const) extends Prop {
+      private[this] val id = Sym.nextSymId
+
       override def toString = variable +"="+ const +"#"+ id
     }
-    private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
-
+    class UniqueSym(variable: Var, const: Const) extends Sym(variable, const)
+    object Sym {
+      private var uniques: util.HashSet[Sym] = new util.HashSet("uniques", 512)
+      def apply(variable: Var, const: Const): Sym = {
+        val newSym = new UniqueSym(variable, const)
+        (uniques findEntryOrUpdate newSym)
+      }
+      private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+    }
 
     def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
     def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
-
 
     trait PropTraverser {
       def apply(x: Prop): Unit = x match {
@@ -2167,7 +2174,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     class Lit(val sym: Sym, val pos: Boolean) {
       override def toString = if (!pos) "-"+ sym.toString else sym.toString
       override def equals(o: Any) = o match {
-        case o: Lit => (o.sym == sym) && (o.pos == pos)
+        case o: Lit => (o.sym eq sym) && (o.pos == pos)
         case _ => false
       }
       override def hashCode = sym.hashCode + pos.hashCode
