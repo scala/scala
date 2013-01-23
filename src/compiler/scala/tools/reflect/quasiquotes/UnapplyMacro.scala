@@ -62,34 +62,38 @@ trait UnapplyMacro { self: Quasiquotes =>
 
     if (settings.Yquasiquotedebug.value) println(s"reified tree\n=${reifiedTree}\n=${showRaw(reifiedTree)}\n")
 
-    val (caseOk, caseFail) =
-      if (placeholders.size == 0)
-        (q"true", q"false")
-      else if (placeholders.size == 1)
-        (q"Some(${TermName(placeholders.keys.head)})", q"None")
-      else {
-        val tupleN = TermName("Tuple" + placeholders.size.toString)
-        val tupleArgs = placeholders.map(p => Ident(TermName(p._1)))
-        (q"Some($tupleN(..$tupleArgs))", q"None")
-      }
-
     val moduleName = TermName(nme.QUASIQUOTE_MATCHER_NAME + randomUUID().toString.replace("-", ""))
 
-    val moduleDef = {
-      val u = nme.UNIVERSE_SHORT
-      q"""
-      object $moduleName {
-        def unapply($u: scala.reflect.api.Universe)(tree: $u.Tree) = {
+    val u = nme.UNIVERSE_SHORT
+
+    val body =
+      if(isVariablePattern(reifiedTree))
+        q"Some(tree)"
+      else if (placeholders.size == 0)
+        q"$reifiedTree.equalsStructure(tree)"
+      else {
+        val matchResult =
+          if (placeholders.size == 1)
+            q"Some(${TermName(placeholders.keys.head)})"
+          else {
+            val tupleN = TermName("Tuple" + placeholders.size.toString)
+            val tupleArgs = placeholders.map(p => Ident(TermName(p._1)))
+            q"Some($tupleN(..$tupleArgs))"
+          }
+        q"""{
           // importing type tags from universe for tree pattern matching to work as expected
           import $u._
           tree match {
-            case $reifiedTree => $caseOk
-            case _ => $caseFail
+            case $reifiedTree => $matchResult
+            case _ => None
           }
-        }
+        }"""
       }
-      """
-    }
+
+    val moduleDef =
+      q"""object $moduleName {
+        def unapply($u: scala.reflect.api.Universe)(tree: $u.Tree) = $body
+      }"""
 
     if (settings.Yquasiquotedebug.value) println(s"moduledef\n=${showRaw(moduleDef, printTypes=true, printIds=true)}\n=$moduleDef\n")
 
@@ -102,5 +106,10 @@ trait UnapplyMacro { self: Quasiquotes =>
     unapplySelector.setType(memberType(universe.tpe, tpnme.Tree))
 
     q"$packge.$moduleName.unapply($universe)($unapplySelector)"
+  }
+
+  def isVariablePattern(tree: Tree) = tree match {
+    case _: Bind => true
+    case _ => false
   }
 }
