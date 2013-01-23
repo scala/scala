@@ -49,7 +49,7 @@ trait ParsersCommon extends ScannersCommon {
      */
     @inline final def inParens[T](body: => T): T = {
       accept(LPAREN); val ret = body
-      accept(RPAREN); ret
+      accept(RPAREN);     ret
     }
      
     @inline final def inParensOrError[T](body: => T, alt: T): T =
@@ -603,8 +603,22 @@ self =>
       case _                            => false
     }
 
-    def isStatSeqEnd                   = in.token == RBRACE || in.token == EOF
-    def isStatSep(token: Int): Boolean =    token == NEWLINE || token == NEWLINES || token == SEMI
+    def isTokenAClosingBrace(token: Int): Boolean = 
+      if (token==RBRACE) true
+      else if (!in.isInSubScript_block) false
+      else token match {
+      case RBRACE_DOT     
+         | RBRACE_DOT3    
+         | RBRACE_QMARK   
+         | RBRACE_EMARK   
+         | RBRACE_ASTERISK
+         | RBRACE_CARET   => true
+      case _              => false
+      }
+
+    
+    def isStatSeqEnd                   = isTokenAClosingBrace(in.token)           || in.token == EOF
+    def isStatSep(token: Int): Boolean =    token == NEWLINE || token == NEWLINES ||    token == SEMI
     def isStatSep            : Boolean = isStatSep(in.token)
 
 
@@ -1196,6 +1210,13 @@ self =>
     val selectSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
     val selectSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
 
+    @inline final def inSubscriptParens[T](body: => T): T = {
+      accept(LPAREN); val wasInSubscript = in.isInSubScript; 
+                        in.isInSubScript = false;           val ret = body; 
+                        in.isInSubScript =   wasInSubscript; 
+      accept(RPAREN);                                           ret
+    }
+    
     def subScriptDSLFunForOperator(op: Tree, spaceOp: Name, newlineOp: Name): Tree = {
       val operatorName      : Name = op match {case Ident(name:Name) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
       val operatorDSLFunName: Name = mapOperatorNameToDSLFunName(operatorName) 
@@ -1212,7 +1233,13 @@ self =>
     )
     val mapOperatorNameToDSLFunName = mapOperatorStringToDSLFunString map {case(k,v) => (newTermName(k): Name, newTermName("_"+v): Name)}
     
-    
+    def eatNewlines(): Boolean = {
+      if (in.token==NEWLINE || in.token==NEWLINES) {
+        in.nextToken()
+        true
+      }
+      false
+    }
     
     def isScriptIdent = in.token == IDENTIFIER && in.name == nme.SCRIPTkw
     def isBreakIdent  = in.token == IDENTIFIER && in.name == nme.BREAKkw
@@ -1491,6 +1518,7 @@ self =>
       do {
         top = scriptSpaceExpression(areSpacesCommas, areNewLinesSpecialSeparators)
         if (isSubScriptInfixOp(in, areNewLinesSpecialSeparators)) {
+           if (!areNewLinesSpecialSeparators) eatNewlines()
            reduceScriptOperatorStack(subScriptInfixOpPrecedence(operatorName(in)))
            scriptOperatorStack = ScriptOpInfo(top, operatorName(in), in.offset, operatorLength(in)) :: scriptOperatorStack // TBD: new line
            in.nextToken() // eat the operator
@@ -1519,6 +1547,7 @@ self =>
       var moreTerms = true
       do  {
         ts += scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators)
+        if (!areNewLinesSpecialSeparators) eatNewlines()
         if (areSpacesCommas 
         || !isSubScriptTermStarter(in)) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
       }
@@ -1533,7 +1562,7 @@ self =>
       var moreTerms = true
       do  {
         ts += scriptTerm()
-        if   (in.token==COMMA) in.nextToken()
+        if   (in.token==COMMA) {in.nextToken(); eatNewlines()}
         else if (!areSpacesCommas 
              ||  !isSubScriptTermStarter(in)) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
       }
@@ -1769,12 +1798,15 @@ self =>
     }
 
     def scriptBlockExpr(): Tree = {
-      in.isInSubScript = false
+      in.isInSubScript       = false
+      in.isInSubScript_block = true
       val startBrace = in.token
       val   endBrace = scriptBracePairs(startBrace);
-      accept(startBrace); val ret = Annotated(Literal(Constant(startBrace)), block()) // TBD: transform here?
-      accept(  endBrace)
-      in.isInSubScript = true
+      accept(startBrace); 
+      val ret = Annotated(Literal(Constant(startBrace)), block()) // TBD: transform here?
+      in.isInSubScript       = true
+      in.isInSubScript_block = false
+      accept(endBrace)
       ret
     }
     
@@ -1786,8 +1818,7 @@ self =>
           case e                                 => e
         }
       }
-      in.isInSubScript = false; val ret = inParens(if (in.token == RPAREN) Nil else args())
-      in.isInSubScript =  true; ret
+      inSubscriptParens(if (in.token == RPAREN) Nil else args())
     }
    
 
@@ -3489,7 +3520,7 @@ self =>
         case _              => defs
       }
     }
-
+    
     /** {{{
      *  BlockStatSeq ::= { BlockStat semi } [ResultExpr]
      *  BlockStat    ::= Import
@@ -3508,7 +3539,7 @@ self =>
         }
         else if (isExprIntro) {
           stats += statement(InBlock)
-          if (in.token != RBRACE && in.token != CASE) acceptStatSep()
+          if (!isTokenAClosingBrace(in.token) && in.token != CASE) acceptStatSep()
         }
         else if (isDefIntro || isLocalModifier || in.token == AT) {
           if (in.token == IMPLICIT) {

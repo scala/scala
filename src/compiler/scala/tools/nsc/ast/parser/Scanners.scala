@@ -85,6 +85,7 @@ trait Scanners extends ScannersCommon {
     
     var isInSubScript        = false
     var isInSubScript_header = false
+    var isInSubScript_block  = false
 
     def isAtEnd = charOffset >= buf.length
 
@@ -361,7 +362,7 @@ trait Scanners extends ScannersCommon {
         case '!' | '^' | '*' | '?' =>
           val chOld = ch
           nextChar()
-          if (isInSubScript && ch==RBRACE) {
+          if (isInSubScript_block && ch=='}') {
             nextChar()
             token = chOld match {
               case '!' => RBRACE_EMARK
@@ -460,12 +461,17 @@ trait Scanners extends ScannersCommon {
           if ('0' <= ch && ch <= '9') {putChar('.'); getFraction()}
           else                   {            token = DOT }
           if (isInSubScript) {
+                 if  (ch == '.') {nextChar()
+                  if (ch == '.') {nextChar(); token = DOT3}
+                  else           {            token = DOT2}}
+          } 
+          else if (isInSubScript_block) {
                  if  (ch == '}') {nextChar(); token = RBRACE_DOT}
             else if  (ch == '.') {nextChar()
                   if (ch == '.') {nextChar()
                    if(ch == '}') {nextChar(); token = RBRACE_DOT3}
-                   else          {            token = DOT3}}
-                  else           {            token = DOT2}}
+                   else          {syntaxError("'...' unexpected")}}
+                  else           {syntaxError( "'..' unexpected")}}
           } 
         case '{' => nextChar(); token = LBRACE
           if (isInSubScript) {
