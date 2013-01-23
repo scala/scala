@@ -58,9 +58,13 @@ trait ApplyMacro { self: Quasiquotes =>
 
     if (settings.Yquasiquotedebug.value) println(s"reified tree\n=${reified}\n=${showRaw(reified)}\n")
 
-    q"""{
+    val result = q"""{
       val ${nme.UNIVERSE_SHORT}: $universe.type = $universe
       $reified
     }"""
+
+    if (settings.Yquasiquotedebug.value) println(s"result tree\n=${result}\n=${showRaw(result)}\n")
+
+    result
   }
 }

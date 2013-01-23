@@ -122,11 +122,8 @@ trait Reifiers { self: Quasiquotes =>
 
   class UnapplyReifier(universe: Tree, placeholders: Placeholders) extends QuasiquoteReifier(universe, placeholders) {
 
-    val correspondingTypes: mutable.Map[String, Tree] = mutable.Map()
-
     override def reifyBasicTree(tree: Tree): Tree = tree match {
       case SimpleTree(name) =>
-        correspondingTypes(name) = tq"$u.Tree"
         Bind(TermName(name), Ident(nme.WILDCARD))
       case Applied(fun, targs, argss) if fun != tree =>
         if (targs.length > 0)
@@ -148,7 +145,6 @@ trait Reifiers { self: Quasiquotes =>
       if (!placeholders.contains(name.toString))
         super.reifyName(name)
       else {
-        correspondingTypes(name.toString) = tq"$u.Name"
         Bind(TermName(name.toString), Ident(nme.WILDCARD))
       }
     }
@@ -159,13 +155,11 @@ trait Reifiers { self: Quasiquotes =>
       val last = if (xs.length > 0) xs.last else EmptyTree
       last match {
         case SimpleTree(name) if placeholders(name)._2 == ".." =>
-          correspondingTypes(name) = tq"List[$u.Tree]"
           val bnd = Bind(TermName(name), Ident(nme.WILDCARD))
           xs.init.foldRight[Tree](bnd) { (el, rest) =>
             scalaFactoryCall("collection.immutable.$colon$colon", reify(el), rest)
           }
         case List(SimpleTree(name)) if placeholders(name)._2 == "..." =>
-          correspondingTypes(name) = tq"List[List[$u.Tree]]"
           val bnd = Bind(TermName(name), Ident(nme.WILDCARD))
           xs.init.foldRight[Tree](bnd) { (el, rest) =>
             scalaFactoryCall("collection.immutable.$colon$colon", reify(el), rest)

@@ -30,9 +30,6 @@ trait UnapplyMacro { self: Quasiquotes =>
     if (!(parts.length >= 1 && parts.length <= 23))
       c.abort(c.enclosingPosition, "Inappropriate amount of quasiquote params.")
 
-    val unapplySelector = Ident(nme.SELECTOR_DUMMY)
-    unapplySelector.setType(memberType(universe.tpe, tpnme.Tree))
-
     val (code, placeholders) = {
       val sb = new StringBuilder()
       var placeholders = SortedMap[String, (Tree, String)]()
@@ -61,34 +58,19 @@ trait UnapplyMacro { self: Quasiquotes =>
 
     if (settings.Yquasiquotedebug.value) println(s"parsed tree\n=${tree}\n=${showRaw(tree)}\n")
 
-    val reifier = new UnapplyReifier(universe, placeholders)
-    val reifiedTree = reifier.reifyTree(tree)
-    val correspondingTypes = reifier.correspondingTypes
+    val reifiedTree = new UnapplyReifier(universe, placeholders).reify(tree)
 
-    if (settings.Yquasiquotedebug.value) println(s"corresponding types=\n$correspondingTypes\n")
     if (settings.Yquasiquotedebug.value) println(s"reified tree\n=${reifiedTree}\n=${showRaw(reifiedTree)}\n")
 
-    val caseBody: Tree =
+    val (caseOk, caseFail) =
       if (placeholders.size == 0)
-        q"true"
+        (q"true", q"false")
       else if (placeholders.size == 1)
-        q"Some(${TermName(placeholders.keys.head)})"
+        (q"Some(${TermName(placeholders.keys.head)})", q"None")
       else {
         val tupleN = TermName("Tuple" + placeholders.size.toString)
         val tupleArgs = placeholders.map(p => Ident(TermName(p._1)))
-        q"Some($tupleN(..$tupleArgs))"
-      }
-
-    val unapplyResultType: Tree =
-      if (placeholders.size == 0) {
-        tq"Boolean"
-      } else if (placeholders.size == 1) {
-        val tpe = correspondingTypes(placeholders.keys.head)
-        tq"Option[$tpe]"
-      } else {
-        val tupleN = TypeName("Tuple" + placeholders.size)
-        val targs = placeholders.map(p => correspondingTypes(p._1))
-        tq"Option[$tupleN[..$targs]]"
+        (q"Some($tupleN(..$tupleArgs))", q"None")
       }
 
     val moduleName = TermName(nme.QUASIQUOTE_MATCHER_NAME + randomUUID().toString.replace("-", ""))
@@ -97,12 +79,12 @@ trait UnapplyMacro { self: Quasiquotes =>
       val u = nme.UNIVERSE_SHORT
       q"""
       object $moduleName {
-        def unapply($u: scala.reflect.api.Universe)(tree: $u.Tree): $unapplyResultType = {
+        def unapply($u: scala.reflect.api.Universe)(tree: $u.Tree) = {
           // importing type tags from universe for tree pattern matching to work as expected
           import $u._
           tree match {
-            case $reifiedTree => $caseBody
-            case _ => None
+            case $reifiedTree => $caseOk
+            case _ => $caseFail
           }
         }
       }
@@ -115,6 +97,9 @@ trait UnapplyMacro { self: Quasiquotes =>
     val modulePos = c.enclosingPosition.focus
 
     c.introduceTopLevel(packge, atPos(modulePos)(moduleDef))
+
+    val unapplySelector = Ident(nme.SELECTOR_DUMMY)
+    unapplySelector.setType(memberType(universe.tpe, tpnme.Tree))
 
     q"$packge.$moduleName.unapply($universe)($unapplySelector)"
   }
