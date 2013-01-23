@@ -1,17 +1,27 @@
-import scala.collection.immutable.TreeMap
-import scala.math.Ordering
-
-class Test[K](param:TreeMap[K,Int]){
-  def this() = this({
-    implicit object TreeOrd extends Ordering[K](){
-      def compare(a: K, b: K) = {
-        -1
-      }
-    }
-    new TreeMap[K, Int]()
-  })
+class C(a: Any)
+object F {
+  def byname(a: => Any) = println(a)
+  def hof(a: () => Any) = println(a())
 }
 
-object Test extends App {
-  new Test()
+
+class C5 extends C({
+  def x = "".toString
+  val y = {
+    object Nested { def xx = x}
+    Nested.xx
+  }
+})
+
+
+class C15(a: Any) {
+  def this() = {
+    this({
+      def x = "".toString
+      val y = {
+        object Nested { def xx = x}
+        Nested.xx
+      }
+    })
+  }
 }

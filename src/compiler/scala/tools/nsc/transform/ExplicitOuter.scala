@@ -8,6 +8,7 @@ package transform
 
 import symtab._
 import Flags.{ CASE => _, _ }
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import matching.{ Patterns, ParallelMatching }
 
@@ -209,6 +210,8 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The first outer selection from currently transformed tree.
      *  The result is typed but not positioned.
+     *
+     * Will return `EmptyTree` if there is no outer accessor because of a premature self reference.
      */
     protected def outerValue: Tree =
       if (outerParam != NoSymbol) ID(outerParam)
@@ -218,25 +221,34 @@ abstract class ExplicitOuter extends InfoTransform
      *  The result is typed but not positioned.
      *  If the outer access is from current class and current class is final
      *  take outer field instead of accessor
+     *
+     *  Will return `EmptyTree` if there is no outer accessor because of a premature self reference.
      */
     private def outerSelect(base: Tree): Tree = {
-      val outerAcc = outerAccessor(base.tpe.typeSymbol.toInterface)
-      val currentClass = this.currentClass //todo: !!! if this line is removed, we get a build failure that protected$currentClass need an override modifier
-      // outerFld is the $outer field of the current class, if the reference can
-      // use it (i.e. reference is allowed to be of the form this.$outer),
-      // otherwise it is NoSymbol
-      val outerFld =
-        if (outerAcc.owner == currentClass &&
+      val baseSym = base.tpe.typeSymbol.toInterface
+      val outerAcc = outerAccessor(baseSym)
+      if (outerAcc == NoSymbol && baseSym.ownersIterator.exists(isUnderConstruction)) {
+         // e.g neg/t6666.scala
+         // The caller will report the error with more information.
+         EmptyTree
+      } else {
+        val currentClass = this.currentClass //todo: !!! if this line is removed, we get a build failure that protected$currentClass need an override modifier
+        // outerFld is the $outer field of the current class, if the reference can
+        // use it (i.e. reference is allowed to be of the form this.$outer),
+        // otherwise it is NoSymbol
+        val outerFld =
+          if (outerAcc.owner == currentClass &&
             base.tpe =:= currentClass.thisType &&
             outerAcc.owner.isEffectivelyFinal)
-          outerField(currentClass) suchThat (_.owner == currentClass)
-        else
-          NoSymbol
-      val path =
-        if (outerFld != NoSymbol) Select(base, outerFld)
-        else Apply(Select(base, outerAcc), Nil)
+            outerField(currentClass) suchThat (_.owner == currentClass)
+          else
+            NoSymbol
+        val path =
+          if (outerFld != NoSymbol) Select(base, outerFld)
+          else Apply(Select(base, outerAcc), Nil)
 
-      localTyper typed path
+        localTyper typed path
+      }
     }
 
     /** The path
@@ -256,6 +268,17 @@ abstract class ExplicitOuter extends InfoTransform
       else outerPath(outerSelect(base), from.outerClass, to)
     }
 
+
+    /** The stack of constructor symbols in which a call to this() or to the super
+      * constructor is active.
+      */
+    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls exists (_.owner == clazz)
+    protected val selfOrSuperCalls = mutable.Stack[Symbol]()
+    @inline protected def inSelfOrSuperCall[A](sym: Symbol)(a: => A) = {
+      selfOrSuperCalls push sym
+      try a finally selfOrSuperCalls.pop()
+    }
+
     override def transform(tree: Tree): Tree = {
       val savedOuterParam = outerParam
       try {
@@ -269,7 +292,10 @@ abstract class ExplicitOuter extends InfoTransform
             }
           case _ =>
         }
-        super.transform(tree)
+        if (treeInfo isSelfOrSuperConstrCall tree) // TODO also handle (and test) (treeInfo isEarlyDef tree)
+          inSelfOrSuperCall(currentOwner)(super.transform(tree))
+        else
+          super.transform(tree)
       }
       finally outerParam = savedOuterParam
     }
@@ -335,7 +361,8 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The definition tree of the outer accessor of current class
      */
-    def outerFieldDef: Tree = VAL(outerField(currentClass)) === EmptyTree
+    def outerFieldDef: Tree =
+      VAL(outerField(currentClass)) === EmptyTree
 
     /** The definition tree of the outer accessor of current class
      */
@@ -483,6 +510,9 @@ abstract class ExplicitOuter extends InfoTransform
                 val clazz = sym.owner
                 val vparamss1 =
                   if (isInner(clazz)) { // (4)
+                    if (isUnderConstruction(clazz.outerClass)) {
+                      reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
+                    }
                     val outerParam =
                       sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
                     ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
