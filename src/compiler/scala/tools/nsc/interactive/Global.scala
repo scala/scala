@@ -759,10 +759,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Implements CompilerControl.askLinkPos */
-  private[interactive] def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
+  private[interactive] def withMirrorSymbol[T](sym: Symbol, source: SourceFile, f: Symbol => T, dflt: => T, response: Response[T]) {
 
     /** Find position of symbol `sym` in unit `unit`. Pre: `unit is loaded. */
-    def findLinkPos(unit: RichCompilationUnit): Position = {
+    def findMirrorSymbol(unit: RichCompilationUnit): Option[Symbol] = {
       val originalTypeParams = sym.owner.typeParams
       parseAndEnter(unit)
       val pre = adaptToNewRunMap(ThisType(sym.owner))
@@ -791,20 +791,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
       }
       if (newsym == NoSymbol) {
-        if (rawsym.exists && !rawsym.isOverloaded) rawsym.pos
+        if (rawsym.exists && !rawsym.isOverloaded) Some(rawsym)
         else {
           debugLog("link not found " + sym + " " + source + " " + pre)
-          NoPosition
+          None
         }
       } else if (newsym.isOverloaded) {
         settings.uniqid.value = true
         debugLog("link ambiguous " + sym + " " + source + " " + pre + " " + newsym.alternatives)
-        NoPosition
+        None
       } else {
         debugLog("link found for " + newsym + ": " + newsym.pos)
-        newsym.pos
+        Some(newsym)
       }
     }
+    def withUnit(unit: RichCompilationUnit) = findMirrorSymbol(unit).fold(dflt)(f)
 
     informIDE("getLinkPos "+sym+" "+source)
     respond(response) {
@@ -812,14 +813,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         getUnit(source) match {
           case None =>
             reloadSources(List(source))
-            try findLinkPos(getUnit(source).get)
+            try withUnit(getUnit(source).get)
             finally afterRunRemoveUnitOf(source)
           case Some(unit) =>
-            findLinkPos(unit)
+            withUnit(unit)
         }
       } else {
         debugLog("link not in class "+sym+" "+source+" "+sym.owner)
-        NoPosition
+        dflt
       }
     }
   }
