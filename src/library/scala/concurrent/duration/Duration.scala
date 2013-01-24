@@ -178,7 +178,7 @@ object Duration {
     override def *(factor: Double): Duration  = this
     override def /(factor: Double): Duration  = this
     override def /(other: Duration): Double   = Double.NaN
-    def compare(other: Duration) = if (other eq this) 0 else 1
+    def compareTo(other: Duration) = if (other eq this) 0 else 1
     def unary_- : Duration = this
     def toUnit(unit: TimeUnit): Double = Double.NaN
   }
@@ -201,7 +201,7 @@ object Duration {
       else this
     def /(divisor: Double): Duration =
       if (divisor.isNaN || divisor.isInfinite) Undefined
-      else if ((divisor compare 0d) < 0) -this
+      else if ((divisor compareTo 0d) < 0) -this
       else this
     def /(divisor: Duration): Double = divisor match {
       case _: Infinite => Double.NaN
@@ -229,7 +229,7 @@ object Duration {
    */
   val Inf: Infinite = new Infinite {
     override def toString = "Duration.Inf"
-    def compare(other: Duration) = other match {
+    def compareTo(other: Duration) = other match {
       case x if x eq Undefined => -1 // Undefined != Undefined
       case x if x eq this      => 0  // `case Inf` will include null checks in the byte code
       case _                   => 1
@@ -245,7 +245,7 @@ object Duration {
    */
   val MinusInf: Infinite = new Infinite {
     override def toString = "Duration.MinusInf"
-    def compare(other: Duration) = if (other eq this) 0 else -1
+    def compareTo(other: Duration) = if (other eq this) 0 else -1
     def unary_- : Duration = Inf
     def toUnit(unit: TimeUnit): Double = Double.NegativeInfinity
   }
@@ -289,7 +289,7 @@ object Duration {
    * The natural ordering of durations matches the natural ordering for Double, including non-finite values.
    */
   implicit object DurationIsOrdered extends Ordering[Duration] {
-    def compare(a: Duration, b: Duration) = a compare b
+    def compare(a: Duration, b: Duration) = a compareTo b
   }
 }
 
@@ -524,7 +524,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
 object FiniteDuration {
 
   implicit object FiniteDurationIsOrdered extends Ordering[FiniteDuration] {
-    def compare(a: FiniteDuration, b: FiniteDuration) = a compare b
+    def compare(a: FiniteDuration, b: FiniteDuration) = a compareTo b
   }
 
   def apply(length: Long, unit: TimeUnit) = new FiniteDuration(length, unit)
@@ -583,9 +583,9 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   private[this] def unitString = timeUnitName(unit) + ( if (length == 1) "" else "s" )
   override def toString = "" + length + " " + unitString
 
-  def compare(other: Duration) = other match {
-    case x: FiniteDuration => toNanos compare x.toNanos
-    case _                 => -(other compare this)
+  def compareTo(other: Duration) = other match {
+    case x: FiniteDuration => toNanos compareTo x.toNanos
+    case _                 => -(other compareTo this)
   }
 
   // see https://www.securecoding.cert.org/confluence/display/java/NUM00-J.+Detect+or+prevent+integer+overflow

@@ -305,7 +305,7 @@ trait TypeDiagnostics {
     def string_==(other: TypeDiag)  = tp.toString == other.tp.toString
     def name_==(other: TypeDiag)    = sym.name == other.sym.name
 
-    def compare(other: TypeDiag) =
+    def compareTo(other: TypeDiag) =
       if (this == other) 0
       else if (sym isLess other.sym) -1
       else 1

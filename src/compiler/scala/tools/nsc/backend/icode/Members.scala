@@ -102,7 +102,7 @@ trait Members {
   trait IMember extends Ordered[IMember] {
     def symbol: Symbol
 
-    def compare(other: IMember) =
+    def compareTo(other: IMember) =
       if (symbol eq other.symbol) 0
       else if (symbol isLess other.symbol) -1
       else 1

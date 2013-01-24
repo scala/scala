@@ -68,7 +68,7 @@ trait FractionalProxy[T] extends Any with ScalaNumberProxy[T] with RangedProxy[T
 trait OrderedProxy[T] extends Any with Ordered[T] with Typed[T] {
   protected def ord: Ordering[T]
 
-  def compare(y: T) = ord.compare(self, y)
+  def compareTo(y: T) = ord.compare(self, y)
 }
 trait RangedProxy[T] extends Any with Typed[T] {
   type ResultWithoutStep
