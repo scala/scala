@@ -75,10 +75,10 @@ trait Names {
    *  @group API
    */
   abstract class NameApi {
-    /** Checks wether the name is a a term name */
+    /** Checks wether the name is a term name */
     def isTermName: Boolean
 
-    /** Checks wether the name is a a type name */
+    /** Checks wether the name is a type name */
     def isTypeName: Boolean
 
     /** Returns a term name that wraps the same string as `this` */

@@ -120,7 +120,7 @@ object Test extends App {
       t
   }
 
-  /** test recursive method with lazy vals and a all vals forced */
+  /** test recursive method with lazy vals and all vals forced */
   def testLazyRecMany(n: Int): Int = {
     lazy val t = { println("forced lazy val t at n = " + n); 42 }
     if (n > 0) {

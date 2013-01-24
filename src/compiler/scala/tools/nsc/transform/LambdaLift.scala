@@ -245,7 +245,7 @@ abstract class LambdaLift extends InfoTransform {
           freshen(sym.name + nme.NAME_JOIN_STRING + sym.owner.name + nme.NAME_JOIN_STRING)
         } else {
           // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
-          //         Generating a a unique name, mangled with the enclosing class name, avoids a VerifyError
+          //         Generating a unique name, mangled with the enclosing class name, avoids a VerifyError
           //         in the case that a sub-class happens to lifts out a method with the *same* name.
           val name = freshen("" + sym.name + nme.NAME_JOIN_STRING)
           if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name.toTermName, sym.enclClass)

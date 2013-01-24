@@ -104,7 +104,7 @@ abstract class ExplicitOuter extends InfoTransform
    *  <ol>
    *    <li>
    *      Add an outer parameter to the formal parameters of a constructor
-   *      in a inner non-trait class;
+   *      in an inner non-trait class;
    *    </li>
    *    <li>
    *      Add a protected $outer field to an inner class which is

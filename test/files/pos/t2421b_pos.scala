@@ -11,7 +11,7 @@ object Test {
 
   f
 }
-/* bug: 
+/* bug:
 error: ambiguous implicit values:
  both method b in object Test1 of type [X <: Test1.B]Test1.F[X]
  and method a in object Test1 of type => Test1.F[Test1.A]
