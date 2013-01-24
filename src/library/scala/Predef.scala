@@ -230,16 +230,12 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
-    // `__resultOfEnsuring` must be a public val to allow inlining.
-    // See comments in ArrowAssoc for more.
-
+  implicit final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
     def ensuring(cond: Boolean): A = { assert(cond); __resultOfEnsuring }
     def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); __resultOfEnsuring }
     def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
     def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(__resultOfEnsuring), msg); __resultOfEnsuring }
   }
-  @inline implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   /** `???` can be used for marking methods that remain to be implemented.
    *  @throws  A `NotImplementedError`
@@ -260,17 +256,10 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
-    // `__leftOfArrow` must be a public val to allow inlining. The val
-    // used to be called `x`, but now goes by `__leftOfArrow`, as that
-    // reduces the chances of a user's writing `foo.__leftOfArrow` and
-    // being confused why they get an ambiguous implicit conversion
-    // error. (`foo.x` used to produce this error since both
-    // any2Ensuring and any2ArrowAssoc enrich everything with an `x`)
+  final implicit class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
-  @inline implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
   // printing and reading -----------------------------------------------
 
