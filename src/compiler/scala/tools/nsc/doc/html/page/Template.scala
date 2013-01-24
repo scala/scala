@@ -760,7 +760,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           if (isReduced) NodeSeq.Empty else {
             def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
               def param0(vl: ValueParam): NodeSeq =
-                // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
+                // notice the }{ in the next lines, they are necessary to avoid an undesired withspace in output
                 <span name={ vl.name }>{
                   Text(vl.name)
                 }{ Text(": ") ++ typeToHtml(vl.resultType, hasLinks) }{
