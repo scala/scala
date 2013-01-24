@@ -87,9 +87,6 @@ class HashMap[A, +B] extends AbstractMap[A, B]
 
   def split: Seq[HashMap[A, B]] = Seq(this)
 
-  @deprecated("Use the `merged` method instead.", "2.10.0")
-  def merge[B1 >: B](that: HashMap[A, B1], mergef: MergeFunction[A, B1] = null): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
-
   /** Creates a new map which is the merge of this and the argument hash map.
    *
    *  Uses the specified collision resolution function if two keys are the same.

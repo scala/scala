@@ -96,9 +96,6 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
   override def takeWhile(p: A => Boolean) = take(countWhile(p))
   override def span(p: A => Boolean) = splitAt(countWhile(p))
 
-  @deprecated("use `ordering.lt` instead", "2.10.0")
-  def isSmaller(x: A, y: A) = compare(x,y) < 0
-
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
   private def newSet(t: RB.Tree[A, Unit]) = new TreeSet[A](t)

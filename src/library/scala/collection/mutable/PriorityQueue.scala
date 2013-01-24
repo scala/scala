@@ -146,14 +146,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return   the element with the highest priority.
    */
-  @deprecated("Use `head` instead.", "2.9.0")
-  def max: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
-
-  /** Returns the element with the highest priority in the queue,
-   *  or throws an error if there is no element contained in the queue.
-   *
-   *  @return   the element with the highest priority.
-   */
   override def head: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Removes all elements from the queue. After this operation is completed,
