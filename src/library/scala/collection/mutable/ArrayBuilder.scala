@@ -57,6 +57,7 @@ object ArrayBuilder {
     private var elems: Array[T] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[T] = {
       val newelems = new Array[T](size)
@@ -121,6 +122,7 @@ object ArrayBuilder {
     private var elems: Array[Byte] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Byte] = {
       val newelems = new Array[Byte](size)
@@ -185,6 +187,7 @@ object ArrayBuilder {
     private var elems: Array[Short] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Short] = {
       val newelems = new Array[Short](size)
@@ -249,6 +252,7 @@ object ArrayBuilder {
     private var elems: Array[Char] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Char] = {
       val newelems = new Array[Char](size)
@@ -313,6 +317,7 @@ object ArrayBuilder {
     private var elems: Array[Int] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Int] = {
       val newelems = new Array[Int](size)
@@ -377,6 +382,7 @@ object ArrayBuilder {
     private var elems: Array[Long] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Long] = {
       val newelems = new Array[Long](size)
@@ -441,6 +447,7 @@ object ArrayBuilder {
     private var elems: Array[Float] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Float] = {
       val newelems = new Array[Float](size)
@@ -505,6 +512,7 @@ object ArrayBuilder {
     private var elems: Array[Double] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Double] = {
       val newelems = new Array[Double](size)
@@ -569,6 +577,7 @@ object ArrayBuilder {
     private var elems: Array[Boolean] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Boolean] = {
       val newelems = new Array[Boolean](size)
@@ -633,6 +642,7 @@ object ArrayBuilder {
     private var elems: Array[Unit] = _
     private var capacity: Int = 0
     private var size: Int = 0
+    def length: Int = size
 
     private def mkArray(size: Int): Array[Unit] = {
       val newelems = new Array[Unit](size)
