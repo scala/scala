@@ -8,29 +8,13 @@
 
 
 
-package scala.util.regexp
+package scala.xml.dtd.impl
 
-/** Pointed regular hedge expressions, a useful subclass of regular hedge expressions.
+/** This runtime exception is thrown if an attempt to instantiate a
+ *  syntactically incorrect expression is detected.
  *
  *  @author  Burak Emir
  *  @version 1.0
  */
 @deprecated("This class will be removed", "2.10.0")
-abstract class PointedHedgeExp extends Base {
-
-  type _regexpT <: RegExp
-  type _labelT
-
-  case class  Node(label: _labelT, r: _regexpT) extends RegExp {
-    final val isNullable = false
-  }
-
-  case class  TopIter(r1: _regexpT, r2: _regexpT) extends RegExp {
-    final val isNullable = r1.isNullable && r2.isNullable //?
-  }
-
-  case object Point extends RegExp {
-    final val isNullable = false
-  }
-
-}
+private[dtd] class SyntaxError(e: String) extends RuntimeException(e)

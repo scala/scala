@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.automata
+package scala.xml.dtd.impl
 
 import scala.collection.{ mutable, immutable }
 
@@ -21,7 +21,7 @@ import scala.collection.{ mutable, immutable }
  *  @version 1.0
  */
 @deprecated("This class will be removed", "2.10.0")
-abstract class DetWordAutom[T <: AnyRef] {
+private[dtd] abstract class DetWordAutom[T <: AnyRef] {
   val nstates: Int
   val finals: Array[Int]
   val delta: Array[mutable.Map[T, Int]]

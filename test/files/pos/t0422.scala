@@ -1,5 +1,4 @@
-import scala.util.regexp.WordExp;
-import scala.util.automata.WordBerrySethi;
+package scala.xml.dtd.impl
 
 object BoolWordExp extends WordExp {
   type _labelT = MyLabels;
