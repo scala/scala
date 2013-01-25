@@ -26,9 +26,18 @@ public class ASMTransformer implements ClassFileTransformer {
         className.startsWith("instrumented/"));
   }
 	
-	public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
+	public byte[] transform(final ClassLoader classLoader, final String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
 	  if (shouldTransform(className)) {
-  		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+	    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS) {
+	      @Override protected String getCommonSuperClass(final String type1, final String type2) {
+	        // Since we are not recomputing stack frame map, this should never be called we override this method because
+	        // default implementation uses reflection for implementation and might try to load the class that we are
+	        // currently processing. That leads to weird results like swallowed exceptions and classes being not
+	        // transformed.
+	        throw new RuntimeException("Unexpected call to getCommonSuperClass(" + type1 + ", " + type2 +
+	            ") while transforming " + className);
+	      }
+	    };
   		ProfilerVisitor visitor = new ProfilerVisitor(writer);
   		ClassReader reader = new ClassReader(classfileBuffer);
   		reader.accept(visitor, 0);
