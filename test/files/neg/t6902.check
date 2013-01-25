@@ -1,0 +1,10 @@
+t6902.scala:4: error: unreachable code
+    case Some(b) => 3 // no warning was emitted
+                    ^
+t6902.scala:9: error: unreachable code
+    case Some(b) => 3 // no warning was emitted
+                    ^
+t6902.scala:21: error: unreachable code
+    case 1 => 3 // crash
+              ^
+three errors found
