@@ -16,8 +16,8 @@ trait CompileOutputCommon {
   def verbose: Boolean
 
   def info(msg: String)  = if (verbose) echo(msg)
-  def echo(msg: String)  = Console println msg
-  def warn(msg: String)  = System.err println msg
+  def echo(msg: String)  = {Console println msg; Console.flush}
+  def warn(msg: String)  = {Console.err println msg; Console.flush}
   def fatal(msg: String) = { warn(msg) ; sys.exit(1) }
 }
 
