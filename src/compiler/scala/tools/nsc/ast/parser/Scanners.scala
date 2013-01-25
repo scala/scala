@@ -155,6 +155,8 @@ trait Scanners extends ScannersCommon {
      */
     val next : TokenData = new TokenData0
     val prev : TokenData = new TokenData0
+    
+    var prevWasNewLine = false
 
     /** a stack of tokens which indicates whether line-ends can be statement separators
      *  also used for keeping track of nesting levels.
@@ -196,6 +198,8 @@ trait Scanners extends ScannersCommon {
      */
     def nextToken() {
       val lastToken = token
+      prevWasNewLine = lastToken==NEWLINE || lastToken==NEWLINES
+      
       // Adapt sepRegions according to last token
       (lastToken: @switch) match {
         case LPAREN   => sepRegions = RPAREN   :: sepRegions

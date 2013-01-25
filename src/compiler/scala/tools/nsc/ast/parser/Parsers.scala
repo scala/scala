@@ -527,7 +527,9 @@ self =>
      */
     def acceptStatSep(): Unit = in.token match {
       case NEWLINE | NEWLINES => in.nextToken()
-      case _                  => accept(SEMI)
+      case _                  => if (!in.prevWasNewLine) // New condition: Subscript sections may eat ahead newlines, so a previously seen newline is also ok
+                                      accept(SEMI)       // Note: this needs be tested
+                                 
     }
     def acceptStatSepOpt()    = if (!isStatSeqEnd) acceptStatSep()
     def errorTypeTree         = TypeTree() setType ErrorType setPos o2p(in.offset)
@@ -1135,21 +1137,26 @@ self =>
 /* ----------- SUBSCRIPT -------------------------------------------- */
 
     /*
+     * TBD: 
+     * 
+     * @, if, while, blocks, specials -> functions
+     * method resolution += "," resolution: phase 2
+     * 
+     * TBTested: 
+     * 
+     * actual parameters: box & add constraints
+     * 
      * DONE:
      * 
-     * reduce stack: make n-ary op...
-     * uniform AST for call: "," + params 
-     * formal parameters: box
-     * script method = body ===> script method = script(name, params){body}
-     * 
-     * TBD: 
+     * acceptStatSepOpt: not for scripts...in.previousToken NL is also ok
      * 
      * end scripts sections & script definitions appropriately
      *   script.. section ends when line indentation <= to "script.." indentation & appropriate token
      *   else current script specification ends when line indentation < "=" & appropriate token  
-     * actual parameters: box & add constraints
-     * @, if, while, blocks, specials -> functions
-     * method resolution += "," resolution: phase 2
+     * reduce stack: make n-ary op...
+     * uniform AST for call: "," + params 
+     * formal parameters: box
+     * script method = body ===> script method = script(name, params){body}
      */
     
     var linePosOfScriptsSection  = 0 // in a "script.." section, the line position of "script" (or any modifier before it); often something like 4
@@ -1162,6 +1169,7 @@ self =>
     val  script_Name  = newTermName("_script")
     val    here_Name  = newTermName("here")
     val   there_Name  = newTermName("there")
+    val    tmp1_Name  = newTermName("$tmp1")
     val            bind_inParam_Name  = newTermName("~")
     val           bind_outParam_Name  = newTermName("~?")
     val   bind_constrainedParam_Name  = newTermName("~??")
@@ -1169,6 +1177,9 @@ self =>
     val       formalInputParameter_Name = newTermName("FormalInputParameter")
     val      formalOutputParameter_Name = newTermName("FormalOutputParameter")
     val formalConstrainedParameter_Name = newTermName("FormalConstrainedParameter")
+    val      actualOutputParameter_Name = newTermName("ActualOutputParameter")
+    val actualConstrainedParameter_Name = newTermName("ActualConstrainedParameter")
+    val    actualAdaptingParameter_Name = newTermName("ActualAdaptingParameter")
 
     val    here_Ident = Ident( here_Name)
     val   there_Ident = Ident(there_Name)
@@ -1228,10 +1239,44 @@ self =>
     val selectFormalInputParameter      : Tree = Select(selectSubScriptVM,       formalInputParameter_Name)
     val selectFormalOutputParameter     : Tree = Select(selectSubScriptVM,      formalOutputParameter_Name)
     val selectFormalConstrainedParameter: Tree = Select(selectSubScriptVM, formalConstrainedParameter_Name)
+
+    val selectActualOutputParameter     : Tree = Select(selectSubScriptVM,      actualOutputParameter_Name)
+    val selectActualConstrainedParameter: Tree = Select(selectSubScriptVM, actualConstrainedParameter_Name)
+    val selectActualAdaptingParameter   : Tree = Select(selectSubScriptVM,    actualAdaptingParameter_Name)
     
     def       makeFormalInputParameter(typer: Tree): Tree = TypeApply(      selectFormalInputParameter, List(typer))
     def      makeFormalOutputParameter(typer: Tree): Tree = TypeApply(     selectFormalOutputParameter, List(typer))
     def makeFormalConstrainedParameter(typer: Tree): Tree = TypeApply(selectFormalConstrainedParameter, List(typer))
+    
+    def  makeParameterTransferFunction(exp   : Tree): Tree = {
+      val vparams = List(
+          atPos(exp.pos) {
+            makeParam(tmp1_Name, EmptyTree)
+          }
+      )
+      Function(vparams , Assign(exp, Ident(tmp1_Name)))
+    }
+    def      makeActualOutputParameter(exp   : Tree, constraint: Tree = null): Tree = {
+      if (constraint==null) Apply(selectActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
+      else             Apply(selectActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
+    }
+      
+    def    makeActualAdaptingParameter(formalParam: Name, constraint: Tree = null): Tree = {
+            Apply(selectActualAdaptingParameter, List(Ident(formalParam), constraint))
+    }
+
+    /*
+     * Enclose the given block with a function with parameter "here" of the given node type 
+     * i.e.: here: NodeType => block
+     */
+    def blockToFunction(block: Tree, nodeType: Name, pos: Position): Function = {
+      val vparams = List(
+          atPos(pos) {
+            makeParam(here_Name, Ident(nodeType) setPos pos)
+          }
+      )
+      Function(vparams , block)
+    }
     
     @inline final def inSubscriptParens[T](body: => T): T = {
       accept(LPAREN); val wasInSubscript = in.isInSubScript; 
@@ -1315,8 +1360,8 @@ self =>
          | LBRACE_QMARK             
          | LBRACE_EMARK             
          | LBRACE_ASTERISK          
-         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
-      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
+         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || !in.prevWasNewLine || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
+      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || !in.prevWasNewLine || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
       case _                                              => isSubScriptUnaryPrefixOp(tokenData)  ||  // MINUS is allways OK, also for -1 etc
                                                              isLiteralToken(tokenData.token)
     }
@@ -1427,7 +1472,7 @@ self =>
       var mustExit = false
       while (!mustExit)
       {
-	      if (doMultipleScripts) {
+	      if (doMultipleScripts && in.prevWasNewLine) {
             val linePos = in.offset - in.lineStartOffset
 	        if (linePos <= linePosOfScriptsSection) mustExit = true
 	      }
@@ -1477,7 +1522,7 @@ self =>
 		                Apply(select, List(pSym))
 		              }
 		            }
-	            val scriptBody = Apply(Apply(Ident(script_Name), This(tpnme.EMPTY)::Ident(name)::paramBindings), List(rhs))
+	            val scriptBody = Apply(Apply(Ident(script_Name), This(tpnme.EMPTY)::Literal(Constant(name.toString))::paramBindings), List(rhs))
 		        DefDef(newmods, name, tparams, vparamss, restype, scriptBody)
 		      }
 	          signalParseProgress(scriptDef.pos)
@@ -1609,6 +1654,7 @@ self =>
     }
 
     def scriptCommaExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
+      val oldOffset = in.offset
       val ts  = new ListBuffer[Tree]
       var moreTerms = true
       do  {
@@ -1619,8 +1665,13 @@ self =>
       }
       while (moreTerms)
         
-      if (ts.length == 1)  ts.head
-      else  Apply(Ident(","), ts.toList)
+      val allTermsArePathsOrLiterals = ts.forall(t =>
+            t match {case Ident(_) | Select(_,_) | Literal(_) => true case _ => false}
+          )
+      
+      if (allTermsArePathsOrLiterals) {Apply(Ident(","), ts.toList)}
+      else if (ts.length == 1)  ts.head
+      else {syntaxError(oldOffset, "terms in comma expression should be path or literal"); ts.head}
     }
 
  
@@ -1850,18 +1901,6 @@ self =>
     }
 
     
-    /*
-     * Enclose the given block with a function with parameter "here" of the given node type 
-     * i.e.: here: NodeType => block
-     */
-    def blockToFunction(block: Tree, nodeType: Name, pos: Position): Function = {
-      val vparams = List(
-          atPos(pos) {
-            makeParam(here_Name, Ident(nodeType) setPos pos)
-          }
-      )
-      Function(vparams , block)
-    }
     def scriptBlockExpr(): Tree = {
       in.isInSubScript       = false
       in.isInSubScript_block = true
@@ -1880,14 +1919,49 @@ self =>
     def scriptArgumentExprs(): List[Tree] = {
       def args(): List[Tree] = commaSeparated {
         val maybeNamed = isIdent
-        expr() match {
+        var isOutputParam   = false
+        var isAdaptingParam = false
+        var paramConstraint: Tree = null
+        var formalParamName: Name = null
+        var exp = expr() match {
           case a @ Assign(id, rhs) if maybeNamed => atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-          case e                                 => e
+          case Apply(Select(lhs                   , QMARKkw ), Nil) =>   isOutputParam = true; lhs
+          case Apply(Select(Ident(formalParamName), QMARK2kw), Nil) => isAdaptingParam = true; Ident(formalParamName)
+          case Apply(Select(lhs                   , QMARK2kw), Nil) =>  syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); lhs
+          case e                                                    => e
         }
+        if (isOutputParam || isAdaptingParam) {
+          if (in.token==IF_QMARK) {
+             in.nextToken
+             paramConstraint = simpleNativeValueExpr()
+          }
+        }
+        if (isOutputParam) makeActualOutputParameter(exp, paramConstraint)
+        else if (isAdaptingParam) makeActualAdaptingParameter(formalParamName, paramConstraint)
+        else exp
       }
       inSubscriptParens(if (in.token == RPAREN) Nil else args())
     }
    
+/*                 
+        var paramConstraint: Tree = null
+                     isOutputParam   = in.name==nme.QMARKkw
+                     isAdaptingParam = in.name==nme.QMARK2kw
+                     in.nextToken()
+                     if (in.token==IF_QMARK) {
+                       in.nextToken
+                       paramConstraint = simpleNativeValueExpr()
+                     }
+                 
+       def      makeActualOutputParameter(exp   : Tree, constraint: Tree = null): Tree = {
+      if (constraint==null) Apply(selectActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
+      else             Apply(selectActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
+    }
+      
+    def    makeActualAdaptingParameter(formalParam: Name, constraint: Tree = null): Tree = {
+*/
+
+    
 
     
 /* ----------- EXPRESSIONS ------------------------------------------------ */
@@ -2225,6 +2299,7 @@ self =>
       }
     }
 
+    
     /** {{{
      *  ArgumentExprs ::= `(' [Exprs] `)'
      *                  | [nl] BlockExpr
