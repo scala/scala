@@ -76,7 +76,7 @@ fi
 
 # last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the
 # supplied argument will be used.
-JAVA_OPTS="-Xmx1024M -Xms64M -XX:MaxPermSize=128M $JAVA_OPTS"
+JAVA_OPTS="-Xmx1024M -Xms64M -XX:PermSize=128M -XX:MaxPermSize=128M $JAVA_OPTS"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
 partestDebugStr=""
