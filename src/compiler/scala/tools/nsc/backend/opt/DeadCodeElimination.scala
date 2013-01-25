@@ -104,10 +104,10 @@ abstract class DeadCodeElimination extends SubComponent {
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
 
-            case LOAD_LOCAL(l) =>
+            case LOAD_LOCAL(_) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
 
-            case STORE_LOCAL(_) =>
+            case STORE_LOCAL(l) =>
               /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
                * (otherwise any side-effects of the module's constructor go lost).
                *   (a) The other two cases where a module's value is stored (STORE_FIELD and STORE_ARRAY_ITEM)
@@ -117,13 +117,18 @@ abstract class DeadCodeElimination extends SubComponent {
                *       TODO check for purity (the ICode?) of the module's constructor (besides m1's purity).
                *       See also https://github.com/paulp/scala/blob/topic/purity-analysis/src/compiler/scala/tools/nsc/backend/opt/DeadCodeElimination.scala
                */
-              val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
+              // more generally we can't eliminate stores to local references because they are indirectly observable
+              // for instance var x = new HumungoObject;/* use x */;x = null; blah() eliminates a reference to the HumungoObject, freeing up
+              // memory for blah(). That kind of thing is pretty common in user code. And just checking null isn't even sufficient. For instance
+              // var x = new HumungoObject; /* use x */; x = new SmallObject; blah(). Finally, even ignoring memory, Weak and Phantom references
+              // make object reachibility somewhat observable.
+              val necessary = l.kind.isRefOrArrayType || (rdef.findDefs(bb, idx, 1) exists { p =>
                 val (bb1, idx1) = p
                 bb1(idx1) match {
                   case LOAD_MODULE(module) => isLoadNeeded(module)
                   case _                   => false
                 }
-              }
+              })
               if (necessary) worklist += ((bb, idx))
 
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
