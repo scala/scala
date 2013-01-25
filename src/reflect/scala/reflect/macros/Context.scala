@@ -52,7 +52,7 @@ trait Context extends Aliases
 
   /** The prefix tree from which the macro is selected.
    *
-   *  For a example, for a macro `filter` defined as an instance method on a collection `Coll`,
+   *  For example, for a macro `filter` defined as an instance method on a collection `Coll`,
    *  `prefix` represents an equivalent of `this` for normal instance methods:
    *
    *  {{{

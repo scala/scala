@@ -37,10 +37,10 @@ private[dtd] abstract class NondetWordAutom[T <: AnyRef] {
   /** @return true if there are no accepting states */
   final def isEmpty = (0 until nstates) forall (x => !isFinal(x))
 
-  /** @return a immutable.BitSet with the next states for given state and label */
+  /** @return an immutable.BitSet with the next states for given state and label */
   def next(q: Int, a: T): immutable.BitSet = delta(q).getOrElse(a, default(q))
 
-  /** @return a immutable.BitSet with the next states for given state and label */
+  /** @return an immutable.BitSet with the next states for given state and label */
   def next(Q: immutable.BitSet, a: T): immutable.BitSet = next(Q, next(_, a))
   def nextDefault(Q: immutable.BitSet): immutable.BitSet = next(Q, default)
 

@@ -464,7 +464,7 @@ abstract class ICodeCheckers {
                 subtypeTest(elem, kind)
                 pushStack(elem)
               case (a, b) =>
-                icodeError(" expected and INT and a array reference, but " +
+                icodeError(" expected an INT and an array reference, but " +
                     a + ", " + b + " found");
             }
 

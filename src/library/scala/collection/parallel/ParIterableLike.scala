@@ -454,7 +454,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   def reduceRightOption[U >: T](op: (T, U) => U): Option[U] = seq.reduceRightOption(op)
 
-  /** Applies a function `f` to all the elements of $coll in a undefined order.
+  /** Applies a function `f` to all the elements of $coll in an undefined order.
    *
    *  @tparam U    the result type of the function applied to each element, which is always discarded
    *  @param f     function applied to each element

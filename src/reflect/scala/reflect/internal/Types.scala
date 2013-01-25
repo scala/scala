@@ -153,7 +153,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     /** No sync necessary, because record should only
-     *  be called from within a undo or undoUnless block,
+     *  be called from within an undo or undoUnless block,
      *  which is already synchronized.
      */
     private[reflect] def record(tv: TypeVar) = {

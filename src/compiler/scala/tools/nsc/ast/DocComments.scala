@@ -320,7 +320,7 @@ trait DocComments { self: Global =>
   }
 
   /** Expand variable occurrences in string `str`, until a fix point is reached or
-   *  a expandLimit is exceeded.
+   *  an expandLimit is exceeded.
    *
    *  @param str   The string to be expanded
    *  @param sym   The symbol for which doc comments are generated
