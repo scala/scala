@@ -2067,12 +2067,9 @@ trait Typers extends Modes with Adaptations with Tags {
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
-      if (sym.hasAnnotation(definitions.VolatileAttr)) {
-        if (!sym.isMutable)
-          VolatileValueError(vdef)
-        else if (sym.isFinal)
-          FinalVolatileVarError(vdef)
-      }
+      if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.isMutable)
+        VolatileValueError(vdef)
+
       val rhs1 =
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && !sym.isLazy && !isPastTyper)
@@ -5219,7 +5216,7 @@ trait Typers extends Modes with Adaptations with Tags {
             val tree3 = stabilize(tree2, pre2, mode, pt)
             // SI-5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
             //         inference errors in pattern matching.
-            tree3 setType dropRepeatedParamType(tree3.tpe)
+            tree3 setType dropIllegalStarTypes(tree3.tpe)
           }
         }
       }

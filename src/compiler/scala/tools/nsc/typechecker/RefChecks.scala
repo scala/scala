@@ -60,23 +60,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     super.transformInfo(sym, tp)
   }
 
-  val toJavaRepeatedParam = new TypeMap {
-    def apply(tp: Type) = tp match {
-      case TypeRef(pre, RepeatedParamClass, args) =>
-        typeRef(pre, JavaRepeatedParamClass, args)
-      case _ =>
-        mapOver(tp)
-    }
-  }
-
-  val toScalaRepeatedParam = new TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, JavaRepeatedParamClass, args) =>
-        typeRef(pre, RepeatedParamClass, args)
-      case _ =>
-        mapOver(tp)
-    }
-  }
+  val toJavaRepeatedParam  = new SubstSymMap(RepeatedParamClass -> JavaRepeatedParamClass)
+  val toScalaRepeatedParam = new SubstSymMap(JavaRepeatedParamClass -> RepeatedParamClass)
 
   def accessFlagsToString(sym: Symbol) = flagsToString(
     sym getFlag (PRIVATE | PROTECTED),
@@ -156,27 +141,22 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
 // Override checking ------------------------------------------------------------
 
-    def isJavaVarargsAncestor(clazz: Symbol) = (
-         clazz.isClass
-      && clazz.isJavaDefined
-      && (clazz.info.nonPrivateDecls exists isJavaVarArgsMethod)
-    )
-
     /** Add bridges for vararg methods that extend Java vararg methods
      */
     def addVarargBridges(clazz: Symbol): List[Tree] = {
       // This is quite expensive, so attempt to skip it completely.
       // Insist there at least be a java-defined ancestor which
       // defines a varargs method. TODO: Find a cheaper way to exclude.
-      if (clazz.thisType.baseClasses exists isJavaVarargsAncestor) {
+      if (inheritsJavaVarArgsMethod(clazz)) {
         log("Found java varargs ancestor in " + clazz.fullLocationString + ".")
         val self = clazz.thisType
         val bridges = new ListBuffer[Tree]
 
         def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
-          log("Generating varargs bridge for " + member.fullLocationString + " of type " + bridgetpe)
+          log(s"Generating varargs bridge for ${member.fullLocationString} of type $bridgetpe")
 
-          val bridge = member.cloneSymbolImpl(clazz, member.flags | VBRIDGE) setPos clazz.pos
+          val newFlags = (member.flags | VBRIDGE | ARTIFACT) & ~PRIVATE
+          val bridge   = member.cloneSymbolImpl(clazz, newFlags) setPos clazz.pos
           bridge.setInfo(bridgetpe.cloneInfo(bridge))
           clazz.info.decls enter bridge
 
@@ -189,25 +169,34 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           localTyper typed DefDef(bridge, body)
         }
 
-        // For all concrete non-private members that have a (Scala) repeated parameter:
-        //   compute the corresponding method type `jtpe` with a Java repeated parameter
+        // For all concrete non-private members (but: see below) that have a (Scala) repeated
+        //   parameter: compute the corresponding method type `jtpe` with a Java repeated parameter
         //   if a method with type `jtpe` exists and that method is not a varargs bridge
         //   then create a varargs bridge of type `jtpe` that forwards to the
         //   member method with the Scala vararg type.
-        for (member <- clazz.info.nonPrivateMembers) {
+        //
+        // @PP: Can't call nonPrivateMembers because we will miss refinement members,
+        //   which have been marked private. See SI-4729.
+        for (member <- nonTrivialMembers(clazz)) {
+          log(s"Considering $member for java varargs bridge in $clazz")
           if (!member.isDeferred && member.isMethod && hasRepeatedParam(member.info)) {
             val inherited = clazz.info.nonPrivateMemberAdmitting(member.name, VBRIDGE)
+
             // Delaying calling memberType as long as possible
             if (inherited ne NoSymbol) {
-              val jtpe = toJavaRepeatedParam(self.memberType(member))
+              val jtpe = toJavaRepeatedParam(self memberType member)
               // this is a bit tortuous: we look for non-private members or bridges
               // if we find a bridge everything is OK. If we find another member,
               // we need to create a bridge
-              if (inherited filter (sym => (self.memberType(sym) matches jtpe) && !(sym hasFlag VBRIDGE)) exists)
+              val inherited1 = inherited filter (sym => !(sym hasFlag VBRIDGE) && (self memberType sym matches jtpe))
+              if (inherited1.exists)
                 bridges += varargBridge(member, jtpe)
             }
           }
         }
+
+        if (bridges.size > 0)
+          log(s"Adding ${bridges.size} bridges for methods extending java varargs.")
 
         bridges.toList
       }
@@ -1473,8 +1462,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {
       case Apply(fn, args) =>
-        !args.isEmpty && (args.last eq tree) &&
-        fn.tpe.params.length == args.length && isRepeatedParamType(fn.tpe.params.last.tpe)
+        (    args.nonEmpty
+          && (args.last eq tree)
+          && (fn.tpe.params.length == args.length)
+          && isRepeatedParamType(fn.tpe.params.last.tpe)
+        )
       case _ =>
         false
     }
