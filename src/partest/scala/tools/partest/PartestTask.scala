@@ -355,7 +355,7 @@ class PartestTask extends Task with CompilationPathProperty {
 
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
-    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS = _)
+    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS ++= _)
     timeout foreach (antFileManager.timeout = _)
 
     type TFSet = (Array[File], String, String)

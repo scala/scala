@@ -77,7 +77,6 @@ fi
 # last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the
 # supplied argument will be used.
 JAVA_OPTS="-Xmx1024M -Xms64M $JAVA_OPTS"
-[ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
 partestDebugStr=""
 if [ ! -z "${PARTEST_DEBUG}" ] ; then
