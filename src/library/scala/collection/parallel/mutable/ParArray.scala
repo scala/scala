@@ -469,7 +469,6 @@ self =>
           Array.copy(arr, i, targetarr, 0, until - i)
           pac.buff.size = pac.buff.size + until - i
           pac.buff.lastPtr.size = until - i
-            pac
         } otherwise {
           copy2builder_quick(cb, arr, until, i)
           i = until
@@ -531,7 +530,6 @@ self =>
         val targetarr: Array[Any] = pac.lastbuff.internalArray.asInstanceOf[Array[Any]]
         reverse2combiner_quick(targetarr, arr, 0, i, until)
         pac.lastbuff.setInternalSize(sz)
-        pac
       } otherwise {
         cb.ifIs[UnrolledParArrayCombiner[T]] {
           pac =>
@@ -542,7 +540,6 @@ self =>
           reverse2combiner_quick(targetarr, arr, 0, i, until)
           pac.buff.size = pac.buff.size + sz
           pac.buff.lastPtr.size = sz
-          pac
         } otherwise super.reverse2combiner(cb)
       }
       cb
