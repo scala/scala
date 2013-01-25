@@ -8,7 +8,7 @@
 
 
 
-package scala.util.regexp
+package scala.xml.dtd.impl
 
 /** Basic regular expressions.
  *
@@ -17,7 +17,7 @@ package scala.util.regexp
  */
 
 @deprecated("This class will be removed", "2.10.0")
-abstract class Base {
+private[dtd] abstract class Base {
   type _regexpT <: RegExp
 
   abstract class RegExp {

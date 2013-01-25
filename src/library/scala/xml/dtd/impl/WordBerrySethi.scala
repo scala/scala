@@ -6,10 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.automata
+package scala.xml.dtd.impl
 
 import scala.collection.{ immutable, mutable }
-import scala.util.regexp.WordExp
 
 /** This class turns a regular expression into a [[scala.util.automata.NondetWordAutom]]
   * celebrated position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
@@ -18,7 +17,7 @@ import scala.util.regexp.WordExp
   *  @version 1.0
   */
 @deprecated("This class will be removed", "2.10.0")
-abstract class WordBerrySethi extends BaseBerrySethi {
+private[dtd] abstract class WordBerrySethi extends BaseBerrySethi {
   override val lang: WordExp
 
   import lang.{ Alt, Eps, Letter, RegExp, Sequ, Star, _labelT }

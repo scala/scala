@@ -11,8 +11,7 @@
 package scala.xml
 package dtd
 
-import scala.util.regexp.WordExp
-import scala.util.automata._
+import scala.xml.dtd.impl._
 import scala.xml.Utility.sbToString
 import PartialFunction._
 

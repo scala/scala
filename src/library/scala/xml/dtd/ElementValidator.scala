@@ -12,10 +12,12 @@ package scala.xml
 package dtd
 
 import PartialFunction._
+import scala.collection.mutable
+
 import ContentModel.ElemName
 import MakeValidationException._    // @todo other exceptions
-import scala.util.automata._
-import scala.collection.mutable
+
+import impl._
 
 /** validate children and/or attributes of an element
  *  exceptions are created but not thrown.

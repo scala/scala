@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.automata
+package scala.xml.dtd.impl
 
 import scala.collection.{ immutable, mutable }
 
@@ -18,7 +18,7 @@ import scala.collection.{ immutable, mutable }
  *  the partial function `finals` is defined.
  */
 @deprecated("This class will be removed", "2.10.0")
-abstract class NondetWordAutom[T <: AnyRef] {
+private[dtd] abstract class NondetWordAutom[T <: AnyRef] {
   val nstates: Int
   val labels: Seq[T]
   val finals: Array[Int] // 0 means not final

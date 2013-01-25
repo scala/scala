@@ -8,7 +8,7 @@
 
 
 
-package scala.util.automata
+package scala.xml.dtd.impl
 
 
 /** A fast test of language inclusion between minimal automata.
@@ -18,7 +18,7 @@ package scala.util.automata
  *  @version 1.0
  */
 @deprecated("This class will be removed", "2.10.0")
-trait Inclusion[A <: AnyRef] {
+private[dtd] trait Inclusion[A <: AnyRef] {
 
   val labels: Seq[A]
 
