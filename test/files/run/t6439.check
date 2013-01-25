@@ -1,0 +1,66 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> class A
+defined class A
+
+scala> object A // warn
+defined module A
+warning: previously defined class A is not a companion to object A.
+Companions must be defined together; you may wish to use :paste mode for this.
+
+scala> trait B
+defined trait B
+
+scala> object B // warn
+defined module B
+warning: previously defined trait B is not a companion to object B.
+Companions must be defined together; you may wish to use :paste mode for this.
+
+scala> object C
+defined module C
+
+scala> object Bippy
+defined module Bippy
+
+scala> class C // warn
+defined class C
+warning: previously defined object C is not a companion to class C.
+Companions must be defined together; you may wish to use :paste mode for this.
+
+scala> class D
+defined class D
+
+scala> def D = 0 // no warn
+D: Int
+
+scala> val D = 0 // no warn
+D: Int = 0
+
+scala> object E
+defined module E
+
+scala> var E = 0 // no warn
+E: Int = 0
+
+scala> object F
+defined module F
+
+scala> type F = Int // no warn
+defined type alias F
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> intp("F") // this now works as a result of changing .typeSymbol to .typeSymbolDirect in IMain#Request#definedSymbols
+res0: $r.intp.global.Symbol = type F
+
+scala> 
+
+scala> 
