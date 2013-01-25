@@ -409,6 +409,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
         // example check: List[Int] <:< ::[Int]
         // TODO: extractor.paramType may contain unbound type params (run/t2800, run/t3530)
+        // `patBinderOrCasted` is assigned the result of casting `patBinder` to `extractor.paramType`
         val (typeTestTreeMaker, patBinderOrCasted, binderKnownNonNull) =
           if (needsTypeTest(patBinder.info.widen, extractor.paramType)) {
             // chain a type-testing extractor before the actual extractor call
@@ -416,7 +417,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
             val treeMaker = TypeTestTreeMaker(patBinder, patBinder, extractor.paramType, extractor.paramType)(pos, extractorArgTypeTest = true)
-            (List(treeMaker), treeMaker.nextBinder, false)
+
+            // check whether typetest implies patBinder is not null,
+            // even though the eventual null check will be on patBinderOrCasted
+            // it'll be equal to patBinder casted to extractor.paramType anyway (and the type test is on patBinder)
+            (List(treeMaker), treeMaker.nextBinder, treeMaker.impliesBinderNonNull(patBinder))
           } else {
             // no type test needed, but the tree maker relies on `patBinderOrCasted` having type `extractor.paramType` (and not just some type compatible with it)
             // SI-6624 shows this is necessary because apparently patBinder may have an unfortunate type (.decls don't have the case field accessors)
@@ -773,11 +778,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def resultType = tpe.finalResultType
       def isSeq      = extractorCall.symbol.name == nme.unapplySeq
 
-       /** Create the TreeMaker that embodies this extractor call
-        *
-        * `binder` has been casted to `paramType` if necessary
-        * `binderKnownNonNull` is not used in this subclass
-        */
+      /** Create the TreeMaker that embodies this extractor call
+       *
+       *  `binder` has been casted to `paramType` if necessary
+       *  `binderKnownNonNull` is not used in this subclass
+       *
+       *  TODO: implement review feedback by @retronym:
+       *    Passing the pair of values around suggests:
+       *       case class Binder(sym: Symbol, knownNotNull: Boolean).
+       *    Perhaps it hasn't reached critical mass, but it would already clean things up a touch.
+       */
       def treeMaker(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
         // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
@@ -1177,6 +1187,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def eqTest(pat: Tree, testedBinder: Symbol): Result           = false
         def and(a: Result, b: Result): Result                         = false // we don't and type tests, so the conjunction must include at least one false
       }
+
+      def nonNullImpliedByTestChecker(binder: Symbol) = new TypeTestCondStrategy {
+        type Result = Boolean
+
+        def typeTest(testedBinder: Symbol, expectedTp: Type): Result  = testedBinder eq binder
+        def outerTest(testedBinder: Symbol, expectedTp: Type): Result = false
+        def nonNullTest(testedBinder: Symbol): Result                 = testedBinder eq binder
+        def equalsTest(pat: Tree, testedBinder: Symbol): Result       = false // could in principle analyse pat and see if it's statically known to be non-null
+        def eqTest(pat: Tree, testedBinder: Symbol): Result           = false // could in principle analyse pat and see if it's statically known to be non-null
+        def and(a: Result, b: Result): Result                         = a || b
+      }
     }
 
     /** implements the run-time aspects of (§8.2) (typedPattern has already done the necessary type transformations)
@@ -1259,6 +1280,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // is this purely a type test, e.g. no outer check, no equality tests (used in switch emission)
       def isPureTypeTest = renderCondition(pureTypeTestChecker)
+
+      def impliesBinderNonNull(binder: Symbol) = renderCondition(nonNullImpliedByTestChecker(binder))
 
       override def toString = "TT"+(expectedTp, testedBinder.name, nextBinderTp)
     }
