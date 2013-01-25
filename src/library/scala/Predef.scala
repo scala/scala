@@ -266,8 +266,7 @@ object Predef extends LowPriorityImplicits {
     // reduces the chances of a user's writing `foo.__leftOfArrow` and
     // being confused why they get an ambiguous implicit conversion
     // error. (`foo.x` used to produce this error since both
-    // any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
-
+    // any2Ensuring and any2ArrowAssoc enrich everything with an `x`)
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }

@@ -7,8 +7,8 @@ package foo {
 }
 
 package object foo {
-  // Crasher: No synthetics for method PimpedFoo2: synthetics contains
-  implicit class PimpedFoo2(value: Foo) {
+  // Crasher: No synthetics for method EnrichedFoo2: synthetics contains
+  implicit class EnrichedFoo2(value: Foo) {
     def huzzah = ""
   }
 }

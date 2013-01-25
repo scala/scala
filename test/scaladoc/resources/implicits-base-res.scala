@@ -11,21 +11,21 @@ trait MyNumeric[R]
  *  - tests the complete type inference
  *  - the following inherited methods should appear:
  * {{{
- * def convToGtColonDoubleA(x: Double)    // pimpA3: with a constraint that T <: Double
- * def convToIntA(x: Int)                 // pimpA2: with a constraint that T = Int
- * def convToManifestA(x: T)              // pimpA7: with 2 constraints: T: Manifest and T <: Double
- * def convToMyNumericA(x: T)             // pimpA6: with a constraint that there is x: MyNumeric[T] implicit in scope
- * def convToNumericA(x: T)               // pimpA1: with a constraint that there is x: Numeric[T] implicit in scope
- * def convToPimpedA(x: Bar[Foo[T]])      // pimpA5: no constraints, SHADOWED
- * def convToPimpedA(x: S)                // pimpA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar, SHADOWED
- * def convToPimpedA(x: T)                // pimpA0: with no constraints, SHADOWED
- * def convToTraversableOps(x: T)         // pimpA7: with 2 constraints: T: Manifest and T <: Double
+ * def convToGtColonDoubleA(x: Double)    // enrichA3: with a constraint that T <: Double
+ * def convToIntA(x: Int)                 // enrichA2: with a constraint that T = Int
+ * def convToManifestA(x: T)              // enrichA7: with 2 constraints: T: Manifest and T <: Double
+ * def convToMyNumericA(x: T)             // enrichA6: with a constraint that there is x: MyNumeric[T] implicit in scope
+ * def convToNumericA(x: T)               // enrichA1: with a constraint that there is x: Numeric[T] implicit in scope
+ * def convToEnrichedA(x: Bar[Foo[T]])    // enrichA5: no constraints, SHADOWED
+ * def convToEnrichedA(x: S)              // enrichA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar, SHADOWED
+ * def convToEnrichedA(x: T)              // enrichA0: with no constraints, SHADOWED
+ * def convToTraversableOps(x: T)         // enrichA7: with 2 constraints: T: Manifest and T <: Double
  *                                        // should not be abstract!
  * }}}
  */
 class A[T] {
-  /** This should prevent the implicitly inherited `def convToPimpedA: T` from `pimpA0` from showing up */
-  def convToPimpedA(x: T): T = sys.error("Let's check it out!")
+  /** This should prevent the implicitly inherited `def convToEnrichedA: T` from `enrichA0` from showing up */
+  def convToEnrichedA(x: T): T = sys.error("Let's check it out!")
   /** This should check implicit member elimination in the case of subtyping */
   def foo(a: T, b: AnyRef): T
 }
@@ -33,15 +33,15 @@ class A[T] {
 object A {
   import language.implicitConversions // according to SIP18
 
-  implicit def pimpA0[V](a: A[V]) = new PimpedA(a)
-  implicit def pimpA1[ZBUR: Numeric](a: A[ZBUR]) = new NumericA[ZBUR](a)
-  implicit def pimpA2(a: A[Int]) = new IntA(a)
-  implicit def pimpA3(a: A[T] forSome { type T <: Double }) = new GtColonDoubleA(a)
-  implicit def pimpA4[S](a: A[Foo[Bar[S]]])(implicit foo: Foo[S], bar: Bar[S]): PimpedA[S] = sys.error("not implemented")
-  implicit def pimpA5[Z](a: A[Z]): PimpedA[Bar[Foo[Z]]] = sys.error("not implemented")
-  implicit def pimpA6[Z: MyNumeric](a: A[Z]) = new MyNumericA[Z](a)
+  implicit def enrichA0[V](a: A[V]) = new EnrichedA(a)
+  implicit def enrichA1[ZBUR: Numeric](a: A[ZBUR]) = new NumericA[ZBUR](a)
+  implicit def enrichA2(a: A[Int]) = new IntA(a)
+  implicit def enrichA3(a: A[T] forSome { type T <: Double }) = new GtColonDoubleA(a)
+  implicit def enrichA4[S](a: A[Foo[Bar[S]]])(implicit foo: Foo[S], bar: Bar[S]): EnrichedA[S] = sys.error("not implemented")
+  implicit def enrichA5[Z](a: A[Z]): EnrichedA[Bar[Foo[Z]]] = sys.error("not implemented")
+  implicit def enrichA6[Z: MyNumeric](a: A[Z]) = new MyNumericA[Z](a)
   // TODO: Add H <: Double and see why it crashes for C and D -- context bounds, need to check!
-  implicit def pimpA7[H <: Double : Manifest](a: A[H]) = new ManifestA[H](a) with MyTraversableOps[H] { def convToTraversableOps(x: H): H = sys.error("no") }
+  implicit def enrichA7[H <: Double : Manifest](a: A[H]) = new ManifestA[H](a) with MyTraversableOps[H] { def convToTraversableOps(x: H): H = sys.error("no") }
 }
 
 
@@ -49,14 +49,14 @@ object A {
  *  - tests the existential type solving
  *  - the following inherited methods should appear:
  * {{{
- * def convToGtColonDoubleA(x: Double)    // pimpA3: no constraints
- * def convToManifestA(x: Double)         // pimpA7: no constraints
- * def convToMyNumericA(x: Double)        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
- * def convToNumericA(x: Double)          // pimpA1: no constraintsd
- * def convToPimpedA(x: Bar[Foo[Double]]) // pimpA5: no constraints, SHADOWED
- * def convToPimpedA(x: Double)           // pimpA0: no constraints, SHADOWED
- * def convToTraversableOps(x: Double)    // pimpA7: no constraints
- *                                        // should not be abstract!
+ * def convToGtColonDoubleA(x: Double)      // enrichA3: no constraints
+ * def convToManifestA(x: Double)           // enrichA7: no constraints
+ * def convToMyNumericA(x: Double)          // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
+ * def convToNumericA(x: Double)            // enrichA1: no constraintsd
+ * def convToEnrichedA(x: Bar[Foo[Double]]) // enrichA5: no constraints, SHADOWED
+ * def convToEnrichedA(x: Double)           // enrichA0: no constraints, SHADOWED
+ * def convToTraversableOps(x: Double)      // enrichA7: no constraints
+ *                                          // should not be abstract!
  * }}}
  */
 class B extends A[Double]
@@ -67,11 +67,11 @@ object B extends A
  *  - tests asSeenFrom
  *  - the following inherited methods should appear:
  * {{{
- * def convToIntA(x: Int)                 // pimpA2: no constraints
- * def convToMyNumericA(x: Int)           // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
- * def convToNumericA(x: Int)             // pimpA1: no constraints
- * def convToPimpedA(x: Int)              // pimpA0: no constraints, SHADOWED
- * def convToPimpedA(x: Bar[Foo[Int]])    // pimpA5: no constraints, SHADOWED
+ * def convToIntA(x: Int)                 // enrichA2: no constraints
+ * def convToMyNumericA(x: Int)           // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
+ * def convToNumericA(x: Int)             // enrichA1: no constraints
+ * def convToEnrichedA(x: Int)            // enrichA0: no constraints, SHADOWED
+ * def convToEnrichedA(x: Bar[Foo[Int]])  // enrichA5: no constraints, SHADOWED
  * }}}
  */
 class C extends A[Int]
@@ -82,10 +82,10 @@ object C extends A
  *  - tests implicit elimination
  *  - the following inherited methods should appear:
  * {{{
- * def convToMyNumericA(x: String)        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
- * def convToNumericA(x: String)          // pimpA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
- * def convToPimpedA(x: Bar[Foo[String]]) // pimpA5: no constraints, SHADOWED
- * def convToPimpedA(x: String)           // pimpA0: no constraints, SHADOWED
+ * def convToMyNumericA(x: String)        // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
+ * def convToNumericA(x: String)          // enrichA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
+ * def convToEnrichedA(x: Bar[Foo[String]]) // enrichA5: no constraints, SHADOWED
+ * def convToEnrichedA(x: String)           // enrichA0: no constraints, SHADOWED
  * }}}
  */
 class D extends A[String]
@@ -93,12 +93,12 @@ class D extends A[String]
 object D extends A
 
 
-/** PimpedA class <br/>
+/** EnrichedA class <br/>
  *  - tests simple inheritance and asSeenFrom
  *  - A, B and C should be implicitly converted to this */
-class PimpedA[V](a: A[V]) {
-  /** The convToPimpedA: V documentation... */
-  def convToPimpedA(x: V): V = sys.error("Not implemented")
+class EnrichedA[V](a: A[V]) {
+  /** The convToEnrichedA: V documentation... */
+  def convToEnrichedA(x: V): V = sys.error("Not implemented")
 }
 
 /** NumericA class <br/>
