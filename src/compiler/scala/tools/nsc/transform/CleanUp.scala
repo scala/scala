@@ -227,12 +227,17 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 var reflPoly$Cache: SoftReference[scala.runtime.MethodCache] = new SoftReference(new EmptyMethodCache())
 
                 def reflMethod$Method(forReceiver: JClass[_]): JMethod = {
-                  var method: JMethod = reflPoly$Cache.find(forReceiver)
-                  if (method != null)
+                  var methodCache: MethodCache = reflPoly$Cache.find(forReceiver)
+                  if (methodCache eq null) {
+                    methodCache = new EmptyMethodCache
+                    reflPoly$Cache = new SoftReference(methodCache)
+                  }
+                  var method: JMethod = methodCache.find(forReceiver)
+                  if (method ne null)
                     return method
                   else {
                     method = ScalaRunTime.ensureAccessible(forReceiver.getMethod("xyz", reflParams$Cache))
-                    reflPoly$Cache = new SoftReference(reflPoly$Cache.get.add(forReceiver, method))
+                    reflPoly$Cache = new SoftReference(methodCache.add(forReceiver, method))
                     return method
                   }
                 }
@@ -248,16 +253,22 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
                 { case Pair(reflMethodSym, List(forReceiverSym)) =>
+                  val methodCache = reflMethodSym.newVariable(ad.pos, mkTerm("methodCache")) setInfo MethodCacheClass.tpe
                   val methodSym = reflMethodSym.newVariable(ad.pos, mkTerm("method")) setInfo MethodClass.tpe
 
                   BLOCK(
-                    IF (getPolyCache OBJ_EQ NULL) THEN (safeREF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
-                    VAL(methodSym) === ((getPolyCache DOT methodCache_find)(REF(forReceiverSym))) ,
-                    IF (REF(methodSym) OBJ_!= NULL) .
+                    VAR(methodCache) === getPolyCache,
+                    IF (REF(methodCache) OBJ_EQ NULL) THEN BLOCK(
+                      REF(methodCache) === NEW(TypeTree(EmptyMethodCacheClass.tpe)),
+                      REF(reflPolyCacheSym) === gen.mkSoftRef(REF(methodCache))
+                    ) ENDIF,
+
+                    VAR(methodSym) === (REF(methodCache) DOT methodCache_find)(REF(forReceiverSym)),
+                    IF (REF(methodSym) OBJ_NE NULL) .
                       THEN (Return(REF(methodSym)))
                     ELSE {
                       def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), safeREF(reflParamsCacheSym)))
-                      def cacheRHS      = ((getPolyCache DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
+                      def cacheRHS      = ((REF(methodCache) DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
                       BLOCK(
                         REF(methodSym)        === (REF(ensureAccessibleMethod) APPLY (methodSymRHS)),
                         safeREF(reflPolyCacheSym) === gen.mkSoftRef(cacheRHS),
