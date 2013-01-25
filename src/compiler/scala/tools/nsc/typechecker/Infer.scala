@@ -1038,7 +1038,7 @@ trait Infer extends Checkable {
 */
     private def covariantReturnOverride(ftpe1: Type, ftpe2: Type): Boolean = (ftpe1, ftpe2) match {
       case (MethodType(_, rtpe1), MethodType(_, rtpe2)) =>
-        rtpe1 <:< rtpe2 || rtpe2.typeSymbol == ObjectClass
+        rtpe1 <:< rtpe2 || rtpe2.typeSymbol == JavaLangObjectClass
       case _ =>
         false
     }

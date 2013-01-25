@@ -152,7 +152,7 @@ trait StructuredTypeStrings extends DestructureTypes {
  *  "definition" is when you want strings like
  */
 trait TypeStrings {
-  private val ObjectClass = classOf[java.lang.Object]
+  private val JavaLangObjectClass = classOf[java.lang.Object]
   private val primitives = Set[String]("byte", "char", "short", "int", "long", "float", "double", "boolean", "void")
   private val primitiveMap = primitives.toList map { x =>
     val key = x match {
@@ -196,7 +196,7 @@ trait TypeStrings {
 
   private def tvarString(tvar: TypeVariable[_]): String = tvarString(tvar.getBounds.toList)
   private def tvarString(bounds: List[AnyRef]): String = {
-    val xs = bounds filterNot (_ == ObjectClass) collect { case x: JClass => x }
+    val xs = bounds filterNot (_ == JavaLangObjectClass) collect { case x: JClass => x }
     if (xs.isEmpty) "_"
     else scalaName(xs.head)
   }

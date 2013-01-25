@@ -347,9 +347,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       case (true, true) =>
         global.lub(List(a.tpe, b.tpe)).typeSymbol // TODO assert == firstCommonSuffix of resp. parents
       case (true, false) =>
-        if(b isSubClass a) a else ObjectClass
+        if(b isSubClass a) a else JavaLangObjectClass
       case (false, true) =>
-        if(a isSubClass b) b else ObjectClass
+        if(a isSubClass b) b else JavaLangObjectClass
       case _ =>
         firstCommonSuffix(superClasses(a), superClasses(b))
     }
@@ -1127,7 +1127,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       debuglog("Potentially conflicting names for forwarders: " + conflictingNames)
 
       for (m <- objectClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
-        if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
+        if (m.isType || m.isDeferred || (m.owner eq JavaLangObjectClass) || m.isConstructor)
           debuglog("No forwarder for '%s' from %s to '%s'".format(m, jclassName, objectClass))
         else if (conflictingNames(m.name))
           log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
@@ -2267,7 +2267,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         hostSymbol.info ; methodOwner.info
 
         def isInterfaceCall(sym: Symbol) = (
-             sym.isInterface && methodOwner != ObjectClass
+             sym.isInterface && methodOwner != JavaLangObjectClass
           || sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass)
         )
         // whether to reference the type of the receiver or
@@ -2420,7 +2420,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               tpe match {
 
                 case REFERENCE(cls) =>
-                  if (cls != ObjectClass) { // No need to checkcast for Objects
+                  if (cls != JavaLangObjectClass) { // No need to checkcast for Objects
                     jmethod.visitTypeInsn(Opcodes.CHECKCAST, javaName(cls))
                   }
 

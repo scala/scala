@@ -105,8 +105,8 @@ trait Erasure {
   }
 
   abstract class ErasureMap extends TypeMap {
-    private lazy val ObjectArray  = arrayType(ObjectClass.tpe)
-    private lazy val ErasedObject = erasedTypeRef(ObjectClass)
+    private lazy val ObjectArray  = arrayType(JavaLangObjectClass.tpe)
+    private lazy val ErasedObject = erasedTypeRef(JavaLangObjectClass)
 
     def mergeParents(parents: List[Type]): Type
 
@@ -122,7 +122,7 @@ trait Erasure {
         apply(st.supertype)
       case tref @ TypeRef(pre, sym, args) =>
         if (sym == ArrayClass)
-          if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
+          if (unboundedGenericArrayLevel(tp) == 1) JavaLangObjectClass.tpe
           else if (args.head.typeSymbol.isBottomClass) ObjectArray
           else typeRef(apply(pre), sym, args map applyInArray)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) ErasedObject
@@ -148,7 +148,7 @@ trait Erasure {
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
         ClassInfoType(
-          if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
+          if (clazz == JavaLangObjectClass || isPrimitiveValueClass(clazz)) Nil
           else if (clazz == ArrayClass) List(ErasedObject)
           else removeLaterObjects(parents map this),
           decls, clazz)
@@ -252,7 +252,7 @@ trait Erasure {
      *  An intersection such as `Object with Trait` erases to Object.
      */
     def mergeParents(parents: List[Type]): Type =
-      if (parents.isEmpty) ObjectClass.tpe
+      if (parents.isEmpty) JavaLangObjectClass.tpe
       else parents.head
   }
 
@@ -300,7 +300,7 @@ trait Erasure {
    *  - Otherwise, the dominator is the first element of the span.
    */
   def intersectionDominator(parents: List[Type]): Type = {
-    if (parents.isEmpty) ObjectClass.tpe
+    if (parents.isEmpty) JavaLangObjectClass.tpe
     else {
       val psyms = parents map (_.typeSymbol)
       if (psyms contains ArrayClass) {

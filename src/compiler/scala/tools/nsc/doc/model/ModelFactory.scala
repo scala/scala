@@ -28,7 +28,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
+  import definitions.{ JavaLangObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
   import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
   // Defaults for member grouping, that may be overridden by the template
@@ -593,7 +593,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
     case null | rootMirror.EmptyPackage | NoSymbol =>
       normalizeTemplate(RootPackage)
-    case ObjectClass =>
+    case JavaLangObjectClass =>
       normalizeTemplate(AnyRefClass)
     case _ if aSym.isPackageObject =>
       normalizeTemplate(aSym.owner)
@@ -937,7 +937,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   /** Get the types of the parents of the current class, ignoring the refinements */
   def makeParentTypes(aType: Type, tpl: Option[MemberTemplateImpl], inTpl: TemplateImpl): List[(TemplateEntity, TypeEntity)] = aType match {
     case RefinedType(parents, defs) =>
-      val ignoreParents = Set[Symbol](AnyClass, AnyRefClass, ObjectClass)
+      val ignoreParents = Set[Symbol](AnyClass, AnyRefClass, JavaLangObjectClass)
       val filtParents =
         // we don't want to expose too many links to AnyRef, that will just be redundant information
         tpl match {

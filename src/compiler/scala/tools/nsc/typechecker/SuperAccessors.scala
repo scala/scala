@@ -28,7 +28,7 @@ import symtab.Flags._
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   import global._
-  import definitions.{ UnitClass, ObjectClass, isRepeatedParamType, isByNameParamType, Any_asInstanceOf }
+  import definitions.{ UnitClass, JavaLangObjectClass, isRepeatedParamType, isByNameParamType, Any_asInstanceOf }
   import analyzer.{ restrictionError }
 
   /** the following two members override abstract members in Transform */

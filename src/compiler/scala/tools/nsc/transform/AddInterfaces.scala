@@ -189,7 +189,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         case ClassInfoType(parents, decls, _) =>
           assert(phase == implClassPhase, tp)
           // Impl class parents: Object first, matching interface last.
-          val implParents = ObjectClass.tpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass)) :+ iface.tpe
+          val implParents = JavaLangObjectClass.tpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != JavaLangObjectClass)) :+ iface.tpe
           ClassInfoType(implParents, implDecls(implSym, decls), implSym)
         case PolyType(_, restpe) =>
           implType(restpe)
@@ -209,7 +209,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         case Nil      => Nil
         case hd :: tl =>
           assert(!hd.typeSymbol.isTrait, clazz)
-          if (clazz.isTrait) erasedTypeRef(ObjectClass) :: tl
+          if (clazz.isTrait) erasedTypeRef(JavaLangObjectClass) :: tl
           else parents
       }
       val decls1 = scopeTransform(clazz)(

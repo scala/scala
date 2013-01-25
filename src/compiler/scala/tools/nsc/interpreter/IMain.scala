@@ -161,7 +161,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   import global._
-  import definitions.{ ObjectClass, termMember, dropNullaryMethod}
+  import definitions.{ JavaLangObjectClass, termMember, dropNullaryMethod}
 
   lazy val runtimeMirror = ru.runtimeMirror(classLoader)
 
@@ -366,7 +366,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
       scopelog(f"[$mark$what%6s] $name%-25s $defn%s")
     }
-    if (ObjectClass isSubClass sym.owner) return
+    if (JavaLangObjectClass isSubClass sym.owner) return
     // unlink previous
     replScope lookupAll sym.name foreach { sym =>
       log("unlink")

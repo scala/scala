@@ -550,7 +550,9 @@ trait StdNames {
     val NoSymbol: NameType             = "NoSymbol"
     val Nothing: NameType              = "Nothing"
     val Null: NameType                 = "Null"
-    val Object: NameType               = "Object"
+    val JavaLangObject: NameType       = "Object"
+    @deprecated("Use `JavaLangObject` instead.", "2.11.0")
+    val Object: NameType               = JavaLangObject
     val RootPackage: NameType          = "RootPackage"
     val RootClass: NameType            = "RootClass"
     val Select: NameType               = "Select"
@@ -602,7 +604,9 @@ trait StdNames {
     val eq: NameType                   = "eq"
     val equalsNumChar : NameType       = "equalsNumChar"
     val equalsNumNum : NameType        = "equalsNumNum"
-    val equalsNumObject : NameType     = "equalsNumObject"
+    val equalsNumRef : NameType        = "equalsNumObject"
+    @deprecated("Use `equalsNumRef` instead.", "2.11.0")
+    val equalsNumObject : NameType     = equalsNumRef
     val equals_ : NameType             = "equals"
     val error: NameType                = "error"
     val ex: NameType                   = "ex"
@@ -683,7 +687,9 @@ trait StdNames {
     val this_ : NameType               = "this"
     val thisPrefix : NameType          = "thisPrefix"
     val toArray: NameType              = "toArray"
-    val toObjectArray : NameType       = "toObjectArray"
+    val toAnyRefArray : NameType       = "toObjectArray"
+    @deprecated("Use `toAnyRefArray` instead.", "2.11.0")
+    def toObjectArray : NameType       = toAnyRefArray
     val toString_ : NameType           = "toString"
     val toTypeConstructor: NameType    = "toTypeConstructor"
     val tpe : NameType                 = "tpe"
@@ -1014,7 +1020,9 @@ trait StdNames {
     final val InvTargetException: TypeName = "java.lang.reflect.InvocationTargetException"
     final val MethodAsObject: TypeName     = "java.lang.reflect.Method"
     final val NPException: TypeName        = "java.lang.NullPointerException"
-    final val Object: TypeName             = "java.lang.Object"
+    final val JavaLangObject: TypeName     = "java.lang.Object"
+          @deprecated("Use `JavaObject` instead", "2.11.0")
+          def Object: TypeName             = JavaLangObject
     final val Throwable: TypeName          = "java.lang.Throwable"
 
     final val GetCause: TermName         = newTermName("getCause")

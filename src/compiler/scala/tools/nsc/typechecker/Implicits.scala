@@ -1180,7 +1180,7 @@ trait Implicits {
           case TypeRef(pre, sym, args) =>
             if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
               findSingletonManifest(sym.name.toString)
-            } else if (sym == ObjectClass || sym == AnyRefClass) {
+            } else if (sym == JavaLangObjectClass || sym == AnyRefClass) {
               findSingletonManifest("Object")
             } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
               EmptyTree

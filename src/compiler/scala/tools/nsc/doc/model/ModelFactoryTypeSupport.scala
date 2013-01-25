@@ -20,7 +20,7 @@ trait ModelFactoryTypeSupport {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ JavaLangObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
 
   protected val typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
 
@@ -168,7 +168,7 @@ trait ModelFactoryTypeSupport {
           }
         /* Refined types */
         case RefinedType(parents, defs) =>
-          val ignoreParents = Set[Symbol](AnyClass, ObjectClass)
+          val ignoreParents = Set[Symbol](AnyClass, JavaLangObjectClass)
           val filtParents = parents filterNot (x => ignoreParents(x.typeSymbol)) match {
             case Nil    => parents
             case ps     => ps

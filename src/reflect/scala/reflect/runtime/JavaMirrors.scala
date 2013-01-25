@@ -212,7 +212,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     }
 
     private def checkMemberOf(sym: Symbol, owner: ClassSymbol) {
-      if (sym.owner == AnyClass || sym.owner == AnyRefClass || sym.owner == ObjectClass) {
+      if (sym.owner == AnyClass || sym.owner == AnyRefClass || sym.owner == JavaLangObjectClass) {
         // do nothing
       } else if (sym.owner == AnyValClass) {
         if (!owner.isPrimitiveValueClass && !owner.isDerivedValueClass) ErrorNotMember(sym, owner)
@@ -315,9 +315,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     // because both AnyVal and its primitive descendants define their own getClass methods
     private def isGetClass(meth: MethodSymbol) = meth.name.toString == "getClass" && meth.paramss.flatten.isEmpty
     private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (meth.owner.isPrimitiveValueClass && meth.returnType =:= StringClass.toType)
-    lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
+    lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, JavaLangObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
     lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
-                                        Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
+                                        Object_notify, Object_notifyAll) ++ JavaLangObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
     private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
       if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == Predef_classOf || meth.isMacro) return true
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)

@@ -2139,7 +2139,7 @@ trait Typers extends Adaptations with Tags {
      */
     def checkMethodStructuralCompatible(ddef: DefDef): Unit = {
       val meth = ddef.symbol
-      def parentString = meth.owner.parentSymbols filterNot (_ == ObjectClass) match {
+      def parentString = meth.owner.parentSymbols filterNot (_ == JavaLangObjectClass) match {
         case Nil => ""
         case xs  => xs.map(_.nameString).mkString(" (of ", " with ", ")")
       }
@@ -4666,7 +4666,7 @@ trait Typers extends Adaptations with Tags {
         // resolution has already happened.
         if (isPastTyper) t.tpe match {
           case OverloadedType(pre, alts) =>
-            if (alts forall (s => (s.owner == ObjectClass) || (s.owner == AnyClass) || isPrimitiveValueClass(s.owner))) ()
+            if (alts forall (s => (s.owner == JavaLangObjectClass) || (s.owner == AnyClass) || isPrimitiveValueClass(s.owner))) ()
             else if (settings.debug.value) printCaller(
               s"""|Select received overloaded type during $phase, but typer is over.
                   |If this type reaches the backend, we are likely doomed to crash.

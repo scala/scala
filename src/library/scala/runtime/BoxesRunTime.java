@@ -10,7 +10,6 @@
 
 package scala.runtime;
 
-import java.io.*;
 import scala.math.ScalaNumber;
 
 /** An object (static class) that defines methods used for creating,
@@ -27,8 +26,9 @@ import scala.math.ScalaNumber;
   * @author  Martin Odersky
   * @contributor Stepan Koltsov
   * @version 2.0 */
-public final class BoxesRunTime
-{
+public final class BoxesRunTime {
+        private BoxesRunTime() {}
+
     private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
     /** We don't need to return BYTE and SHORT, as everything which might
@@ -773,7 +773,7 @@ public final class BoxesRunTime
         if (arg instanceof java.lang.Integer) return boxToShort((short)unboxToInt(arg));
         if (arg instanceof java.lang.Long) return boxToShort((short)unboxToLong(arg));
         if (arg instanceof java.lang.Character) return boxToShort((short)unboxToChar(arg));
-        if (arg instanceof java.lang.Byte) return boxToShort((short)unboxToByte(arg));
+        if (arg instanceof java.lang.Byte) return boxToShort(unboxToByte(arg));
         if (arg instanceof java.lang.Short) return (java.lang.Short)arg;
         if (arg instanceof java.lang.Float) return boxToShort((short)unboxToFloat(arg));
         if (arg instanceof java.lang.Double) return boxToShort((short)unboxToDouble(arg));
@@ -786,45 +786,45 @@ public final class BoxesRunTime
         if (arg instanceof java.lang.Long) return boxToInteger((int)unboxToLong(arg));
         if (arg instanceof java.lang.Double) return boxToInteger((int)unboxToDouble(arg));
         if (arg instanceof java.lang.Float) return boxToInteger((int)unboxToFloat(arg));
-        if (arg instanceof java.lang.Character) return boxToInteger((int)unboxToChar(arg));
-        if (arg instanceof java.lang.Byte) return boxToInteger((int)unboxToByte(arg));
-        if (arg instanceof java.lang.Short) return boxToInteger((int)unboxToShort(arg));
+        if (arg instanceof java.lang.Character) return boxToInteger(unboxToChar(arg));
+        if (arg instanceof java.lang.Byte) return boxToInteger(unboxToByte(arg));
+        if (arg instanceof java.lang.Short) return boxToInteger(unboxToShort(arg));
         throw new NoSuchMethodException();
     }
 
     /** arg.toLong */
     public static java.lang.Long toLong(Object arg) throws NoSuchMethodException {
-        if (arg instanceof java.lang.Integer) return boxToLong((long)unboxToInt(arg));
+        if (arg instanceof java.lang.Integer) return boxToLong(unboxToInt(arg));
         if (arg instanceof java.lang.Double) return boxToLong((long)unboxToDouble(arg));
         if (arg instanceof java.lang.Float) return boxToLong((long)unboxToFloat(arg));
         if (arg instanceof java.lang.Long) return (java.lang.Long)arg;
-        if (arg instanceof java.lang.Character) return boxToLong((long)unboxToChar(arg));
-        if (arg instanceof java.lang.Byte) return boxToLong((long)unboxToByte(arg));
-        if (arg instanceof java.lang.Short) return boxToLong((long)unboxToShort(arg));
+        if (arg instanceof java.lang.Character) return boxToLong(unboxToChar(arg));
+        if (arg instanceof java.lang.Byte) return boxToLong(unboxToByte(arg));
+        if (arg instanceof java.lang.Short) return boxToLong(unboxToShort(arg));
         throw new NoSuchMethodException();
     }
 
     /** arg.toFloat */
     public static java.lang.Float toFloat(Object arg) throws NoSuchMethodException {
-        if (arg instanceof java.lang.Integer) return boxToFloat((float)unboxToInt(arg));
-        if (arg instanceof java.lang.Long) return boxToFloat((float)unboxToLong(arg));
+        if (arg instanceof java.lang.Integer) return boxToFloat(unboxToInt(arg));
+        if (arg instanceof java.lang.Long) return boxToFloat(unboxToLong(arg));
         if (arg instanceof java.lang.Float) return (java.lang.Float)arg;
         if (arg instanceof java.lang.Double) return boxToFloat((float)unboxToDouble(arg));
-        if (arg instanceof java.lang.Character) return boxToFloat((float)unboxToChar(arg));
-        if (arg instanceof java.lang.Byte) return boxToFloat((float)unboxToByte(arg));
-        if (arg instanceof java.lang.Short) return boxToFloat((float)unboxToShort(arg));
+        if (arg instanceof java.lang.Character) return boxToFloat(unboxToChar(arg));
+        if (arg instanceof java.lang.Byte) return boxToFloat(unboxToByte(arg));
+        if (arg instanceof java.lang.Short) return boxToFloat(unboxToShort(arg));
         throw new NoSuchMethodException();
     }
 
     /** arg.toDouble */
     public static java.lang.Double toDouble(Object arg) throws NoSuchMethodException {
-        if (arg instanceof java.lang.Integer) return boxToDouble((double)unboxToInt(arg));
-        if (arg instanceof java.lang.Float) return boxToDouble((double)unboxToFloat(arg));
+        if (arg instanceof java.lang.Integer) return boxToDouble(unboxToInt(arg));
+        if (arg instanceof java.lang.Float) return boxToDouble(unboxToFloat(arg));
         if (arg instanceof java.lang.Double) return (java.lang.Double)arg;
-        if (arg instanceof java.lang.Long) return boxToDouble((double)unboxToLong(arg));
-        if (arg instanceof java.lang.Character) return boxToDouble((double)unboxToChar(arg));
-        if (arg instanceof java.lang.Byte) return boxToDouble((double)unboxToByte(arg));
-        if (arg instanceof java.lang.Short) return boxToDouble((double)unboxToShort(arg));
+        if (arg instanceof java.lang.Long) return boxToDouble(unboxToLong(arg));
+        if (arg instanceof java.lang.Character) return boxToDouble(unboxToChar(arg));
+        if (arg instanceof java.lang.Byte) return boxToDouble(unboxToByte(arg));
+        if (arg instanceof java.lang.Short) return boxToDouble(unboxToShort(arg));
         throw new NoSuchMethodException();
     }
 

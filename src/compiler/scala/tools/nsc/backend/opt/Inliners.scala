@@ -42,7 +42,7 @@ abstract class Inliners extends SubComponent {
   import icodes._
   import icodes.opcodes._
   import definitions.{
-    NullClass, NothingClass, ObjectClass,
+    NullClass, NothingClass, JavaLangObjectClass,
     PredefObject, RuntimePackage, ScalaInlineClass, ScalaNoInlineClass,
     isFunctionType, isByNameParamType
   }
@@ -799,7 +799,7 @@ abstract class Inliners extends SubComponent {
         assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instruction in block!")
 
         // store the '$this' into the special local
-        val inlinedThis = newLocal("$inlThis", REFERENCE(ObjectClass))
+        val inlinedThis = newLocal("$inlThis", REFERENCE(JavaLangObjectClass))
 
         /** buffer for the returned value */
         val retVal = inc.m.returnType match {

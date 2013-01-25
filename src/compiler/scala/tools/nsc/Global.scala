@@ -1626,7 +1626,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** We resolve the class/object ambiguity by passing a type/term name.
    */
   def showDef(fullName: Name, declsOnly: Boolean, ph: Phase) = {
-    val boringOwners = Set[Symbol](definitions.AnyClass, definitions.AnyRefClass, definitions.ObjectClass)
+    val boringOwners = Set[Symbol](definitions.AnyClass, definitions.AnyRefClass, definitions.JavaLangObjectClass)
     def phased[T](body: => T): T = exitingPhase(ph)(body)
     def boringMember(sym: Symbol) = boringOwners(sym.owner)
     def symString(sym: Symbol) = if (sym.isTerm) sym.defString else sym.toString

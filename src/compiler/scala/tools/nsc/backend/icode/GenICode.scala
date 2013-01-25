@@ -23,7 +23,7 @@ abstract class GenICode extends SubComponent  {
   import icodes._
   import icodes.opcodes._
   import definitions.{
-    ArrayClass, ObjectClass, ThrowableClass, StringClass, StringObject, AnyRefClass,
+    ArrayClass, JavaLangObjectClass, ThrowableClass, StringClass, StringObject, AnyRefClass,
     Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeObject,
     BoxedNumberClass, BoxedCharacterClass,
     getMember
@@ -296,7 +296,7 @@ abstract class GenICode extends SubComponent  {
     }
     private def genSynchronized(tree: Apply, ctx: Context, expectedType: TypeKind): (Context, TypeKind) = {
       val Apply(fun, args) = tree
-      val monitor = ctx.makeLocal(tree.pos, ObjectClass.tpe, "monitor")
+      val monitor = ctx.makeLocal(tree.pos, JavaLangObjectClass.tpe, "monitor")
       var monitorResult: Local = null
       val argTpe = args.head.tpe
       val hasResult = expectedType != UNIT
@@ -815,7 +815,7 @@ abstract class GenICode extends SubComponent  {
             } else {
               ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos)
               generatedType = REFERENCE(
-                if (tree.symbol == ArrayClass) ObjectClass else ctx.clazz.symbol
+                if (tree.symbol == ArrayClass) JavaLangObjectClass else ctx.clazz.symbol
               )
             }
             ctx
@@ -1191,7 +1191,7 @@ abstract class GenICode extends SubComponent  {
      */
     private lazy val String_valueOf: Symbol = getMember(StringObject, nme.valueOf) filter (sym =>
       sym.info.paramTypes match {
-        case List(pt) => pt.typeSymbol == ObjectClass
+        case List(pt) => pt.typeSymbol == JavaLangObjectClass
         case _        => false
       }
     )

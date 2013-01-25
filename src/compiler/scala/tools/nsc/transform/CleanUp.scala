@@ -312,7 +312,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             // Erasure lets Unit through as Unit, but a method returning Any will have an
             // erased return type of Object and should also allow Unit.
             def isDefinitelyUnit  = (resultSym == UnitClass)
-            def isMaybeUnit       = (resultSym == ObjectClass) || isDefinitelyUnit
+            def isMaybeUnit       = (resultSym == JavaLangObjectClass) || isDefinitelyUnit
             // If there's any chance this signature could be met by an Array.
             val isArrayMethodSignature = {
               def typesMatchApply = paramTypes match {
@@ -334,7 +334,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             val qualSym           = qual.tpe.typeSymbol
             val args              = qual1() :: params
             def isDefinitelyArray = (qualSym == ArrayClass)
-            def isMaybeArray      = (qualSym == ObjectClass) || isDefinitelyArray
+            def isMaybeArray      = (qualSym == JavaLangObjectClass) || isDefinitelyArray
             def isMaybeBoxed      = platform isMaybeBoxed qualSym
 
             // This is complicated a bit by trying to handle Arrays correctly.
@@ -348,7 +348,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             // unconditional outcomes (genValueCall, genArrayCall, genDefaultCall.)
             def fixResult(tree: Tree, mustBeUnit: Boolean = false) =
               if (mustBeUnit || resultSym == UnitClass) BLOCK(tree, REF(BoxedUnit_UNIT))  // boxed unit
-              else if (resultSym == ObjectClass) tree                                     // no cast necessary
+              else if (resultSym == JavaLangObjectClass) tree                                     // no cast necessary
               else gen.mkCast(tree, boxedResType)                                         // cast to expected type
 
             /** Normal non-Array call */
@@ -357,7 +357,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val invokeName  = MethodClass.tpe member nme.invoke_                                  // scala.reflect.Method.invoke(...)
               def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))     // cache Symbol
               def lookup      = Apply(cache, List(qual1() GETCLASS))                                // get Method object from cache
-              def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
+              def invokeArgs  = ArrayValue(TypeTree(JavaLangObjectClass.tpe), params)                       // args for invocation
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
               // exception catching machinery

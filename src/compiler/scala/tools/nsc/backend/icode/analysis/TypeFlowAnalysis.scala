@@ -15,14 +15,14 @@ import scala.collection.{mutable, immutable}
 abstract class TypeFlowAnalysis {
   val global: Global
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyRefClass, StringClass, ThrowableClass }
+  import definitions.{ JavaLangObjectClass, NothingClass, AnyRefClass, StringClass, ThrowableClass }
 
   /** The lattice of ICode types.
    */
   object typeLattice extends SemiLattice {
     type Elem = icodes.TypeKind
 
-    val top    = icodes.REFERENCE(ObjectClass)
+    val top    = icodes.REFERENCE(JavaLangObjectClass)
     val bottom = icodes.REFERENCE(NothingClass)
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) =

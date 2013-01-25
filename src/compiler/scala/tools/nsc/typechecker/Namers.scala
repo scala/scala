@@ -1523,8 +1523,8 @@ trait Namers extends MethodSynthesis {
     private object RestrictJavaArraysMap extends TypeMap {
       def apply(tp: Type): Type = tp match {
         case TypeRef(pre, ArrayClass, List(elemtp))
-        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectClass.tpe) =>
-          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, ObjectClass.tpe))))
+        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< JavaLangObjectClass.tpe) =>
+          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, JavaLangObjectClass.tpe))))
         case _ =>
           mapOver(tp)
       }

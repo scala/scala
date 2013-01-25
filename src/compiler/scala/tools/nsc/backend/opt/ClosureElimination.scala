@@ -58,7 +58,7 @@ abstract class ClosureElimination extends SubComponent {
         if (isStatic)
           Some(Nil)
         else
-          Some(DROP(REFERENCE(definitions.ObjectClass)) :: Nil)
+          Some(DROP(REFERENCE(definitions.JavaLangObjectClass)) :: Nil)
 
       case _ => None
     }
@@ -183,7 +183,7 @@ abstract class ClosureElimination extends SubComponent {
       case Const(k) =>
         CONSTANT(k)
       case Deref(This) =>
-        THIS(definitions.ObjectClass)
+        THIS(definitions.JavaLangObjectClass)
       case Boxed(LocalVar(v)) =>
         LOAD_LOCAL(v)
     }

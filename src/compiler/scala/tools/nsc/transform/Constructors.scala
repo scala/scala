@@ -458,7 +458,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             val applyMethod = (
               closureClass
                 newMethod(nme.apply, impl.pos, FINAL)
-                setInfoAndEnter MethodType(Nil, ObjectClass.tpe)
+                setInfoAndEnter MethodType(Nil, JavaLangObjectClass.tpe)
             )
             val outerFieldDef     = ValDef(outerField)
             val closureClassTyper = localTyper.atOwner(closureClass)

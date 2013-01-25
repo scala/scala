@@ -25,7 +25,7 @@ package icode
 
 trait TypeKinds { self: ICodes =>
   import global._
-  import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass, arrayType }
+  import definitions.{ ArrayClass, AnyRefClass, JavaLangObjectClass, NullClass, NothingClass, arrayType }
 
   /** A map from scala primitive Types to ICode TypeKinds */
   lazy val primitiveTypeMap: Map[Symbol, TypeKind] = {
@@ -140,7 +140,7 @@ trait TypeKinds { self: ICodes =>
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.isTrait)
 
-      if (front.isEmpty || rest.isEmpty || rest.head.typeSymbol == ObjectClass) tp
+      if (front.isEmpty || rest.isEmpty || rest.head.typeSymbol == JavaLangObjectClass) tp
       else rest.head
     }
 
@@ -320,7 +320,7 @@ trait TypeKinds { self: ICodes =>
      *  code that interacts with Java. */
     override def <:<(other: TypeKind) = other match {
       case ARRAY(elem2)                         => elem <:< elem2
-      case REFERENCE(AnyRefClass | ObjectClass) => true // TODO: platform dependent!
+      case REFERENCE(AnyRefClass | JavaLangObjectClass) => true // TODO: platform dependent!
       case _                                    => false
     }
   }
@@ -338,7 +338,7 @@ trait TypeKinds { self: ICodes =>
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind) = other match {
       case BOXED(`kind`)                        => true
-      case REFERENCE(AnyRefClass | ObjectClass) => true // TODO: platform dependent!
+      case REFERENCE(AnyRefClass | JavaLangObjectClass) => true // TODO: platform dependent!
       case _                                    => false
     }
   }
@@ -372,7 +372,7 @@ trait TypeKinds { self: ICodes =>
    *  arrayOrClassType below would return ObjectReference.
    */
   def toTypeKind(t: Type): TypeKind = t.dealiasWiden match {
-    case ThisType(ArrayClass)            => ObjectReference
+    case ThisType(ArrayClass)            => JavaLangObjectReference
     case ThisType(sym)                   => REFERENCE(sym)
     case SingleType(_, sym)              => primitiveOrRefType(sym)
     case ConstantType(_)                 => toTypeKind(t.underlying)
@@ -389,7 +389,7 @@ trait TypeKinds { self: ICodes =>
     case RefinedType(parents, _)         => parents map toTypeKind reduceLeft lub
     // For sure WildcardTypes shouldn't reach here either, but when
     // debugging such situations this may come in handy.
-    // case WildcardType                    => REFERENCE(ObjectClass)
+    // case WildcardType                    => REFERENCE(JavaLangObjectClass)
     case norm => abort(
       "Unknown type: %s, %s [%s, %s] TypeRef? %s".format(
         t, norm, t.getClass, norm.getClass, t.isInstanceOf[TypeRef]

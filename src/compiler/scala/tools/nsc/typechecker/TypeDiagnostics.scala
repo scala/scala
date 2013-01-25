@@ -595,7 +595,7 @@ trait TypeDiagnostics {
             }
             contextError(context0, pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
 
-            if (sym == ObjectClass)
+            if (sym == JavaLangObjectClass)
               throw new FatalError("cannot redefine root "+sym)
           }
         case _ =>

@@ -248,7 +248,7 @@ abstract class SymbolTable extends macros.Universe
     }
     // enter decls of parent classes
     for (p <- container.parentSymbols) {
-      if (p != definitions.ObjectClass) {
+      if (p != definitions.JavaLangObjectClass) {
         openPackageObject(p, dest)
       }
     }
@@ -266,7 +266,7 @@ abstract class SymbolTable extends macros.Universe
       assert(formals.last.typeSymbol == definitions.ArrayClass, formals)
       val method = params.last.owner
       val elemtp = formals.last.typeArgs.head match {
-        case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.ObjectClass) =>
+        case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.JavaLangObjectClass) =>
           t1 // drop intersection with Object for abstract types in varargs. UnCurry can handle them.
         case t =>
           t

@@ -70,7 +70,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
-    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass,
+    SpecializedClass, UnspecializedClass, AnyRefClass,
     GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
   import rootMirror.RootClass

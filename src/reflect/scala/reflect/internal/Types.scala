@@ -469,7 +469,7 @@ trait Types extends api.Types { self: SymbolTable =>
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
-    def firstParent = if (parents.nonEmpty) parents.head else ObjectClass.tpe
+    def firstParent = if (parents.nonEmpty) parents.head else JavaLangObjectClass.tpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -1954,7 +1954,7 @@ trait Types extends api.Types { self: SymbolTable =>
     private def classInfo(tparam: Symbol): ClassInfoType =
       tparam.owner.info.resultType match {
         case ci: ClassInfoType => ci
-        case _ => classInfo(ObjectClass) // something's wrong; fall back to safe value
+        case _ => classInfo(JavaLangObjectClass) // something's wrong; fall back to safe value
                                          // (this can happen only for erroneous programs).
       }
 
@@ -3502,7 +3502,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = {
     if (phase.erasedTypes)
-      if (parents.isEmpty) ObjectClass.tpe else parents.head
+      if (parents.isEmpty) JavaLangObjectClass.tpe else parents.head
     else {
       val clazz = owner.newRefinementClass(pos)
       val result = RefinedType(parents, decls, clazz)
@@ -6089,8 +6089,8 @@ trait Types extends api.Types { self: SymbolTable =>
           val tp1 = sym1.tpe
           val tp2 = sym2.tpe
           (tp1 =:= tp2 ||
-           syms1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
-           syms2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass) &&
+           syms1isJava && tp2.typeSymbol == JavaLangObjectClass && tp1.typeSymbol == AnyClass ||
+           syms2isJava && tp1.typeSymbol == JavaLangObjectClass && tp2.typeSymbol == AnyClass) &&
           matchingParams(rest1, rest2, syms1isJava, syms2isJava)
       }
   }
@@ -6817,7 +6817,7 @@ trait Types extends api.Types { self: SymbolTable =>
           } else {
             val args = argss map (_.head)
             if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
+            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(JavaLangObjectClass.tpe)
             else Some(typeRef(pre, sym, List(lub(args))))
           }
         }
@@ -7025,7 +7025,7 @@ trait Types extends api.Types { self: SymbolTable =>
   def importableMembers(pre: Type): Scope = pre.members filter isImportable
 
   def objToAny(tp: Type): Type =
-    if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe
+    if (!phase.erasedTypes && tp.typeSymbol == JavaLangObjectClass) AnyClass.tpe
     else tp
 
   val shorthands = Set(

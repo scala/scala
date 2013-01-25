@@ -230,7 +230,7 @@ trait Definitions extends api.StandardDefinitions {
     /** Is this symbol a member of Object or Any? */
     def isUniversalMember(sym: Symbol) = (
          (sym ne NoSymbol)
-      && (ObjectClass isSubClass sym.owner)
+      && (JavaLangObjectClass isSubClass sym.owner)
     )
 
     /** Is this symbol unimportable? Unimportable symbols include:
@@ -258,7 +258,7 @@ trait Definitions extends api.StandardDefinitions {
       case ClassInfoType(parents, decls, clazz) =>
         if (parents.head.typeSymbol == AnyClass) tpe
         else {
-          assert(parents.head.typeSymbol == ObjectClass, parents)
+          assert(parents.head.typeSymbol == JavaLangObjectClass, parents)
           ClassInfoType(AnyClass.tpe :: parents.tail, decls, clazz)
         }
       case PolyType(tparams, restpe) =>
@@ -266,12 +266,12 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // top types
-    lazy val AnyClass    = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
-    lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.tpe)
-    lazy val ObjectClass = getRequiredClass(sn.Object.toString)
-    lazy val AnyTpe     = definitions.AnyClass.toTypeConstructor
-    lazy val AnyRefTpe  = definitions.AnyRefClass.toTypeConstructor
-    lazy val ObjectTpe  = definitions.ObjectClass.toTypeConstructor
+    lazy val AnyClass            = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
+    lazy val AnyRefClass         = newAlias(ScalaPackageClass, tpnme.AnyRef, JavaLangObjectClass.tpe)
+    lazy val JavaLangObjectClass = getRequiredClass(sn.JavaLangObject.toString)
+    lazy val AnyTpe              = definitions.AnyClass.toTypeConstructor
+    lazy val AnyRefTpe           = definitions.AnyRefClass.toTypeConstructor
+    lazy val JavaLangObjectTpe   = definitions.JavaLangObjectClass.toTypeConstructor
 
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
@@ -307,7 +307,7 @@ trait Definitions extends api.StandardDefinitions {
     final object NullClass extends BottomClassSymbol(tpnme.Null, AnyRefClass) {
       override def isSubClass(that: Symbol) = (
            (that eq AnyClass)
-        || (that ne NothingClass) && (that isSubClass ObjectClass)
+        || (that ne NothingClass) && (that isSubClass JavaLangObjectClass)
       )
     }
     lazy val NothingTpe = definitions.NothingClass.toTypeConstructor
@@ -780,7 +780,7 @@ trait Definitions extends api.StandardDefinitions {
     // Since getClass is not actually a polymorphic method, this requires compiler
     // participation.  At the "Any" level, the return type is Class[_] as it is in
     // java.lang.Object.  Java also special cases the return type.
-    lazy val Any_getClass     = enterNewMethod(AnyClass, nme.getClass_, Nil, getMemberMethod(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
+    lazy val Any_getClass     = enterNewMethod(AnyClass, nme.getClass_, Nil, getMemberMethod(JavaLangObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
     lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => booltype)
     lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
 
@@ -820,14 +820,14 @@ trait Definitions extends api.StandardDefinitions {
     /** Remove references to class Object (other than the head) in a list of parents */
     def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
       case Nil      => Nil
-      case x :: xs  => x :: xs.filterNot(_.typeSymbol == ObjectClass)
+      case x :: xs  => x :: xs.filterNot(_.typeSymbol == JavaLangObjectClass)
     }
     /** Remove all but one reference to class Object from a list of parents. */
     def removeRedundantObjects(tps: List[Type]): List[Type] = tps match {
       case Nil      => Nil
       case x :: xs  =>
-        if (x.typeSymbol == ObjectClass)
-          x :: xs.filterNot(_.typeSymbol == ObjectClass)
+        if (x.typeSymbol == JavaLangObjectClass)
+          x :: xs.filterNot(_.typeSymbol == JavaLangObjectClass)
         else
           x :: removeRedundantObjects(xs)
     }
@@ -838,8 +838,8 @@ trait Definitions extends api.StandardDefinitions {
      *  to Object except the first one found are discarded.
      */
     def normalizedParents(parents: List[Type]): List[Type] = {
-      if (parents exists (t => (t.typeSymbol ne ObjectClass) && t.typeSymbol.isClass))
-        parents filterNot (_.typeSymbol eq ObjectClass)
+      if (parents exists (t => (t.typeSymbol ne JavaLangObjectClass) && t.typeSymbol.isClass))
+        parents filterNot (_.typeSymbol eq JavaLangObjectClass)
       else
         removeRedundantObjects(parents)
     }
@@ -865,26 +865,26 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // members of class java.lang.{ Object, String }
-    lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
-    lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, anyrefparam, booltype, FINAL)
-    lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, anyrefparam, booltype, FINAL)
-    lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, anyrefparam, booltype, FINAL)
-    lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
-    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => booltype)
-    lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
+    lazy val Object_## = enterNewMethod(JavaLangObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
+    lazy val Object_== = enterNewMethod(JavaLangObjectClass, nme.EQ, anyrefparam, booltype, FINAL)
+    lazy val Object_!= = enterNewMethod(JavaLangObjectClass, nme.NE, anyrefparam, booltype, FINAL)
+    lazy val Object_eq = enterNewMethod(JavaLangObjectClass, nme.eq, anyrefparam, booltype, FINAL)
+    lazy val Object_ne = enterNewMethod(JavaLangObjectClass, nme.ne, anyrefparam, booltype, FINAL)
+    lazy val Object_isInstanceOf = newT1NoParamsMethod(JavaLangObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => booltype)
+    lazy val Object_asInstanceOf = newT1NoParamsMethod(JavaLangObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
+    lazy val Object_synchronized = newPolyMethod(1, JavaLangObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
     lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
 
-    def Object_getClass  = getMemberMethod(ObjectClass, nme.getClass_)
-    def Object_clone     = getMemberMethod(ObjectClass, nme.clone_)
-    def Object_finalize  = getMemberMethod(ObjectClass, nme.finalize_)
-    def Object_notify    = getMemberMethod(ObjectClass, nme.notify_)
-    def Object_notifyAll = getMemberMethod(ObjectClass, nme.notifyAll_)
-    def Object_equals    = getMemberMethod(ObjectClass, nme.equals_)
-    def Object_hashCode  = getMemberMethod(ObjectClass, nme.hashCode_)
-    def Object_toString  = getMemberMethod(ObjectClass, nme.toString_)
+    def Object_getClass  = getMemberMethod(JavaLangObjectClass, nme.getClass_)
+    def Object_clone     = getMemberMethod(JavaLangObjectClass, nme.clone_)
+    def Object_finalize  = getMemberMethod(JavaLangObjectClass, nme.finalize_)
+    def Object_notify    = getMemberMethod(JavaLangObjectClass, nme.notify_)
+    def Object_notifyAll = getMemberMethod(JavaLangObjectClass, nme.notifyAll_)
+    def Object_equals    = getMemberMethod(JavaLangObjectClass, nme.equals_)
+    def Object_hashCode  = getMemberMethod(JavaLangObjectClass, nme.hashCode_)
+    def Object_toString  = getMemberMethod(JavaLangObjectClass, nme.toString_)
 
     // boxed classes
     lazy val ObjectRefClass         = requiredClass[scala.runtime.ObjectRef[_]]

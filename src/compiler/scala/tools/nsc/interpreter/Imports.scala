@@ -12,7 +12,7 @@ trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefObject }
+  import definitions.{ JavaLangObjectClass, ScalaPackage, JavaLangPackage, PredefObject }
 
   import memberHandlers._
 

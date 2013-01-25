@@ -356,7 +356,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           // This method should be generated as private, but apparently if it is, then
           // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
           // For sure special methods like "readResolve" should not be mangled.
-          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceObject) }))
+          List(createMethod(nme.readResolve, Nil, JavaLangObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceObject) }))
         }
         else Nil
       )

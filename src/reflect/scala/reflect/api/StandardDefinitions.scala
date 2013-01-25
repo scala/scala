@@ -41,7 +41,9 @@ trait StandardDefinitions {
     def AnyValClass: ClassSymbol
 
     /** The class symbol of core class `java.lang.Object`. */
-    def ObjectClass: ClassSymbol
+    def JavaLangObjectClass: ClassSymbol
+    @deprecated("Use `JavaLangObjectClass` instead.", "2.11.0")
+    def ObjectClass: ClassSymbol = JavaLangObjectClass
 
     /** The type symbol of core class `scala.AnyRef`. */
     def AnyRefClass: TypeSymbol
@@ -303,7 +305,9 @@ trait StandardDefinitions {
     val AnyRefTpe: Type
 
     /** The type of core type `Object`. */
-    val ObjectTpe: Type
+    val JavaLangObjectTpe: Type
+    @deprecated("Use `JavaLangObjectTpe` instead.", "2.11.0")
+    def ObjectTpe: Type = JavaLangObjectTpe
 
     /** The type of core type `Nothing`. */
     val NothingTpe: Type

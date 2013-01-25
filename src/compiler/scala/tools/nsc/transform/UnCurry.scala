@@ -141,7 +141,7 @@ abstract class UnCurry extends InfoTransform
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
       nonLocalReturnKeys.getOrElseUpdate(meth,
-        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectClass.tpe
+        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo JavaLangObjectClass.tpe
       )
 
     /** Generate a non-local return throw with given return expression from given method.
@@ -183,7 +183,7 @@ abstract class UnCurry extends InfoTransform
           THEN ((ex DOT nme.value)())
           ELSE (Throw(Ident(ex)))
         )
-        val keyDef   = ValDef(key, New(ObjectClass.tpe))
+        val keyDef   = ValDef(key, New(JavaLangObjectClass.tpe))
         val tryCatch = Try(body, pat -> rhs)
 
         for (Try(t, catches, _) <- body ; cdef <- catches ; if treeInfo catchesThrowable cdef)
@@ -326,10 +326,10 @@ abstract class UnCurry extends InfoTransform
           }
 
         exitingUncurry {
-          if (isJava && !isReferenceArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
+          if (isJava && !isReferenceArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, JavaLangObjectClass)) {
             // The array isn't statically known to be a reference array, so call ScalaRuntime.toObjectArray.
             suffix = localTyper.typedPos(pos) {
-              gen.mkRuntimeCall(nme.toObjectArray, List(suffix))
+              gen.mkRuntimeCall(nme.toAnyRefArray, List(suffix))
             }
           }
         }
@@ -740,7 +740,7 @@ abstract class UnCurry extends InfoTransform
         //   becomes     def foo[T](a: Int, b: Array[Object])
         //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
         arrayType(
-          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectClass.tpe
+          if (arg.typeSymbol.isTypeParameterOrSkolem) JavaLangObjectClass.tpe
           else arg
         )
       }

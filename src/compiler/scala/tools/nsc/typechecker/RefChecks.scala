@@ -728,7 +728,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // For non-AnyVal classes, prevent abstract methods in interfaces that override
         // final members in Object; see #4431
         for (decl <- clazz.info.decls.iterator) {
-          val overridden = decl.overriddenSymbol(ObjectClass)
+          val overridden = decl.overriddenSymbol(JavaLangObjectClass)
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
@@ -947,7 +947,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
 
         /** Symbols which limit the warnings we can issue since they may be value types */
-        val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
+        val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, JavaLangObjectClass, ComparableClass, JavaSerializableClass)
 
         // Whether def equals(other: Any) has known behavior: it is the default
         // inherited from java.lang.Object, or it is a synthetically generated
@@ -1039,7 +1039,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // better to have lubbed and lost
           def warnIfLubless(): Unit = {
             val common = global.lub(List(actual.tpe, receiver.tpe))
-            if (ObjectClass.tpe <:< common)
+            if (JavaLangObjectClass.tpe <:< common)
               unrelatedTypes()
           }
           def eitherSubclasses = (actual isSubClass receiver) || (receiver isSubClass actual)

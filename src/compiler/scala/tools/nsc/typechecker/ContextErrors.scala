@@ -320,7 +320,7 @@ trait ContextErrors {
                 ""
             )
             val notAnyRef = (
-              if (ObjectClass.info.member(name).exists) notAnyRefMessage(target)
+              if (JavaLangObjectClass.info.member(name).exists) notAnyRefMessage(target)
               else ""
             )
             companion + notAnyRef + semicolon
