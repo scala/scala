@@ -187,12 +187,8 @@ trait Reshape {
     }
 
     private def toPreTyperTypedOrAnnotated(tree: Tree): Tree = tree match {
-      case ty @ Typed(expr1, tpt) =>
+      case ty @ Typed(expr1, tt @ TypeTree()) =>
         if (reifyDebug) println("reify typed: " + tree)
-        val original = tpt match {
-          case tt @ TypeTree() => tt.original
-          case tpt => tpt
-        }
         val annotatedArg = {
           def loop(tree: Tree): Tree = tree match {
             case annotated1 @ Annotated(ann, annotated2 @ Annotated(_, _)) => loop(annotated2)
@@ -200,15 +196,15 @@ trait Reshape {
             case _ => EmptyTree
           }
 
-          loop(original)
+          loop(tt.original)
         }
         if (annotatedArg != EmptyTree) {
           if (annotatedArg.isType) {
             if (reifyDebug) println("verdict: was an annotated type, reify as usual")
             ty
           } else {
-            if (reifyDebug) println("verdict: was an annotated value, equivalent is " + original)
-            toPreTyperTypedOrAnnotated(original)
+            if (reifyDebug) println("verdict: was an annotated value, equivalent is " + tt.original)
+            toPreTyperTypedOrAnnotated(tt.original)
           }
         } else {
           if (reifyDebug) println("verdict: wasn't annotated, reify as usual")

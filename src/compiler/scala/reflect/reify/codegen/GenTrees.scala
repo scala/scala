@@ -177,7 +177,7 @@ trait GenTrees {
       // then we can reify the scrutinee as a symless AST and that will definitely be hygienic
       // why? because then typechecking of a scrutinee doesn't depend on the environment external to the quasiquote
       // otherwise we need to reify the corresponding type
-      if (tree.symbol.isLocalToReifee || tree.tpe.isLocalToReifee || treeInfo.isWildcardStarType(tree))
+      if (sym.isLocalToReifee || tpe.isLocalToReifee)
         reifyProduct(tree)
       else {
         if (reifyDebug) println("reifying bound type %s (underlying type is %s)".format(sym, tpe))
