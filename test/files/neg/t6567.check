@@ -1,0 +1,7 @@
+t6567.scala:8: error: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.apply.
+  Option[B](a)
+           ^
+t6567.scala:10: error: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.apply.
+  val b: Option[B] = Option(a)
+                           ^
+two errors found
