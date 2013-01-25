@@ -341,12 +341,17 @@ abstract class Erasure extends AddInterfaces
       case _                               => tp.deconst
     }
   }
-  // Methods on Any/Object which we rewrite here while we still know what
-  // is a primitive and what arrived boxed.
-  private lazy val interceptedMethods = Set[Symbol](Any_##, Object_##, Any_getClass, AnyVal_getClass) ++ (
-    // Each value class has its own getClass for ultra-precise class object typing.
+
+  // Each primitive value class has its own getClass for ultra-precise class object typing.
+  private lazy val primitiveGetClassMethods = Set[Symbol](Any_getClass, AnyVal_getClass) ++ (
     ScalaValueClasses map (_.tpe member nme.getClass_)
   )
+
+  // ## requires a little translation
+  private lazy val poundPoundMethods = Set[Symbol](Any_##, Object_##)
+  // Methods on Any/Object which we rewrite here while we still know what
+  // is a primitive and what arrived boxed.
+  private lazy val interceptedMethods = poundPoundMethods ++ primitiveGetClassMethods
 
 // -------- erasure on trees ------------------------------------------
 
@@ -1130,7 +1135,7 @@ abstract class Erasure extends AddInterfaces
               }
             }
             else if (args.isEmpty && interceptedMethods(fn.symbol)) {
-              if (fn.symbol == Any_## || fn.symbol == Object_##) {
+              if (poundPoundMethods.contains(fn.symbol)) {
                 // This is unattractive, but without it we crash here on ().## because after
                 // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
                 // This must be because some earlier transformation is being skipped on ##, but so
@@ -1157,9 +1162,18 @@ abstract class Erasure extends AddInterfaces
               } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) {
                 // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
                 global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
-              } else if (fn.symbol == AnyVal_getClass) {
+              } else if (primitiveGetClassMethods.contains(fn.symbol)) {
+                // if we got here then we're trying to send a primitive getClass method to either
+                // a) an Any, in which cage Object_getClass works because Any erases to object. Or
+                //
+                // b) a non-primitive, e.g. because the qualifier's type is a refinement type where one parent
+                //    of the refinement is a primitive and another is AnyRef. In that case
+                //    we get a primitive form of _getClass trying to target a boxed value
+                //    so we need replace that method name with Object_getClass to get correct behavior.
+                //    See SI-5568.
                 tree setSymbol Object_getClass
               } else {
+                debugwarn(s"The symbol '${fn.symbol}' was interecepted but didn't match any cases, that means the intercepted methods set doesn't match the code")
                 tree
               }
             } else qual match {

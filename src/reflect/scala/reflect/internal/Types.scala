@@ -2461,7 +2461,9 @@ trait Types extends api.Types { self: SymbolTable =>
           targs match {
             case in :: out :: Nil if !isTupleType(in) =>
               // A => B => C should be (A => B) => C or A => (B => C)
-              val in_s  = if (isFunctionType(in)) "(" + in + ")" else "" + in
+              // Also if A is byname, then we want (=> A) => B because => is right associative and => A => B
+              // would mean => (A => B) which is a different type
+              val in_s  = if (isFunctionType(in) || isByNameParamType(in)) "(" + in + ")" else "" + in
               val out_s = if (isFunctionType(out)) "(" + out + ")" else "" + out
               in_s + " => " + out_s
             case xs =>

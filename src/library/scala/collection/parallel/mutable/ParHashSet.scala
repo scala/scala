@@ -85,7 +85,7 @@ extends ParSet[T]
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
-    init(in, x => x)
+    init(in, x => ())
   }
 
   import scala.collection.DebugUtils._

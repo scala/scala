@@ -683,7 +683,15 @@ trait Typers extends Adaptations with Tags {
           if (context1.hasErrors) {
             stopStats()
             SilentTypeError(context1.errBuffer.head)
-          } else SilentResultValue(result)
+          } else {
+            // If we have a successful result, emit any warnings it created.
+            if (context1.hasWarnings) {
+              context1.flushAndReturnWarningsBuffer() foreach {
+                case (pos, msg) => unit.warning(pos, msg)
+              }
+            }
+            SilentResultValue(result)
+          }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
           withSavedContext(context){
@@ -4919,13 +4927,15 @@ trait Typers extends Adaptations with Tags {
         var block1 = typed(tree.block, pt)
         var catches1 = typedCases(tree.catches, ThrowableClass.tpe, pt)
 
-        for (cdef <- catches1; if treeInfo catchesThrowable cdef) {
-          val name = (treeInfo assignedNameOfPattern cdef).decoded
-          context.warning(cdef.pat.pos,
-            s"""|This catches all Throwables, which often has undesirable consequences.
-                |If intentional, use `case $name : Throwable` to clear this warning.""".stripMargin
-          )
+        for (cdef <- catches1 if !isPastTyper && cdef.guard.isEmpty) {
+          def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
+          def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
+          cdef.pat match {
+            case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
+            case i @ Ident(name) if unbound(i)          => warn(name)
+            case _                                      =>
           }
+        }
 
         val finalizer1 =
           if (tree.finalizer.isEmpty) tree.finalizer
