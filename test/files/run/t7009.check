@@ -22,7 +22,7 @@ scala> :paste
 
 // Exiting paste mode, now interpreting.
 
-atp.typeParams.isEmpty: false
-throws(classOf[java.lang.IllegalStateException])
+atp.typeParams.isEmpty: true
+throws[IllegalStateException](classOf[java.lang.IllegalStateException])
 
 scala> 

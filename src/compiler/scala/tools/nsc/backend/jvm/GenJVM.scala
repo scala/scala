@@ -888,7 +888,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (needsAnnotation) {
         val c   = Constant(RemoteExceptionClass.tpe)
         val arg = Literal(c) setType c.tpe
-        meth.addAnnotation(ThrowsClass, arg)
+        meth.addAnnotation(appliedType(ThrowsClass, c.tpe), arg)
       }
     }
 

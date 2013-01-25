@@ -37,11 +37,11 @@ scala> :paste
 // Exiting paste mode, now interpreting.
 
 foo
-atp.typeParams.isEmpty: false
-throws(classOf[java.lang.IllegalStateException])
+atp.typeParams.isEmpty: true
+throws[IllegalStateException](classOf[java.lang.IllegalStateException])
 
 bar
-tp.typeParams.isEmpty: false
-throws(classOf[test.PolymorphicException])
+tp.typeParams.isEmpty: true
+throws[test.PolymorphicException[_]](classOf[test.PolymorphicException])
 
 scala> 

@@ -1043,7 +1043,13 @@ abstract class ClassfileParser {
       val nClasses = in.nextChar
       for (n <- 0 until nClasses) {
         val cls = pool.getClassSymbol(in.nextChar.toInt)
-        sym.addAnnotation(definitions.ThrowsClass, Literal(Constant(cls.tpe)))
+        val tp = if (cls.isMonomorphicType) cls.tpe else {
+          debuglog(s"Encountered polymorphic exception `${cls.fullName}` while parsing class file.")
+          // in case we encounter polymorphic exception the best we can do is to convert that type to
+          // monomorphic one by introducing existientals, see SI-7009 for details
+          typer.packSymbols(cls.typeParams, cls.tpe)
+        }
+        sym.addAnnotation(appliedType(definitions.ThrowsClass, tp), Literal(Constant(tp)))
       }
     }
 

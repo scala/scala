@@ -1018,7 +1018,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       if (needsAnnotation) {
         val c   = Constant(RemoteExceptionClass.tpe)
         val arg = Literal(c) setType c.tpe
-        meth.addAnnotation(ThrowsClass, arg)
+        meth.addAnnotation(appliedType(ThrowsClass, c.tpe), arg)
       }
     }
 
