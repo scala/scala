@@ -443,10 +443,10 @@ abstract class LambdaLift extends InfoTransform {
             /* Creating a constructor argument if one isn't present. */
             val constructorArg = rhs match {
               case EmptyTree =>
-                sym.primaryConstructor.info.paramTypes match {
+                sym.tpe.typeSymbol.primaryConstructor.info.paramTypes match {
                   case List(tp) => gen.mkZero(tp)
                   case _        =>
-                    log("Couldn't determine how to properly construct " + sym)
+                    debugwarn("Couldn't determine how to properly construct " + sym)
                     rhs
                 }
               case arg => arg
