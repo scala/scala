@@ -7,7 +7,9 @@ import scala.tools.nsc.util._
 import scala.tools.nsc.io._
 
 object Test extends InteractiveTest {
-  override val settings: doc.Settings = docSettings
+  override val settings = new doc.Settings(_ => ()) {
+    prepareSettings(this)
+  }
 
   val tags = Seq(
     "@example  `\"abb\".permutations = Iterator(abb, bab, bba)`",
@@ -28,12 +30,15 @@ object Test extends InteractiveTest {
        |trait Commented {}
        |class User(c: %sCommented)""".stripMargin.format(comment, tags take nTags mkString "\n", caret)
 
-  override def main(args: Array[String]) {
-    val documenter = new Doc(settings) {
-      val global: compiler.type = compiler
-
+  override lazy val compiler = {
+    new {
+      override val settings = Test.this.settings
+    } with Global(settings, compilerReporter) with Doc {
       def chooseLink(links: List[LinkTo]): LinkTo = links.head
     }
+  }
+
+  override def main(args: Array[String]) {
     for (i <- 1 to tags.length) {
       val markedText = text(i)
       val idx = markedText.indexOf(caret)
@@ -52,7 +57,7 @@ object Test extends InteractiveTest {
           treeResponse.get.left.toOption match {
             case Some(tree) =>
               val sym = tree.tpe.typeSymbol
-              documenter.retrieve(sym, sym.owner) match {
+              compiler.ask { () => compiler.retrieve(sym, sym.owner) } match {
                case Some(HtmlResult(comment)) =>
                  import comment._
                  val tags: List[(String, Iterable[Body])] =
