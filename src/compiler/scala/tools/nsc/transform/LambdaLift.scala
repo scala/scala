@@ -364,6 +364,7 @@ abstract class LambdaLift extends InfoTransform {
 
             copyDefDef(tree)(vparamss = List(vparams ++ freeParams))
           case ClassDef(_, _, _, _) =>
+            // SI-6231
             // Disabled attempt to to add getters to freeParams
             // this does not work yet. Problem is that local symbols need local names
             // and references to local symbols need to be transformed into
@@ -381,7 +382,7 @@ abstract class LambdaLift extends InfoTransform {
         tree
     }
 
-/*  Something like this will be necessary to eliminate the implementation
+/*  SI-6231: Something like this will be necessary to eliminate the implementation
  *  restiction from paramGetter above:
  *  We need to pass getters to the interface of an implementation class.
     private def fixTraitGetters(lifted: List[Tree]): List[Tree] =
