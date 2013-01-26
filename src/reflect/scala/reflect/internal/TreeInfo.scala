@@ -65,6 +65,9 @@ abstract class TreeInfo {
       false
   }
 
+  // TODO SI-5304 tighten this up so we don't elide side effect in module loads
+  def isQualifierSafeToElide(tree: Tree): Boolean = isExprSafeToInline(tree)
+
   /** Is tree an expression which can be inlined without affecting program semantics?
    *
    *  Note that this is not called "isExprPure" since purity (lack of side-effects)
@@ -475,7 +478,7 @@ abstract class TreeInfo {
 
       tp match {
         case TypeRef(pre, sym, args) =>
-          args.isEmpty && (sym.owner.isPackageClass || isSimple(pre))
+          args.isEmpty && (sym.isTopLevel || isSimple(pre))
         case NoPrefix =>
           true
         case _ =>

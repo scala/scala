@@ -591,7 +591,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
          (this hasFlag MODULE)
-      && owner.isPackageClass
+      && isTopLevel
       && nme.isReplWrapperName(name)
     )
     final def getFlag(mask: Long): Long = {
@@ -813,13 +813,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
          (this hasFlag FINAL | PACKAGE)
-      || isModuleOrModuleClass && (owner.isPackageClass || !settings.overrideObjects.value)
+      || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects.value)
       || isTerm && (
              isPrivate
           || isLocal
           || isNotOverridden
          )
     )
+
+    /** Is this symbol owned by a package? */
+    final def isTopLevel = owner.isPackageClass
 
     /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
     final def isLocal: Boolean = owner.isTerm
@@ -870,7 +873,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Does not always work if the rawInfo is a SourcefileLoader, see comment
     // in "def coreClassesFirst" in Global.
-    def exists = !owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType }
+    def exists = !isTopLevel || { rawInfo.load(this); rawInfo != NoType }
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
@@ -1916,7 +1919,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The top-level class containing this symbol. */
     def enclosingTopLevelClass: Symbol =
-      if (owner.isPackageClass) {
+      if (isTopLevel) {
         if (isClass) this else moduleClass
       } else owner.enclosingTopLevelClass
 
@@ -2889,7 +2892,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isAnonymousClass        = name containsName tpnme.ANON_CLASS_NAME
     override def isConcreteClass         = !(this hasFlag ABSTRACT | TRAIT)
     override def isJavaInterface         = hasAllFlags(JAVA | TRAIT)
-    override def isNestedClass           = !owner.isPackageClass
+    override def isNestedClass           = !isTopLevel
     override def isNumericValueClass     = definitions.isNumericValueClass(this)
     override def isNumeric               = isNumericValueClass
     override def isPackageObjectClass    = isModuleClass && (name == tpnme.PACKAGE)
@@ -2915,7 +2918,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isLocalClass = (
          isAnonOrRefinementClass
       || isLocal
-      || !owner.isPackageClass && owner.isLocalClass
+      || !isTopLevel && owner.isLocalClass
     )
 
     override def enclClassChain = this :: owner.enclClassChain
@@ -2944,7 +2947,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     override def associatedFile = (
-      if (!owner.isPackageClass) super.associatedFile
+      if (!isTopLevel) super.associatedFile
       else if (_associatedFile eq null) NoAbstractFile // guarantee not null, but save cost of initializing the var
       else _associatedFile
     )
