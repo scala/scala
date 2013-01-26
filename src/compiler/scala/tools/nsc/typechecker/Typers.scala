@@ -1052,15 +1052,21 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def insertApply(): Tree = {
         assert(!inHKMode(mode), modeString(mode)) //@M
-        val qual = adaptToName(tree, nme.apply) match {
-          case id @ Ident(_) =>
-            val pre = if (id.symbol.owner.isPackageClass) id.symbol.owner.thisType
-            else if (id.symbol.owner.isClass)
-              context.enclosingSubClassContext(id.symbol.owner).prefix
-            else NoPrefix
-            stabilize(id, pre, EXPRmode | QUALmode, WildcardType)
-          case sel @ Select(qualqual, _) =>
-            stabilize(sel, qualqual.tpe, EXPRmode | QUALmode, WildcardType)
+        val adapted = adaptToName(tree, nme.apply)
+        def stabilize0(pre: Type): Tree = stabilize(adapted, pre, EXPRmode | QUALmode, WildcardType)
+        // TODO reconcile the overlap between Typers#stablize and TreeGen.stabilize
+        val qual = adapted match {
+          case This(_) =>
+            gen.stabilize(adapted)
+          case Ident(_) =>
+            val owner = adapted.symbol.owner
+            val pre =
+              if (owner.isPackageClass) owner.thisType
+              else if (owner.isClass) context.enclosingSubClassContext(owner).prefix
+              else NoPrefix
+            stabilize0(pre)
+          case Select(qualqual, _) =>
+            stabilize0(qualqual.tpe)
           case other =>
             other
         }
