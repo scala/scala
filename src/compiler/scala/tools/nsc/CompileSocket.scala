@@ -72,7 +72,7 @@ class CompileSocket extends CompileOutputCommon {
   /** A temporary directory to use */
   val tmpDir = {
     val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (Path(Properties.tmpDir) / "scala-devel" / udir).createDirectory()
+    val f     = (Path(Properties.tmpDir) / ("scala-devel" + udir)).createDirectory()
 
     if (f.isDirectory && f.canWrite) {
       info("[Temp directory: " + f + "]")
