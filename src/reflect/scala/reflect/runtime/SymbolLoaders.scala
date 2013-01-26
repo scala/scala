@@ -79,7 +79,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       with SynchronizedScope {
     assert(pkgClass.isType)
     // disable fingerprinting as we do not know entries beforehand
-    private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
+    private val negatives = new mutable.HashSet[Name] with mutable.SynchronizedSet[Name] // Syncnote: Performance only, so need not be protected.
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)
       if (e != null)
