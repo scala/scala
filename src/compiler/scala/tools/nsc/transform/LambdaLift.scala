@@ -320,12 +320,24 @@ abstract class LambdaLift extends InfoTransform {
     private def memberRef(sym: Symbol) = {
       val clazz = sym.owner.enclClass
       //Console.println("memberRef from "+currentClass+" to "+sym+" in "+clazz)
-      val qual = if (clazz == currentClass) gen.mkAttributedThis(clazz)
-                 else {
-                   sym resetFlag(LOCAL | PRIVATE)
-                   if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
-                   else outerPath(outerValue, currentClass.outerClass, clazz)
-                 }
+      def prematureSelfReference() {
+        val what =
+          if (clazz.isStaticOwner) clazz.fullLocationString
+          else s"the unconstructed `this` of ${clazz.fullLocationString}"
+        val msg = s"Implementation restriction: access of ${sym.fullLocationString} from ${currentClass.fullLocationString}, would require illegal premature access to $what"
+        currentUnit.error(curTree.pos, msg)
+      }
+      val qual =
+        if (clazz == currentClass) gen.mkAttributedThis(clazz)
+        else {
+          sym resetFlag (LOCAL | PRIVATE)
+          if (selfOrSuperCalls exists (_.owner == clazz)) {
+            prematureSelfReference()
+            EmptyTree
+          }
+          else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
+          else outerPath(outerValue, currentClass.outerClass, clazz)
+        }
       Select(qual, sym) setType sym.tpe
     }
 
@@ -352,6 +364,7 @@ abstract class LambdaLift extends InfoTransform {
 
             copyDefDef(tree)(vparamss = List(vparams ++ freeParams))
           case ClassDef(_, _, _, _) =>
+            // SI-6231
             // Disabled attempt to to add getters to freeParams
             // this does not work yet. Problem is that local symbols need local names
             // and references to local symbols need to be transformed into
@@ -369,7 +382,7 @@ abstract class LambdaLift extends InfoTransform {
         tree
     }
 
-/*  Something like this will be necessary to eliminate the implementation
+/*  SI-6231: Something like this will be necessary to eliminate the implementation
  *  restiction from paramGetter above:
  *  We need to pass getters to the interface of an implementation class.
     private def fixTraitGetters(lifted: List[Tree]): List[Tree] =
@@ -430,10 +443,10 @@ abstract class LambdaLift extends InfoTransform {
             /* Creating a constructor argument if one isn't present. */
             val constructorArg = rhs match {
               case EmptyTree =>
-                sym.primaryConstructor.info.paramTypes match {
+                sym.tpe.typeSymbol.primaryConstructor.info.paramTypes match {
                   case List(tp) => gen.mkZero(tp)
                   case _        =>
-                    log("Couldn't determine how to properly construct " + sym)
+                    debugwarn("Couldn't determine how to properly construct " + sym)
                     rhs
                 }
               case arg => arg
@@ -495,13 +508,25 @@ abstract class LambdaLift extends InfoTransform {
 
     private def preTransform(tree: Tree) = super.transform(tree) setType lifted(tree.tpe)
 
+    /** The stack of constructor symbols in which a call to this() or to the super
+      * constructor is active.
+      */
+    private val selfOrSuperCalls = mutable.Stack[Symbol]()
+    @inline private def inSelfOrSuperCall[A](sym: Symbol)(a: => A) = try {
+      selfOrSuperCalls push sym
+      a
+    } finally selfOrSuperCalls.pop()
+
     override def transform(tree: Tree): Tree = tree match {
       case Select(ReferenceToBoxed(idt), elem) if elem == nme.elem =>
         postTransform(preTransform(idt), isBoxedRef = false)
       case ReferenceToBoxed(idt) =>
         postTransform(preTransform(idt), isBoxedRef = true)
       case _ =>
-        postTransform(preTransform(tree))
+        def transformTree = postTransform(preTransform(tree))
+        if (treeInfo isSelfOrSuperConstrCall tree)
+          inSelfOrSuperCall(currentOwner)(transformTree)
+        else transformTree
     }
 
     /** Transform statements and add lifted definitions to them. */

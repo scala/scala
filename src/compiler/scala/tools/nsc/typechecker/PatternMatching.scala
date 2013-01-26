@@ -3237,6 +3237,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // TODO: make more fine-grained, as we don't always need to jump
       def canJump: Boolean
 
+      /** Should exhaustivity analysis be skipped? */
       def unchecked: Boolean
 
 
@@ -3470,12 +3471,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             case Some(cds) => cds
           }
 
-          val allReachable = unchecked || {
-            // a switch with duplicate cases yields a verify error,
-            // and a switch with duplicate cases and guards cannot soundly be rewritten to an unguarded switch
-            // (even though the verify error would disappear, the behaviour would change)
-            unreachableCase(caseDefsWithGuards) map (cd => reportUnreachable(cd.body.pos)) isEmpty
-          }
+          // a switch with duplicate cases yields a verify error,
+          // and a switch with duplicate cases and guards cannot soundly be rewritten to an unguarded switch
+          // (even though the verify error would disappear, the behaviour would change)
+          val allReachable = unreachableCase(caseDefsWithGuards) map (cd => reportUnreachable(cd.body.pos)) isEmpty
 
           if (!allReachable) Nil
           else if (noGuards(caseDefsWithGuards)) {
@@ -3718,10 +3717,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                               with SymbolicMatchAnalysis
                               with DPLLSolver { self: TreeMakers =>
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
+      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+        reportUnreachable(cases(caseIndex).last.pos)
+      }
       if (!unchecked) {
-        unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-          reportUnreachable(cases(caseIndex).last.pos)
-        }
         val counterExamples = exhaustive(prevBinder, cases, pt)
         if (counterExamples.nonEmpty)
           reportMissingCases(prevBinder.pos, counterExamples)
