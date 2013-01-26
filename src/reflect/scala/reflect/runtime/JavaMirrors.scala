@@ -56,9 +56,12 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     definitions.init()
   }
 
-  def runtimeMirror(cl: ClassLoader): Mirror = mirrors get cl match {
-    case Some(WeakReference(m)) => m
-    case _ => createMirror(rootMirror.RootClass, cl)
+  private lazy val mirrorLock = new Object
+  def runtimeMirror(cl: ClassLoader): Mirror = mirrorLock.synchronized {
+    mirrors get cl match {
+      case Some(WeakReference(m)) => m
+      case _ => createMirror(rootMirror.RootClass, cl)
+    }
   }
 
   /** The API of a mirror for a reflective universe */
