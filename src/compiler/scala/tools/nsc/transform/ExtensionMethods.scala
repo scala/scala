@@ -144,6 +144,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
              wrap over other value classes anyway.
             checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
+            currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
             super.transform(tree)
