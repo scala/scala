@@ -3390,6 +3390,14 @@ trait Typers extends Adaptations with Tags {
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
 
+      def finish(res: AnnotationInfo): AnnotationInfo = {
+        if (hasError) {
+          pending.foreach(ErrorUtils.issueTypeError)
+          ErroneousAnnotation
+        }
+        else res
+      }
+
       def reportAnnotationError(err: AbsTypeError) = {
         pending += err
         hasError = true
@@ -3470,6 +3478,8 @@ trait Typers extends Adaptations with Tags {
 
       // begin typedAnnotation
       val treeInfo.Applied(fun0, targs, argss) = ann
+      if (fun0.isErroneous)
+        return finish(ErroneousAnnotation)
       val typedFun0 = typed(fun0, mode.forFunMode, WildcardType)
       val typedFunPart = (
         // If there are dummy type arguments in typeFun part, it suggests we
@@ -3483,9 +3493,9 @@ trait Typers extends Adaptations with Tags {
       val treeInfo.Applied(typedFun @ Select(New(annTpt), _), _, _) = typedFunPart
       val annType = annTpt.tpe
 
-      val res = if (typedFun.isErroneous) ErroneousAnnotation
-      else {
-        if (typedFun.isErroneous) ErroneousAnnotation
+      finish(
+        if (typedFun.isErroneous)
+          ErroneousAnnotation
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
           val isJava = typedFun.symbol.owner.isJavaDefined
@@ -3558,7 +3568,7 @@ trait Typers extends Adaptations with Tags {
             val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
 
             rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
-            }
+          }
 
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -3585,13 +3595,7 @@ trait Typers extends Adaptations with Tags {
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
-        }
-      }
-
-      if (hasError) {
-        pending.foreach(ErrorUtils.issueTypeError)
-        ErroneousAnnotation
-      } else res
+      })
     }
 
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
