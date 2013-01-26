@@ -521,8 +521,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     Right(buildRequest(line, trees))
   }
 
-  // normalize non-public types so we don't see protected aliases like Self
-  def normalizeNonPublic(tp: Type) = tp match {
+  // dealias non-public types so we don't see protected aliases like Self
+  def dealiasNonPublic(tp: Type) = tp match {
     case TypeRef(_, sym, _) if sym.isAliasType && !sym.isPublic => tp.dealias
     case _                                                      => tp
   }
@@ -980,7 +980,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def cleanTypeAfterTyper(sym: => Symbol): Type = {
     exitingTyper(
-      normalizeNonPublic(
+      dealiasNonPublic(
         dropNullaryMethod(
           sym.tpe_*
         )
