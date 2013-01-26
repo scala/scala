@@ -22,6 +22,8 @@ import util.ThreeValues._
     // internal: error
   case WildcardType =>
     // internal: unknown
+  case BoundedWildcardType(bounds) =>
+    // internal: unknown
   case NoType =>
   case NoPrefix =>
   case ThisType(sym) =>
