@@ -124,7 +124,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       // todo. refactor when fixing SI-5498
       def className: String = {
         def loop(sym: Symbol): String = sym match {
-          case sym if sym.owner.isPackageClass =>
+          case sym if sym.isTopLevel =>
             val suffix = if (sym.isModuleClass) "$" else ""
             sym.fullName + suffix
           case sym =>

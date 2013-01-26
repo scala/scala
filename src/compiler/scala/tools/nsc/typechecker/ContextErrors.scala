@@ -1048,8 +1048,8 @@ trait ContextErrors {
         val s1 = if (prevSym.isModule) "case class companion " else ""
         val s2 = if (prevSym.isSynthetic) "(compiler-generated) " + s1 else ""
         val s3 = if (prevSym.isCase) "case class " + prevSym.name else "" + prevSym
-        val where = if (currentSym.owner.isPackageClass != prevSym.owner.isPackageClass) {
-                      val inOrOut = if (prevSym.owner.isPackageClass) "outside of" else "in"
+        val where = if (currentSym.isTopLevel != prevSym.isTopLevel) {
+                      val inOrOut = if (prevSym.isTopLevel) "outside of" else "in"
                       " %s package object %s".format(inOrOut, ""+prevSym.effectiveOwner.name)
                     } else ""
 
