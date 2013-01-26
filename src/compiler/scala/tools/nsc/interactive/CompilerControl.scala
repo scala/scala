@@ -155,7 +155,22 @@ trait CompilerControl { self: Global =>
    *  is unloaded, it stays that way.
    */
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
-    postWorkItem(new AskLinkPosItem(sym, source, response))
+    postWorkItem(new AskLinkPosItem(sym, source,  response))
+
+  /** Sets sync var `response` to the result of a given function application to the linked symbol in
+   *  the given sourcefile.
+   *
+   *  @param   sym      The symbol referenced by the link (might come from a classfile)
+   *  @param   source   The source file that's supposed to contain the definition
+   *  @param   f        The function that will be applied to a mirror symbol.
+   *  @param   dflt     Default value returned if the mirror symbol cannot be found.
+   *  @param   response A response that will be set to the result of function application or `fail` if
+   *                    the mirror symbol cannot be found.
+   *  Note: This operation does not automatically load `source`. If `source`
+   *  is unloaded, it stays that way.
+   */
+  def askMirrorSymbol[T](sym: Symbol, source: SourceFile, f: Symbol => T, dflt: => T, response: Response[T]) =
+    postWorkItem(new AskMirrorSymbolItem(sym, source, f, () => dflt, response))
 
   /** Sets sync var `response` to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
@@ -367,8 +382,16 @@ trait CompilerControl { self: Global =>
   }
 
   case class AskLinkPosItem(val sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
-    def apply() = self.getLinkPos(sym, source, response)
+    def apply() = self.withMirrorSymbol(sym, source, (_.pos), NoPosition, response)
     override def toString = "linkpos "+sym+" in "+source
+
+    def raiseMissing() =
+      response raise new MissingResponse
+  }
+
+  case class AskMirrorSymbolItem[T](val sym: Symbol, val source: SourceFile, val f: Symbol => T, dflt: () => T, response: Response[T]) extends WorkItem {
+    def apply() = self.withMirrorSymbol(sym, source, f, dflt(), response)
+    override def toString = "mirrorsymbol "+sym+" in "+source
 
     def raiseMissing() =
       response raise new MissingResponse
