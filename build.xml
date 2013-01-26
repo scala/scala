@@ -1000,6 +1000,10 @@ PACKED LOCKER BUILD (PALO)
       class="scala.tools.nsc.CompileClient"
       javaFlags="${java.flags}"/>
     <palo-bin
+      file="${build-palo.dir}/bin/jarlister"
+      class="scala.tools.nsc.JarLister"
+      javaFlags="${java.flags}"/>
+    <palo-bin
       file="${build-palo.dir}/bin/scalap"
       class="scala.tools.scalap.Main"
       javaFlags="${java.flags}"/>
@@ -1007,6 +1011,7 @@ PACKED LOCKER BUILD (PALO)
     <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-palo.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-palo.dir}/bin/jarlister"/>
     <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scalap"/>
     <touch file="${build-locker.dir}/bin.complete" verbose="no"/>
   </target>
@@ -1434,6 +1439,10 @@ QUICK BUILD (QUICK)
       javaFlags="${java.flags}"
       classpathref="quick.bin.classpath"/>
     <quick-bin
+      file="${build-quick.dir}/bin/jarlister"
+      class="scala.tools.nsc.JarLister"
+      javaFlags="${java.flags}"/>
+    <quick-bin
       file="${build-quick.dir}/bin/scalap"
       class="scala.tools.scalap.Main"
       javaFlags="${java.flags}"
@@ -1442,6 +1451,7 @@ QUICK BUILD (QUICK)
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-quick.dir}/bin/jarlister"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalap"/>
     <touch file="${build-quick.dir}/bin.complete" verbose="no"/>
   </target>
@@ -1474,6 +1484,7 @@ PACKED QUICK BUILD (PACK)
   </target>
 
   <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
+    <taskdef name="pack-lib" classname="scala.tools.ant.JarLister" classpathref="quick.classpath"/>
     <mkdir dir="${build-pack.dir}/lib"/>
     <!-- First copy maven dependencies -->
     <copy todir="${build-pack.dir}/lib">
@@ -1487,6 +1498,7 @@ PACKED QUICK BUILD (PACK)
       </fileset>
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
+    <pack-lib file="${build-pack.dir}/lib/scala-library.jar"/>
     <jar destfile="${build-pack.dir}/lib/scala-actors.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <include name="scala/actors/**"/>
@@ -1528,9 +1540,11 @@ PACKED QUICK BUILD (PACK)
     <copy file="META-INF/MANIFEST.MF" toDir="${build-pack.dir}/META-INF"/>
     <manifest file="${build-pack.dir}/META-INF/MANIFEST.MF" mode="update">
       <attribute name="Bundle-Version" value="${version.number}"/>
+      <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
     </manifest>
     <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
+      <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <fileset dir="${build-asm.dir}/classes"/>
       <fileset dir="${build-libs.dir}/classes/fjbg"/>
@@ -1633,6 +1647,10 @@ PACKED QUICK BUILD (PACK)
       class="scala.tools.nsc.CompileClient"
       javaFlags="${java.flags}"/>
     <pack-bin
+      file="${build-pack.dir}/bin/jarlister"
+      class="scala.tools.nsc.JarLister"
+      javaFlags="${java.flags}"/>
+    <pack-bin
       file="${build-pack.dir}/bin/scalap"
       class="scala.tools.scalap.Main"
       javaFlags="${java.flags}"/>
@@ -1640,6 +1658,7 @@ PACKED QUICK BUILD (PACK)
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-pack.dir}/bin/jarlister"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalap"/>
     <touch file="${build-pack.dir}/bin.complete" verbose="no"/>
   </target>
@@ -2359,7 +2378,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, scala, scalac, scaladoc, scalap"
+    <genman command="fsc, scala, scalac, scaladoc, scalap, jarlister"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->
@@ -2682,10 +2701,21 @@ DISTRIBUTION
     <mkdir dir="${dist.dir}/bin"/>
     <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
     <copy-bundle name="scala-library"/>
+    <jarlister file="${dist.dir}/lib/scala-library.jar"/>
     <copy-bundle name="scala-reflect"/>
     <copy-bundle name="scala-swing"/>
     <copy-bundle name="scala-actors"/>
     <copy-bundle name="scala-compiler"/>
+    <unzip src="${dist.dir}/lib/scala-compiler.jar" dest="${dist.dir}">
+      <patternset>
+        <include name="META-INF/MANIFEST.MF"/>
+      </patternset>
+    </unzip>
+    <manifest file="${dist.dir}/META-INF/MANIFEST.MF" mode="update">
+      <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
+    </manifest>
+    <jar destfile="${dist.dir}/lib/scala-compiler.jar" manifest="${dist.dir}/META-INF/MANIFEST.MF" update="true"/>
+    <delete dir="${dist.dir}/META-INF"/>
     <copy toDir="${dist.dir}/bin">
       <fileset dir="${build-pack.dir}/bin"/>
     </copy>
@@ -2693,6 +2723,7 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/jarlister"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
     <mkdir dir="${dist.dir}/misc/scala-devel/plugins"/>
     <copy-plugin-bundle name="continuations"/>

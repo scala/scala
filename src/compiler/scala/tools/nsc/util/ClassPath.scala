@@ -14,6 +14,7 @@ import scala.reflect.internal.util.StringOps.splitWhere
 import scala.reflect.ClassTag
 import Jar.isJarOrZip
 import File.pathSeparator
+import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
 import java.net.MalformedURLException
 
 /** <p>
@@ -145,7 +146,12 @@ object ClassPath {
     private def classesInPathImpl(path: String, expand: Boolean) =
       for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
         newClassPath(dir)
+
+    def classesInManifest(used: Boolean) =
+      if (used) for (url <- manifests) yield newClassPath(AbstractFile getResources url) else Nil
   }
+
+  def manifests = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
 
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {
@@ -292,7 +298,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
 class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = if (dir.file == null) Nil else List(dir.toURL)
+  def asURLs = if (dir.file == null) List(new URL(name)) else List(dir.toURL)
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 

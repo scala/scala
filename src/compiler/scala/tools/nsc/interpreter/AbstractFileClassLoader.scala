@@ -5,6 +5,9 @@
 package scala.tools.nsc
 package interpreter
 
+import java.net.URL
+import java.security.cert.Certificate
+import java.security.{ProtectionDomain, CodeSource}
 import scala.tools.nsc.io.{ File, AbstractFile }
 import util.ScalaClassLoader
 import java.net.URL
@@ -55,6 +58,10 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     return file
   }
 
+  lazy val protectionDomain = new ProtectionDomain(new CodeSource(new URL(path), null.asInstanceOf[Array[Certificate]]), null, this, null)
+
+  def path = Thread.currentThread().getContextClassLoader().getResource("scala/ScalaObject.class").getPath match { case s => s.substring(0, s.lastIndexOf('!')) }
+
   override def getResourceAsStream(name: String) = findAbstractFile(name) match {
     case null => super.getResourceAsStream(name)
     case file => file.input
@@ -68,7 +75,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     if (bytes.length == 0)
       throw new ClassNotFoundException(name)
     else
-      defineClass(name, bytes, 0, bytes.length)
+      defineClass(name, bytes, 0, bytes.length, protectionDomain)
   }
 
   private val packages = mutable.Map[String, Package]()
