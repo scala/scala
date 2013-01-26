@@ -12,7 +12,7 @@ import scala.collection.immutable.ListMap
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
-  import definitions.{ ThrowsClass, StaticAnnotationClass, isMetaAnnotation }
+  import definitions.{ ThrowsClass, ThrowableClass, StaticAnnotationClass, isMetaAnnotation }
 
   // Common annotation code between Symbol and Type.
   // For methods altering the annotation list, on Symbol it mutates
@@ -334,7 +334,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     * as well as “new-stye” `@throws[Exception]("cause")` annotations.
     */
   object ThrownException {
-    def unapply(ann: AnnotationInfo): Option[Symbol] =
+    def unapply(ann: AnnotationInfo): Option[Symbol] = {
       ann match {
         case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
           None
@@ -342,8 +342,11 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
           Some(tpe.typeSymbol)
         // new-style: @throws[Exception], @throws[Exception]("cause")
-        case AnnotationInfo(TypeRef(_, _, args), _, _) =>
-          Some(args.head.typeSymbol)
+        case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>
+          Some(arg.typeSymbol)
+        case AnnotationInfo(TypeRef(_, _, Nil), _, _) =>
+          Some(ThrowableClass)
       }
+    }
   }
 }

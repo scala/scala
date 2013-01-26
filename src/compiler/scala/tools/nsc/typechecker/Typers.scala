@@ -126,10 +126,7 @@ trait Typers extends Adaptations with Tags {
         // paramFailed cannot be initialized with params.exists(_.tpe.isError) because that would
         // hide some valid errors for params preceding the erroneous one.
         var paramFailed = false
-
-        def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
-        def mkNamedArg(argTree: Tree, paramName: Name) = atPos(argTree.pos)(new AssignOrNamedArg(Ident(paramName), (argTree)))
-        var mkArg: (Tree, Name) => Tree = mkPositionalArg
+        var mkArg: (Name, Tree) => Tree = (_, tree) => tree
 
         // DEPMETTODO: instantiate type vars that depend on earlier implicit args (see adapt (4.1))
         //
@@ -144,9 +141,9 @@ trait Typers extends Adaptations with Tags {
           argResultsBuff += res
 
           if (res.isSuccess) {
-            argBuff += mkArg(res.tree, param.name)
+            argBuff += mkArg(param.name, res.tree)
           } else {
-            mkArg = mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
+            mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
               context.errBuffer.find(_.kind == ErrorKinds.Divergent) match {
                 case Some(divergentImplicit) =>
@@ -1789,12 +1786,16 @@ trait Typers extends Adaptations with Tags {
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
-      if ((clazz != ClassfileAnnotationClass) &&
-          (clazz isNonBottomSubClass ClassfileAnnotationClass))
-        restrictionWarning(cdef.pos, unit,
-          "subclassing Classfile does not\n"+
-          "make your annotation visible at runtime.  If that is what\n"+
-          "you want, you must write the annotation class in Java.")
+
+      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
+        if (!clazz.owner.isPackageClass)
+          unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+        else restrictionWarning(cdef.pos, unit,
+          """|subclassing Classfile does not
+             |make your annotation visible at runtime.  If that is what
+             |you want, you must write the annotation class in Java.""".stripMargin)
+      }
+
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionSymbolOf(clazz, context)
@@ -1926,9 +1927,6 @@ trait Typers extends Adaptations with Tags {
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
-
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
-        unit.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
@@ -3101,10 +3099,10 @@ trait Typers extends Adaptations with Tags {
               val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
               if (namelessArgs exists (_.isErroneous)) {
                 duplErrTree
-              } else if (!isIdentity(argPos) && !sameLength(formals, params))
-                // !isIdentity indicates that named arguments are used to re-order arguments
+              } else if (!allArgsArePositional(argPos) && !sameLength(formals, params))
+                // !allArgsArePositional indicates that named arguments are used to re-order arguments
                 duplErrorTree(MultipleVarargError(tree))
-              else if (isIdentity(argPos) && !isNamedApplyBlock(fun)) {
+              else if (allArgsArePositional(argPos) && !isNamedApplyBlock(fun)) {
                 // if there's no re-ordering, and fun is not transformed, no need to transform
                 // more than an optimization, e.g. important in "synchronized { x = update-x }"
                 checkNotMacro()
@@ -3154,7 +3152,7 @@ trait Typers extends Adaptations with Tags {
           }
 
           if (!sameLength(formals, args) ||   // wrong nb of arguments
-              (args exists isNamed) ||        // uses a named argument
+              (args exists isNamedArg) ||     // uses a named argument
               isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
                                               // integrate this application into the block
             if (dyna.isApplyDynamicNamed(fun)) dyna.typedNamedApply(tree, fun, args, mode, pt)
@@ -3362,7 +3360,12 @@ trait Typers extends Adaptations with Tags {
     // return the corresponding extractor (an instance of ClassTag[`pt`])
     def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (isPastTyper) None else {
       // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
-      pt.normalize.typeConstructor match {
+      // but at least make a proper type before passing it elsewhere
+      val pt1 = pt.dealias match {
+        case tr @ TypeRef(pre, sym, args) if args.nonEmpty => copyTypeRef(tr, pre, sym, sym.typeParams map (_.tpeHK)) // replace actual type args with dummies
+        case pt1                                           => pt1
+      }
+      pt1 match {
         // if at least one of the types in an intersection is checkable, use the checkable ones
         // this avoids problems as in run/matchonseq.scala, where the expected type is `Coll with scala.collection.SeqLike`
         // Coll is an abstract type, but SeqLike of course is not
@@ -3377,17 +3380,23 @@ trait Typers extends Adaptations with Tags {
           else None
 
         case _ => None
-    }
+      }
     }
 
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
-     *
-     * @param annClass the expected annotation class
      */
-    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode, selfsym: Symbol = NoSymbol, annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
+    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode, selfsym: Symbol = NoSymbol): AnnotationInfo = {
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
+
+      def finish(res: AnnotationInfo): AnnotationInfo = {
+        if (hasError) {
+          pending.foreach(ErrorUtils.issueTypeError)
+          ErroneousAnnotation
+        }
+        else res
+      }
 
       def reportAnnotationError(err: AbsTypeError) = {
         pending += err
@@ -3399,7 +3408,10 @@ trait Typers extends Adaptations with Tags {
        *  floats and literals in particular) are not yet folded.
        */
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
-        val const: Constant = typed(constfold(tr), EXPRmode, pt) match {
+        // The typed tree may be relevantly different than the tree `tr`,
+        // e.g. it may have encountered an implicit conversion.
+        val ttree = typed(constfold(tr), EXPRmode, pt)
+        val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
             case ConstantType(c)  => c
@@ -3408,7 +3420,7 @@ trait Typers extends Adaptations with Tags {
         }
 
         if (const == null) {
-          reportAnnotationError(AnnotationNotAConstantError(tr)); None
+          reportAnnotationError(AnnotationNotAConstantError(ttree)); None
         } else if (const.value == null) {
           reportAnnotationError(AnnotationArgNullError(tr)); None
         } else
@@ -3423,7 +3435,14 @@ trait Typers extends Adaptations with Tags {
           reportAnnotationError(ArrayConstantsError(tree)); None
 
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          val annInfo = typedAnnotation(ann, mode, NoSymbol, pt.typeSymbol, true)
+          val annInfo = typedAnnotation(ann, mode, NoSymbol)
+          val annType = annInfo.tpe
+
+          if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
+            reportAnnotationError(AnnotationTypeMismatchError(tpt, annType, annType))
+          else if (!annType.typeSymbol.isSubClass(ClassfileAnnotationClass))
+            reportAnnotationError(NestedAnnotationError(ann, annType))
+
           if (annInfo.atp.isErroneous) { hasError = true; None }
           else Some(NestedAnnotArg(annInfo))
 
@@ -3458,44 +3477,42 @@ trait Typers extends Adaptations with Tags {
       }
 
       // begin typedAnnotation
-      val (fun, argss) = {
-        def extract(fun: Tree, outerArgss: List[List[Tree]]):
-          (Tree, List[List[Tree]]) = fun match {
-            case Apply(f, args) =>
-              extract(f, args :: outerArgss)
-            case Select(New(tpt), nme.CONSTRUCTOR) =>
-              (fun, outerArgss)
-            case _ =>
-              reportAnnotationError(UnexpectedTreeAnnotation(fun))
-              (setError(fun), outerArgss)
-          }
-        extract(ann, List())
-      }
+      val treeInfo.Applied(fun0, targs, argss) = ann
+      if (fun0.isErroneous)
+        return finish(ErroneousAnnotation)
+      val typedFun0 = typed(fun0, mode.forFunMode, WildcardType)
+      val typedFunPart = (
+        // If there are dummy type arguments in typeFun part, it suggests we
+        // must type the actual constructor call, not only the select. The value
+        // arguments are how the type arguments will be inferred.
+        if (targs.isEmpty && typedFun0.exists(t => isDummyAppliedType(t.tpe)))
+          logResult(s"Retyped $typedFun0 to find type args")(typed(argss.foldLeft(fun0)(Apply(_, _))))
+        else
+          typedFun0
+      )
+      val treeInfo.Applied(typedFun @ Select(New(annTpt), _), _, _) = typedFunPart
+      val annType = annTpt.tpe
 
-      val res = if (fun.isErroneous) ErroneousAnnotation
-      else {
-        val typedFun @ Select(New(tpt), _) = typed(fun, mode.forFunMode, WildcardType)
-        val annType = tpt.tpe
-
-        if (typedFun.isErroneous) ErroneousAnnotation
+      finish(
+        if (typedFun.isErroneous)
+          ErroneousAnnotation
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
           val isJava = typedFun.symbol.owner.isJavaDefined
-          if (!annType.typeSymbol.isNonBottomSubClass(annClass)) {
-            reportAnnotationError(AnnotationTypeMismatchError(tpt, annClass.tpe, annType))
-          } else if (argss.length > 1) {
+          if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
-          } else {
+          }
+          else {
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new scala.collection.mutable.HashSet[Symbol]
-            def hasValue = names exists (_.name == nme.value)
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
+
+            def hasValue = names exists (_.name == nme.value)
             val args = argss match {
-              case List(List(arg)) if !isNamed(arg) && hasValue =>
-                List(new AssignOrNamedArg(Ident(nme.value), arg))
-              case as :: _ => as
+              case (arg :: Nil) :: Nil if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
+              case args :: Nil                                         => args
             }
 
             val nvPairs = args map {
@@ -3528,13 +3545,12 @@ trait Typers extends Adaptations with Tags {
             if (hasError) ErroneousAnnotation
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))
           }
-        } else if (requireJava) {
-          reportAnnotationError(NestedAnnotationError(ann, annType))
-        } else {
+        }
+        else {
           val typedAnn = if (selfsym == NoSymbol) {
             // local dummy fixes SI-5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
-            localTyper.typed(ann, mode, annClass.tpe)
+            localTyper.typed(ann, mode, annType)
           }
           else {
             // Since a selfsym is supplied, the annotation should have an extra
@@ -3548,11 +3564,11 @@ trait Typers extends Adaptations with Tags {
             // sometimes does. The problem is that "self" ident's within
             // annot.constr will retain the old symbol from the previous typing.
             val func     = Function(funcparm :: Nil, ann.duplicate)
-            val funcType = appliedType(FunctionClass(1), selfsym.info, annClass.tpe_*)
+            val funcType = appliedType(FunctionClass(1), selfsym.info, annType)
             val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
 
             rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
-            }
+          }
 
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -3579,13 +3595,7 @@ trait Typers extends Adaptations with Tags {
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
-        }
-      }
-
-      if (hasError) {
-        pending.foreach(ErrorUtils.issueTypeError)
-        ErroneousAnnotation
-      } else res
+      })
     }
 
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
@@ -3705,7 +3715,8 @@ trait Typers extends Adaptations with Tags {
         else containsDef(owner, sym) || isRawParameter(sym) || isCapturedExistential(sym)
       def containsLocal(tp: Type): Boolean =
         tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
-      val normalizeLocals = new TypeMap {
+
+      val dealiasLocals = new TypeMap {
         def apply(tp: Type): Type = tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType && containsLocal(tp)) apply(tp.dealias)
@@ -3758,9 +3769,9 @@ trait Typers extends Adaptations with Tags {
         for (sym <- remainingSyms) addLocals(sym.existentialBound)
       }
 
-      val normalizedTpe = normalizeLocals(tree.tpe)
-      addLocals(normalizedTpe)
-      packSymbols(localSyms.toList, normalizedTpe)
+      val dealiasedType = dealiasLocals(tree.tpe)
+      addLocals(dealiasedType)
+      packSymbols(localSyms.toList, dealiasedType)
     }
 
     def typedClassOf(tree: Tree, tpt: Tree, noGen: Boolean = false) =

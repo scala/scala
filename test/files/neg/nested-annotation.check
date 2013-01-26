@@ -1,0 +1,10 @@
+nested-annotation.scala:3: warning: Implementation restriction: subclassing Classfile does not
+make your annotation visible at runtime.  If that is what
+you want, you must write the annotation class in Java.
+class ComplexAnnotation(val value: Annotation) extends ClassfileAnnotation
+      ^
+nested-annotation.scala:8: error: nested classfile annotations must be defined in java; found: inline
+  @ComplexAnnotation(new inline) def bippy(): Int = 1
+                     ^
+one warning found
+one error found

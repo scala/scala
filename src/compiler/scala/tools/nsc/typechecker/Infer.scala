@@ -244,6 +244,8 @@ trait Infer extends Checkable {
    *  This method seems to be performance critical.
    */
   def normalize(tp: Type): Type = tp match {
+    case pt @ PolyType(tparams, restpe) =>
+      logResult(s"Normalizing $tp in infer")(normalize(restpe))
     case mt @ MethodType(params, restpe) if mt.isImplicit =>
       normalize(restpe)
     case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
@@ -866,7 +868,7 @@ trait Infer extends Checkable {
               val (argtpes1, argPos, namesOK) = checkNames(argtpes0, params)
               // when using named application, the vararg param has to be specified exactly once
               (    namesOK
-                && (isIdentity(argPos) || sameLength(formals, params))
+                && (allArgsArePositional(argPos) || sameLength(formals, params))
                 && typesCompatible(reorderArgs(argtpes1, argPos)) // nb. arguments and names are OK, check if types are compatible
               )
             }
@@ -1222,8 +1224,6 @@ trait Infer extends Checkable {
         }
     }
 
-    def widen(tp: Type): Type = abstractTypesToBounds(tp)
-
     /** Substitute free type variables `undetparams` of type constructor
      *  `tree` in pattern, given prototype `pt`.
      *
@@ -1232,7 +1232,7 @@ trait Infer extends Checkable {
      *  @param pt          the expected result type of the instance
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
-      val pt       = widen(pt0)
+      val pt       = abstractTypesToBounds(pt0)
       val ptparams = freeTypeParamsOfTerms(pt)
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
@@ -1371,7 +1371,7 @@ trait Infer extends Checkable {
     }
 
     def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
-      val pt        = widen(pt0)
+      val pt        = abstractTypesToBounds(pt0)
       val ptparams  = freeTypeParamsOfTerms(pt)
       val tpparams  = freeTypeParamsOfTerms(pattp)
 

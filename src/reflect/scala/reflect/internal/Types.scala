@@ -835,23 +835,27 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     /** Is this type a subtype of that type in a pattern context?
-     *  Any type arguments on the right hand side are replaced with
+     *  Dummy type arguments on the right hand side are replaced with
      *  fresh existentials, except for Arrays.
      *
      *  See bug1434.scala for an example of code which would fail
      *  if only a <:< test were applied.
      */
-    def matchesPattern(that: Type): Boolean = {
-      (this <:< that) || ((this, that) match {
-        case (TypeRef(_, ArrayClass, List(arg1)), TypeRef(_, ArrayClass, List(arg2))) if arg2.typeSymbol.typeParams.nonEmpty =>
-          arg1 matchesPattern arg2
-        case (_, TypeRef(_, _, args)) =>
-          val newtp = existentialAbstraction(args map (_.typeSymbol), that)
-          !(that =:= newtp) && (this <:< newtp)
-        case _ =>
-          false
-      })
-    }
+    def matchesPattern(that: Type): Boolean = (this <:< that) || (that match {
+      case ArrayTypeRef(elem2) if elem2.typeConstructor.isHigherKinded =>
+        this match {
+          case ArrayTypeRef(elem1) => elem1 matchesPattern elem2
+          case _                   => false
+        }
+      case TypeRef(_, sym, args) =>
+        val that1 = existentialAbstraction(args map (_.typeSymbol), that)
+        (that ne that1) && (this <:< that1) && {
+          log(s"$this.matchesPattern($that) depended on discarding args and testing <:< $that1")
+          true
+        }
+      case _ =>
+        false
+    })
 
     def stat_<:<(that: Type): Boolean = {
       if (Statistics.canEnable) Statistics.incCounter(subtypeCount)
@@ -2867,6 +2871,13 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  object ArrayTypeRef {
+    def unapply(tp: Type) = tp match {
+      case TypeRef(_, ArrayClass, arg :: Nil) => Some(arg)
+      case _                                  => None
+    }
+  }
+
   //@M
   // a TypeVar used to be a case class with only an origin and a constr
   // then, constr became mutable (to support UndoLog, I guess),
@@ -2935,20 +2946,6 @@ trait Types extends api.Types { self: SymbolTable =>
     private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar =
       createTypeVar(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
   }
-
-  /** Repack existential types, otherwise they sometimes get unpacked in the
-   *  wrong location (type inference comes up with an unexpected skolem)
-   */
-  def repackExistential(tp: Type): Type = (
-    if (tp == NoType) tp
-    else existentialAbstraction(existentialsInType(tp), tp)
-  )
-
-  def containsExistential(tpe: Type) =
-    tpe exists typeIsExistentiallyBound
-
-  def existentialsInType(tpe: Type) =
-    tpe withFilter typeIsExistentiallyBound map (_.typeSymbol)
 
   /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
    */
@@ -3735,17 +3732,14 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   /** Type with all top-level occurrences of abstract types replaced by their bounds */
-  def abstractTypesToBounds(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
-    case TypeRef(_, sym, _) if sym.isAbstractType =>
-      abstractTypesToBounds(tp.bounds.hi)
-    case TypeRef(_, sym, _) if sym.isAliasType =>
-      abstractTypesToBounds(tp.normalize)
-    case rtp @ RefinedType(parents, decls) =>
-      copyRefinedType(rtp, parents mapConserve abstractTypesToBounds, decls)
-    case AnnotatedType(_, underlying, _) =>
-      abstractTypesToBounds(underlying)
-    case _ =>
-      tp
+  object abstractTypesToBounds extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(_, sym, _) if sym.isAliasType    => apply(tp.dealias)
+      case TypeRef(_, sym, _) if sym.isAbstractType => apply(tp.bounds.hi)
+      case rtp @ RefinedType(parents, decls)        => copyRefinedType(rtp, parents mapConserve this, decls)
+      case AnnotatedType(_, _, _)                   => mapOver(tp)
+      case _                                        => tp             // no recursion - top level only
+    }
   }
 
   // Set to true for A* => Seq[A]
@@ -3916,7 +3910,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
   class ClassUnwrapper(existential: Boolean) extends TypeUnwrapper(poly = true, existential, annotated = true, nullary = false) {
-    override def apply(tp: Type) = super.apply(tp.normalize)
+    override def apply(tp: Type) = super.apply(tp.normalize) // normalize is required here
   }
 
   object        unwrapToClass extends ClassUnwrapper(existential = true) { }
@@ -4163,6 +4157,26 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
+  /** Repack existential types, otherwise they sometimes get unpacked in the
+   *  wrong location (type inference comes up with an unexpected skolem)
+   */
+  def repackExistential(tp: Type): Type = (
+    if (tp == NoType) tp
+    else existentialAbstraction(existentialsInType(tp), tp)
+  )
+
+  def containsExistential(tpe: Type) = tpe exists typeIsExistentiallyBound
+  def existentialsInType(tpe: Type) = tpe withFilter typeIsExistentiallyBound map (_.typeSymbol)
+
+  private def isDummyOf(tpe: Type)(targ: Type) = {
+    val sym = targ.typeSymbol
+    sym.isTypeParameter && sym.owner == tpe.typeSymbol
+  }
+  def isDummyAppliedType(tp: Type) = tp.dealias match {
+    case tr @ TypeRef(_, _, args) => args exists isDummyOf(tr)
+    case _                        => false
+  }
+
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
     val eparams = mapWithIndex(tparams)((tparam, i) =>
       clazz.newExistential(newTypeName("?"+i), clazz.pos) setInfo tparam.info.bounds)
@@ -4172,19 +4186,21 @@ trait Types extends api.Types { self: SymbolTable =>
   def typeParamsToExistentials(clazz: Symbol): List[Symbol] =
     typeParamsToExistentials(clazz, clazz.typeParams)
 
+  def isRawIfWithoutArgs(sym: Symbol) = sym.isClass && sym.typeParams.nonEmpty && sym.isJavaDefined
+  /** Is type tp a ''raw type''? */
   //  note: it's important to write the two tests in this order,
   //  as only typeParams forces the classfile to be read. See #400
-  private def isRawIfWithoutArgs(sym: Symbol) =
-    sym.isClass && sym.typeParams.nonEmpty && sym.isJavaDefined
+  def isRawType(tp: Type) = !phase.erasedTypes && (tp match {
+    case TypeRef(_, sym, Nil) => isRawIfWithoutArgs(sym)
+    case _                    => false
+  })
 
-  def isRaw(sym: Symbol, args: List[Type]) =
-    !phase.erasedTypes && isRawIfWithoutArgs(sym) && args.isEmpty
-
-  /** Is type tp a ''raw type''? */
-  def isRawType(tp: Type) = tp match {
-    case TypeRef(_, sym, args) => isRaw(sym, args)
-    case _ => false
-  }
+  @deprecated("Use isRawType", "2.10.1") // presently used by sbt
+  def isRaw(sym: Symbol, args: List[Type]) = (
+       !phase.erasedTypes
+    && args.isEmpty
+    && isRawIfWithoutArgs(sym)
+  )
 
   /** The raw to existential map converts a ''raw type'' to an existential type.
    *  It is necessary because we might have read a raw type of a
@@ -5617,7 +5633,13 @@ trait Types extends api.Types { self: SymbolTable =>
             // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
         }
       } && annotationsConform(tp1.normalize, tp2.normalize)
-      case (_, _) => false // @assume !tp1.isHigherKinded || !tp2.isHigherKinded
+
+      case (PolyType(_, _), MethodType(params, _)) if params exists (_.tpe.isWildcard) =>
+        false   // don't warn on HasMethodMatching on right hand side
+
+      case (ntp1, ntp2) =>
+        devWarning(s"isHKSubType0($tp1, $tp2, _) is ${tp1.getClass}, ${tp2.getClass}: ($ntp1, $ntp2)")
+        false // @assume !tp1.isHigherKinded || !tp2.isHigherKinded
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
     }))
 
@@ -5715,7 +5737,7 @@ trait Types extends api.Types { self: SymbolTable =>
         case NotNullClass => tp1.isNotNull
         case SingletonClass => tp1.isStable || fourthTry
         case _: ClassSymbol =>
-          if (isRaw(sym2, tp2.args))
+          if (isRawType(tp2))
             isSubType(tp1, rawToExistential(tp2), depth)
           else if (sym2.name == tpnme.REFINE_CLASS_NAME)
             isSubType(tp1, sym2.info, depth)
@@ -5797,7 +5819,7 @@ trait Types extends api.Types { self: SymbolTable =>
                 isSingleType(tp2) && isSubType(tp1, tp2.widen, depth)
             }
           case _: ClassSymbol =>
-            if (isRaw(sym1, tr1.args))
+            if (isRawType(tp1))
               isSubType(rawToExistential(tp1), tp2, depth)
             else if (sym1.isModuleClass) tp2 match {
               case SingleType(pre2, sym2) => equalSymsAndPrefixes(sym1.sourceModule, pre1, sym2, pre2)
