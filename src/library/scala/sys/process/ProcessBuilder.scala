@@ -23,7 +23,7 @@ import ProcessBuilder._
   * based on these factories made available in the package object
   * [[scala.sys.process]]. Here are some examples:
   * {{{
-  * import.scala.sys.process._
+  * import scala.sys.process._
   *
   * // Executes "ls" and sends output to stdout
   * "ls".!
