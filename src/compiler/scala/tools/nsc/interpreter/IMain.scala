@@ -386,8 +386,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     // be what people want so I'm waiting until I can do it better.
     exitingTyper {
       req.defines filterNot (s => req.defines contains s.companionSymbol) foreach { newSym =>
-        val companion = newSym.name.companionName
-        replScope lookup companion andAlso { oldSym =>
+        val oldSym = replScope lookup newSym.name.companionName
+        if (Seq(oldSym, newSym).permutations exists { case Seq(s1, s2) => s1.isClass && s2.isModule }) {
           replwarn(s"warning: previously defined $oldSym is not a companion to $newSym.")
           replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
         }

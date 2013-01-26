@@ -46,7 +46,7 @@ object SBTRunner extends DirectRunner {
       case x                                        => sys.error("Unknown command line options: " + x)
     }
     val config = parseArgs(args, CommandLineOptions())
-    fileManager.SCALAC_OPTS = config.scalacOptions
+    fileManager.SCALAC_OPTS ++= config.scalacOptions
     fileManager.CLASSPATH = config.classpath getOrElse sys.error("No classpath set")
 
     def findClasspath(jar: String, name: String): Option[String] = {
