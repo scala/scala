@@ -60,14 +60,18 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     }
   }
 
-  /** Return the extension method that corresponds to given instance method `meth`.
-   */
+  private def companionModuleForce(sym: Symbol) = {
+    sym.andAlso(_.owner.initialize) // See SI-6976. `companionModule` only calls `rawInfo`. (Why?)
+    sym.companionModule
+  }
+
+  /** Return the extension method that corresponds to given instance method `meth`. */
   def extensionMethod(imeth: Symbol): Symbol = enteringPhase(currentRun.refchecksPhase) {
-    val companionInfo = imeth.owner.companionModule.info
+    val companionInfo = companionModuleForce(imeth.owner).info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty,
-      s"no extension method found for $imeth:${imeth.tpe} among ${candidates map (c => c.name+":"+c.tpe)} / ${extensionNames(imeth)}")
+      s"no extension method found for $imeth:${imeth.tpe} among ${candidates.map(c => c.name+":"+c.tpe).toList} / ${extensionNames(imeth).toList}")
     matching.head
   }
 

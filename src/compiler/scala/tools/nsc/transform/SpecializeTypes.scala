@@ -1365,7 +1365,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               debuglog("obtained env: " + e)
               e.keySet == env.keySet
             } catch {
-              case _ =>
+              case _: Throwable =>
                 debuglog("Could not unify.")
                 false
             }

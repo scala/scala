@@ -1944,7 +1944,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     //
     // TODO: for V1 representing x1 and V2 standing for x1.head, encode that
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
-    def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
+    // may throw an AnalysisBudget.Exception
+    def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Formula, List[Formula]) = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
 
       val vars = new scala.collection.mutable.HashSet[Var]
@@ -1968,10 +1969,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       props foreach gatherEqualities.apply
       if (modelNull) vars foreach (_.registerNull)
 
-      val pure = props map rewriteEqualsToProp.apply
+      val pure = props map (p => eqFreePropToSolvable(rewriteEqualsToProp(p)))
 
-      var eqAxioms: Prop = True
-      def addAxiom(p: Prop) = eqAxioms = And(eqAxioms, p)
+      val eqAxioms = formulaBuilder
+      @inline def addAxiom(p: Prop) = addFormula(eqAxioms, eqFreePropToSolvable(p))
 
       patmatDebug("removeVarEq vars: "+ vars)
       vars.foreach { v =>
@@ -1997,23 +1998,37 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         }
       }
 
-      patmatDebug("eqAxioms:\n"+ cnfString(eqFreePropToSolvable(eqAxioms)))
-      patmatDebug("pure:"+ pure.map(p => cnfString(eqFreePropToSolvable(p))).mkString("\n"))
+      patmatDebug("eqAxioms:\n"+ cnfString(toFormula(eqAxioms)))
+      patmatDebug("pure:"+ pure.map(p => cnfString(p)).mkString("\n"))
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
-      (eqAxioms, pure)
+      (toFormula(eqAxioms), pure)
     }
 
 
+    // an interface that should be suitable for feeding a SAT solver when the time comes
     type Formula
+    type FormulaBuilder
+
+    // creates an empty formula builder to which more formulae can be added
+    def formulaBuilder: FormulaBuilder
+
+    // val f = formulaBuilder; addFormula(f, f1); ... addFormula(f, fN)
+    // toFormula(f) == andFormula(f1, andFormula(..., fN))
+    def addFormula(buff: FormulaBuilder, f: Formula): Unit
+    def toFormula(buff: FormulaBuilder): Formula
+
+    // the conjunction of formulae `a` and `b`
     def andFormula(a: Formula, b: Formula): Formula
 
+    // equivalent formula to `a`, but simplified in a lightweight way (drop duplicate clauses)
+    def simplifyFormula(a: Formula): Formula
 
     // may throw an AnalysisBudget.Exception
     def propToSolvable(p: Prop): Formula = {
       val (eqAxioms, pure :: Nil) = removeVarEq(List(p), modelNull = false)
-      eqFreePropToSolvable(And(eqAxioms, pure))
+      andFormula(eqAxioms, pure)
     }
 
     // may throw an AnalysisBudget.Exception
@@ -2029,23 +2044,33 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   }
 
   trait CNF extends Logic {
-    // CNF: a formula is a conjunction of clauses
-    type Formula = Array[Clause]
     /** Override Array creation for efficiency (to not go through reflection). */
     private implicit val clauseTag: scala.reflect.ClassTag[Clause] = new scala.reflect.ClassTag[Clause] {
       def runtimeClass: java.lang.Class[Clause] = classOf[Clause]
       final override def newArray(len: Int): Array[Clause] = new Array[Clause](len)
     }
-    def formula(c: Clause*): Formula = c.toArray
-    def andFormula(a: Formula, b: Formula): Formula = a ++ b
 
+    import scala.collection.mutable.ArrayBuffer
+    type FormulaBuilder = ArrayBuffer[Clause]
+    def formulaBuilder  = ArrayBuffer[Clause]()
+    def addFormula(buff: FormulaBuilder, f: Formula): Unit = buff ++= f
+    def toFormula(buff: FormulaBuilder): Formula = buff
+
+    // CNF: a formula is a conjunction of clauses
+    type Formula = FormulaBuilder
+    def formula(c: Clause*): Formula = ArrayBuffer(c: _*)
+
+    type Clause  = Set[Lit]
     // a clause is a disjunction of distinct literals
-    type Clause = Set[Lit]
     def clause(l: Lit*): Clause = l.toSet
-    private def merge(a: Clause, b: Clause) = a ++ b
 
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
+
+    def andFormula(a: Formula, b: Formula): Formula = a ++ b
+    def simplifyFormula(a: Formula): Formula = a.distinct
+
+    private def merge(a: Clause, b: Clause) = a ++ b
 
     // throws an AnalysisBudget.Exception when the prop results in a CNF that's too big
     // TODO: be smarter/more efficient about this (http://lara.epfl.ch/w/sav09:tseitin_s_encoding)
@@ -2617,23 +2642,22 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       val propsCasesOk   = testCasesOk   map (t => symbolicCase(t, modelNull = true))
       val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t, modelNull = true)))
-      val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
-      val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   modelNull = true)
 
       try {
-        // most of the time eqAxiomsFail == eqAxiomsOk, but the different approximations might cause different variables to disapper in general
-        val eqAxiomsCNF =
-          if (eqAxiomsFail == eqAxiomsOk) eqFreePropToSolvable(eqAxiomsFail)
-          else eqFreePropToSolvable(And(eqAxiomsFail, eqAxiomsOk))
+        val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
+        val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   modelNull = true)
+        val eqAxioms = simplifyFormula(andFormula(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
 
-        var prefix     = eqAxiomsCNF
+        val prefix   = formulaBuilder
+        addFormula(prefix, eqAxioms)
+
         var prefixRest = symbolicCasesFail
         var current    = symbolicCasesOk
         var reachable  = true
         var caseIndex  = 0
 
         patmatDebug("reachability, vars:\n"+ ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
-        patmatDebug("equality axioms:\n"+ cnfString(eqAxiomsCNF))
+        patmatDebug("equality axioms:\n"+ cnfString(eqAxiomsOk))
 
         // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
         // termination: prefixRest.length decreases by 1
@@ -2643,11 +2667,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           prefixRest = prefixRest.tail
           if (prefixRest.isEmpty) reachable = true
           else {
-            prefix = andFormula(eqFreePropToSolvable(prefHead), prefix)
+            addFormula(prefix, prefHead)
             current = current.tail
-            val model = findModelFor(andFormula(eqFreePropToSolvable(current.head), prefix))
+            val model = findModelFor(andFormula(current.head, toFormula(prefix)))
 
-            // patmatDebug("trying to reach:\n"+ cnfString(eqFreePropToSolvable(current.head)) +"\nunder prefix:\n"+ cnfString(prefix))
+            // patmatDebug("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
             // if (NoModel ne model) patmatDebug("reached: "+ modelString(model))
 
             reachable = NoModel ne model
@@ -3213,6 +3237,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // TODO: make more fine-grained, as we don't always need to jump
       def canJump: Boolean
 
+      /** Should exhaustivity analysis be skipped? */
       def unchecked: Boolean
 
 
@@ -3446,12 +3471,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             case Some(cds) => cds
           }
 
-          val allReachable = unchecked || {
-            // a switch with duplicate cases yields a verify error,
-            // and a switch with duplicate cases and guards cannot soundly be rewritten to an unguarded switch
-            // (even though the verify error would disappear, the behaviour would change)
-            unreachableCase(caseDefsWithGuards) map (cd => reportUnreachable(cd.body.pos)) isEmpty
-          }
+          // a switch with duplicate cases yields a verify error,
+          // and a switch with duplicate cases and guards cannot soundly be rewritten to an unguarded switch
+          // (even though the verify error would disappear, the behaviour would change)
+          val allReachable = unreachableCase(caseDefsWithGuards) map (cd => reportUnreachable(cd.body.pos)) isEmpty
 
           if (!allReachable) Nil
           else if (noGuards(caseDefsWithGuards)) {
@@ -3487,8 +3510,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       val alternativesSupported = true
       val canJump = true
 
-      object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat match {
-        case Literal(const@Constant((_: Byte ) | (_: Short) | (_: Int  ) | (_: Char ))) =>
+      // Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
+      // The tree itself can be a literal, an ident, a selection, ...
+      object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat.tpe match {
+        case ConstantType(const) if const.isIntRange =>
           Some(Literal(Constant(const.intValue))) // TODO: Java 7 allows strings in switches
         case _ => None
       }}
@@ -3692,10 +3717,10 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                               with SymbolicMatchAnalysis
                               with DPLLSolver { self: TreeMakers =>
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
+      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+        reportUnreachable(cases(caseIndex).last.pos)
+      }
       if (!unchecked) {
-        unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-          reportUnreachable(cases(caseIndex).last.pos)
-        }
         val counterExamples = exhaustive(prevBinder, cases, pt)
         if (counterExamples.nonEmpty)
           reportMissingCases(prevBinder.pos, counterExamples)
