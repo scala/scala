@@ -81,40 +81,51 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     // disable fingerprinting as we do not know entries beforehand
     private val negatives = new mutable.HashSet[Name] with mutable.SynchronizedSet[Name] // Syncnote: Performance only, so need not be protected.
     override def lookupEntry(name: Name): ScopeEntry = {
-      val e = super.lookupEntry(name)
-      if (e != null)
-        e
-      else if (isInvalidClassName(name) || (negatives contains name))
-        null
-      else {
+      def lookupExisting: Option[ScopeEntry] = {
+        val e = super.lookupEntry(name)
+        if (e != null)
+          Some(e)
+        else if (isInvalidClassName(name) || (negatives contains name))
+          Some(null) // TODO: omg
+        else
+          None
+      }
+
+      def materialize: ScopeEntry = {
         val path =
           if (pkgClass.isEmptyPackageClass) name.toString
           else pkgClass.fullName + "." + name
         val currentMirror = mirrorThatLoaded(pkgClass)
         currentMirror.tryJavaClass(path) match {
           case Some(cls) =>
-            val loadingMirror = currentMirror.mirrorDefining(cls)
-            val (clazz, module) =
-              if (loadingMirror eq currentMirror) {
-                initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-              } else {
-                val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
-                val clazz = origOwner.info decl name.toTypeName
-                val module = origOwner.info decl name.toTermName
-                assert(clazz != NoSymbol)
-                assert(module != NoSymbol)
-                pkgClass.info.decls enter clazz
-                pkgClass.info.decls enter module
-                (clazz, module)
+            currentMirror.synchronized {
+              lookupExisting getOrElse {
+                val loadingMirror = currentMirror.mirrorDefining(cls)
+                val (clazz, module) =
+                  if (loadingMirror eq currentMirror) {
+                    initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+                  } else {
+                    val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
+                    val clazz = origOwner.info decl name.toTypeName
+                    val module = origOwner.info decl name.toTermName
+                    assert(clazz != NoSymbol)
+                    assert(module != NoSymbol)
+                    pkgClass.info.decls enter clazz
+                    pkgClass.info.decls enter module
+                    (clazz, module)
+                  }
+                debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
+                lookupEntry(name)
               }
-            debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
-            lookupEntry(name)
+            }
           case none =>
             debugInfo("*** not found : "+path)
             negatives += name
             null
         }
       }
+
+      lookupExisting getOrElse materialize
     }
   }
 

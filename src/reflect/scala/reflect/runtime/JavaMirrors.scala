@@ -683,7 +683,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         completeRest()
       }
 
-      def completeRest(): Unit = thisUniverse.synchronized {
+      def completeRest(): Unit = thisMirror.synchronized {
         val tparams = clazz.rawInfo.typeParams
 
         val parents = try {
@@ -899,7 +899,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      * The Scala package with given fully qualified name. Unlike `packageNameToScala`,
      *  this one bypasses the cache.
      */
-    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = {
+    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = thisMirror.synchronized {
       val split = fullname lastIndexOf '.'
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
