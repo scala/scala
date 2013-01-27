@@ -1139,11 +1139,15 @@ self =>
     /*
      * TBD: 
      * 
-     * @, if, while, blocks, specials -> functions
+     * formal parameters: p ==> p.value, using Transformer
      * method resolution += "," resolution: phase 2
+     *   - eliminate ","
+     *   - if !resolved type is script then encapsulate: _normal{here:N_code_normal => ...}
+     *   - ? implicit with multiple parameters?
      * 
      * TBTested: 
      * 
+     * @, if, while, blocks, specials -> functions
      * actual parameters: box & add constraints
      * 
      * DONE:
@@ -1307,19 +1311,33 @@ self =>
         LBRACE_QMARK    -> "unsure",
         LBRACE_EMARK    -> "tiny",
         LBRACE_DOT      -> "eventhandling",
-        LBRACE_DOT3     -> "eventhandling_loop"        
+        LBRACE_DOT3     -> "eventhandling_loop",        
+        WHILE           -> "while"    ,     
+        IF              -> "if"       ,
+        ELSE            -> "if_else"  ,    
+        LPAREN_PLUS_RPAREN       -> "empty"       ,
+        LPAREN_MINUS_RPAREN      -> "deadlock"    ,
+        LPAREN_PLUS_MINUS_RPAREN -> "neutral"     ,
+        LPAREN_SEMI_RPAREN       -> "skip"        ,
+        DOT             -> "optionalBreak"        ,
+        DOT2            -> "optionalBreak_loop"   ,
+        DOT3            -> "loop"        
     )
     val mapTokenToDSLFunName = mapTokenToDSLFunString map {case(k,v) => (k, newTermName("_"+v): Name)}
-    
+    val break_DSLFunName = "_break"
+      
     val mapTokenToDSLNodeString = Map[Int,String](
-        LBRACE          -> "normal",
-        LBRACE_ASTERISK -> "threaded",
-        LBRACE_QMARK    -> "unsure",
-        LBRACE_EMARK    -> "tiny",
-        LBRACE_DOT      -> "eh",
-        LBRACE_DOT3     -> "eh_loop"        
+        LBRACE          -> "code_normal",
+        LBRACE_ASTERISK -> "code_threaded",
+        LBRACE_QMARK    -> "code_unsure",
+        LBRACE_EMARK    -> "code_tiny",
+        LBRACE_DOT      -> "code_eh",
+        LBRACE_DOT3     -> "code_eh_loop"  ,      
+        WHILE           -> "while"    ,     
+        IF              -> "if"       ,
+        ELSE            -> "if_else"   
     )
-    val mapTokenToDSLNodeName = mapTokenToDSLNodeString map {case(k,v) => (k, newTermName("N_code_"+v): Name)}
+    val mapTokenToDSLNodeName = mapTokenToDSLNodeString map {case(k,v) => (k, newTermName("N_"+v): Name)}
     
     def eatNewlines(): Boolean = {
       if (in.token==NEWLINE || in.token==NEWLINES) {
@@ -1333,7 +1351,6 @@ self =>
     def isBreakIdent  = in.token == IDENTIFIER && in.name == nme.BREAKkw
     def isQMark       = in.token == IDENTIFIER && in.name == nme.QMARKkw
     def isQMark2      = in.token == IDENTIFIER && in.name == nme.QMARK2kw
-    
     
     def isSubScriptTermStarter(tokenData: TokenData): Boolean = in.token match {
       case VAL                      
@@ -1850,24 +1867,28 @@ self =>
   parenthesizedExpression = "(" scalaExpression ")"
  
      */
-    def simpleScriptTerm (isNegated: Boolean = false): Tree = 
+    def simpleScriptTerm (isNegated: Boolean = false): Tree = atPos(in.offset) {
       
       in.token match {
       case IF =>
         def parseIf = atPos(in.skipToken()) {
+          val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
           val cond  = simpleNativeValueExpr();  newLinesOpt()
           val thenp = scriptExpr()
-          val elsep = if (in.token == ELSE) {in.nextToken(); scriptExpr()}
-                      else Literal(Constant())
-          If(cond, thenp, elsep)
+          if (in.token == ELSE) {
+               in.nextToken(); 
+               val elsep = scriptExpr()
+               Apply(Apply(Ident(mapTokenToDSLFunName(ELSE)), List(blockToFunction(cond, mapTokenToDSLNodeName(ELSE), startPos))),List(thenp, elsep))
+          }
+          else Apply(Apply(Ident(mapTokenToDSLFunName(  IF)), List(blockToFunction(cond, mapTokenToDSLNodeName(  IF), startPos))),List(thenp))
         }
         parseIf
       case WHILE =>
         def parseWhile    = atPos(in.skipToken()) {
+          val startPos    = r2p(in.offset, in.offset, in.lastOffset max in.offset)
           val lname: Name = freshTermName(nme.WHILE_PREFIX)
           val cond        = simpleNativeValueExpr(); newLinesOpt()
-          val body        = Literal(Constant())
-          makeWhile(lname.toTermName, cond, body)
+          Apply(Ident(mapTokenToDSLFunName(in.token)), List(blockToFunction(cond, mapTokenToDSLNodeName(in.token), startPos)))
         }
         parseWhile
       case LPAREN_PLUS_RPAREN           
@@ -1876,8 +1897,8 @@ self =>
          | LPAREN_SEMI_RPAREN               
          | DOT                              
          | DOT2                             
-         | DOT3                         => Apply(Literal(Constant(in.token)), Nil)  
-      case IDENTIFIER if (isBreakIdent) => Apply(Literal(Constant(in.token)), Nil)
+         | DOT3                         => Apply(Ident(mapTokenToDSLFunName(in.token)), Nil) // TBD: transform here?
+      case IDENTIFIER if (isBreakIdent) => Apply(Ident(break_DSLFunName), Nil)
       case LPAREN                       => atPos(in.offset)(inScriptParens(scriptExpr()))
       case LBRACE           
          | LBRACE_DOT              
@@ -1899,7 +1920,7 @@ self =>
       case NEW    => ???
       case _      => syntaxErrorOrIncomplete("illegal start of simple expression", true); errorTermTree
     }
-
+    }
     
     def scriptBlockExpr(): Tree = {
       in.isInSubScript       = false
@@ -1925,9 +1946,9 @@ self =>
         var formalParamName: Name = null
         var exp = expr() match {
           case a @ Assign(id, rhs) if maybeNamed => atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-          case Apply(Select(lhs                   , QMARKkw ), Nil) =>   isOutputParam = true; lhs
-          case Apply(Select(Ident(formalParamName), QMARK2kw), Nil) => isAdaptingParam = true; Ident(formalParamName)
-          case Apply(Select(lhs                   , QMARK2kw), Nil) =>  syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); lhs
+          case Apply(Select(lhs                   , nme.QMARKkw ), Nil) =>   isOutputParam = true; lhs
+          case Apply(Select(Ident(formalParamName), nme.QMARK2kw), Nil) => isAdaptingParam = true; Ident(formalParamName)
+          case Apply(Select(lhs                   , nme.QMARK2kw), Nil) =>  syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); lhs
           case e                                                    => e
         }
         if (isOutputParam || isAdaptingParam) {
