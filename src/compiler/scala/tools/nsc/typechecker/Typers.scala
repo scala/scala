@@ -30,7 +30,6 @@ trait Typers extends Modes with Adaptations with Tags {
   import global._
   import definitions._
   import TypersStats._
-  import patmat.DefaultOverrideMatchAttachment
 
   final def forArgMode(fun: Tree, mode: Int) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode
@@ -2674,7 +2673,6 @@ trait Typers extends Modes with Adaptations with Tags {
       import CODE._
 
       val Match(sel, cases) = tree
-
       // need to duplicate the cases before typing them to generate the apply method, or the symbols will be all messed up
       val casesTrue = cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE_typed)).duplicate.asInstanceOf[CaseDef])
 
@@ -2696,8 +2694,13 @@ trait Typers extends Modes with Adaptations with Tags {
       def mkParam(methodSym: Symbol, tp: Type = argTp) =
         methodSym.newValueParameter(paramName, paramPos.focus, SYNTHETIC) setInfo tp
 
+      def mkDefaultCase(body: Tree) =
+        atPos(tree.pos.makeTransparent) {
+          CaseDef(Bind(nme.DEFAULT_CASE, Ident(nme.WILDCARD)), body)
+        }
+
       // `def applyOrElse[A1 <: $argTp, B1 >: $matchResTp](x: A1, default: A1 => B1): B1 =
-      //  ${`$selector match { $cases }` updateAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x)))}`
+      //  ${`$selector match { $cases; case default$ => default(x) }`
       def applyOrElseMethodDef = {
         val methodSym = anonClass.newMethod(nme.applyOrElse, tree.pos, FINAL | OVERRIDE)
 
@@ -2706,7 +2709,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val x = mkParam(methodSym, A1.tpe)
 
         // applyOrElse's default parameter:
-        val B1 = methodSym newTypeParameter (newTypeName("B1")) setInfo TypeBounds.empty //lower(resTp)
+        val B1 = methodSym newTypeParameter (newTypeName("B1")) setInfo TypeBounds.empty
         val default = methodSym newValueParameter (newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
 
         val paramSyms = List(x, default)
@@ -2716,19 +2719,72 @@ trait Typers extends Modes with Adaptations with Tags {
         // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
         paramSyms foreach (methodBodyTyper.context.scope enter _)
 
-        val match_ = methodBodyTyper.typedMatch(selector, cases, mode, resTp)
+        // First, type without the default case; only the cases provided
+        // by the user are typed. The LUB of these becomes `B`, the lower
+        // bound of `B1`, which in turn is the result type of the default
+        // case
+        val match0 = methodBodyTyper.typedMatch(selector, cases, mode, resTp)
+        val matchResTp = match0.tpe
 
-        val matchResTp = match_.tpe
         B1 setInfo TypeBounds.lower(matchResTp) // patch info
 
+        // the default uses applyOrElse's first parameter since the scrut's type has been widened
+        val match_ = {
+          val defaultCase = methodBodyTyper.typedCase(
+            mkDefaultCase(methodBodyTyper.typed1(REF(default) APPLY (REF(x)), mode, B1.tpe).setType(B1.tpe)), argTp, B1.tpe)
+          treeCopy.Match(match0, match0.selector, match0.cases :+ defaultCase)
+        }
         match_ setType B1.tpe
 
-        // the default uses applyOrElse's first parameter since the scrut's type has been widened
-        val matchWithDefault = match_ updateAttachment DefaultOverrideMatchAttachment(REF(default) APPLY (REF(x)))
-        (DefDef(methodSym, methodBodyTyper.virtualizedMatch(matchWithDefault, mode, B1.tpe)), matchResTp)
+        // SI-6187 Do you really want to know? Okay, here's what's going on here.
+        //
+        //         Well behaved trees satisfy the property:
+        //
+        //         typed(tree) == typed(resetLocalAttrs(typed(tree))
+        //
+        //         Trees constructed without low-level symbol manipulation get this for free;
+        //         references to local symbols are cleared by `ResetAttrs`, but bind to the
+        //         corresponding symbol in the re-typechecked tree. But PartialFunction synthesis
+        //         doesn't play by these rules.
+        //
+        //         During typechecking of method bodies, references to method type parameter from
+        //         the declared types of the value parameters should bind to a fresh set of skolems,
+        //         which have been entered into scope by `Namer#methodSig`. A comment therein:
+        //
+        //         "since the skolemized tparams are in scope, the TypeRefs in vparamSymss refer to skolemized tparams"
+        //
+        //         But, if we retypecheck the reset `applyOrElse`, the TypeTree of the `default`
+        //         parameter contains no type. Somehow (where?!) it recovers a type that is _almost_ okay:
+        //         `A1 => B1`. But it should really be `A1&0 => B1&0`. In the test, run/t6187.scala, this
+        //         difference results in a type error, as `default.apply(x)` types as `B1`, which doesn't
+        //         conform to the required `B1&0`
+        //
+        //         I see three courses of action.
+        //
+        //         1) synthesize a `asInstanceOf[B1]` below (I tried this first. But... ewwww.)
+        //         2) install an 'original' TypeTree that will used after ResetAttrs (the solution below)
+        //         3) Figure out how the almost-correct type is recovered on re-typechecking, and
+        //            substitute in the skolems.
+        //
+        //         For 2.11, we'll probably shift this transformation back a phase or two, so macros
+        //         won't be affected. But in any case, we should satisfy retypecheckability.
+        //
+        val originals: Map[Symbol, Tree] = {
+          def typedIdent(sym: Symbol) = methodBodyTyper.typedType(Ident(sym), mode)
+          val A1Tpt = typedIdent(A1)
+          val B1Tpt = typedIdent(B1)
+          Map(
+            x -> A1Tpt,
+            default -> gen.scalaFunctionConstr(List(A1Tpt), B1Tpt)
+          )
+        }
+        val rhs = methodBodyTyper.virtualizedMatch(match_, mode, B1.tpe)
+        val defdef = DefDef(methodSym, Modifiers(methodSym.flags), originals, rhs)
+
+        (defdef, matchResTp)
       }
 
-      // `def isDefinedAt(x: $argTp): Boolean = ${`$selector match { $casesTrue ` updateAttachment DefaultOverrideMatchAttachment(FALSE_typed)}`
+      // `def isDefinedAt(x: $argTp): Boolean = ${`$selector match { $casesTrue; case default$ => false } }`
       def isDefinedAtMethod = {
         val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos.makeTransparent, FINAL)
         val paramSym = mkParam(methodSym)
@@ -2737,10 +2793,10 @@ trait Typers extends Modes with Adaptations with Tags {
         methodBodyTyper.context.scope enter paramSym
         methodSym setInfo MethodType(List(paramSym), BooleanClass.tpe)
 
-        val match_ = methodBodyTyper.typedMatch(selector, casesTrue, mode, BooleanClass.tpe)
+        val defaultCase = mkDefaultCase(FALSE_typed)
+        val match_ = methodBodyTyper.typedMatch(selector, casesTrue :+ defaultCase, mode, BooleanClass.tpe)
 
-        val matchWithDefault = match_ updateAttachment DefaultOverrideMatchAttachment(FALSE_typed)
-        DefDef(methodSym, methodBodyTyper.virtualizedMatch(matchWithDefault, mode, BooleanClass.tpe))
+        DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, BooleanClass.tpe))
       }
 
       // only used for @cps annotated partial functions
@@ -2785,7 +2841,9 @@ trait Typers extends Modes with Adaptations with Tags {
       members foreach (m => anonClass.info.decls enter m.symbol)
 
       val typedBlock = typedPos(tree.pos, mode, pt) {
-        Block(ClassDef(anonClass, NoMods, ListOfNil, members, tree.pos.focus), atPos(tree.pos.focus)(New(anonClass.tpe)))
+        Block(ClassDef(anonClass, NoMods, ListOfNil, members, tree.pos.focus), atPos(tree.pos.focus)(
+          Apply(Select(New(Ident(anonClass.name).setSymbol(anonClass)), nme.CONSTRUCTOR), List())
+        ))
       }
 
       if (typedBlock.isErrorTyped) typedBlock
@@ -5877,4 +5935,5 @@ object TypersStats {
   val visitsByType        = Statistics.newByClass("#visits by tree node", "typer")(Statistics.newCounter(""))
   val byTypeNanos         = Statistics.newByClass("time spent by tree node", "typer")(Statistics.newStackableTimer("", typerNanos))
   val byTypeStack         = Statistics.newTimerStack()
+
 }
