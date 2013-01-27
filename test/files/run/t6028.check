@@ -15,7 +15,7 @@ package <empty> {
       }
     };
     def bar(barParam: Int): Object = {
-      @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = new runtime.VolatileObjectRef(<empty>);
+      @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = new runtime.VolatileObjectRef(null);
       T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
     };
     def tryy(tryyParam: Int): Function0 = {
