@@ -44,17 +44,19 @@ abstract class Attachments { self =>
    *  Replaces an existing payload of the same type, if exists.
    */
   def update[T: ClassTag](attachment: T): Attachments { type Pos = self.Pos } =
-    new NonemptyAttachments(this.pos, remove[T].all + attachment)
+    new NonemptyAttachments[Pos](this.pos, remove[T].all + attachment)
 
   /** Creates a copy of this attachment with the payload of the given class type `T` removed. */
   def remove[T: ClassTag]: Attachments { type Pos = self.Pos } = {
     val newAll = all filterNot matchesTag[T]
     if (newAll.isEmpty) pos.asInstanceOf[Attachments { type Pos = self.Pos }]
-    else new NonemptyAttachments(this.pos, newAll)
+    else new NonemptyAttachments[Pos](this.pos, newAll)
   }
+}
 
-  private class NonemptyAttachments(override val pos: Pos, override val all: Set[Any]) extends Attachments {
-    type Pos = self.Pos
-    def withPos(newPos: Pos) = new NonemptyAttachments(newPos, all)
-  }
+// SI-7018: This used to be an inner class of `Attachments`, but that led to a memory leak in the
+// IDE via $outer pointers.
+private final class NonemptyAttachments[P >: Null](override val pos: P, override val all: Set[Any]) extends Attachments {
+  type Pos = P
+  def withPos(newPos: Pos) = new NonemptyAttachments(newPos, all)
 }
