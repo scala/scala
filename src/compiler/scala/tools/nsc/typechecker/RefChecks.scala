@@ -11,6 +11,9 @@ import scala.collection.{ mutable, immutable }
 import transform.InfoTransform
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
+import scala.tools.nsc.settings.ScalaVersion
+import scala.tools.nsc.settings.AnyScalaVersion
+import scala.tools.nsc.settings.NoScalaVersion
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -1378,10 +1381,18 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
      *  indicating it has changed semantics between versions.
      */
     private def checkMigration(sym: Symbol, pos: Position) = {
-      if (sym.hasMigrationAnnotation)
-        unit.warning(pos, "%s has changed semantics in version %s:\n%s".format(
-          sym.fullLocationString, sym.migrationVersion.get, sym.migrationMessage.get)
-        )
+      if (sym.hasMigrationAnnotation) {
+        val changed = try 
+          settings.Xmigration.value < ScalaVersion(sym.migrationVersion.get)
+        catch {
+          case e : NumberFormatException => 
+            unit.warning(pos, s"${sym.fullLocationString} has an unparsable version number: ${e.getMessage()}")
+            // if we can't parse the format on the migration annotation just conservatively assume it changed         
+            true
+        }
+        if (changed)
+          unit.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
+      }
     }
 
     private def checkCompileTimeOnly(sym: Symbol, pos: Position) = {
@@ -1587,7 +1598,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
        *  arbitrarily choose one as more important than the other.
        */
       checkDeprecated(sym, tree.pos)
-      if (settings.Xmigration28.value)
+      if(settings.Xmigration.value != NoScalaVersion)
         checkMigration(sym, tree.pos)
       checkCompileTimeOnly(sym, tree.pos)
 
