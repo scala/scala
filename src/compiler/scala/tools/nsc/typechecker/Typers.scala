@@ -3922,6 +3922,23 @@ trait Typers extends Modes with Adaptations with Tags {
       if (printInfers)
         println(s)
     }
+      val here_Name = newTermName("here")
+      val normalCode_DSLNodeString = "N_code_normal"
+      val scriptCall_DSLNodeString = "N_call"
+      val normalCode_DSLNodeName   = newTermName(normalCode_DSLNodeString)
+      val scriptCall_DSLNodeName   = newTermName(scriptCall_DSLNodeString)
+      
+      def underscore_name(name: Name) = newTermName("_"+name)
+      // copied from Parsers.scala:
+      def makeParam (pname: TermName, tpe: Tree) =  ValDef(Modifiers(PARAM), pname, tpe, EmptyTree)
+      def blockToFunction(block: Tree, nodeType: Name, pos: Position): Function = {
+        val vparams = List(
+          atPos(pos) {
+            makeParam(here_Name, Ident(nodeType) setPos pos)
+          }
+        )
+        Function(vparams , block)
+      }
 
     def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       def isPatternMode = inPatternMode(mode)
@@ -4408,6 +4425,51 @@ trait Typers extends Modes with Adaptations with Tags {
           }
         }
       }
+      
+      def normalTypedScriptApply(tree: Tree, fun: Tree, args: List[Tree]) = {
+          val funpt     = if (isPatternMode) pt else WildcardType
+          val appStart  = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
+          val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos ) else null
+
+          def onError(reportError: => Tree): Tree = {
+                  if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+                  reportError
+          }
+          // first try underscored_fun: script a becomes method _a
+          val underscored_fun = fun match {
+            case Ident(name) => Ident(underscore_name(name))
+            case Select(qual, selector) =>  Select(qual, underscore_name(selector))
+          }
+          var isScriptCall = true
+          
+          silent(op => op.typed(underscored_fun, forFunMode(mode), funpt).orElse {isScriptCall = false
+                       op.typed(            fun, forFunMode(mode), funpt) } ,
+                 if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
+                 if ((mode & EXPRmode) != 0) tree else context.tree) match {
+            case SilentResultValue(fun1) =>
+              val fun2 = fun1 // was:  if (stableApplication) ... else fun1
+              if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
+              def isImplicitMethod(tpe: Type) = tpe match {
+                case mt: MethodType => mt.isImplicit
+                case _ => false
+              }
+              val useTry = (
+                   !isPastTyper
+                && fun2.isInstanceOf[Select]
+                && !isImplicitMethod(fun2.tpe)
+                && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
+                && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
+              )
+              val res =
+                if (useTry) tryTypedApply(fun2, args)
+                else doTypedApply(tree, fun2, args, mode, pt)
+
+              val nodeType = if (isScriptCall) scriptCall_DSLNodeName else normalCode_DSLNodeName
+              blockToFunction(res, nodeType, tree.pos)
+            case SilentTypeError(err) =>
+              onError({issue(err); setError(tree)})
+          }
+      }
 
       // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
       // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len)
@@ -4437,6 +4499,10 @@ trait Typers extends Modes with Adaptations with Tags {
             case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //SI-5696
             case tree1                                                               => tree1
           }
+      }
+      def typedScriptApply(tree: ScriptApply): Tree = tree match {
+        case ScriptApply(EmptyTree, fun::args) => typedScriptApply(ScriptApply(fun, args))
+        case ScriptApply(fun, args) => normalTypedScriptApply(tree, fun, args)
       }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree]): Tree = {
@@ -5115,6 +5181,7 @@ trait Typers extends Modes with Adaptations with Tags {
         case tree: Ident                        => typedIdentOrWildcard(tree)
         case tree: Select                       => typedSelectOrSuperCall(tree)
         case tree: Apply                        => typedApply(tree)
+        case tree: ScriptApply                  => typedScriptApply(tree)
         case tree: TypeTree                     => typedTypeTree(tree)
         case tree: Literal                      => typedLiteral(tree)
         case tree: This                         => typedThis(tree)

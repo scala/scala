@@ -1803,10 +1803,52 @@ trait Trees { self: Universe =>
     def unapply(apply: Apply): Option[(Tree, List[Tree])]
   }
 
-  /** The API that all applies support
+  /** The API that all script applies support
    *  @group API
    */
   trait ApplyApi extends GenericApplyApi { this: Apply =>
+  }
+
+  /** Value application
+   *  @group Trees
+   *  @template
+   */
+  type ScriptApply >: Null <: GenericApply with ScriptApplyApi
+
+  /** A tag that preserves the identity of the `ScriptApply` abstract type from erasure.
+   *  Can be used for pattern matching, instance tests, serialization and likes.
+   *  @group Tags
+   */
+  implicit val ScriptApplyTag: ClassTag[ScriptApply]
+
+  /** The constructor/extractor for `ScriptApply` instances.
+   *  @group Extractors
+   */
+  val ScriptApply: ScriptApplyExtractor
+
+  /** An extractor class to create and pattern match with syntax `ScriptApply(fun, args)`.
+   *  This AST node corresponds to the following SubScript code:
+   *
+   *    script(args)
+   *    script,arg1,arg2
+   *    script
+   *    fun(args)
+   *    fun,arg1,arg2
+   *    fun
+   *    arg1, arg2
+   *    arg1
+   *
+   *  @group Extractors
+   */
+  abstract class ScriptApplyExtractor {
+    def apply(fun: Tree, args: List[Tree]): ScriptApply
+    def unapply(apply: ScriptApply): Option[(Tree, List[Tree])]
+  }
+
+  /** The API that all script applies support
+   *  @group API
+   */
+  trait ScriptApplyApi extends GenericApplyApi { this: ScriptApply =>
   }
 
   /** Super reference, where `qual` is the corresponding `this` reference.
@@ -2765,6 +2807,11 @@ trait Trees { self: Universe =>
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
      */
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply
+
+    /** Creates a `ScriptApply` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
+    def ScriptApply(tree: Tree, fun: Tree, args: List[Tree]): ScriptApply
 
     /** Creates a `Super` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.

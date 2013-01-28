@@ -283,6 +283,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
   }
+  case class     ScriptApply(fun: Tree, args: List[Tree])       extends GenericApply with ScriptApplyApi {
+    override def symbol: Symbol = fun.symbol
+    override def symbol_=(sym: Symbol) { fun.symbol = sym }
+  }
 
   // TODO remove this class, add a tree attachment to Apply to track whether implicits were involved
   // copying trees will all too easily forget to distinguish subclasses
@@ -292,7 +296,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
   // copying trees will all too easily forget to distinguish subclasses
   class ApplyImplicitView(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
+  // TODO remove this class, add a tree attachment to ScriptApply to track whether implicits were involved
+  // copying trees will all too easily forget to distinguish subclasses
+  class ScriptApplyToImplicitArgs(fun: Tree, args: List[Tree]) extends ScriptApply(fun, args)
+
+  // TODO remove this class, add a tree attachment to ScriptApply to track whether implicits were involved
+  // copying trees will all too easily forget to distinguish subclasses
+  class ScriptApplyImplicitView(fun: Tree, args: List[Tree]) extends ScriptApply(fun, args)
+
   def ApplyConstructor(tpt: Tree, args: List[Tree]) = Apply(Select(New(tpt), nme.CONSTRUCTOR), args)
+  def ScriptApplyConstructor(tpt: Tree, args: List[Tree]) = ScriptApply(Select(New(tpt), nme.CONSTRUCTOR), args)
 
   // Creates a constructor call from the constructor symbol.  This is
   // to avoid winding up with an OverloadedType for the constructor call.
@@ -370,6 +383,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object Typed               extends               TypedExtractor
   object TypeApply           extends           TypeApplyExtractor
   object Apply               extends               ApplyExtractor
+  object ScriptApply         extends         ScriptApplyExtractor
   object Super               extends               SuperExtractor
   object This                extends                ThisExtractor
   object Select              extends              SelectExtractor
@@ -466,6 +480,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
         //TODO: ApplyConstructor ???
         case self.pendingSuperCall  => self.pendingSuperCall
         case _                      => new Apply(fun, args)
+      }).copyAttrs(tree)
+    def ScriptApply    (tree: Tree,    fun  : Tree, args: List[Tree]                              ) =
+      (tree match { // TODO: the same as for Apply
+        case _: ScriptApplyToImplicitArgs => new ScriptApplyToImplicitArgs(fun, args)
+        case _: ScriptApplyImplicitView   => new ScriptApplyImplicitView  (fun, args)
+      //case self.pendingSuperCall  => self.pendingSuperCall
+        case _                      => new ScriptApply(fun, args)
       }).copyAttrs(tree)
     def ApplyDynamic       (tree: Tree, qual     : Tree, args: List[Tree]                          ) = new ApplyDynamic       (qual, args                                     ).copyAttrs(tree)
     def Super              (tree: Tree, qual     : Tree, mix: TypeName                             ) = new Super              (qual, mix                                      ).copyAttrs(tree)
@@ -625,6 +646,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
       case t @ Apply(fun0, args0)
       if (fun0 == fun) && (args0 == args) => t
       case _ => treeCopy.Apply(tree, fun, args)
+    }
+    def ScriptApply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
+      case t @ ScriptApply(fun0, args0)
+      if (fun0 == fun) && (args0 == args) => t
+      case _ => treeCopy.ScriptApply(tree, fun, args)
     }
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) = tree match {
       case t @ ApplyDynamic(qual0, args0)
@@ -925,6 +951,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       case Typed              (expr     , tpt           ) =>  traverse(expr); traverse(tpt)
       case TypeApply          (fun      , args          ) =>  traverse(fun); traverseTrees(args)
       case Apply              (fun      , args          ) =>  traverse(fun); traverseTrees(args)
+      case ScriptApply        (fun      , args          ) =>  traverse(fun); traverseTrees(args)
       case ApplyDynamic       (qual     , args          ) =>  traverse(qual); traverseTrees(args)
       case Super              (qual     , _             ) =>  traverse(qual)
       case This               (_                        ) =>  ;
@@ -953,6 +980,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       case Ident   (name)                                  =>                       treeCopy.Ident              (tree, name)
       case Select  (qualifier, selector)                   =>                       treeCopy.Select             (tree, transform(qualifier), selector)
       case Apply   (fun, args)                             =>                       treeCopy.Apply              (tree, transform(fun), transformTrees(args))
+      case ScriptApply(fun, args)                          =>                       treeCopy.ScriptApply        (tree, transform(fun), transformTrees(args))
       case TypeTree()                                      =>                       treeCopy.TypeTree           (tree)
       case Literal (value)                                 =>                       treeCopy.Literal            (tree, value)
       case This    (qual)                                  =>                       treeCopy.This               (tree, qual)
@@ -1300,6 +1328,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val        GenericApplyTag = ClassTag[GenericApply       ](classOf[   GenericApply    ])
   implicit val           TypeApplyTag = ClassTag[   TypeApply       ](classOf[      TypeApply    ])
   implicit val               ApplyTag = ClassTag[       Apply       ](classOf[          Apply    ])
+  implicit val         ScriptApplyTag = ClassTag[ ScriptApply       ](classOf[    ScriptApply    ])
   implicit val               SuperTag = ClassTag[Super              ](classOf[   Super           ])
   implicit val                ThisTag = ClassTag[This               ](classOf[   This            ])
   implicit val              SelectTag = ClassTag[Select             ](classOf[   Select          ])

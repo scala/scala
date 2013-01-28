@@ -1140,8 +1140,7 @@ self =>
      * TBD: 
      * 
      * formal parameters: p ==> p.value, using Transformer
-     * method resolution += "," resolution: phase 2
-     *   - eliminate ","
+     * method resolution += ScriptApply resolution: phase 2
      *   - if !resolved type is script then encapsulate: _normal{here:N_code_normal => ...}
      *   - ? implicit with multiple parameters?
      * 
@@ -1158,7 +1157,6 @@ self =>
      *   script.. section ends when line indentation <= to "script.." indentation & appropriate token
      *   else current script specification ends when line indentation < "=" & appropriate token  
      * reduce stack: make n-ary op...
-     * uniform AST for call: "," + params 
      * formal parameters: box
      * script method = body ===> script method = script(name, params){body}
      */
@@ -1166,6 +1164,8 @@ self =>
     var linePosOfScriptsSection  = 0 // in a "script.." section, the line position of "script" (or any modifier before it); often something like 4
     var linePosOfScriptEqualsSym = 0 // in a script definition, the line position of "=" or "+="
     
+    def isIdent(tokenData: TokenData) = tokenData.token == IDENTIFIER || tokenData.token == BACKQUOTED_IDENT
+
     val NEWLINE_Name  = newTermName("NEWLINE")
     val   SPACE_Name  = newTermName(" ")
     val    SEMI_Name  = newTermName(";")
@@ -1187,7 +1187,22 @@ self =>
 
     val    here_Ident = Ident( here_Name)
     val   there_Ident = Ident(there_Name)
+                                                     
+    val nameSubScript = newTermName("subscript")
+    val nameDSL       = newTermName("DSL")
+    val nameVM        = newTermName("vm")
     
+    val selectSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
+    val selectSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
+
+    val selectFormalInputParameter      : Tree = Select(selectSubScriptVM,       formalInputParameter_Name)
+    val selectFormalOutputParameter     : Tree = Select(selectSubScriptVM,      formalOutputParameter_Name)
+    val selectFormalConstrainedParameter: Tree = Select(selectSubScriptVM, formalConstrainedParameter_Name)
+
+    val selectActualOutputParameter     : Tree = Select(selectSubScriptVM,      actualOutputParameter_Name)
+    val selectActualConstrainedParameter: Tree = Select(selectSubScriptVM, actualConstrainedParameter_Name)
+    val selectActualAdaptingParameter   : Tree = Select(selectSubScriptVM,    actualAdaptingParameter_Name)
+
     final val raw_space = " "
     final val raw_semi  = ";"
     final val raw_bar   = "|"
@@ -1207,12 +1222,11 @@ self =>
                                                       newTermName(raw_space)
                                                      )
                                                      
-                                                     
-                                                     
+    
+    
+    
     final val setSubScriptUnaryPrefixOp : Set[Name] = Set(raw.MINUS, raw.TILDE, raw.BANG)
     final val setSubScriptUnaryPostfixOp: Set[Name] = Set(raw.STAR)
-
-    def isIdent(tokenData: TokenData) = tokenData.token == IDENTIFIER || tokenData.token == BACKQUOTED_IDENT
 
     def isSubScriptUnaryPrefixOp (name     : Name     ): Boolean =                      setSubScriptUnaryPrefixOp (name)
     def isSubScriptUnaryPostfixOp(name     : Name     ): Boolean =                      setSubScriptUnaryPostfixOp(name)
@@ -1233,25 +1247,13 @@ self =>
       case Ident(name: Name) => isSubScriptOperator(name)
       case _ => false
     }
-    val nameSubScript = newTermName("subscript")
-    val nameDSL       = newTermName("DSL")
-    val nameVM        = newTermName("vm")
     
-    val selectSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
-    val selectSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
-
-    val selectFormalInputParameter      : Tree = Select(selectSubScriptVM,       formalInputParameter_Name)
-    val selectFormalOutputParameter     : Tree = Select(selectSubScriptVM,      formalOutputParameter_Name)
-    val selectFormalConstrainedParameter: Tree = Select(selectSubScriptVM, formalConstrainedParameter_Name)
-
-    val selectActualOutputParameter     : Tree = Select(selectSubScriptVM,      actualOutputParameter_Name)
-    val selectActualConstrainedParameter: Tree = Select(selectSubScriptVM, actualConstrainedParameter_Name)
-    val selectActualAdaptingParameter   : Tree = Select(selectSubScriptVM,    actualAdaptingParameter_Name)
-    
-    def       makeFormalInputParameter(typer: Tree): Tree = TypeApply(      selectFormalInputParameter, List(typer))
-    def      makeFormalOutputParameter(typer: Tree): Tree = TypeApply(     selectFormalOutputParameter, List(typer))
-    def makeFormalConstrainedParameter(typer: Tree): Tree = TypeApply(selectFormalConstrainedParameter, List(typer))
-    
+    @inline final def inSubscriptParens[T](body: => T): T = {
+      accept(LPAREN); val wasInSubscript = in.isInSubScript; 
+                        in.isInSubScript = false;           val ret = body; 
+                        in.isInSubScript =   wasInSubscript; 
+      accept(RPAREN);                                           ret
+    }
     def  makeParameterTransferFunction(exp   : Tree): Tree = {
       val vparams = List(
           atPos(exp.pos) {
@@ -1260,6 +1262,11 @@ self =>
       )
       Function(vparams , Assign(exp, Ident(tmp1_Name)))
     }
+
+    def       makeFormalInputParameter(typer: Tree): Tree = TypeApply(      selectFormalInputParameter, List(typer))
+    def      makeFormalOutputParameter(typer: Tree): Tree = TypeApply(     selectFormalOutputParameter, List(typer))
+    def makeFormalConstrainedParameter(typer: Tree): Tree = TypeApply(selectFormalConstrainedParameter, List(typer))
+    
     def      makeActualOutputParameter(exp   : Tree, constraint: Tree = null): Tree = {
       if (constraint==null) Apply(selectActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
       else             Apply(selectActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
@@ -1268,6 +1275,7 @@ self =>
     def    makeActualAdaptingParameter(formalParam: Name, constraint: Tree = null): Tree = {
             Apply(selectActualAdaptingParameter, List(Ident(formalParam), constraint))
     }
+    def underscore_name(name: Name) = newTermName("_"+name)
 
     /*
      * Enclose the given block with a function with parameter "here" of the given node type 
@@ -1281,13 +1289,7 @@ self =>
       )
       Function(vparams , block)
     }
-    
-    @inline final def inSubscriptParens[T](body: => T): T = {
-      accept(LPAREN); val wasInSubscript = in.isInSubScript; 
-                        in.isInSubScript = false;           val ret = body; 
-                        in.isInSubScript =   wasInSubscript; 
-      accept(RPAREN);                                           ret
-    }
+  
     
     def subScriptDSLFunForOperator(op: Tree, spaceOp: Name, newlineOp: Name): Tree = {
       val operatorName      : Name = op match {case Ident(name:Name) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
@@ -1539,7 +1541,9 @@ self =>
 		                Apply(select, List(pSym))
 		              }
 		            }
-	            val scriptBody = Apply(Apply(Ident(script_Name), This(tpnme.EMPTY)::Literal(Constant(name.toString))::paramBindings), List(rhs))
+		        val underscore_script_name = underscore_name(script_Name)
+
+	            val scriptBody = Apply(Apply(Ident(underscore_script_name), This(tpnme.EMPTY)::Literal(Constant(name.toString))::paramBindings), List(rhs))
 		        DefDef(newmods, name, tparams, vparamss, restype, scriptBody)
 		      }
 	          signalParseProgress(scriptDef.pos)
@@ -1686,7 +1690,7 @@ self =>
             t match {case Ident(_) | Select(_,_) | Literal(_) => true case _ => false}
           )
       
-      if (allTermsArePathsOrLiterals) {Apply(Ident(","), ts.toList)}
+      if (allTermsArePathsOrLiterals) {ScriptApply(EmptyTree, ts.toList)}
       else if (ts.length == 1)  ts.head
       else {syntaxError(oldOffset, "terms in comma expression should be path or literal"); ts.head}
     }
@@ -1911,8 +1915,7 @@ self =>
       case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER => 
         val t = path(thisOK = true, typeOK = false); // scriptSimpleExprRest(t, canApply = canApply)
 	      in.token match {
-	        // FTTB, every call (to script or method) is encoded as a "," Apply:
-	        case LPAREN => return atPos(t.pos.startOrPoint, in.offset) {Apply(Ident(","), List(Apply(t, scriptArgumentExprs())))}
+	        case LPAREN => return atPos(t.pos.startOrPoint, in.offset) {ScriptApply(t, scriptArgumentExprs())}
 	        case IDENTIFIER if (isQMark || isQMark2)  => ??? // parse constraint
 	        case _      => t
 	      }

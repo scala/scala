@@ -138,6 +138,7 @@ trait Contexts { self: Analyzer =>
     }
 
     var enclMethod: Context = _             // The next outer context whose tree is a method
+    var enclScript: Context = _             // The next outer context whose tree is a script
     var variance: Int = _                   // Variance relative to enclosing class
     private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
                                                     // not inherited to child contexts
