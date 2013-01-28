@@ -78,14 +78,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       else templ
     }
 
-    val originalAccessors = clazz.caseFieldAccessors
-    // private ones will have been renamed -- make sure they are entered
-    // in the original order.
-    def accessors = clazz.caseFieldAccessors sortBy { acc =>
-      originalAccessors indexWhere { orig =>
-        (acc.name == orig.name) || (acc.name startsWith (orig.name append "$"))
-      }
-    }
+    def accessors = clazz.caseFieldAccessors
     val arity = accessors.size
     // If this is ProductN[T1, T2, ...], accessorLub is the lub of T1, T2, ..., .
     // !!! Hidden behind -Xexperimental due to bummer type inference bugs.

@@ -1728,8 +1728,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** For a case class, the symbols of the accessor methods, one for each
      *  argument in the first parameter list of the primary constructor.
      *  The empty list for all other classes.
+     *
+     * This list will be sorted to correspond to the declaration order
+     * in the constructor parameter
      */
-    final def caseFieldAccessors: List[Symbol] =
+    final def caseFieldAccessors: List[Symbol] = {
+      // We can't rely on the ordering of the case field accessors within decls --
+      // handling of non-public parameters seems to change the order (see SI-7035.)
+      //
+      // Luckily, the constrParamAccessors are still sorted properly, so sort the field-accessors using them
+      // (need to undo name-mangling, including the sneaky trailing whitespace)
+      //
+      // The slightly more principled approach of using the paramss of the
+      // primary constructor leads to cycles in, for example, pos/t5084.scala.
+      val primaryNames = constrParamAccessors.map(acc => nme.dropLocalSuffix(acc.name))
+      caseFieldAccessorsUnsorted.sortBy { acc =>
+        primaryNames indexWhere { orig =>
+          (acc.name == orig) || (acc.name startsWith (orig append "$"))
+        }
+      }
+    }
+    private final def caseFieldAccessorsUnsorted: List[Symbol] =
       (info.decls filter (_.isCaseAccessorMethod)).toList
 
     final def constrParamAccessors: List[Symbol] =
