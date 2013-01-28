@@ -1,5 +1,3 @@
-package t6259
-
 import scala.reflect.runtime.universe._
 
 class A[X](implicit val tt: TypeTag[X]) {}
@@ -17,15 +15,14 @@ class G {
   object H extends A[String]
 }
 
-object Test {
+object HasX {
   val x = {
     object InVal extends A[String]
+    InVal
     5
   }
 
 }
-
-// Note: Both of these fail right now.
 
 trait NeedsEarly {
  val x: AnyRef
@@ -44,4 +41,16 @@ object DoubleOk extends DoubleTrouble[String]({
   object InnerTrouble extends A[String]; 
   InnerTrouble 
 })
+
+object Test extends App {
+  B
+  C.D
+  val e = new E {}; e.F
+  val g = new G; g.H
+
+  //locally(HasX.x)   TODO sort out VerifyError in HasX$InVal$2$.<init> by accounting for nesting in Namer#inConstructorFlag
+  // locally(Early.x) TODO sort out VerifyError in Early$.<init>
+  // DoubleOk         TODO sort out VerifyError in DoubleOk$.<init>
+}
+
 
