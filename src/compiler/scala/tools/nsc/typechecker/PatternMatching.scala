@@ -2501,7 +2501,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // (At least conceptually: `true` is an instance of class `Boolean`)
     private def widenToClass(tp: Type): Type =
       if (tp.typeSymbol.isClass) tp
-      else tp.baseType(tp.baseClasses.head)
+      else tp.baseType(tp.baseClasses.headOption.getOrElse(AnyClass)) // Checkable type might be type ID[X] = X
 
     object TypeConst extends TypeConstExtractor {
       def apply(tp: Type) = {
