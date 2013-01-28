@@ -1,0 +1,4 @@
+t6666b.scala:6: error: Implementation restriction: access of object TreeOrd$1 from object TreeOrd$2, would require illegal premature access to the unconstructed `this` of class Test
+    implicit object TreeOrd extends Ordering[K](){
+                    ^
+one error found
