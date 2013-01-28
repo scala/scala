@@ -18,7 +18,7 @@ object IndexModelFactory {
       object result extends mutable.HashMap[Char,SymbolMap] {
 
         /* symbol name ordering */
-        implicit def orderingMap = math.Ordering.String.on { x: String => x.toLowerCase }
+        implicit def orderingMap = math.Ordering.String
 
         def addMember(d: MemberEntity) = {
           val firstLetter = {

@@ -335,8 +335,7 @@ function keyboardScrolldownLeftPane() {
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input id='index-input' type='text' accesskey='/'/></span><span class='post'/></div>");
-        printAlphabet();
+        $("#textfilter").append("<span class='pre'/><span class='input'><input id='index-input' type='text' accesskey='/'/></span><span class='post'/>");
         var input = $("#textfilter input");
         resizeFilterBlock();
         input.bind('keyup', function(event) {
@@ -532,19 +531,3 @@ function kindFilterSync() {
 function resizeFilterBlock() {
     $("#tpl").css("top", $("#filter").outerHeight(true));
 }
-
-function printAlphabet() {
-    var html = '<a target="template" href="index/index-_.html">#</a>';
-    var c;
-    for (c = 'a'; c <= 'z'; c = String.fromCharCode(c.charCodeAt(0) + 1)) {
-        html += [
-            '<a target="template" href="index/index-',
-            c,
-            '.html">',
-            c.toUpperCase(),
-            '</a>'
-        ].join('');
-    }
-    $("#filter").append('<div id="letters">' + html + '</div>');
-}
-
