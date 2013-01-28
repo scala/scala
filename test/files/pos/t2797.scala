@@ -1,5 +1,5 @@
 class MyVector[A] {
-  def map[B](f: A => B): MyVector[B] = error("")
+  def map[B](f: A => B): MyVector[B] = sys.error("")
 }
 
 object Test {

@@ -7,7 +7,7 @@ logImplicits.scala:7: applied implicit conversion from String("abc") to ?{def ma
 logImplicits.scala:15: inferred view from String("abc") to Int = C.this.convert:(p: String("abc"))Int
   math.max(122, x: Int)
                 ^
-logImplicits.scala:19: applied implicit conversion from Int(1) to ?{def ->: ?} = implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A]
+logImplicits.scala:19: applied implicit conversion from Int(1) to ?{def ->: ?} = implicit def ArrowAssoc[A](__leftOfArrow: A): ArrowAssoc[A]
   def f = (1 -> 2) + "c"
            ^
 logImplicits.scala:19: applied implicit conversion from (Int, Int) to ?{def +: ?} = implicit def any2stringadd(x: Any): scala.runtime.StringAdd

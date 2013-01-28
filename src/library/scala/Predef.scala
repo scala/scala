@@ -136,17 +136,6 @@ object Predef extends LowPriorityImplicits {
   // Apparently needed for the xml library
   val $scope = scala.xml.TopScope
 
-  // Deprecated
-
-  @deprecated("Use `sys.error(message)` instead", "2.9.0")
-  def error(message: String): Nothing = sys.error(message)
-
-  @deprecated("Use `sys.exit()` instead", "2.9.0")
-  def exit(): Nothing = sys.exit()
-
-  @deprecated("Use `sys.exit(status)` instead", "2.9.0")
-  def exit(status: Int): Nothing = sys.exit(status)
-
   // errors and asserts -------------------------------------------------
 
   /** Tests an expression, throwing an `AssertionError` if false.
@@ -230,16 +219,12 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
-    // `__resultOfEnsuring` must be a public val to allow inlining.
-    // See comments in ArrowAssoc for more.
-
+  implicit final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
     def ensuring(cond: Boolean): A = { assert(cond); __resultOfEnsuring }
     def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); __resultOfEnsuring }
     def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
     def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(__resultOfEnsuring), msg); __resultOfEnsuring }
   }
-  @inline implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   /** `???` can be used for marking methods that remain to be implemented.
    *  @throws  A `NotImplementedError`
@@ -260,17 +245,10 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
-    // `__leftOfArrow` must be a public val to allow inlining. The val
-    // used to be called `x`, but now goes by `__leftOfArrow`, as that
-    // reduces the chances of a user's writing `foo.__leftOfArrow` and
-    // being confused why they get an ambiguous implicit conversion
-    // error. (`foo.x` used to produce this error since both
-    // any2Ensuring and any2ArrowAssoc enrich everything with an `x`)
+  final implicit class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
-  @inline implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
   // printing and reading -----------------------------------------------
 
@@ -279,20 +257,20 @@ object Predef extends LowPriorityImplicits {
   def println(x: Any) = Console.println(x)
   def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
 
-  def readLine(): String = Console.readLine()
-  def readLine(text: String, args: Any*) = Console.readLine(text, args: _*)
-  def readBoolean() = Console.readBoolean()
-  def readByte() = Console.readByte()
-  def readShort() = Console.readShort()
-  def readChar() = Console.readChar()
-  def readInt() = Console.readInt()
-  def readLong() = Console.readLong()
-  def readFloat() = Console.readFloat()
-  def readDouble() = Console.readDouble()
-  def readf(format: String) = Console.readf(format)
-  def readf1(format: String) = Console.readf1(format)
-  def readf2(format: String) = Console.readf2(format)
-  def readf3(format: String) = Console.readf3(format)
+  @deprecated("Use the method in scala.Console", "2.11.0") def readLine(): String                 = Console.readLine()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readLine(text: String, args: Any*) = Console.readLine(text, args: _*)
+  @deprecated("Use the method in scala.Console", "2.11.0") def readBoolean()                      = Console.readBoolean()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readByte()                         = Console.readByte()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readShort()                        = Console.readShort()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readChar()                         = Console.readChar()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readInt()                          = Console.readInt()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readLong()                         = Console.readLong()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readFloat()                        = Console.readFloat()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readDouble()                       = Console.readDouble()
+  @deprecated("Use the method in scala.Console", "2.11.0") def readf(format: String)              = Console.readf(format)
+  @deprecated("Use the method in scala.Console", "2.11.0") def readf1(format: String)             = Console.readf1(format)
+  @deprecated("Use the method in scala.Console", "2.11.0") def readf2(format: String)             = Console.readf2(format)
+  @deprecated("Use the method in scala.Console", "2.11.0") def readf3(format: String)             = Console.readf3(format)
 
   // views --------------------------------------------------------------
 
