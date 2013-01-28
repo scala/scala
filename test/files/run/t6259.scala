@@ -48,7 +48,7 @@ object Test extends App {
   val e = new E {}; e.F
   val g = new G; g.H
 
-  //locally(HasX.x)   TODO sort out VerifyError in HasX$InVal$2$.<init> by accounting for nesting in Namer#inConstructorFlag
+  locally(HasX.x)
   // locally(Early.x) TODO sort out VerifyError in Early$.<init>
   // DoubleOk         TODO sort out VerifyError in DoubleOk$.<init>
 }
