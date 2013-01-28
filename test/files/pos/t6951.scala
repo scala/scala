@@ -32,3 +32,11 @@ object CallerWithTag extends App {
     case Matcher(branch) => branch // <-- type mismatch; found: T#Branch; required: Oak.Branch
   }
 }
+
+
+object TypeConstructor {
+  object E { def unapply[M[_] <: Array[_], T](mt: M[T]) = Some(mt) }
+  Array(1) match { case E(x) => x }
+
+  type ID[X] = X
+}
