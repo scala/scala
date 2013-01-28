@@ -317,8 +317,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     val commonConversionTargets = Set(
       "scala.Predef.any2stringfmt",
       "scala.Predef.any2stringadd",
-      "scala.Predef.any2ArrowAssoc",
-      "scala.Predef.any2Ensuring",
+      "scala.Predef.ArrowAssoc",
+      "scala.Predef.Ensuring",
       "scala.collection.TraversableOnce.alternateImplicit")
 
     /** There's a reason all these are specialized by hand but documenting each of them is beyond the point */

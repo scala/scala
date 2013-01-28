@@ -225,6 +225,8 @@ object Predef extends LowPriorityImplicits {
     def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
     def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(__resultOfEnsuring), msg); __resultOfEnsuring }
   }
+  // Deprecated stub for any who may have been calling it directly.
+  @deprecated("Use Ensuring", "2.11.0") def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   /** `???` can be used for marking methods that remain to be implemented.
    *  @throws  A `NotImplementedError`
@@ -249,6 +251,8 @@ object Predef extends LowPriorityImplicits {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
+  // Deprecated stub for any who may have been calling it directly.
+  @deprecated("Use ArrowAssoc", "2.11.0") def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
   // printing and reading -----------------------------------------------
 
