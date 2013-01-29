@@ -76,7 +76,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   }
 
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
-      with SynchronizedScope {
+                                          with SynchronizedScope {
     assert(pkgClass.isType)
 
     // materializing multiple copies of the same symbol in PackageScope is a very popular bug
@@ -87,9 +87,11 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       super.enter(sym)
     }
 
-    // disable fingerprinting as we do not know entries beforehand
-    private val negatives = new mutable.HashSet[Name] with mutable.SynchronizedSet[Name] // Syncnote: Performance only, so need not be protected.
-    override def lookupEntry(name: Name): ScopeEntry = {
+    // package scopes need to synchronize on the GIL
+    // because lookupEntry might cause changes to the global symbol table
+    override protected lazy val syncLock = gil
+    private val negatives = new mutable.HashSet[Name]
+    override def lookupEntry(name: Name): ScopeEntry = syncLock.synchronized {
       def lookupExisting: Option[ScopeEntry] = {
         val e = super.lookupEntry(name)
         if (e != null)
@@ -99,7 +101,6 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
         else
           None
       }
-
       def materialize: ScopeEntry = {
         val path =
           if (pkgClass.isEmptyPackageClass) name.toString
@@ -107,25 +108,23 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
         val currentMirror = mirrorThatLoaded(pkgClass)
         currentMirror.tryJavaClass(path) match {
           case Some(cls) =>
-            currentMirror.synchronized {
-              lookupExisting getOrElse {
-                val loadingMirror = currentMirror.mirrorDefining(cls)
-                val (clazz, module) =
-                  if (loadingMirror eq currentMirror) {
-                    initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-                  } else {
-                    val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
-                    val clazz = origOwner.info decl name.toTypeName
-                    val module = origOwner.info decl name.toTermName
-                    assert(clazz != NoSymbol)
-                    assert(module != NoSymbol)
-                    pkgClass.info.decls enter clazz
-                    pkgClass.info.decls enter module
-                    (clazz, module)
-                  }
-                debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
-                lookupEntry(name)
-              }
+            lookupExisting getOrElse {
+              val loadingMirror = currentMirror.mirrorDefining(cls)
+              val (clazz, module) =
+                if (loadingMirror eq currentMirror) {
+                  initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+                } else {
+                  val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
+                  val clazz = origOwner.info decl name.toTypeName
+                  val module = origOwner.info decl name.toTermName
+                  assert(clazz != NoSymbol)
+                  assert(module != NoSymbol)
+                  pkgClass.info.decls enter clazz
+                  pkgClass.info.decls enter module
+                  (clazz, module)
+                }
+              debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
+              lookupEntry(name)
             }
           case none =>
             debugInfo("*** not found : "+path)
@@ -133,7 +132,6 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
             null
         }
       }
-
       lookupExisting getOrElse materialize
     }
   }
