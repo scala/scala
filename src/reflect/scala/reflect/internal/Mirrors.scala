@@ -274,34 +274,45 @@ trait Mirrors extends api.Mirrors {
       def mirror                      = thisMirror.asInstanceOf[Mirror]
     }
 
-    // This is the package _root_.  The actual root cannot be referenced at
-    // the source level, but _root_ is essentially a function => <root>.
-    final object RootPackage extends ModuleSymbol(rootOwner, NoPosition, nme.ROOTPKG) with RootSymbol {
+    class RootPackage extends ModuleSymbol(rootOwner, NoPosition, nme.ROOTPKG) with RootSymbol {
       this setInfo NullaryMethodType(RootClass.tpe)
       RootClass.sourceModule = this
 
       override def isRootPackage = true
     }
-    // This is <root>, the actual root of everything except the package _root_.
-    // <root> and _root_ (RootPackage and RootClass) should be the only "well known"
-    // symbols owned by NoSymbol.  All owner chains should go through RootClass,
-    // although it is probable that some symbols are created as direct children
-    // of NoSymbol to ensure they will not be stumbled upon.  (We should designate
-    // a better encapsulated place for that.)
-    final object RootClass extends PackageClassSymbol(rootOwner, NoPosition, tpnme.ROOT) with RootSymbol {
+
+    // This is the package _root_.  The actual root cannot be referenced at
+    // the source level, but _root_ is essentially a function => <root>.
+    lazy val RootPackage = new RootPackage
+
+    class RootClass extends PackageClassSymbol(rootOwner, NoPosition, tpnme.ROOT) with RootSymbol {
       this setInfo rootLoader
 
       override def isRoot            = true
       override def isEffectiveRoot   = true
       override def isNestedClass     = false
     }
-    // The empty package, which holds all top level types without given packages.
-    final object EmptyPackage extends ModuleSymbol(RootClass, NoPosition, nme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
+
+    // This is <root>, the actual root of everything except the package _root_.
+    // <root> and _root_ (RootPackage and RootClass) should be the only "well known"
+    // symbols owned by NoSymbol.  All owner chains should go through RootClass,
+    // although it is probable that some symbols are created as direct children
+    // of NoSymbol to ensure they will not be stumbled upon.  (We should designate
+    // a better encapsulated place for that.)
+    lazy val RootClass = new RootClass
+
+    class EmptyPackage extends ModuleSymbol(RootClass, NoPosition, nme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
       override def isEmptyPackage = true
     }
-    final object EmptyPackageClass extends PackageClassSymbol(RootClass, NoPosition, tpnme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
+
+    // The empty package, which holds all top level types without given packages.
+    lazy val EmptyPackage = new EmptyPackage
+
+    class EmptyPackageClass extends PackageClassSymbol(RootClass, NoPosition, tpnme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
       override def isEffectiveRoot     = true
       override def isEmptyPackageClass = true
     }
+
+    lazy val EmptyPackageClass = new EmptyPackageClass
   }
 }

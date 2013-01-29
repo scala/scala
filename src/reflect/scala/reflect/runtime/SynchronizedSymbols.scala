@@ -90,11 +90,14 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
       new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
 
-    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol = createModuleSymbol(name, pos, newFlags)
+    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
+      createModuleSymbol(name, pos, newFlags)
 
-    // TODO
-    // override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long)
-    // override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long)
+    override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long) =
+      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+
+    override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long) =
+      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
   }
 
 // ------- subclasses ---------------------------------------------------------------------

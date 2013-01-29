@@ -69,6 +69,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     import definitions._
 
+    override lazy val RootPackage = new RootPackage with SynchronizedTermSymbol
+    override lazy val RootClass = new RootClass with SynchronizedModuleClassSymbol
+    override lazy val EmptyPackage = new EmptyPackage with SynchronizedTermSymbol
+    override lazy val EmptyPackageClass = new EmptyPackageClass with SynchronizedModuleClassSymbol
+
     /** The lazy type for root.
      */
     override lazy val rootLoader = new LazyType with FlagAgnosticCompleter {
