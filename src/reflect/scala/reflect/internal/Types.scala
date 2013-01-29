@@ -4706,23 +4706,13 @@ trait Types extends api.Types { self: SymbolTable =>
           case idx  => Some(to(idx))
         }
 
-        override def transform(tree: Tree) =
-          tree match {
-            case tree@Ident(_) =>
-              termMapsTo(tree.symbol) match {
-                case Some(tosym) =>
-                  if (tosym.info.bounds.hi.typeSymbol isSubClass SingletonClass) {
-                    Ident(tosym.existentialToString)
-                      .setSymbol(tosym)
-                      .setPos(tosym.pos)
-                      .setType(dropSingletonType(tosym.info.bounds.hi))
-                  } else {
-                    giveup()
-                  }
-                case none => super.transform(tree)
-              }
-            case tree => super.transform(tree)
+        override def transform(tree: Tree) = {
+          termMapsTo(tree.symbol) match {
+            case Some(tosym) => tree.symbol = tosym
+            case None => ()
           }
+          super.transform(tree)
+        }
       }
       trans.transform(tree)
     }
@@ -6615,10 +6605,20 @@ trait Types extends api.Types { self: SymbolTable =>
         val rest = elimSub0(ts1 filter (t1 => !isSubType(t1, t, decr(depth))))
         if (rest exists (t1 => isSubType(t, t1, decr(depth)))) rest else t :: rest
     }
+    // eliminates anonymous classes (using elimAnonymousClass) and singleton types
+    // (using _.underlying). keeps type annotations.
+    def elimSingletonAndAnonClass(t: Type) = t match {
+      case AnnotatedType(anns, tp, selfs) =>
+        val tp1 = elimAnonymousClass(tp.underlying)
+        if (tp1 eq tp) t
+        else AnnotatedType(anns, tp1, selfs)
+      case _ =>
+        elimAnonymousClass(t.underlying)
+    }
     val ts0 = elimSub0(ts)
     if (ts0.isEmpty || ts0.tail.isEmpty) ts0
     else {
-      val ts1 = ts0 mapConserve (t => elimAnonymousClass(t.underlying))
+      val ts1 = ts0 mapConserve elimSingletonAndAnonClass
       if (ts1 eq ts0) ts0
       else elimSub(ts1, depth)
     }
@@ -6735,6 +6735,8 @@ trait Types extends api.Types { self: SymbolTable =>
         NullaryMethodType(lub0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
+      case ts @ AnnotatedType(annots, tpe, _) :: rest =>
+        annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
         lubResults get (depth, ts) match {
           case Some(lubType) =>
