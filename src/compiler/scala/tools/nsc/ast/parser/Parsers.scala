@@ -527,7 +527,7 @@ self =>
      */
     def acceptStatSep(): Unit = in.token match {
       case NEWLINE | NEWLINES => in.nextToken()
-      case _                  => if (!in.prevWasNewLine) // New condition: Subscript sections may eat ahead newlines, so a previously seen newline is also ok
+      case _                  => //TBD: throw this comment away, once things work. Was: if (!in.afterLineEnd()) // New condition: Subscript sections may eat ahead newlines, so a previously seen newline is also ok
                                       accept(SEMI)       // Note: this needs be tested
                                  
     }
@@ -1174,9 +1174,9 @@ self =>
     val    here_Name  = newTermName("here")
     val   there_Name  = newTermName("there")
     val    tmp1_Name  = newTermName("$tmp1")
-    val            bind_inParam_Name  = newTermName("~")
-    val           bind_outParam_Name  = newTermName("~?")
-    val   bind_constrainedParam_Name  = newTermName("~??")
+    val            bind_inParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~"))
+    val           bind_outParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~?"))
+    val   bind_constrainedParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~??"))
     
     val       formalInputParameter_Name = newTermName("FormalInputParameter")
     val      formalOutputParameter_Name = newTermName("FormalOutputParameter")
@@ -1192,17 +1192,19 @@ self =>
     val nameDSL       = newTermName("DSL")
     val nameVM        = newTermName("vm")
     
-    val selectSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
-    val selectSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
+    val sSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
+    val sSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
 
-    val selectFormalInputParameter      : Tree = Select(selectSubScriptVM,       formalInputParameter_Name)
-    val selectFormalOutputParameter     : Tree = Select(selectSubScriptVM,      formalOutputParameter_Name)
-    val selectFormalConstrainedParameter: Tree = Select(selectSubScriptVM, formalConstrainedParameter_Name)
+    val sFormalInputParameter      : Tree = Select(sSubScriptVM,       formalInputParameter_Name)
+    val sFormalOutputParameter     : Tree = Select(sSubScriptVM,      formalOutputParameter_Name)
+    val sFormalConstrainedParameter: Tree = Select(sSubScriptVM, formalConstrainedParameter_Name)
 
-    val selectActualOutputParameter     : Tree = Select(selectSubScriptVM,      actualOutputParameter_Name)
-    val selectActualConstrainedParameter: Tree = Select(selectSubScriptVM, actualConstrainedParameter_Name)
-    val selectActualAdaptingParameter   : Tree = Select(selectSubScriptVM,    actualAdaptingParameter_Name)
+    val sActualOutputParameter     : Tree = Select(sSubScriptVM,      actualOutputParameter_Name)
+    val sActualConstrainedParameter: Tree = Select(sSubScriptVM, actualConstrainedParameter_Name)
+    val sActualAdaptingParameter   : Tree = Select(sSubScriptVM,    actualAdaptingParameter_Name)
 
+    val s_script: Tree = Select(sSubScriptDSL, script_Name)
+    
     final val raw_space = " "
     final val raw_semi  = ";"
     final val raw_bar   = "|"
@@ -1222,8 +1224,6 @@ self =>
                                                       newTermName(raw_space)
                                                      )
                                                      
-    
-    
     
     final val setSubScriptUnaryPrefixOp : Set[Name] = Set(raw.MINUS, raw.TILDE, raw.BANG)
     final val setSubScriptUnaryPostfixOp: Set[Name] = Set(raw.STAR)
@@ -1263,38 +1263,45 @@ self =>
       Function(vparams , Assign(exp, Ident(tmp1_Name)))
     }
 
-    def       makeFormalInputParameter(typer: Tree): Tree = TypeApply(      selectFormalInputParameter, List(typer))
-    def      makeFormalOutputParameter(typer: Tree): Tree = TypeApply(     selectFormalOutputParameter, List(typer))
-    def makeFormalConstrainedParameter(typer: Tree): Tree = TypeApply(selectFormalConstrainedParameter, List(typer))
+    def       makeFormalInputParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(      sFormalInputParameter), List(typer))
+    def      makeFormalOutputParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(     sFormalOutputParameter), List(typer))
+    def makeFormalConstrainedParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(sFormalConstrainedParameter), List(typer))
     
     def      makeActualOutputParameter(exp   : Tree, constraint: Tree = null): Tree = {
-      if (constraint==null) Apply(selectActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
-      else             Apply(selectActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
+      if (constraint==null) Apply(sActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
+      else             Apply(sActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
     }
       
     def    makeActualAdaptingParameter(formalParam: Name, constraint: Tree = null): Tree = {
-            Apply(selectActualAdaptingParameter, List(Ident(formalParam), constraint))
+            Apply(sActualAdaptingParameter, List(Ident(formalParam), constraint))
     }
-    def underscore_name(name: Name) = newTermName("_"+name)
+    def underscore_prefix(s: String) = "_"+s
 
     /*
      * Enclose the given block with a function with parameter "here" of the given node type 
      * i.e.: here: NodeType => block
      */
-    def blockToFunction(block: Tree, nodeType: Name, pos: Position): Function = {
+    def blockToFunction(block: Tree, nodeType: Tree, pos: Position, hereOrThere: TermName): Function = {
       val vparams = List(
           atPos(pos) {
-            makeParam(here_Name, Ident(nodeType) setPos pos)
+            makeParam(hereOrThere, nodeType setPos pos)
           }
       )
       Function(vparams , block)
     }
   
+    /*
+     * Enclose the given block with a function with parameter "here" of the given node type 
+     * i.e.: here: NodeType => block
+     */
+    def blockToFunction_here (block: Tree, nodeType: Tree, pos: Position): Function = blockToFunction(block, nodeType, pos,  here_Name)
+    def blockToFunction_there(block: Tree, nodeType: Tree, pos: Position): Function = blockToFunction(block, nodeType, pos, there_Name)
+  
     
     def subScriptDSLFunForOperator(op: Tree, spaceOp: Name, newlineOp: Name): Tree = {
       val operatorName      : Name = op match {case Ident(name:Name) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
       val operatorDSLFunName: Name = mapOperatorNameToDSLFunName(operatorName) 
-      Select(selectSubScriptDSL, operatorDSLFunName)
+      Select(sSubScriptDSL, operatorDSLFunName)
     }
     val mapOperatorStringToDSLFunString = Map[String,String](
         ";"  -> "seq",
@@ -1314,6 +1321,7 @@ self =>
         LBRACE_EMARK    -> "tiny",
         LBRACE_DOT      -> "eventhandling",
         LBRACE_DOT3     -> "eventhandling_loop",        
+        AT              -> "at"    ,     
         WHILE           -> "while"    ,     
         IF              -> "if"       ,
         ELSE            -> "if_else"  ,    
@@ -1326,9 +1334,8 @@ self =>
         DOT3            -> "loop"        
     )
     val mapTokenToDSLFunName = mapTokenToDSLFunString map {case(k,v) => (k, newTermName("_"+v): Name)}
-    val break_DSLFunName = "_break"
       
-    val mapTokenToDSLNodeString = Map[Int,String](
+    val mapTokenToVMNodeString = Map[Int,String](
         LBRACE          -> "code_normal",
         LBRACE_ASTERISK -> "code_threaded",
         LBRACE_QMARK    -> "code_unsure",
@@ -1337,10 +1344,19 @@ self =>
         LBRACE_DOT3     -> "code_eh_loop"  ,      
         WHILE           -> "while"    ,     
         IF              -> "if"       ,
-        ELSE            -> "if_else"   
+        ELSE            -> "if_else"  ,
+        0               -> "any"
     )
-    val mapTokenToDSLNodeName = mapTokenToDSLNodeString map {case(k,v) => (k, newTermName("N_"+v): Name)}
-    
+    val mapTokenToVMNodeName = mapTokenToVMNodeString map {case(k,v) => (k, newTermName("N_"+v): Name)}
+
+    def dslFunForBreak       : Tree = Select(sSubScriptDSL, newTermName("_break"))
+    def dslFunFor(token: Int): Tree = Select(sSubScriptDSL, mapTokenToDSLFunName(token))
+    def vmNodeFor(token: Int): Tree = Select(sSubScriptVM , mapTokenToVMNodeName(token))
+    def vmNodeOf (tree: Tree): Tree = tree match {
+      case (Apply(fun, Function(List(ValDef(_,_, nodeType,_)),block)::_)) => nodeType
+      case _ => Select(sSubScriptVM , mapTokenToVMNodeName(0))
+    }
+      
     def eatNewlines(): Boolean = {
       if (in.token==NEWLINE || in.token==NEWLINES) {
         in.nextToken()
@@ -1379,8 +1395,8 @@ self =>
          | LBRACE_QMARK             
          | LBRACE_EMARK             
          | LBRACE_ASTERISK          
-         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || !in.prevWasNewLine || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
-      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || !in.prevWasNewLine || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
+         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || !in.afterLineEnd || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
+      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || !in.afterLineEnd || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
       case _                                              => isSubScriptUnaryPrefixOp(tokenData)  ||  // MINUS is allways OK, also for -1 etc
                                                              isLiteralToken(tokenData.token)
     }
@@ -1491,7 +1507,7 @@ self =>
       var mustExit = false
       while (!mustExit)
       {
-	      if (doMultipleScripts && in.prevWasNewLine) {
+	      if (doMultipleScripts && in.afterLineEnd) {
             val linePos = in.offset - in.lineStartOffset
 	        if (linePos <= linePosOfScriptsSection) mustExit = true
 	      }
@@ -1528,23 +1544,26 @@ self =>
 		        
                 // insert the _script(this, 'vkey, _k~??'k) part
 		        // the parameter bindings such as _k~??'k are a little complicated
-		        val paramBindings: List[Tree] = if (vparamss.isEmpty) Nil
+		        val underscored_param_defs_and_bindings: List[(ValDef, Tree)] = if (vparamss.isEmpty) Nil
 		            else {
 		              if (!vparamss.tail.isEmpty) syntaxError(nameOffset, "script should have only 1 parameter list")
 		              vparamss.head map {p => 
-		                val pSym = Apply(scalaDot(nme.Symbol), List(Ident(p.name))) // TBD: ensure there is only 1 parameter list
+		                val pSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(p.name.toString)))) // TBD: ensure there is only 1 parameter list
+		                val underscored_p_name = newTermName(underscore_prefix(p.name.toString))
 		                val bindParam_Name = 
 		                    if      (p.mods.annotations contains Ident(nme.QMARKkw )) bind_outParam_Name
 		                    else if (p.mods.annotations contains Ident(nme.QMARK2kw)) bind_constrainedParam_Name
 		                    else                                                      bind_inParam_Name
-		                val select = Select(Ident(p.name), bindParam_Name)
-		                Apply(select, List(pSym))
+		                val select = Select(Ident(underscored_p_name), bindParam_Name)
+		                (makeParam(underscored_p_name, p.tpt), Apply(select, List(pSym)))
 		              }
 		            }
-		        val underscore_script_name = underscore_name(script_Name)
-
-	            val scriptBody = Apply(Apply(Ident(underscore_script_name), This(tpnme.EMPTY)::Literal(Constant(name.toString))::paramBindings), List(rhs))
-		        DefDef(newmods, name, tparams, vparamss, restype, scriptBody)
+		        val underscored_script_name = newTermName(underscore_prefix(name.toString))
+		        val underscored_param_defs  = underscored_param_defs_and_bindings map (_._1)
+		        val paramBindings           = underscored_param_defs_and_bindings map (_._2)
+		        val scriptNameAsSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
+	            val scriptBody = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), List(rhs))
+		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), restype, scriptBody)
 		      }
 	          signalParseProgress(scriptDef.pos)
 	          
@@ -1632,12 +1651,17 @@ self =>
       var moreTerms = true
       do {
         top = scriptSpaceExpression(areSpacesCommas, areNewLinesSpecialSeparators)
+        //if (!areNewLinesSpecialSeparators) eatNewlines()
         if (isSubScriptInfixOp(in, areNewLinesSpecialSeparators)) {
-           if (!areNewLinesSpecialSeparators) eatNewlines()
            reduceScriptOperatorStack(subScriptInfixOpPrecedence(operatorName(in)))
            scriptOperatorStack = ScriptOpInfo(top, operatorName(in), in.offset, operatorLength(in)) :: scriptOperatorStack // TBD: new line
            in.nextToken() // eat the operator
-           newLineOptWhenFollowing_TokenData(isSubScriptTermStarter)
+           //newLineOptWhenFollowing_TokenData(isSubScriptTermStarter) // ???
+           //if (!areNewLinesSpecialSeparators) eatNewlines()
+        }
+        else if (areNewLinesSpecialSeparators && isSubScriptTermStarter(in) && in.afterLineEnd()) {
+           reduceScriptOperatorStack(subScriptInfixOpPrecedence(NEWLINE_Name))
+           scriptOperatorStack = ScriptOpInfo(top, NEWLINE_Name, in.offset, 1 /*operatorLength*/) :: scriptOperatorStack // TBD: new line
         }
         else moreTerms = false
       } while (moreTerms)
@@ -1664,14 +1688,15 @@ self =>
       var moreTerms = true
       do  {
         ts += scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators)
-        if (!areNewLinesSpecialSeparators) eatNewlines()
+        //if (!areNewLinesSpecialSeparators) eatNewlines()
         if (areSpacesCommas 
-        || !isSubScriptTermStarter(in)) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
+        || !isSubScriptTermStarter(in)
+        || areNewLinesSpecialSeparators && in.afterLineEnd()) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
       }
       while (moreTerms)
         
       if (ts.length == 1)  ts.head
-      else  Apply(Ident(raw_space), ts.toList)
+      else Apply(Ident(raw_space), ts.toList)
     }
 
     def scriptCommaExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
@@ -1680,7 +1705,7 @@ self =>
       var moreTerms = true
       do  {
         ts += scriptTerm()
-        if   (in.token==COMMA) {in.nextToken(); eatNewlines()}
+        if   (in.token==COMMA) {in.nextToken()/*; eatNewlines()*/}
         else if (!areSpacesCommas 
              ||  !isSubScriptTermStarter(in)) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
       }
@@ -1789,9 +1814,11 @@ self =>
       case AT =>
         def parseAnnotation = {
           atPos(in.skipToken()) {
+            val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
             val annotationCode = expr(); accept(COLON); newLinesOpt()
-            val body           = unaryPrefixScriptTerm()
-            Annotated(annotationCode, body)
+            val body           = stripParens(unaryPrefixScriptTerm())
+            
+            Apply(dslFunFor(AT), List(blockToFunction_there(annotationCode, vmNodeOf(body), startPos), body))
           }
         }
         parseAnnotation
@@ -1882,9 +1909,9 @@ self =>
           if (in.token == ELSE) {
                in.nextToken(); 
                val elsep = scriptExpr()
-               Apply(Apply(Ident(mapTokenToDSLFunName(ELSE)), List(blockToFunction(cond, mapTokenToDSLNodeName(ELSE), startPos))),List(thenp, elsep))
+               Apply(Apply(dslFunFor(ELSE), List(blockToFunction_here(cond, vmNodeFor(ELSE), startPos))),List(thenp, elsep))
           }
-          else Apply(Apply(Ident(mapTokenToDSLFunName(  IF)), List(blockToFunction(cond, mapTokenToDSLNodeName(  IF), startPos))),List(thenp))
+          else Apply(Apply(dslFunFor(  IF), List(blockToFunction_here(cond, vmNodeFor(  IF), startPos))),List(thenp))
         }
         parseIf
       case WHILE =>
@@ -1892,7 +1919,7 @@ self =>
           val startPos    = r2p(in.offset, in.offset, in.lastOffset max in.offset)
           val lname: Name = freshTermName(nme.WHILE_PREFIX)
           val cond        = simpleNativeValueExpr(); newLinesOpt()
-          Apply(Ident(mapTokenToDSLFunName(in.token)), List(blockToFunction(cond, mapTokenToDSLNodeName(in.token), startPos)))
+          Apply(dslFunFor(in.token), List(blockToFunction_here(cond, vmNodeFor(in.token), startPos)))
         }
         parseWhile
       case LPAREN_PLUS_RPAREN           
@@ -1901,8 +1928,8 @@ self =>
          | LPAREN_SEMI_RPAREN               
          | DOT                              
          | DOT2                             
-         | DOT3                         => Apply(Ident(mapTokenToDSLFunName(in.token)), Nil) // TBD: transform here?
-      case IDENTIFIER if (isBreakIdent) => Apply(Ident(break_DSLFunName), Nil)
+         | DOT3                         => Apply(dslFunFor(in.token), Nil) // TBD: transform here?
+      case IDENTIFIER if (isBreakIdent) => Apply(dslFunForBreak, Nil)
       case LPAREN                       => atPos(in.offset)(inScriptParens(scriptExpr()))
       case LBRACE           
          | LBRACE_DOT              
@@ -1933,7 +1960,7 @@ self =>
       val startPos   = r2p(in.offset, in.offset, in.lastOffset max in.offset)
       accept(startBrace)
       val b = block()
-      val ret = Apply(Ident(mapTokenToDSLFunName(startBrace)), List(blockToFunction(b, mapTokenToDSLNodeName(startBrace), startPos))) // TBD: transform here?
+      val ret = Apply(dslFunFor(startBrace), List(blockToFunction_here(b, vmNodeFor(startBrace), startPos))) // TBD: transform here?
       in.isInSubScript       = true
       in.isInSubScript_block = false
       accept(endBrace)

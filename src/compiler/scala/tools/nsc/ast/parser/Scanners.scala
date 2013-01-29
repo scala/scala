@@ -83,9 +83,10 @@ trait Scanners extends ScannersCommon {
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
     
-    var isInSubScript        = false
-    var isInSubScript_header = false
-    var isInSubScript_block  = false
+    var isInSubScript            = false
+    var isInSubScript_header     = false
+    var isInSubScript_block      = false
+    def isInSubScript_expression = isInSubScript && !isInSubScript_header
 
     def isAtEnd = charOffset >= buf.length
 
@@ -156,8 +157,6 @@ trait Scanners extends ScannersCommon {
     val next : TokenData = new TokenData0
     val prev : TokenData = new TokenData0
     
-    var prevWasNewLine = false
-
     /** a stack of tokens which indicates whether line-ends can be statement separators
      *  also used for keeping track of nesting levels.
      *  We keep track of the closing symbol of a region. This can be
@@ -198,7 +197,6 @@ trait Scanners extends ScannersCommon {
      */
     def nextToken() {
       val lastToken = token
-      prevWasNewLine = lastToken==NEWLINE || lastToken==NEWLINES
       
       // Adapt sepRegions according to last token
       (lastToken: @switch) match {
@@ -258,10 +256,13 @@ trait Scanners extends ScannersCommon {
       /** Insert NEWLINE or NEWLINES if
        *  - we are after a newline
        *  - we are within a { ... } or on toplevel (wrt sepRegions)
-       *  - the current token can start a statement and the one before can end it
+       *  - NOT isInSubScript_expression and the current token can start a statement and the one before can end it
        *  insert NEWLINES if we are past a blank line, NEWLINE otherwise
+       * 
+       *  TBD: maybe require different handling if isInSubScript_expression
        */
-      if (!applyBracePatch() && afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
+      if (!applyBracePatch() && afterLineEnd() && 
+          (!isInSubScript_expression && inLastOfStat(lastToken) && inFirstOfStat(token)) &&
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         next copyFrom this
         offset = if (lineStartOffset <= offset) lineStartOffset else lastLineStartOffset
@@ -297,7 +298,7 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Is current token first one after a newline? */
-    private def afterLineEnd(): Boolean =
+    def afterLineEnd(): Boolean =
       lastOffset < lineStartOffset &&
       (lineStartOffset <= offset ||
        lastOffset < lastLineStartOffset && lastLineStartOffset <= offset)

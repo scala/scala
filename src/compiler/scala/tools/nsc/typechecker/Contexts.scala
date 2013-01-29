@@ -21,6 +21,7 @@ trait Contexts { self: Analyzer =>
     outer      = this
     enclClass  = this
     enclMethod = this
+    enclScript = this
 
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil

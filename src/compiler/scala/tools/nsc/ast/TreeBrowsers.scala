@@ -449,6 +449,9 @@ abstract class TreeBrowsers {
       case Apply(fun, args) =>
         List(fun) ::: args
 
+      case ScriptApply(fun, args) =>
+        List(fun) ::: args
+
       case ApplyDynamic(qual, args) =>
         List(qual) ::: args
 
