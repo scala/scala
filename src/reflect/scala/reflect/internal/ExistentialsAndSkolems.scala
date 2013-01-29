@@ -32,19 +32,4 @@ trait ExistentialsAndSkolems {
     }
     (new Deskolemizer).typeSkolems
   }
-
-  /** Convert to corresponding type parameters all skolems of method
-   *  parameters which appear in `tparams`.
-   */
-  def deskolemizeTypeParams(tparams: List[Symbol])(tp: Type): Type = {
-    class DeSkolemizeMap extends TypeMap {
-      def apply(tp: Type): Type = tp match {
-        case TypeRef(pre, sym, args) if sym.isTypeSkolem && (tparams contains sym.deSkolemize) =>
-          mapOver(typeRef(NoPrefix, sym.deSkolemize, args))
-        case _ =>
-          mapOver(tp)
-      }
-    }
-    new DeSkolemizeMap mapOver tp
-  }
 }

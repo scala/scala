@@ -1,0 +1,10 @@
+t5543.scala:3: error: not found: type T
+  def this(x: T) { this() }
+              ^
+t5543.scala:11: error: not found: value x
+   def this(a: Int, b: Int = x) {
+                             ^
+t5543.scala:18: error: not found: value x
+  def this(a: Int = x) { this() }
+                    ^
+three errors found
