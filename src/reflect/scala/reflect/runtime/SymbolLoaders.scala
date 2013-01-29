@@ -76,6 +76,15 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
       with SynchronizedScope {
     assert(pkgClass.isType)
+
+    // materializing multiple copies of the same symbol in PackageScope is a very popular bug
+    // this override does its best to guard against it
+    override def enter[T <: Symbol](sym: T): T = {
+      val existing = super.lookupEntry(sym.name)
+      assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
+      super.enter(sym)
+    }
+
     // disable fingerprinting as we do not know entries beforehand
     private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
     override def lookupEntry(name: Name): ScopeEntry = {
