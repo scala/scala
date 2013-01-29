@@ -368,10 +368,10 @@ trait TypeKinds { self: ICodes =>
 
   /** Return the TypeKind of the given type
    *
-   *  Call to .normalize fixes #3003 (follow type aliases). Otherwise,
+   *  Call to dealiasWiden fixes #3003 (follow type aliases). Otherwise,
    *  arrayOrClassType below would return ObjectReference.
    */
-  def toTypeKind(t: Type): TypeKind = t.normalize match {
+  def toTypeKind(t: Type): TypeKind = t.dealiasWiden match {
     case ThisType(ArrayClass)            => ObjectReference
     case ThisType(sym)                   => REFERENCE(sym)
     case SingleType(_, sym)              => primitiveOrRefType(sym)

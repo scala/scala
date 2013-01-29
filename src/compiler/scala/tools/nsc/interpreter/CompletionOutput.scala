@@ -75,7 +75,7 @@ trait CompletionOutput {
     }
 
     def methodString() =
-      method.keyString + " " + method.nameString + (method.info.normalize match {
+      method.keyString + " " + method.nameString + (method.info.dealiasWiden match {
         case NullaryMethodType(resType)         => ": " + typeToString(resType)
         case PolyType(tparams, resType)         => tparamsString(tparams) + typeToString(resType)
         case mt @ MethodType(_, _)              => methodTypeToString(mt)

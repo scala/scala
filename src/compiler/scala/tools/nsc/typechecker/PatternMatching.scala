@@ -477,7 +477,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         **/
         // must treat Typed and Bind together -- we need to know the patBinder of the Bind pattern to get at the actual type
         case MaybeBoundTyped(subPatBinder, pt) =>
-          val next = glb(List(patBinder.info.widen, pt)).normalize
+          val next = glb(List(patBinder.info.dealiasWiden, pt)).normalize
           // a typed pattern never has any subtrees
           noFurtherSubPats(TypeTestTreeMaker(subPatBinder, patBinder, pt, next)(pos))
 

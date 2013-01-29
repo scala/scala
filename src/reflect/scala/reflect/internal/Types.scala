@@ -2456,7 +2456,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case RepeatedParamClass => args.head + "*"
       case ByNameParamClass   => "=> " + args.head
       case _                  =>
-        def targs = normalize.typeArgs
+        def targs = dealiasWiden.typeArgs
 
         if (isFunctionType(this)) {
           // Aesthetics: printing Function1 as T => R rather than (T) => R

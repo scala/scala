@@ -56,7 +56,7 @@ package object reify {
       if (concrete) throw new ReificationException(enclosingMacroPosition, "tpe %s is an unresolved spliceable type".format(tpe))
     }
 
-    tpe.normalize match {
+    tpe.dealiasWiden match {
       case TypeRef(_, ArrayClass, componentTpe :: Nil) =>
         val componentErasure = reifyRuntimeClass(global)(typer0, componentTpe, concrete)
         gen.mkMethodCall(arrayClassMethod, List(componentErasure))

@@ -844,7 +844,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this class or type defined as a structural refinement type?
      */
     final def isStructuralRefinement: Boolean =
-      (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
+      (isClass || isType || isModule) && info.dealiasWiden/*.underlying*/.isStructuralRefinement
 
     /** Is this a term symbol only defined in a refinement (so that it needs
      *  to be accessed by reflection)?
