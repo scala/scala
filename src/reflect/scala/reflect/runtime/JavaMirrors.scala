@@ -24,7 +24,7 @@ import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
-private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
+private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -46,9 +46,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
   trait JavaClassCompleter extends FlagAssigningCompleter
 
-  def runtimeMirror(cl: ClassLoader): Mirror = mirrors get cl match {
-    case Some(WeakReference(m)) => m
-    case _ => createMirror(rootMirror.RootClass, cl)
+  def runtimeMirror(cl: ClassLoader): Mirror = gilSynchronized {
+    mirrors get cl match {
+      case Some(WeakReference(m)) => m
+      case _ => createMirror(rootMirror.RootClass, cl)
+    }
   }
 
   /** The API of a mirror for a reflective universe */
@@ -662,7 +664,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         completeRest()
       }
 
-      def completeRest(): Unit = thisUniverse.synchronized {
+      def completeRest(): Unit = gilSynchronized {
         val tparams = clazz.rawInfo.typeParams
 
         val parents = try {
@@ -878,7 +880,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      * The Scala package with given fully qualified name. Unlike `packageNameToScala`,
      *  this one bypasses the cache.
      */
-    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = {
+    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = gilSynchronized {
       val split = fullname lastIndexOf '.'
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
