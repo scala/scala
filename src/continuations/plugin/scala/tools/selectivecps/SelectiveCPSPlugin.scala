@@ -32,7 +32,7 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
   val checker = new CPSAnnotationChecker {
     val global: SelectiveCPSPlugin.this.global.type = SelectiveCPSPlugin.this.global
   }
-  global.addAnnotationChecker(checker.checker)
+  global.analyzer.addAnalyzerPlugin(checker.plugin)
 
   global.log("instantiated cps plugin: " + this)
 

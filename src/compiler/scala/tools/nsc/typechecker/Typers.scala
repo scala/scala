@@ -872,7 +872,9 @@ trait Typers extends Modes with Adaptations with Tags {
               case _ =>
                 debuglog("fallback on implicits: " + tree + "/" + resetAllAttrs(original))
                 val tree1 = typed(resetAllAttrs(original), mode, WildcardType)
-                tree1.tpe = addAnnotations(tree1, tree1.tpe)
+                // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
+                // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
+                tree1.tpe = pluginsTyped(this, tree1, mode, pt, tree1.tpe)
                 if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
             }
           else
@@ -1071,8 +1073,8 @@ trait Typers extends Modes with Adaptations with Tags {
 
       // begin adapt
       tree.tpe match {
-        case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (-1)
-          adaptAnnotations(tree, mode, pt)
+        case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(this, tree, mode, pt) => // (-1)
+          adaptAnnotations(this, tree, mode, pt)
         case ct @ ConstantType(value) if inNoModes(mode, TYPEmode | FUNmode) && (ct <:< pt) && !forScaladoc && !forInteractive => // (0)
           val sym = tree.symbol
           if (sym != null && sym.isDeprecated) {
@@ -1176,8 +1178,8 @@ trait Typers extends Modes with Adaptations with Tags {
                           Select(tree, "to" + sym.name)
                         }
                       }
-                    case AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (13)
-                      return typed(adaptAnnotations(tree, mode, pt), mode, pt)
+                    case AnnotatedType(_, _, _) if canAdaptAnnotations(this, tree, mode, pt) => // (13)
+                      return typed(adaptAnnotations(this, tree, mode, pt), mode, pt)
                     case _ =>
                   }
                   if (!context.undetparams.isEmpty) {
@@ -4443,8 +4445,9 @@ trait Typers extends Modes with Adaptations with Tags {
               if (typed(expr).tpe.typeSymbol != UnitClass)
                 unit.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded")
             }
-            treeCopy.Return(tree, checkDead(expr1)).setSymbol(enclMethod.owner)
-                                                   .setType(adaptTypeOfReturn(expr1, restpt.tpe, NothingClass.tpe))
+            val res = treeCopy.Return(tree, checkDead(expr1)).setSymbol(enclMethod.owner)
+            val tp = pluginsTypedReturn(this, res, restpt.tpe, NothingClass.tpe)
+            res.setType(tp)
           }
         }
       }
@@ -5642,11 +5645,13 @@ trait Typers extends Modes with Adaptations with Tags {
       lastTreeToTyper = tree
       indentTyping()
 
+      val ptPlugins = pluginsPt(this, tree, mode, pt)
+
       val startByType = if (Statistics.canEnable) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
       if (Statistics.canEnable) Statistics.incCounter(visitsByType, tree.getClass)
       try {
         if (context.retyping &&
-            (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
+            (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< ptPlugins))) {
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
@@ -5654,7 +5659,7 @@ trait Typers extends Modes with Adaptations with Tags {
         val alreadyTyped = tree.tpe ne null
         var tree1: Tree = if (alreadyTyped) tree else {
           printTyping(
-            ptLine("typing %s: pt = %s".format(ptTree(tree), pt),
+            ptLine("typing %s: pt = %s".format(ptTree(tree), ptPlugins),
               "undetparams"      -> context.undetparams,
               "implicitsEnabled" -> context.implicitsEnabled,
               "enrichmentEnabled"   -> context.enrichmentEnabled,
@@ -5663,7 +5668,7 @@ trait Typers extends Modes with Adaptations with Tags {
               "context.owner"    -> context.owner
             )
           )
-          typed1(tree, mode, dropExistential(pt))
+          typed1(tree, mode, dropExistential(ptPlugins))
         }
         // Can happen during erroneous compilation - error(s) have been
         // reported, but we need to avoid causing an NPE with this tree
@@ -5677,12 +5682,12 @@ trait Typers extends Modes with Adaptations with Tags {
           )
         }
 
-        tree1.tpe = addAnnotations(tree1, tree1.tpe)
-        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, tree)
+        tree1.tpe = pluginsTyped(this, tree1, mode, ptPlugins, tree1.tpe)
+        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, ptPlugins, tree)
 
         if (!alreadyTyped) {
           printTyping("adapted %s: %s to %s, %s".format(
-            tree1, tree1.tpe.widen, pt, context.undetparamsString)
+            tree1, tree1.tpe.widen, ptPlugins, context.undetparamsString)
           ) //DEBUG
         }
         if (!isPastTyper) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
@@ -5697,7 +5702,7 @@ trait Typers extends Modes with Adaptations with Tags {
           setError(tree)
         case ex: Exception =>
           if (settings.debug.value) // @M causes cyclic reference error
-            Console.println("exception when typing "+tree+", pt = "+pt)
+            Console.println("exception when typing "+tree+", pt = "+ptPlugins)
           if (context != null && context.unit.exists && tree != null)
             logError("AT: " + (tree.pos).dbgString, ex)
           throw ex
