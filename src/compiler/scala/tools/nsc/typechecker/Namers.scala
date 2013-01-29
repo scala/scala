@@ -755,10 +755,9 @@ trait Namers extends MethodSynthesis {
     def accessorTypeCompleter(tree: ValDef, isSetter: Boolean) = mkTypeCompleter(tree) { sym =>
       logAndValidate(sym) {
         sym setInfo {
-          if (isSetter)
-            MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitClass.tpe)
-          else
-            NullaryMethodType(typeSig(tree))
+          val tp = if (isSetter) MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitClass.tpe)
+                   else NullaryMethodType(typeSig(tree))
+          pluginsTypeSigAccessor(tp, typer, tree, sym)
         }
       }
     }
@@ -903,7 +902,8 @@ trait Namers extends MethodSynthesis {
       for (cda <- module.attachments.get[ConstructorDefaultsAttachment]) {
         cda.companionModuleClassNamer = templateNamer
       }
-      ClassInfoType(parents, decls, clazz)
+      val classTp = ClassInfoType(parents, decls, clazz)
+      pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)
     }
 
     private def classSig(cdef: ClassDef): Type = {
@@ -913,17 +913,18 @@ trait Namers extends MethodSynthesis {
       val resultType = templateSig(impl)
 
       val res = GenPolyType(tparams0, resultType)
+      val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).
       // Allows isDerivedValueClass to look at the info.
-      clazz setInfo res
+      clazz setInfo pluginsTp
       if (clazz.isDerivedValueClass) {
         log("Ensuring companion for derived value class " + cdef.name + " at " + cdef.pos.show)
         clazz setFlag FINAL
         // Don't force the owner's info lest we create cycles as in SI-6357.
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
-      res
+      pluginsTp
     }
 
     private def moduleSig(mdef: ModuleDef): Type = {
@@ -931,9 +932,10 @@ trait Namers extends MethodSynthesis {
       // The info of both the module and the moduleClass symbols need to be assigned. monoTypeCompleter assigns
       // the result of typeSig to the module symbol. The module class info is assigned here as a side-effect.
       val result = templateSig(mdef.impl)
+      val pluginsTp = pluginsTypeSig(result, typer, mdef, WildcardType)
       // Assign the moduleClass info (templateSig returns a ClassInfoType)
       val clazz = moduleSym.moduleClass
-      clazz setInfo result
+      clazz setInfo pluginsTp
       // clazz.tpe returns a `ModuleTypeRef(clazz)`, a typeRef that links to the module class `clazz`
       // (clazz.info would the ClassInfoType, which is not what should be assigned to the module symbol)
       clazz.tpe
@@ -1134,7 +1136,7 @@ trait Namers extends MethodSynthesis {
         typer.computeMacroDefType(ddef, resTpFromOverride)
       }
 
-      thisMethodType({
+      val res = thisMethodType({
         val rt = (
           if (!tpt.isEmpty) {
             methResTp
@@ -1150,6 +1152,7 @@ trait Namers extends MethodSynthesis {
           rt.withAnnotation(AnnotationInfo(uncheckedVarianceClass.tpe, List(), List()))
         else rt
       })
+      pluginsTypeSig(res, typer, ddef, methResTp)
     }
 
     /**
@@ -1286,7 +1289,7 @@ trait Namers extends MethodSynthesis {
 
     private def valDefSig(vdef: ValDef) = {
       val ValDef(_, _, tpt, rhs) = vdef
-      if (tpt.isEmpty) {
+      val result = if (tpt.isEmpty) {
         if (rhs.isEmpty) {
           MissingParameterOrValTypeError(tpt)
           ErrorType
@@ -1295,6 +1298,8 @@ trait Namers extends MethodSynthesis {
       } else {
         typer.typedType(tpt).tpe
       }
+      pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
+
     }
 
     //@M! an abstract type definition (abstract type member/type parameter)
@@ -1328,7 +1333,8 @@ trait Namers extends MethodSynthesis {
       // However, separate compilation requires the symbol info to be
       // loaded to do this check, but loading the info will probably
       // lead to spurious cyclic errors.  So omit the check.
-      GenPolyType(tparamSyms, tp)
+      val res = GenPolyType(tparamSyms, tp)
+      pluginsTypeSig(res, typer, tdef, WildcardType)
     }
 
     private def importSig(imp: Import) = {

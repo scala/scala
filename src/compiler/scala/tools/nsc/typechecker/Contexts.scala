@@ -35,7 +35,7 @@ trait Contexts { self: Analyzer =>
     val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
   }
 
-  private val startContext = {
+  private lazy val startContext = {
     NoContext.make(
     Template(List(), emptyValDef, List()) setSymbol global.NoSymbol setType global.NoType,
     rootMirror.RootClass,
