@@ -1248,8 +1248,24 @@ trait Definitions extends api.StandardDefinitions {
 
     def init() {
       if (isInitialized) return
+      // forcing ScalaPackageClass first thing during startup is important, because syntheticCoreClasses such as AnyRefClass
+      // need to be entered into ScalaPackageClass, which entails calling ScalaPackageClass.info.decls.enter
+      // if ScalaPackageClass isn't initialized by that moment, the following will happen for runtime reflection:
+      // 1) initialization of ScalaPackageClass will trigger unpickling
+      // 2) unpickling will need to load some auxiliary types such as, for example, String
+      // 3) to load String, runtime reflection will call mirrorDefining(classOf[String])
+      // 4) this, in turn, will call runtimeMirror(classOf[String].getClassLoader)
+      // 5) for some classloader configurations, the resulting mirror will be different from rootMirror
+      // 6) in that case, initialization of the resulting mirror will try to import definitions.syntheticCoreClasses into the mirror
+      // 7) this will force all the lazy vals corresponding to syntheticCoreClasses
+      // 8) by that time, the completer of ScalaPackageClass will have already called setInfo on ScalaPackageClass, so there won't be any stack overflow
+      // so far so good, but there's a subtle detail. if forcing of ScalaPackageClass was called by a syntheticCoreClasses lazy val,
+      // then this lazy val will be entered twice: once during step 7 and once when returning from the original call
+      // to avoid this we need to initialize ScalaPackageClass first and only then synthesize the core classes
+      ScalaPackageClass.initialize
       // force initialization of every symbol that is synthesized or hijacked by the compiler
-      val forced = symbolsNotPresentInBytecode
+      val forced1 = symbolsNotPresentInBytecode
+      val forced2 = NoSymbol
       isInitialized = true
     } //init
 

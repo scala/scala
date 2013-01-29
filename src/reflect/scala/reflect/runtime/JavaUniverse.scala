@@ -24,5 +24,9 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 
   init()
+
+  def init() {
+    definitions.init()
+  }
 }
 
