@@ -13,6 +13,7 @@ package immutable
 
 import generic._
 import scala.annotation.{tailrec, bridge}
+import scala.NoSuchElementException
 
 /** $factoryInfo
  *  @since 1
@@ -155,7 +156,12 @@ extends AbstractMap[A, B]
      *  @param  k   the key
      *  @return     the value associated with the given key.
      */
-    override def apply(k: A): B1 = apply0(this, k)
+    override def apply(k: A): B1 =
+      try {
+        apply0(this, k)
+      } catch {
+        case e :NoSuchElementException => throw new NoSuchElementException("key not found: "+k)
+      }
 
     @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 = if (k == cur.key) cur.value else apply0(cur.tail, k)
 
