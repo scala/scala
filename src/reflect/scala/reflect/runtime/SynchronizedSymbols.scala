@@ -45,7 +45,29 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override def updateInfo(info: Type): Symbol = synchronized { super.updateInfo(info) }
     override def rawInfo: Type = synchronized { super.rawInfo }
 
-    override def typeParams: List[Symbol] = synchronized { super.typeParams }
+    override def typeParams: List[Symbol] = synchronized {
+      if (isCompilerUniverse) super.typeParams
+      else {
+        if (isMonomorphicType) Nil
+        else {
+          // analogously to the "info" getter, here we allow for two completions:
+          //   one: sourceCompleter to LazyType, two: LazyType to completed type
+          if (validTo == NoPeriod)
+            rawInfo load this
+          if (validTo == NoPeriod)
+            rawInfo load this
+
+          rawInfo.typeParams
+        }
+      }
+    }
+    override def unsafeTypeParams: List[Symbol] = synchronized {
+      if (isCompilerUniverse) super.unsafeTypeParams
+      else {
+        if (isMonomorphicType) Nil
+        else rawInfo.typeParams
+      }
+    }
 
     override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
 

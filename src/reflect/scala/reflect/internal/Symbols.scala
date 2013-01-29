@@ -1565,6 +1565,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
+    // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
+    // don't forget to modify the code over there if you modify this method
     def unsafeTypeParams: List[Symbol] =
       if (isMonomorphicType) Nil
       else enteringPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
@@ -1573,6 +1575,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
+    // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
+    // don't forget to modify the code over there if you modify this method
     def typeParams: List[Symbol] =
       if (isMonomorphicType) Nil
       else {

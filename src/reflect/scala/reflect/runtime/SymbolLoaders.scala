@@ -17,37 +17,13 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    *  is found, a package is created instead.
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
-//    def makePackage() {
-//      println("wrong guess; making package "+clazz)
-//      val ptpe = newPackageType(module.moduleClass)
-//      for (sym <- List(clazz, module, module.moduleClass)) {
-//        sym setFlag Flags.PACKAGE
-//        sym setInfo ptpe
-//      }
-//    }
-
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
-//      try {
-      enteringPhaseNotLaterThan(picklerPhase) {
+      slowButSafeEnteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
         loadingMirror.unpickleClass(clazz, module, javaClass)
-//      } catch {
-//        case ex: ClassNotFoundException => makePackage()
-//        case ex: NoClassDefFoundError => makePackage()
-          // Note: We catch NoClassDefFoundError because there are situations
-          // where a package and a class have the same name except for capitalization.
-          // It seems in this case the class is loaded even if capitalization differs
-          // but then a NoClassDefFound error is issued with a ("wrong name: ...")
-          // reason. (I guess this is a concession to Windows).
-          // The present behavior is a bit too forgiving, in that it masks
-          // all class load errors, not just wrong name errors. We should try
-          // to be more discriminating. To get on the right track simply delete
-          // the clause above and load a collection class such as collection.Iterable.
-          // You'll see an error that class `parallel` has the wrong name.
-//      }
       }
     }
     override def load(sym: Symbol) = complete(sym)
