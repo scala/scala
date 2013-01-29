@@ -269,10 +269,10 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
 
-    /** The stack of constructor symbols in which a call to this() or to the super
-      * constructor is active.
+    /** The stack of class symbols in which a call to this() or to the super
+      * constructor, or early definition is active
       */
-    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls exists (_.owner == clazz)
+    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz
     protected val selfOrSuperCalls = mutable.Stack[Symbol]()
     @inline protected def inSelfOrSuperCall[A](sym: Symbol)(a: => A) = {
       selfOrSuperCalls push sym
@@ -292,8 +292,8 @@ abstract class ExplicitOuter extends InfoTransform
             }
           case _ =>
         }
-        if (treeInfo isSelfOrSuperConstrCall tree) // TODO also handle (and test) (treeInfo isEarlyDef tree)
-          inSelfOrSuperCall(currentOwner)(super.transform(tree))
+        if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree))
+          inSelfOrSuperCall(currentOwner.owner)(super.transform(tree))
         else
           super.transform(tree)
       }
