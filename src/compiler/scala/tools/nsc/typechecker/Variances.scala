@@ -67,6 +67,8 @@ trait Variances {
   def varianceInType(tp: Type)(tparam: Symbol): Int = tp match {
     case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
       VARIANCES
+    case BoundedWildcardType(bounds) =>
+      varianceInType(bounds)(tparam)
     case SingleType(pre, sym) =>
       varianceInType(pre)(tparam)
     case TypeRef(pre, sym, args) =>
