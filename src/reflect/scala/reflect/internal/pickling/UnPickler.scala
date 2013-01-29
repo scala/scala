@@ -34,7 +34,7 @@ abstract class UnPickler {
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
     try {
-      new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
+      newScan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
       case ex: IOException =>
         throw ex
@@ -45,6 +45,8 @@ abstract class UnPickler {
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
     }
   }
+
+  def newScan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) = new Scan(_bytes, offset, classRoot, moduleRoot, filename)
 
   class Scan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
@@ -848,25 +850,26 @@ abstract class UnPickler {
     }
 
     /** A lazy type which when completed returns type at index `i`. */
-    private class LazyTypeRef(i: Int) extends LazyType with FlagAgnosticCompleter {
+    class LazyTypeRef(i: Int) extends LazyType with FlagAgnosticCompleter {
       private val definedAtRunId = currentRunId
       private val p = phase
       override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
-        atPhase(p) (sym setInfo tp)
+        assignType(sym, tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
       }
       catch {
         case e: MissingRequirementError => throw toTypeError(e)
       }
+      def assignType(sym: Symbol, tp: Type): Unit = atPhase(p) (sym setInfo tp)
       override def load(sym: Symbol) { complete(sym) }
     }
 
     /** A lazy type which when completed returns type at index `i` and sets alias
      *  of completed symbol to symbol at index `j`.
      */
-    private class LazyTypeRefAndAlias(i: Int, j: Int) extends LazyTypeRef(i) {
+    class LazyTypeRefAndAlias(i: Int, j: Int) extends LazyTypeRef(i) {
       override def complete(sym: Symbol) = try {
         super.complete(sym)
         var alias = at(j, readSymbol)

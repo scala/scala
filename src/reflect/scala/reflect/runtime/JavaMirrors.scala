@@ -516,6 +516,24 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     private object unpickler extends UnPickler {
       val global: thisUniverse.type = thisUniverse
+
+      override def newScan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) = new SynchronizedScan(_bytes, offset, classRoot, moduleRoot, filename)
+
+      class SynchronizedScan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends Scan(_bytes, offset, classRoot, moduleRoot, filename) {
+        override def newLazyTypeRef(i: Int): LazyType = new SynchronizedLazyTypeRef(i)
+        class SynchronizedLazyTypeRef(i: Int) extends LazyTypeRef(i) {
+          override def assignType(sym: Symbol, tp: Type): Unit =
+            if (isCompilerUniverse) super.assignType(sym, tp)
+            else (sym setInfo tp)
+        }
+
+        override def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = new SynchronizedLazyTypeRefAndAlias(i, j)
+        class SynchronizedLazyTypeRefAndAlias(i: Int, j: Int) extends LazyTypeRefAndAlias(i, j) {
+          override def assignType(sym: Symbol, tp: Type): Unit =
+            if (isCompilerUniverse) super.assignType(sym, tp)
+            else (sym setInfo tp)
+        }
+      }
     }
 
     /** how connected????
