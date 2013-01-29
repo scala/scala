@@ -411,7 +411,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // TODO: extractor.paramType may contain unbound type params (run/t2800, run/t3530)
         // `patBinderOrCasted` is assigned the result of casting `patBinder` to `extractor.paramType`
         val (typeTestTreeMaker, patBinderOrCasted, binderKnownNonNull) =
-          if (needsTypeTest(patBinder.info.widen, extractor.paramType)) {
+          if (patBinder.info.widen <:< extractor.paramType) {
+            // no type test needed, but the tree maker relies on `patBinderOrCasted` having type `extractor.paramType` (and not just some type compatible with it)
+            // SI-6624 shows this is necessary because apparently patBinder may have an unfortunate type (.decls don't have the case field accessors)
+            // TODO: get to the bottom of this -- I assume it happens when type checking infers a weird type for an unapply call
+            // by going back to the parameterType for the extractor call we get a saner type, so let's just do that for now
+            /* TODO: uncomment when `settings.developer` and `devWarning` become available
+              if (settings.developer.value && !(patBinder.info =:= extractor.paramType))
+                devWarning(s"resetting info of $patBinder: ${patBinder.info} to ${extractor.paramType}")
+            */
+            (Nil, patBinder setInfo extractor.paramType, false)
+          } else {
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
             // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
@@ -422,16 +432,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
             // even though the eventual null check will be on patBinderOrCasted
             // it'll be equal to patBinder casted to extractor.paramType anyway (and the type test is on patBinder)
             (List(treeMaker), treeMaker.nextBinder, treeMaker.impliesBinderNonNull(patBinder))
-          } else {
-            // no type test needed, but the tree maker relies on `patBinderOrCasted` having type `extractor.paramType` (and not just some type compatible with it)
-            // SI-6624 shows this is necessary because apparently patBinder may have an unfortunate type (.decls don't have the case field accessors)
-            // TODO: get to the bottom of this -- I assume it happens when type checking infers a weird type for an unapply call
-            // by going back to the parameterType for the extractor call we get a saner type, so let's just do that for now
-            /* TODO: uncomment when `settings.developer` and `devWarning` become available
-              if (settings.developer.value && !(patBinder.info =:= extractor.paramType))
-                devWarning(s"resetting info of $patBinder: ${patBinder.info} to ${extractor.paramType}")
-            */
-            (Nil, patBinder setInfo extractor.paramType, false)
           }
 
         withSubPats(typeTestTreeMaker :+ extractor.treeMaker(patBinderOrCasted, binderKnownNonNull, pos), extractor.subBindersAndPatterns: _*)
@@ -1176,9 +1176,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       override def toString = "P"+(prevBinder.name,  extraCond getOrElse "", localSubstitution)
     }
 
-    // typetag-based tests are inserted by the type checker
-    def needsTypeTest(tp: Type, pt: Type): Boolean = !(tp <:< pt)
-
     object TypeTestTreeMaker {
       // factored out so that we can consistently generate other representations of the tree that implements the test
       // (e.g. propositions for exhaustivity and friends, boolean for isPureTypeTest)
@@ -1192,12 +1189,14 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def equalsTest(pat: Tree, testedBinder: Symbol): Result
         def eqTest(pat: Tree, testedBinder: Symbol): Result
         def and(a: Result, b: Result): Result
+        def tru: Result
       }
 
       object treeCondStrategy extends TypeTestCondStrategy { import CODE._
         type Result = Tree
 
         def and(a: Result, b: Result): Result                = a AND b
+        def tru                                              = TRUE_typed
         def typeTest(testedBinder: Symbol, expectedTp: Type) = codegen._isInstanceOf(testedBinder, expectedTp)
         def nonNullTest(testedBinder: Symbol)                = REF(testedBinder) OBJ_NE NULL
         def equalsTest(pat: Tree, testedBinder: Symbol)      = codegen._equals(pat, testedBinder)
@@ -1228,6 +1227,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def equalsTest(pat: Tree, testedBinder: Symbol): Result       = false
         def eqTest(pat: Tree, testedBinder: Symbol): Result           = false
         def and(a: Result, b: Result): Result                         = false // we don't and type tests, so the conjunction must include at least one false
+        def tru                                                       = true
       }
 
       def nonNullImpliedByTestChecker(binder: Symbol) = new TypeTestCondStrategy {
@@ -1239,6 +1239,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def equalsTest(pat: Tree, testedBinder: Symbol): Result       = false // could in principle analyse pat and see if it's statically known to be non-null
         def eqTest(pat: Tree, testedBinder: Symbol): Result           = false // could in principle analyse pat and see if it's statically known to be non-null
         def and(a: Result, b: Result): Result                         = a || b
+        def tru                                                       = false
       }
     }
 
@@ -1308,10 +1309,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           // I think it's okay:
           //  - the isInstanceOf test includes a test for the element type
           //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
-          case _ if (expectedTp <:< AnyRefClass.tpe) && !needsTypeTest(testedBinder.info.widen, expectedTp) =>
-            // do non-null check first to ensure we won't select outer on null
-            if (outerTestNeeded) and(nonNullTest(testedBinder), outerTest(testedBinder, expectedTp))
-            else nonNullTest(testedBinder)
+          case _ if testedBinder.info.widen <:< expectedTp =>
+            // if the expected type is a primitive value type, it cannot be null and it cannot have an outer pointer
+            // since the types conform, no further checking is required
+            if (expectedTp.typeSymbol.isPrimitiveValueClass) tru
+            // have to test outer and non-null only when it's a reference type
+            else if (expectedTp <:< AnyRefClass.tpe) {
+              // do non-null check first to ensure we won't select outer on null
+              if (outerTestNeeded) and(nonNullTest(testedBinder), outerTest(testedBinder, expectedTp))
+              else nonNullTest(testedBinder)
+            } else default
 
           case _ => default
         }
@@ -1823,6 +1830,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                 def nonNullTest(testedBinder: Symbol)                 = NonNullCond(binderToUniqueTree(testedBinder))
                 def equalsTest(pat: Tree, testedBinder: Symbol)       = EqualityCond(binderToUniqueTree(testedBinder), unique(pat))
                 def eqTest(pat: Tree, testedBinder: Symbol)           = EqualityCond(binderToUniqueTree(testedBinder), unique(pat)) // TODO: eq, not ==
+                def tru                                               = TrueCond
               }
               ttm.renderCondition(condStrategy)
             case EqualityTestTreeMaker(prevBinder, patTree, _)        => EqualityCond(binderToUniqueTree(prevBinder), unique(patTree))
