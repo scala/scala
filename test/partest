@@ -82,7 +82,9 @@ fi
 
 # last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the
 # supplied argument will be used.
-JAVA_OPTS="-Xmx1024M -Xms64M $JAVA_OPTS"
+# At this writing it is reported test/partest --all requires 108m permgen.
+JAVA_OPTS="-Xmx1024M -Xms64M -XX:MaxPermSize=128M $JAVA_OPTS"
+
 # the ant task doesn't supply any options by default,
 # so don't to that here either -- note that you may want to pass -optimise
 # to mimic what happens during nightlies

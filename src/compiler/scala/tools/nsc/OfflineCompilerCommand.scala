@@ -33,7 +33,7 @@ class OfflineCompilerCommand(arguments: List[String], settings: FscSettings) ext
     }
     else {
       // Otherwise we're on the server and will use it to absolutize the paths.
-      settings.absolutize(currentDir.value)
+      settings.absolutize()
     }
   }
 
