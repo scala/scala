@@ -1281,8 +1281,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
   override def missingHook(owner: Symbol, name: Name): Symbol = {
     if (owner.hasPackageFlag) {
       val mirror = mirrorThatLoaded(owner)
-      // todo. this makes toolbox tests pass, but it's a mere workaround for SI-5865
-//      assert((owner.info decl name) == NoSymbol, s"already exists: $owner . $name")
       if (owner.isRootSymbol && mirror.tryJavaClass(name.toString).isDefined)
         return mirror.EmptyPackageClass.info decl name
       if (name.isTermName && !owner.isEmptyPackageClass)
