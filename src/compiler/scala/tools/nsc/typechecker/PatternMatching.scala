@@ -647,6 +647,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         case bp => bp
       }
 
+      // never store these in local variables (for PreserveSubPatBinders)
+      lazy val ignoredSubPatBinders = (subPatBinders zip args).collect{
+        case (b, PatternBoundToUnderscore()) => b
+      }.toSet
+
       def subPatTypes: List[Type] =
         if(isSeq) {
           val TypeRef(pre, SeqClass, args) = seqTp
@@ -750,13 +755,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       def treeMaker(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
         val paramAccessors = binder.constrParamAccessors
         // binders corresponding to mutable fields should be stored (SI-5158, SI-6070)
+        // make an exception for classes under the scala package as they should be well-behaved,
+        // to optimize matching on List
         val mutableBinders =
-          if (paramAccessors exists (_.isMutable))
+          if (!binder.info.typeSymbol.hasTransOwner(ScalaPackageClass) &&
+              (paramAccessors exists (_.isMutable)))
             subPatBinders.zipWithIndex.collect{ case (binder, idx) if paramAccessors(idx).isMutable => binder }
           else Nil
 
         // checks binder ne null before chaining to the next extractor
-        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull)
+        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull, ignoredSubPatBinders)
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
@@ -792,7 +800,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
         val binder         = freshSym(pos, pureType(resultInMonad)) // can't simplify this when subPatBinders.isEmpty, since UnitClass.tpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
-        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(subPatBinders, subPatRefs(binder), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted)
+        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(subPatBinders, subPatRefs(binder), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted, ignoredSubPatBinders)
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -846,6 +854,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         case Alternative(ps)                       => ps forall (WildcardPattern.unapply(_))
         case EmptyTree                             => true
         case _                                     => false
+      }
+    }
+
+    object PatternBoundToUnderscore {
+      def unapply(pat: Tree): Boolean = pat match {
+        case Bind(nme.WILDCARD, _)                => true // don't skip when binding an interesting symbol!
+        case Ident(nme.WILDCARD)                  => true
+        case Alternative(ps)                      => ps forall (PatternBoundToUnderscore.unapply(_))
+        case Typed(PatternBoundToUnderscore(), _) => true
+        case _                                    => false
       }
     }
 
@@ -1016,10 +1034,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     trait PreserveSubPatBinders extends TreeMaker {
       val subPatBinders: List[Symbol]
       val subPatRefs: List[Tree]
+      val ignoredSubPatBinders: Set[Symbol]
 
       // unless `debugInfoEmitVars`, this set should contain the bare minimum for correctness
       // mutable case class fields need to be stored regardless (SI-5158, SI-6070) -- see override in ProductExtractorTreeMaker
-      def storedBinders: Set[Symbol] = if (debugInfoEmitVars) subPatBinders.toSet else Set.empty
+      // sub patterns bound to wildcard (_) are never stored as they can't be referenced
+      // dirty debuggers will have to get dirty to see the wildcards
+      lazy val storedBinders: Set[Symbol] =
+        (if (debugInfoEmitVars) subPatBinders.toSet else Set.empty) ++ extraStoredBinders -- ignoredSubPatBinders
+
+      // e.g., mutable fields of a case class in ProductExtractorTreeMaker
+      def extraStoredBinders: Set[Symbol]
 
       def emitVars = storedBinders.nonEmpty
 
@@ -1040,10 +1065,22 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution
 
       import CODE._
-      def bindSubPats(in: Tree): Tree = if (!emitVars) in
+      def bindSubPats(in: Tree): Tree =
+        if (!emitVars) in
         else {
-          val (subPatBindersStored, subPatRefsStored) = stored.unzip
-          Block(map2(subPatBindersStored.toList, subPatRefsStored.toList)(VAL(_) === _), in)
+          // binders in `subPatBindersStored` that are referenced by tree `in`
+          val usedBinders = new collection.mutable.HashSet[Symbol]()
+          // all potentially stored subpat binders
+          val potentiallyStoredBinders = stored.unzip._1.toSet
+          // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
+          in.foreach(t => if (potentiallyStoredBinders(t.symbol)) usedBinders += t.symbol)
+
+          if (usedBinders.isEmpty) in
+          else {
+            // only store binders actually used
+            val (subPatBindersStored, subPatRefsStored) = stored.filter{case (b, _) => usedBinders(b)}.unzip
+            Block(map2(subPatBindersStored.toList, subPatRefsStored.toList)(VAL(_) === _), in)
+          }
         }
     }
 
@@ -1063,7 +1100,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           val subPatRefs: List[Tree],
           extractorReturnsBoolean: Boolean,
           val checkedLength: Option[Int],
-          val prevBinder: Symbol) extends FunTreeMaker with PreserveSubPatBinders {
+          val prevBinder: Symbol,
+          val ignoredSubPatBinders: Set[Symbol]
+          ) extends FunTreeMaker with PreserveSubPatBinders {
+
+      def extraStoredBinders: Set[Symbol] = Set()
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         val condAndNext = extraCond match {
@@ -1107,14 +1148,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           val subPatBinders: List[Symbol],
           val subPatRefs: List[Tree],
           val mutableBinders: List[Symbol],
-          binderKnownNonNull: Boolean) extends FunTreeMaker with PreserveSubPatBinders {
+          binderKnownNonNull: Boolean,
+          val ignoredSubPatBinders: Set[Symbol]
+         ) extends FunTreeMaker with PreserveSubPatBinders {
 
       import CODE._
       val nextBinder = prevBinder // just passing through
 
       // mutable binders must be stored to avoid unsoundness or seeing mutation of fields after matching (SI-5158, SI-6070)
-      // (the implementation could be optimized by duplicating code from `super.storedBinders`, but this seems more elegant)
-      override def storedBinders: Set[Symbol] = super.storedBinders ++ mutableBinders.toSet
+      def extraStoredBinders: Set[Symbol] = mutableBinders.toSet
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         val nullCheck = REF(prevBinder) OBJ_NE NULL
