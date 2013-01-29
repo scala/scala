@@ -27,11 +27,10 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
 
     this.settings
     this.treeInfo
+    this.gil
     // inaccessible: this.uniqueLock
-    // inaccessible: this.subsametypeLock
-    // inaccessible: this.lubglbLock
-    // inaccessible: this.indentLock
-    // inaccessible: this.toStringLock
+    // inaccessible: this.nextIdLock
+    // inaccessible: this.freshExistentialNameLock
     // inaccessible: this.mirrors
     this.rootMirror
     this.treeBuild

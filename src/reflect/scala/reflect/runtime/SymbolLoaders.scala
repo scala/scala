@@ -67,6 +67,25 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     }
   }
 
+
+  // Since runtime reflection doesn't have a luxury of enumerating all classes
+  // on the classpath, it has to materialize symbols for top-level definitions
+  // (packages, classes, objects) on demand.
+  //
+  // Someone asks us for a class named `foo.Bar`? Easy. Let's speculatively create
+  // a package named `foo` and then look up `newTypeName("bar")` in its decls.
+  // This lookup, implemented in `SymbolLoaders.PackageScope` tests the waters by
+  // trying to to `Class.forName("foo.Bar")` and then creates a ClassSymbol upon
+  // success (the whole story is a bit longer, but the rest is irrelevant here).
+  //
+  // That's all neat, but these non-deterministic mutations of the global symbol
+  // table give a lot of trouble in multi-threaded setting. One of the popular
+  // reflection crashes happens when multiple threads happen to trigger symbol
+  // materialization multiple times for the same symbol, making subsequent
+  // reflective operations stumble upon outrageous stuff like overloaded packages.
+  //
+  // Short of significantly changing SymbolLoaders I see no other way than just
+  // to slap a global lock on materialization in runtime reflection.
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
       with SynchronizedScope {
     assert(pkgClass.isType)
@@ -89,9 +108,11 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       else existing.sym.asInstanceOf[T]
     }
 
-    // disable fingerprinting as we do not know entries beforehand
-    private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
-    override def lookupEntry(name: Name): ScopeEntry = {
+    // package scopes need to synchronize on the GIL
+    // because lookupEntry might cause changes to the global symbol table
+    override def syncLockSynchronized[T](body: => T): T = gilSynchronized(body)
+    private val negatives = new mutable.HashSet[Name]
+    override def lookupEntry(name: Name): ScopeEntry = syncLockSynchronized {
       val e = super.lookupEntry(name)
       if (e != null)
         e

@@ -6,14 +6,18 @@ import scala.reflect.io.AbstractFile
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
-  override protected def nextId() = synchronized { super.nextId() }
+  // we can keep this lock fine-grained, because nextId is just a simple increment, which makes deadlocks impossible
+  private lazy val nextIdLock = new Object
+  override protected def nextId() = nextIdLock.synchronized { super.nextId() }
 
+  // we can keep this lock fine-grained, because freshExistentialName is just a simple increment, which makes deadlocks impossible
+  private lazy val freshExistentialNameLock = new Object
   override protected def freshExistentialName(suffix: String) =
-    synchronized { super.freshExistentialName(suffix) }
+    freshExistentialNameLock.synchronized { super.freshExistentialName(suffix) }
 
   // Set the fields which point companions at one another.  Returns the module.
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
-    synchronized { super.connectModuleToClass(m, moduleClass) }
+    gilSynchronized { super.connectModuleToClass(m, moduleClass) }
 
   override def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
     new FreeTermSymbol(name, value, origin) with SynchronizedTermSymbol initFlags flags
@@ -25,27 +29,27 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedSymbol extends Symbol {
 
-    override def rawflags = synchronized { super.rawflags }
-    override def rawflags_=(x: Long) = synchronized { super.rawflags_=(x) }
+    override def rawflags = gilSynchronized { super.rawflags }
+    override def rawflags_=(x: Long) = gilSynchronized { super.rawflags_=(x) }
 
-    override def rawowner = synchronized { super.rawowner }
-    override def owner_=(owner: Symbol) = synchronized { super.owner_=(owner) }
+    override def rawowner = gilSynchronized { super.rawowner }
+    override def owner_=(owner: Symbol) = gilSynchronized { super.owner_=(owner) }
 
-    override def validTo = synchronized { super.validTo }
-    override def validTo_=(x: Period) = synchronized { super.validTo_=(x) }
+    override def validTo = gilSynchronized { super.validTo }
+    override def validTo_=(x: Period) = gilSynchronized { super.validTo_=(x) }
 
-    override def pos = synchronized { super.pos }
-    override def setPos(pos: Position): this.type = { synchronized { super.setPos(pos) }; this }
+    override def pos = gilSynchronized { super.pos }
+    override def setPos(pos: Position): this.type = { gilSynchronized { super.setPos(pos) }; this }
 
-    override def privateWithin = synchronized { super.privateWithin }
-    override def privateWithin_=(sym: Symbol) = synchronized { super.privateWithin_=(sym) }
+    override def privateWithin = gilSynchronized { super.privateWithin }
+    override def privateWithin_=(sym: Symbol) = gilSynchronized { super.privateWithin_=(sym) }
 
-    override def info = synchronized { super.info }
-    override def info_=(info: Type) = synchronized { super.info_=(info) }
-    override def updateInfo(info: Type): Symbol = synchronized { super.updateInfo(info) }
-    override def rawInfo: Type = synchronized { super.rawInfo }
+    override def info = gilSynchronized { super.info }
+    override def info_=(info: Type) = gilSynchronized { super.info_=(info) }
+    override def updateInfo(info: Type): Symbol = gilSynchronized { super.updateInfo(info) }
+    override def rawInfo: Type = gilSynchronized { super.rawInfo }
 
-    override def typeParams: List[Symbol] = synchronized {
+    override def typeParams: List[Symbol] = gilSynchronized {
       if (isCompilerUniverse) super.typeParams
       else {
         if (isMonomorphicType) Nil
@@ -61,7 +65,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
         }
       }
     }
-    override def unsafeTypeParams: List[Symbol] = synchronized {
+    override def unsafeTypeParams: List[Symbol] = gilSynchronized {
       if (isCompilerUniverse) super.unsafeTypeParams
       else {
         if (isMonomorphicType) Nil
@@ -69,12 +73,12 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       }
     }
 
-    override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
+    override def reset(completer: Type): this.type = gilSynchronized { super.reset(completer) }
 
-    override def infosString: String = synchronized { super.infosString }
+    override def infosString: String = gilSynchronized { super.infosString }
 
-    override def annotations: List[AnnotationInfo] = synchronized { super.annotations }
-    override def setAnnotations(annots: List[AnnotationInfo]): this.type = { synchronized { super.setAnnotations(annots) }; this }
+    override def annotations: List[AnnotationInfo] = gilSynchronized { super.annotations }
+    override def setAnnotations(annots: List[AnnotationInfo]): this.type = { gilSynchronized { super.setAnnotations(annots) }; this }
 
 
 // ------ creators -------------------------------------------------------------------
@@ -125,40 +129,40 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 // ------- subclasses ---------------------------------------------------------------------
 
   trait SynchronizedTermSymbol extends TermSymbol with SynchronizedSymbol {
-    override def name_=(x: Name) = synchronized { super.name_=(x) }
-    override def rawname = synchronized { super.rawname }
-    override def referenced: Symbol = synchronized { super.referenced }
-    override def referenced_=(x: Symbol) = synchronized { super.referenced_=(x) }
+    override def name_=(x: Name) = gilSynchronized { super.name_=(x) }
+    override def rawname = gilSynchronized { super.rawname }
+    override def referenced: Symbol = gilSynchronized { super.referenced }
+    override def referenced_=(x: Symbol) = gilSynchronized { super.referenced_=(x) }
   }
 
   trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
-    override def typeAsMemberOf(pre: Type): Type = synchronized { super.typeAsMemberOf(pre) }
-    override def paramss: List[List[Symbol]] = synchronized { super.paramss }
-    override def returnType: Type = synchronized { super.returnType }
+    override def typeAsMemberOf(pre: Type): Type = gilSynchronized { super.typeAsMemberOf(pre) }
+    override def paramss: List[List[Symbol]] = gilSynchronized { super.paramss }
+    override def returnType: Type = gilSynchronized { super.returnType }
   }
 
   trait SynchronizedTypeSymbol extends TypeSymbol with SynchronizedSymbol {
-    override def name_=(x: Name) = synchronized { super.name_=(x) }
-    override def rawname = synchronized { super.rawname }
-    override def typeConstructor: Type = synchronized { super.typeConstructor }
-    override def tpe_* : Type = synchronized { super.tpe_* }
-    override def tpeHK : Type = synchronized { super.tpeHK }
+    override def name_=(x: Name) = gilSynchronized { super.name_=(x) }
+    override def rawname = gilSynchronized { super.rawname }
+    override def typeConstructor: Type = gilSynchronized { super.typeConstructor }
+    override def tpe_* : Type = gilSynchronized { super.tpe_* }
+    override def tpeHK : Type = gilSynchronized { super.tpeHK }
   }
 
   trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol {
-    override def associatedFile = synchronized { super.associatedFile }
-    override def associatedFile_=(f: AbstractFile) = synchronized { super.associatedFile_=(f) }
-    override def thisSym: Symbol = synchronized { super.thisSym }
-    override def thisType: Type = synchronized { super.thisType }
-    override def typeOfThis: Type = synchronized { super.typeOfThis }
-    override def typeOfThis_=(tp: Type) = synchronized { super.typeOfThis_=(tp) }
-    override def children = synchronized { super.children }
-    override def addChild(sym: Symbol) = synchronized { super.addChild(sym) }
+    override def associatedFile = gilSynchronized { super.associatedFile }
+    override def associatedFile_=(f: AbstractFile) = gilSynchronized { super.associatedFile_=(f) }
+    override def thisSym: Symbol = gilSynchronized { super.thisSym }
+    override def thisType: Type = gilSynchronized { super.thisType }
+    override def typeOfThis: Type = gilSynchronized { super.typeOfThis }
+    override def typeOfThis_=(tp: Type) = gilSynchronized { super.typeOfThis_=(tp) }
+    override def children = gilSynchronized { super.children }
+    override def addChild(sym: Symbol) = gilSynchronized { super.addChild(sym) }
   }
 
   trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
-    override def sourceModule = synchronized { super.sourceModule }
-    override def implicitMembers: Scope = synchronized { super.implicitMembers }
+    override def sourceModule = gilSynchronized { super.sourceModule }
+    override def implicitMembers: Scope = gilSynchronized { super.implicitMembers }
   }
 }
 
