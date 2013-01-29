@@ -1690,6 +1690,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     @inline final def map(f: Symbol => Symbol): Symbol = if (this eq NoSymbol) this else f(this)
 
+    final def toOption: Option[Symbol] = if (exists) Some(this) else None
+
 // ------ cloneing -------------------------------------------------------------------
 
     /** A clone of this symbol. */
