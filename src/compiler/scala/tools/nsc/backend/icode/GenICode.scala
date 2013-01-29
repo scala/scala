@@ -1164,34 +1164,28 @@ abstract class GenICode extends SubComponent  {
       resCtx
     }
 
-    private def adapt(from: TypeKind, to: TypeKind, ctx: Context, pos: Position): Unit = {
-      if (!(from <:< to) && !(from == NullReference && to == NothingReference)) {
-        to match {
-          case UNIT =>
-            ctx.bb.emit(DROP(from), pos)
-            debuglog("Dropped an " + from);
+    private def adapt(from: TypeKind, to: TypeKind, ctx: Context, pos: Position) {
+      // An awful lot of bugs explode here - let's leave ourselves more clues.
+      // A typical example is an overloaded type assigned after typer.
+      log(s"GenICode#adapt($from, $to, $ctx, $pos)")
 
-          case _ =>
-            debugassert(from != UNIT, "Can't convert from UNIT to " + to + " at: " + pos)
-            assert(!from.isReferenceType && !to.isReferenceType,
-              "type error: can't convert from " + from + " to " + to +" in unit " + unit.source + " at " + pos)
-
-            ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos)
-        }
-      } else if (from == NothingReference) {
-        ctx.bb.emit(THROW(ThrowableClass))
-        ctx.bb.enterIgnoreMode
-      } else if (from == NullReference) {
-        ctx.bb.emit(DROP(from))
-        ctx.bb.emit(CONSTANT(Constant(null)))
+      val conforms = (from <:< to) || (from == NullReference && to == NothingReference)
+      def coerce(from: TypeKind, to: TypeKind) = ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos)
+      def checkAssertions() {
+        def msg = s"Can't convert from $from to $to in unit ${unit.source} at $pos"
+        debugassert(from != UNIT, msg)
+        assert(!from.isReferenceType && !to.isReferenceType, msg)
       }
-      else if (from == ThrowableReference && !(ThrowableClass.tpe <:< to.toType)) {
-        log("Inserted check-cast on throwable to " + to + " at " + pos)
-        ctx.bb.emit(CHECK_CAST(to))
+      if (conforms) from match {
+        case NothingReference                                          => ctx.bb.emit(THROW(ThrowableClass)) ; ctx.bb.enterIgnoreMode
+        case NullReference                                             => ctx.bb.emit(Seq(DROP(from), CONSTANT(Constant(null))))
+        case ThrowableReference if !(ThrowableClass.tpe <:< to.toType) => ctx.bb.emit(CHECK_CAST(to)) // downcast throwables
+        case BYTE | SHORT | CHAR | INT if to == LONG                   => coerce(INT, LONG)           // widen subrange types
+        case _                                                         => ()
       }
-      else (from, to) match  {
-        case (BYTE, LONG) | (SHORT, LONG) | (CHAR, LONG) | (INT, LONG) => ctx.bb.emit(CALL_PRIMITIVE(Conversion(INT, LONG)))
-        case _ => ()
+      else to match {
+        case UNIT => ctx.bb.emit(DROP(from), pos)           // value discarding
+        case _    => checkAssertions() ; coerce(from, to)   // other primitive coercions
       }
     }
 
@@ -1907,18 +1901,8 @@ abstract class GenICode extends SubComponent  {
 
       var handlerCount = 0
 
-      override def toString(): String = {
-        val buf = new StringBuilder()
-        buf.append("\tpackage: ").append(packg).append('\n')
-        buf.append("\tclazz: ").append(clazz).append('\n')
-        buf.append("\tmethod: ").append(method).append('\n')
-        buf.append("\tbb: ").append(bb).append('\n')
-        buf.append("\tlabels: ").append(labels).append('\n')
-        buf.append("\texception handlers: ").append(handlers).append('\n')
-        buf.append("\tcleanups: ").append(cleanups).append('\n')
-        buf.append("\tscope: ").append(scope).append('\n')
-        buf.toString()
-      }
+      override def toString =
+        s"package $packg { class $clazz { def $method { bb=$bb } } }"
 
       def loadException(ctx: Context, exh: ExceptionHandler, pos: Position) = {
         debuglog("Emitting LOAD_EXCEPTION for class: " + exh.loadExceptionClass)
