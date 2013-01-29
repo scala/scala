@@ -1180,10 +1180,17 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     lazy val AnnotationDefaultAttr: ClassSymbol = {
-      val attr = enterNewClass(RuntimePackageClass, tpnme.AnnotationDefaultATTR, List(AnnotationClass.tpe))
-      // This attribute needs a constructor so that modifiers in parsed Java code make sense
-      attr.info.decls enter attr.newClassConstructor(NoPosition)
-      attr
+      val sym = RuntimePackageClass.newClassSymbol(tpnme.AnnotationDefaultATTR, NoPosition, 0L)
+      sym setInfo ClassInfoType(List(AnnotationClass.tpe), newScope, sym)
+      RuntimePackageClass.info.decls.toList.filter(_.name == sym.name) match {
+        case existing :: _ =>
+          existing.asInstanceOf[ClassSymbol]
+        case _ =>
+          RuntimePackageClass.info.decls enter sym
+          // This attribute needs a constructor so that modifiers in parsed Java code make sense
+          sym.info.decls enter sym.newClassConstructor(NoPosition)
+          sym
+      }
     }
 
     private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member") = {
@@ -1388,10 +1395,13 @@ trait Definitions extends api.StandardDefinitions {
       else flatNameString(etp.typeSymbol, '.')
     }
 
+    // documented in JavaUniverse.init
     def init() {
       if (isInitialized) return
-      // force initialization of every symbol that is synthesized or hijacked by the compiler
-      val _ = symbolsNotPresentInBytecode
+      ObjectClass.initialize
+      ScalaPackageClass.initialize
+      val forced1 = symbolsNotPresentInBytecode
+      val forced2 = NoSymbol
       isInitialized = true
     } //init
 

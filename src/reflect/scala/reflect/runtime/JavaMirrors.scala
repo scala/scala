@@ -44,16 +44,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
   trait JavaClassCompleter extends FlagAssigningCompleter
 
-  def init() = {
-    definitions.AnyValClass // force it.
-
-    // establish root association to avoid cyclic dependency errors later
-    rootMirror.classToScala(classOf[java.lang.Object]).initialize
-
-    // println("initializing definitions")
-    definitions.init()
-  }
-
   def runtimeMirror(cl: ClassLoader): Mirror = mirrors get cl match {
     case Some(WeakReference(m)) => m
     case _ => createMirror(rootMirror.RootClass, cl)
@@ -1280,11 +1270,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     case _ => abort(s"${sym}.enclosingRootClass = ${sym.enclosingRootClass}, which is not a RootSymbol")
   }
 
-  private lazy val syntheticCoreClasses: Map[(String, Name), Symbol] = {
-    def mapEntry(sym: Symbol): ((String, Name), Symbol) = (sym.owner.fullName, sym.name) -> sym
-    Map() ++ (definitions.syntheticCoreClasses map mapEntry)
-  }
-
   /** 1. If `owner` is a package class (but not the empty package) and `name` is a term name, make a new package
    *  <owner>.<name>, otherwise return NoSymbol.
    *  Exception: If owner is root and a java class with given name exists, create symbol in empty package instead
@@ -1301,13 +1286,15 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      syntheticCoreClasses get ((owner.fullName, name)) foreach { tsym =>
-        // synthetic core classes are only present in root mirrors
-        // because Definitions.scala, which initializes and enters them, only affects rootMirror
-        // therefore we need to enter them manually for non-root mirrors
-        if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
-        return tsym
-      }
+      if (name == tpnme.AnyRef && owner.owner.isRoot && owner.name == tpnme.scala_)
+        // when we synthesize the scala.AnyRef symbol, we need to add it to the scope of the scala package
+        // the problem is that adding to the scope implies doing something like `owner.info.decls enter anyRef`
+        // which entails running a completer for the scala package
+        // which will try to unpickle the stuff in scala/package.class
+        // which will transitively load scala.AnyRef
+        // which doesn't exist yet, because it hasn't been added to the scope yet
+        // this missing hook ties the knot without introducing synchronization problems like before
+        return definitions.AnyRefClass
     }
     info("*** missing: "+name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)
     super.missingHook(owner, name)

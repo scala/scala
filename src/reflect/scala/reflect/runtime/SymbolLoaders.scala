@@ -70,6 +70,25 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
       with SynchronizedScope {
     assert(pkgClass.isType)
+
+    // materializing multiple copies of the same symbol in PackageScope is a very popular bug
+    // this override does its best to guard against it
+    override def enter[T <: Symbol](sym: T): T = {
+      // workaround for SI-7728
+      if (isCompilerUniverse) super.enter(sym)
+      else {
+        val existing = super.lookupEntry(sym.name)
+        assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
+        super.enter(sym)
+      }
+    }
+
+    override def enterIfNew[T <: Symbol](sym: T): T = {
+      val existing = super.lookupEntry(sym.name)
+      if (existing == null) enter(sym)
+      else existing.sym.asInstanceOf[T]
+    }
+
     // disable fingerprinting as we do not know entries beforehand
     private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
     override def lookupEntry(name: Name): ScopeEntry = {
@@ -95,8 +114,21 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
                 val module = origOwner.info decl name.toTermName
                 assert(clazz != NoSymbol)
                 assert(module != NoSymbol)
-                pkgClass.info.decls enter clazz
-                pkgClass.info.decls enter module
+                // currentMirror.mirrorDefining(cls) might side effect by entering symbols into pkgClass.info.decls
+                // therefore, even though in the beginning of this method, super.lookupEntry(name) returned null
+                // entering clazz/module now will result in a double-enter assertion in PackageScope.enter
+                // here's how it might happen
+                // 1) we are the rootMirror
+                // 2) cls.getClassLoader is different from our classloader
+                // 3) mirrorDefining(cls) looks up a mirror corresponding to that classloader and cannot find it
+                // 4) mirrorDefining creates a new mirror
+                // 5) that triggers Mirror.init() of the new mirror
+                // 6) that triggers definitions.syntheticCoreClasses
+                // 7) that might materialize symbols and enter them into our scope (because syntheticCoreClasses live in rootMirror)
+                // 8) now we come back here and try to enter one of the now entered symbols => BAM!
+                // therefore we use enterIfNew rather than just enter
+                enterIfNew(clazz)
+                enterIfNew(module)
                 (clazz, module)
               }
             debugInfo(s"created $module/${module.moduleClass} in $pkgClass")

@@ -3341,10 +3341,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def name = nme.NO_NAME
     override def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
-    synchronized {
-      setInfo(NoType)
-      privateWithin = this
-    }
+    // Syncnote: no need to synchronize this, because NoSymbol's initialization is triggered by JavaUniverse.init
+    // which is called in universe's constructor - something that's inherently single-threaded
+    setInfo(NoType)
+    privateWithin = this
+
     override def info_=(info: Type) = {
       infos = TypeHistory(1, NoType, null)
       unlock()

@@ -139,6 +139,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       enter(sym)
     }
 
+    def enterIfNew[T <: Symbol](sym: T): T = {
+      val existing = lookupEntry(sym.name)
+      if (existing == null) enter(sym)
+      else existing.sym.asInstanceOf[T]
+    }
+
     private def createHash() {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterAllInHash(elems)
