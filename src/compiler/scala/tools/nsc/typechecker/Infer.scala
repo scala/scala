@@ -88,7 +88,7 @@ trait Infer extends Checkable {
       else resTp.baseType(OptionClass).typeArgs match {
         case optionTArg :: Nil =>
           def productArgs = getProductArgs(optionTArg)
-          if (nbSubPats == 1) {
+          if ((nbSubPats == 1 && !isUnapplySeq) || productArgs.size == 1) {
             if (isUnapplySeq) List(seqToRepeatedChecked(optionTArg))
             else {
               val productArity = productArgs.size
