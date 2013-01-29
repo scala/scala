@@ -1904,7 +1904,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
     class UniqueSym(variable: Var, const: Const) extends Sym(variable, const)
     object Sym {
-      private var uniques: util.HashSet[Sym] = new util.HashSet("uniques", 512)
+      private val uniques: util.HashSet[Sym] = new util.HashSet("uniques", 512)
       def apply(variable: Var, const: Const): Sym = {
         val newSym = new UniqueSym(variable, const)
         (uniques findEntryOrUpdate newSym)
