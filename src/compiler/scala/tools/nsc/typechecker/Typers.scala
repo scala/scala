@@ -3922,19 +3922,34 @@ trait Typers extends Modes with Adaptations with Tags {
       if (printInfers)
         println(s)
     }
+    
       val here_Name = newTermName("here")
-      val normalCode_DSLNodeString = "N_code_normal"
-      val scriptCall_DSLNodeString = "N_call"
-      val normalCode_DSLNodeName   = newTermName(normalCode_DSLNodeString)
-      val scriptCall_DSLNodeName   = newTermName(scriptCall_DSLNodeString)
+      val normalCode_NodeString = "N_code_normal"
+      val scriptCall_NodeString = "N_call"
+      val normalCode_NodeName   = newTypeName(normalCode_NodeString)
+      val scriptCall_NodeName   = newTypeName(scriptCall_NodeString)
+      
+      val nameSubScript        = newTermName("subscript")
+      val nameDSL              = newTermName("DSL")
+      val nameVM               = newTermName("vm")
+      val name_scriptType      = newTypeName("_scriptType")
+      val name_fun_code_normal = newTermName("_normal")
+      val name_fun_call        = newTermName("_call")
+ 
+      def sSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
+      def sSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
+      def sSubScriptVM_N_code_normal : Tree = Select(sSubScriptVM, normalCode_NodeName)
+      def sSubScriptVM_N_call        : Tree = Select(sSubScriptVM, scriptCall_NodeName)
+      def sSubScriptDSL_N_code_normal: Tree = Select(sSubScriptDSL, name_fun_code_normal)
+      def sSubScriptDSL_call         : Tree = Select(sSubScriptDSL, name_fun_call)
       
       def underscore_name(name: Name) = newTermName("_"+name)
       // copied from Parsers.scala:
       def makeParam (pname: TermName, tpe: Tree) =  ValDef(Modifiers(PARAM), pname, tpe, EmptyTree)
-      def blockToFunction(block: Tree, nodeType: Name, pos: Position): Function = {
+      def blockToFunction(block: Tree, nodeType: Tree, pos: Position): Function = {
         val vparams = List(
           atPos(pos) {
-            makeParam(here_Name, Ident(nodeType) setPos pos)
+            makeParam(here_Name, nodeType setPos pos)
           }
         )
         Function(vparams , block)
@@ -4464,8 +4479,13 @@ trait Typers extends Modes with Adaptations with Tags {
                 if (useTry) tryTypedApply(fun2, args)
                 else doTypedApply(tree, fun2, args, mode, pt)
 
-              val nodeType = if (isScriptCall) scriptCall_DSLNodeName else normalCode_DSLNodeName
-              blockToFunction(res, nodeType, tree.pos)
+              val nodeType    : Tree = if (isScriptCall) sSubScriptVM_N_call else sSubScriptVM_N_code_normal
+              val fun_template: Tree = if (isScriptCall) sSubScriptDSL_call  else sSubScriptDSL_N_code_normal
+              
+              val function_node_to_code = blockToFunction(res, nodeType, tree.pos)
+              val apply_template = Apply(fun_template, List(function_node_to_code))
+              typed(apply_template)
+              
             case SilentTypeError(err) =>
               onError({issue(err); setError(tree)})
           }

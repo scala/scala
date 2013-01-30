@@ -1188,10 +1188,11 @@ self =>
     def    here_Ident = Ident( here_Name) // Note: such items should be def's rather than val's; else the Typer will get confused
     def   there_Ident = Ident(there_Name)
                                                      
-    val nameSubScript = newTermName("subscript")
-    val nameDSL       = newTermName("DSL")
-    val nameVM        = newTermName("vm")
-    
+    val nameSubScript   = newTermName("subscript")
+    val nameDSL         = newTermName("DSL")
+    val nameVM          = newTermName("vm")
+    val name_scriptType = newTypeName("_scriptType")
+ 
     def sSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
     def sSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
 
@@ -1203,7 +1204,8 @@ self =>
     def sActualConstrainedParameter: Tree = Select(sSubScriptVM, actualConstrainedParameter_Name)
     def sActualAdaptingParameter   : Tree = Select(sSubScriptVM,    actualAdaptingParameter_Name)
 
-    def s_script: Tree = Select(sSubScriptDSL, script_Name)
+    def s_script    : Tree = Select(sSubScriptDSL, script_Name)
+    def s_scriptType: Tree = Select(sSubScriptDSL, name_scriptType)
     
     final val raw_space = " "
     final val raw_semi  = ";"
@@ -1527,10 +1529,11 @@ self =>
 		        val tparams         = typeParamClauseOpt(name, contextBoundBuf)
 		        val vparamss        =     paramClauses  (name, contextBoundBuf.toList, ofCaseClass = false)
 		        newLineOptWhenFollowedBy(EQUALS)
-		        var restype = fromWithinReturnType(typedOpt())
+		        //var restype = fromWithinReturnType(typedOpt()) // TBD: support Script return values
+		        
 		        val rhs =
 		          if (isStatSep || in.token == RBRACE) {
-		            if (restype.isEmpty) restype = scalaUnitConstr
+		            //if (restype.isEmpty) restype = scalaUnitConstr
 		            newmods |= Flags.DEFERRED
 		            EmptyTree
 		          } else {
@@ -1564,7 +1567,7 @@ self =>
 		        val paramBindings           = underscored_param_defs_and_bindings map (_._2)
 		        val scriptNameAsSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
 	            val scriptBody = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), List(rhs))
-		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), restype, scriptBody)
+		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, scriptBody)
 		      }
 	          signalParseProgress(scriptDef.pos)
 	          
