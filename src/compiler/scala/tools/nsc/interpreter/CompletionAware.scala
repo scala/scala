@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
-
-import scala.reflect.NameTransformer
 
 /** An interface for objects which are aware of tab completion and
  *  will supply their own candidates and resolve their own paths.
@@ -53,31 +51,3 @@ trait CompletionAware {
     results.sorted
   }
 }
-
-object CompletionAware {
-  val Empty = new CompletionAware { def completions(verbosity: Int) = Nil }
-
-  def unapply(that: Any): Option[CompletionAware] = that match {
-    case x: CompletionAware => Some((x))
-    case _                  => None
-  }
-
-  /** Create a CompletionAware object from the given functions.
-   *  The first should generate the list of completions whenever queried,
-   *  and the second should return Some(CompletionAware) object if
-   *  subcompletions are possible.
-   */
-  def apply(terms: () => List[String], followFunction: String => Option[CompletionAware]): CompletionAware =
-    new CompletionAware {
-      def completions = terms()
-      def completions(verbosity: Int) = completions
-      override def follow(id: String) = followFunction(id)
-    }
-
-  /** Convenience factories.
-   */
-  def apply(terms: () => List[String]): CompletionAware = apply(terms, _ => None)
-  def apply(map: scala.collection.Map[String, CompletionAware]): CompletionAware =
-    apply(() => map.keys.toList, map.get _)
-}
-

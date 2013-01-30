@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -19,7 +19,7 @@ import scala.reflect.ClassTag
  *  @author Aleksandar Prokopec
  */
 abstract class GenericClassTagCompanion[+CC[X] <: Traversable[X]] {
-  type Coll = CC[_]
+  protected[this] type Coll = CC[_]
 
   def newBuilder[A](implicit ord: ClassTag[A]): Builder[A, CC[A]]
 

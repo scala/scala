@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Grzegorz Kossakowski
  */
 
@@ -78,6 +78,7 @@ object Instrumentation {
     !t.className.startsWith("scala/util/DynamicVariable")
   }
 
+  // Used in tests.
   def printStatistics(stats: Statistics = getStatistics, filter: MethodCallTrace => Boolean = standardFilter): Unit = {
     val stats = getStatistics
     println("Method call statistics:")

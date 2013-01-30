@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2012 LAMP/EPFL
+ * Copyright 2006-2013 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -39,7 +39,4 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
   val nc = BooleanSetting(
       "-nc",
       "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon"
-
-  @deprecated("Use `nc` instead", "2.9.0") def nocompdaemon = nc
-  @deprecated("Use `save` instead", "2.9.0") def savecompiled = save
 }

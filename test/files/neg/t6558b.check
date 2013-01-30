@@ -1,0 +1,7 @@
+t6558b.scala:5: error: not found: type inargument
+    @inargument
+     ^
+t6558b.scala:11: error: not found: type infunction
+    @infunction
+     ^
+two errors found

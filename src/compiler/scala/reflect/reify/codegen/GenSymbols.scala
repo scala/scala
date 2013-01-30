@@ -5,7 +5,6 @@ trait GenSymbols {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   /** Symbol table of the reifee.
    *
@@ -99,7 +98,7 @@ trait GenSymbols {
   def reifyFreeTerm(binding: Tree): Tree =
     reifyIntoSymtab(binding.symbol) { sym =>
       if (reifyDebug) println("Free term" + (if (sym.isCapturedVariable) " (captured)" else "") + ": " + sym + "(" + sym.accurateKindString + ")")
-      val name = newTermName(nme.REIFY_FREE_PREFIX + sym.name + (if (sym.isType) nme.REIFY_FREE_THIS_SUFFIX else ""))
+      val name = newTermName("" + nme.REIFY_FREE_PREFIX + sym.name + (if (sym.isType) nme.REIFY_FREE_THIS_SUFFIX else ""))
       if (sym.isCapturedVariable) {
         assert(binding.isInstanceOf[Ident], showRaw(binding))
         val capturedBinding = referenceCapturedVariable(sym)
@@ -113,14 +112,14 @@ trait GenSymbols {
     reifyIntoSymtab(binding.symbol) { sym =>
       if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
       state.reificationIsConcrete = false
-      val name = newTermName(nme.REIFY_FREE_PREFIX + sym.name)
+      val name: TermName = nme.REIFY_FREE_PREFIX append sym.name
       Reification(name, binding, mirrorBuildCall(nme.newFreeType, reify(sym.name.toString), mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
     }
 
   def reifySymDef(sym: Symbol): Tree =
     reifyIntoSymtab(sym) { sym =>
       if (reifyDebug) println("Sym def: %s (%s)".format(sym, sym.accurateKindString))
-      val name = newTermName(nme.REIFY_SYMDEF_PREFIX + sym.name)
+      val name: TermName = nme.REIFY_SYMDEF_PREFIX append sym.name
       def reifiedOwner = if (sym.owner.isLocatable) reify(sym.owner) else reifySymDef(sym.owner)
       Reification(name, Ident(sym), mirrorBuildCall(nme.newNestedSymbol, reifiedOwner, reify(sym.name), reify(sym.pos), mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(sym.isClass)))
     }
@@ -144,7 +143,7 @@ trait GenSymbols {
       val reification = reificode(sym)
       import reification.{name, binding}
       val tree = reification.tree updateAttachment ReifyBindingAttachment(binding)
-      state.symtab += (sym, name, tree)
+      state.symtab += (sym, name.toTermName, tree)
     }
     fromSymtab
   }

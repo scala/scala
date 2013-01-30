@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -8,8 +8,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
 
 abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment
@@ -94,7 +92,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         impl.typeOfThis = iface.typeOfThis
         impl.thisSym setName iface.thisSym.name
       }
-      impl.sourceFile = iface.sourceFile
+      impl.associatedFile = iface.sourceFile
       if (inClass)
         iface.owner.info.decls enter impl
 
@@ -231,9 +229,8 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           extends ChangeOwnerTraverser(oldowner, newowner) {
     override def traverse(tree: Tree) {
       tree match {
-        case Return(expr) =>
-          if (tree.symbol == oldowner) tree.symbol = newowner
-        case _ =>
+        case _: Return => change(tree.symbol)
+        case _         =>
       }
       super.traverse(tree)
     }
@@ -321,7 +318,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         Block(List(Apply(gen.mkSuperInitCall, Nil)), expr)
 
       case Block(stats, expr) =>
-        // needs `hasSymbol` check because `supercall` could be a block (named / default args)
+        // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }

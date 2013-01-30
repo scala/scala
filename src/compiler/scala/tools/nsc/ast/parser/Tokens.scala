@@ -1,20 +1,16 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package ast.parser
 
-import scala.annotation.switch
-
 /** Common code between JavaTokens and Tokens.  Not as much (and not as concrete)
  *  as one might like because JavaTokens for no clear reason chose new numbers for
  *  identical token sets.
  */
 abstract class Tokens {
-  import scala.reflect.internal.Chars._
-
   /** special tokens */
   final val EMPTY = -3
   final val UNDEF = -2
@@ -34,14 +30,6 @@ abstract class Tokens {
 
   def isIdentifier(code: Int): Boolean
   def isLiteral(code: Int): Boolean
-  def isKeyword(code: Int): Boolean
-  def isSymbol(code: Int): Boolean
-
-  final def isSpace(at: Char)       = at == ' ' || at == '\t'
-  final def isNewLine(at: Char)     = at == CR || at == LF || at == FF
-  final def isBrace(code: Int)      = code >= LPAREN && code <= RBRACE
-  final def isOpenBrace(code: Int)  = isBrace(code) && (code % 2 == 0)
-  final def isCloseBrace(code: Int) = isBrace(code) && (code % 2 == 1)
 }
 
 object Tokens extends Tokens {
@@ -52,20 +40,10 @@ object Tokens extends Tokens {
   def isLiteral(code: Int) =
     code >= CHARLIT && code <= INTERPOLATIONID
 
-
   /** identifiers */
   final val IDENTIFIER = 10
   final val BACKQUOTED_IDENT = 11
-  def isIdentifier(code: Int) =
-    code >= IDENTIFIER && code <= BACKQUOTED_IDENT
-
-  @switch def canBeginExpression(code: Int) = code match {
-    case IDENTIFIER|BACKQUOTED_IDENT|USCORE       => true
-    case LBRACE|LPAREN|LBRACKET|COMMENT           => true
-    case IF|DO|WHILE|FOR|NEW|TRY|THROW            => true
-    case NULL|THIS|TRUE|FALSE                     => true
-    case code                                     => isLiteral(code)
-  }
+  def isIdentifier(code: Int) = code >= IDENTIFIER && code <= BACKQUOTED_IDENT // used by ide
 
   /** keywords */
   final val IF = 20
@@ -113,17 +91,6 @@ object Tokens extends Tokens {
   final val MACRO = 62 // not yet used in 2.10
   final val THEN = 63  // not yet used in 2.10
 
-  def isKeyword(code: Int) =
-    code >= IF && code <= LAZY
-
-  @switch def isDefinition(code: Int) = code match {
-    case CLASS|TRAIT|OBJECT => true
-    case CASECLASS|CASEOBJECT => true
-    case DEF|VAL|VAR => true
-    case TYPE => true
-    case _ => false
-  }
-
   /** special symbols */
   final val COMMA = 70
   final val SEMI = 71
@@ -140,9 +107,6 @@ object Tokens extends Tokens {
   final val HASH = 82
   final val AT = 83
   final val VIEWBOUND = 84
-
-  def isSymbol(code: Int) =
-    code >= COMMA && code <= VIEWBOUND
 
   /** parenthesis */
   final val LPAREN = 90

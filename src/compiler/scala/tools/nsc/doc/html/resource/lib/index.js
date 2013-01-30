@@ -14,7 +14,10 @@ var title = $(document).attr('title');
 var lastHash = "";
 
 $(document).ready(function() {
-    $('body').layout({ west__size: '20%' });
+    $('body').layout({ 
+        west__size: '20%',
+        center__maskContents: true 
+    });
     $('#browser').layout({
         center__paneSelector: ".ui-west-center"
         //,center__initClosed:true
@@ -336,7 +339,7 @@ function configureTextFilter() {
         printAlphabet();
         var input = $("#textfilter input");
         resizeFilterBlock();
-        input.bind("keydown", function(event) {
+        input.bind('keyup', function(event) {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
             }

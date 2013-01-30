@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Parallel Testing               **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -43,7 +43,6 @@ import org.apache.tools.ant.types.Commandline.Argument
  *  - `runtests`,
  *  - `jvmtests`,
  *  - `residenttests`,
- *  - `buildmanagertests`,
  *  - `shootouttests`,
  *  - `scalaptests`,
  *  - `scalachecktests`,
@@ -74,10 +73,6 @@ class PartestTask extends Task with CompilationPathProperty {
 
   def addConfiguredResidentTests(input: FileSet) {
     residentFiles = Some(input)
-  }
-
-  def addConfiguredBuildManagerTests(input: FileSet) {
-    buildManagerFiles = Some(input)
   }
 
   def addConfiguredScalacheckTests(input: FileSet) {
@@ -182,13 +177,11 @@ class PartestTask extends Task with CompilationPathProperty {
   private var javaccmd: Option[File] = None
   private var showDiff: Boolean = false
   private var showLog: Boolean = false
-  private var runFailed: Boolean = false
   private var posFiles: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var jvmFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
-  private var buildManagerFiles: Option[FileSet] = None
   private var scalacheckFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
   private var shootoutFiles: Option[FileSet] = None
@@ -245,7 +238,6 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getRunFiles          = getFilesAndDirs(runFiles)
   private def getJvmFiles          = getFilesAndDirs(jvmFiles)
   private def getResidentFiles     = getFiles(residentFiles)
-  private def getBuildManagerFiles = getFilesAndDirs(buildManagerFiles)
   private def getScalacheckFiles   = getFilesAndDirs(scalacheckFiles)
   private def getScriptFiles       = getFiles(scriptFiles)
   private def getShootoutFiles     = getFiles(shootoutFiles)
@@ -325,16 +317,6 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala actors.")
 
-    val scalaActorsMigration = {
-      (classpath.list map { fs => new File(fs) }) find { f =>
-        f.getName match {
-          case "scala-actors-migration.jar" => true
-          case "actors-migration" if (f.getParentFile.getName == "classes") => true
-          case _ => false
-        }
-      }
-    } getOrElse sys.error("Provided classpath does not contain a Scala actors.")
-
     def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
       val parts = a.getParts
       if(parts eq null) Seq[String]() else parts.toSeq
@@ -355,18 +337,16 @@ class PartestTask extends Task with CompilationPathProperty {
 
     antFileManager.showDiff = showDiff
     antFileManager.showLog = showLog
-    antFileManager.failed = runFailed
     antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
     antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
     antFileManager.LATEST_REFLECT = scalaReflect.getAbsolutePath
     antFileManager.LATEST_COMP = scalaCompiler.getAbsolutePath
     antFileManager.LATEST_PARTEST = scalaPartest.getAbsolutePath
     antFileManager.LATEST_ACTORS = scalaActors.getAbsolutePath
-    antFileManager.LATEST_ACTORS_MIGRATION = scalaActorsMigration.getAbsolutePath
 
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
-    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS = _)
+    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS ++= _)
     timeout foreach (antFileManager.timeout = _)
 
     type TFSet = (Array[File], String, String)
@@ -376,7 +356,6 @@ class PartestTask extends Task with CompilationPathProperty {
       (getRunFiles, "run", "Compiling and running files"),
       (getJvmFiles, "jvm", "Compiling and running files"),
       (getResidentFiles, "res", "Running resident compiler scenarii"),
-      (getBuildManagerFiles, "buildmanager", "Running Build Manager scenarii"),
       (getScalacheckFiles, "scalacheck", "Running scalacheck tests"),
       (getScriptFiles, "script", "Running script files"),
       (getShootoutFiles, "shootout", "Running shootout tests"),

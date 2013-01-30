@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,7 +12,7 @@ package factory
 
 import javax.xml.parsers.SAXParserFactory
 import parsing.{ FactoryAdapter, NoBindingFactoryAdapter }
-import java.io.{ InputStream, Reader, StringReader, File, FileDescriptor, FileInputStream }
+import java.io.{ InputStream, Reader, File, FileDescriptor }
 import java.net.URL
 
 /** Presents collection of XML loading methods which use the parser

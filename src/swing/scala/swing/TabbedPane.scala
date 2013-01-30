@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -111,9 +111,6 @@ class TabbedPane extends Component with Publisher {
    * Possible values are Left, Right, Top, Bottom.
    */
   def tabPlacement_=(b: Alignment.Value) { peer.setTabPlacement(b.id) }
-
-  @deprecated("Use tabPlacement_=() instead.", "2.9.1")
-  def tabPlacement(b: Alignment.Value) { peer.setTabPlacement(b.id) }
 
   /**
    * The current page selection

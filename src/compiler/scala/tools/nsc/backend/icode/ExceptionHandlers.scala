@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.immutable
 
 /**
  * Exception handlers are pieces of code that `handle` exceptions on
@@ -26,9 +26,6 @@ trait ExceptionHandlers {
     def loadExceptionClass = if (cls == NoSymbol) ThrowableClass else cls
     private var _startBlock: BasicBlock = _;
     var finalizer: Finalizer = _;
-
-    /** Needed for the MSIL backend. */
-    var resultKind: TypeKind = _;
 
     def setStartBlock(b: BasicBlock) = {
       _startBlock = b;
@@ -70,11 +67,5 @@ trait ExceptionHandlers {
   class Finalizer(method: IMethod, label: TermName, pos: Position) extends ExceptionHandler(method, label, NoSymbol, pos) {
     override def toString() = "finalizer_" + label
     override def dup: Finalizer = new Finalizer(method, label, pos)
-  }
-
-  object NoFinalizer extends Finalizer(null, newTermNameCached("<no finalizer>"), NoPosition) {
-    override def startBlock: BasicBlock             = sys.error("NoFinalizer cannot have a start block.");
-    override def setStartBlock(b: BasicBlock): Unit = sys.error("NoFinalizer cannot have a start block.");
-    override def dup = this
   }
 }

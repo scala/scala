@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -8,7 +8,6 @@ package interactive
 import ast.Trees
 import ast.Positions
 import scala.reflect.internal.util.{SourceFile, Position, RangePosition, NoPosition}
-import scala.tools.nsc.util.WorkScheduler
 import scala.collection.mutable.ListBuffer
 
 /** Handling range positions
@@ -60,7 +59,7 @@ self: scala.tools.nsc.Global =>
   }
 
   // -------------- ensuring no overlaps -------------------------------
-  
+
   /** Ensure that given tree has no positions that overlap with
    *  any of the positions of `others`. This is done by
    *  shortening the range, assigning TransparentPositions
@@ -144,7 +143,7 @@ self: scala.tools.nsc.Global =>
    */
   private def setChildrenPos(pos: Position, trees: List[Tree]): Unit = try {
     for (tree <- trees) {
-      if (!tree.isEmpty && tree.pos == NoPosition) {
+      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
         val children = tree.children
         if (children.isEmpty) {
           tree setPos pos.focus
@@ -165,7 +164,7 @@ self: scala.tools.nsc.Global =>
    */
   override def atPos[T <: Tree](pos: Position)(tree: T): T = {
     if (pos.isOpaqueRange) {
-      if (!tree.isEmpty && tree.pos == NoPosition) {
+      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
         tree.setPos(pos)
         val children = tree.children
         if (children.nonEmpty) {
@@ -203,7 +202,7 @@ self: scala.tools.nsc.Global =>
 
     def validate(tree: Tree, encltree: Tree): Unit = {
 
-      if (!tree.isEmpty) {
+      if (!tree.isEmpty && tree.canHaveAttrs) {
         if (settings.Yposdebug.value && (settings.verbose.value || settings.Yrangepos.value))
           println("[%10s] %s".format("validate", treeStatus(tree, encltree)))
 

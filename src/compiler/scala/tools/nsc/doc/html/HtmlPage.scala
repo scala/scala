@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
@@ -7,10 +7,11 @@ package scala.tools.nsc
 package doc
 package html
 
+import base._
+import base.comment._
 import model._
-import comment._
 
-import scala.xml.{XML, NodeSeq}
+import scala.xml.NodeSeq
 import scala.xml.dtd.{DocType, PublicID}
 import scala.collection._
 import java.io.Writer
@@ -117,7 +118,7 @@ abstract class HtmlPage extends Page { thisPage =>
     case Underline(in) => <u>{ inlineToHtml(in) }</u>
     case Superscript(in) => <sup>{ inlineToHtml(in) }</sup>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
-    case Link(raw, title) => <a href={ raw }>{ inlineToHtml(title) }</a>
+    case Link(raw, title) => <a href={ raw } target="_blank">{ inlineToHtml(title) }</a>
     case Monospace(in) => <code>{ inlineToHtml(in) }</code>
     case Text(text) => scala.xml.Text(text)
     case Summary(in) => inlineToHtml(in)
@@ -126,12 +127,12 @@ abstract class HtmlPage extends Page { thisPage =>
   }
 
   def linkToHtml(text: Inline, link: LinkTo, hasLinks: Boolean) = link match {
-    case LinkToTpl(dtpl) =>
+    case LinkToTpl(dtpl: TemplateEntity) =>
       if (hasLinks)
         <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</a>
       else
         <span class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</span>
-    case LinkToMember(mbr, inTpl) =>
+    case LinkToMember(mbr: MemberEntity, inTpl: TemplateEntity) =>
       if (hasLinks)
         <a href={ relativeLinkTo(inTpl) + "#" + mbr.signature } class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</a>
       else
@@ -140,7 +141,7 @@ abstract class HtmlPage extends Page { thisPage =>
       <span class="extype" name={ tooltip }>{ inlineToHtml(text) }</span>
     case LinkToExternal(name, url) =>
       <a href={ url } class="extype" target="_top">{ inlineToHtml(text) }</a>
-    case NoLink =>
+    case _ =>
       inlineToHtml(text)
   }
 

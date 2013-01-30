@@ -1,17 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
-import java.io.{ IOException, FileNotFoundException, PrintWriter, FileOutputStream }
-import java.io.{ BufferedReader, FileReader }
-import java.util.regex.Pattern
-import java.net._
+import java.io.{ FileNotFoundException, PrintWriter, FileOutputStream }
 import java.security.SecureRandom
 import io.{ File, Path, Directory, Socket }
-import scala.util.control.Exception.catching
 import scala.tools.util.CompileOutputCommon
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.sys.process._
@@ -72,7 +68,7 @@ class CompileSocket extends CompileOutputCommon {
   /** A temporary directory to use */
   val tmpDir = {
     val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (Path(Properties.tmpDir) / "scala-devel" / udir).createDirectory()
+    val f     = (Path(Properties.tmpDir) / ("scala-devel" + udir)).createDirectory()
 
     if (f.isDirectory && f.canWrite) {
       info("[Temp directory: " + f + "]")

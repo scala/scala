@@ -1,19 +1,15 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
 package interactive
 
-import scala.concurrent.SyncVar
 import scala.reflect.internal.util._
-import scala.tools.nsc.symtab._
-import scala.tools.nsc.ast._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
 import scala.tools.nsc.scratchpad.SourceInserter
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
-import java.io.{File, FileWriter}
+import java.io.FileWriter
 
 /** Interface of interactive compiler to a client such as an IDE
  */
@@ -92,6 +88,7 @@ object REPL {
     val completeResult = new Response[List[comp.Member]]
     val typedResult = new Response[comp.Tree]
     val structureResult = new Response[comp.Tree]
+    @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
     val instrumentedResult = new Response[(String, Array[Char])]
 
     def makePos(file: String, off1: String, off2: String) = {
@@ -124,6 +121,7 @@ object REPL {
      *  @param iContents  An Array[Char] containing the instrumented source
      *  @return The name of the instrumented source file
      */
+    @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
     def writeInstrumented(iFullName: String, suffix: String, iContents: Array[Char]): String = {
       val iSimpleName = iFullName drop ((iFullName lastIndexOf '.') + 1)
       val iSourceName = iSimpleName + suffix
@@ -142,6 +140,7 @@ object REPL {
      *                    and outputs in the right column, or None if the presentation compiler
      *                    does not respond to askInstrumented.
      */
+    @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
     def instrument(arguments: List[String], line: Int): Option[(String, String)] = {
       val source = toSourceFile(arguments.head)
       // strip right hand side comment column and any trailing spaces from all lines

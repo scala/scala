@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -11,7 +11,6 @@ package nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 import utils.Properties._
-import RunnerUtils._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
@@ -26,15 +25,12 @@ class ConsoleRunner extends DirectRunner {
   private def antFilter(p: Path) = p.isFile && (p endsWith "build.xml")
 
   val testSets = {
-    val pathFilter: Path => Boolean = x => x.isDirectory || (x hasExtension "scala")
-
     List(
       TestSet("pos", stdFilter, "Testing compiler (on files whose compilation should succeed)"),
       TestSet("neg", stdFilter, "Testing compiler (on files whose compilation should fail)"),
       TestSet("run", stdFilter, "Testing interpreter and backend"),
       TestSet("jvm", stdFilter, "Testing JVM backend"),
       TestSet("res", x => x.isFile && (x hasExtension "res"), "Testing resident compiler"),
-      TestSet("buildmanager", _.isDirectory, "Testing Build Manager"),
       TestSet("shootout", stdFilter, "Testing shootout tests"),
       TestSet("script", stdFilter, "Testing script tests"),
       TestSet("scalacheck", stdFilter, "Testing ScalaCheck tests"),
@@ -53,8 +49,6 @@ class ConsoleRunner extends DirectRunner {
   private val testSetKinds  = testSets map (_.kind)
   private val testSetArgs   = testSets map ("--" + _.kind)
   private val testSetArgMap = testSetArgs zip testSets toMap
-
-  def denotesTestSet(arg: String)  = testSetArgs contains arg
 
   private def printVersion() { NestUI outline (versionMsg + "\n") }
 
@@ -94,8 +88,6 @@ class ConsoleRunner extends DirectRunner {
       else if (parsed isSet "--classpath") new ConsoleFileManager(parsed("--classpath"), true)
       else if (parsed isSet "--pack") new ConsoleFileManager("build/pack")
       else new ConsoleFileManager  // auto detection, see ConsoleFileManager.findLatest
-
-    def argNarrowsTests(x: String) = denotesTestSet(x) || denotesTestPath(x)
 
     NestUI._verbose         = parsed isSet "--verbose"
     fileManager.showDiff    = true

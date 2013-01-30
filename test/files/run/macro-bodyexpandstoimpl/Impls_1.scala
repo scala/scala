@@ -6,7 +6,7 @@ object Impls {
   def refToFoo(dummy: Int) = macro refToFoo_impl
   def refToFoo_impl(c: Ctx)(dummy: c.Expr[Int]) = {
     import c.universe._
-    val body = Select(Ident(newTermName("Impls")), newTermName("foo"))
+    val body = Select(Ident(TermName("Impls")), TermName("foo"))
     c.Expr[Int](body)
   }
 }

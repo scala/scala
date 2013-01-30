@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -25,17 +25,6 @@ trait Repository {
 
   /** The icode of the given class, if available */
   def icode(sym: Symbol): Option[IClass] = (classes get sym) orElse (loaded get sym)
-
-  /** The icode of the given class. If not available, it loads
-   *  its bytecode.
-   */
-  def icode(sym: Symbol, force: Boolean): IClass =
-    icode(sym) getOrElse {
-      log("loading " + sym)
-      load(sym)
-      assert(available(sym))
-      loaded(sym)
-    }
 
   /** Load bytecode for given symbol. */
   def load(sym: Symbol): Boolean = {

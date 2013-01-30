@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 
 import io.{ Directory, File, Path }
 import java.io.IOException
-import java.net.URL
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import util.Exceptional.unwrap
 
@@ -49,24 +48,11 @@ class ScriptRunner extends HasCompileSocket {
     case x  => x
   }
 
-  def isScript(settings: Settings) = settings.script.value != ""
-
   /** Choose a jar filename to hold the compiled version of a script. */
   private def jarFileFor(scriptFile: String)= File(
     if (scriptFile endsWith ".jar") scriptFile
     else scriptFile.stripSuffix(".scala") + ".jar"
   )
-
-  /** Read the entire contents of a file as a String. */
-  private def contentsOfFile(filename: String) = File(filename).slurp()
-
-  /** Split a fully qualified object name into a
-   *  package and an unqualified object name */
-  private def splitObjectName(fullname: String): (Option[String], String) =
-    (fullname lastIndexOf '.') match {
-      case -1   => (None, fullname)
-      case idx  => (Some(fullname take idx), fullname drop (idx + 1))
-    }
 
   /** Compile a script using the fsc compilation daemon.
    */

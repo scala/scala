@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2010-2012 LAMP/EPFL
+ * Copyright 2010-2013 LAMP/EPFL
  * @author  Stephane Micheloud
  */
 
@@ -29,8 +29,8 @@ private[html] object SyntaxHigh {
   /** Annotations, sorted alphabetically */
   val annotations = Array(
     "BeanProperty", "SerialVersionUID",
-    "beanGetter", "beanSetter", "bridge", "cloneable",
-    "deprecated", "deprecatedName",
+    "beanGetter", "beanSetter", "bridge",
+    "deprecated", "deprecatedName", "deprecatedOverriding", "deprecatedInheritance",
     "elidable", "field", "getter", "inline",
     "migration", "native", "noinline", "param",
     "remote", "setter", "specialized", "strictfp", "switch",
@@ -40,7 +40,7 @@ private[html] object SyntaxHigh {
 
   /** Standard library classes/objects, sorted alphabetically */
   val standards = Array (
-    "WeakTypeTag", "Any", "AnyRef", "AnyVal", "App", "Application", "Array",
+    "WeakTypeTag", "Any", "AnyRef", "AnyVal", "App", "Array",
     "Boolean", "Byte", "Char", "Class", "ClassTag", "ClassManifest",
     "Console", "Double", "Enumeration", "Float", "Function", "Int",
     "List", "Long", "Manifest", "Map",

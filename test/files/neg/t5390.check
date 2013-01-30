@@ -1,0 +1,4 @@
+t5390.scala:7: error: forward reference extends over definition of value b
+    val b = a.B("")
+            ^
+one error found

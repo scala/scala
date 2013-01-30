@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -17,7 +17,7 @@ package scala.xml
  *  @author Burak Emir <bqe@google.com>
  */
 object Elem {
-  /** Build an Elem, setting its minimizeEmpty property to <code>true</code> if it has no children.  Note that this
+  /** Build an Elem, setting its minimizeEmpty property to `true` if it has no children.  Note that this
    *  default may not be exactly what you want, as some XML dialects don't permit some elements to be minimized.
    *
    * @deprecated This factory method is retained for backward compatibility; please use the other one, with which you
@@ -59,7 +59,7 @@ class Elem(
   val child: Node*)
 extends Node with Serializable
 {
-  @deprecated("This constructor is retained for backward compatibility. Please use the primary constructor, which lets you specify your own preference for `minimizeEmpty`.", "2.10")
+  @deprecated("This constructor is retained for backward compatibility. Please use the primary constructor, which lets you specify your own preference for `minimizeEmpty`.", "2.10.0")
   def this(prefix: String, label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) = {
     this(prefix, label, attributes, scope, child.isEmpty, child: _*)
   }

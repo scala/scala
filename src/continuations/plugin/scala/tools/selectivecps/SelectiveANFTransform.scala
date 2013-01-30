@@ -2,12 +2,9 @@
 
 package scala.tools.selectivecps
 
-import scala.tools.nsc._
 import scala.tools.nsc.transform._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.plugins._
-
-import scala.tools.nsc.ast._
 
 /**
  * In methods marked @cps, explicitly name results of calls to other @cps methods
@@ -20,12 +17,13 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
   import definitions._             // standard classes and methods
   import typer.atOwner             // methods to type trees
 
+  override def description = "ANF pre-transform for @cps"
+
   /** the following two members override abstract members in Transform */
   val phaseName: String = "selectiveanf"
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ANFTransformer(unit)
-
 
   class ANFTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
@@ -131,7 +129,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
             def transformPureMatch(tree: Tree, selector: Tree, cases: List[CaseDef]) = {
               val caseVals = cases map { case cd @ CaseDef(pat, guard, body) =>
-                // if (!hasPlusMarker(body.tpe)) body.tpe = body.tpe withAnnotation newPlusMarker() // TODO: to avoid warning
+                // if (!hasPlusMarker(body.tpe)) body modifyType (_ withAnnotation newPlusMarker()) // TODO: to avoid warning
                 val bodyVal = transExpr(body, None, ext) // ??? triggers "cps-transformed unexpectedly" warning in transTailValue
                 treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
               }
@@ -172,7 +170,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           debuglog("transforming valdef " + vd.symbol)
 
           if (getExternalAnswerTypeAnn(tpt.tpe).isEmpty) {
-            
+
             atOwner(vd.symbol) {
 
               val rhs1 = transExpr(rhs, None, None)
@@ -195,9 +193,12 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         case _ =>
           if (hasAnswerTypeAnn(tree.tpe)) {
-            if (!cpsAllowed)
-              unit.error(tree.pos, "cps code not allowed here / " + tree.getClass + " / " + tree)
-
+            if (!cpsAllowed) {
+              if (tree.symbol.isLazy)
+                unit.error(tree.pos, "implementation restriction: cps annotations not allowed on lazy value definitions")
+              else
+                unit.error(tree.pos, "cps code not allowed here / " + tree.getClass + " / " + tree)
+            }
             log(tree)
           }
 
@@ -468,7 +469,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           val sym: Symbol = (
             currentOwner.newValue(newTermName(unit.fresh.newName("tmp")), tree.pos, Flags.SYNTHETIC)
               setInfo valueTpe
-              setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil))
+              setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe_*, Nil, Nil))
           )
           expr.changeOwner(currentOwner -> sym)
 
@@ -500,9 +501,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           // TODO: better yet: do without annotations on symbols
 
           val spcVal = getAnswerTypeAnn(anfRhs.tpe)
-          if (spcVal.isDefined) {
-              tree.symbol.setAnnotations(List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil)))
-          }
+          spcVal foreach (_ => tree.symbol setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe_*, Nil, Nil)))
 
           (stms:::List(treeCopy.ValDef(tree, mods, name, tpt, anfRhs)), linearize(spc, spcVal)(unit, tree.pos))
 

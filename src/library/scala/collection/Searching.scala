@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2012, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -39,7 +39,7 @@ object Searching {
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
-      * @see [[scala.math.IndexedSeq]]
+      * @see [[scala.collection.IndexedSeq]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
@@ -63,7 +63,7 @@ object Searching {
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
-      * @see [[scala.math.IndexedSeq]]
+      * @see [[scala.collection.IndexedSeq]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *

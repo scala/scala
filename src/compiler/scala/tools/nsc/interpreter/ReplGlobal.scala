@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import reporters._
 import typechecker.Analyzer
 
 /** A layer on top of Global so I can guarantee some extra
@@ -25,7 +24,7 @@ trait ReplGlobal extends Global {
     val global: ReplGlobal.this.type = ReplGlobal.this
   } with Analyzer {
     override def newTyper(context: Context): Typer = new Typer(context) {
-      override def typed(tree: Tree, mode: Int, pt: Type): Tree = {
+      override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
         val res = super.typed(tree, mode, pt)
         tree match {
           case Ident(name) if !tree.symbol.hasPackageFlag && !name.toString.startsWith("$") =>

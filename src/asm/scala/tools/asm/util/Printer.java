@@ -52,14 +52,14 @@ public abstract class Printer {
 
     /**
      * The names of the for <code>operand</code> parameter values of the
-     * {@link org.objectweb.asm.MethodVisitor#visitIntInsn} method when
+     * {@link scala.tools.asm.MethodVisitor#visitIntInsn} method when
      * <code>opcode</code> is <code>NEWARRAY</code>.
      */
     public static final String[] TYPES;
 
     /**
      * The names of the <code>tag</code> field values for
-     * {@link org.objectweb.asm.Handle}.
+     * {@link scala.tools.asm.Handle}.
      */
     public static final String[] HANDLE_TAG;
 
@@ -103,8 +103,8 @@ public abstract class Printer {
         }
 
         s = "H_GETFIELD,H_GETSTATIC,H_PUTFIELD,H_PUTSTATIC,"
-          + "H_INVOKEVIRTUAL,H_INVOKESTATIC,H_INVOKESPECIAL,"
-          + "H_NEWINVOKESPECIAL,H_INVOKEINTERFACE,";
+                + "H_INVOKEVIRTUAL,H_INVOKESTATIC,H_INVOKESPECIAL,"
+                + "H_NEWINVOKESPECIAL,H_INVOKEINTERFACE,";
         HANDLE_TAG = new String[10];
         j = 0;
         i = 1;
@@ -149,81 +149,58 @@ public abstract class Printer {
     }
 
     /**
-     * Class header.
-     * See {@link org.objectweb.asm.ClassVisitor#visit}.
+     * Class header. See {@link scala.tools.asm.ClassVisitor#visit}.
      */
-    public abstract void visit(
-        final int version,
-        final int access,
-        final String name,
-        final String signature,
-        final String superName,
-        final String[] interfaces);
+    public abstract void visit(final int version, final int access,
+            final String name, final String signature, final String superName,
+            final String[] interfaces);
 
     /**
-     * Class source.
-     * See {@link org.objectweb.asm.ClassVisitor#visitSource}.
+     * Class source. See {@link scala.tools.asm.ClassVisitor#visitSource}.
      */
     public abstract void visitSource(final String file, final String debug);
 
     /**
-     * Class outer class.
-     * See {@link org.objectweb.asm.ClassVisitor#visitOuterClass}.
+     * Class outer class. See
+     * {@link scala.tools.asm.ClassVisitor#visitOuterClass}.
      */
-    public abstract void visitOuterClass(
-        final String owner,
-        final String name,
-        final String desc);
+    public abstract void visitOuterClass(final String owner, final String name,
+            final String desc);
 
     /**
-     * Class annotation.
-     * See {@link org.objectweb.asm.ClassVisitor#visitAnnotation}.
+     * Class annotation. See
+     * {@link scala.tools.asm.ClassVisitor#visitAnnotation}.
      */
-    public abstract Printer visitClassAnnotation(
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitClassAnnotation(final String desc,
+            final boolean visible);
 
     /**
-     * Class attribute.
-     * See {@link org.objectweb.asm.ClassVisitor#visitAttribute}.
+     * Class attribute. See
+     * {@link scala.tools.asm.ClassVisitor#visitAttribute}.
      */
     public abstract void visitClassAttribute(final Attribute attr);
 
     /**
-     * Class inner name.
-     * See {@link org.objectweb.asm.ClassVisitor#visitInnerClass}.
+     * Class inner name. See
+     * {@link scala.tools.asm.ClassVisitor#visitInnerClass}.
      */
-    public abstract void visitInnerClass(
-        final String name,
-        final String outerName,
-        final String innerName,
-        final int access);
+    public abstract void visitInnerClass(final String name,
+            final String outerName, final String innerName, final int access);
 
     /**
-     * Class field.
-     * See {@link org.objectweb.asm.ClassVisitor#visitField}.
+     * Class field. See {@link scala.tools.asm.ClassVisitor#visitField}.
      */
-    public abstract Printer visitField(
-        final int access,
-        final String name,
-        final String desc,
-        final String signature,
-        final Object value);
+    public abstract Printer visitField(final int access, final String name,
+            final String desc, final String signature, final Object value);
 
     /**
-     * Class method.
-     * See {@link org.objectweb.asm.ClassVisitor#visitMethod}.
+     * Class method. See {@link scala.tools.asm.ClassVisitor#visitMethod}.
      */
-    public abstract Printer visitMethod(
-        final int access,
-        final String name,
-        final String desc,
-        final String signature,
-        final String[] exceptions);
+    public abstract Printer visitMethod(final int access, final String name,
+            final String desc, final String signature, final String[] exceptions);
 
     /**
-     * Class end.
-     * See {@link org.objectweb.asm.ClassVisitor#visitEnd}.
+     * Class end. See {@link scala.tools.asm.ClassVisitor#visitEnd}.
      */
     public abstract void visitClassEnd();
 
@@ -232,37 +209,31 @@ public abstract class Printer {
     // ------------------------------------------------------------------------
 
     /**
-     * Annotation value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visit}.
+     * Annotation value. See {@link scala.tools.asm.AnnotationVisitor#visit}.
      */
     public abstract void visit(final String name, final Object value);
 
     /**
-     * Annotation enum value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitEnum}.
+     * Annotation enum value. See
+     * {@link scala.tools.asm.AnnotationVisitor#visitEnum}.
      */
-    public abstract void visitEnum(
-        final String name,
-        final String desc,
-        final String value);
+    public abstract void visitEnum(final String name, final String desc,
+            final String value);
 
     /**
-     * Nested annotation value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitAnnotation}.
+     * Nested annotation value. See
+     * {@link scala.tools.asm.AnnotationVisitor#visitAnnotation}.
      */
-    public abstract Printer visitAnnotation(
-        final String name,
-        final String desc);
+    public abstract Printer visitAnnotation(final String name, final String desc);
 
     /**
-     * Annotation array value.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitArray}.
+     * Annotation array value. See
+     * {@link scala.tools.asm.AnnotationVisitor#visitArray}.
      */
     public abstract Printer visitArray(final String name);
 
     /**
-     * Annotation end.
-     * See {@link org.objectweb.asm.AnnotationVisitor#visitEnd}.
+     * Annotation end. See {@link scala.tools.asm.AnnotationVisitor#visitEnd}.
      */
     public abstract void visitAnnotationEnd();
 
@@ -271,22 +242,20 @@ public abstract class Printer {
     // ------------------------------------------------------------------------
 
     /**
-     * Field annotation.
-     * See {@link org.objectweb.asm.FieldVisitor#visitAnnotation}.
+     * Field annotation. See
+     * {@link scala.tools.asm.FieldVisitor#visitAnnotation}.
      */
-    public abstract Printer visitFieldAnnotation(
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitFieldAnnotation(final String desc,
+            final boolean visible);
 
     /**
-     * Field attribute.
-     * See {@link org.objectweb.asm.FieldVisitor#visitAttribute}.
+     * Field attribute. See
+     * {@link scala.tools.asm.FieldVisitor#visitAttribute}.
      */
     public abstract void visitFieldAttribute(final Attribute attr);
 
     /**
-     * Field end.
-     * See {@link org.objectweb.asm.FieldVisitor#visitEnd}.
+     * Field end. See {@link scala.tools.asm.FieldVisitor#visitEnd}.
      */
     public abstract void visitFieldEnd();
 
@@ -295,193 +264,161 @@ public abstract class Printer {
     // ------------------------------------------------------------------------
 
     /**
-     * Method default annotation.
-     * See {@link org.objectweb.asm.MethodVisitor#visitAnnotationDefault}.
+     * Method default annotation. See
+     * {@link scala.tools.asm.MethodVisitor#visitAnnotationDefault}.
      */
     public abstract Printer visitAnnotationDefault();
 
     /**
-     * Method annotation.
-     * See {@link org.objectweb.asm.MethodVisitor#visitAnnotation}.
+     * Method annotation. See
+     * {@link scala.tools.asm.MethodVisitor#visitAnnotation}.
      */
-    public abstract Printer visitMethodAnnotation(
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitMethodAnnotation(final String desc,
+            final boolean visible);
 
     /**
-     * Method parameter annotation.
-     * See {@link org.objectweb.asm.MethodVisitor#visitParameterAnnotation}.
+     * Method parameter annotation. See
+     * {@link scala.tools.asm.MethodVisitor#visitParameterAnnotation}.
      */
-    public abstract Printer visitParameterAnnotation(
-        final int parameter,
-        final String desc,
-        final boolean visible);
+    public abstract Printer visitParameterAnnotation(final int parameter,
+            final String desc, final boolean visible);
 
     /**
-     * Method attribute.
-     * See {@link org.objectweb.asm.MethodVisitor#visitAttribute}.
+     * Method attribute. See
+     * {@link scala.tools.asm.MethodVisitor#visitAttribute}.
      */
     public abstract void visitMethodAttribute(final Attribute attr);
 
     /**
-     * Method start.
-     * See {@link org.objectweb.asm.MethodVisitor#visitCode}.
+     * Method start. See {@link scala.tools.asm.MethodVisitor#visitCode}.
      */
     public abstract void visitCode();
 
     /**
-     * Method stack frame.
-     * See {@link org.objectweb.asm.MethodVisitor#visitFrame}.
+     * Method stack frame. See
+     * {@link scala.tools.asm.MethodVisitor#visitFrame}.
      */
-    public abstract void visitFrame(
-        final int type,
-        final int nLocal,
-        final Object[] local,
-        final int nStack,
-        final Object[] stack);
+    public abstract void visitFrame(final int type, final int nLocal,
+            final Object[] local, final int nStack, final Object[] stack);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitInsn}.
+     * Method instruction. See {@link scala.tools.asm.MethodVisitor#visitInsn}
+     * .
      */
     public abstract void visitInsn(final int opcode);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitIntInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitIntInsn}.
      */
     public abstract void visitIntInsn(final int opcode, final int operand);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitVarInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitVarInsn}.
      */
     public abstract void visitVarInsn(final int opcode, final int var);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitTypeInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitTypeInsn}.
      */
     public abstract void visitTypeInsn(final int opcode, final String type);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitFieldInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitFieldInsn}.
      */
-    public abstract void visitFieldInsn(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc);
+    public abstract void visitFieldInsn(final int opcode, final String owner,
+            final String name, final String desc);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitMethodInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitMethodInsn}.
      */
-    public abstract void visitMethodInsn(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc);
+    public abstract void visitMethodInsn(final int opcode, final String owner,
+            final String name, final String desc);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitInvokeDynamicInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitInvokeDynamicInsn}.
      */
-    public abstract void visitInvokeDynamicInsn(
-        String name,
-        String desc,
-        Handle bsm,
-        Object... bsmArgs);
+    public abstract void visitInvokeDynamicInsn(String name, String desc,
+            Handle bsm, Object... bsmArgs);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitJumpInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitJumpInsn}.
      */
     public abstract void visitJumpInsn(final int opcode, final Label label);
 
     /**
-     * Method label.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLabel}.
+     * Method label. See {@link scala.tools.asm.MethodVisitor#visitLabel}.
      */
     public abstract void visitLabel(final Label label);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLdcInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitLdcInsn}.
      */
     public abstract void visitLdcInsn(final Object cst);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitIincInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitIincInsn}.
      */
     public abstract void visitIincInsn(final int var, final int increment);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitTableSwitchInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitTableSwitchInsn}.
      */
-    public abstract void visitTableSwitchInsn(
-        final int min,
-        final int max,
-        final Label dflt,
-        final Label... labels);
+    public abstract void visitTableSwitchInsn(final int min, final int max,
+            final Label dflt, final Label... labels);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLookupSwitchInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitLookupSwitchInsn}.
      */
-    public abstract void visitLookupSwitchInsn(
-        final Label dflt,
-        final int[] keys,
-        final Label[] labels);
+    public abstract void visitLookupSwitchInsn(final Label dflt,
+            final int[] keys, final Label[] labels);
 
     /**
-     * Method instruction.
-     * See {@link org.objectweb.asm.MethodVisitor#visitMultiANewArrayInsn}.
+     * Method instruction. See
+     * {@link scala.tools.asm.MethodVisitor#visitMultiANewArrayInsn}.
      */
-    public abstract void visitMultiANewArrayInsn(
-        final String desc,
-        final int dims);
+    public abstract void visitMultiANewArrayInsn(final String desc,
+            final int dims);
 
     /**
-     * Method exception handler.
-     * See {@link org.objectweb.asm.MethodVisitor#visitTryCatchBlock}.
+     * Method exception handler. See
+     * {@link scala.tools.asm.MethodVisitor#visitTryCatchBlock}.
      */
-    public abstract void visitTryCatchBlock(
-        final Label start,
-        final Label end,
-        final Label handler,
-        final String type);
+    public abstract void visitTryCatchBlock(final Label start, final Label end,
+            final Label handler, final String type);
 
     /**
-     * Method debug info.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLocalVariable}.
+     * Method debug info. See
+     * {@link scala.tools.asm.MethodVisitor#visitLocalVariable}.
      */
-    public abstract void visitLocalVariable(
-        final String name,
-        final String desc,
-        final String signature,
-        final Label start,
-        final Label end,
-        final int index);
+    public abstract void visitLocalVariable(final String name,
+            final String desc, final String signature, final Label start,
+            final Label end, final int index);
 
     /**
-     * Method debug info.
-     * See {@link org.objectweb.asm.MethodVisitor#visitLineNumber}.
+     * Method debug info. See
+     * {@link scala.tools.asm.MethodVisitor#visitLineNumber}.
      */
     public abstract void visitLineNumber(final int line, final Label start);
 
     /**
-     * Method max stack and max locals.
-     * See {@link org.objectweb.asm.MethodVisitor#visitMaxs}.
+     * Method max stack and max locals. See
+     * {@link scala.tools.asm.MethodVisitor#visitMaxs}.
      */
     public abstract void visitMaxs(final int maxStack, final int maxLocals);
 
     /**
-     * Method end.
-     * See {@link org.objectweb.asm.MethodVisitor#visitEnd}.
+     * Method end. See {@link scala.tools.asm.MethodVisitor#visitEnd}.
      */
     public abstract void visitMethodEnd();
 
@@ -497,7 +434,8 @@ public abstract class Printer {
     /**
      * Prints the text constructed by this visitor.
      *
-     * @param pw the print writer to be used.
+     * @param pw
+     *            the print writer to be used.
      */
     public void print(final PrintWriter pw) {
         printList(pw, text);
@@ -506,8 +444,10 @@ public abstract class Printer {
     /**
      * Appends a quoted string to a given buffer.
      *
-     * @param buf the buffer where the string must be added.
-     * @param s the string to be added.
+     * @param buf
+     *            the buffer where the string must be added.
+     * @param s
+     *            the string to be added.
      */
     public static void appendString(final StringBuffer buf, final String s) {
         buf.append('\"');
@@ -541,9 +481,11 @@ public abstract class Printer {
     /**
      * Prints the given string tree.
      *
-     * @param pw the writer to be used to print the tree.
-     * @param l a string tree, i.e., a string list that can contain other string
-     *        lists, and so on recursively.
+     * @param pw
+     *            the writer to be used to print the tree.
+     * @param l
+     *            a string tree, i.e., a string list that can contain other
+     *            string lists, and so on recursively.
      */
     static void printList(final PrintWriter pw, final List<?> l) {
         for (int i = 0; i < l.size(); ++i) {

@@ -4,49 +4,54 @@ import scala.tools.partest.ScaladocModelTest
 object Test extends ScaladocModelTest {
 
   override def code = """
-      package test.scaladoc.groups {
+      package test.scaladoc {
 
-        /**
-         * The trait A
-         * @groupdesc A Group A is the group that contains functions starting with f
-         * For example:
-         * {{{
-         *    this is an example
-         * }}}
-         * @groupdesc B Group B is the group that contains functions starting with b
-         * @groupname B Group B has a nice new name and a high priority
-         * @groupprio B -10
-         * @group Traits
-         * @note This is a note
-         */
-        trait A {
-          /** foo description
-           *  @group A */
-          def foo = 1
+        /** @groupname Z From owner chain */
+        package object `groups`
 
-          /** bar description
-           *  @group B */
-          def bar = 2
-        }
+        package groups {
+          /**
+           * The trait A
+           * @groupdesc A Group A is the group that contains functions starting with f
+           * For example:
+           * {{{
+           *    this is an example
+           * }}}
+           * @groupdesc B Group B is the group that contains functions starting with b
+           * @groupname B Group B has a nice new name and a high priority
+           * @groupprio B -10
+           * @group Traits
+           * @note This is a note
+           */
+          trait A {
+            /** foo description
+             *  @group A */
+            def foo = 1
 
-        /** The trait B
-         *  @group Traits
-         *  @groupdesc C Group C is introduced by B
-         */
-        trait B {
-          /** baz descriptopn
-           *  @group C */
-          def baz = 3
-        }
+            /** bar description
+             *  @group B */
+            def bar = 2
+          }
 
-        /** The class C which inherits from both A and B
-         *  @group Classes
-         *  @groupdesc B Look ma, I'm overriding group descriptions!!!
-         *  @groupname B And names
-         */
-        class C extends A with B {
-          /** Oh noes, I lost my group -- or did I?!? */
-          override def baz = 4
+          /** The trait B
+           *  @group Traits
+           *  @groupdesc C Group C is introduced by B
+           */
+          trait B {
+            /** baz descriptopn
+             *  @group C */
+            def baz = 3
+          }
+
+          /** The class C which inherits from both A and B
+           *  @group Classes
+           *  @groupdesc B Look ma, I'm overriding group descriptions!!!
+           *  @groupname B And names
+           */
+          class C extends A with B {
+            /** Oh noes, I lost my group -- or did I?!? */
+            override def baz = 4
+          }
         }
       }
   """
@@ -101,10 +106,12 @@ object Test extends ScaladocModelTest {
     checkGroupDesc(A, "B", "Group B is the group that contains functions starting with b")
     checkGroupName(A, "B", "Group B has a nice new name and a high priority")
     checkGroupPrio(A, "B", -10)
+    checkGroupName(A, "Z", "From owner chain")
 
     checkGroupDesc(B, "C", "Group C is introduced by B")
     checkGroupName(B, "C", "C")
     checkGroupPrio(B, "C", 0)
+    checkGroupName(B, "Z", "From owner chain")
 
     checkGroupDesc(C, "A", "Group A is the group that contains functions starting with f")
     checkGroupName(C, "A", "A")
@@ -115,5 +122,6 @@ object Test extends ScaladocModelTest {
     checkGroupDesc(C, "C", "Group C is introduced by B")
     checkGroupName(C, "C", "C")
     checkGroupPrio(C, "C", 0)
+    checkGroupName(C, "Z", "From owner chain")
   }
 }

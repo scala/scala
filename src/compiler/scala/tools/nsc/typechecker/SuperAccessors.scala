@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -234,14 +234,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case sel @ Select(qual, name) =>
           def transformSelect = {
-          /** return closest enclosing method, unless shadowed by an enclosing class;
-           *  no use of closures here in the interest of speed.
-           */
-          def closestEnclMethod(from: Symbol): Symbol =
-            if (from.isSourceMethod) from
-            else if (from.isClass) NoSymbol
-            else closestEnclMethod(from.owner)
 
+          // FIXME Once Inliners is modified with the "'meta-knowledge' that all fields accessed by @inline will be made public" [1]
+          //       this can be removed; the correct place for this in in ExplicitOuter.
+          //
+          // [1] https://groups.google.com/forum/#!topic/scala-internals/iPkMCygzws4
+          //
           if (closestEnclMethod(currentOwner) hasAnnotation definitions.ScalaInlineClass)
             sym.makeNotPrivate(sym.owner)
 
@@ -390,7 +388,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *  typed.
      */
     private def makeAccessor(tree: Select, targs: List[Tree]): Tree = {
-      val Select(qual, name) = tree
+      val Select(qual, _) = tree
       val sym = tree.symbol
       val clazz = hostForAccessorOf(sym, currentClass)
 
@@ -509,9 +507,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       def accessibleThroughSubclassing =
         validCurrentOwner && clazz.thisSym.isSubClass(sym.owner) && !clazz.isTrait
 
-      def packageAccessBoundry(sym: Symbol) =
-        sym.accessBoundary(sym.enclosingPackageClass)
-
       val isCandidate = (
            sym.isProtected
         && sym.isJavaDefined
@@ -530,8 +525,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
       def isJavaProtected = host.isTrait && sym.isJavaDefined && {
         restrictionError(pos, unit,
-          s"""|$clazz accesses protected $sym inside a concrete trait method.
-              |Add an accessor in a class extending ${sym.enclClass} as a workaround.""".stripMargin
+          sm"""$clazz accesses protected $sym inside a concrete trait method.
+              |Add an accessor in a class extending ${sym.enclClass} as a workaround."""
         )
         true
       }

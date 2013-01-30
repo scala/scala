@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Lex Spoon
  * Updated by Anders Bach Nielsen
  */
@@ -7,7 +7,8 @@
 package scala.tools.nsc
 package plugins
 
-import io.{ File, Path }
+import scala.reflect.io.{ File, Path }
+import scala.tools.util.PathResolver.Defaults
 
 /** Support for run-time loading of compiler plugins.
  *
@@ -25,8 +26,14 @@ trait Plugins {
    */
   protected def loadRoughPluginsList(): List[Plugin] = {
     val jars = settings.plugin.value map Path.apply
-    val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map Path.apply
-    val classes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
+    def injectDefault(s: String) = if (s.isEmpty) Defaults.scalaPluginPath else s
+    val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map injectDefault map Path.apply
+    val maybes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
+    val (goods, errors) = maybes partition (_.isSuccess)
+    errors foreach (_ recover {
+      case e: Exception => inform(e.getMessage)
+    })
+    val classes = goods map (_.get)  // flatten
 
     // Each plugin must only be instantiated once. A common pattern
     // is to register annotation checkers during object construction, so
@@ -106,7 +113,7 @@ trait Plugins {
    * @see phasesSet
    */
   protected def computePluginPhases(): Unit =
-    phasesSet ++= (plugins flatMap (_.components))
+    for (p <- plugins; c <- p.components) addToPhasesSet(c, c.description)
 
   /** Summary of the options for all loaded plugins */
   def pluginOptionsHelp: String =

@@ -1712,7 +1712,7 @@ public class ConsoleReader
     }
 
     /**
-     * Output a platform-dependant newline.
+     * Output a platform-dependent newline.
      */
     public final void println() throws IOException {
         print(CR);

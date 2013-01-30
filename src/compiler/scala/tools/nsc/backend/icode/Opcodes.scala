@@ -1,15 +1,12 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-
-
 
 package scala.tools.nsc
 package backend
 package icode
 
-import scala.tools.nsc.ast._
 import scala.reflect.internal.util.{Position,NoPosition}
 
 /*
@@ -67,7 +64,7 @@ import scala.reflect.internal.util.{Position,NoPosition}
  * in the source files.
  */
 trait Opcodes { self: ICodes =>
-  import global.{Symbol, NoSymbol, Type, Name, Constant};
+  import global.{Symbol, NoSymbol, Name, Constant};
 
   // categories of ICode instructions
   final val localsCat =  1
@@ -111,16 +108,10 @@ trait Opcodes { self: ICodes =>
     // Vlad: I wonder why we keep producedTypes around -- it looks like an useless thing to have
     def producedTypes: List[TypeKind] = Nil
 
-    /** This method returns the difference of size of the stack when the instruction is used */
-    def difference = produced-consumed
-
     /** The corresponding position in the source file */
     private var _pos: Position = NoPosition
 
     def pos: Position = _pos
-
-    /** Used by dead code elimination. */
-    var useful: Boolean = false
 
     def setPos(p: Position): this.type = {
       _pos = p
@@ -133,13 +124,6 @@ trait Opcodes { self: ICodes =>
   }
 
   object opcodes {
-
-    def mayThrow(i: Instruction): Boolean = i match {
-      case LOAD_LOCAL(_) | STORE_LOCAL(_) | CONSTANT(_) | THIS(_) | CZJUMP(_, _, _, _)
-              | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION(_) | JUMP(_) | CJUMP(_, _, _, _) => false
-      case _ => true
-    }
-
     /** Loads "this" on top of the stack.
      * Stack: ...
      *    ->: ...:ref
@@ -715,8 +699,6 @@ trait Opcodes { self: ICodes =>
       /** Is this a static method call? */
       def isStatic: Boolean = false
 
-      def isSuper: Boolean = false
-
       /** Is this an instance method call? */
       def hasInstance: Boolean = true
 
@@ -750,77 +732,7 @@ trait Opcodes { self: ICodes =>
      *  On JVM, translated to `invokespecial`.
      */
     case class SuperCall(mix: Name) extends InvokeStyle {
-      override def isSuper = true
       override def toString(): String = { "super(" + mix + ")" }
-    }
-
-
-    // CLR backend
-
-    case class CIL_LOAD_LOCAL_ADDRESS(local: Local) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "CIL_LOAD_LOCAL_ADDRESS "+local  //+isArgument?" (argument)":"";
-
-      override def consumed = 0
-      override def produced = 1
-
-      override def producedTypes = msil_mgdptr(local.kind) :: Nil
-
-      override def category = localsCat
-    }
-
-    case class CIL_LOAD_FIELD_ADDRESS(field: Symbol, isStatic: Boolean) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String =
-        "CIL_LOAD_FIELD_ADDRESS " + (if (isStatic) field.fullName else field.toString)
-
-      override def consumed = if (isStatic) 0 else 1
-      override def produced = 1
-
-      override def consumedTypes = if (isStatic) Nil else REFERENCE(field.owner) :: Nil;
-      override def producedTypes = msil_mgdptr(REFERENCE(field.owner)) :: Nil;
-
-      override def category = fldsCat
-    }
-
-    case class CIL_LOAD_ARRAY_ITEM_ADDRESS(kind: TypeKind) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "CIL_LOAD_ARRAY_ITEM_ADDRESS (" + kind + ")"
-
-      override def consumed = 2
-      override def produced = 1
-
-      override def consumedTypes = ARRAY(kind) :: INT :: Nil
-      override def producedTypes = msil_mgdptr(kind) :: Nil
-
-      override def category = arraysCat
-    }
-
-    case class CIL_UNBOX(valueType: TypeKind) extends Instruction {
-      override def toString(): String = "CIL_UNBOX " + valueType
-      override def consumed = 1
-      override def consumedTypes = ObjectReferenceList // actually consumes a 'boxed valueType'
-      override def produced = 1
-      override def producedTypes = msil_mgdptr(valueType) :: Nil
-      override def category = objsCat
-    }
-
-    case class CIL_INITOBJ(valueType: TypeKind) extends Instruction {
-      override def toString(): String = "CIL_INITOBJ " + valueType
-      override def consumed = 1
-      override def consumedTypes = ObjectReferenceList // actually consumes a managed pointer
-      override def produced = 0
-      override def category = objsCat
-    }
-
-    case class CIL_NEWOBJ(method: Symbol) extends Instruction {
-      override def toString(): String = "CIL_NEWOBJ " + hostClass.fullName + method.fullName
-      var hostClass: Symbol = method.owner;
-      override def consumed = method.tpe.paramTypes.length
-      override def consumedTypes = method.tpe.paramTypes map toTypeKind
-      override def produced = 1
-      override def producedTypes = toTypeKind(method.tpe.resultType) :: Nil
-      override def category = objsCat
     }
   }
 }

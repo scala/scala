@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -11,8 +11,6 @@ import FromString.ExistingDir
 trait CodegenSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = CodegenSpec
   def programInfo         = Spec.Info("codegen", "", "scala.tools.cmd.gen.Codegen")
-
-  import FromString.ExistingDir
 
   help("Usage: codegen [<options>]")
 

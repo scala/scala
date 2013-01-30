@@ -357,10 +357,8 @@ defined class Term
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
 }
-<console>:18: warning: match is not exhaustive!
-missing combination            Exp
-missing combination           Term
-
+<console>:18: warning: match may not be exhaustive.
+It would fail on the following inputs: Exp(), Term()
        def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
 f: (e: Exp)Int

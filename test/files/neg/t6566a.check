@@ -1,0 +1,4 @@
+t6566a.scala:2: error: covariant type T occurs in invariant position in type T of type MyType
+  class TypeCheat[+T] { type MyType = T }
+                             ^
+one error found

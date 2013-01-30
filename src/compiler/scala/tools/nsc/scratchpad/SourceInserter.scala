@@ -1,10 +1,9 @@
 package scala.tools.nsc
 package scratchpad
 
-import java.io.Writer
-import scala.reflect.internal.util.SourceFile
 import scala.reflect.internal.Chars._
 
+@deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
 object SourceInserter {
   def stripRight(cs: Array[Char]): Array[Char] = {
     val lines =

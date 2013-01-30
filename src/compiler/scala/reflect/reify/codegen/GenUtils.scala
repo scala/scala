@@ -5,7 +5,6 @@ trait GenUtils {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   def reifyList(xs: List[Any]): Tree =
     mkList(xs map reify)
@@ -31,41 +30,32 @@ trait GenUtils {
   def call(fname: String, args: Tree*): Tree =
     Apply(termPath(fname), args.toList)
 
-  def mirrorSelect(name: String): Tree =
-    termPath(nme.UNIVERSE_PREFIX + name)
+  def mirrorSelect(name: String): Tree   = termPath(nme.UNIVERSE_PREFIX + name)
+  def mirrorSelect(name: TermName): Tree = mirrorSelect(name.toString)
 
-  def mirrorBuildSelect(name: String): Tree =
-    termPath(nme.UNIVERSE_BUILD_PREFIX + name)
-
-  def mirrorMirrorSelect(name: String): Tree =
-    termPath(nme.MIRROR_PREFIX + name)
+  def mirrorMirrorSelect(name: TermName): Tree =
+    termPath("" + nme.MIRROR_PREFIX + name)
 
   def mirrorCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.UNIVERSE_PREFIX append name), args: _*)
-
-  def mirrorCall(name: String, args: Tree*): Tree =
-    call(nme.UNIVERSE_PREFIX + name, args: _*)
+    call("" + nme.UNIVERSE_PREFIX + name, args: _*)
 
   def mirrorBuildCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.UNIVERSE_BUILD_PREFIX append name), args: _*)
-
-  def mirrorBuildCall(name: String, args: Tree*): Tree =
-    call(nme.UNIVERSE_BUILD_PREFIX + name, args: _*)
+    call("" + nme.UNIVERSE_BUILD_PREFIX + name, args: _*)
 
   def mirrorMirrorCall(name: TermName, args: Tree*): Tree =
-    call("" + (nme.MIRROR_PREFIX append name), args: _*)
-
-  def mirrorMirrorCall(name: String, args: Tree*): Tree =
-    call(nme.MIRROR_PREFIX + name, args: _*)
+    call("" + nme.MIRROR_PREFIX + name, args: _*)
 
   def mirrorFactoryCall(value: Product, args: Tree*): Tree =
     mirrorFactoryCall(value.productPrefix, args: _*)
 
-  def mirrorFactoryCall(prefix: String, args: Tree*): Tree =
-    mirrorCall(prefix, args: _*)
+  def mirrorFactoryCall(prefix: TermName, args: Tree*): Tree =
+    mirrorCall("" + prefix, args: _*)
+
+  def scalaFactoryCall(name: TermName, args: Tree*): Tree =
+    call(s"scala.$name.apply", args: _*)
 
   def scalaFactoryCall(name: String, args: Tree*): Tree =
-    call("scala." + name + ".apply", args: _*)
+    scalaFactoryCall(name: TermName, args: _*)
 
   def mkList(args: List[Tree]): Tree =
     scalaFactoryCall("collection.immutable.List", args: _*)
@@ -91,22 +81,6 @@ trait GenUtils {
   /** An (unreified) path that refers to term definition with given fully qualified name */
   def termPath(fullname: String): Tree = path(fullname, newTermName)
 
-  /** An (unreified) path that refers to type definition with given fully qualified name */
-  def typePath(fullname: String): Tree = path(fullname, newTypeName)
-
-  def isTough(tpe: Type) = {
-    def isTough(tpe: Type) = tpe match {
-      case _: RefinedType => true
-      case _: ExistentialType => true
-      case _: ClassInfoType => true
-      case _: MethodType => true
-      case _: PolyType => true
-      case _ => false
-    }
-
-    tpe != null && (tpe exists isTough)
-  }
-
   object TypedOrAnnotated {
     def unapply(tree: Tree): Option[Tree] = tree match {
       case ty @ Typed(_, _) =>
@@ -116,15 +90,6 @@ trait GenUtils {
       case _ =>
         None
     }
-  }
-
-  def isAnnotated(tpe: Type) = {
-    def isAnnotated(tpe: Type) = tpe match {
-      case _: AnnotatedType => true
-      case _ => false
-    }
-
-    tpe != null && (tpe exists isAnnotated)
   }
 
   def isSemiConcreteTypeMember(tpe: Type) = tpe match {

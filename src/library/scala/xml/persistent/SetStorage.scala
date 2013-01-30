@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -20,16 +20,14 @@ import java.io.File
  */
 class SetStorage(file: File) extends CachedFileStorage(file) {
 
-  private var theSet: mutable.HashSet[Node] = new mutable.HashSet[Node]
+  private val theSet = mutable.HashSet[Node]()
 
   // initialize
 
   {
     val it = super.initialNodes
     dirty = it.hasNext
-    for(x <- it) {
-      theSet += x;
-    }
+    theSet ++= it
   }
 
   /* forwarding methods to hashset*/

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -10,7 +10,7 @@ import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowabl
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
-object ReflectionUtils {
+private[scala] object ReflectionUtils {
   // Unwraps some chained exceptions which arise during reflective calls.
   def unwrapThrowable(x: Throwable): Throwable = x match {
     case  _: InvocationTargetException |      // thrown by reflectively invoked method or constructor

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -17,14 +17,14 @@ import Path.fail
  *
  *  @author Paul Phillips
  *  @since  2.8
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object Streamable {
   /** Traits which can be viewed as a sequence of bytes.  Source types
    *  which know their length should override def length: Long for more
    *  efficient method implementations.
-   *  
+   *
    *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
    */
   trait Bytes {
@@ -69,7 +69,7 @@ object Streamable {
   }
 
   /** For objects which can be viewed as Chars.
-   * 
+   *
    * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
    */
   trait Chars extends Bytes {
@@ -81,7 +81,6 @@ object Streamable {
      */
     def creationCodec: Codec = implicitly[Codec]
 
-    def chars(): BufferedSource = chars(creationCodec)
     def chars(codec: Codec): BufferedSource = Source.fromInputStream(inputStream())(codec)
 
     def lines(): Iterator[String] = lines(creationCodec)
@@ -89,7 +88,6 @@ object Streamable {
 
     /** Obtains an InputStreamReader wrapped around a FileInputStream.
      */
-    def reader(): InputStreamReader = reader(creationCodec)
     def reader(codec: Codec): InputStreamReader = new InputStreamReader(inputStream, codec.charSet)
 
     /** Wraps a BufferedReader around the result of reader().

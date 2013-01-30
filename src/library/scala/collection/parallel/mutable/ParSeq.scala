@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -17,12 +17,6 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.ParFactory
 import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.Combiner
-import scala.collection.GenSeq
-
-
-
-
-
 
 /** A mutable variant of `ParSeq`.
  *

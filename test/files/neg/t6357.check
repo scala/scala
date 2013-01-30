@@ -1,0 +1,4 @@
+t6357.scala:3: error: value class may not be a local class
+      final class Y(val j: Int) extends AnyVal
+                  ^
+one error found

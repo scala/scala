@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -20,13 +20,10 @@ import scala.annotation.tailrec
  *  @author  Philippe Altherr (original version)
  *  @author  Paul Phillips (this one)
  *  @version 2.0,
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object ZipArchive {
-  def fromPath(path: String): FileZipArchive = fromFile(new JFile(path))
-  def fromPath(path: Path): FileZipArchive = fromFile(path.toFile)
-
   /**
    * @param   file  a File
    * @return  A ZipArchive if `file` is a readable zip file, otherwise null.
@@ -41,7 +38,6 @@ object ZipArchive {
    * @return  A ZipArchive backed by the given url.
    */
   def fromURL(url: URL): URLZipArchive = new URLZipArchive(url)
-  def fromURL(url: String): URLZipArchive = fromURL(new URL(url))
 
   private def dirName(path: String)  = splitPath(path, true)
   private def baseName(path: String) = splitPath(path, false)
@@ -79,7 +75,6 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
       else Iterator(f)
     }
   }
-  def deepIterator = walkIterator(iterator)
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
     // have to keep this name for compat with sbt's compiler-interface

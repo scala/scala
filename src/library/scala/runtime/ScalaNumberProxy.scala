@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -9,7 +9,7 @@
 package scala.runtime
 
 import scala.collection.{ mutable, immutable }
-import scala.math.ScalaNumericConversions
+import scala.math.{ ScalaNumericConversions, ScalaNumericAnyConversions }
 import immutable.NumericRange
 import Proxy.Typed
 
@@ -20,7 +20,7 @@ import Proxy.Typed
  *  @version 2.9
  *  @since   2.9
  */
-trait ScalaNumberProxy[T] extends Any with ScalaNumericConversions with Typed[T] with OrderedProxy[T] {
+trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed[T] with OrderedProxy[T] {
   protected implicit def num: Numeric[T]
 
   def underlying()  = self.asInstanceOf[AnyRef]
@@ -28,6 +28,8 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericConversions with Typed[T]
   def floatValue()  = num.toFloat(self)
   def longValue()   = num.toLong(self)
   def intValue()    = num.toInt(self)
+  def byteValue()   = intValue.toByte
+  def shortValue()  = intValue.toShort
 
   def min(that: T): T = num.min(self, that)
   def max(that: T): T = num.max(self, that)

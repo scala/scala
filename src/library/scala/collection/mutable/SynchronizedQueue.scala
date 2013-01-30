@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -25,8 +25,6 @@ package mutable
  *  @define coll synchronized queue
  */
 class SynchronizedQueue[A] extends Queue[A] {
-  import scala.collection.Traversable
-
   /** Checks if the queue is empty.
    *
    *  @return true, iff there is no element in the queue.

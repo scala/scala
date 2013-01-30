@@ -69,7 +69,7 @@ trait Erasure {
   //
   // This requires that cls.isClass.
   protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
-    if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
+    if (cls.owner.isClass) cls.owner.tpe_* else pre // why not cls.isNestedClass?
   }
 
   def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =
@@ -221,7 +221,8 @@ trait Erasure {
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
       case tp =>
-        assert(clazz == ArrayClass || tp.isError, s"unexpected constructor erasure $tp for $clazz")
+        if (!(clazz == ArrayClass || tp.isError))
+          assert(clazz == ArrayClass || tp.isError, s"!!! unexpected constructor erasure $tp for $clazz")
         specialScalaErasure(tp)
     }
   }

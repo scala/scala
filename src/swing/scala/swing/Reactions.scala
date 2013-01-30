@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,8 +14,6 @@ import event.Event
 import scala.collection.mutable.{Buffer, ListBuffer}
 
 object Reactions {
-  import scala.ref._
-
   class Impl extends Reactions {
     private val parts: Buffer[Reaction] = new ListBuffer[Reaction]
     def isDefinedAt(e: Event) = parts.exists(_ isDefinedAt e)

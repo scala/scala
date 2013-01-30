@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -52,7 +52,7 @@ abstract class ReachingDefinitions {
           // it makes it harder to spot the real problems.
           val result = (a.stack, b.stack).zipped map (_ ++ _)
           if (settings.debug.value && (a.stack.length != b.stack.length))
-            debugwarn("Mismatched stacks in ReachingDefinitions#lub2: " + a.stack + ", " + b.stack + ", returning " + result)
+            devWarning(s"Mismatched stacks in ReachingDefinitions#lub2: ${a.stack}, ${b.stack}, returning $result")
           result
         }
       )
@@ -155,7 +155,7 @@ abstract class ReachingDefinitions {
     import lattice.IState
     def updateReachingDefinition(b: BasicBlock, idx: Int, rd: ListSet[Definition]): ListSet[Definition] = {
       val STORE_LOCAL(local) = b(idx)
-      var tmp = local
+      val tmp = local
       (rd filter { case (l, _, _) => l != tmp }) + ((tmp, b, idx))
     }
 
@@ -197,7 +197,7 @@ abstract class ReachingDefinitions {
     def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
       assert(bb.closed, bb)
 
-      var instrs = bb.getArray
+      val instrs = bb.getArray
       var res: List[(BasicBlock, Int)] = Nil
       var i = idx
       var n = m

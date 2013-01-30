@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -433,12 +433,13 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @tparam S        the type of accumulated results
    *  @param z         the initial value for the accumulated result of the partition - this
    *                   will typically be the neutral element for the `seqop` operator (e.g.
-   *                   `Nil` for list concatenation or `0` for summation)
+   *                   `Nil` for list concatenation or `0` for summation) and may be evaluated
+   *                   more than once
    *  @param seqop     an operator used to accumulate results within a partition
    *  @param combop    an associative operator used to combine results from different partitions
    */
-  def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
-    tasksupport.executeAndWaitResult(new Aggregate(z, seqop, combop, splitter))
+  def aggregate[S](z: =>S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
+    tasksupport.executeAndWaitResult(new Aggregate(() => z, seqop, combop, splitter))
   }
 
   def foldLeft[S](z: S)(op: (S, T) => S): S = seq.foldLeft(z)(op)
@@ -453,7 +454,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   def reduceRightOption[U >: T](op: (T, U) => U): Option[U] = seq.reduceRightOption(op)
 
-  /** Applies a function `f` to all the elements of $coll in a undefined order.
+  /** Applies a function `f` to all the elements of $coll in an undefined order.
    *
    *  @tparam U    the result type of the function applied to each element, which is always discarded
    *  @param f     function applied to each element
@@ -848,7 +849,6 @@ self: ParIterableLike[T, Repr, Sequential] =>
     override def seq = self.seq.view
     def splitter = self.splitter
     def size = splitter.remaining
-    override def isEmpty = size == 0
   }
 
   override def toArray[U >: T: ClassTag]: Array[U] = {
@@ -1006,10 +1006,10 @@ self: ParIterableLike[T, Repr, Sequential] =>
     override def merge(that: Fold[U]) = result = op(result, that.result)
   }
 
-  protected[this] class Aggregate[S](z: S, seqop: (S, T) => S, combop: (S, S) => S, protected[this] val pit: IterableSplitter[T])
+  protected[this] class Aggregate[S](z: () => S, seqop: (S, T) => S, combop: (S, S) => S, protected[this] val pit: IterableSplitter[T])
   extends Accessor[S, Aggregate[S]] {
     @volatile var result: S = null.asInstanceOf[S]
-    def leaf(prevr: Option[S]) = result = pit.foldLeft(z)(seqop)
+    def leaf(prevr: Option[S]) = result = pit.foldLeft(z())(seqop)
     protected[this] def newSubtask(p: IterableSplitter[T]) = new Aggregate(z, seqop, combop, p)
     override def merge(that: Aggregate[S]) = result = combop(result, that.result)
   }

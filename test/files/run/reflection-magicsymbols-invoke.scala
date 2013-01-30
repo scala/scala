@@ -2,6 +2,12 @@ import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.{currentMirror => cm}
 
+package scala {
+  object ExceptionUtils {
+    def unwrapThrowable(ex: Throwable): Throwable = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+  }
+}
+
 object Test extends App {
   def key(sym: Symbol) = sym + ": " + sym.typeSignature
   def test(tpe: Type, receiver: Any, method: String, args: Any*) {
@@ -13,7 +19,7 @@ object Test extends App {
         println(result)
       } catch {
         case ex: Throwable =>
-          val realex = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+          val realex = scala.ExceptionUtils.unwrapThrowable(ex)
           println(realex.getClass + ": " + realex.getMessage)
       }
     print(s"testing ${tpe.typeSymbol.name}.$method: ")
@@ -22,7 +28,7 @@ object Test extends App {
         val ctor = tpe.declaration(nme.CONSTRUCTOR).asMethod
         cm.reflectClass(ctor.owner.asClass).reflectConstructor(ctor)(args: _*)
       } else {
-        val meth = tpe.declaration(newTermName(method).encodedName.toTermName).asMethod
+        val meth = tpe.declaration(TermName(method).encodedName.toTermName).asMethod
         cm.reflect(receiver).reflectMethod(meth)(args: _*)
       }
     })
@@ -48,7 +54,7 @@ object Test extends App {
   println("it's important to print the list of AnyVal's members")
   println("if some of them change (possibly, adding and/or removing magic symbols), we must update this test")
   typeOf[AnyVal].declarations.toList.sortBy(key).foreach(sym => println(key(sym)))
-  test(typeOf[AnyVal], null, "<init>")
+  test(typeOf[AnyVal], null, nme.CONSTRUCTOR.toString)
   test(typeOf[AnyVal], 2, "getClass")
 
   println("============\nAnyRef")

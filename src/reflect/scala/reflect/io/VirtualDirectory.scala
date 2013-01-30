@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  */
 
 package scala.reflect
@@ -11,7 +11,7 @@ import scala.collection.mutable
  * An in-memory directory.
  *
  * @author Lex Spoon
- * 
+ *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualDirectory(val name: String, maybeContainer: Option[VirtualDirectory])
@@ -26,7 +26,8 @@ extends AbstractFile {
 
   def container = maybeContainer.get
   def isDirectory = true
-  var lastModified: Long = System.currentTimeMillis
+  override def isVirtual = true
+  val lastModified: Long = System.currentTimeMillis
 
   override def file = null
   override def input = sys.error("directories cannot be read")

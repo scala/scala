@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -77,7 +77,7 @@ trait TraversableLike[+A, +Repr] extends Any
   import Traversable.breaks._
 
   /** The type implementing this traversable */
-  protected type Self = Repr
+  protected[this] type Self = Repr
 
   /** The collection of type $coll underlying this `TraversableLike` object.
    *  By default this is implemented as the `TraversableLike` object itself,
@@ -252,18 +252,21 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
+  private def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
+    val b = newBuilder
+    for (x <- this)
+      if (p(x) != isFlipped) b += x
+
+    b.result
+  }
+
   /** Selects all elements of this $coll which satisfy a predicate.
    *
    *  @param p     the predicate used to test elements.
    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
-  def filter(p: A => Boolean): Repr = {
-    val b = newBuilder
-    for (x <- this)
-      if (p(x)) b += x
-    b.result
-  }
+  def filter(p: A => Boolean): Repr = filterImpl(p, isFlipped = false)
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
    *
@@ -271,16 +274,11 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
-  def filterNot(p: A => Boolean): Repr = {
-    val b = newBuilder
-    for (x <- this)
-      if (!p(x)) b += x
-    b.result
-  }
+  def filterNot(p: A => Boolean): Repr = filterImpl(p, isFlipped = true)
 
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
+    foreach(pf.runWith(b += _))
     b.result
   }
 
@@ -665,7 +663,6 @@ trait TraversableLike[+A, +Repr] extends Any
   def view = new TraversableView[A, Repr] {
     protected lazy val underlying = self.repr
     override def foreach[U](f: A => U) = self foreach f
-    override def isEmpty = self.isEmpty
   }
 
   /** Creates a non-strict view of a slice of this $coll.

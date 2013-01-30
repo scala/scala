@@ -5,7 +5,7 @@ class Foo[@specialized(Int) A](a:A) {
 object Test {
   def main(args:Array[String]) {
     val f = new Foo(333)
-    val ms = f.getClass().getDeclaredMethods()
+    val ms = f.getClass().getDeclaredMethods().sortBy(_.getName)
     ms.foreach(m => println(m.getName))
   }
 }

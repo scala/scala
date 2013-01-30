@@ -1,0 +1,4 @@
+List()
+immutable.this.List.apply[String]("")
+Apply(TypeApply(Select(Select(This(TypeName("immutable")), scala.collection.immutable.List), TermName("apply")), List(TypeTree().setOriginal(Ident(TypeName("String"))))), List(Literal(Constant(""))))
+error!

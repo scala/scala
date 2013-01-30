@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -175,7 +175,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * Note that calling this source-compatible method will result in the same old, arguably almost universally unwanted,
    * behaviour.
    */
-  @deprecated("Please use `serialize` instead and specify a `minimizeTags` parameter", "2.10")
+  @deprecated("Please use `serialize` instead and specify a `minimizeTags` parameter", "2.10.0")
   def toXML(
     x: Node,
     pscope: NamespaceBinding = TopScope,

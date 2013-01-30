@@ -11,10 +11,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   def rootScalaDot(name: Name)       = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
   def scalaDot(name: Name)           = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
   def scalaAnnotationDot(name: Name) = Select(scalaDot(nme.annotation), name)
-  def scalaAnyRefConstr              = scalaDot(tpnme.AnyRef) setSymbol AnyRefClass
-  def scalaUnitConstr                = scalaDot(tpnme.Unit) setSymbol UnitClass
-  def productConstr                  = scalaDot(tpnme.Product) setSymbol ProductRootClass
-  def serializableConstr             = scalaDot(tpnme.Serializable) setSymbol SerializableClass
+  def scalaAnyRefConstr              = scalaDot(tpnme.AnyRef) setSymbol AnyRefClass // used in ide
 
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
     val cls = if (abstractFun)
@@ -116,7 +113,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   }
 
   /** Builds a reference to given symbol with given stable prefix. */
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
+  def mkAttributedRef(pre: Type, sym: Symbol): RefTree = {
     val qual = mkAttributedQualifier(pre)
     qual match {
       case EmptyTree                                  => mkAttributedIdent(sym)
@@ -126,19 +123,21 @@ abstract class TreeGen extends macros.TreeBuilder {
   }
 
   /** Builds a reference to given symbol. */
-  def mkAttributedRef(sym: Symbol): Tree =
+  def mkAttributedRef(sym: Symbol): RefTree =
     if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
     else mkAttributedIdent(sym)
 
-  /** Builds an untyped reference to given symbol. */
-  def mkUnattributedRef(sym: Symbol): Tree =
-    if (sym.owner.isClass) Select(This(sym.owner), sym)
-    else Ident(sym)
+  def mkUnattributedRef(sym: Symbol): RefTree = mkUnattributedRef(sym.fullNameAsName('.'))
+
+  def mkUnattributedRef(fullName: Name): RefTree = {
+    val hd :: tl = nme.segments(fullName.toString, assumeTerm = fullName.isTermName)
+    tl.foldLeft(Ident(hd): RefTree)(Select(_,_))
+  }
 
   /** Replaces tree type with a stable type if possible */
-  def stabilize(tree: Tree): Tree = {
-    for(tp <- stableTypeFor(tree)) tree.tpe = tp
-    tree
+  def stabilize(tree: Tree): Tree = stableTypeFor(tree) match {
+    case Some(tp) => tree setType tp
+    case _        => tree
   }
 
   /** Computes stable type for a tree if possible */
@@ -161,13 +160,13 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkAttributedStableRef(sym: Symbol): Tree =
     stabilize(mkAttributedRef(sym))
 
-  def mkAttributedThis(sym: Symbol): Tree =
+  def mkAttributedThis(sym: Symbol): This =
     This(sym.name.toTypeName) setSymbol sym setType sym.thisType
 
-  def mkAttributedIdent(sym: Symbol): Tree =
-    Ident(sym.name) setSymbol sym setType sym.tpe
+  def mkAttributedIdent(sym: Symbol): RefTree =
+    Ident(sym.name) setSymbol sym setType sym.tpeHK
 
-  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree = {
+  def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree = {
     // Tests involving the repl fail without the .isEmptyPackage condition.
     if (qual.symbol != null && (qual.symbol.isEffectiveRoot || qual.symbol.isEmptyPackage))
       mkAttributedIdent(sym)
@@ -248,10 +247,6 @@ abstract class TreeGen extends macros.TreeBuilder {
     Literal(Constant(tp)) setType ConstantType(Constant(tp))
 
   /** Builds a list with given head and tail. */
-  def mkNewCons(head: Tree, tail: Tree): Tree =
-    New(Apply(mkAttributedRef(ConsClass), List(head, tail)))
-
-  /** Builds a list with given head and tail. */
   def mkNil: Tree = mkAttributedRef(NilModule)
 
   /** Builds a tree representing an undefined local, as in
@@ -276,6 +271,10 @@ abstract class TreeGen extends macros.TreeBuilder {
     case _            => Constant(null)
   }
 
+  /** Wrap an expression in a named argument. */
+  def mkNamedArg(name: Name, tree: Tree): Tree = mkNamedArg(Ident(name), tree)
+  def mkNamedArg(lhs: Tree, rhs: Tree): Tree = atPos(rhs.pos)(AssignOrNamedArg(lhs, rhs))
+
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(Constant())
@@ -294,5 +293,9 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkRuntimeUniverseRef: Tree = {
     assert(ReflectRuntimeUniverse != NoSymbol)
     mkAttributedRef(ReflectRuntimeUniverse) setType singleType(ReflectRuntimeUniverse.owner.thisPrefix, ReflectRuntimeUniverse)
+  }
+
+  def mkPackageDef(packageName: String, stats: List[Tree]): PackageDef = {
+    PackageDef(mkUnattributedRef(newTermName(packageName)), stats)
   }
 }

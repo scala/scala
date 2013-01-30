@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -14,15 +14,9 @@ trait History {
   def asStrings: List[String]
   def index: Int
   def size: Int
-  def grep(s: String): List[String]
 }
 object NoHistory extends History {
   def asStrings       = Nil
-  def grep(s: String) = Nil
   def index           = 0
   def size            = 0
-}
-
-object History {
-  def empty: History = NoHistory
 }

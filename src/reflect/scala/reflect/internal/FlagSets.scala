@@ -17,8 +17,6 @@ trait FlagSets extends api.FlagSets { self: SymbolTable =>
 
   val NoFlags: FlagSet = 0L
 
-  trait FlagValues extends FlagValuesApi
-
   object Flag extends FlagValues {
     val TRAIT         : FlagSet = Flags.TRAIT
     val INTERFACE     : FlagSet = Flags.INTERFACE

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -22,12 +22,6 @@ object BigInt {
   private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
   private val minusOne = BigInteger.valueOf(-1)
-
-  @deprecated("Use Long.MinValue", "2.9.0")
-  val MinLong = BigInt(Long.MinValue)
-
-  @deprecated("Use Long.MaxValue", "2.9.0")
-  val MaxLong = BigInt(Long.MaxValue)
 
   /** Constructs a `BigInt` whose value is equal to that of the
    *  specified integer value.
@@ -295,9 +289,6 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
    */
   def signum: Int = this.bigInteger.signum()
 
-  @deprecated("Use ~bigInt (the unary_~ method) instead", "2.10.0")
-  def ~ : BigInt = ~this
-
   /** Returns the bitwise complement of this BigInt
    */
   def unary_~ : BigInt = new BigInt(this.bigInteger.not())
@@ -364,7 +355,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   def charValue   = intValue.toChar
 
   /** Converts this BigInt to an <tt>int</tt>.
-   *  If the BigInt is too big to fit in a int, only the low-order 32 bits
+   *  If the BigInt is too big to fit in an int, only the low-order 32 bits
    *  are returned. Note that this conversion can lose information about the
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.

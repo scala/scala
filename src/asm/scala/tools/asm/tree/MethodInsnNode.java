@@ -43,7 +43,7 @@ public class MethodInsnNode extends AbstractInsnNode {
 
     /**
      * The internal name of the method's owner class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
      */
     public String owner;
 
@@ -53,27 +53,28 @@ public class MethodInsnNode extends AbstractInsnNode {
     public String name;
 
     /**
-     * The method's descriptor (see {@link org.objectweb.asm.Type}).
+     * The method's descriptor (see {@link scala.tools.asm.Type}).
      */
     public String desc;
 
     /**
      * Constructs a new {@link MethodInsnNode}.
      *
-     * @param opcode the opcode of the type instruction to be constructed. This
-     *        opcode must be INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or
-     *        INVOKEINTERFACE.
-     * @param owner the internal name of the method's owner class (see
-     *        {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
-     * @param name the method's name.
-     * @param desc the method's descriptor (see {@link org.objectweb.asm.Type}).
+     * @param opcode
+     *            the opcode of the type instruction to be constructed. This
+     *            opcode must be INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or
+     *            INVOKEINTERFACE.
+     * @param owner
+     *            the internal name of the method's owner class (see
+     *            {@link scala.tools.asm.Type#getInternalName()
+     *            getInternalName}).
+     * @param name
+     *            the method's name.
+     * @param desc
+     *            the method's descriptor (see {@link scala.tools.asm.Type}).
      */
-    public MethodInsnNode(
-        final int opcode,
-        final String owner,
-        final String name,
-        final String desc)
-    {
+    public MethodInsnNode(final int opcode, final String owner,
+            final String name, final String desc) {
         super(opcode);
         this.owner = owner;
         this.name = name;
@@ -83,8 +84,9 @@ public class MethodInsnNode extends AbstractInsnNode {
     /**
      * Sets the opcode of this instruction.
      *
-     * @param opcode the new instruction opcode. This opcode must be
-     *        INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or INVOKEINTERFACE.
+     * @param opcode
+     *            the new instruction opcode. This opcode must be INVOKEVIRTUAL,
+     *            INVOKESPECIAL, INVOKESTATIC or INVOKEINTERFACE.
      */
     public void setOpcode(final int opcode) {
         this.opcode = opcode;

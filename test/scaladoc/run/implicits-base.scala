@@ -25,54 +25,54 @@ object Test extends ScaladocModelTest {
 
     val A = base._class("A")
 
-    // def convToPimpedA(x: T)                // pimpA0: with no constraints, SHADOWED
-    conv = A._conversion(A.qualifiedName + ".pimpA0")
+    // def convToEnrichedA(x: T)                // enrichA0: with no constraints, SHADOWED
+    conv = A._conversion(A.qualifiedName + ".enrichA0")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "T")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "T")
 
-    // def convToNumericA: T               // pimpA1: with a constraint that there is x: Numeric[T] implicit in scope
-    conv = A._conversion(A.qualifiedName + ".pimpA1")
+    // def convToNumericA: T               // enrichA1: with a constraint that there is x: Numeric[T] implicit in scope
+    conv = A._conversion(A.qualifiedName + ".enrichA1")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToNumericA").resultType.name == "T")
 
-    // def convToIntA: Int                 // pimpA2: with a constraint that T = Int
-    conv = A._conversion(A.qualifiedName + ".pimpA2")
+    // def convToIntA: Int                 // enrichA2: with a constraint that T = Int
+    conv = A._conversion(A.qualifiedName + ".enrichA2")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToIntA").resultType.name == "Int")
 
-    // def convToGtColonDoubleA: Double    // pimpA3: with a constraint that T <: Double
-    conv = A._conversion(A.qualifiedName + ".pimpA3")
+    // def convToGtColonDoubleA: Double    // enrichA3: with a constraint that T <: Double
+    conv = A._conversion(A.qualifiedName + ".enrichA3")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToGtColonDoubleA").resultType.name == "Double")
 
-    // def convToPimpedA: S                // pimpA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar
-    conv = A._conversion(A.qualifiedName + ".pimpA4")
+    // def convToEnrichedA: S                // enrichA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar
+    conv = A._conversion(A.qualifiedName + ".enrichA4")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 3)
-    assert(conv._member("convToPimpedA").resultType.name == "S")
+    assert(conv._member("convToEnrichedA").resultType.name == "S")
 
-    // def convToPimpedA: Bar[Foo[T]]      // pimpA5: no constraints
-    conv = A._conversion(A.qualifiedName + ".pimpA5")
+    // def convToEnrichedA: Bar[Foo[T]]      // enrichA5: no constraints
+    conv = A._conversion(A.qualifiedName + ".enrichA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[T]]")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "Bar[Foo[T]]")
 
-    // def convToMyNumericA: T             // pimpA6: with a constraint that there is x: MyNumeric[T] implicit in scope
-    conv = A._conversion(A.qualifiedName + ".pimpA6")
+    // def convToMyNumericA: T             // enrichA6: with a constraint that there is x: MyNumeric[T] implicit in scope
+    conv = A._conversion(A.qualifiedName + ".enrichA6")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToMyNumericA").resultType.name == "T")
 
-    // def convToManifestA: T              // pimpA7: with 2 constraints: T: Manifest and T <: Double
-    // def convToTraversableOps: T         // pimpA7: with 2 constraints: T: Manifest and T <: Double
+    // def convToManifestA: T              // enrichA7: with 2 constraints: T: Manifest and T <: Double
+    // def convToTraversableOps: T         // enrichA7: with 2 constraints: T: Manifest and T <: Double
                                            // should not be abstract!
-    conv = A._conversion(A.qualifiedName + ".pimpA7")
+    conv = A._conversion(A.qualifiedName + ".enrichA7")
     assert(conv.members.length == 2)
     assert(conv.constraints.length == 2)
     assert(conv._member("convToManifestA").resultType.name == "T")
@@ -84,45 +84,45 @@ object Test extends ScaladocModelTest {
     val B = base._class("B")
 
     // these conversions should not affect B
-    assert(B._conversions(A.qualifiedName + ".pimpA2").isEmpty)
-    assert(B._conversions(A.qualifiedName + ".pimpA4").isEmpty)
+    assert(B._conversions(A.qualifiedName + ".enrichA2").isEmpty)
+    assert(B._conversions(A.qualifiedName + ".enrichA4").isEmpty)
 
-    // def convToPimpedA(x: Double)           // pimpA0: no constraints, SHADOWED
-    conv = B._conversion(A.qualifiedName + ".pimpA0")
+    // def convToEnrichedA(x: Double)           // enrichA0: no constraints, SHADOWED
+    conv = B._conversion(A.qualifiedName + ".enrichA0")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "Double")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "Double")
 
-    // def convToNumericA: Double          // pimpA1: no constraintsd
-    conv = B._conversion(A.qualifiedName + ".pimpA1")
+    // def convToNumericA: Double          // enrichA1: no constraintsd
+    conv = B._conversion(A.qualifiedName + ".enrichA1")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
     assert(conv._member("convToNumericA").resultType.name == "Double")
 
-    // def convToGtColonDoubleA: Double    // pimpA3: no constraints
-    conv = B._conversion(A.qualifiedName + ".pimpA3")
+    // def convToGtColonDoubleA: Double    // enrichA3: no constraints
+    conv = B._conversion(A.qualifiedName + ".enrichA3")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
     assert(conv._member("convToGtColonDoubleA").resultType.name == "Double")
 
-    // def convToPimpedA: Bar[Foo[Double]] // pimpA5: no constraints
-    conv = B._conversion(A.qualifiedName + ".pimpA5")
+    // def convToEnrichedA: Bar[Foo[Double]] // enrichA5: no constraints
+    conv = B._conversion(A.qualifiedName + ".enrichA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[Double]]")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "Bar[Foo[Double]]")
 
-    // def convToMyNumericA: Double        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
-    conv = B._conversion(A.qualifiedName + ".pimpA6")
+    // def convToMyNumericA: Double        // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
+    conv = B._conversion(A.qualifiedName + ".enrichA6")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToMyNumericA").resultType.name == "Double")
 
-    // def convToManifestA: Double         // pimpA7: no constraints
-    // def convToTraversableOps: Double    // pimpA7: no constraints
+    // def convToManifestA: Double         // enrichA7: no constraints
+    // def convToTraversableOps: Double    // enrichA7: no constraints
     //                                     // should not be abstract!
-    conv = B._conversion(A.qualifiedName + ".pimpA7")
+    conv = B._conversion(A.qualifiedName + ".enrichA7")
     assert(conv.members.length == 2)
     assert(conv.constraints.length == 0)
     assert(conv._member("convToManifestA").resultType.name == "Double")
@@ -134,38 +134,38 @@ object Test extends ScaladocModelTest {
     val C = base._class("C")
 
     // these conversions should not affect C
-    assert(C._conversions(A.qualifiedName + ".pimpA3").isEmpty)
-    assert(C._conversions(A.qualifiedName + ".pimpA4").isEmpty)
-    assert(C._conversions(A.qualifiedName + ".pimpA7").isEmpty)
+    assert(C._conversions(A.qualifiedName + ".enrichA3").isEmpty)
+    assert(C._conversions(A.qualifiedName + ".enrichA4").isEmpty)
+    assert(C._conversions(A.qualifiedName + ".enrichA7").isEmpty)
 
-    // def convToPimpedA(x: Int)           // pimpA0: no constraints, SHADOWED
-    conv = C._conversion(A.qualifiedName + ".pimpA0")
+    // def convToEnrichedA(x: Int)           // enrichA0: no constraints, SHADOWED
+    conv = C._conversion(A.qualifiedName + ".enrichA0")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "Int")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "Int")
 
-    // def convToNumericA: Int             // pimpA1: no constraints
-    conv = C._conversion(A.qualifiedName + ".pimpA1")
+    // def convToNumericA: Int             // enrichA1: no constraints
+    conv = C._conversion(A.qualifiedName + ".enrichA1")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
     assert(conv._member("convToNumericA").resultType.name == "Int")
 
-    // def convToIntA: Int                 // pimpA2: no constraints
-    conv = C._conversion(A.qualifiedName + ".pimpA2")
+    // def convToIntA: Int                 // enrichA2: no constraints
+    conv = C._conversion(A.qualifiedName + ".enrichA2")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
     assert(conv._member("convToIntA").resultType.name == "Int")
 
-    // def convToPimpedA: Bar[Foo[Int]]    // pimpA5: no constraints
-    conv = C._conversion(A.qualifiedName + ".pimpA5")
+    // def convToEnrichedA: Bar[Foo[Int]]    // enrichA5: no constraints
+    conv = C._conversion(A.qualifiedName + ".enrichA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[Int]]")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "Bar[Foo[Int]]")
 
-    // def convToMyNumericA: Int           // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
-    conv = C._conversion(A.qualifiedName + ".pimpA6")
+    // def convToMyNumericA: Int           // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[Int] implicit in scope
+    conv = C._conversion(A.qualifiedName + ".enrichA6")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToMyNumericA").resultType.name == "Int")
@@ -175,33 +175,33 @@ object Test extends ScaladocModelTest {
     val D = base._class("D")
 
     // these conversions should not affect D
-    assert(D._conversions(A.qualifiedName + ".pimpA2").isEmpty)
-    assert(D._conversions(A.qualifiedName + ".pimpA3").isEmpty)
-    assert(D._conversions(A.qualifiedName + ".pimpA4").isEmpty)
-    assert(D._conversions(A.qualifiedName + ".pimpA7").isEmpty)
+    assert(D._conversions(A.qualifiedName + ".enrichA2").isEmpty)
+    assert(D._conversions(A.qualifiedName + ".enrichA3").isEmpty)
+    assert(D._conversions(A.qualifiedName + ".enrichA4").isEmpty)
+    assert(D._conversions(A.qualifiedName + ".enrichA7").isEmpty)
 
-    // def convToPimpedA(x: String)        // pimpA0: no constraints, SHADOWED
-    conv = D._conversion(A.qualifiedName + ".pimpA0")
+    // def convToEnrichedA(x: String)        // enrichA0: no constraints, SHADOWED
+    conv = D._conversion(A.qualifiedName + ".enrichA0")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "String")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "String")
 
-    // def convToNumericA: String          // pimpA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
-    conv = D._conversion(A.qualifiedName + ".pimpA1")
+    // def convToNumericA: String          // enrichA1: (if showAll is set) with a constraint that there is x: Numeric[String] implicit in scope
+    conv = D._conversion(A.qualifiedName + ".enrichA1")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToNumericA").resultType.name == "String")
 
-    // def convToPimpedA: Bar[Foo[String]] // pimpA5: no constraints
-    conv = D._conversion(A.qualifiedName + ".pimpA5")
+    // def convToEnrichedA: Bar[Foo[String]] // enrichA5: no constraints
+    conv = D._conversion(A.qualifiedName + ".enrichA5")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
-    assert(isShadowed(conv._member("convToPimpedA")))
-    assert(conv._member("convToPimpedA").resultType.name == "Bar[Foo[String]]")
+    assert(isShadowed(conv._member("convToEnrichedA")))
+    assert(conv._member("convToEnrichedA").resultType.name == "Bar[Foo[String]]")
 
-    // def convToMyNumericA: String        // pimpA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
-    conv = D._conversion(A.qualifiedName + ".pimpA6")
+    // def convToMyNumericA: String        // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[String] implicit in scope
+    conv = D._conversion(A.qualifiedName + ".enrichA6")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 1)
     assert(conv._member("convToMyNumericA").resultType.name == "String")

@@ -1,8 +1,7 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-
 
 package scala.reflect
 package io
@@ -14,7 +13,7 @@ import java.io.{ File => JFile }
  *
  *  @author  Philippe Altherr
  *  @version 1.0, 23/03/2004
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualFile(val name: String, override val path: String) extends AbstractFile {
@@ -33,16 +32,12 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
     case _              => false
   }
 
-  //########################################################################
-  // Private data
   private var content = Array.emptyByteArray
 
-  //########################################################################
-  // Public Methods
   def absolute = this
 
   /** Returns null. */
-  final def file: JFile = null
+  def file: JFile = null
 
   override def sizeOption: Option[Int] = Some(content.size)
 
@@ -62,10 +57,12 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false
 
+  /** @inheritdoc */
+  override def isVirtual: Boolean = true
+
   /** Returns the time that this abstract file was last modified. */
   private var _lastModified: Long = 0
   def lastModified: Long = _lastModified
-  def lastModified_=(x: Long) = _lastModified = x
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {
@@ -84,10 +81,6 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
    * specified name. If there is no such file, returns null. The
    * argument "directory" tells whether to look for a directory or
    * or a regular file.
-   *
-   * @param name      ...
-   * @param directory ...
-   * @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile = {
     assert(isDirectory, "not a directory '" + this + "'")
@@ -98,6 +91,4 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
    *  check that it exists.
    */
   def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
-
-  //########################################################################
 }

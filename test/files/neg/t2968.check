@@ -1,0 +1,10 @@
+t2968.scala:8: error: Missing closing brace `}' assumed here
+} // missing brace
+^
+t2968.scala:17: error: Missing closing brace `}' assumed here
+} // missing brace
+^
+t2968.scala:26: error: Missing closing brace `}' assumed here
+} // missing brace
+^
+three errors found

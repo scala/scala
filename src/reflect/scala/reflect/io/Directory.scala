@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,12 +14,10 @@ import java.io.{ File => JFile }
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object Directory {
-  import scala.util.Properties.{ tmpDir, userHome, userDir }
+  import scala.util.Properties.{ userHome, userDir }
 
   private def normalizePath(s: String) = Some(apply(Path(s).normalize))
   def Current: Option[Directory]  = if (userDir == "") None else normalizePath(userDir)
-  def Home: Option[Directory]     = if (userHome == "") None else normalizePath(userHome)
-  def TmpDir: Option[Directory]   = if (tmpDir == "") None else normalizePath(tmpDir)
 
   def apply(path: Path): Directory = path.toDirectory
 
@@ -30,20 +28,18 @@ object Directory {
     path.createDirectory()
   }
 }
-import Path._
 
 /** An abstraction for directories.
  *
  *  @author  Paul Phillips
  *  @since   2.8
- *  
+ *
  *  ''Note:  This is library is considered experimental and should not be used unless you know what you are doing.''
  */
 class Directory(jfile: JFile) extends Path(jfile) {
   override def toAbsolute: Directory = if (isAbsolute) this else super.toAbsolute.toDirectory
   override def toDirectory: Directory = this
   override def toFile: File = new File(jfile)
-  override def isValid = jfile.isDirectory() || !jfile.exists()
   override def normalize: Directory = super.normalize.toDirectory
 
   /** An iterator over the contents of this directory.
@@ -60,7 +56,6 @@ class Directory(jfile: JFile) extends Path(jfile) {
   override def walkFilter(cond: Path => Boolean): Iterator[Path] =
     list filter cond flatMap (_ walkFilter cond)
 
-  def deepDirs: Iterator[Directory] = Path.onlyDirs(deepList())
   def deepFiles: Iterator[File] = Path.onlyFiles(deepList())
 
   /** If optional depth argument is not given, will recurse
@@ -70,10 +65,4 @@ class Directory(jfile: JFile) extends Path(jfile) {
     if (depth < 0) list ++ (dirs flatMap (_ deepList (depth)))
     else if (depth == 0) Iterator.empty
     else list ++ (dirs flatMap (_ deepList (depth - 1)))
-
-  /** An iterator over the directories underneath this directory,
-   *  to the (optionally) given depth.
-   */
-  def subdirs(depth: Int = 1): Iterator[Directory] =
-    deepList(depth) collect { case x: Directory => x }
 }

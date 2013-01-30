@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -22,7 +22,7 @@ import scala.math.{ min, max, Ordering }
  *  Sequences are special cases of iterable collections of class `Iterable`.
  *  Unlike iterables, sequences always have a defined order of elements.
  *  Sequences provide a method `apply` for indexing. Indices range from `0` up to the `length` of
- *  a sequence. Sequences support a number to find occurrences of elements or subsequences, including
+ *  a sequence. Sequences support a number of methods to find occurrences of elements or subsequences, including
  *  `segmentLength`, `prefixLength`, `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`,
  *  `startsWith`, `endsWith`, `indexOfSlice`.
  *
@@ -84,13 +84,17 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *  if computing `length` is cheap.
    */
   def lengthCompare(len: Int): Int = {
-    var i = 0
-    val it = iterator
-    while (it.hasNext && i <= len) {
-      it.next()
-      i += 1
+    if (len < 0) 1
+    else {
+      var i = 0
+      val it = iterator
+      while (it.hasNext) {
+        if (i == len) return if (it.hasNext) 1 else 0
+        it.next()
+        i += 1
+      }
+      i - len
     }
-    i - len
   }
 
   override /*IterableLike*/ def isEmpty: Boolean = lengthCompare(0) == 0
@@ -103,7 +107,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   def segmentLength(p: A => Boolean, from: Int): Int = {
     var i = 0
-    var it = iterator.drop(from)
+    val it = iterator.drop(from)
     while (it.hasNext && p(it.next()))
       i += 1
     i
@@ -111,7 +115,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
-    var it = iterator.drop(from)
+    val it = iterator.drop(from)
     while (it.hasNext) {
       if (p(it.next())) return i
       else i += 1
@@ -177,10 +181,10 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
       result
     }
     private def swap(i: Int, j: Int) {
-      var tmpI = idxs(i)
+      val tmpI = idxs(i)
       idxs(i) = idxs(j)
       idxs(j) = tmpI
-      var tmpE = elms(i)
+      val tmpE = elms(i)
       elms(i) = elms(j)
       elms(j) = tmpE
     }
@@ -630,7 +634,6 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   override def view = new SeqView[A, Repr] {
     protected lazy val underlying = self.repr
-    override def isEmpty = self.isEmpty
     override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)
@@ -777,7 +780,7 @@ object SeqLike {
         val iter = S.iterator.drop(m0)
         val Wopt = kmpOptimizeWord(W, n0, n1, true)
         val T = kmpJumpTable(Wopt, n1-n0)
-        var cache = new Array[AnyRef](n1-n0)  // Ring buffer--need a quick way to do a look-behind
+        val cache = new Array[AnyRef](n1-n0)  // Ring buffer--need a quick way to do a look-behind
         var largest = 0
         var i, m = 0
         var answer = -1

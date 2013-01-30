@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -25,6 +25,6 @@ package scala.annotation
  * @since 2.8
  */
  private[scala] final class migration(message: String, changedIn: String) extends scala.annotation.StaticAnnotation {
-   @deprecated("Use the constructor taking two Strings instead.", "2.10")
+   @deprecated("Use the constructor taking two Strings instead.", "2.10.0")
    def this(majorVersion: Int, minorVersion: Int, message: String) = this(message, majorVersion + "." + minorVersion)
  }

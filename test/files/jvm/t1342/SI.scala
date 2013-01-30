@@ -4,7 +4,7 @@ class SI extends JI {
    }
 }
 
-object Test extends Application {
+object Test extends App {
   val x: JI = new SI
   x.varArgsMethod("one", "two")
 }

@@ -1,0 +1,6 @@
+t5340.scala:17: error: type mismatch;
+ found   : MyApp.r.E
+ required: MyApp.s.E
+  println(b: s.E)
+          ^
+one error found

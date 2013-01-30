@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -144,6 +144,11 @@ abstract class NodeSeq extends AbstractSeq[Node] with immutable.Seq[Node] with S
       case _                    => filt(x => !x.isAtom && x.label == that)
     }
   }
+
+  /** Convenience method which returns string text of the named attribute. Use:
+   *   - `that \@ "foo"` to get the string text of attribute `"foo"`;
+   */
+  def \@(attributeName: String): String = (this \ ("@" + attributeName)).text
 
   override def toString(): String = theSeq.mkString
 

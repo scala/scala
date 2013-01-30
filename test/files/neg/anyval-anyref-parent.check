@@ -3,7 +3,7 @@ trait Foo2 extends AnyVal // fail
       ^
 anyval-anyref-parent.scala:5: error: Any does not have a constructor
 class Bar1 extends Any      // fail
-           ^
+                   ^
 anyval-anyref-parent.scala:6: error: value class needs to have exactly one public val parameter
 class Bar2(x: Int) extends AnyVal // fail
       ^

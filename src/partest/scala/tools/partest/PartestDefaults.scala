@@ -8,8 +8,6 @@ import java.lang.Runtime.getRuntime
 
 object PartestDefaults {
   import nsc.Properties._
-  private def wrapAccessControl[T](body: => Option[T]): Option[T] =
-    try body catch { case _: java.security.AccessControlException => None }
 
   def testRootName  = propOrNone("partest.root")
   def srcDirName    = propOrElse("partest.srcdir", "files")
@@ -21,7 +19,7 @@ object PartestDefaults {
   def javaCmd     = propOrElse("partest.javacmd", "java")
   def javacCmd    = propOrElse("partest.javac_cmd", "javac")
   def javaOpts    = propOrElse("partest.java_opts", "")
-  def scalacOpts  = propOrElse("partest.scalac_opts", "-deprecation")
+  def scalacOpts  = propOrElse("partest.scalac_opts", "")
 
   def testBuild  = propOrNone("partest.build")
   def errorCount = propOrElse("partest.errors", "0").toInt

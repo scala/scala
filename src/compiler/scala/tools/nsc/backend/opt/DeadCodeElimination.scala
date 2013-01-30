@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -8,7 +8,6 @@ package scala.tools.nsc
 package backend.opt
 
 import scala.collection.{ mutable, immutable }
-import symtab._
 
 /**
  */
@@ -145,6 +144,8 @@ abstract class DeadCodeElimination extends SubComponent {
                 }
               }
               if (necessary) worklist += ((bb, idx))
+            case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
+              worklist += ((bb, idx)) // SI-4859 Module initialization might side-effect.
             case _ => ()
           }
           rd = rdef.interpret(bb, idx, rd)
@@ -278,13 +279,6 @@ abstract class DeadCodeElimination extends SubComponent {
         }
       }
       compensations
-    }
-
-    private def withClosed[a](bb: BasicBlock)(f: => a): a = {
-      if (bb.nonEmpty) bb.close
-      val res = f
-      if (bb.nonEmpty) bb.open
-      res
     }
 
     private def findInstruction(bb: BasicBlock, i: Instruction): (BasicBlock, Int) = {

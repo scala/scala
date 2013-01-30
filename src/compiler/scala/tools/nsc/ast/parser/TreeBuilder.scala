@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -26,15 +26,11 @@ abstract class TreeBuilder {
   def o2p(offset: Int): Position
   def r2p(start: Int, point: Int, end: Int): Position
 
-  def rootId(name: Name)       = gen.rootId(name)
   def rootScalaDot(name: Name) = gen.rootScalaDot(name)
   def scalaDot(name: Name)     = gen.scalaDot(name)
   def scalaAnyRefConstr        = scalaDot(tpnme.AnyRef)
-  def scalaAnyValConstr        = scalaDot(tpnme.AnyVal)
-  def scalaAnyConstr           = scalaDot(tpnme.Any)
   def scalaUnitConstr          = scalaDot(tpnme.Unit)
   def productConstr            = scalaDot(tpnme.Product)
-  def productConstrN(n: Int)   = scalaDot(newTypeName("Product" + n))
   def serializableConstr       = scalaDot(tpnme.Serializable)
 
   def convertToTypeName(t: Tree) = gen.convertToTypeName(t)
@@ -175,15 +171,10 @@ abstract class TreeBuilder {
 
   /** Create tree representing (unencoded) binary operation expression or pattern. */
   def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position): Tree = {
-    def mkNamed(args: List[Tree]) =
-      if (isExpr) args map {
-        case a @ Assign(id @ Ident(name), rhs) =>
-          atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-        case e => e
-      } else args
+    def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
     val arguments = right match {
       case Parens(args) => mkNamed(args)
-      case _ => List(right)
+      case _            => List(right)
     }
     if (isExpr) {
       if (treeInfo.isLeftAssoc(op)) {
@@ -205,20 +196,26 @@ abstract class TreeBuilder {
    */
   def makeAnonymousNew(stats: List[Tree]): Tree = {
     val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
-    makeNew(Nil, emptyValDef, stats1, ListOfNil, NoPosition, NoPosition)
+    makeNew(Nil, emptyValDef, stats1, NoPosition, NoPosition)
   }
 
   /** Create positioned tree representing an object creation <new parents { stats }
    *  @param npos  the position of the new
    *  @param cpos  the position of the anonymous class starting with parents
    */
-  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]],
+  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree],
               npos: Position, cpos: Position): Tree =
     if (parents.isEmpty)
-      makeNew(List(scalaAnyRefConstr), self, stats, argss, npos, cpos)
-    else if (parents.tail.isEmpty && stats.isEmpty)
-      atPos(npos union cpos) { New(parents.head, argss) }
-    else {
+      makeNew(List(scalaAnyRefConstr), self, stats, npos, cpos)
+    else if (parents.tail.isEmpty && stats.isEmpty) {
+      // `Parsers.template` no longer differentiates tpts and their argss
+      // e.g. `C()` will be represented as a single tree Apply(Ident(C), Nil)
+      // instead of parents = Ident(C), argss = Nil as before
+      // this change works great for things that are actually templates
+      // but in this degenerate case we need to perform postprocessing
+      val app = treeInfo.dissectApplied(parents.head)
+      atPos(npos union cpos) { New(app.callee, app.argss) }
+    } else {
       val x = tpnme.ANON_CLASS_NAME
       atPos(npos union cpos) {
         Block(
@@ -226,12 +223,12 @@ abstract class TreeBuilder {
             atPos(cpos) {
               ClassDef(
                 Modifiers(FINAL), x, Nil,
-                Template(parents, self, NoMods, ListOfNil, argss, stats, cpos.focus))
+                Template(parents, self, NoMods, ListOfNil, stats, cpos.focus))
             }),
           atPos(npos) {
             New(
               Ident(x) setPos npos.focus,
-              ListOfNil)
+              Nil)
           }
         )
       }
@@ -285,7 +282,7 @@ abstract class TreeBuilder {
   def makeGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat)
     val rhs1 =
-      if (valeq || treeInfo.isVariablePattern(pat)) rhs
+      if (valeq || treeInfo.isVarPatternDeep(pat)) rhs
       else makeFilter(rhs, pat1.duplicate, nme.CHECK_IF_REFUTABLE_STRING)
 
     if (valeq) ValEq(pos, pat1, rhs1)
@@ -379,13 +376,6 @@ abstract class TreeBuilder {
     def makeCombination(pos: Position, meth: TermName, qual: Tree, pat: Tree, body: Tree): Tree =
       Apply(Select(qual, meth) setPos qual.pos, List(makeClosure(pos, pat, body))) setPos pos
 
-    /** Optionally, if pattern is a `Bind`, the bound name, otherwise None.
-     */
-    def patternVar(pat: Tree): Option[Name] = pat match {
-      case Bind(name, _) => Some(name)
-      case _ => None
-    }
-
     /** If `pat` is not yet a `Bind` wrap it in one with a fresh name
      */
     def makeBind(pat: Tree): Tree = pat match {
@@ -450,18 +440,6 @@ abstract class TreeBuilder {
   /** Create tree for for-yield comprehension <for (enums) yield body> */
   def makeForYield(enums: List[Enumerator], body: Tree): Tree =
     makeFor(nme.map, nme.flatMap, enums, body)
-
-  /** Create tree for a lifted expression XX-LIFTING
-   */
-  def makeLifted(gs: List[ValFrom], body: Tree): Tree = {
-    def combine(gs: List[ValFrom]): ValFrom = (gs: @unchecked) match {
-      case g :: Nil => g
-      case ValFrom(pos1, pat1, rhs1) :: gs2 =>
-        val ValFrom(pos2, pat2, rhs2) = combine(gs2)
-        ValFrom(pos1, makeTuple(List(pat1, pat2), false), Apply(Select(rhs1, nme.zip), List(rhs2)))
-    }
-    makeForYield(List(combine(gs)), body)
-  }
 
   /** Create tree for a pattern alternative */
   def makeAlternative(ts: List[Tree]): Tree = {

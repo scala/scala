@@ -3,7 +3,7 @@ reload: ImplicitMember.scala
 askTypeCompletion at ImplicitMember.scala(7,7)
 ================================================================================
 [response] aksTypeCompletion at (7,7)
-retrieved 39 members
+retrieved 38 members
 [accessible:  true] `class AppliedImplicitImplicit.AppliedImplicit`
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -33,7 +33,6 @@ retrieved 39 members
 [accessible:  true] `method wait()Unit`
 [accessible:  true] `method wait(x$1: Long)Unit`
 [accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method x=> Implicit.type`
 [accessible:  true] `method →[B](y: B)(Implicit.type, B)`
 [accessible:  true] `value __leftOfArrowImplicit.type`
 [accessible:  true] `value __resultOfEnsuringImplicit.type`
