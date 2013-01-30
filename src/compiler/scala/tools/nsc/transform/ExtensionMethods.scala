@@ -75,7 +75,19 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty,
-      s"no extension method found for $imeth:${imeth.tpe} among ${candidates.map(c => c.name+":"+c.tpe).toList} / ${extensionNames(imeth).toList}")
+      sm"""|no extension method found for:
+           |
+           |  $imeth:${imeth.tpe}
+           |
+           | Candidates:
+           |
+           | ${candidates.map(c => c.name+":"+c.tpe).mkString("\n")}
+           |
+           | Candidates (signatures normalized):
+           |
+           | ${candidates.map(c => c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}
+           |
+           | Eligible Names: ${extensionNames(imeth).mkString(",")}"""")
     matching.head
   }
 
@@ -94,11 +106,18 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
    */
   private def normalize(stpe: Type, clazz: Symbol): Type = stpe match {
     case PolyType(tparams, restpe) =>
-      GenPolyType(tparams dropRight clazz.typeParams.length, normalize(restpe.substSym(tparams takeRight clazz.typeParams.length, clazz.typeParams), clazz))
+      // Split the type parameters of the extension method into two groups,
+      // corresponding the to class and method type parameters.
+      val numClassParams = clazz.typeParams.length
+      val methTParams = tparams dropRight numClassParams
+      val classTParams = tparams takeRight numClassParams
+
+      GenPolyType(methTParams,
+        normalize(restpe.substSym(classTParams, clazz.typeParams), clazz))
     case MethodType(List(thiz), restpe) if thiz.name == nme.SELF =>
-      restpe
-    case MethodType(tparams, restpe) =>
-      MethodType(tparams.drop(1), restpe)
+      restpe.substituteTypes(thiz :: Nil, clazz.thisType :: Nil)
+    case MethodType(thiz :: params, restpe) =>
+      MethodType(params, restpe)
     case _ =>
       stpe
   }
@@ -128,7 +147,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           MethodType(List(thisParam), restpe)
       }
       val GenPolyType(tparams, restpe) = origInfo cloneInfo extensionMeth
-      GenPolyType(tparams ::: newTypeParams, transform(restpe) substSym (clazz.typeParams, newTypeParams))
+      val selfParamSingletonType = singleType(currentOwner.companionModule.thisType, thisParam)
+      GenPolyType(
+        tparams ::: newTypeParams,
+        transform(restpe) substThisAndSym (clazz, selfParamSingletonType, clazz.typeParams, newTypeParams)
+      )
     }
 
     private def allParams(tpe: Type): List[Symbol] = tpe match {
@@ -162,7 +185,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             origMeth.defString,
             extensionMeth.defString)) // extensionMeth.defStringSeenAs(origInfo
 
-          def thisParamRef = gen.mkAttributedIdent(extensionMeth.info.params.head setPos extensionMeth.pos)
+          def thisParamRef = gen.mkAttributedStableRef(extensionMeth.info.params.head setPos extensionMeth.pos)
           val GenPolyType(extensionTpeParams, extensionMono) = extensionMeth.info
           val origTpeParams = (tparams map (_.symbol)) ::: currentOwner.typeParams
           val extensionBody = rhs
