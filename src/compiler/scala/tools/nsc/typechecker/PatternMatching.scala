@@ -1887,16 +1887,23 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     case object False extends Prop
 
     // symbols are propositions
-    case class Sym(val variable: Var, val const: Const) extends Prop {
-      private[this] val id = nextSymId
+    abstract case class Sym(val variable: Var, val const: Const) extends Prop {
+      private[this] val id = Sym.nextSymId
+
       override def toString = variable +"="+ const +"#"+ id
     }
-    private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
-
+    class UniqueSym(variable: Var, const: Const) extends Sym(variable, const)
+    object Sym {
+      private val uniques: util.HashSet[Sym] = new util.HashSet("uniques", 512)
+      def apply(variable: Var, const: Const): Sym = {
+        val newSym = new UniqueSym(variable, const)
+        (uniques findEntryOrUpdate newSym)
+      }
+      private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+    }
 
     def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
     def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
-
 
     trait PropTraverser {
       def apply(x: Prop): Unit = x match {
@@ -2053,6 +2060,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     import scala.collection.mutable.ArrayBuffer
     type FormulaBuilder = ArrayBuffer[Clause]
     def formulaBuilder  = ArrayBuffer[Clause]()
+    def formulaBuilderSized(init: Int)  = new ArrayBuffer[Clause](init)
     def addFormula(buff: FormulaBuilder, f: Formula): Unit = buff ++= f
     def toFormula(buff: FormulaBuilder): Formula = buff
 
@@ -2157,7 +2165,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     class Lit(val sym: Sym, val pos: Boolean) {
       override def toString = if (!pos) "-"+ sym.toString else sym.toString
       override def equals(o: Any) = o match {
-        case o: Lit => (o.sym == sym) && (o.pos == pos)
+        case o: Lit => (o.sym eq sym) && (o.pos == pos)
         case _ => false
       }
       override def hashCode = sym.hashCode + pos.hashCode
@@ -2206,13 +2214,18 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
 
     private def withLit(res: Model, l: Lit): Model = if (res eq NoModel) NoModel else res + (l.sym -> l.pos)
-    private def dropUnit(f: Formula, unitLit: Lit) = {
+    private def dropUnit(f: Formula, unitLit: Lit): Formula = {
       val negated = -unitLit
       // drop entire clauses that are trivially true
       // (i.e., disjunctions that contain the literal we're making true in the returned model),
       // and simplify clauses by dropping the negation of the literal we're making true
       // (since False \/ X == X)
-      f.filterNot(_.contains(unitLit)).map(_ - negated)
+      val dropped = formulaBuilderSized(f.size)
+      for {
+        clause <- f
+        if !(clause contains unitLit)
+      } dropped += (clause - negated)
+      dropped
     }
 
     def findModelFor(f: Formula): Model = {
