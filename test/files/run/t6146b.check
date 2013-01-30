@@ -1,0 +1,52 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> val u = rootMirror.universe; import u._, language._
+u: $r.intp.global.type = <global>
+import u._
+import language._
+
+scala> val S1 = typeOf[c.X.S1.type forSome { val c: C[_] }].typeSymbol.tpeHK
+S1: u.Type = C.X.S1.type
+
+scala> val S2 = typeOf[O.S2].typeSymbol.tpeHK
+S2: u.Type = C.this.S2
+
+scala> val S3 = typeOf[O.S3].typeSymbol.tpeHK
+S3: u.Type = O.S3
+
+scala> val S4 = typeOf[S4].typeSymbol.tpeHK
+S4: u.Type = S4
+
+scala> val F = typeOf[c.F[_] forSome { val c: C[_] }].typeSymbol.tpeHK
+F: u.Type = C.this.F
+
+scala> val fTpe = typeOf[O.type].decl(newTermName("foo")).paramss.head.head.tpe
+fTpe: u.Type = O.F[Int]
+
+scala> def memType(sub: Type, scrut: Type): Type =
+  nestedMemberType(sub.typeSymbol, scrut.prefix, scrut.typeSymbol.owner)
+memType: (sub: u.Type, scrut: u.Type)u.Type
+
+scala> 
+
+scala> memType(S1, fTpe)
+res0: u.Type = O.X.S1.type
+
+scala> memType(S2, fTpe)
+res1: u.Type = O.S2
+
+scala> memType(S3, fTpe)
+res2: u.Type = O.S3
+
+scala> memType(S4, fTpe)
+res3: u.Type = S4
+
+scala> 
