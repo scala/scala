@@ -90,11 +90,11 @@ abstract class Changes {
         } else
           !sym1.isTypeParameter || !changedTypeParams.contains(sym1.fullName)
 
+      // @M! normalize reduces higher-kinded case to PolyType's
       testSymbols && sameType(pre1, pre2) &&
         (sym1.variance == sym2.variance) &&
         ((tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize) ||
            sameTypes(args1, args2))
-         // @M! normalize reduces higher-kinded case to PolyType's
 
     case (RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
       def isSubScope(s1: Scope, s2: Scope): Boolean = s2.toList.forall {

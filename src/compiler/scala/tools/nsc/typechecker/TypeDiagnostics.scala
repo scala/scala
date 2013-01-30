@@ -213,7 +213,7 @@ trait TypeDiagnostics {
                   // force measures than comparing normalized Strings were producing error messages
                   // like "and java.util.ArrayList[String] <: java.util.ArrayList[String]" but there
                   // should be a cleaner way to do this.
-                  if (found.normalize.toString == tp.normalize.toString) ""
+                  if (found.dealiasWiden.toString == tp.dealiasWiden.toString) ""
                   else " (and %s <: %s)".format(found, tp)
                 )
                 val explainDef = {
