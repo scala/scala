@@ -3943,6 +3943,8 @@ trait Typers extends Modes with Adaptations with Tags {
       def sSubScriptDSL_N_code_normal: Tree = Select(sSubScriptDSL, name_fun_code_normal)
       def sSubScriptDSL_call         : Tree = Select(sSubScriptDSL, name_fun_call)
       
+      def here_Ident                 : Tree = Ident(here_Name)
+      
       def underscore_name(name: Name) = newTermName("_"+name)
       // copied from Parsers.scala:
       def makeParam (pname: TermName, tpe: Tree) =  ValDef(Modifiers(PARAM), pname, tpe, EmptyTree)
@@ -4475,14 +4477,27 @@ trait Typers extends Modes with Adaptations with Tags {
                 && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
                 && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
               )
-              val res =
+              val resolvedMethod = // TBD note: the resolution should be done in a context with "here"
                 if (useTry) tryTypedApply(fun2, args)
                 else doTypedApply(tree, fun2, args, mode, pt)
 
-              val nodeType    : Tree = if (isScriptCall) sSubScriptVM_N_call else sSubScriptVM_N_code_normal
-              val fun_template: Tree = if (isScriptCall) sSubScriptDSL_call  else sSubScriptDSL_N_code_normal
+              var nodeType    : Tree = null
+              var fun_template: Tree = null
+              var block       : Tree = null
               
-              val function_node_to_code = blockToFunction(res, nodeType, tree.pos)
+              if (isScriptCall) {
+                nodeType     = sSubScriptVM_N_call
+                fun_template = sSubScriptDSL_call
+                block        = Apply(resolvedMethod, List(here_Ident))
+              } 
+              else {
+                nodeType     = sSubScriptVM_N_code_normal
+                fun_template = sSubScriptDSL_N_code_normal
+                block        = resolvedMethod
+              }
+             
+              // blockToFunction adds "here" to the context. A little late; the application cannot use "here" for a parameter of the call
+              val function_node_to_code = blockToFunction(block, nodeType, tree.pos)
               val apply_template = Apply(fun_template, List(function_node_to_code))
               typed(apply_template)
               
