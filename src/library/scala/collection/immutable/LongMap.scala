@@ -416,5 +416,19 @@ extends AbstractMap[Long, T]
 
   def ++[S >: T](that: LongMap[S]) =
     this.unionWith[S](that, (key, x, y) => y)
+
+
+  final def firstKey: Long = this match {
+    case LongMap.Bin(_, _, l, r) => l.firstKey
+    case LongMap.Tip(k, v) => k
+    case LongMap.Nil => sys.error("Empty set")
+  }
+
+  final def lastKey: Long = this match {
+    case LongMap.Bin(_, _, l, r) => r.lastKey
+    case LongMap.Tip(k , v) => k
+    case LongMap.Nil => sys.error("Empty set")
+  }
+
 }
 
