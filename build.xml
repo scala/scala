@@ -1377,6 +1377,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${ant.jar}"/>
         <path refid="forkjoin.classpath"/>
         <path refid="fjbg.classpath"/>
+        <path refid="asm.classpath"/>
         <pathelement location="${scalacheck.jar}"/>
       </compilationpath>
     </scalacfork>
