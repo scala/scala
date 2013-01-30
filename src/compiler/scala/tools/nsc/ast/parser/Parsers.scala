@@ -1178,32 +1178,32 @@ self =>
     val           bind_outParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~?"))
     val   bind_constrainedParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~??"))
     
-    val       formalInputParameter_Name = newTermName("FormalInputParameter")
-    val      formalOutputParameter_Name = newTermName("FormalOutputParameter")
-    val formalConstrainedParameter_Name = newTermName("FormalConstrainedParameter")
-    val      actualOutputParameter_Name = newTermName("ActualOutputParameter")
-    val actualConstrainedParameter_Name = newTermName("ActualConstrainedParameter")
-    val    actualAdaptingParameter_Name = newTermName("ActualAdaptingParameter")
+    val       formalInputParameter_Name = newTypeName("FormalInputParameter")
+    val      formalOutputParameter_Name = newTypeName("FormalOutputParameter")
+    val formalConstrainedParameter_Name = newTypeName("FormalConstrainedParameter")
+    val      actualOutputParameter_Name = newTypeName("ActualOutputParameter")
+    val actualConstrainedParameter_Name = newTypeName("ActualConstrainedParameter")
+    val    actualAdaptingParameter_Name = newTypeName("ActualAdaptingParameter")
 
-    val    here_Ident = Ident( here_Name)
-    val   there_Ident = Ident(there_Name)
+    def    here_Ident = Ident( here_Name) // Note: such items should be def's rather than val's; else the Typer will get confused
+    def   there_Ident = Ident(there_Name)
                                                      
     val nameSubScript = newTermName("subscript")
     val nameDSL       = newTermName("DSL")
     val nameVM        = newTermName("vm")
     
-    val sSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
-    val sSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
+    def sSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
+    def sSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
 
-    val sFormalInputParameter      : Tree = Select(sSubScriptVM,       formalInputParameter_Name)
-    val sFormalOutputParameter     : Tree = Select(sSubScriptVM,      formalOutputParameter_Name)
-    val sFormalConstrainedParameter: Tree = Select(sSubScriptVM, formalConstrainedParameter_Name)
+    def sFormalInputParameter      : Tree = Select(sSubScriptVM,       formalInputParameter_Name)
+    def sFormalOutputParameter     : Tree = Select(sSubScriptVM,      formalOutputParameter_Name)
+    def sFormalConstrainedParameter: Tree = Select(sSubScriptVM, formalConstrainedParameter_Name)
 
-    val sActualOutputParameter     : Tree = Select(sSubScriptVM,      actualOutputParameter_Name)
-    val sActualConstrainedParameter: Tree = Select(sSubScriptVM, actualConstrainedParameter_Name)
-    val sActualAdaptingParameter   : Tree = Select(sSubScriptVM,    actualAdaptingParameter_Name)
+    def sActualOutputParameter     : Tree = Select(sSubScriptVM,      actualOutputParameter_Name)
+    def sActualConstrainedParameter: Tree = Select(sSubScriptVM, actualConstrainedParameter_Name)
+    def sActualAdaptingParameter   : Tree = Select(sSubScriptVM,    actualAdaptingParameter_Name)
 
-    val s_script: Tree = Select(sSubScriptDSL, script_Name)
+    def s_script: Tree = Select(sSubScriptDSL, script_Name)
     
     final val raw_space = " "
     final val raw_semi  = ";"
@@ -1279,15 +1279,16 @@ self =>
 
     /*
      * Enclose the given block with a function with parameter "here" of the given node type 
-     * i.e.: here: NodeType => block
+     * i.e.: here: NodeType => body
      */
-    def blockToFunction(block: Tree, nodeType: Tree, pos: Position, hereOrThere: TermName): Function = {
+    def blockToFunction(body: Tree, nodeType: Tree, pos: Position, hereOrThere: TermName): Function = {
       val vparams = List(
           atPos(pos) {
             makeParam(hereOrThere, nodeType setPos pos)
           }
       )
-      Function(vparams , block)
+      //val block = body match {case Block(_,_) => body case _ => Block(body)}
+      Function(vparams , body)
     }
   
     /*
@@ -1347,14 +1348,14 @@ self =>
         ELSE            -> "if_else"  ,
         0               -> "any"
     )
-    val mapTokenToVMNodeName = mapTokenToVMNodeString map {case(k,v) => (k, newTermName("N_"+v): Name)}
+    val mapTokenToVMNodeTypeName = mapTokenToVMNodeString map {case(k,v) => (k, newTypeName("N_"+v): Name)}
 
     def dslFunForBreak       : Tree = Select(sSubScriptDSL, newTermName("_break"))
     def dslFunFor(token: Int): Tree = Select(sSubScriptDSL, mapTokenToDSLFunName(token))
-    def vmNodeFor(token: Int): Tree = Select(sSubScriptVM , mapTokenToVMNodeName(token))
+    def vmNodeFor(token: Int): Tree = Select(sSubScriptVM , mapTokenToVMNodeTypeName(token))
     def vmNodeOf (tree: Tree): Tree = tree match {
       case (Apply(fun, Function(List(ValDef(_,_, nodeType,_)),block)::_)) => nodeType
-      case _ => Select(sSubScriptVM , mapTokenToVMNodeName(0))
+      case _ => Select(sSubScriptVM , mapTokenToVMNodeTypeName(0))
     }
       
     def eatNewlines(): Boolean = {

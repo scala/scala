@@ -198,7 +198,7 @@ abstract class TreeBrowsers {
                                         row: Int, hasFocus: Boolean) = {
             val (cls, name) = TreeInfo.treeName(value.asInstanceOf[Tree])
             if (name != EMPTY)
-              cls + "[" + name + "]"
+              cls + "[" + name + ": " + name.getClass.getSimpleName + "]"
             else
               cls
         }
