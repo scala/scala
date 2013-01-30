@@ -3981,7 +3981,8 @@ trait Typers extends Adaptations with Tags {
 
       // Lookup in the given qualifier.  Used in last-ditch efforts by typedIdent and typedSelect.
       def lookupInRoot(name: Name): Symbol  = lookupInOwner(rootMirror.RootClass, name)
-      def lookupInEmpty(name: Name): Symbol = lookupInOwner(rootMirror.EmptyPackageClass, name)
+      def lookupInEmpty(name: Name): Symbol = rootMirror.EmptyPackageClass.info member name
+
       def lookupInQualifier(qual: Tree, name: Name): Symbol = (
         if (name == nme.ERROR || qual.tpe.widen.isErroneous)
           NoSymbol
@@ -4775,7 +4776,7 @@ trait Typers extends Adaptations with Tags {
        *                   (2) Change imported symbols to selections
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
-        // setting to enable unqualified idents in empty package
+        // setting to enable unqualified idents in empty package (used by the repl)
         def inEmptyPackage = if (settings.exposeEmptyPackage.value) lookupInEmpty(name) else NoSymbol
 
         def issue(err: AbsTypeError) = {
