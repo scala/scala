@@ -7,7 +7,8 @@ import reporters.{Reporter => CompilerReporter}
 /** Trait encapsulating the creation of a presentation compiler's instance.*/
 private[tests] trait PresentationCompilerInstance extends TestSettings {
   protected val settings = new Settings
-  protected def docSettings: doc.Settings = new doc.Settings(_ => ())
+  protected val docSettings = new doc.Settings(_ => ())
+
   protected val compilerReporter: CompilerReporter = new InteractiveReporter {
     override def compiler = PresentationCompilerInstance.this.compiler
   }

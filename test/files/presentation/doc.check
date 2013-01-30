@@ -1,3 +1,4 @@
+reload: Test.scala
 body:Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(This is a test comment), Text(.)))), Text(
 ))))))
 @example:Body(List(Paragraph(Chain(List(Summary(Monospace(Text("abb".permutations = Iterator(abb, bab, bba)))))))))
