@@ -1089,7 +1089,7 @@ QUICK BUILD (QUICK)
     </copy>
   </target>
 
-  <target name="quick.swing" depends="quick.lib" if="has.java6" unless="quick.lib.available">
+  <target name="quick.swing" depends="quick.lib" unless="quick.lib.available">
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
@@ -1524,7 +1524,7 @@ PACKED QUICK BUILD (PACK)
   </jar>
   </target>
 
-  <target name="pack.swing" depends="pack.lib" if="has.java6">
+  <target name="pack.swing" depends="pack.lib">
     <jar destfile="${build-pack.dir}/lib/scala-swing.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <include name="scala/swing/**"/>
@@ -1760,8 +1760,7 @@ OSGi Artifacts
     <stopwatch name="osgi.bundle.timer" action="total"/>
   </target>
 
-  <target name="osgi.bundles.swing" depends="osgi.init" if="has.java6" unless="osgi.bundles.available">
-    <!-- TODO - only if JDK6 -->
+  <target name="osgi.bundles.swing" depends="osgi.init" unless="osgi.bundles.available">
     <make-bundle name="scala-swing" version="${osgi.version.number}"/>
   </target>
 
@@ -1904,7 +1903,7 @@ BOOTSTRAPPING BUILD (STRAP)
     </copy>
   </target>
 
-  <target name="strap.swing" if="has.java6" unless="strap.lib.available" depends="strap.lib">
+  <target name="strap.swing" unless="strap.lib.available" depends="strap.lib">
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
