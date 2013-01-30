@@ -1,0 +1,32 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala>  val u = rootMirror.universe
+u: $r.intp.global.type = scala.tools.nsc.interpreter.IMain$$anon$1@38a133ff
+
+scala>  import u._, language._
+import u._
+import language._
+
+scala>  class C { object O { class E }}; object D extends C
+defined class C
+defined module D
+
+scala>  deepMemberType(typeOf[D.type], typeOf[c.O.E forSome { val c: C }].typeSymbol)
+res0: u.Type = D.O.E
+
+scala>  class C { class C1 { class E }}; object D extends C
+defined class C
+defined module D
+
+scala>  deepMemberType(typeOf[D.type], typeOf[c1.E forSome { val c1: C#C1 }].typeSymbol)
+res1: u.Type = D.C1#E
+
+scala> 

@@ -2720,17 +2720,18 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
           val tpApprox = typer.infer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
           // valid subtypes are turned into checkable types, as we are entering the realm of the dynamic
-          val validSubTypes = (subclasses flatMap {sym =>
-              // have to filter out children which cannot match: see ticket #3683 for an example
-              // compare to the fully known type `tp` (modulo abstract types),
-              // so that we can rule out stuff like: sealed trait X[T]; class XInt extends X[Int] --> XInt not valid when enumerating X[String]
-              // however, must approximate abstract types in
-              val subTp       = appliedType(pre.memberType(sym), sym.typeParams.map(_ => WildcardType))
-              val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
-              // patmatDebug("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
-              if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
-              else None
-            })
+          val validSubTypes = (subclasses flatMap { sym =>
+            // have to filter out children which cannot match: see ticket #3683 for an example
+            // compare to the fully known type `tp` (modulo abstract types),
+            // so that we can rule out stuff like: sealed trait X[T]; class XInt extends X[Int] --> XInt not valid when enumerating X[String]
+            // however, must approximate abstract types in
+
+            val subTp = appliedType(deepMemberType(pre, sym), sym.typeParams.map(_ => WildcardType))
+            val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
+            // patmatDebug("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
+            if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
+            else None
+          })
           patmatDebug("enum sealed "+ (tp, tpApprox) + " as "+ validSubTypes)
           Some(validSubTypes)
       }
