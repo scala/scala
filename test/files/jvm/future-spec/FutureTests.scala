@@ -74,6 +74,30 @@ object FutureTests extends MinimalScalaTest {
   "A future with global ExecutionContext" should {
     import ExecutionContext.Implicits._
 
+    "output uncaught exceptions" in {
+      import java.io.{ ByteArrayOutputStream, PrintStream }
+
+      val baos = new ByteArrayOutputStream(1 << 16) { def isEmpty: Boolean = count == 0 }
+      val tmpErr = new PrintStream(baos)
+      
+      def assertPrintedToErr(t: Throwable): Unit = {
+          t.printStackTrace(tmpErr)
+          tmpErr.flush()
+          val expected = baos.toByteArray.toIndexedSeq
+          baos.reset()
+          val f = Future(throw t)
+          val d = Deadline.now + 5.seconds
+          while(d.hasTimeLeft && baos.isEmpty) Thread.sleep(10)
+          baos.toByteArray.toIndexedSeq mustBe (expected)
+        }
+
+      val oldErr = System.err
+      System.setErr(tmpErr)
+      try {
+        assertPrintedToErr(new NotImplementedError("foo"))
+      } finally System.setErr(oldErr)
+    }
+
     "compose with for-comprehensions" in {
       def async(x: Int) = future { (x * 2).toString }
       val future0 = future[Any] {
