@@ -452,7 +452,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         if (aparam.name != rparam.name && !rparam.isSynthetic) MacroImplParamNameMismatchError(aparam, rparam)
         if (isRepeated(aparam) ^ isRepeated(rparam)) MacroImplVarargMismatchError(aparam, rparam)
         val aparamtpe = aparam.tpe.dealias match {
-          case RefinedType(List(tpe), Scope(sym)) if tpe == MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
+          case RefinedType(List(tpe), Scope(sym)) if tpe =:= MacroContextClass.tpe && sym.allOverriddenSymbols.contains(MacroContextPrefixType) => tpe
           case tpe => tpe
         }
         checkMacroImplParamTypeMismatch(atpeToRtpe(aparamtpe), rparam)
