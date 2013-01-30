@@ -20,7 +20,6 @@ class SameBytecode {
     val x1 = Foo(1, "a")
     if (x1.ne(null)) {
       if (x1.x.isInstanceOf[String]) {
-        val x3 = x1.x.asInstanceOf[String]
         return x1.y
       }
     }

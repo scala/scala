@@ -16,7 +16,6 @@ class SameBytecode {
   def b: String = {
     val x1 = Foo(1, "a")
     if (x1.ne(null)) {
-      val x3 = x1.x
       return x1.y
     }
 

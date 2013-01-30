@@ -3792,11 +3792,17 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         // nextBinder: T
         // next == MatchMonad[U]
         // returns MatchMonad[U]
-        def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree =
-          ifThenElseZero(cond, BLOCK(
-            VAL(nextBinder) === res,
-            next
-          ))
+        def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree = {
+          val rest =
+            // only emit a local val for `nextBinder` if it's actually referenced in `next`
+            if (next.exists(_.symbol eq nextBinder))
+              BLOCK(
+                VAL(nextBinder) === res,
+                next
+              )
+            else next
+          ifThenElseZero(cond, rest)
+        }
 
         // guardTree: Boolean
         // next: MatchMonad[T]

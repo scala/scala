@@ -14,7 +14,6 @@ class SameBytecode {
     if (x1.isInstanceOf[Foo]) {
       val x3 = x1.asInstanceOf[Foo]
       if (x3.x.isInstanceOf[String]) {
-        val x4 = x3.x.asInstanceOf[String]
         val x = ()
         return
       }
