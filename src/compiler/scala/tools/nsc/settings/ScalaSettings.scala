@@ -169,6 +169,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Yrangepos       = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val Ybuilderdebug   = ChoiceSetting     ("-Ybuilder-debug", "manager", "Compile using the specified build manager.", List("none", "refined", "simple"), "none")
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
+  val Ymacronoexpand  = BooleanSetting    ("-Ymacro-no-expand", "Don't expand macros. Might be useful for scaladoc and presentation compiler, but will crash anything which uses macros and gets past typer.")
   val Yreplsync       = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
   val Ynotnull        = BooleanSetting    ("-Ynotnull", "Enable (experimental and incomplete) scala.NotNull.")
   val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods.")
