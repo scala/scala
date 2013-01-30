@@ -826,6 +826,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     line1 :: line2 :: descs mkString
   }
 
+  final override def notifyPhaseChange(p: Phase) {
+    analyzer.pluginsEnterPhase(p)
+  }
+
   /** Returns List of (phase, value) pairs, including only those
    *  where the value compares unequal to the previous phase's value.
    */
