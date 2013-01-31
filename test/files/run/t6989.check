@@ -1,0 +1,24 @@
+============
+class JavaClass_1
+isPrivate = false
+isProtected = false
+isPublic = false
+privateWithin = package foo
+============
+variable x
+isPrivate = true
+isProtected = false
+isPublic = false
+privateWithin = <none>
+============
+variable y
+isPrivate = false
+isProtected = true
+isPublic = false
+privateWithin = package foo
+============
+variable z
+isPrivate = false
+isProtected = false
+isPublic = true
+privateWithin = <none>

@@ -631,6 +631,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       /** used to avoid cycles while initializing classes */
       private var parentsLevel = 0
       private var pendingLoadActions: List[() => Unit] = Nil
+      private val relatedSymbols = clazz +: (if (module != NoSymbol) List(module, module.moduleClass) else Nil)
 
       override def load(sym: Symbol): Unit = {
         debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
@@ -642,6 +643,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           module.moduleClass setFlag (flags & PRIVATE | JAVA)
         }
 
+        relatedSymbols foreach (importPrivateWithinFromJavaFlags(_, jclazz.getModifiers))
         copyAnnotations(clazz, jclazz)
         // to do: annotations to set also for module?
 
@@ -1060,6 +1062,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           .newValue(newTermName(jfield.getName), NoPosition, toScalaFieldFlags(jfield.getModifiers))
           .setInfo(typeToScala(jfield.getGenericType))
       fieldCache enter (jfield, field)
+      importPrivateWithinFromJavaFlags(field, jfield.getModifiers)
       copyAnnotations(field, jfield)
       field
     }
@@ -1085,6 +1088,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
       val resulttpe = typeToScala(jmeth.getGenericReturnType)
       setMethType(meth, tparams, paramtpes, resulttpe)
+      importPrivateWithinFromJavaFlags(meth, jmeth.getModifiers)
       copyAnnotations(meth, jmeth)
       if ((jmeth.getModifiers & JAVA_ACC_VARARGS) != 0) meth.setInfo(arrayToRepeated(meth.info))
       meth
@@ -1108,6 +1112,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
       setMethType(constr, tparams, paramtpes, clazz.tpe)
       constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
+      importPrivateWithinFromJavaFlags(constr, jconstr.getModifiers)
       copyAnnotations(constr, jconstr)
       constr
     }
