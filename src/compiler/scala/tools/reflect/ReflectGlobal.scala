@@ -12,9 +12,10 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
   extends Global(currentSettings, reporter) with scala.tools.reflect.ReflectSetup with scala.reflect.runtime.SymbolTable {
 
   override def transformedType(sym: Symbol) =
-    erasure.transformInfo(sym,
-      uncurry.transformInfo(sym,
-        refChecks.transformInfo(sym, sym.info)))
+    postErasure.transformInfo(sym,
+      erasure.transformInfo(sym,
+        uncurry.transformInfo(sym,
+          refChecks.transformInfo(sym, sym.info))))
 
   override def isCompilerUniverse = true
 
