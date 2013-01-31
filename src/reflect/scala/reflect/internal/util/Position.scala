@@ -91,7 +91,7 @@ abstract class Position extends scala.reflect.api.Position { self =>
   /** An optional value containing the source file referred to by this position, or
    *  None if not defined.
    */
-  def source: SourceFile = throw new UnsupportedOperationException("Position.source")
+  def source: SourceFile = throw new UnsupportedOperationException(s"Position.source on ${this.getClass}")
 
   /** Is this position neither a NoPosition nor a FakePosition?
    *  If isDefined is true, offset and source are both defined.
@@ -111,19 +111,19 @@ abstract class Position extends scala.reflect.api.Position { self =>
   def makeTransparent: Position = this
 
   /** The start of the position's range, error if not a range position */
-  def start: Int = throw new UnsupportedOperationException("Position.start")
+  def start: Int = throw new UnsupportedOperationException(s"Position.start on ${this.getClass}")
 
   /** The start of the position's range, or point if not a range position */
   def startOrPoint: Int = point
 
   /**  The point (where the ^ is) of the position */
-  def point: Int = throw new UnsupportedOperationException("Position.point")
+  def point: Int = throw new UnsupportedOperationException(s"Position.point on ${this.getClass}")
 
   /**  The point (where the ^ is) of the position, or else `default` if undefined */
   def pointOrElse(default: Int): Int = default
 
   /** The end of the position's range, error if not a range position */
-  def end: Int = throw new UnsupportedOperationException("Position.end")
+  def end: Int = throw new UnsupportedOperationException(s"Position.end on ${this.getClass}")
 
   /** The end of the position's range, or point if not a range position */
   def endOrPoint: Int = point
