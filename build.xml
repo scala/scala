@@ -236,7 +236,7 @@ PROPERTIES
 
   <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
        but if it is unset it will take this default value. -->
-  <property name="env.ANT_OPTS" value="-Xms1536M -Xmx1536M -Xss1M -XX:MaxPermSize=192M -XX:+UseParallelGC" />
+  <property name="env.ANT_OPTS" value="-Xms2G -Xmx2G -Xss1M -XX:MaxPermSize=192M -XX:+UseParallelGC" />
 
   <property
       name="scalacfork.jvmargs"
