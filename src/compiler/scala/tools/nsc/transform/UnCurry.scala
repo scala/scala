@@ -627,7 +627,7 @@ abstract class UnCurry extends InfoTransform
               }
             }
 
-          case Assign(Select(_, _), _) =>
+          case Assign(_: RefTree, _) =>
             withNeedLift(true) { super.transform(tree) }
 
           case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
