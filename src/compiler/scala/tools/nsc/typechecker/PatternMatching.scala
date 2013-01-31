@@ -746,26 +746,8 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
       override protected def tupleSel(binder: Symbol)(i: Int): Tree = { import CODE._
-        // caseFieldAccessors is messed up after typers (reversed, names mangled for non-public fields)
-        // TODO: figure out why...
         val accessors = binder.caseFieldAccessors
-        // luckily, the constrParamAccessors are still sorted properly, so sort the field-accessors using them
-        // (need to undo name-mangling, including the sneaky trailing whitespace)
-        val constrParamAccessors = binder.constrParamAccessors
-
-        def indexInCPA(acc: Symbol) =
-          constrParamAccessors indexWhere { orig =>
-            // patmatDebug("compare: "+ (orig, acc, orig.name, acc.name, (acc.name == orig.name), (acc.name startsWith (orig.name append "$"))))
-            val origName  = orig.name.toString.trim
-            val accName = acc.name.toString.trim
-            (accName == origName) || (accName startsWith (origName + "$"))
-          }
-
-        // patmatDebug("caseFieldAccessors: "+ (accessors, binder.caseFieldAccessors map indexInCPA))
-        // patmatDebug("constrParamAccessors: "+ constrParamAccessors)
-
-        val accessorsSorted = accessors sortBy indexInCPA
-        if (accessorsSorted isDefinedAt (i-1)) REF(binder) DOT accessorsSorted(i-1)
+        if (accessors isDefinedAt (i-1)) REF(binder) DOT accessors(i-1)
         else codegen.tupleSel(binder)(i) // this won't type check for case classes, as they do not inherit ProductN
       }
 
