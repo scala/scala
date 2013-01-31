@@ -69,6 +69,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
    // Members declared in scala.reflect.internal.Required
   def picklerPhase: scala.reflect.internal.Phase = SomePhase
+  def erasurePhase: scala.reflect.internal.Phase = SomePhase
 
   // Members declared in scala.reflect.internal.SymbolTable
   def currentRunId: Int = 1

@@ -12,6 +12,8 @@ class JavaUniverse extends internal.SymbolTable with JavaUniverseForce with Refl
 
   override def inform(msg: String): Unit = log(msg)
   def picklerPhase = internal.SomePhase
+  def erasurePhase = internal.SomePhase
+
   lazy val settings = new Settings
   private val isLogging = sys.props contains "scala.debug.reflect"
 

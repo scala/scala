@@ -16,7 +16,7 @@ import java.io.IOException
 import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags, JMethodOrConstructor }
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
-import scala.collection.mutable.{ HashMap, ListBuffer }
+import scala.collection.mutable.{ HashMap, ListBuffer, ArrayBuffer }
 import internal.Flags._
 import ReflectionUtils._
 import scala.language.existentials
@@ -312,13 +312,17 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
     }
 
+    private def isByNameParam(p: Type) = isByNameParamType(p)
+    private def isValueClassParam(p: Type) = p.typeSymbol.isDerivedValueClass
+
     // unlike other mirrors, method mirrors are created by a factory
     // that's because we want to have decent performance
     // therefore we move special cases into separate subclasses
     // rather than have them on a hot path them in a unified implementation of the `apply` method
     private def mkJavaMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): JavaMethodMirror = {
+      def existsParam(pred: Type => Boolean) = symbol.paramss.flatten.map(_.info).exists(pred)
       if (isBytecodelessMethod(symbol)) new JavaBytecodelessMethodMirror(receiver, symbol)
-      else if (symbol.paramss.flatten exists (p => isByNameParamType(p.info))) new JavaByNameMethodMirror(receiver, symbol)
+      else if (existsParam(isByNameParam) || existsParam(isValueClassParam)) new JavaTransformingMethodMirror(receiver, symbol)
       else {
         symbol.paramss.flatten.length match {
           case 0 => new JavaVanillaMethodMirror0(receiver, symbol)
@@ -379,12 +383,38 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
     }
 
-    private class JavaByNameMethodMirror(val receiver: Any, symbol: MethodSymbol)
+    // caches MethodSymbol metadata, so that we minimize the work that needs to be done during Mirror.apply
+    // TODO: vararg is only supported in the last parameter list (SI-6182), so we don't need to worry about the rest for now
+    private class MethodMetadata(symbol: MethodSymbol) {
+      private val params = symbol.paramss.flatten.toArray
+      val isByName = params.map(p => isByNameParam(p.info))
+      val isValueClass = params.map(p => isValueClassParam(p.info))
+      private def valueClassUnboxer(p: Symbol) = {
+        val fields @ (field :: _) = p.info.declarations.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
+        assert(fields.length == 1, s"$p: $fields")
+        runtimeClass(p.info).getDeclaredMethod(field.name.toString)
+      }
+      val paramUnboxers = params.map(p => if (isValueClassParam(p.info)) valueClassUnboxer(p) else null)
+      val paramCount = params.length
+    }
+
+    private class JavaTransformingMethodMirror(val receiver: Any, symbol: MethodSymbol, metadata: MethodMetadata)
             extends JavaMethodMirror(symbol) {
-      def bind(newReceiver: Any) = new JavaByNameMethodMirror(newReceiver, symbol)
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new MethodMetadata(symbol))
+      override def bind(newReceiver: Any) = new JavaTransformingMethodMirror(newReceiver, symbol, metadata)
+
       def apply(args: Any*): Any = {
-        val transformed = map2(args.toList, symbol.paramss.flatten)((arg, param) => if (isByNameParamType(param.info)) () => arg else arg)
-        jinvoke(jmeth, receiver, transformed)
+        import metadata._
+        val args1 = new Array[Any](args.length)
+        var i = 0
+        while (i < args1.length) {
+          val arg = args(i)
+          if (i >= paramCount) args1(i) = arg // don't transform varargs
+          else if (isByName(i)) args1(i) = () => arg // don't transform by-name value class params
+          else if (isValueClass(i)) args1(i) = paramUnboxers(i).invoke(arg)
+          i += 1
+        }
+        jinvoke(jmeth, receiver, args1)
       }
     }
 

@@ -12,7 +12,7 @@ import scala.reflect.internal.util.AbstractFileClassLoader
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
-private[scala] object ReflectionUtils {
+object ReflectionUtils {
   // Unwraps some chained exceptions which arise during reflective calls.
   def unwrapThrowable(x: Throwable): Throwable = x match {
     case  _: InvocationTargetException |      // thrown by reflectively invoked method or constructor
