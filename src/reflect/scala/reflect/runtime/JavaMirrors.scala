@@ -610,11 +610,19 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     /**
      * Copy all annotations of Java annotated element `jann` over to Scala symbol `sym`.
+     * Also creates `@throws` annotations if necessary.
      *  Pre: `sym` is already initialized with a concrete type.
      *  Note: If `sym` is a method or constructor, its parameter annotations are copied as well.
      */
     private def copyAnnotations(sym: Symbol, jann: AnnotatedElement) {
       sym setAnnotations (jann.getAnnotations map JavaAnnotationProxy).toList
+      // FIXME: we're not using getGenericExceptionTypes here to be consistent with ClassfileParser
+      val jexTpes = jann match {
+        case jm: jMethod => jm.getExceptionTypes.toList
+        case jconstr: jConstructor[_] => jconstr.getExceptionTypes.toList
+        case _ => Nil
+      }
+      jexTpes foreach (jexTpe => sym.addThrowsAnnotation(classSymbol(jexTpe)))
     }
 
     /**
