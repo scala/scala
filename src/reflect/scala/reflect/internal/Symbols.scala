@@ -1583,8 +1583,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       setAnnotations(annot :: annotations)
 
     // Convenience for the overwhelmingly common case
-    def addAnnotation(sym: Symbol, args: Tree*): this.type =
+    def addAnnotation(sym: Symbol, args: Tree*): this.type = {
+      // The assertion below is meant to prevent from issues like SI-7009 but it's disabled
+      // due to problems with cycles while compiling Scala library. It's rather shocking that
+      // just checking if sym is monomorphic type introduces nasty cycles. We are definitively
+      // forcing too much because monomorphism is a local property of a type that can be checked
+      // syntactically
+      // assert(sym.initialize.isMonomorphicType, sym)
       addAnnotation(AnnotationInfo(sym.tpe, args.toList, Nil))
+    }
+
+    /** Use that variant if you want to pass (for example) an applied type */
+    def addAnnotation(tp: Type, args: Tree*): this.type = {
+      assert(tp.typeParams.isEmpty, tp)
+      addAnnotation(AnnotationInfo(tp, args.toList, Nil))
+    }
 
 // ------ comparisons ----------------------------------------------------------------
 
