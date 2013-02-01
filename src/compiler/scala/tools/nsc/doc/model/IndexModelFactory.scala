@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  Pedro Furlanetto
  */
 
@@ -17,8 +17,6 @@ object IndexModelFactory {
 
       object result extends mutable.HashMap[Char,SymbolMap] {
 
-        /* Owner template ordering */
-        implicit def orderingSet = math.Ordering.String.on { x: MemberEntity => x.name.toLowerCase }
         /* symbol name ordering */
         implicit def orderingMap = math.Ordering.String.on { x: String => x.toLowerCase }
 

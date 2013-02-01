@@ -1,0 +1,16 @@
+t5954.scala:36: error: implementation restriction: package object A cannot contain case class D. Instead, class D should be placed directly in package A.
+  case class D()
+             ^
+t5954.scala:35: error: implementation restriction: package object A cannot contain companion object C. Instead, object C should be placed directly in package A.
+  object C
+         ^
+t5954.scala:34: error: implementation restriction: package object A cannot contain companion trait C. Instead, trait C should be placed directly in package A.
+  trait C
+        ^
+t5954.scala:33: error: implementation restriction: package object A cannot contain companion object B. Instead, object B should be placed directly in package A.
+  object B
+         ^
+t5954.scala:32: error: implementation restriction: package object A cannot contain companion class B. Instead, class B should be placed directly in package A.
+  class B
+        ^
+5 errors found

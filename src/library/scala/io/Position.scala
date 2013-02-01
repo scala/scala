@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -68,14 +68,6 @@ abstract class Position {
 }
 
 object Position extends Position {
-  /** The undefined position */
-  @deprecated("This will be removed", "2.9.0")
-  final val NOPOS = 0
-
-  /** The first position in a source file */
-  @deprecated("This will be removed", "2.9.0")
-  final val FIRSTPOS = encode(1, 1)
-
   def checkInput(line: Int, column: Int) {
     if (line < 0)
       throw new IllegalArgumentException(line + " < 0")

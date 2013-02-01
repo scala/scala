@@ -1,1 +1,1 @@
-object S extends Application { (new J).foo = 5 }
+object S extends App { (new J).foo = 5 }

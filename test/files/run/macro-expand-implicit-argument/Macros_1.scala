@@ -41,18 +41,18 @@ object Macros {
     def const(x:Int) = Literal(Constant(x))
 
     val n = as.length
-    val arr = newTermName("arr")
+    val arr = TermName("arr")
 
-    val create = Apply(Select(ct.tree, "newArray"), List(const(n)))
+    val create = Apply(Select(ct.tree, TermName("newArray")), List(const(n)))
     val arrtpe = TypeTree(implicitly[c.WeakTypeTag[Array[A]]].tpe)
     val valdef = ValDef(Modifiers(), arr, arrtpe, create)
 
     val updates = (0 until n).map {
-      i => Apply(Select(Ident(arr), "update"), List(const(i), as(i).tree))
+      i => Apply(Select(Ident(arr), TermName("update")), List(const(i), as(i).tree))
     }
 
-    val exprs = Seq(valdef) ++ updates ++ Seq(Ident(arr))
-    val block = Block(exprs:_*)
+    val exprs = (Seq(valdef) ++ updates ++ Seq(Ident(arr))).toList
+    val block = Block(exprs.init, exprs.last)
 
     c.Expr[Array[A]](block)
   }

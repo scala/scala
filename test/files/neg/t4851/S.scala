@@ -10,6 +10,9 @@ object Test {
   val z2 = new J2()
   val z3 = new J2(())
 
+  def anyId(a: Any) = a
+  val w1 = anyId(1, 2 ,3)
+
   def main(args: Array[String]): Unit = {
     println(x1)
     println(x2)
@@ -19,5 +22,7 @@ object Test {
     println(z1)
     println(z2)
     println(z3)
+
+    println(w1)
   }
 }

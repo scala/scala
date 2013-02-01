@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -13,7 +13,6 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
 import scala.tools.nsc.io.{ Path, Directory, File => SFile }
-import scala.sys.process._
 import scala.collection.mutable
 
 trait FileUtil {
@@ -64,7 +63,6 @@ trait FileManager extends FileUtil {
   var LATEST_COMP: String
   var LATEST_PARTEST: String
   var LATEST_ACTORS: String
-  var LATEST_ACTORS_MIGRATION: String
 
   var showDiff = false
   var updateCheck = false
@@ -74,17 +72,11 @@ trait FileManager extends FileUtil {
   var SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
   var JAVA_OPTS   = PartestDefaults.javaOpts
   var timeout     = PartestDefaults.timeout
-  // how can 15 minutes not be enough? What are you doing, run/lisp.scala?
-  // You complete in 11 seconds on my machine.
-  var oneTestTimeout = 60 * 60 * 1000
 
   /** Only when --debug is given. */
   lazy val testTimings = new mutable.HashMap[String, Long]
   def recordTestTiming(name: String, milliseconds: Long) =
     synchronized { testTimings(name) = milliseconds }
-  def showTestTimings() {
-    testTimings.toList sortBy (-_._2) foreach { case (k, v) => println("%s: %s".format(k, v)) }
-  }
 
   def getLogFile(dir: File, fileBase: String, kind: String): File =
     new File(dir, fileBase + "-" + kind + ".log")

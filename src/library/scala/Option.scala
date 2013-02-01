@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -256,7 +256,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  value (if possible), or $none.
    */
   @inline final def collect[B](pf: PartialFunction[A, B]): Option[B] =
-    if (!isEmpty && pf.isDefinedAt(this.get)) Some(pf(this.get)) else None
+    if (!isEmpty) pf.lift(this.get) else None
 
   /** Returns this $option if it is nonempty,
    *  otherwise return the result of evaluating `alternative`.

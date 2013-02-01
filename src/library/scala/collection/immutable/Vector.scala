@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -242,8 +242,8 @@ override def companion: GenericCompanion[Vector] = Vector
 
   private[immutable] def appendFront[B>:A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
-      var blockIndex = (startIndex - 1) & ~31
-      var lo = (startIndex - 1) & 31
+      val blockIndex = (startIndex - 1) & ~31
+      val lo = (startIndex - 1) & 31
 
       if (startIndex != blockIndex + 32) {
         val s = new Vector(startIndex - 1, endIndex, blockIndex)
@@ -339,8 +339,8 @@ override def companion: GenericCompanion[Vector] = Vector
 //    //println("------- append " + value)
 //    debug()
     if (endIndex != startIndex) {
-      var blockIndex = endIndex & ~31
-      var lo = endIndex & 31
+      val blockIndex = endIndex & ~31
+      val lo = endIndex & 31
 
       if (endIndex != blockIndex) {
         //println("will make writable block (from "+focus+") at: " + blockIndex)
@@ -574,9 +574,7 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   private def dropFront0(cutIndex: Int): Vector[A] = {
-    var blockIndex = cutIndex & ~31
-    var lo = cutIndex & 31
-
+    val blockIndex = cutIndex & ~31
     val xor = cutIndex ^ (endIndex - 1)
     val d = requiredDepth(xor)
     val shift = (cutIndex & ~((1 << (5*d))-1))
@@ -606,9 +604,7 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   private def dropBack0(cutIndex: Int): Vector[A] = {
-    var blockIndex = (cutIndex - 1) & ~31
-    var lo = ((cutIndex - 1) & 31) + 1
-
+    val blockIndex = (cutIndex - 1) & ~31
     val xor = startIndex ^ (cutIndex - 1)
     val d = requiredDepth(xor)
     val shift = (startIndex & ~((1 << (5*d))-1))
@@ -630,14 +626,13 @@ override def companion: GenericCompanion[Vector] = Vector
 }
 
 
-class VectorIterator[+A](_startIndex: Int, _endIndex: Int)
+class VectorIterator[+A](_startIndex: Int, endIndex: Int)
 extends AbstractIterator[A]
    with Iterator[A]
    with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31
-  private var endIndex: Int = _endIndex
 
   private var endLo = math.min(endIndex - blockIndex, 32)
 
@@ -667,13 +662,13 @@ extends AbstractIterator[A]
     res
   }
 
-  private[collection] def remainingElementCount: Int = (_endIndex - (blockIndex + lo)) max 0
+  private[collection] def remainingElementCount: Int = (endIndex - (blockIndex + lo)) max 0
 
   /** Creates a new vector which consists of elements remaining in this iterator.
    *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
    */
   private[collection] def remainingVector: Vector[A] = {
-    val v = new Vector(blockIndex + lo, _endIndex, blockIndex + lo)
+    val v = new Vector(blockIndex + lo, endIndex, blockIndex + lo)
     v.initFrom(this)
     v
   }

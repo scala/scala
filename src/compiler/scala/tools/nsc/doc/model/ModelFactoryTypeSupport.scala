@@ -1,21 +1,13 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2012 LAMP/EPFL */
+/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL */
 
 package scala.tools.nsc
 package doc
 package model
 
-import comment._
-
+import base._
 import diagram._
 
 import scala.collection._
-import scala.util.matching.Regex
-
-import symtab.Flags
-
-import io._
-
-import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
 trait ModelFactoryTypeSupport {
@@ -24,18 +16,16 @@ trait ModelFactoryTypeSupport {
                with ModelFactoryTypeSupport
                with DiagramFactory
                with CommentFactory
-               with TreeFactory =>
+               with TreeFactory
+               with MemberLookup =>
 
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
-  import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
   protected val typeCache = new mutable.LinkedHashMap[Type, TypeEntity]
 
   /** */
   def makeType(aType: Type, inTpl: TemplateImpl): TypeEntity = {
-    def templatePackage = closestPackage(inTpl.sym)
-
     def createTypeEntity = new TypeEntity {
       private var nameBuffer = new StringBuilder
       private var refBuffer = new immutable.TreeMap[Int, (LinkTo, Int)]
@@ -92,7 +82,10 @@ trait ModelFactoryTypeSupport {
             findTemplateMaybe(bSym) match {
               case Some(bTpl) if owner == bSym.owner =>
                 // (0) the owner's class is linked AND has a template - lovely
-                LinkToTpl(bTpl)
+                bTpl match {
+                  case dtpl: DocTemplateEntity => new LinkToTpl(dtpl)
+                  case _ => new Tooltip(bTpl.qualifiedName)
+                }
               case _ =>
                 val oTpl = findTemplateMaybe(owner)
                 (oTpl, oTpl flatMap (findMember(bSym, _))) match {
@@ -104,7 +97,7 @@ trait ModelFactoryTypeSupport {
                     if (!bSym.owner.isPackage)
                       Tooltip(name)
                     else
-                      findExternalLink(name).getOrElse (
+                      findExternalLink(bSym, name).getOrElse (
                         // (3) if we couldn't find neither the owner nor external URL to link to, show a tooltip with the qualified name
                         Tooltip(name)
                       )
@@ -231,7 +224,6 @@ trait ModelFactoryTypeSupport {
           def appendClauses = {
             nameBuffer append " forSome {"
             var first = true
-            val qset = quantified.toSet
             for (sym <- quantified) {
               if (!first) { nameBuffer append ", " } else first = false
               if (sym.isSingletonExistential) {

@@ -1,7 +1,9 @@
-error: extension of type scala.Dynamic needs to be enabled
+t6040.scala:1: error: extension of type scala.Dynamic needs to be enabled
 by making the implicit value language.dynamics visible.
 This can be achieved by adding the import clause 'import scala.language.dynamics'
 or by setting the compiler option -language:dynamics.
 See the Scala docs for value scala.language.dynamics for a discussion
 why the feature needs to be explicitly enabled.
+class X extends Dynamic
+                ^
 one error found

@@ -1,6 +1,5 @@
 package scala.tools.reflect
 
-import scala.reflect.macros.{ReificationError, UnexpectedReificationError}
 import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
@@ -38,7 +37,7 @@ abstract class MacroImplementations {
     val argsStack = Stack(args : _*)
 
     def defval(value: Tree, tpe: Type): Unit = {
-      val freshName = newTermName(c.fresh("arg$"))
+      val freshName = newTermName(c.freshName("arg$"))
       evals += ValDef(Modifiers(), freshName, TypeTree(tpe) setPos value.pos.focus, value) setPos value.pos
       ids += Ident(freshName)
     }

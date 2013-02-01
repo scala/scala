@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -60,7 +60,7 @@ private[remote] class NetKernel(service: Service) {
     send(node, name, msg, 'nosession)
 
   def send(node: Node, name: Symbol, msg: AnyRef, session: Symbol) {
-    val senderLoc = Locator(service.node, getOrCreateName(Actor.self))
+    val senderLoc = Locator(service.node, getOrCreateName(Actor.self(Scheduler)))
     val receiverLoc = Locator(node, name)
     namedSend(senderLoc, receiverLoc, msg, session)
   }

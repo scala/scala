@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package symtab
 
-import scala.collection.{ mutable, immutable }
 import scala.language.implicitConversions
 import scala.language.postfixOps
 
@@ -16,9 +15,6 @@ import scala.language.postfixOps
 trait SymbolTrackers {
   val global: Global
   import global._
-
-  private implicit lazy val TreeOrdering: Ordering[Tree] =
-    Ordering by (x => (x.shortClass, x.symbol))
 
   private implicit lazy val SymbolOrdering: Ordering[Symbol] =
     Ordering by (x => (x.kindString, x.name.toString))
@@ -76,7 +72,6 @@ trait SymbolTrackers {
     private def isFlagsChange(sym: Symbol) = changed.flags contains sym
 
     private implicit def NodeOrdering: Ordering[Node] = Ordering by (_.root)
-    private def ownersString(sym: Symbol, num: Int) = sym.ownerChain drop 1 take num mkString " -> "
 
     object Node {
       def nodes(syms: Set[Symbol]): List[Node] = {
@@ -114,7 +109,6 @@ trait SymbolTrackers {
         case Some(oldFlags) =>
           val added   = masked & ~oldFlags
           val removed = oldFlags & ~masked
-          val steady  = masked & ~(added | removed)
           val all     = masked | oldFlags
           val strs    = 0 to 63 map { bit =>
             val flag = 1L << bit
@@ -181,7 +175,7 @@ trait SymbolTrackers {
     }
     def show(label: String): String = {
       val hierarchy = Node(current)
-      val Change(added, removed, symMap, owners, flags) = history.head
+      val Change(_, removed, symMap, _, _) = history.head
       def detailString(sym: Symbol) = {
         val ownerString = sym.ownerChain splitAt 3 match {
           case (front, back) =>

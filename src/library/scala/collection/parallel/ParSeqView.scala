@@ -1,15 +1,14 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel
 
-import scala.collection.{ TraversableView, SeqView, Parallel, Iterator }
+import scala.collection.{ SeqView, Parallel, Iterator }
 import scala.collection.generic.CanCombineFrom
 
 /** A template view of a non-strict view of a parallel sequence.

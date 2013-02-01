@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -44,7 +44,9 @@ abstract class MutableSettings extends AbsSettings {
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
   def Xexperimental: BooleanSetting
-  def XoldPatmat: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting
   def XfullLubs: BooleanSetting
+  def breakCycles: BooleanSetting
+  def companionsInPkgObjs: BooleanSetting
+  
 }

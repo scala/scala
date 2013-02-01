@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,6 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.mutable
-import scala.ref.WeakReference
 import scala.reflect.ClassTag
 
 /**
@@ -42,13 +41,11 @@ trait NamesDefaults { self: Analyzer =>
     blockTyper: Typer
   ) { }
 
-  val noApplyInfo = NamedApplyInfo(None, Nil, Nil, null)
-
-  def nameOf(arg: Tree) = arg match {
-    case AssignOrNamedArg(Ident(name), rhs) => Some(name)
-    case _ => None
+  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case AssignOrNamedArg(Ident(name), _) => name }
+  def isNamedArg(arg: Tree) = arg match {
+    case AssignOrNamedArg(Ident(_), _) => true
+    case _                             => false
   }
-  def isNamed(arg: Tree) = nameOf(arg).isDefined
 
   /** @param pos maps indices from old to new */
   def reorderArgs[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
@@ -58,13 +55,13 @@ trait NamesDefaults { self: Analyzer =>
   }
 
   /** @param pos maps indices from new to old (!) */
-  def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
+  private def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
     (argsArray.indices map (i => argsArray(pos(i)))).toList
   }
 
   /** returns `true` if every element is equal to its index */
-  def isIdentity(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
+  def allArgsArePositional(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
 
   /**
    * Transform a function application into a Block, and assigns typer.context
@@ -107,7 +104,7 @@ trait NamesDefaults { self: Analyzer =>
    *  @return the transformed application (a Block) together with the NamedApplyInfo.
    *     if isNamedApplyBlock(tree), returns the existing context.namedApplyBlockInfo
    */
-  def transformNamedApplication(typer: Typer, mode: Int, pt: Type)
+  def transformNamedApplication(typer: Typer, mode: Mode, pt: Type)
                                (tree: Tree, argPos: Int => Int): Tree = {
     import typer._
     import typer.infer._
@@ -171,7 +168,7 @@ trait NamesDefaults { self: Analyzer =>
         qual changeOwner (blockTyper.context.owner -> sym)
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
-        var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
+        val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
           // setSymbol below is important because the 'selected' function might be overloaded. by
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, SI-5259.
@@ -319,7 +316,7 @@ trait NamesDefaults { self: Analyzer =>
           assert(isNamedApplyBlock(transformedFun), transformedFun)
           val NamedApplyInfo(qual, targs, vargss, blockTyper) =
             context.namedApplyBlockInfo.get._2
-          val existingBlock @ Block(stats, funOnly) = transformedFun
+          val Block(stats, funOnly) = transformedFun
 
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
@@ -362,7 +359,7 @@ trait NamesDefaults { self: Analyzer =>
     }
   }
 
-  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOf _): (List[Symbol], Boolean) = {
+  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOfNamedArg _): (List[Symbol], Boolean) = {
     val namedArgs = args.dropWhile(arg => {
       val n = argName(arg)
       n.isEmpty || params.forall(p => p.name != n.get)
@@ -397,7 +394,7 @@ trait NamesDefaults { self: Analyzer =>
           // TODO #3649 can create spurious errors when companion object is gone (because it becomes unlinked from scope)
           if (defGetter == NoSymbol) None // prevent crash in erroneous trees, #3649
           else {
-            var default1 = qual match {
+            var default1: Tree = qual match {
               case Some(q) => gen.mkAttributedSelect(q.duplicate, defGetter)
               case None    => gen.mkAttributedRef(defGetter)
 

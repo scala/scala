@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,13 +8,9 @@ package backend
 package icode
 
 import java.io.PrintWriter
-import scala.tools.nsc.symtab.Flags
-import scala.reflect.internal.util.Position
 
 trait Printers { self: ICodes =>
   import global._
-  import global.icodes.opcodes._
-  import global.icodes._
 
   class TextPrinter(writer: PrintWriter, lin: Linearizer) {
     private var margin = 0

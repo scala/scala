@@ -3,7 +3,7 @@ package scala.tools.nsc.io
 import java.io.{Reader, Writer}
 
 import Pickler._
-import Lexer.{Token, EOF}
+import Lexer.EOF
 
 abstract class LogReplay {
   def logreplay(event: String, x: => Boolean): Boolean

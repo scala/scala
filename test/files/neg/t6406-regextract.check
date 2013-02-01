@@ -1,0 +1,7 @@
+t6406-regextract.scala:4: error: cannot resolve overloaded unapply
+  List(1) collect { case r(i) => i }
+                         ^
+t6406-regextract.scala:4: error: not found: value i
+  List(1) collect { case r(i) => i }
+                                 ^
+two errors found

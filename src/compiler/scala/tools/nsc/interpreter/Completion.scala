@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -23,8 +23,6 @@ object NoCompletion extends Completion {
 }
 
 object Completion {
-  def empty: Completion = NoCompletion
-
   case class Candidates(cursor: Int, candidates: List[String]) { }
   val NoCandidates = Candidates(-1, Nil)
 

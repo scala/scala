@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -31,15 +31,6 @@ trait DataFlowAnalysis[L <: SemiLattice] {
   def init(f: => Unit): Unit = {
     iterations = 0
     in.clear; out.clear; worklist.clear; visited.clear;
-    f
-  }
-
-  /** Reinitialize, but keep the old solutions. Should be used when reanalyzing the
-   *  same method, after some code transformation.
-   */
-  def reinit(f: => Unit): Unit = {
-    iterations = 0
-    worklist.clear; visited.clear;
     f
   }
 
@@ -82,10 +73,6 @@ trait DataFlowAnalysis[L <: SemiLattice] {
       sys.error("Could not find element " + e.getMessage)
   }
 
-  /** ...
-   *
-   *  @param f ...
-   */
   def backwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit =
     while (worklist.nonEmpty) {
       if (stat) iterations += 1

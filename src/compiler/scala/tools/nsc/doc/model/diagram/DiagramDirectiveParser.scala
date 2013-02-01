@@ -3,12 +3,8 @@ package model
 package diagram
 
 import model._
-import comment.CommentFactory
 import java.util.regex.{Pattern, Matcher}
 import scala.util.matching.Regex
-
-// statistics
-import  html.page.diagram.DiagramStats
 
 /**
  *  This trait takes care of parsing @{inheritance, content}Diagram annotations
@@ -154,7 +150,6 @@ trait DiagramDirectiveParser {
   private val NodeSpecRegex = "\\\"[A-Za-z\\*][A-Za-z\\.\\*]*\\\""
   private val NodeSpecPattern = Pattern.compile(NodeSpecRegex)
   private val EdgeSpecRegex = "\\(" + NodeSpecRegex + "\\s*\\->\\s*" + NodeSpecRegex + "\\)"
-  private val EdgeSpecPattern = Pattern.compile(NodeSpecRegex)
   // And the composed regexes:
   private val HideNodesRegex = new Regex("^hideNodes(\\s*" + NodeSpecRegex + ")+$")
   private val HideEdgesRegex = new Regex("^hideEdges(\\s*" + EdgeSpecRegex + ")+$")
@@ -183,7 +178,7 @@ trait DiagramDirectiveParser {
       def warning(message: String) = {
         // we need the position from the package object (well, ideally its comment, but yeah ...)
         val sym = if (template.sym.isPackage) template.sym.info.member(global.nme.PACKAGE) else template.sym
-        assert((sym != global.NoSymbol) || (sym == global.definitions.RootPackage))
+        assert((sym != global.NoSymbol) || (sym == global.rootMirror.RootPackage))
         global.reporter.warning(sym.pos, message)
       }
 

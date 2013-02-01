@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -14,7 +14,6 @@ import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.io.Path
 import scala.collection.{ mutable, immutable }
 import java.util.concurrent._
-import scala.collection.convert.decorateAll._
 
 case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
 
@@ -49,10 +48,9 @@ trait DirectRunner {
     val latestLibFile     = new File(fileManager.LATEST_LIB)
     val latestPartestFile = new File(fileManager.LATEST_PARTEST)
     val latestActorsFile  = new File(fileManager.LATEST_ACTORS)
-    val latestActMigFile  = new File(fileManager.LATEST_ACTORS_MIGRATION)
     val scalacheckURL     = PathSettings.scalaCheck.toURL
     val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      scalacheckURL :: (List(latestCompFile, latestReflectFile, latestLibFile, latestActorsFile, latestActMigFile, latestPartestFile).map(_.toURI.toURL))
+      scalacheckURL :: (List(latestCompFile, latestReflectFile, latestLibFile, latestActorsFile, latestPartestFile).map(_.toURI.toURL))
     )
 
     val kindFiles = onlyValidTestPaths(_kindFiles)

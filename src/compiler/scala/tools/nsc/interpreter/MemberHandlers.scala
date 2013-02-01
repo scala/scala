@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,8 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.cond
-import scala.reflect.internal.Chars
 import scala.reflect.internal.Flags._
 import scala.language.implicitConversions
 
@@ -21,8 +19,6 @@ trait MemberHandlers {
 
   private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
-
-  private def codegen(xs: String*): String = codegen(true, xs: _*)
   private def codegen(leadingPlus: Boolean, xs: String*): String = {
     val front = if (leadingPlus) "+ " else ""
     front + (xs map string2codeQuoted mkString " + ")
@@ -52,24 +48,26 @@ trait MemberHandlers {
     }
   }
 
+  private def isTermMacro(ddef: DefDef): Boolean = ddef.mods.isMacro
+
   def chooseHandler(member: Tree): MemberHandler = member match {
-    case member: DefDef        => new DefHandler(member)
-    case member: ValDef        => new ValHandler(member)
-    case member: Assign        => new AssignHandler(member)
-    case member: ModuleDef     => new ModuleHandler(member)
-    case member: ClassDef      => new ClassHandler(member)
-    case member: TypeDef       => new TypeAliasHandler(member)
-    case member: Import        => new ImportHandler(member)
-    case DocDef(_, documented) => chooseHandler(documented)
-    case member                => new GenericHandler(member)
+    case member: DefDef if isTermMacro(member) => new TermMacroHandler(member)
+    case member: DefDef                        => new DefHandler(member)
+    case member: ValDef                        => new ValHandler(member)
+    case member: ModuleDef                     => new ModuleHandler(member)
+    case member: ClassDef                      => new ClassHandler(member)
+    case member: TypeDef                       => new TypeAliasHandler(member)
+    case member: Assign                        => new AssignHandler(member)
+    case member: Import                        => new ImportHandler(member)
+    case DocDef(_, documented)                 => chooseHandler(documented)
+    case member                                => new GenericHandler(member)
   }
 
   sealed abstract class MemberDefHandler(override val member: MemberDef) extends MemberHandler(member) {
-    def symbol          = if (member.symbol eq null) NoSymbol else member.symbol
-    def name: Name      = member.name
-    def mods: Modifiers = member.mods
-    def keyword         = member.keyword
-    def prettyName      = name.decode
+    override def name: Name = member.name
+    def mods: Modifiers     = member.mods
+    def keyword             = member.keyword
+    def prettyName          = name.decode
 
     override def definesImplicit = member.mods.isImplicit
     override def definesTerm: Option[TermName] = Some(name.toTermName) filter (_ => name.isTermName)
@@ -81,9 +79,11 @@ trait MemberHandlers {
    *  in a single interpreter request.
    */
   sealed abstract class MemberHandler(val member: Tree) {
+    def name: Name      = nme.NO_NAME
+    def path            = intp.originalPath(symbol)
+    def symbol          = if (member.symbol eq null) NoSymbol else member.symbol
     def definesImplicit = false
     def definesValue    = false
-    def isLegalTopLevel = false
 
     def definesTerm     = Option.empty[TermName]
     def definesType     = Option.empty[TypeName]
@@ -91,7 +91,6 @@ trait MemberHandlers {
     lazy val referencedNames = ImportVarsTraverser(member)
     def importedNames        = List[Name]()
     def definedNames         = definesTerm.toList ++ definesType.toList
-    def definedOrImported    = definedNames ++ importedNames
     def definedSymbols       = List[Symbol]()
 
     def extraCodeToEvaluate(req: Request): String = ""
@@ -114,29 +113,38 @@ trait MemberHandlers {
         // if this is a lazy val we avoid evaluating it here
         val resultString =
           if (mods.isLazy) codegenln(false, "<lazy>")
-          else any2stringOf(req fullPath name, maxStringElements)
+          else any2stringOf(path, maxStringElements)
 
         val vidString =
-          if (replProps.vids) """" + " @ " + "%%8x".format(System.identityHashCode(%s)) + " """.trim.format(req fullPath name)
+          if (replProps.vids) s"""" + " @ " + "%%8x".format(System.identityHashCode($path)) + " """.trim
           else ""
 
-        """ + "%s%s: %s = " + %s""".format(prettyName, vidString, string2code(req typeOf name), resultString)
+        """ + "%s%s: %s = " + %s""".format(string2code(prettyName), vidString, string2code(req typeOf name), resultString)
       }
     }
   }
 
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
-    private def vparamss = member.vparamss
-    private def isMacro = member.symbol hasFlag MACRO
-    // true if not a macro and 0-arity
-    override def definesValue = !isMacro && flattensToEmpty(vparamss)
+    override def definesValue = flattensToEmpty(member.vparamss) // true if 0-arity
     override def resultExtractionCode(req: Request) =
       if (mods.isPublic) codegenln(name, ": ", req.typeOf(name)) else ""
   }
 
+  abstract class MacroHandler(member: DefDef) extends MemberDefHandler(member) {
+    override def definesValue = false
+    override def definesTerm: Option[TermName] = Some(name.toTermName)
+    override def definesType: Option[TypeName] = None
+    override def resultExtractionCode(req: Request) = if (mods.isPublic) codegenln(notification(req)) else ""
+    def notification(req: Request): String
+  }
+
+  class TermMacroHandler(member: DefDef) extends MacroHandler(member) {
+    def notification(req: Request) = s"defined term macro $name: ${req.typeOf(name)}"
+  }
+
   class AssignHandler(member: Assign) extends MemberHandler(member) {
     val Assign(lhs, rhs) = member
-    val name = newTermName(freshInternalVarName())
+    override lazy val name = newTermName(freshInternalVarName())
 
     override def definesTerm = Some(name)
     override def definesValue = true
@@ -147,23 +155,21 @@ trait MemberHandlers {
     override def resultExtractionCode(req: Request) = {
       val lhsType = string2code(req lookupTypeOf name)
       val res     = string2code(req fullPath name)
-
-      """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res) + "\n"
+      """ + "%s: %s = " + %s + "\n" """.format(string2code(lhs.toString), lhsType, res) + "\n"
     }
   }
 
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
-    override def definesTerm = Some(name)
+    override def definesTerm = Some(name.toTermName)
     override def definesValue = true
-    override def isLegalTopLevel = true
 
-    override def resultExtractionCode(req: Request) = codegenln("defined module ", name)
+    override def resultExtractionCode(req: Request) = codegenln("defined object ", name)
   }
 
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {
+    override def definedSymbols = List(symbol, symbol.companionSymbol) filterNot (_ == NoSymbol)
     override def definesType = Some(name.toTypeName)
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
-    override def isLegalTopLevel = true
 
     override def resultExtractionCode(req: Request) =
       codegenln("defined %s %s".format(keyword, name))
@@ -179,21 +185,11 @@ trait MemberHandlers {
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
-    def targetType: Type = intp.typeOfExpression("" + expr)
-    override def isLegalTopLevel = true
-
-    def createImportForName(name: Name): String = {
-      selectors foreach {
-        case sel @ ImportSelector(old, _, `name`, _)  => return "import %s.{ %s }".format(expr, sel)
-        case _ => ()
-      }
-      "import %s.%s".format(expr, name)
+    def targetType = intp.global.rootMirror.getModuleIfDefined("" + expr) match {
+      case NoSymbol => intp.typeOfExpression("" + expr)
+      case sym      => sym.thisType
     }
-    // TODO: Need to track these specially to honor Predef masking attempts,
-    // because they must be the leading imports in the code generated for each
-    // line.  We can use the same machinery as Contexts now, anyway.
-    def isPredefImport = isReferenceToPredef(expr)
-
+    private def importableTargetMembers = importableMembers(targetType).toList
     // wildcard imports, e.g. import foo._
     private def selectorWild    = selectors filter (_.name == nme.USCOREkw)
     // renamed imports, e.g. import foo.{ bar => baz }
@@ -202,22 +198,16 @@ trait MemberHandlers {
     /** Whether this import includes a wildcard import */
     val importsWildcard = selectorWild.nonEmpty
 
-    /** Whether anything imported is implicit .*/
-    def importsImplicit = implicitSymbols.nonEmpty
-
     def implicitSymbols = importedSymbols filter (_.isImplicit)
     def importedSymbols = individualSymbols ++ wildcardSymbols
 
-    lazy val individualSymbols: List[Symbol] =
-      enteringPickler(individualNames map (targetType nonPrivateMember _))
-
-    lazy val wildcardSymbols: List[Symbol] =
-      if (importsWildcard) enteringPickler(targetType.nonPrivateMembers.toList)
-      else Nil
+    private val selectorNames = selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames) toSet
+    lazy val individualSymbols: List[Symbol] = exitingTyper(importableTargetMembers filter (m => selectorNames(m.name)))
+    lazy val wildcardSymbols: List[Symbol]   = exitingTyper(if (importsWildcard) importableTargetMembers else Nil)
 
     /** Complete list of names imported by a wildcard */
     lazy val wildcardNames: List[Name]   = wildcardSymbols map (_.name)
-    lazy val individualNames: List[Name] = selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames)
+    lazy val individualNames: List[Name] = individualSymbols map (_.name)
 
     /** The names imported by this statement */
     override lazy val importedNames: List[Name] = wildcardNames ++ individualNames

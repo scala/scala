@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
 package interactive
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.internal.util.Position
 
 trait ContextTrees { self: Global =>
 

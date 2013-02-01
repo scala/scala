@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Stepan Koltsov
  */
 
@@ -7,8 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import java.io.IOException
-import java.nio.channels.ClosedByInterruptException
-import scala.util.control.Exception._
 import session.History
 import InteractiveReader._
 import Properties.isMac
@@ -17,22 +15,16 @@ import Properties.isMac
 trait InteractiveReader {
   val interactive: Boolean
 
-  def init(): Unit
   def reset(): Unit
-
   def history: History
   def completion: Completion
-  def eraseLine(): Unit
   def redrawLine(): Unit
-  def currentLine: String
 
   def readYesOrNo(prompt: String, alt: => Boolean): Boolean = readOneKey(prompt) match {
     case 'y'  => true
     case 'n'  => false
     case _    => alt
   }
-  def readAssumingNo(prompt: String)  = readYesOrNo(prompt, false)
-  def readAssumingYes(prompt: String) = readYesOrNo(prompt, true)
 
   protected def readOneLine(prompt: String): String
   protected def readOneKey(prompt: String): Int
@@ -52,6 +44,6 @@ object InteractiveReader {
 
   def apply(): InteractiveReader = SimpleReader()
   @deprecated("Use `apply` instead.", "2.9.0")
-  def createDefault(): InteractiveReader = apply()
+  def createDefault(): InteractiveReader = apply() // used by sbt
 }
 

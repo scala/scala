@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -8,7 +8,6 @@
 
 package scala.collection
 
-import generic._
 import mutable.ArrayBuffer
 import scala.annotation.tailrec
 
@@ -53,7 +52,6 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
   // pre: start >= 0, end <= self.length
   @SerialVersionUID(1756321872811029277L)
   protected class Elements(start: Int, end: Int) extends AbstractIterator[A] with BufferedIterator[A] with Serializable {
-    private def initialSize = if (end <= start) 0 else end - start
     private var index = start
     private def available = (end - index) max 0
 

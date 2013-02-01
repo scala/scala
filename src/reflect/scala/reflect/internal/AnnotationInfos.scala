@@ -1,19 +1,18 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.reflect
 package internal
 
-import util._
 import pickling.ByteCodecs
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
-  import definitions.{ ThrowsClass, StaticAnnotationClass, isMetaAnnotation }
+  import definitions.{ ThrowsClass, ThrowableClass, StaticAnnotationClass, isMetaAnnotation }
 
   // Common annotation code between Symbol and Type.
   // For methods altering the annotation list, on Symbol it mutates
@@ -30,7 +29,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Symbols of any @throws annotations on this symbol.
      */
     def throwsAnnotations(): List[Symbol] = annotations collect {
-      case AnnotationInfo(tp, Literal(Constant(tpe: Type)) :: Nil, _) if tp.typeSymbol == ThrowsClass => tpe.typeSymbol
+      case ThrownException(exc) => exc
     }
 
     /** Tests for, get, or remove an annotation */
@@ -201,6 +200,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     override def toString = if (forced) forcedInfo.toString else "@<?>"
 
     override def pos: Position = if (forced) forcedInfo.pos else NoPosition
+
+    override def completeInfo(): Unit = forcedInfo
   }
 
   /** Typed information about an annotation. It can be attached to either
@@ -241,6 +242,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
       rawpos = pos
       this
     }
+
+    // Forces LazyAnnotationInfo, no op otherwise
+    def completeInfo(): Unit = ()
 
     /** Annotations annotating annotations are confusing so I drew
      *  an example.  Given the following code:
@@ -288,10 +292,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Check whether any of the arguments mention a symbol */
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
 
-    /** Change all ident's with Symbol "from" to instead use symbol "to" */
-    def substIdentSyms(from: Symbol, to: Symbol) =
-      AnnotationInfo(atp, args map (_ substituteSymbols (List(from), List(to))), assocs) setPos pos
-
     def stringArg(index: Int) = constantAtIndex(index) map (_.stringValue)
     def intArg(index: Int)    = constantAtIndex(index) map (_.intValue)
     def symbolArg(index: Int) = argAtIndex(index) collect {
@@ -325,4 +325,28 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   implicit val AnnotationTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
 
   object UnmappableAnnotation extends CompleteAnnotationInfo(NoType, Nil, Nil)
+
+  object ErroneousAnnotation extends CompleteAnnotationInfo(ErrorType, Nil, Nil)
+
+  /** Extracts symbol of thrown exception from AnnotationInfo.
+    *
+    * Supports both “old-style” `@throws(classOf[Exception])`
+    * as well as “new-stye” `@throws[Exception]("cause")` annotations.
+    */
+  object ThrownException {
+    def unapply(ann: AnnotationInfo): Option[Symbol] = {
+      ann match {
+        case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
+          None
+        // old-style: @throws(classOf[Exception]) (which is throws[T](classOf[Exception]))
+        case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
+          Some(tpe.typeSymbol)
+        // new-style: @throws[Exception], @throws[Exception]("cause")
+        case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>
+          Some(arg.typeSymbol)
+        case AnnotationInfo(TypeRef(_, _, Nil), _, _) =>
+          Some(ThrowableClass)
+      }
+    }
+  }
 }

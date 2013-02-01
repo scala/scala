@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -171,7 +171,7 @@ self =>
    *          fewer elements than size.
    */
   def sliding(size: Int): Iterator[Repr] = sliding(size, 1)
-
+  
   /** Groups elements in fixed size blocks by passing a "sliding window"
    *  over them (as opposed to partitioning them, as is done in grouped.)
    *  @see [[scala.collection.Iterator]], method `sliding`
@@ -293,7 +293,6 @@ self =>
 
   override /*TraversableLike*/ def view = new IterableView[A, Repr] {
     protected lazy val underlying = self.repr
-    override def isEmpty = self.isEmpty
     override def iterator = self.iterator
   }
 

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -154,7 +154,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     var info_enc: Option[String] = None
     var info_stdl: Option[Boolean] = None
 
-    var m = xmlProcInstr()
+    val m = xmlProcInstr()
     var n = 0
 
     if (isProlog)
@@ -303,10 +303,8 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     var scope: NamespaceBinding = pscope
     var aMap: MetaData = Null
     while (isNameStart(ch)) {
-      val pos = this.pos
-
       val qname = xName
-      val _     = xEQ
+      xEQ // side effect
       val value = xAttributeValue()
 
       Utility.prefix(qname) match {
@@ -423,7 +421,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    *  content1 ::=  '<' content1 | '&' charref ...
    *  }}} */
   def content(pscope: NamespaceBinding): NodeSeq = {
-    var ts = new NodeBuffer
+    val ts = new NodeBuffer
     var exit = eof
     // todo: optimize seq repr.
     def done = new NodeSeq { val theSeq = ts.toList }
@@ -582,7 +580,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     var exit = false
     while (! exit) {
       putChar(ch)
-      val opos = pos
       nextch
 
       exit = eof || ( ch == '<' ) || ( ch == '&' )
@@ -828,7 +825,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    *  }}} */
   def entityDecl() = {
     var isParameterEntity = false
-    var entdef: EntityDef = null
     xToken("NTITY")
     xSpace
     if ('%' == ch) {

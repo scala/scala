@@ -17,10 +17,6 @@ object Test {
     val r = a.merged(b)(null)
     println(r)
     println(r(1))
-    
-    val rold = a.merge(b)
-    println(rold)
-    println(rold(1))
   }
   
   def resolveFirst() {
@@ -34,10 +30,6 @@ object Test {
     val r = a.merged(b) { collision }
     println(r)
     println(r(1))
-    
-    val rold = a.merge(b, collision)
-    println(rold)
-    println(rold(1))
   }
   
   def resolveSecond() {
@@ -51,10 +43,6 @@ object Test {
     val r = a.merged(b) { collision }
     println(r)
     println(r(1))
-    
-    val rold = a.merge(b, collision)
-    println(rold)
-    println(rold(1))
   }
   
   def resolveMany() {
@@ -65,9 +53,6 @@ object Test {
     }
     
     val r = a.merged(b) { collision }
-    for ((k, v) <- r) assert(v == 100 + 2 * k, (k, v))
-    
-    val rold = a.merge(b, collision)
     for ((k, v) <- r) assert(v == 100 + 2 * k, (k, v))
   }
   

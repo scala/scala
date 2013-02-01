@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -18,8 +18,6 @@ import io.{ Path, Directory }
 import File.pathSeparator
 import ClassPath.{ join }
 import PathResolver.{ Environment, Defaults }
-import RunnerUtils._
-
 
 class ConsoleFileManager extends FileManager {
   var testBuild: Option[String] = PartestDefaults.testBuild
@@ -81,34 +79,26 @@ class ConsoleFileManager extends FileManager {
       testClassesDir = Path(testClasses.get).toCanonical.toDirectory
       NestUI.verbose("Running with classes in "+testClassesDir)
 
-      latestFile        = testClassesDir.parent / "bin"
       latestLibFile     = testClassesDir / "library"
       latestActorsFile  = testClassesDir / "library" / "actors"
-      latestActMigFile  = testClassesDir / "actors-migration"
       latestReflectFile = testClassesDir / "reflect"
       latestCompFile    = testClassesDir / "compiler"
       latestPartestFile = testClassesDir / "partest"
-      latestFjbgFile    = testParent / "lib" / "fjbg.jar"
     }
     else if (testBuild.isDefined) {
       val dir = Path(testBuild.get)
       NestUI.verbose("Running on "+dir)
-      latestFile        = dir / "bin"
       latestLibFile     = dir / "lib/scala-library.jar"
       latestActorsFile  = dir / "lib/scala-actors.jar"
-      latestActMigFile  = dir / "lib/scala-actors-migration.jar"
       latestReflectFile = dir / "lib/scala-reflect.jar"
       latestCompFile    = dir / "lib/scala-compiler.jar"
       latestPartestFile = dir / "lib/scala-partest.jar"
-      latestFjbgFile    = testParent / "lib" / "fjbg.jar"
     }
     else {
       def setupQuick() {
         NestUI.verbose("Running build/quick")
-        latestFile        = prefixFile("build/quick/bin")
         latestLibFile     = prefixFile("build/quick/classes/library")
         latestActorsFile  = prefixFile("build/quick/classes/library/actors")
-        latestActMigFile  = prefixFile("build/quick/classes/actors-migration")
         latestReflectFile = prefixFile("build/quick/classes/reflect")
         latestCompFile    = prefixFile("build/quick/classes/compiler")
         latestPartestFile = prefixFile("build/quick/classes/partest")
@@ -117,10 +107,8 @@ class ConsoleFileManager extends FileManager {
       def setupInst() {
         NestUI.verbose("Running dist (installed)")
         val p = testParent.getParentFile
-        latestFile        = prefixFileWith(p, "bin")
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
         latestActorsFile  = prefixFileWith(p, "lib/scala-actors.jar")
-        latestActMigFile  = prefixFileWith(p, "lib/scala-actors-migration.jar")
         latestReflectFile = prefixFileWith(p, "lib/scala-reflect.jar")
         latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
         latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
@@ -128,10 +116,8 @@ class ConsoleFileManager extends FileManager {
 
       def setupDist() {
         NestUI.verbose("Running dists/latest")
-        latestFile        = prefixFile("dists/latest/bin")
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
         latestActorsFile  = prefixFile("dists/latest/lib/scala-actors.jar")
-        latestActMigFile  = prefixFile("dists/latest/lib/scala-actors-migration.jar")
         latestReflectFile = prefixFile("dists/latest/lib/scala-reflect.jar")
         latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
@@ -139,19 +125,12 @@ class ConsoleFileManager extends FileManager {
 
       def setupPack() {
         NestUI.verbose("Running build/pack")
-        latestFile        = prefixFile("build/pack/bin")
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
         latestActorsFile  = prefixFile("build/pack/lib/scala-actors.jar")
-        latestActMigFile  = prefixFile("build/pack/lib/scala-actors-migration.jar")
         latestReflectFile = prefixFile("build/pack/lib/scala-reflect.jar")
         latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       }
-
-      val dists = testParent / "dists"
-      val build = testParent / "build"
-      // in case of an installed dist, testRootDir is one level deeper
-      val bin = testParent.parent / "bin"
 
       def mostRecentOf(base: String, names: String*) =
         names map (x => prefixFile(base + "/" + x).lastModified) reduceLeft (_ max _)
@@ -171,8 +150,6 @@ class ConsoleFileManager extends FileManager {
 
       // run setup based on most recent time
       pairs(pairs.keys max)()
-
-      latestFjbgFile = prefixFile("lib/fjbg.jar")
     }
 
     LATEST_LIB = latestLibFile.getAbsolutePath
@@ -180,7 +157,6 @@ class ConsoleFileManager extends FileManager {
     LATEST_COMP = latestCompFile.getAbsolutePath
     LATEST_PARTEST = latestPartestFile.getAbsolutePath
     LATEST_ACTORS = latestActorsFile.getAbsolutePath
-    LATEST_ACTORS_MIGRATION = latestActMigFile.getAbsolutePath
   }
 
   var LATEST_LIB: String = ""
@@ -188,22 +164,16 @@ class ConsoleFileManager extends FileManager {
   var LATEST_COMP: String = ""
   var LATEST_PARTEST: String = ""
   var LATEST_ACTORS: String = ""
-  var LATEST_ACTORS_MIGRATION: String = ""
 
-  var latestFile: File = _
   var latestLibFile: File = _
   var latestActorsFile: File = _
-  var latestActMigFile: File = _
   var latestReflectFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
-  var latestFjbgFile: File = _
   def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
   var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
-
-  var testFiles: List[io.Path] = Nil
 
   def getFiles(kind: String, cond: Path => Boolean): List[File] = {
     def ignoreDir(p: Path) = List("svn", "obj") exists (p hasExtension _)
@@ -213,9 +183,7 @@ class ConsoleFileManager extends FileManager {
     if (dir.isDirectory) NestUI.verbose("look in %s for tests" format dir)
     else NestUI.failure("Directory '%s' not found" format dir)
 
-    val files =
-      if (testFiles.nonEmpty) testFiles filter (_.parent isSame dir)
-      else dir.list filterNot ignoreDir filter cond toList
+    val files = dir.list filterNot ignoreDir filter cond toList
 
     ( if (failed) files filter (x => logFileExists(x, kind)) else files ) map (_.jfile)
   }

@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  */
 
 package scala.tools.partest
@@ -9,7 +9,6 @@ import scala.tools.nsc.Properties.{ setProp, propOrEmpty, propOrNone, propOrElse
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io
 import io.{ Path, File, Directory }
-import RunnerUtils._
 
 object PathSettings {
   import PartestDefaults.{ testRootDir, srcDirName }

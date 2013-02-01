@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -8,7 +8,6 @@ package backend
 
 import io.AbstractFile
 import util.{ClassPath,JavaClassPath,MergedClassPath,DeltaClassPath}
-import util.ClassPath.{ JavaContext, DefaultJavaContext }
 import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform {
@@ -39,18 +38,10 @@ trait JavaPlatform extends Platform {
     // replaces the tighter abstract definition here. If we had DOT typing rules, the two
     // types would be conjoined and everything would work out. Yet another reason to push for DOT.
 
-  private def depAnalysisPhase =
-    if (settings.make.isDefault) Nil
-    else List(dependencyAnalysis)
-
-  private def classEmitPhase =
-    if (settings.target.value == "jvm-1.5-fjbg") genJVM
-    else genASM
-
   def platformPhases = List(
     flatten,        // get rid of inner classes
-    classEmitPhase  // generate .class files
-  ) ++ depAnalysisPhase
+    genASM  // generate .class files
+  )
 
   lazy val externalEquals          = getDecl(BoxesRunTimeClass, nme.equals_)
   lazy val externalEqualsNumNum    = getDecl(BoxesRunTimeClass, nme.equalsNumNum)

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 //todo: allow infix type patterns
@@ -35,7 +35,6 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
 
-    protected def posToReport: Int = in.currentPos
     def freshName(prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
     private implicit def p2i(pos : Position): Int = if (pos.isDefined) pos.point else -1
@@ -94,11 +93,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       if (skipIt)
         skip()
     }
-    def warning(msg: String) : Unit = warning(in.currentPos, msg)
-
     def errorTypeTree = TypeTree().setType(ErrorType) setPos in.currentPos
-    def errorTermTree = Literal(Constant(null)) setPos in.currentPos
-    def errorPatternTree = blankExpr setPos in.currentPos
 
     // --------- tree building -----------------------------
 
@@ -130,7 +125,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
       makeParam(nme.syntheticParamName(count), tpt)
     def makeParam(name: String, tpt: Tree): ValDef =
-      makeParam(newTypeName(name), tpt)
+      makeParam(name: TermName, tpt)
     def makeParam(name: TermName, tpt: Tree): ValDef =
       ValDef(Modifiers(Flags.JAVA | Flags.PARAM), name, tpt, EmptyTree)
 
@@ -178,11 +173,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def accept(token: Int): Int = {
       val pos = in.currentPos
       if (in.token != token) {
-        val posToReport =
-          //if (in.currentPos.line(unit.source).get(0) > in.lastPos.line(unit.source).get(0))
-          //  in.lastPos
-          //else
-            in.currentPos
+        val posToReport = in.currentPos
         val msg =
           JavaScannerConfiguration.token2string(token) + " expected but " +
             JavaScannerConfiguration.token2string(in.token) + " found."
@@ -348,46 +339,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     /** Annotation ::= TypeName [`(` AnnotationArgument {`,` AnnotationArgument} `)`]
      */
     def annotation() {
-      val pos = in.currentPos
-      var t = qualId()
+      qualId()
       if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
       else if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
     }
-/*
-    def annotationArg() = {
-      val pos = in.token
-      if (in.token == IDENTIFIER && in.lookaheadToken == ASSIGN) {
-        val name = ident()
-        accept(ASSIGN)
-        atPos(pos) {
-          ValDef(Modifiers(Flags.JAVA), name, TypeTree(), elementValue())
-        }
-      } else {
-        elementValue()
-      }
-    }
-
-    def elementValue(): Tree =
-      if (in.token == AT) annotation()
-      else if (in.token == LBRACE) elementValueArrayInitializer()
-      else expression1()
-
-    def elementValueArrayInitializer() = {
-      accept(LBRACE)
-      val buf = new ListBuffer[Tree]
-      def loop() =
-        if (in.token != RBRACE) {
-          buf += elementValue()
-          if (in.token == COMMA) {
-            in.nextToken
-            loop()
-          }
-        }
-      loop()
-      accept(RBRACE)
-      buf.toList
-    }
- */
 
     def modifiers(inInterface: Boolean): Modifiers = {
       var flags: Long = Flags.JAVA
@@ -493,7 +448,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           AppliedTypeTree(scalaDot(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME), List(t))
         }
       }
-     varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident())
+     varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident().toTermName)
     }
 
     def optThrows() {
@@ -551,7 +506,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               if (parentToken == AT && in.token == DEFAULT) {
                 val annot =
                   atPos(pos) {
-                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), ListOfNil)
+                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), Nil)
                   }
                 mods1 = mods1 withAnnotations List(annot)
                 skipTo(SEMI)
@@ -587,7 +542,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      *  these potential definitions are real or not.
      */
     def fieldDecls(pos: Position, mods: Modifiers, tpt: Tree, name: Name): List[Tree] = {
-      val buf = ListBuffer[Tree](varDecl(pos, mods, tpt, name))
+      val buf = ListBuffer[Tree](varDecl(pos, mods, tpt, name.toTermName))
       val maybe = new ListBuffer[Tree] // potential variable definitions.
       while (in.token == COMMA) {
         in.nextToken
@@ -595,10 +550,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           val name = ident()
           if (in.token == ASSIGN || in.token == SEMI) { // ... followed by a `=` or `;`, we know it's a real variable definition
             buf ++= maybe
-            buf += varDecl(in.currentPos, mods, tpt.duplicate, name)
+            buf += varDecl(in.currentPos, mods, tpt.duplicate, name.toTermName)
             maybe.clear()
           } else if (in.token == COMMA) { // ... if there's a comma after the ident, it could be a real vardef or not.
-            maybe += varDecl(in.currentPos, mods, tpt.duplicate, name)
+            maybe += varDecl(in.currentPos, mods, tpt.duplicate, name.toTermName)
           } else { // ... if there's something else we were still in the initializer of the
                    // previous var def; skip to next comma or semicolon.
             skipTo(COMMA, SEMI)
@@ -875,7 +830,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         // The STABLE flag is to signal to namer that this was read from a
         // java enum, and so should be given a Constant type (thereby making
         // it usable in annotations.)
-        ValDef(Modifiers(Flags.STABLE | Flags.JAVA | Flags.STATIC), name, enumType, blankExpr)
+        ValDef(Modifiers(Flags.STABLE | Flags.JAVA | Flags.STATIC), name.toTermName, enumType, blankExpr)
       }
     }
 

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -15,7 +15,7 @@ trait Uncompilable {
   val global: Global
   val settings: Settings
 
-  import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, Name, DocComment, NoSymbol }
+  import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, DocComment, NoSymbol }
   import global.definitions.AnyRefClass
   import global.rootMirror.RootClass
 

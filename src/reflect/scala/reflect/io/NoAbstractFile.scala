@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -22,6 +22,7 @@ object NoAbstractFile extends AbstractFile {
   def file: JFile = null
   def input: InputStream = null
   def isDirectory: Boolean = false
+  override def isVirtual: Boolean = true
   def iterator: Iterator[AbstractFile] = Iterator.empty
   def lastModified: Long = 0L
   def lookupName(name: String, directory: Boolean): AbstractFile = null

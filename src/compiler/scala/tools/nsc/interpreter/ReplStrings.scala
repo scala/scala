@@ -1,13 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.cond
 import scala.reflect.internal.Chars
 
 trait ReplStrings {
@@ -31,5 +29,4 @@ trait ReplStrings {
     "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
   def words(s: String) = s.trim split "\\s+" filterNot (_ == "") toList
-  def isQuoted(s: String) = (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
 }

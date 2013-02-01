@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -86,9 +86,6 @@ class HashMap[A, +B] extends AbstractMap[A, B]
   protected def writeReplace(): AnyRef = new HashMap.SerializationProxy(this)
 
   def split: Seq[HashMap[A, B]] = Seq(this)
-
-  @deprecated("Use the `merged` method instead.", "2.10.0")
-  def merge[B1 >: B](that: HashMap[A, B1], mergef: MergeFunction[A, B1] = null): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
 
   /** Creates a new map which is the merge of this and the argument hash map.
    *
@@ -471,9 +468,6 @@ time { mNew.iterator.foreach( p => ()) }
             // condition below is due to 2 things:
             // 1) no unsigned int compare on JVM
             // 2) 0 (no lsb) should always be greater in comparison
-            val a = thislsb - 1
-            val b = thatlsb - 1
-
             if (unsignedCompare(thislsb - 1, thatlsb - 1)) {
               val m = thiselems(thisi)
               totalelems += m.size

@@ -1,0 +1,10 @@
+t6558.scala:4: error: not found: type classs
+  @classs
+   ^
+t6558.scala:7: error: not found: type typeparam
+  class D[@typeparam T]
+           ^
+t6558.scala:10: error: not found: type valueparam
+  	@valueparam x: Any
+         ^
+three errors found

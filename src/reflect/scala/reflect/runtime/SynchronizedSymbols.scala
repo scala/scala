@@ -3,7 +3,7 @@ package runtime
 
 import scala.reflect.io.AbstractFile
 
-trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
+private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
   override protected def nextId() = synchronized { super.nextId() }
 
@@ -83,9 +83,6 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
     override protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol =
       new PackageObjectClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
 
-    override protected def createTermSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
-      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
-
     override protected def createMethodSymbol(name: TermName, pos: Position, newFlags: Long): MethodSymbol =
       new MethodSymbol(this, pos, name) with SynchronizedMethodSymbol initFlags newFlags
 
@@ -110,7 +107,7 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
   trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
     override def typeAsMemberOf(pre: Type): Type = synchronized { super.typeAsMemberOf(pre) }
-    override def params: List[List[Symbol]] = synchronized { super.params }
+    override def paramss: List[List[Symbol]] = synchronized { super.paramss }
     override def returnType: Type = synchronized { super.returnType }
   }
 
@@ -118,7 +115,8 @@ trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
     override def name_=(x: Name) = synchronized { super.name_=(x) }
     override def rawname = synchronized { super.rawname }
     override def typeConstructor: Type = synchronized { super.typeConstructor }
-    override def tpe: Type = synchronized { super.tpe }
+    override def tpe_* : Type = synchronized { super.tpe_* }
+    override def tpeHK : Type = synchronized { super.tpeHK }
   }
 
   trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol {

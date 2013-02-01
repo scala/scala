@@ -1,6 +1,6 @@
 /*     ___ ____ ___   __   ___   ___
 **    / _// __// _ | / /  / _ | / _ \  Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2011, LAMP/EPFL
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2013, LAMP/EPFL
 ** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
 **
 */
@@ -87,7 +87,7 @@ object Arguments {
               i += 2
             }
           } else {
-            var iter = prefixes.iterator
+            val iter = prefixes.iterator
             val j = i
             while ((i == j) && iter.hasNext) {
               val prefix = iter.next

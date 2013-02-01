@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -14,9 +14,9 @@ import scala.collection.mutable.ArrayBuffer
 
 /**
  * An abstraction over files for use in the reflection/compiler libraries.
- * 
+ *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
- *  
+ *
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
@@ -27,7 +27,7 @@ object AbstractFile {
 
   /**
    * If the specified File exists and is a regular file, returns an
-   * abstract regular file backed by it. Otherwise, returns <code>null</code>.
+   * abstract regular file backed by it. Otherwise, returns `null`.
    */
   def getFile(file: File): AbstractFile =
     if (file.isFile) new PlainFile(file) else null
@@ -38,10 +38,7 @@ object AbstractFile {
   /**
    * If the specified File exists and is either a directory or a
    * readable zip or jar archive, returns an abstract directory
-   * backed by it. Otherwise, returns <code>null</code>.
-   *
-   * @param file ...
-   * @return     ...
+   * backed by it. Otherwise, returns `null`.
    */
   def getDirectory(file: File): AbstractFile =
     if (file.isDirectory) new PlainFile(file)
@@ -51,10 +48,7 @@ object AbstractFile {
   /**
    * If the specified URL exists and is a readable zip or jar archive,
    * returns an abstract directory backed by it. Otherwise, returns
-   * <code>null</code>.
-   *
-   * @param file ...
-   * @return     ...
+   * `null`.
    */
   def getURL(url: URL): AbstractFile = {
     if (url == null || !Path.isExtensionJarOrZip(url.getPath)) null
@@ -80,12 +74,12 @@ object AbstractFile {
  * </p>
  * <p>
  *   The interface does <b>not</b> allow to access the content.
- *   The class <code>symtab.classfile.AbstractFileReader</code> accesses
+ *   The class `symtab.classfile.AbstractFileReader` accesses
  *   bytes, knowing that the character set of classfiles is UTF-8. For
- *   all other cases, the class <code>SourceFile</code> is used, which honors
- *   <code>global.settings.encoding.value</code>.
+ *   all other cases, the class `SourceFile` is used, which honors
+ *   `global.settings.encoding.value`.
  * </p>
- * 
+ *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 abstract class AbstractFile extends Iterable[AbstractFile] {
@@ -130,6 +124,9 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   /** Is this abstract file a directory? */
   def isDirectory: Boolean
 
+  /** Does this abstract file correspond to something on-disk? */
+  def isVirtual: Boolean = false
+
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long
 
@@ -148,7 +145,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   def toURL: URL = if (file == null) null else file.toURI.toURL
 
   /** Returns contents of file (if applicable) in a Char array.
-   *  warning: use <code>Global.getSourceFile()</code> to use the proper
+   *  warning: use `Global.getSourceFile()` to use the proper
    *  encoding when converting to the char array.
    */
   @throws(classOf[IOException])
@@ -175,8 +172,8 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   def iterator: Iterator[AbstractFile]
 
   /** Returns the abstract file in this abstract directory with the specified
-   *  name. If there is no such file, returns <code>null</code>. The argument
-   *  <code>directory</code> tells whether to look for a directory or
+   *  name. If there is no such file, returns `null`. The argument
+   *  `directory` tells whether to look for a directory or
    *  a regular file.
    */
   def lookupName(name: String, directory: Boolean): AbstractFile
@@ -185,19 +182,6 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
    *  check that it exists.
    */
   def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile
-
-  /** Returns the abstract file in this abstract directory with the specified
-   *  path relative to it, If there is no such file, returns null. The argument
-   *  <code>directory</code> tells whether to look for a directory or a regular
-   *  file.
-   *
-   *  @param path      ...
-   *  @param directory ...
-   *  @return          ...
-   */
-  def lookupPath(path: String, directory: Boolean): AbstractFile = {
-    lookup((f, p, dir) => f.lookupName(p, dir), path, directory)
-  }
 
   /** Return an abstract file that does not check that `path` denotes
    *  an existing file.

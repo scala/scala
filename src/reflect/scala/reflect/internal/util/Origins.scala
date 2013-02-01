@@ -1,14 +1,12 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
 package scala.reflect
 package internal.util
 
-import NameTransformer._
 import scala.collection.{ mutable, immutable }
-import Origins._
 
 /** A debugging class for logging from whence a method is being called.
  *  Say you wanted to discover who was calling phase_= in SymbolTable.

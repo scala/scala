@@ -1,0 +1,6 @@
+t6663.scala:16: error: type mismatch;
+ found   : String
+ required: Int
+  var v = new C(42).foo[String].get :Int
+                                ^
+one error found

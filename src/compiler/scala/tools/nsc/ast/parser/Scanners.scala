@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.tools.nsc
@@ -10,7 +10,8 @@ import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.switch
-import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
+import scala.collection.{ mutable, immutable }
+import mutable.{ ListBuffer, ArrayBuffer }
 import scala.xml.Utility.{ isNameStart }
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
@@ -26,7 +27,6 @@ trait ScannersCommon {
 
   trait ScannerCommon extends CommonTokenData {
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
-    def warning(off: Int, msg: String): Unit
     def error  (off: Int, msg: String): Unit
     def incompleteInputError(off: Int, msg: String): Unit
     def deprecationWarning(off: Int, msg: String): Unit
@@ -49,9 +49,6 @@ trait Scanners extends ScannersCommon {
 
   /** Offset into source character array */
   type Offset = Int
-
-  /** An undefined offset */
-  val NoOffset: Offset = -1
 
   trait TokenData extends CommonTokenData {
 
@@ -88,8 +85,6 @@ trait Scanners extends ScannersCommon {
 
     def isAtEnd = charOffset >= buf.length
 
-    def flush = { charOffset = offset; nextChar(); this }
-
     def resume(lastCode: Int) = {
       token = lastCode
       if (next.token != EMPTY && !reporter.hasErrors)
@@ -97,10 +92,6 @@ trait Scanners extends ScannersCommon {
 
       nextToken()
     }
-
-    /** the last error offset
-     */
-    var errOffset: Offset = NoOffset
 
     /** A character buffer for literals
      */
@@ -113,6 +104,11 @@ trait Scanners extends ScannersCommon {
       cbuf.append(c)
     }
 
+    /** Determines whether this scanner should emit identifier deprecation warnings,
+     *  e.g. when seeing `macro` or `then`, which are planned to become keywords in future versions of Scala.
+     */
+    protected def emitIdentifierDeprecationWarnings = true
+
     /** Clear buffer and set name and token */
     private def finishNamed(idtoken: Int = IDENTIFIER) {
       name = newTermName(cbuf.toString)
@@ -122,7 +118,7 @@ trait Scanners extends ScannersCommon {
         val idx = name.start - kwOffset
         if (idx >= 0 && idx < kwArray.length) {
           token = kwArray(idx)
-          if (token == IDENTIFIER && allowIdent != name)
+          if (token == IDENTIFIER && allowIdent != name && emitIdentifierDeprecationWarnings)
             deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
         }
       }
@@ -283,10 +279,16 @@ trait Scanners extends ScannersCommon {
         prev copyFrom this
         val nextLastOffset = charOffset - 1
         fetchToken()
+        def resetOffset() {
+          offset = prev.offset
+          lastOffset = prev.lastOffset
+        }
         if (token == CLASS) {
           token = CASECLASS
+          resetOffset()
         } else if (token == OBJECT) {
           token = CASEOBJECT
+          resetOffset()
         } else {
           lastOffset = nextLastOffset
           next copyFrom this
@@ -607,7 +609,10 @@ trait Scanners extends ScannersCommon {
       if (ch == '`') {
         nextChar()
         finishNamed(BACKQUOTED_IDENT)
-        if (name.length == 0) syntaxError("empty quoted identifier")
+        if (name.length == 0)
+          syntaxError("empty quoted identifier")
+        else if (name == nme.WILDCARD)
+          syntaxError("wildcard invalid as backquoted identifier")
       }
       else syntaxError("unclosed quoted identifier")
     }
@@ -1054,7 +1059,6 @@ trait Scanners extends ScannersCommon {
     def syntaxError(off: Offset, msg: String) {
       error(off, msg)
       token = ERROR
-      errOffset = off
     }
 
     /** generate an error at the current token offset
@@ -1067,7 +1071,6 @@ trait Scanners extends ScannersCommon {
     def incompleteInputError(msg: String) {
       incompleteInputError(offset, msg)
       token = EOF
-      errOffset = offset
     }
 
     override def toString() = token match {
@@ -1232,7 +1235,6 @@ trait Scanners extends ScannersCommon {
     override val decodeUni: Boolean = !settings.nouescape.value
 
     // suppress warnings, throw exception on errors
-    def warning(off: Offset, msg: String): Unit = ()
     def deprecationWarning(off: Offset, msg: String): Unit = ()
     def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
@@ -1243,7 +1245,6 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def warning(off: Offset, msg: String)              = unit.warning(unit.position(off), msg)
     override def deprecationWarning(off: Offset, msg: String)   = unit.deprecationWarning(unit.position(off), msg)
     override def error  (off: Offset, msg: String)              = unit.error(unit.position(off), msg)
     override def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
@@ -1302,7 +1303,7 @@ trait Scanners extends ScannersCommon {
   }
 
   class ParensAnalyzer(unit: CompilationUnit, patches: List[BracePatch]) extends UnitScanner(unit, patches) {
-    var balance = scala.collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+    val balance = mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
     init()
 
@@ -1424,18 +1425,6 @@ trait Scanners extends ScannersCommon {
                         else bp :: insertPatch(bps, patch)
     }
 
-    def leftColumn(offset: Int) =
-      if (offset == -1) -1 else column(lineStart(line(offset)))
-
-    def rightColumn(offset: Int, default: Int) =
-      if (offset == -1) -1
-      else {
-        val rlin = line(offset)
-        if (lineStart(rlin) == offset) column(offset)
-        else if (rlin + 1 < lineStart.length) column(lineStart(rlin + 1))
-        else default
-      }
-
     def insertRBrace(): List[BracePatch] = {
       def insert(bps: List[BracePair]): List[BracePatch] = bps match {
         case List() => patches
@@ -1477,16 +1466,9 @@ trait Scanners extends ScannersCommon {
       delete(bracePairs)
     }
 
-    def imbalanceMeasure: Int = {
-      def measureList(bps: List[BracePair]): Int =
-        (bps map measure).sum
-      def measure(bp: BracePair): Int =
-        (if (bp.lindent != bp.rindent) 1 else 0) + measureList(bp.nested)
-      measureList(bracePairs)
-    }
-
-    def improves(patches1: List[BracePatch]): Boolean =
-      imbalanceMeasure > new ParensAnalyzer(unit, patches1).imbalanceMeasure
+    // don't emit deprecation warnings about identifiers like `macro` or `then`
+    // when skimming through the source file trying to heal braces
+    override def emitIdentifierDeprecationWarnings = false
 
     override def error(offset: Int, msg: String) {}
   }

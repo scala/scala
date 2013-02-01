@@ -1,3 +1,0 @@
-javac Action.java Task.java
-scalac Test_1.scala
-scalac Read_Classfile_2.scala

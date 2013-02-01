@@ -1,0 +1,4 @@
+t5390d.scala:7: error: forward reference extends over definition of value b
+    val b = a.B.toString
+            ^
+one error found

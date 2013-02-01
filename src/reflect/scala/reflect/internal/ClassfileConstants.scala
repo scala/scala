@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -380,11 +380,4 @@ object ClassfileConstants {
   def toScalaMethodFlags(flags: Int): Long = FlagTranslation methodFlags flags
   def toScalaClassFlags(flags: Int): Long  = FlagTranslation classFlags flags
   def toScalaFieldFlags(flags: Int): Long  = FlagTranslation fieldFlags flags
-
-  @deprecated("Use another method in this object", "2.10.0")
-  def toScalaFlags(flags: Int, isClass: Boolean = false, isField: Boolean = false): Long = (
-    if (isClass) toScalaClassFlags(flags)
-    else if (isField) toScalaFieldFlags(flags)
-    else toScalaMethodFlags(flags)
-  )
 }

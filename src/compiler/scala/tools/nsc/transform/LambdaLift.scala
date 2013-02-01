@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author
  */
 
@@ -245,10 +245,10 @@ abstract class LambdaLift extends InfoTransform {
           freshen(sym.name + nme.NAME_JOIN_STRING + sym.owner.name + nme.NAME_JOIN_STRING)
         } else {
           // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
-          //         Generating a a unique name, mangled with the enclosing class name, avoids a VerifyError
+          //         Generating a unique name, mangled with the enclosing class name, avoids a VerifyError
           //         in the case that a sub-class happens to lifts out a method with the *same* name.
-          val name = freshen(sym.name + nme.NAME_JOIN_STRING)
-          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name, sym.enclClass)
+          val name = freshen("" + sym.name + nme.NAME_JOIN_STRING)
+          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name.toTermName, sym.enclClass)
           else name
         }
       }
@@ -290,7 +290,7 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
-              val proxy = owner.newValue(proxyName, owner.pos, newFlags) setInfo fv.info
+              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags) setInfo fv.info
               if (owner.isClass) owner.info.decls enter proxy
               proxy
             }
@@ -320,12 +320,24 @@ abstract class LambdaLift extends InfoTransform {
     private def memberRef(sym: Symbol) = {
       val clazz = sym.owner.enclClass
       //Console.println("memberRef from "+currentClass+" to "+sym+" in "+clazz)
-      val qual = if (clazz == currentClass) gen.mkAttributedThis(clazz)
-                 else {
-                   sym resetFlag(LOCAL | PRIVATE)
-                   if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
-                   else outerPath(outerValue, currentClass.outerClass, clazz)
-                 }
+      def prematureSelfReference() {
+        val what =
+          if (clazz.isStaticOwner) clazz.fullLocationString
+          else s"the unconstructed `this` of ${clazz.fullLocationString}"
+        val msg = s"Implementation restriction: access of ${sym.fullLocationString} from ${currentClass.fullLocationString}, would require illegal premature access to $what"
+        currentUnit.error(curTree.pos, msg)
+      }
+      val qual =
+        if (clazz == currentClass) gen.mkAttributedThis(clazz)
+        else {
+          sym resetFlag (LOCAL | PRIVATE)
+          if (selfOrSuperCalls exists (_.owner == clazz)) {
+            prematureSelfReference()
+            EmptyTree
+          }
+          else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
+          else outerPath(outerValue, currentClass.outerClass, clazz)
+        }
       Select(qual, sym) setType sym.tpe
     }
 
@@ -352,6 +364,7 @@ abstract class LambdaLift extends InfoTransform {
 
             copyDefDef(tree)(vparamss = List(vparams ++ freeParams))
           case ClassDef(_, _, _, _) =>
+            // SI-6231
             // Disabled attempt to to add getters to freeParams
             // this does not work yet. Problem is that local symbols need local names
             // and references to local symbols need to be transformed into
@@ -369,7 +382,7 @@ abstract class LambdaLift extends InfoTransform {
         tree
     }
 
-/*  Something like this will be necessary to eliminate the implementation
+/*  SI-6231: Something like this will be necessary to eliminate the implementation
  *  restiction from paramGetter above:
  *  We need to pass getters to the interface of an implementation class.
     private def fixTraitGetters(lifted: List[Tree]): List[Tree] =
@@ -430,28 +443,53 @@ abstract class LambdaLift extends InfoTransform {
             /* Creating a constructor argument if one isn't present. */
             val constructorArg = rhs match {
               case EmptyTree =>
-                sym.primaryConstructor.info.paramTypes match {
+                sym.tpe.typeSymbol.primaryConstructor.info.paramTypes match {
                   case List(tp) => gen.mkZero(tp)
                   case _        =>
-                    log("Couldn't determine how to properly construct " + sym)
+                    debugwarn("Couldn't determine how to properly construct " + sym)
                     rhs
                 }
               case arg => arg
             }
-            /** Wrap expr argument in new *Ref(..) constructor, but make
-             *  sure that Try expressions stay at toplevel.
+
+            /** Wrap expr argument in new *Ref(..) constructor. But try/catch
+             * is a problem because a throw will clear the stack and post catch
+             * we would expect the partially-constructed object to be on the stack
+             * for the call to init. So we recursively
+             * search for "leaf" result expressions where we know its safe
+             * to put the new *Ref(..) constructor or, if all else fails, transform
+             * an expr to { val temp=expr; new *Ref(temp) }.
+             * The reason we narrowly look for try/catch in captured var definitions
+             * is because other try/catch expression have already been lifted
+             * see SI-6863
              */
-            def refConstr(expr: Tree): Tree = expr match {
+            def refConstr(expr: Tree): Tree = typer.typedPos(expr.pos)(expr match {
+              // very simple expressions can be wrapped in a new *Ref(expr) because they can't have
+              // a try/catch in final expression position.
+              case Ident(_) | Apply(_, _) | Literal(_) | New(_) | Select(_, _) | Throw(_) | Assign(_, _) | ValDef(_, _, _, _) | Return(_) | EmptyTree =>
+                New(sym.tpe, expr)
               case Try(block, catches, finalizer) =>
                 Try(refConstr(block), catches map refConstrCase, finalizer)
+              case Block(stats, expr) =>
+                Block(stats, refConstr(expr))
+              case If(cond, trueBranch, falseBranch) =>
+                If(cond, refConstr(trueBranch), refConstr(falseBranch))
+              case Match(selector, cases) =>
+                Match(selector, cases map refConstrCase)
+              // if we can't figure out what else to do, turn expr into {val temp1 = expr; new *Ref(temp1)} to avoid
+              // any possibility of try/catch in the *Ref constructor. This should be a safe tranformation as a default
+              // though it potentially wastes a variable slot. In particular this case handles LabelDefs.
               case _ =>
-                New(sym.tpe, expr)
-            }
+                debuglog("assigning expr to temp: " + (expr.pos))
+                val tempSym = currentOwner.newValue(unit.freshTermName("temp"), expr.pos) setInfo expr.tpe
+                val tempDef = ValDef(tempSym, expr) setPos expr.pos
+                val tempRef = Ident(tempSym) setPos expr.pos
+                Block(tempDef, New(sym.tpe, tempRef))
+            })
             def refConstrCase(cdef: CaseDef): CaseDef =
               CaseDef(cdef.pat, cdef.guard, refConstr(cdef.body))
-            treeCopy.ValDef(tree, mods, name, tpt1, typer.typedPos(rhs.pos) {
-              refConstr(constructorArg)
-            })
+
+            treeCopy.ValDef(tree, mods, name, tpt1, refConstr(constructorArg))
           } else tree
         case Return(Block(stats, value)) =>
           Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos
@@ -495,13 +533,25 @@ abstract class LambdaLift extends InfoTransform {
 
     private def preTransform(tree: Tree) = super.transform(tree) setType lifted(tree.tpe)
 
+    /** The stack of constructor symbols in which a call to this() or to the super
+      * constructor is active.
+      */
+    private val selfOrSuperCalls = mutable.Stack[Symbol]()
+    @inline private def inSelfOrSuperCall[A](sym: Symbol)(a: => A) = try {
+      selfOrSuperCalls push sym
+      a
+    } finally selfOrSuperCalls.pop()
+
     override def transform(tree: Tree): Tree = tree match {
       case Select(ReferenceToBoxed(idt), elem) if elem == nme.elem =>
         postTransform(preTransform(idt), isBoxedRef = false)
       case ReferenceToBoxed(idt) =>
         postTransform(preTransform(idt), isBoxedRef = true)
       case _ =>
-        postTransform(preTransform(tree))
+        def transformTree = postTransform(preTransform(tree))
+        if (treeInfo isSelfOrSuperConstrCall tree)
+          inSelfOrSuperCall(currentOwner)(transformTree)
+        else transformTree
     }
 
     /** Transform statements and add lifted definitions to them. */

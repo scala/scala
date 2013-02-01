@@ -11,7 +11,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   override lazy val settings = super.settings ++ Versions.settings ++ Seq(
     autoScalaLibrary := false,
     resolvers += Resolver.url(
-      "Typesafe nightlies", 
+      "Typesafe nightlies",
       url("https://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/")
     )(Resolver.ivyStylePatterns),
     resolvers ++= Seq(
@@ -21,14 +21,14 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     organization := "org.scala-lang",
     version <<= Versions.mavenVersion,
     pomExtra := epflPomExtra
-  ) 
+  )
 
   // Collections of projects to run 'compile' on.
-  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, actorsMigration, swing, forkjoin, fjbg)
+  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, forkjoin)
   // Collection of projects to 'package' and 'publish' together.
-  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, actors, actorsMigration, continuationsPlugin, jline, scalap)
+  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, actors, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
-  
+
   private def epflPomExtra = (
     <xml:group>
       <inceptionYear>2002</inceptionYear>
@@ -47,7 +47,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
       </issueManagement>
     </xml:group>
   )
-    
+
   // Settings used to make sure publishing goes smoothly.
   def publishSettings: Seq[Setting[_]] = Seq(
     ivyScala ~= ((is: Option[IvyScala]) => is.map(_.copy(checkExplicit = false))),
@@ -82,7 +82,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
     makeExplodedDist <<= (makeExplodedDist in scaladist).identity,
     // Note: We override unmanagedSources so that ~ compile will look at all these sources, then run our aggregated compile...
     unmanagedSourceDirectories in Compile <<= baseDirectory apply (_ / "src") apply { dir =>
-      Seq("library/scala","actors","compiler","fjbg","swing","continuations/library","forkjoin") map (dir / _)
+      Seq("library/scala","actors","compiler","swing","continuations/library","forkjoin") map (dir / _)
     },
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
     commands += Release.pushStarr
@@ -91,7 +91,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings: _*) settings(ShaResolve.settings: _*)
 
   // External dependencies used for various projects
-  lazy val externalDeps: Setting[_] = libraryDependencies <<= (sbtVersion)(v => 
+  lazy val externalDeps: Setting[_] = libraryDependencies <<= (sbtVersion)(v =>
     Seq(
       "org.apache.ant" % "ant" % "1.8.2",
       "org.scala-sbt" % "compiler-interface" % v % "provided"
@@ -132,9 +132,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
 
   // Jline nested project.   Compile this sucker once and be done.
   lazy val jline = Project("jline", file("src/jline"))
-  // Fast Java Bytecode Generator (nested in every scala-compiler.jar)
-  lazy val fjbg = Project("fjbg", file(".")) settings(settingOverrides : _*)
-  // Our wrapped version of msil.
+  // Our wrapped version of asm.
   lazy val asm = Project("asm", file(".")) settings(settingOverrides : _*)
   // Forkjoin backport
   lazy val forkjoin = Project("forkjoin", file(".")) settings(settingOverrides : _*)
@@ -175,9 +173,9 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   // --------------------------------------------------------------
   //  Projects dependent on layered compilation (quick)
   // --------------------------------------------------------------
-  def addCheaterDependency(projectName: String): Setting[_] = 
-    pomPostProcess <<= (version, organization, pomPostProcess) apply { (v,o,k) => 
-      val dependency: scala.xml.Node = 
+  def addCheaterDependency(projectName: String): Setting[_] =
+    pomPostProcess <<= (version, organization, pomPostProcess) apply { (v,o,k) =>
+      val dependency: scala.xml.Node =
         <dependency>
           <groupId>{o}</groupId>
           <artifactid>{projectName}</artifactid>
@@ -193,10 +191,10 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
           case n: scala.xml.Elem if n.label == "dependencies" => n
         } isEmpty)
       // TODO - Keep namespace on project...
-      k andThen { 
+      k andThen {
         case n @ <project>{ nested@_*}</project> if hasDependencies(n)   =>
           <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">{nested}<dependencies>{dependency}</dependencies></project>
-        case <project>{ nested@_*}</project>                                       => 
+        case <project>{ nested@_*}</project>                                       =>
           <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">{ nested map fixDependencies }</project>
       }
     }
@@ -205,8 +203,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency, addCheaterDependency("scala-library"))
   lazy val actors = Project("scala-actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
   lazy val swing = Project("scala-swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
-  lazy val actorsMigration = Project("scala-actors-migration", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
-  // This project will generate man pages (in man1 and html) for scala.    
+  // This project will generate man pages (in man1 and html) for scala.
   lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings :+ externalDeps
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
@@ -235,7 +232,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val continuationsPlugin = Project("continuations-plugin", file(".")) settings(continuationsPluginSettings:_*)
   lazy val continuationsLibrarySettings = dependentProjectSettings ++ Seq(
     scalaSource in Compile <<= baseDirectory(_ / "src/continuations/library/"),
-    scalacOptions in Compile <++= (exportedProducts in Compile in continuationsPlugin) map { 
+    scalacOptions in Compile <++= (exportedProducts in Compile in continuationsPlugin) map {
      case Seq(cpDir) => Seq("-Xplugin-require:continuations", "-P:continuations:enable", "-Xplugin:"+cpDir.data.getAbsolutePath)
     }
   )
@@ -284,7 +281,7 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   // --------------------------------------------------------------
   //  Real Compiler Artifact
   // --------------------------------------------------------------
-  lazy val packageScalaBinTask = Seq(quickComp, fjbg, asm).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
+  lazy val packageScalaBinTask = Seq(quickComp, asm).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
@@ -298,11 +295,11 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(publishSettings:_*) settings(scalaBinArtifactSettings:_*) dependsOn(scalaReflect)
   lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaReflect, scalaCompiler)
 
-  
+
   // --------------------------------------------------------------
   //  Generating Documentation.
   // --------------------------------------------------------------
-  
+
   // TODO - Migrate this into the dist project.
   // Scaladocs
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
@@ -332,6 +329,6 @@ object ScalaBuild extends Build with Layers with Packaging with Testing {
   lazy val documentation = (
     Project("documentation", file("."))
     settings (documentationSettings: _*)
-    dependsOn(quickLib, quickComp, actors, fjbg, forkjoin, swing, continuationsLibrary)
+    dependsOn(quickLib, quickComp, actors, forkjoin, swing, continuationsLibrary)
   )
 }

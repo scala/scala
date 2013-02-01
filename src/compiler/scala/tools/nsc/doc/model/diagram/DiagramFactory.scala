@@ -3,8 +3,6 @@ package model
 package diagram
 
 import model._
-import comment.CommentFactory
-import scala.collection.mutable
 
 // statistics
 import  html.page.diagram.DiagramStats
@@ -25,7 +23,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
 
   // the following can used for hardcoding different relations into the diagram, for bootstrapping purposes
   def aggregationNode(text: String) =
-    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (LinkTo, Int)]() }, None)()
+    NormalNode(new TypeEntity { val name = text; val refEntity = SortedMap[Int, (base.LinkTo, Int)]() }, None)()
 
   /** Create the inheritance diagram for this template */
   def makeInheritanceDiagram(tpl: DocTemplateImpl): Option[Diagram] = {
@@ -48,7 +46,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         val thisNode = ThisNode(tpl.resultType, Some(tpl))(Some(tpl.qualifiedName + " (this " + tpl.kind + ")"))
 
         // superclasses
-        var superclasses: List[Node] =
+        val superclasses: List[Node] =
           tpl.parentTypes.collect {
             case p: (TemplateEntity, TypeEntity) if !classExcluded(p._1) => NormalNode(p._2, Some(p._1))()
           }.reverse

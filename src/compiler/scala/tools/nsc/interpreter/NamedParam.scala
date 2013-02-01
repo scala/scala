@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -14,14 +14,10 @@ import scala.reflect.{ClassTag, classTag}
 trait NamedParamCreator {
   protected def freshName: () => String
 
-  def apply(name: String, tpe: String, value: Any): NamedParam = NamedParamClass(name, tpe, value)
   def apply[T: ru.TypeTag : ClassTag](name: String, x: T): NamedParam = new Typed[T](name, x)
   def apply[T: ru.TypeTag : ClassTag](x: T): NamedParam = apply(freshName(), x)
-
   def clazz(name: String, x: Any): NamedParam = new Untyped(name, x)
-  def clazz(x: Any): NamedParam = clazz(freshName(), x)
 
-  implicit def namedValue[T: ru.TypeTag : ClassTag](name: String, x: T): NamedParam = apply(name, x)
   implicit def tuple[T: ru.TypeTag : ClassTag](pair: (String, T)): NamedParam       = apply(pair._1, pair._2)
 }
 

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -12,11 +12,8 @@ trait Imports {
   self: IMain =>
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import definitions.{ ObjectClass, ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
-
-  def isNoImports = settings.noimports.value
-  def isNoPredef  = settings.nopredef.value
 
   /** Synthetic import handlers for the language defined imports. */
   private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
@@ -31,12 +28,9 @@ trait Imports {
 
   /** Symbols whose contents are language-defined to be imported. */
   def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
-  def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
   def allImportedNames = importHandlers flatMap (_.importedNames)
-  def importedTerms    = onlyTerms(allImportedNames)
-  def importedTypes    = onlyTypes(allImportedNames)
 
   /** Types which have been wildcard imported, such as:
    *    val x = "abc" ; import x._  // type java.lang.String
@@ -52,17 +46,11 @@ trait Imports {
   def sessionWildcards: List[Type] = {
     importHandlers filter (_.importsWildcard) map (_.targetType) distinct
   }
-  def wildcardTypes = languageWildcards ++ sessionWildcards
 
   def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
   def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
   def importedSymbols        = languageSymbols ++ sessionImportedSymbols
   def importedTermSymbols    = importedSymbols collect { case x: TermSymbol => x }
-  def importedTypeSymbols    = importedSymbols collect { case x: TypeSymbol => x }
-  def implicitSymbols        = importedSymbols filter (_.isImplicit)
-
-  def importedTermNamed(name: String): Symbol =
-    importedTermSymbols find (_.name.toString == name) getOrElse NoSymbol
 
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
@@ -146,44 +134,42 @@ trait Imports {
       code append "object %s {\n".format(impname)
       trailingBraces append "}\n"
       accessPath append ("." + impname)
-
-      currentImps.clear
+      currentImps.clear()
     }
-
-    addWrapper()
+    def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
+    def wrapBeforeAndAfter[T](op: => T): T = {
+      addWrapper()
+      try op finally addWrapper()
+    }
 
     // loop through previous requests, adding imports for each one
-    for (ReqAndHandler(req, handler) <- reqsToUse) {
-      handler match {
-        // If the user entered an import, then just use it; add an import wrapping
-        // level if the import might conflict with some other import
-        case x: ImportHandler =>
-          if (x.importsWildcard || currentImps.exists(x.importedNames contains _))
-            addWrapper()
+    wrapBeforeAndAfter {
+      for (ReqAndHandler(req, handler) <- reqsToUse) {
+        handler match {
+          // If the user entered an import, then just use it; add an import wrapping
+          // level if the import might conflict with some other import
+          case x: ImportHandler if x.importsWildcard =>
+            wrapBeforeAndAfter(code append (x.member + "\n"))
+          case x: ImportHandler =>
+            maybeWrap(x.importedNames: _*)
+            code append (x.member + "\n")
+            currentImps ++= x.importedNames
 
-          code append (x.member + "\n")
-
-          // give wildcard imports a import wrapper all to their own
-          if (x.importsWildcard) addWrapper()
-          else currentImps ++= x.importedNames
-
-        // For other requests, import each defined name.
-        // import them explicitly instead of with _, so that
-        // ambiguity errors will not be generated. Also, quote
-        // the name of the variable, so that we don't need to
-        // handle quoting keywords separately.
-        case x =>
-          for (imv <- x.definedNames) {
-            if (currentImps contains imv) addWrapper()
-
-            code append ("import " + (req fullPath imv) + "\n")
-            currentImps += imv
-          }
+          // For other requests, import each defined name.
+          // import them explicitly instead of with _, so that
+          // ambiguity errors will not be generated. Also, quote
+          // the name of the variable, so that we don't need to
+          // handle quoting keywords separately.
+          case x =>
+            for (sym <- x.definedSymbols) {
+              maybeWrap(sym.name)
+              code append s"import ${x.path}\n"
+              currentImps += sym.name
+            }
+        }
       }
     }
-    // add one extra wrapper, to prevent warnings in the common case of
-    // redefining the value bound in the last interpreter request.
-    addWrapper()
+
     ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
   }
 

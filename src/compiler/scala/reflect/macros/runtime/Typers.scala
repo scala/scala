@@ -1,6 +1,8 @@
 package scala.reflect.macros
 package runtime
 
+import scala.reflect.internal.Mode
+
 trait Typers {
   self: Context =>
 
@@ -8,6 +10,9 @@ trait Typers {
 
   def openImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
 
+  /**
+   * @see [[scala.tools.reflect.Toolbox.typeCheck]]
+   */
   def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
     macroLogVerbose("typechecking %s with expected type %s, implicit views = %s, macros = %s".format(tree, pt, !withImplicitViewsDisabled, !withMacrosDisabled))
     val context = callsiteTyper.context
@@ -19,13 +24,13 @@ trait Typers {
     // typechecking uses silent anyways (e.g. in typedSelect), so you'll only waste your time
     // I'd advise fixing the root cause: finding why the context is not set to report errors
     // (also see reflect.runtime.ToolBoxes.typeCheckExpr for a workaround that might work for you)
-    wrapper(callsiteTyper.silent(_.typed(tree, universe.analyzer.EXPRmode, pt)) match {
+    wrapper(callsiteTyper.silent(_.typed(tree, Mode.EXPRmode, pt)) match {
       case universe.analyzer.SilentResultValue(result) =>
         macroLogVerbose(result)
         result
       case error @ universe.analyzer.SilentTypeError(_) =>
         macroLogVerbose(error.err.errMsg)
-        if (!silent) throw new universe.TypeError(error.err.errPos, error.err.errMsg)
+        if (!silent) throw new TypecheckException(error.err.errPos, error.err.errMsg)
         universe.EmptyTree
     })
   }
@@ -49,17 +54,11 @@ trait Typers {
     wrapper(universe.analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos)) match {
       case failure if failure.tree.isEmpty =>
         macroLogVerbose("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-        if (context.hasErrors) throw new universe.TypeError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
+        if (context.hasErrors) throw new TypecheckException(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
         universe.EmptyTree
       case success =>
         success.tree
     }
-  }
-
-  type TypeError = universe.TypeError
-
-  object TypeError extends TypeErrorExtractor {
-    def unapply(error: TypeError): Option[(Position, String)] = Some((error.pos, error.msg))
   }
 
   def resetAllAttrs(tree: Tree): Tree = universe.resetAllAttrs(tree)

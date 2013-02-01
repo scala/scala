@@ -1,6 +1,4 @@
-lazy.scala:5: error: type mismatch;
- found   : Unit @scala.util.continuations.cpsParam[Unit,Unit]
- required: Unit
-  def foo() = {
-              ^
+lazy.scala:6: error: implementation restriction: cps annotations not allowed on lazy value definitions
+    lazy val x = shift((k:Unit=>Unit)=>k())
+             ^
 one error found

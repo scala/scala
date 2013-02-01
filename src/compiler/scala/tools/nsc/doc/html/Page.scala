@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
@@ -87,12 +87,6 @@ abstract class Page {
     * @param destEntity The class or object entity that the link will point to. */
   def relativeLinkTo(destClass: TemplateEntity): String =
     relativeLinkTo(templateToPath(destClass))
-
-  /** A relative link from this page to some destination page in the Scaladoc site.
-    * @param destPage The page that the link will point to. */
-  def relativeLinkTo(destPage: HtmlPage): String = {
-    relativeLinkTo(destPage.path)
-  }
 
   /** A relative link from this page to some destination path.
     * @param destPath The path that the link will point to. */

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2012 LAMP/EPFL
+ * Copyright 2006-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -11,10 +11,10 @@ import java.net.URL
 import scala.collection.{ mutable, immutable }
 import io.{ File, Directory, Path, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
-import scala.reflect.ClassTag
 import Jar.isJarOrZip
 import File.pathSeparator
 import java.net.MalformedURLException
+import java.util.regex.PatternSyntaxException
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -32,15 +32,14 @@ object ClassPath {
     def lsDir(dir: Directory, filt: String => Boolean = _ => true) =
       dir.list filter (x => filt(x.name) && (x.isDirectory || isJarOrZip(x))) map (_.path) toList
 
-    def basedir(s: String) =
-      if (s contains File.separator) s.substring(0, s.lastIndexOf(File.separator))
-      else "."
-
     if (pattern == "*") lsDir(Directory("."))
     else if (pattern endsWith wildSuffix) lsDir(Directory(pattern dropRight 2))
     else if (pattern contains '*') {
-      val regexp = ("^%s$" format pattern.replaceAll("""\*""", """.*""")).r
-      lsDir(Directory(pattern).parent, regexp findFirstIn _ isDefined)
+      try {
+        val regexp = ("^" + pattern.replaceAllLiterally("""\*""", """.*""") + "$").r
+        lsDir(Directory(pattern).parent, regexp findFirstIn _ isDefined)
+      }
+      catch { case _: PatternSyntaxException => List(pattern) }
     }
     else List(pattern)
   }
@@ -53,22 +52,6 @@ object ClassPath {
 
   /** Split the classpath, apply a transformation function, and reassemble it. */
   def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
-
-  /** Split the classpath, filter according to predicate, and reassemble. */
-  def filter(cp: String, p: String => Boolean): String = join(split(cp) filter p: _*)
-
-  /** Split the classpath and map them into Paths */
-  def toPaths(cp: String): List[Path] = split(cp) map (x => Path(x).toAbsolute)
-
-  /** Make all classpath components absolute. */
-  def makeAbsolute(cp: String): String = fromPaths(toPaths(cp): _*)
-
-  /** Join the paths as a classpath */
-  def fromPaths(paths: Path*): String = join(paths map (_.path): _*)
-  def fromURLs(urls: URL*): String = fromPaths(urls map (x => Path(x.getPath)) : _*)
-
-  /** Split the classpath and map them into URLs */
-  def toURLs(cp: String): List[URL] = toPaths(cp) map (_.toURL)
 
   /** Expand path and possibly expanding stars */
   def expandPath(path: String, expandStar: Boolean = true): List[String] =
@@ -128,13 +111,6 @@ object ClassPath {
     def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
       for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
         newClassPath(entry)
-
-    def classesAtAllURLS(path: String): List[ClassPath[T]] =
-      (path split " ").toList flatMap classesAtURL
-
-    def classesAtURL(spec: String) =
-      for (url <- specToURL(spec).toList ; location <- Option(AbstractFile getURL url)) yield
-        newClassPath(location)
 
     def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
       classesInPathImpl(path, true).toIndexedSeq
@@ -212,8 +188,7 @@ abstract class ClassPath[T] {
   def sourcepaths: IndexedSeq[AbstractFile]
 
   /**
-   * Represents classes which can be loaded with a ClassfileLoader/MsilFileLoader
-   * and / or a SourcefileLoader.
+   * Represents classes which can be loaded with a ClassfileLoader and/or SourcefileLoader.
    */
   case class ClassRep(binary: Option[T], source: Option[AbstractFile]) {
     def name: String = binary match {
@@ -404,15 +379,3 @@ class JavaClassPath(
   containers: IndexedSeq[ClassPath[AbstractFile]],
   context: JavaContext)
 extends MergedClassPath[AbstractFile](containers, context) { }
-
-object JavaClassPath {
-  def fromURLs(urls: Seq[URL], context: JavaContext): JavaClassPath = {
-    val containers = {
-      for (url <- urls ; f = AbstractFile getURL url ; if f != null) yield
-        new DirectoryClassPath(f, context)
-    }
-    new JavaClassPath(containers.toIndexedSeq, context)
-  }
-  def fromURLs(urls: Seq[URL]): JavaClassPath =
-    fromURLs(urls, ClassPath.DefaultJavaContext)
-}

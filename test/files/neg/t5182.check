@@ -1,0 +1,7 @@
+t5182.scala:2: error: unknown annotation argument name: qwe
+  @java.lang.Deprecated(qwe = "wer") def ok(q:Int) = 1
+                            ^
+t5182.scala:3: error: classfile annotation arguments have to be supplied as named arguments
+  @java.lang.Deprecated("wer") def whereAmI(q:Int) = 1
+                        ^
+two errors found

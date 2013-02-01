@@ -1,7 +1,6 @@
 package scala.tools
 package reflect
 
-import java.lang.{Class => jClass}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.api.{Mirror, TypeCreator, Universe => ApiUniverse}
 

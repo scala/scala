@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -16,8 +16,6 @@ import javax.swing.tree._
 
 import scala.concurrent.Lock
 import scala.text._
-import symtab.Flags._
-import symtab.SymbolTable
 import scala.language.implicitConversions
 
 /**
@@ -509,7 +507,7 @@ abstract class TreeBrowsers {
     /** Return a textual representation of this t's symbol */
     def symbolText(t: Tree): String = {
       val prefix =
-        if (t.hasSymbol)  "[has] "
+        if (t.hasSymbolField)  "[has] "
         else if (t.isDef) "[defines] "
         else ""
 
@@ -529,10 +527,9 @@ abstract class TreeBrowsers {
      * attributes */
     def symbolAttributes(t: Tree): String = {
       val s = t.symbol
-      var att = ""
 
       if ((s ne null) && (s != NoSymbol)) {
-        var str = flagsToString(s.flags)
+        var str = s.flagString
         if (s.isStaticMember) str = str + " isStatic ";
         (str + " annotations: " + s.annotations.mkString("", " ", "")
           + (if (s.isTypeSkolem) "\ndeSkolemized annotations: " + s.deSkolemize.annotations.mkString("", " ", "") else ""))

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -33,7 +33,7 @@ import scala.language.{implicitConversions, higherKinds}
   * }}}
   *
   * An Ordering[T] is implemented by specifying compare(a:T, b:T), which
-  * decides how to order to instances a and b. Instances of Ordering[T] can be
+  * decides how to order two instances a and b. Instances of Ordering[T] can be
   * used by things like scala.util.Sorting to sort collections like Array[T].
   *
   * For example:

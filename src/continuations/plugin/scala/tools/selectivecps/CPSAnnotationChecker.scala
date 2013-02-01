@@ -2,11 +2,10 @@
 
 package scala.tools.selectivecps
 
-import scala.tools.nsc.Global
-import scala.tools.nsc.typechecker.Modes
+import scala.tools.nsc.{ Global, Mode }
 import scala.tools.nsc.MissingRequirementError
 
-abstract class CPSAnnotationChecker extends CPSUtils with Modes {
+abstract class CPSAnnotationChecker extends CPSUtils {
   val global: Global
   import global._
   import definitions._
@@ -96,7 +95,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       if (!cpsEnabled) return bounds
 
       val anyAtCPS = newCpsParamsMarker(NothingClass.tpe, AnyClass.tpe)
-      if (isFunctionType(tparams.head.owner.tpe) || isPartialFunctionType(tparams.head.owner.tpe)) {
+      if (isFunctionType(tparams.head.owner.tpe_*) || isPartialFunctionType(tparams.head.owner.tpe_*)) {
         vprintln("function bound: " + tparams.head.owner.tpe + "/"+bounds+"/"+targs)
         if (hasCpsParamTypes(targs.last))
           bounds.reverse match {
@@ -117,14 +116,14 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         bounds
     }
 
-    override def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = {
+    override def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = {
       if (!cpsEnabled) return false
-      vprintln("can adapt annotations? " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
+      vprintln("can adapt annotations? " + tree + " / " + tree.tpe + " / " + mode + " / " + pt)
 
       val annots1 = cpsParamAnnotation(tree.tpe)
       val annots2 = cpsParamAnnotation(pt)
 
-      if ((mode & global.analyzer.PATTERNmode) != 0) {
+      if (mode.inPatternMode) {
         //println("can adapt pattern annotations? " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
         if (!annots1.isEmpty) {
           return true
@@ -133,7 +132,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
 
 /*
       // not precise enough -- still relying on addAnnotations to remove things from ValDef symbols
-      if ((mode & global.analyzer.TYPEmode) != 0 && (mode & global.analyzer.BYVALmode) != 0) {
+      if ((mode & TYPEmode) != 0 && (mode & BYVALmode) != 0) {
         if (!annots1.isEmpty) {
           return true
         }
@@ -142,16 +141,16 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
 
 /*
       this interferes with overloading resolution
-      if ((mode & global.analyzer.BYVALmode) != 0 && tree.tpe <:< pt) {
+      if ((mode & BYVALmode) != 0 && tree.tpe <:< pt) {
         vprintln("already compatible, can't adapt further")
         return false
       }
 */
-      if ((mode & global.analyzer.EXPRmode) != 0) {
+      if (mode.inExprMode) {
         if ((annots1 corresponds annots2)(_.atp <:< _.atp)) {
           vprintln("already same, can't adapt further")
           false
-        } else if (annots1.isEmpty && !annots2.isEmpty && ((mode & global.analyzer.BYVALmode) == 0)) {
+        } else if (annots1.isEmpty && !annots2.isEmpty && !mode.inByValMode) {
           //println("can adapt annotations? " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
           if (!hasPlusMarker(tree.tpe)) {
   //          val base = tree.tpe <:< removeAllCPSAnnotations(pt)
@@ -164,10 +163,10 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
               true
             //}
           } else false
-        } else if (!hasPlusMarker(tree.tpe) && annots1.isEmpty && !annots2.isEmpty && ((mode & global.analyzer.RETmode) != 0)) {
+        } else if (!hasPlusMarker(tree.tpe) && annots1.isEmpty && !annots2.isEmpty && mode.inRetMode) {
           vprintln("checking enclosing method's result type without annotations")
           tree.tpe <:< pt.withoutAnnotations
-        } else if (!hasMinusMarker(tree.tpe) && !annots1.isEmpty && ((mode & global.analyzer.BYVALmode) != 0)) {
+        } else if (!hasMinusMarker(tree.tpe) && !annots1.isEmpty && mode.inByValMode) {
           val optCpsTypes: Option[(Type, Type)]         = cpsParamTypes(tree.tpe)
           val optExpectedCpsTypes: Option[(Type, Type)] = cpsParamTypes(pt)
           if (optCpsTypes.isEmpty || optExpectedCpsTypes.isEmpty) {
@@ -183,21 +182,21 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else false
     }
 
-    override def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
+    override def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = {
       if (!cpsEnabled) return tree
 
-      vprintln("adapt annotations " + tree + " / " + tree.tpe + " / " + modeString(mode) + " / " + pt)
+      vprintln("adapt annotations " + tree + " / " + tree.tpe + " / " + mode + " / " + pt)
 
-      val patMode   = (mode & global.analyzer.PATTERNmode) != 0
-      val exprMode  = (mode & global.analyzer.EXPRmode) != 0
-      val byValMode = (mode & global.analyzer.BYVALmode) != 0
-      val retMode   = (mode & global.analyzer.RETmode) != 0
+      val patMode   = mode.inPatternMode
+      val exprMode  = mode.inExprMode
+      val byValMode = mode.inByValMode
+      val retMode   = mode.inRetMode
 
       val annotsTree     = cpsParamAnnotation(tree.tpe)
       val annotsExpected = cpsParamAnnotation(pt)
 
       // not sure I rephrased this comment correctly:
-      // replacing `patMode` in the condition below by `patMode || ((mode & global.analyzer.TYPEmode) != 0 && (mode & global.analyzer.BYVALmode))`
+      // replacing `patMode` in the condition below by `patMode || ((mode & TYPEmode) != 0 && (mode & BYVALmode))`
       // doesn't work correctly -- still relying on addAnnotations to remove things from ValDef symbols
       if (patMode && !annotsTree.isEmpty) tree modifyType removeAllCPSAnnotations
       else if (exprMode && !byValMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) { // shiftUnit
@@ -221,7 +220,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else if (retMode && !hasPlusMarker(tree.tpe) && annotsTree.isEmpty && annotsExpected.nonEmpty) {
         // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
         // tree will look like having any possible annotation
-        
+
         // note 1: we are only adding a plus marker if the method's result type is a cps type
         //         (annotsExpected.nonEmpty == cpsParamAnnotation(pt).nonEmpty)
         // note 2: we are not adding the expected cps annotations, since they will be added
@@ -234,7 +233,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
 
     /** Returns an adapted type for a return expression if the method's result type (pt) is a CPS type.
      *  Otherwise, it returns the `default` type (`typedReturn` passes `NothingClass.tpe`).
-     *  
+     *
      *  A return expression in a method that has a CPS result type is an error unless the return
      *  is in tail position. Therefore, we are making sure that only the types of return expressions
      *  are adapted which will either be removed, or lead to an error.
@@ -356,7 +355,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         global.globalError("not a single cps annotation: " + xs)
         xs(0)
     }
-    
+
     def emptyOrSingleList(xs: List[AnnotationInfo]) = if (xs.isEmpty) Nil else List(single(xs))
 
     def transChildrenInOrder(tree: Tree, tpe: Type, childTrees: List[Tree], byName: List[Tree]) = {
@@ -396,8 +395,10 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
     override def addAnnotations(tree: Tree, tpe: Type): Type = {
       import scala.util.control._
       if (!cpsEnabled) {
-        if (Exception.failAsValue(classOf[MissingRequirementError])(false)(hasCpsParamTypes(tpe)))
+        val report = try hasCpsParamTypes(tpe) catch { case _: MissingRequirementError => false }
+        if (report)
           global.reporter.error(tree.pos, "this code must be compiled with the Scala continuations plugin enabled")
+
         return tpe
       }
 
@@ -496,7 +497,11 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
         case ValDef(mods, name, tpt, rhs) =>
           vprintln("[checker] checking valdef " + name + "/"+tpe+"/"+tpt+"/"+tree.symbol.tpe)
           // ValDef symbols must *not* have annotations!
-          if (hasAnswerTypeAnn(tree.symbol.info)) { // is it okay to modify sym here?
+          // lazy vals are currently not supported
+          // but if we erase here all annotations, compiler will complain only
+          // when generating bytecode.
+          // This way lazy vals will be reported as unsupported feature later rather than weird type error.
+          if (hasAnswerTypeAnn(tree.symbol.info) && !mods.isLazy) { // is it okay to modify sym here?
             vprintln("removing annotation from sym " + tree.symbol + "/" + tree.symbol.tpe + "/" + tpt)
             tpt modifyType removeAllCPSAnnotations
             tree.symbol modifyInfo removeAllCPSAnnotations

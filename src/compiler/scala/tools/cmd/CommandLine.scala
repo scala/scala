@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -19,7 +19,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
   def this(spec: Reference, line: String) = this(spec, Parser tokenize line)
   def this(spec: Reference, args: Array[String]) = this(spec, args.toList)
 
-  import spec.{ isAnyOption, isUnaryOption, isBinaryOption, isExpandOption }
+  import spec.{ isUnaryOption, isBinaryOption, isExpandOption }
 
   val Terminator = "--"
   val ValueForUnaryOption = "true"  // so if --opt is given, x(--opt) = true

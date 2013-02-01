@@ -1,11 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package typechecker
-
 
 import java.lang.ArithmeticException
 
@@ -18,7 +17,6 @@ abstract class ConstantFolder {
 
   val global: Global
   import global._
-  import definitions._
 
   /** If tree is a constant operation, replace with result. */
   def apply(tree: Tree): Tree = fold(tree, tree match {
@@ -29,9 +27,6 @@ abstract class ConstantFolder {
 
   /** If tree is a constant value that can be converted to type `pt`, perform
    *  the conversion.
-   *
-   *  @param tree ...
-   *  @param pt ...
    */
   def apply(tree: Tree, pt: Type): Tree = fold(apply(tree), tree.tpe match {
     case ConstantType(x) => x convertTo pt

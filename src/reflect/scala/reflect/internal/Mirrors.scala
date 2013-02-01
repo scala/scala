@@ -1,6 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -20,6 +19,8 @@ trait Mirrors extends api.Mirrors {
   trait RootSymbol extends Symbol { def mirror: Mirror }
 
   abstract class RootsBase(rootOwner: Symbol) extends scala.reflect.api.Mirror[Mirrors.this.type] { thisMirror =>
+    private[this] var initialized = false
+    def isMirrorInitialized = initialized
 
     protected[scala] def rootLoader: LazyType
 
@@ -41,7 +42,7 @@ trait Mirrors extends api.Mirrors {
         if (point > 0) getModuleOrClass(path.toTermName, point)
         else RootClass
       val name = path subName (point + 1, len)
-      var sym = owner.info member name
+      val sym = owner.info member name
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
@@ -77,7 +78,9 @@ trait Mirrors extends api.Mirrors {
 
     protected def universeMissingHook(owner: Symbol, name: Name): Symbol = thisUniverse.missingHook(owner, name)
 
-    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
+    private[scala] def missingHook(owner: Symbol, name: Name): Symbol = logResult(s"missingHook($owner, $name)")(
+      mirrorMissingHook(owner, name) orElse universeMissingHook(owner, name)
+    )
 
     // todo: get rid of most the methods here and keep just staticClass/Module/Package
 
@@ -169,14 +172,15 @@ trait Mirrors extends api.Mirrors {
         case _                                              => MissingRequirementError.notFound("package " + fullname)
       }
 
-    def getPackage(fullname: Name): ModuleSymbol =
+    def getPackage(fullname: TermName): ModuleSymbol =
       ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname), allowModules = true)
 
-    def getRequiredPackage(fullname: String): ModuleSymbol =
+    @deprecated("Use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
       getPackage(newTermNameCached(fullname))
 
-    def getPackageObject(fullname: String): ModuleSymbol =
-      (getPackage(newTermName(fullname)).info member nme.PACKAGE) match {
+    def getPackageObject(fullname: String): ModuleSymbol = getPackageObject(newTermName(fullname))
+    def getPackageObject(fullname: TermName): ModuleSymbol =
+      (getPackage(fullname).info member nme.PACKAGE) match {
         case x: ModuleSymbol => x
         case _               => MissingRequirementError.notFound("package object " + fullname)
       }
@@ -184,8 +188,8 @@ trait Mirrors extends api.Mirrors {
     def getPackageObjectIfDefined(fullname: String): Symbol =
       getPackageObjectIfDefined(newTermNameCached(fullname))
 
-    def getPackageObjectIfDefined(fullname: Name): Symbol =
-      wrapMissing(getPackageObject(fullname.toTermName))
+    def getPackageObjectIfDefined(fullname: TermName): Symbol =
+      wrapMissing(getPackageObject(fullname))
 
     override def staticPackage(fullname: String): ModuleSymbol =
       ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
@@ -203,7 +207,7 @@ trait Mirrors extends api.Mirrors {
       erasureString(classTag[T].runtimeClass)
     }
 
-   @inline private def wrapMissing(body: => Symbol): Symbol =
+   @inline final def wrapMissing(body: => Symbol): Symbol =
       try body
       catch { case _: MissingRequirementError => NoSymbol }
 
@@ -229,6 +233,7 @@ trait Mirrors extends api.Mirrors {
     // }
 
     def init() {
+      if (initialized) return
       // Still fiddling with whether it's cleaner to do some of this setup here
       // or from constructors.  The latter approach tends to invite init order issues.
 
@@ -240,6 +245,8 @@ trait Mirrors extends api.Mirrors {
 
       RootClass.info.decls enter EmptyPackage
       RootClass.info.decls enter RootPackage
+
+      initialized = true
     }
   }
 

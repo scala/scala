@@ -1,0 +1,6 @@
+t6675.scala:10: warning: extractor pattern binds a single value to a Product3 of type (Int, Int, Int)
+  "" match { case X(b) => b } // should warn under -Xlint. Not an error because of SI-6111
+                  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

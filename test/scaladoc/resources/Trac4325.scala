@@ -1,5 +1,5 @@
-case class WithSynthetic
+case class WithSynthetic()
 
-case class WithObject
+case class WithObject()
 object WithObject
 

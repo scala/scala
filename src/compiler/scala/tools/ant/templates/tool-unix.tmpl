@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 ##############################################################################
-# Copyright 2002-2012 LAMP/EPFL
+# Copyright 2002-2013 LAMP/EPFL
 #
 # This is free software; see the distribution for copying conditions.
 # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -102,6 +102,9 @@ if [[ -n "$cygwin" ]]; then
         format=windows
     fi
     SCALA_HOME="$(cygpath --$format "$SCALA_HOME")"
+    if [[ -n "$JAVA_HOME" ]]; then
+        JAVA_HOME="$(cygpath --$format "$JAVA_HOME")"
+    fi
     TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
 elif [[ -n "$mingw" ]]; then
     SCALA_HOME="$(cmd //c echo "$SCALA_HOME")"

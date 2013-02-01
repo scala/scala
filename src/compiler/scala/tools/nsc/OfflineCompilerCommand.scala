@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -26,14 +26,14 @@ class OfflineCompilerCommand(arguments: List[String], settings: FscSettings) ext
       // instead of whatever it's supposed to be doing.
       val baseDirectory = {
         val pwd = System.getenv("PWD")
-        if (pwd != null && !isWin) Directory(pwd)
-        else Directory.Current getOrElse Directory("/")
+        if (pwd == null || isWin) Directory.Current getOrElse Directory("/")
+        else Directory(pwd) 
       }
       currentDir.value = baseDirectory.path
     }
     else {
       // Otherwise we're on the server and will use it to absolutize the paths.
-      settings.absolutize(currentDir.value)
+      settings.absolutize()
     }
   }
 

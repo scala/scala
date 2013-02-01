@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2012, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -8,7 +8,7 @@
 
 package scala
 
-/** This class provides the basic mechanism to do String Interpolation.  
+/** This class provides the basic mechanism to do String Interpolation.
  * String Interpolation allows users
  * to embed variable references directly in *processed* string literals.
  * Here's an example:
@@ -26,7 +26,7 @@ package scala
  * is rewritten to be:
  *
  * {{{
- *   new StringContext("Hello, ", "").s(name)
+ *   StringContext("Hello, ", "").s(name)
  * }}}
  *
  * By default, this class provides the `raw`, `s` and `f` methods as
@@ -36,7 +36,7 @@ package scala
  * which adds a method to `StringContext`.  Here's an example:
  * {{{
  *    implicit class JsonHelper(val sc: StringContext) extends AnyVal {
- *     def json(args: Any*): JSONObject = ...
+ *      def json(args: Any*): JSONObject = ...
  *    }
  *    val x: JSONObject = json"{ a: $a }"
  * }}}
@@ -72,7 +72,7 @@ case class StringContext(parts: String*) {
    *    println(s"Hello, $name")  // Hello, James
    *  }}}
    *  In this example, the expression $name is replaced with the `toString` of the
-   *  variable `name`.  
+   *  variable `name`.
    *  The `s` interpolator can take the `toString` of any arbitrary expression within
    *  a `${}` block, for example:
    *  {{{
@@ -96,6 +96,13 @@ case class StringContext(parts: String*) {
    *  standard escape sequences as defined in the Scala specification.
    *
    *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
+   *
+   *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
+   *  For example:
+   *  {{{
+   *    scala> raw"\u005cu0025"
+   *    res0: String = #
+   *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws An `IllegalArgumentException`
@@ -184,7 +191,7 @@ object StringContext {
     var cur = 0
     var idx = 0
     def output(ch: Char) = {
-      bldr append str.substring (start, cur)
+      bldr.append(str, start, cur)
       bldr append ch
       start = idx
     }
@@ -192,14 +199,15 @@ object StringContext {
       cur = idx
       if (str(idx) == '\\') {
         idx += 1
+        if (idx >= len) throw new InvalidEscapeException(str, cur)
         if ('0' <= str(idx) && str(idx) <= '7') {
           val leadch = str(idx)
           var oct = leadch - '0'
           idx += 1
-          if ('0' <= str(idx) && str(idx) <= '7') {
+          if (idx < len && '0' <= str(idx) && str(idx) <= '7') {
             oct = oct * 8 + str(idx) - '0'
             idx += 1
-            if (leadch <= '3' && '0' <= str(idx) && str(idx) <= '7') {
+            if (idx < len && leadch <= '3' && '0' <= str(idx) && str(idx) <= '7') {
               oct = oct * 8 + str(idx) - '0'
               idx += 1
             }
@@ -227,6 +235,6 @@ object StringContext {
       }
     }
     if (start == 0) str
-    else (bldr append str.substring(start, idx)).toString
+    else bldr.append(str, start, idx).toString
   }
 }

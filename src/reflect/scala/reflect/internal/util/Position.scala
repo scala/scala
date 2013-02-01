@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  *
  */
@@ -7,7 +7,8 @@
 package scala.reflect.internal.util
 
 import scala.reflect.ClassTag
-import scala.reflect.api.Attachments
+import scala.reflect.internal.FatalError
+import scala.reflect.macros.Attachments
 
 object Position {
   val tabInc = 8
@@ -35,6 +36,50 @@ object Position {
   }
 }
 
+/** The Position class and its subclasses represent positions of ASTs and symbols.
+ *  Except for NoPosition and FakePos, every position refers to a SourceFile
+ *  and to an offset in the sourcefile (its `point`). For batch compilation,
+ *  that's all. For interactive IDE's there are also RangePositions
+ *  and TransparentPositions. A RangePosition indicates a start and an end
+ *  in addition to its point. TransparentPositions are a subclass of RangePositions.
+ *  Range positions that are not transparent are called opaque.
+ *  Trees with RangePositions need to satisfy the following invariants.
+ *
+ *  INV1: A tree with an offset position never contains a child
+ *        with a range position
+ *  INV2: If the child of a tree with a range position also has a range position,
+ *        then the child's range is contained in the parent's range.
+ *  INV3: Opaque range positions of children of the same node are non-overlapping
+ *        (this means their overlap is at most a single point).
+ *
+ *  The following tests are useful on positions:
+ *
+ *  pos.isDefined     true if position is not a NoPosition nor a FakePosition
+ *  pos.isRange       true if position is a range
+ *  pos.isOpaqueRange true if position is an opaque range
+ *
+ *  The following accessor methods are provided:
+ *
+ *  pos.source        The source file of the position, which must be defined
+ *  pos.point         The offset of the position's point, which must be defined
+ *  pos.start         The start of the position, which must be a range
+ *  pos.end           The end of the position, which must be a range
+ *
+ *  There are also convenience methods, such as
+ *
+ *  pos.startOrPoint
+ *  pos.endOrPoint
+ *  pos.pointOrElse(default)
+ *
+ *  These are less strict about the kind of position on which they can be applied.
+ *
+ *  The following conversion methods are often used:
+ *
+ *  pos.focus           converts a range position to an offset position, keeping its point;
+ *                      returns all other positions unchanged.
+ *  pos.makeTransparent converts an opaque range position into a transparent one.
+ *                      returns all other positions unchanged.
+ */
 abstract class Position extends scala.reflect.api.Position { self =>
 
   type Pos = Position
@@ -84,7 +129,7 @@ abstract class Position extends scala.reflect.api.Position { self =>
   def endOrPoint: Int = point
 
   @deprecated("use point instead", "2.9.0")
-  def offset: Option[Int] = if (isDefined) Some(point) else None
+  def offset: Option[Int] = if (isDefined) Some(point) else None // used by sbt
 
   /** The same position with a different start value (if a range) */
   def withStart(off: Int): Position = this
@@ -225,7 +270,7 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
 /** new for position ranges */
 class RangePosition(source: SourceFile, override val start: Int, point: Int, override val end: Int)
 extends OffsetPosition(source, point) {
-  if (start > end) assert(false, "bad position: "+show)
+  if (start > end) sys.error("bad position: "+show)
   override def isRange: Boolean = true
   override def isOpaqueRange: Boolean = true
   override def startOrPoint: Int = start

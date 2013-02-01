@@ -1,0 +1,12 @@
+t6902.scala:4: warning: unreachable code
+    case Some(b) => 3 // no warning was emitted
+                    ^
+t6902.scala:9: warning: unreachable code
+    case Some(b) => 3 // no warning was emitted
+                    ^
+t6902.scala:21: warning: unreachable code
+    case 1 => 3 // crash
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import java.lang.reflect
-import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader
 import ScalaClassLoader.appLoader
 import scala.reflect.NameTransformer._
@@ -39,25 +38,5 @@ object ByteCode {
     }
     yield names
 
-  /** Attempts to retrieve case parameter names for given class name.
-   */
-  def caseParamNamesForPath(path: String) =
-    for {
-      module <- DECODER
-      method <- decoderMethod("caseParamNames", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[List[String]]]
-    }
-    yield names
-
   def aliasesForPackage(pkg: String) = aliasMap flatMap (_(pkg))
-
-  /** Attempts to find type aliases in package objects.
-   */
-  def aliasForType(path: String): Option[String] = {
-    val (pkg, name) = (path lastIndexOf '.') match {
-      case -1   => return None
-      case idx  => (path take idx, path drop (idx + 1))
-    }
-    aliasesForPackage(pkg) flatMap (_ get name)
-  }
 }

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -50,6 +50,20 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
       repr.asInstanceOf[Array[U]]
     else
       super.toArray[U]
+  }
+
+  def :+[B >: T: scala.reflect.ClassTag](elem: B): Array[B] = {
+    val result = Array.ofDim[B](repr.length + 1)
+    Array.copy(repr, 0, result, 0, repr.length)
+    result(repr.length) = elem
+    result
+  }
+
+  def +:[B >: T: scala.reflect.ClassTag](elem: B): Array[B] = {
+    val result = Array.ofDim[B](repr.length + 1)
+    result(0) = elem
+    Array.copy(repr, 0, result, 1, repr.length)
+    result
   }
 
   override def par = ParArray.handoff(repr)

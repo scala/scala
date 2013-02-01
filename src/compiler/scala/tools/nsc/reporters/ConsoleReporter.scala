@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2012 LAMP/EPFL
+ * Copyright 2002-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -34,9 +34,6 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   }
 
   /** Returns the number of errors issued totally as a string.
-   *
-   *  @param severity ...
-   *  @return         ...
    */
   private def getCountString(severity: Severity): String =
     StringOps.countElementsAsString((severity).count, label(severity))
@@ -52,17 +49,12 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     printMessage(pos, clabel(severity) + msg)
   }
 
-  /**
-   *  @param pos ...
-   */
   def printSourceLine(pos: Position) {
     printMessage(pos.lineContent.stripLineEnd)
     printColumnMarker(pos)
   }
 
   /** Prints the column marker of the given position.
-   *
-   *  @param pos ...
    */
   def printColumnMarker(pos: Position) =
     if (pos.isDefined) { printMessage(" " * (pos.column - 1) + "^") }
@@ -94,6 +86,5 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     }
   }
 
-  private def abort(msg: String) = throw new Error(msg)
   override def flush() { writer.flush() }
 }

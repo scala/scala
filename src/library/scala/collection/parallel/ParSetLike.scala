@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -15,14 +15,6 @@ import scala.collection.SetLike
 import scala.collection.GenSetLike
 import scala.collection.GenSet
 import scala.collection.Set
-import scala.collection.mutable.Builder
-
-
-
-
-
-
-
 
 /** A template trait for parallel sets. This trait is mixed in with concrete
  *  parallel sets to override the representation type.

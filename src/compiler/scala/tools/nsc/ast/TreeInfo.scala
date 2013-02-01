@@ -1,14 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package ast
-
-import scala.reflect.internal.HasFlags
-import scala.reflect.internal.Flags._
-import symtab._
 
 /** This class ...
  *
@@ -18,8 +14,6 @@ import symtab._
 abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
   val global: Global
   import global._
-
-  import definitions.ThrowableClass
 
   /** Is tree legal as a member definition of an interface?
    */
@@ -41,15 +35,5 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
   override def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
     case ClassDef(_, `name`, _, _) :: Nil => true
     case _ => super.firstDefinesClassOrObject(trees, name)
-  }
-
-  def isInterface(mods: HasFlags, body: List[Tree]) =
-    mods.isTrait && (body forall isInterfaceMember)
-
-  def isAllowedInUniversalTrait(stat: Tree): Boolean = stat match {
-    case _: ValDef => false
-    case Import(_, _) | EmptyTree => true
-    case _: DefTree => true
-    case _ => false
   }
 }

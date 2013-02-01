@@ -28,7 +28,7 @@ object QueryableMacros{
     val foo = c.Expr[ru.Expr[Queryable[S]]](
     c.reifyTree( mkRuntimeUniverseRef, EmptyTree, c.typeCheck(
       Utils[c.type](c).removeDoubleReify(
-        Apply(Select(c.prefix.tree, newTermName( name )), List( projection.tree ))
+        Apply(Select(c.prefix.tree, TermName( name )), List( projection.tree ))
        ).asInstanceOf[Tree]
       )))
     c.universe.reify{ Queryable.factory[S]( foo.splice )}

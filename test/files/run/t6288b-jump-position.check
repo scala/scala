@@ -1,0 +1,80 @@
+object Case3 extends Object {
+  // fields:
+  
+  // methods
+  def unapply(z: Object (REF(class Object))): Option {
+  locals: value z
+  startBlock: 1
+  blocks: [1]
+  
+  1: 
+    2	NEW REF(class Some)
+    2	DUP(REF(class Some))
+    2	CONSTANT(-1)
+    2	BOX INT
+    2	CALL_METHOD scala.Some.<init> (static-instance)
+    2	RETURN(REF(class Option))
+    
+  }
+  Exception handlers: 
+    
+  def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
+  locals: value args, value x1, value x2, value x
+  startBlock: 1
+  blocks: [1,2,3,6,7]
+  
+  1: 
+    4	CONSTANT("")
+    4	STORE_LOCAL(value x1)
+    4	SCOPE_ENTER value x1
+    4	JUMP 2
+    
+  2: 
+    5	LOAD_LOCAL(value x1)
+    5	IS_INSTANCE REF(class String)
+    5	CZJUMP (BOOL)NE ? 3 : 6
+    
+  3: 
+    5	LOAD_LOCAL(value x1)
+    5	CHECK_CAST REF(class String)
+    5	STORE_LOCAL(value x2)
+    5	SCOPE_ENTER value x2
+    6	LOAD_MODULE object Predef
+    6	CONSTANT("case 0")
+    6	CALL_METHOD scala.Predef.println (dynamic)
+    6	LOAD_FIELD scala.runtime.BoxedUnit.UNIT
+    6	STORE_LOCAL(value x)
+    6	JUMP 7
+    
+  6: 
+    8	LOAD_MODULE object Predef
+    8	CONSTANT("default")
+    8	CALL_METHOD scala.Predef.println (dynamic)
+    8	LOAD_FIELD scala.runtime.BoxedUnit.UNIT
+    8	STORE_LOCAL(value x)
+    8	JUMP 7
+    
+  7: 
+    10	LOAD_MODULE object Predef
+    10	CONSTANT("done")
+    10	CALL_METHOD scala.Predef.println (dynamic)
+    10	RETURN(UNIT)
+    
+  }
+  Exception handlers: 
+    
+  def <init>(): Case3.type {
+  locals: 
+  startBlock: 1
+  blocks: [1]
+  
+  1: 
+    12	THIS(Case3)
+    12	CALL_METHOD java.lang.Object.<init> (super())
+    12	RETURN(UNIT)
+    
+  }
+  Exception handlers: 
+    
+  
+}

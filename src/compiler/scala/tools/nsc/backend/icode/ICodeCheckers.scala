@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -9,7 +9,6 @@ package icode
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.symtab._
 
 abstract class ICodeCheckers {
   val global: Global
@@ -49,7 +48,7 @@ abstract class ICodeCheckers {
    *  @author  Iulian Dragos
    *  @version 1.0, 06/09/2005
    *
-   *  @todo Better checks for <code>MONITOR_ENTER/EXIT</code>
+   *  @todo Better checks for `MONITOR_ENTER/EXIT`
    *        Better checks for local var initializations
    *
    *  @todo Iulian says: I think there's some outdated logic in the checker.
@@ -103,7 +102,6 @@ abstract class ICodeCheckers {
     private def posStr(p: Position) =
       if (p.isDefined) p.line.toString else "<??>"
 
-    private def indent(s: String, spaces: Int): String = indent(s, " " * spaces)
     private def indent(s: String, prefix: String): String = {
       val lines = s split "\\n"
       lines map (prefix + _) mkString "\n"
@@ -170,7 +168,6 @@ abstract class ICodeCheckers {
       val preds = bl.predecessors
 
       def hasNothingType(s: TypeStack) = s.nonEmpty && (s.head == NothingReference)
-      def hasNullType(s: TypeStack) = s.nonEmpty && (s.head == NullReference)
 
       /** XXX workaround #1: one stack empty, the other has BoxedUnit.
        *  One example where this arises is:
@@ -296,7 +293,7 @@ abstract class ICodeCheckers {
         else prefix + " with initial stack " + initial.types.mkString("[", ", ", "]")
       })
 
-      var stack = new TypeStack(initial)
+      val stack = new TypeStack(initial)
       def checkStack(len: Int) {
         if (stack.length < len)
           ICodeChecker.this.icodeError("Expected at least " + len + " elements on the stack", stack)
@@ -369,11 +366,6 @@ abstract class ICodeCheckers {
         }
       }
 
-      /** Return true if k1 is a subtype of any of the following types,
-       *  according to the somewhat relaxed subtyping standards in effect here.
-       */
-      def isOneOf(k1: TypeKind, kinds: TypeKind*) = kinds exists (k => isSubtype(k1, k))
-
       def subtypeTest(k1: TypeKind, k2: TypeKind): Unit =
         if (isSubtype(k1, k2)) ()
         else typeError(k2, k1)
@@ -421,10 +413,7 @@ abstract class ICodeCheckers {
         }
 
         /** Checks that the object passed as receiver has a method
-         *  <code>method</code> and that it is callable from the current method.
-         *
-         *  @param receiver ...
-         *  @param method   ...
+         *  `method` and that it is callable from the current method.
          */
         def checkMethod(receiver: TypeKind, method: Symbol) =
           receiver match {
@@ -475,7 +464,7 @@ abstract class ICodeCheckers {
                 subtypeTest(elem, kind)
                 pushStack(elem)
               case (a, b) =>
-                icodeError(" expected and INT and a array reference, but " +
+                icodeError(" expected an INT and an array reference, but " +
                     a + ", " + b + " found");
             }
 
@@ -494,7 +483,7 @@ abstract class ICodeCheckers {
 
          case LOAD_MODULE(module) =>
            checkBool((module.isModule || module.isModuleClass),
-                     "Expected module: " + module + " flags: " + Flags.flagsToString(module.flags));
+                     "Expected module: " + module + " flags: " + module.flagString);
            pushStack(toTypeKind(module.tpe));
 
          case STORE_THIS(kind) =>

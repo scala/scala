@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Burak Emir
  */
 
@@ -11,7 +11,6 @@ import scala.xml.{ EntityRef, Text }
 import scala.xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.StringOps.splitWhere
-import scala.language.implicitConversions
 
 /** This class builds instance of `Tree` that represent XML.
  *

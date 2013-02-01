@@ -1,11 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
-import scala.collection.mutable.ListBuffer
 import io.File
 
 /** A class representing command line info for scalac */
@@ -14,9 +13,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def this(arguments: List[String], settings: Settings, error: String => Unit) = this(arguments, settings withErrorFn error)
 
   type Setting = Settings#Setting
-
-  /** file extensions of files that the compiler can process */
-  lazy val fileEndings = Properties.fileEndings
 
   private val processArgumentsResult =
     if (shouldProcessArguments) processArguments
@@ -41,8 +37,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   """.stripMargin.trim + "\n"
 
   def shortUsage = "Usage: %s <options> <source files>" format cmdName
-  def createUsagePreface(shouldExplain: Boolean) =
-    if (shouldExplain) shortUsage + "\n" + explainAdvanced else ""
 
   /** Creates a help message for a subset of options based on cond */
   def createUsageMsg(cond: Setting => Boolean): String = {

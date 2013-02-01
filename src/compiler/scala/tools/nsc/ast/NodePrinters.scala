@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -102,7 +102,7 @@ abstract class NodePrinters {
       buf.clear()
       if (settings.XshowtreesStringified.value) buf.append(tree.toString + EOL)
       if (settings.XshowtreesCompact.value) {
-        buf.append(showRaw(tree))
+        buf.append(showRaw(tree, printIds = settings.uniqid.value, printTypes = settings.printtypes.value))
       } else {
         level = 0
         traverse(tree)
@@ -168,6 +168,13 @@ abstract class NodePrinters {
       }
     }
 
+    def typeApplyCommon(tree: Tree, fun: Tree, args: List[Tree]) {
+      printMultiline(tree) {
+        traverse(fun)
+        traverseList("[]", "type argument")(args)
+      }
+    }
+
     def treePrefix(tree: Tree) = showPosition(tree) + tree.productPrefix
     def printMultiline(tree: Tree)(body: => Unit) {
       printMultiline(treePrefix(tree), showAttributes(tree))(body)
@@ -203,9 +210,11 @@ abstract class NodePrinters {
       showPosition(tree)
 
       tree match {
-        case AppliedTypeTree(tpt, args) => applyCommon(tree, tpt, args)
-        case ApplyDynamic(fun, args)    => applyCommon(tree, fun, args)
-        case Apply(fun, args)           => applyCommon(tree, fun, args)
+        case ApplyDynamic(fun, args)      => applyCommon(tree, fun, args)
+        case Apply(fun, args)             => applyCommon(tree, fun, args)
+
+        case TypeApply(fun, args)         => typeApplyCommon(tree, fun, args)
+        case AppliedTypeTree(tpt, args)   => typeApplyCommon(tree, tpt, args)
 
         case Throw(Ident(name)) =>
           printSingle(tree, name)
@@ -312,11 +321,6 @@ abstract class NodePrinters {
           }
         case This(qual) =>
           printSingle(tree, qual)
-        case TypeApply(fun, args) =>
-          printMultiline(tree) {
-            traverse(fun)
-            traverseList("[]", "type argument")(args)
-          }
         case tt @ TypeTree() =>
           println(showTypeTree(tt))
 

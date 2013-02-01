@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -13,11 +13,6 @@ package scala.collection.parallel.mutable
 
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
-import scala.collection.GenSet
-
-
-
-
 
 /** A mutable variant of `ParSet`.
  *

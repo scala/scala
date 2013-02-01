@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -62,7 +62,7 @@ extends AbstractSeq[T]
   override def par = ParArray.handoff(array)
 
   private def elementClass: Class[_] =
-    arrayElementClass(repr.getClass)
+    arrayElementClass(array.getClass)
 
   override def toArray[U >: T : ClassTag]: Array[U] = {
     val thatElementClass = arrayElementClass(implicitly[ClassTag[U]])

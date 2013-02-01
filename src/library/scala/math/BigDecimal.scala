@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -24,12 +24,6 @@ object BigDecimal {
   private val minCached = -512
   private val maxCached = 512
   val defaultMathContext = MathContext.DECIMAL128
-
-  @deprecated("Use Long.MinValue", "2.9.0")
-  val MinLong = new BigDecimal(BigDec valueOf Long.MinValue, defaultMathContext)
-
-  @deprecated("Use Long.MaxValue", "2.9.0")
-  val MaxLong = new BigDecimal(BigDec valueOf Long.MaxValue, defaultMathContext)
 
   /** Cache ony for defaultMathContext using BigDecimals in a small range. */
   private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
