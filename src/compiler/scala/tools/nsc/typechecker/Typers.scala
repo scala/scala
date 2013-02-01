@@ -3498,12 +3498,13 @@ trait Typers extends Modes with Adaptations with Tags {
       val argDummy  = context.owner.newValue(nme.SELECTOR_DUMMY, fun.pos, SYNTHETIC) setInfo pt
       val arg       = Ident(argDummy) setType pt
 
-      val uncheckedTypeExtractor =
-        if (unappType.paramTypes.nonEmpty)
-          extractorForUncheckedType(tree.pos, unappType.paramTypes.head)
-        else None
 
       if (!isApplicableSafe(Nil, unappType, List(pt), WildcardType)) {
+        val uncheckedTypeExtractor =
+          if (unappType.paramTypes.nonEmpty)
+            extractorForUncheckedType(tree.pos, unappType.paramTypes.head)
+          else None
+
         //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
         val (freeVars, unappFormal) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
         val unapplyContext = context.makeNewScope(context.tree, context.owner)
@@ -3539,11 +3540,26 @@ trait Typers extends Modes with Adaptations with Tags {
           arg.tpe = pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
           val unapply = UnApply(fun1, args1) setPos tree.pos setType itype
 
+          // SI-6951 Use the inferred type arguments of unapply to recheck and recreate
+          //         the class tag based extractor wrapper; we might have inferred a
+          //         checkable type. If we don't do this, we can lose track of singleton types.
+          val uncheckedTypeExtractor = {
+            val inferredScrutineeType: Option[Type] = unappType.paramTypes.headOption.map { tp =>
+              val applied = treeInfo.dissectApplied(fun1)
+              val unapplyFunTpe = applied.core.tpe
+              unapplyFunTpe.paramTypes.head.subst(unapplyFunTpe.typeParams, applied.targs.map(_.tpe))
+            }
+            inferredScrutineeType flatMap (extractorForUncheckedType(tree.pos, _))
+          }
+
           // if the type that the unapply method expects for its argument is uncheckable, wrap in classtag extractor
           // skip if the unapply's type is not a method type with (at least, but really it should be exactly) one argument
           // also skip if we already wrapped a classtag extractor (so we don't keep doing that forever)
-          if (uncheckedTypeExtractor.isEmpty || fun1.symbol.owner.isNonBottomSubClass(ClassTagClass)) unapply
-          else wrapClassTagUnapply(unapply, uncheckedTypeExtractor.get, unappType.paramTypes.head)
+          val isClassTagMember = fun1.symbol.owner isNonBottomSubClass ClassTagClass
+          uncheckedTypeExtractor match {
+            case Some(extractor) if !isClassTagMember => wrapClassTagUnapply(unapply, extractor, unappType.paramTypes.head)
+            case _                                    => unapply
+          }
         }
       }
     }
@@ -3581,14 +3597,20 @@ trait Typers extends Modes with Adaptations with Tags {
           None
 
         case ptCheckable if infer.containsUnchecked(ptCheckable) =>
-          val classTagExtractor = resolveClassTag(pos, ptCheckable)
+          // We disallow materialization to prevent summoning ClassTag[Outer#Inner]
+          // to satify the ClassTag[T#Inner] in:
+          //
+          // class Outer { class Inner }
+          // object Extractor { def unapply[T <: Outer](t: T#Inner) = ...
+          //
+          val classTagExtractor = resolveClassTag(pos, ptCheckable, allowMaterialization = false)
 
           if (classTagExtractor != EmptyTree && unapplyMember(classTagExtractor.tpe) != NoSymbol)
             Some(classTagExtractor)
           else None
 
         case _ => None
-    }
+      }
     }
 
     /**
