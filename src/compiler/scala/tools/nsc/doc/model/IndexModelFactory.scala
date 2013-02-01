@@ -20,7 +20,7 @@ object IndexModelFactory {
         /* Owner template ordering */
         implicit def orderingSet = math.Ordering.String.on { x: MemberEntity => x.name.toLowerCase }
         /* symbol name ordering */
-        implicit def orderingMap = math.Ordering.String.on { x: String => x.toLowerCase }
+        implicit def orderingMap = math.Ordering.String
 
         def addMember(d: MemberEntity) = {
           val firstLetter = {
