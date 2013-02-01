@@ -760,10 +760,14 @@ trait ContextErrors {
             else " of " + expanded.getClass
         ))
 
-      def MacroImplementationNotFoundError(expandee: Tree) =
-        macroExpansionError(expandee,
+      def MacroImplementationNotFoundError(expandee: Tree) = {
+        val message =
           "macro implementation not found: " + expandee.symbol.name + " " +
-          "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)")
+          "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)" +
+          (if (forScaladoc) ". When generating scaladocs for multiple projects at once, consider using -Ymacro-no-expand to disable macro expansions altogether."
+           else "")
+        macroExpansionError(expandee, message)
+      }
     }
   }
 
