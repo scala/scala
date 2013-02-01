@@ -12,6 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
+import annotation.tailrec
 
 /** A simple mutable map backed by a list.
  *
@@ -47,13 +48,17 @@ extends AbstractMap[A, B]
 
   def get(key: A): Option[B] = elems find (_._1 == key) map (_._2)
   def iterator: Iterator[(A, B)] = elems.iterator
-  def += (kv: (A, B)) = { elems = remove(kv._1, elems); elems = kv :: elems; siz += 1; this }
-  def -= (key: A) = { elems = remove(key, elems); this }
 
-  private def remove(key: A, elems: List[(A, B)]): List[(A, B)] =
-    if (elems.isEmpty) elems
-    else if (elems.head._1 == key) { siz -= 1; elems.tail }
-    else elems.head :: remove(key, elems.tail)
+  def += (kv: (A, B)) = { elems = remove(kv._1, elems, List()); elems = kv :: elems; siz += 1; this }
+  def -= (key: A) = { elems = remove(key, elems, List()); this }
+
+  @tailrec
+  private def remove(key: A, elems: List[(A, B)], acc: List[(A, B)]): List[(A, B)] = {
+    if (elems.isEmpty) acc
+    else if (elems.head._1 == key) { siz -= 1; acc ::: elems.tail }
+    else remove(key, elems.tail, elems.head :: acc)
+  }
+
 
   override def clear() = { elems = List(); siz = 0 }
   override def size: Int = siz
