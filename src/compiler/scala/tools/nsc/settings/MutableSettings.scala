@@ -221,6 +221,7 @@ class MutableSettings(val errorFn: String => Unit)
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
+  def ScalaVersionSetting(name: String, arg: String, descr: String, default: ScalaVersion) = add(new ScalaVersionSetting(name, arg, descr, default))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
     val prepend = StringSetting(name + "/p", "", "", "").internalOnly()
     val append = StringSetting(name + "/a", "", "", "").internalOnly()
@@ -484,6 +485,35 @@ class MutableSettings(val errorFn: String => Unit)
     def unparse: List[String] = if (value == default) Nil else List(name, value)
 
     withHelpSyntax(name + " <" + arg + ">")
+  }
+
+  /** A setting represented by a Scala version, (`default` unless set) */
+  class ScalaVersionSetting private[nsc](
+    name: String,
+    val arg: String,
+    descr: String,
+    default: ScalaVersion)
+  extends Setting(name, descr) {
+    import ScalaVersion._
+    
+    type T = ScalaVersion
+    protected var v: T = NoScalaVersion
+
+    override def tryToSet(args: List[String]) = {
+      value = default
+      Some(args)
+    }
+    
+    override def tryToSetColon(args: List[String]) = args match {
+      case Nil      => value = default; Some(Nil)
+      case x :: xs  => value = ScalaVersion(x, errorFn) ; Some(xs)
+    }
+    
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(List(s))
+    
+    def unparse: List[String] = if (value == NoScalaVersion) Nil else List(s"${name}:${value.unparse}")
+
+    withHelpSyntax(s"${name}:<${arg}>")
   }
 
   class PathSetting private[nsc](

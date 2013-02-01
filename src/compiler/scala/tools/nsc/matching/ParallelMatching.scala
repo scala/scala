@@ -15,6 +15,7 @@ import symtab.Flags
 import mutable.ListBuffer
 import scala.annotation.elidable
 import scala.language.postfixOps
+import scala.tools.nsc.settings.ScalaVersion
 
 trait ParallelMatching extends ast.TreeDSL
       with MatchSupport
@@ -821,7 +822,7 @@ trait ParallelMatching extends ast.TreeDSL
       // match that's unimportant; so we add an instance check only if there
       // is a binding.
       def bindingWarning() = {
-        if (isBound && settings.Xmigration28.value) {
+        if (isBound && settings.Xmigration.value < ScalaVersion.twoDotEight) {
           cunit.warning(scrutTree.pos,
             "A bound pattern such as 'x @ Pattern' now matches fewer cases than the same pattern with no binding.")
         }
