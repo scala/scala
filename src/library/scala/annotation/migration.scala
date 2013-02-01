@@ -17,7 +17,8 @@ package scala.annotation
  * order between Scala 2.7 and 2.8.
  *
  * @param message A message describing the change, which is emitted
- * by the compiler if the flag `-Xmigration` is set.
+ * by the compiler if the flag `-Xmigration` indicates a version 
+ * prior to the changedIn version.
  *
  * @param changedIn The version, in which the behaviour change was
  * introduced.
