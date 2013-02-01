@@ -48,14 +48,20 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
       </div>
     </body>
 
-  def letters: NodeSeq = {
-    val xs = index.firstLetterIndex.keys.toSeq
-    xs.sorted map {
-      c => <a target="template" href={ "index/index-" + c + ".html" }>{
-        if (c == '_') '#' else c.toUpper
-      }</a>
+  def letters: NodeSeq =
+    '_' +: ('a' to 'z') map {
+      char => {
+        val label = if (char == '_') '#' else char.toUpper
+
+        index.firstLetterIndex.get(char) match {
+          case Some(_) =>
+            <a target="template" href={ "index/index-" + char + ".html" }>{
+              label
+            }</a>
+          case None => <span>{ label }</span>
+        }
+      }
     }
-  }
 
   def browser =
     <div id="browser" class="ui-layout-west">
