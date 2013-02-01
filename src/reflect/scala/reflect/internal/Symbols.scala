@@ -893,6 +893,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInitialized: Boolean =
       validTo != NoPeriod
 
+    /** Some completers call sym.setInfo when still in-flight and then proceed with initialization (e.g. see LazyPackageType)
+     *  setInfo sets _validTo to current period, which means that after a call to setInfo isInitialized will start returning true.
+     *  Unfortunately, this doesn't mean that info becomes ready to be used, because subsequent initialization might change the info.
+     *  Therefore we need this method to distinguish between initialized and really initialized symbol states.
+     */
+    final def isFullyInitialized: Boolean = _validTo != NoPeriod && (flags & LOCKED) == 0
+
     /** Can this symbol be loaded by a reflective mirror?
      *
      *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
