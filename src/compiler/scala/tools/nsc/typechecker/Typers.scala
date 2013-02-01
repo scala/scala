@@ -2069,7 +2069,7 @@ trait Typers extends Modes with Adaptations with Tags {
       val sym = vdef.symbol
       val valDefTyper = {
         val maybeConstrCtx =
-          if (sym.isParameter && sym.owner.isConstructor) context.makeConstructorContext
+          if ((sym.isParameter || sym.isEarlyInitialized) && sym.owner.isConstructor) context.makeConstructorContext
           else context
         newTyper(maybeConstrCtx.makeNewScope(vdef, sym))
       }
