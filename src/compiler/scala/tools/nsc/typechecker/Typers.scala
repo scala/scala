@@ -2437,7 +2437,7 @@ trait Typers extends Adaptations with Tags {
         // but not in real life (i.e., now that's we've reset the method's type skolems'
         //   infos back to their pre-GADT-constraint state)
         if (isFullyDefined(pt) && !(body1.tpe <:< pt))
-          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.normalize))
+          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.dealiasWiden))
 
       }
 
@@ -2507,7 +2507,7 @@ trait Typers extends Adaptations with Tags {
      */
     def synthesizePartialFunction(paramName: TermName, paramPos: Position, tree: Tree, mode: Mode, pt: Type): Tree = {
       assert(pt.typeSymbol == PartialFunctionClass, s"PartialFunction synthesis for match in $tree requires PartialFunction expected type, but got $pt.")
-      val targs = pt.normalize.typeArgs
+      val targs = pt.dealiasWiden.typeArgs
 
       // if targs.head isn't fully defined, we can translate --> error
       targs match {
@@ -2665,10 +2665,10 @@ trait Typers extends Adaptations with Tags {
 
       def decompose(pt: Type): (Symbol, List[Type], Type) =
         if ((isFunctionType(pt) || (pt.typeSymbol == PartialFunctionClass && numVparams == 1 && fun.body.isInstanceOf[Match])) && // see bug901 for a reason why next conditions are needed
-            (  pt.normalize.typeArgs.length - 1 == numVparams
+            (  pt.dealiasWiden.typeArgs.length - 1 == numVparams
             || fun.vparams.exists(_.tpt.isEmpty)
             ))
-          (pt.typeSymbol, pt.normalize.typeArgs.init, pt.normalize.typeArgs.last)
+          (pt.typeSymbol, pt.dealiasWiden.typeArgs.init, pt.dealiasWiden.typeArgs.last)
         else
           (FunctionClass(numVparams), fun.vparams map (x => NoType), WildcardType)
 
@@ -3316,7 +3316,7 @@ trait Typers extends Adaptations with Tags {
 
       if (fun1.tpe.isErroneous) duplErrTree
       else {
-        val resTp     = fun1.tpe.finalResultType.normalize
+        val resTp     = fun1.tpe.finalResultType.dealiasWiden
         val nbSubPats = args.length
 
         val (formals, formalsExpanded) = extractorFormalTypes(fun0.pos, resTp, nbSubPats, fun1.symbol)
@@ -3364,7 +3364,7 @@ trait Typers extends Adaptations with Tags {
     def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (isPastTyper) None else {
       // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
       // but at least make a proper type before passing it elsewhere
-      val pt1 = pt.dealias match {
+      val pt1 = pt.dealiasWiden match {
         case tr @ TypeRef(pre, sym, args) if args.nonEmpty => copyTypeRef(tr, pre, sym, sym.typeParams map (_.tpeHK)) // replace actual type args with dummies
         case pt1                                           => pt1
       }
@@ -4209,7 +4209,7 @@ trait Typers extends Adaptations with Tags {
           if (newPatternMatching && (pt.typeSymbol == PartialFunctionClass))
             synthesizePartialFunction(newTermName(context.unit.fresh.newName("x")), tree.pos, tree, mode, pt)
           else {
-            val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
+            val arity = if (isFunctionType(pt)) pt.dealiasWiden.typeArgs.length - 1 else 1
             val params = for (i <- List.range(0, arity)) yield
               atPos(tree.pos.focusStart) {
                 ValDef(Modifiers(PARAM | SYNTHETIC),

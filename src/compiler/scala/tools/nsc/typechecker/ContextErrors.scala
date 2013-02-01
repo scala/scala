@@ -153,7 +153,7 @@ trait ContextErrors {
         // members present, then display along with the expected members. This is done here because
         // this is the last point where we still have access to the original tree, rather than just
         // the found/req types.
-        val foundType: Type = req.normalize match {
+        val foundType: Type = req.dealiasWiden match {
           case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
             val retyped    = typed (tree.duplicate.clearType())
             val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
