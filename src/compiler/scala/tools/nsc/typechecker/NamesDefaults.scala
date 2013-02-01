@@ -268,26 +268,32 @@ trait NamesDefaults { self: Analyzer =>
      *
      * For by-name parameters, create a value
      *  x$n: () => T = () => arg
+     *
+     * For Ident(<unapply-selector>) arguments, no ValDef is created (SI-3353).
      */
-    def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[ValDef] = {
+    def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[Option[ValDef]] = {
       val context = blockTyper.context
-      val symPs = map2(args, paramTypes)((arg, tpe) => {
-        val byName   = isByNameParamType(tpe)
-        val repeated = isScalaRepeatedParamType(tpe)
-        val argTpe = (
-          if (repeated) arg match {
-            case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
-            case _                                       => seqType(arg.tpe)
-          }
-          else arg.tpe
-        ).widen // have to widen or types inferred from literal defaults will be singletons
-        val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
-          if (byName) functionType(Nil, argTpe) else argTpe
-        )
-        (context.scope.enter(s), byName, repeated)
+      val symPs = map2(args, paramTypes)((arg, tpe) => arg match {
+        case Ident(nme.SELECTOR_DUMMY) =>
+          None // don't create a local ValDef if the argument is <unapply-selector>
+        case _ =>
+          val byName   = isByNameParamType(tpe)
+          val repeated = isScalaRepeatedParamType(tpe)
+          val argTpe = (
+            if (repeated) arg match {
+              case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
+              case _                                       => seqType(arg.tpe)
+            }
+            else arg.tpe
+            ).widen // have to widen or types inferred from literal defaults will be singletons
+          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
+              if (byName) functionType(Nil, argTpe) else argTpe
+              )
+          Some((context.scope.enter(s), byName, repeated))
       })
       map2(symPs, args) {
-        case ((sym, byName, repeated), arg) =>
+        case (None, _) => None
+        case (Some((sym, byName, repeated)), arg) =>
           val body =
             if (byName) {
               val res = blockTyper.typed(Function(List(), arg))
@@ -303,7 +309,7 @@ trait NamesDefaults { self: Analyzer =>
                   blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
               } else arg
             }
-          atPos(body.pos)(ValDef(sym, body).setType(NoType))
+          Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))
       }
     }
 
@@ -329,27 +335,29 @@ trait NamesDefaults { self: Analyzer =>
             // ValDef's in the block), change the arguments to these local values.
             case Apply(expr, typedArgs) =>
               // typedArgs: definition-site order
-              val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, false, false)
+              val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, removeByName = false, removeRepeated = false)
               // valDefs: call-site order
               val valDefs = argValDefs(reorderArgsInv(typedArgs, argPos),
                                        reorderArgsInv(formals, argPos),
                                        blockTyper)
               // refArgs: definition-site order again
-              val refArgs = map2(reorderArgs(valDefs, argPos), formals)((vDef, tpe) => {
-                val ref = gen.mkAttributedRef(vDef.symbol)
-                atPos(vDef.pos.focus) {
-                  // for by-name parameters, the local value is a nullary function returning the argument
-                  tpe.typeSymbol match {
-                    case ByNameParamClass   => Apply(ref, Nil)
-                    case RepeatedParamClass => Typed(ref, Ident(tpnme.WILDCARD_STAR))
-                    case _                  => ref
+              val refArgs = map3(reorderArgs(valDefs, argPos), formals, typedArgs)((vDefOpt, tpe, origArg) => vDefOpt match {
+                case None => origArg
+                case Some(vDef) =>
+                  val ref = gen.mkAttributedRef(vDef.symbol)
+                  atPos(vDef.pos.focus) {
+                    // for by-name parameters, the local value is a nullary function returning the argument
+                    tpe.typeSymbol match {
+                      case ByNameParamClass   => Apply(ref, Nil)
+                      case RepeatedParamClass => Typed(ref, Ident(tpnme.WILDCARD_STAR))
+                      case _                  => ref
+                    }
                   }
-                }
               })
               // cannot call blockTyper.typedBlock here, because the method expr might be partially applied only
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
               res.setPos(res.pos.makeTransparent)
-              val block = Block(stats ::: valDefs, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
+              val block = Block(stats ::: valDefs.flatten, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
               context.namedApplyBlockInfo =
                 Some((block, NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper)))
               block
