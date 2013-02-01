@@ -800,7 +800,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 
       protected lazy val rawSubPatTypes =
         if (resultInMonad.typeSymbol eq UnitClass) Nil
-        else if(nbSubPats == 1)                    List(resultInMonad)
+        else if(!isSeq && nbSubPats == 1)          List(resultInMonad)
         else getProductArgs(resultInMonad) match {
           case Nil => List(resultInMonad)
           case x   => x
