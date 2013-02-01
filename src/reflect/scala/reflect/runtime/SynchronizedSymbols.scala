@@ -29,27 +29,16 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedSymbol extends Symbol {
 
-    override def rawflags = gilSynchronized { super.rawflags }
-    override def rawflags_=(x: Long) = gilSynchronized { super.rawflags_=(x) }
+    def gilSynchronizedIfNotInited[T](body: => T): T = {
+      if (isFullyInitialized) body
+      else gilSynchronized { body }
+    }
 
-    override def rawowner = gilSynchronized { super.rawowner }
-    override def owner_=(owner: Symbol) = gilSynchronized { super.owner_=(owner) }
+    override def validTo = gilSynchronizedIfNotInited { super.validTo }
+    override def info = gilSynchronizedIfNotInited { super.info }
+    override def rawInfo: Type = gilSynchronizedIfNotInited { super.rawInfo }
 
-    override def validTo = gilSynchronized { super.validTo }
-    override def validTo_=(x: Period) = gilSynchronized { super.validTo_=(x) }
-
-    override def pos = gilSynchronized { super.pos }
-    override def setPos(pos: Position): this.type = { gilSynchronized { super.setPos(pos) }; this }
-
-    override def privateWithin = gilSynchronized { super.privateWithin }
-    override def privateWithin_=(sym: Symbol) = gilSynchronized { super.privateWithin_=(sym) }
-
-    override def info = gilSynchronized { super.info }
-    override def info_=(info: Type) = gilSynchronized { super.info_=(info) }
-    override def updateInfo(info: Type): Symbol = gilSynchronized { super.updateInfo(info) }
-    override def rawInfo: Type = gilSynchronized { super.rawInfo }
-
-    override def typeParams: List[Symbol] = gilSynchronized {
+    override def typeParams: List[Symbol] = gilSynchronizedIfNotInited {
       if (isCompilerUniverse) super.typeParams
       else {
         if (isMonomorphicType) Nil
@@ -65,21 +54,13 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
         }
       }
     }
-    override def unsafeTypeParams: List[Symbol] = gilSynchronized {
+    override def unsafeTypeParams: List[Symbol] = gilSynchronizedIfNotInited {
       if (isCompilerUniverse) super.unsafeTypeParams
       else {
         if (isMonomorphicType) Nil
         else rawInfo.typeParams
       }
     }
-
-    override def reset(completer: Type): this.type = gilSynchronized { super.reset(completer) }
-
-    override def infosString: String = gilSynchronized { super.infosString }
-
-    override def annotations: List[AnnotationInfo] = gilSynchronized { super.annotations }
-    override def setAnnotations(annots: List[AnnotationInfo]): this.type = { gilSynchronized { super.setAnnotations(annots) }; this }
-
 
 // ------ creators -------------------------------------------------------------------
 
@@ -128,41 +109,26 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
 // ------- subclasses ---------------------------------------------------------------------
 
-  trait SynchronizedTermSymbol extends TermSymbol with SynchronizedSymbol {
-    override def name_=(x: Name) = gilSynchronized { super.name_=(x) }
-    override def rawname = gilSynchronized { super.rawname }
-    override def referenced: Symbol = gilSynchronized { super.referenced }
-    override def referenced_=(x: Symbol) = gilSynchronized { super.referenced_=(x) }
-  }
+  trait SynchronizedTermSymbol extends SynchronizedSymbol
 
   trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
-    override def typeAsMemberOf(pre: Type): Type = gilSynchronized { super.typeAsMemberOf(pre) }
-    override def paramss: List[List[Symbol]] = gilSynchronized { super.paramss }
-    override def returnType: Type = gilSynchronized { super.returnType }
+    // we can keep this lock fine-grained, because it's just a cache over asSeenFrom, which makes deadlocks impossible
+    // unfortunately we cannot elide this lock, because the cache depends on `pre`
+    private lazy val typeAsMemberOfLock = new Object
+    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotInited { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
   }
+
+  trait SynchronizedModuleSymbol extends ModuleSymbol with SynchronizedTermSymbol
 
   trait SynchronizedTypeSymbol extends TypeSymbol with SynchronizedSymbol {
-    override def name_=(x: Name) = gilSynchronized { super.name_=(x) }
-    override def rawname = gilSynchronized { super.rawname }
-    override def typeConstructor: Type = gilSynchronized { super.typeConstructor }
-    override def tpe_* : Type = gilSynchronized { super.tpe_* }
-    override def tpeHK : Type = gilSynchronized { super.tpeHK }
+    // unlike with typeConstructor, a lock is necessary here, because tpe calculation relies on
+    // temporarily assigning NoType to tpeCache to detect cyclic reference errors
+    private lazy val tpeLock = new Object
+    override def tpe_* : Type = gilSynchronizedIfNotInited { tpeLock.synchronized { super.tpe_* } }
   }
 
-  trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol {
-    override def associatedFile = gilSynchronized { super.associatedFile }
-    override def associatedFile_=(f: AbstractFile) = gilSynchronized { super.associatedFile_=(f) }
-    override def thisSym: Symbol = gilSynchronized { super.thisSym }
-    override def thisType: Type = gilSynchronized { super.thisType }
-    override def typeOfThis: Type = gilSynchronized { super.typeOfThis }
-    override def typeOfThis_=(tp: Type) = gilSynchronized { super.typeOfThis_=(tp) }
-    override def children = gilSynchronized { super.children }
-    override def addChild(sym: Symbol) = gilSynchronized { super.addChild(sym) }
-  }
+  trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol
 
-  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
-    override def sourceModule = gilSynchronized { super.sourceModule }
-    override def implicitMembers: Scope = gilSynchronized { super.implicitMembers }
-  }
+  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol
 }
 

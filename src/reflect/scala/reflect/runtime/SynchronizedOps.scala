@@ -44,7 +44,7 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
     // we can keep this lock fine-grained, because methods of Scope don't do anything extraordinary, which makes deadlocks impossible
     // fancy subclasses of internal.Scopes#Scope should do synchronization themselves (e.g. see PackageScope for an example)
     private lazy val syncLock = new Object
-    def syncLockSynchronized[T](body: => T): T = syncLock.synchronized { body }
+    def syncLockSynchronized[T](body: => T): T = if (isCompilerUniverse) body else syncLock.synchronized { body }
     override def isEmpty: Boolean = syncLockSynchronized { super.isEmpty }
     override def size: Int = syncLockSynchronized { super.size }
     override def enter[T <: Symbol](sym: T): T = syncLockSynchronized { super.enter(sym) }

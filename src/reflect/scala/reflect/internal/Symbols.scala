@@ -951,6 +951,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInitialized: Boolean =
       validTo != NoPeriod
 
+    /** Some completers call sym.setInfo when still in-flight and then proceed with initialization (e.g. see LazyPackageType)
+     *  setInfo sets _validTo to current period, which means that after a call to setInfo isInitialized will start returning true.
+     *  Unfortunately, this doesn't mean that info becomes ready to be used, because subsequent initialization might change the info.
+     *  Therefore we need this method to distinguish between initialized and really initialized symbol states.
+     */
+    final def isFullyInitialized: Boolean = _validTo != NoPeriod && (flags & LOCKED) == 0
+
     /** Can this symbol be loaded by a reflective mirror?
      *
      *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
@@ -3129,8 +3136,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def thisType: Type = {
       val period = thisTypePeriod
       if (period != currentPeriod) {
-        thisTypePeriod = currentPeriod
         if (!isValid(period)) thisTypeCache = ThisType(this)
+        thisTypePeriod = currentPeriod
       }
       thisTypeCache
     }
@@ -3218,9 +3225,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def typeOfThis = {
       val period = typeOfThisPeriod
       if (period != currentPeriod) {
-        typeOfThisPeriod = currentPeriod
         if (!isValid(period))
           typeOfThisCache = singleType(owner.thisType, sourceModule)
+        typeOfThisPeriod = currentPeriod
       }
       typeOfThisCache
     }
@@ -3231,9 +3238,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // Skip a package object class, because the members are also in
         // the package and we wish to avoid spurious ambiguities as in pos/t3999.
         if (!isPackageObjectClass) {
+          implicitMembersCacheValue = tp.implicitMembers
           implicitMembersCacheKey1 = tp
           implicitMembersCacheKey2 = tp.decls.elems
-          implicitMembersCacheValue = tp.implicitMembers
         }
       }
       implicitMembersCacheValue
