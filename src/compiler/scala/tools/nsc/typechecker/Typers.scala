@@ -4452,58 +4452,74 @@ trait Typers extends Modes with Adaptations with Tags {
                   if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
                   reportError
           }
-          // first try underscored_fun: script a becomes method _a
+          var  err_scriptResolution: AbsTypeError = null
+          var  err_methodResolution: AbsTypeError = null
+          var tree_scriptResolution: Tree = null
+          var tree_methodResolution: Tree = null
+          
+          // resolve script and method calls
+          // Note: : a script named "a" becomes method "_a"
+          //
+          // - script call: a(here.toString) ===> _call  {here=>(_a(here.toString))(here)}
+          // - mednot call: a(here.toString) ===> _normal{here=>  a(here.toString)}
+
+          // first try a script call
+          
           val underscored_fun = fun match {
             case Ident(name) => Ident(underscore_name(name))
             case Select(qual, selector) =>  Select(qual, underscore_name(selector))
           }
-          var isScriptCall = true
           
-          silent(op => op.typed(underscored_fun, forFunMode(mode), funpt).orElse {isScriptCall = false
-                       op.typed(            fun, forFunMode(mode), funpt) } ,
+          silent(op => op.typed(underscored_fun, forFunMode(mode), funpt),
+                 if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
+                 if ((mode & EXPRmode) != 0) tree  else context.tree) match {
+            case SilentResultValue(fun1) =>
+              
+              val nodeType     = sSubScriptVM_N_call
+              val fun_template = sSubScriptDSL_call
+              val tree1        = Apply( fun1, args)             // _a(here.toString)
+              val tree2        = Apply(tree1, List(here_Ident)) // (_a(here.toString))(here)
+             
+              // blockToFunction adds "here" to the context
+              val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>(_a(here.toString))(here)
+              val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_a(here.toString))(here)}
+
+              // by now the ScriptApply has been rewritten into 3 nested normal Apply's, so this can be typed:
+              tree_scriptResolution = typed(apply_template)
+              
+            case SilentTypeError(err) => err_scriptResolution = err
+          }
+          
+          // next try a method call
+          
+          silent(op => op.typed(            fun, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
             case SilentResultValue(fun1) =>
-              val fun2 = fun1 // was:  if (stableApplication) ... else fun1
-              if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
-              def isImplicitMethod(tpe: Type) = tpe match {
-                case mt: MethodType => mt.isImplicit
-                case _ => false
-              }
-              val useTry = (
-                   !isPastTyper
-                && fun2.isInstanceOf[Select]
-                && !isImplicitMethod(fun2.tpe)
-                && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
-                && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
-              )
-              val resolvedMethod = // TBD note: the resolution should be done in a context with "here"
-                if (useTry) tryTypedApply(fun2, args)
-                else doTypedApply(tree, fun2, args, mode, pt)
+              
+              val nodeType    : Tree = sSubScriptVM_N_code_normal
+              val fun_template: Tree = sSubScriptDSL_N_code_normal
+              val tree1       : Tree = Apply(fun1, args) //a(here.toString)
+              var tree2       : Tree = tree1
+              
+              // blockToFunction adds "here" to the context
+              val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>a(here.toString)
+              val apply_template        = Apply(fun_template, List(function_here_to_code)) // _normal{here=>  a(here.toString)}
 
-              var nodeType    : Tree = null
-              var fun_template: Tree = null
-              var block       : Tree = null
+              // by now the ScriptApply has been rewritten into 2 or 3 nested Applies, so this can be typed:
+              tree_methodResolution = typed(apply_template)
               
-              if (isScriptCall) {
-                nodeType     = sSubScriptVM_N_call
-                fun_template = sSubScriptDSL_call
-                block        = Apply(resolvedMethod, List(here_Ident))
-              } 
-              else {
-                nodeType     = sSubScriptVM_N_code_normal
-                fun_template = sSubScriptDSL_N_code_normal
-                block        = resolvedMethod
-              }
-             
-              // blockToFunction adds "here" to the context. A little late; the application cannot use "here" for a parameter of the call
-              val function_node_to_code = blockToFunction(block, nodeType, tree.pos)
-              val apply_template = Apply(fun_template, List(function_node_to_code))
-              typed(apply_template)
-              
-            case SilentTypeError(err) =>
-              onError({issue(err); setError(tree)})
+            case SilentTypeError(err) => err_methodResolution = err
           }
+          if   (tree_scriptResolution != null) {
+            if (tree_methodResolution != null) {
+              val err = AmbiguousTypeError(tree, tree.pos, "call may be both to a script and a method") 
+              onError({issue(err); setError(tree)})
+            }
+            else tree_scriptResolution
+          }
+          else if (tree_methodResolution != null) tree_methodResolution
+          else {onError({issue(err_scriptResolution); setError(tree)})} // ignore err_methodResolution
       }
 
       // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)

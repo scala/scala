@@ -83,10 +83,10 @@ trait Scanners extends ScannersCommon {
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
     
-    var isInSubScript            = false
+    var isInSubScript_script     = false
     var isInSubScript_header     = false
-    var isInSubScript_block      = false
-    def isInSubScript_expression = isInSubScript && !isInSubScript_header
+    var isInSubScript_nativeCode      = false
+    def isInSubScript_expression = isInSubScript_script && !isInSubScript_header && !isInSubScript_nativeCode
 
     def isAtEnd = charOffset >= buf.length
 
@@ -367,7 +367,7 @@ trait Scanners extends ScannersCommon {
         case '!' | '^' | '*' | '?' =>
           val chOld = ch
           nextChar()
-          if (isInSubScript_block && ch=='}') {
+          if (isInSubScript_nativeCode && ch=='}') {
             nextChar()
             token = chOld match {
               case '!' => RBRACE_EMARK
@@ -465,12 +465,12 @@ trait Scanners extends ScannersCommon {
           nextChar()
           if ('0' <= ch && ch <= '9') {putChar('.'); getFraction()}
           else                   {            token = DOT }
-          if (isInSubScript) {
+          if (isInSubScript_script) {
                  if  (ch == '.') {nextChar()
                   if (ch == '.') {nextChar(); token = DOT3}
                   else           {            token = DOT2}}
           } 
-          else if (isInSubScript_block) {
+          else if (isInSubScript_nativeCode) {
                  if  (ch == '}') {nextChar(); token = RBRACE_DOT}
             else if  (ch == '.') {nextChar()
                   if (ch == '.') {nextChar()
@@ -479,7 +479,7 @@ trait Scanners extends ScannersCommon {
                   else           {syntaxError( "'..' unexpected")}}
           } 
         case '{' => nextChar(); token = LBRACE
-          if (isInSubScript) {
+          if (isInSubScript_script) {
             (ch: @switch) match {
               case '?' => nextChar(); token = LBRACE_QMARK
               case '!' => nextChar(); token = LBRACE_EMARK
@@ -494,7 +494,7 @@ trait Scanners extends ScannersCommon {
             }
           }
         case '(' => nextChar(); token = LPAREN
-          if (isInSubScript) { // (+)  (-)  (+-)  (;)
+          if (isInSubScript_script) { // (+)  (-)  (+-)  (;)
             var isSpecialOperand = false            
             val lookahead = lookaheadReader
             lookahead.nextChar()
@@ -516,7 +516,7 @@ trait Scanners extends ScannersCommon {
             }
           }          
         case ')' => nextChar(); token = RPAREN
-        case ';' => if (!isInSubScript) {nextChar(); token = SEMI}
+        case ';' => if (!isInSubScript_script) {nextChar(); token = SEMI}
                     else   {putChar(ch); nextChar(); getOperatorRest()}
         case ',' => nextChar(); token = COMMA
         case '}' => nextChar(); token = RBRACE
@@ -666,7 +666,7 @@ trait Scanners extends ScannersCommon {
              '>' | '?' | ':' | '=' | '&' |
              '|' | '\\'                  =>      putChar(ch); nextChar(); getOperatorRest()
         case _ => if (isSpecial(ch)
-                  ||  isInSubScript && ch==';') {putChar(ch); nextChar(); getOperatorRest()}
+                  ||  isInSubScript_script && ch==';') {putChar(ch); nextChar(); getOperatorRest()}
                   else finishNamed()
       }
     }

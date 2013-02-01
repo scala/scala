@@ -430,8 +430,8 @@ self =>
 /* ------------- ERROR HANDLING ------------------------------------------- */
 
     val assumedClosingParens = mutable.Map (RPAREN          -> 0, 
-									        RBRACKET        -> 0, 
-									        RBRACE          -> 0,
+                                            RBRACKET        -> 0, 
+                                            RBRACE          -> 0,
                                             RBRACE_DOT      -> 0,
                                             RBRACE_DOT3     -> 0,
                                             RBRACE_QMARK    -> 0,
@@ -607,7 +607,7 @@ self =>
 
     def isTokenAClosingBrace(token: Int): Boolean = 
       if (token==RBRACE) true
-      else if (!in.isInSubScript_block) false
+      else if (!in.isInSubScript_nativeCode) false
       else token match {
       case RBRACE_DOT     
          | RBRACE_DOT3    
@@ -1172,6 +1172,8 @@ self =>
     
     val  script_Name  = newTermName("_script")
     val    here_Name  = newTermName("here")
+    val      at_Name  = newTermName("at")
+    val   value_Name  = newTermName("value")
     val   there_Name  = newTermName("there")
     val    tmp1_Name  = newTermName("$tmp1")
     val            bind_inParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~"))
@@ -1250,11 +1252,10 @@ self =>
       case _ => false
     }
     
-    @inline final def inSubscriptParens[T](body: => T): T = {
-      accept(LPAREN); val wasInSubscript = in.isInSubScript; 
-                        in.isInSubScript = false;           val ret = body; 
-                        in.isInSubScript =   wasInSubscript; 
-      accept(RPAREN);                                           ret
+    @inline final def inSubscriptArgumentParens[T](body: => T): T = {
+      accept(LPAREN); in.isInSubScript_nativeCode =  true; val ret = body 
+                      in.isInSubScript_nativeCode = false 
+      accept(RPAREN);                                          ret
     }
     def  makeParameterTransferFunction(exp   : Tree): Tree = {
       val vparams = List(
@@ -1274,10 +1275,11 @@ self =>
       else             Apply(sActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
     }
       
-    def    makeActualAdaptingParameter(formalParam: Name, constraint: Tree = null): Tree = {
-            Apply(sActualAdaptingParameter, List(Ident(formalParam), constraint))
+    def    makeActualAdaptingParameter(paramName: Name, constraint: Tree = null): Tree = {
+            Apply(sActualAdaptingParameter, List(Ident(newTermName(underscore_prefix(paramName.toString))), constraint))
     }
     def underscore_prefix(s: String) = "_"+s
+	def underscore_TermName(n: TermName) = newTermName(underscore_prefix(n.toString))
 
     /*
      * Enclose the given block with a function with parameter "here" of the given node type 
@@ -1492,14 +1494,21 @@ self =>
       accept(RPAREN); scriptExpressionParenthesesNestingLevel -= 1; ret
     }
     
+    // the following aims to provide a context for Script data.
+    // it is a quick hack; 
+    // context sensitive transformations should be moved to a later compiler phase
+    var scriptFormalParameters = new ListBuffer[ValDef]
+    var scriptLocalVariables   = new ListBuffer[ValDef] // should be in a context stack; now the scope becomes too big 
+    var scriptLocalValues      = new ListBuffer[ValDef]
     
     def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
-      in.isInSubScript        = true
+      in.isInSubScript_script = true
       in.isInSubScript_header = true
       in.nextToken
       val result = new ListBuffer[Tree]
       val doMultipleScripts = in.token == DOT2
       if (doMultipleScripts) {
+        // TBD: forbid tab characters in such sections, at least in script headers and in top level script expressions
         in.nextToken()
         while (in.token==NEWLINE) {
           in.nextToken()
@@ -1546,6 +1555,11 @@ self =>
 		            scriptExpr()
 		          }
 		        
+		        
+		        // so far for the parsing.
+		        // now the parsed script is turned into a method.
+		        // this part should be brought to a later compiler phase, before typer
+		        
                 // insert the _script(this, 'vkey, _k~??'k) part
 		        // the parameter bindings such as _k~??'k are a little complicated
 		        val underscored_param_defs_and_bindings: List[(ValDef, Tree)] = if (vparamss.isEmpty) Nil
@@ -1562,22 +1576,52 @@ self =>
 		                (makeParam(underscored_p_name, p.tpt), Apply(select, List(pSym)))
 		              }
 		            }
+		        // now all parameters and local values should be available in the list buffers.
+		        // transform the tree so that the identifiers are replaced appropriately
+		        // Note: actual adapting parameters have already got an underscore in their name prefix (...)
+		        // so these will not be found in the scriptFormalParameters list etc.
+		        val scriptLocalDataTransformer = new Transformer {
+		          override def transform(tree: Tree): Tree = tree match {
+		            case ident @ Ident(name) => 
+		              if      (scriptFormalParameters.contains(name)) atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), value_Name)} // _p.value
+		              else if (scriptLocalVariables  .contains(name) 
+		                   ||  scriptLocalValues     .contains(name)) {  // _c.at(here).value
+		                      val select_at     = atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), at_Name)}
+		                      val apply_at_here = Apply(select_at, List(here_Ident))
+		                      atPos(ident.pos) {Select(apply_at_here, value_Name)}
+		              } else ident
+		            case _ => super.transform(tree)
+		          }
+		        }
+		        val rhs_withAdjustedScriptLocalData = scriptLocalDataTransformer.transform(rhs)
+		        
+		        // add for each variable and value: val _c = subscript.DSL._declare[Char]('c)
+		        val variablesAndValuesDeclarations = new ListBuffer[Tree]
+		        // TBD
+		        val rhs_withVariablesAndValuesDeclarations = variablesAndValuesDeclarations append rhs_withAdjustedScriptLocalData
+		        
 		        val underscored_script_name = newTermName(underscore_prefix(name.toString))
 		        val underscored_param_defs  = underscored_param_defs_and_bindings map (_._1)
 		        val paramBindings           = underscored_param_defs_and_bindings map (_._2)
 		        val scriptNameAsSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
-	            val scriptBody = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), List(rhs))
+	            val scriptBody = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), 
+	                                   List(rhs_withAdjustedScriptLocalData))
+	            
+	            // to enable moving this all to a later phase, we should create a ScriptDef rather than a DefDef
 		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, scriptBody)
 		      }
 	          signalParseProgress(scriptDef.pos)
 	          
 	          result+=scriptDef
 	      }
-	      
+	      scriptFormalParameters = new ListBuffer[ValDef]   
+	      scriptLocalVariables   = new ListBuffer[ValDef]   
+	      scriptLocalValues      = new ListBuffer[ValDef]   
+	                                                             
 	      if (!doMultipleScripts) mustExit = true
       }
       
-      in.isInSubScript = false
+      in.isInSubScript_script = false
       result.toList
     }
     
@@ -1726,7 +1770,7 @@ self =>
 
  
     def simpleNativeValueExpr(): Tree = {
-      in.isInSubScript = false
+      in.isInSubScript_nativeCode = true
       val ret = in.token match {
         case LPAREN           => {in.nextToken();val r = expr(); accept(RPAREN); r}
         case IDENTIFIER 
@@ -1735,7 +1779,7 @@ self =>
         |    SUPER            => path(thisOK = true, typeOK = false)
         case _ if (isLiteral) => atPos(in.offset)(literal())
       }
-      in.isInSubScript = true
+      in.isInSubScript_nativeCode = false
       ret
     }
 
@@ -1784,7 +1828,14 @@ self =>
           else {simpleNativeValueExpr()}
         }
         else {newmods = newmods | Flags.DEFERRED; EmptyTree}
-      ValDef(newmods, name.toTermName, tp, rhs)
+      
+      // TBD: val result = ValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
+      // val c = initializer ===> subscript.DSL._val(_c, here => initializer)   likewise for var
+
+      val result = null
+      if (mods.isMutable) scriptLocalVariables += result
+      else                scriptLocalValues    += result
+      result
     }
 
     def unaryPostfixScriptTerm (): Tree = {
@@ -1957,16 +2008,14 @@ self =>
     }
     
     def scriptBlockExpr(): Tree = {
-      in.isInSubScript       = false
-      in.isInSubScript_block = true
+      in.isInSubScript_nativeCode = true
       val startBrace = in.token
       val   endBrace = scriptBracePairs(startBrace);
       val startPos   = r2p(in.offset, in.offset, in.lastOffset max in.offset)
       accept(startBrace)
       val b = block()
       val ret = Apply(dslFunFor(startBrace), List(blockToFunction_here(b, vmNodeFor(startBrace), startPos))) // TBD: transform here?
-      in.isInSubScript       = true
-      in.isInSubScript_block = false
+      in.isInSubScript_nativeCode = false
       accept(endBrace)
       ret
     }
@@ -1991,11 +2040,11 @@ self =>
              paramConstraint = simpleNativeValueExpr()
           }
         }
-        if (isOutputParam) makeActualOutputParameter(exp, paramConstraint)
+        if      (  isOutputParam) makeActualOutputParameter  (exp, paramConstraint)
         else if (isAdaptingParam) makeActualAdaptingParameter(formalParamName, paramConstraint)
         else exp
       }
-      inSubscriptParens(if (in.token == RPAREN) Nil else args())
+      inSubscriptArgumentParens(if (in.token == RPAREN) Nil else args())
     }
    
 /*                 
@@ -2867,12 +2916,12 @@ self =>
         val nameOffset = in.offset
         val name       = ident()
         var bynamemod = 0
-        if (in.isInSubScript) {
+        if (in.isInSubScript_header) { // TBD: clean up
           if (in.token==IDENTIFIER)
             in.name match {
               case nme.QMARKkw   
                  | nme.QMARK2kw => annots = Ident(in.name)::annots; in.nextToken()
-              case _            =>
+              case _            => 
             }
         }
         var tpt =
@@ -2888,7 +2937,7 @@ self =>
             }
             paramType()
           }
-        if (in.isInSubScript) {
+        if (in.isInSubScript_header) {
           tpt = if      (annots contains Ident(nme.QMARKkw ))      makeFormalOutputParameter(tpt)
 		        else if (annots contains Ident(nme.QMARK2kw)) makeFormalConstrainedParameter(tpt)
 		        else                                                makeFormalInputParameter(tpt)
@@ -2899,9 +2948,13 @@ self =>
             mods |= Flags.DEFAULTPARAM
             expr()
           } else EmptyTree
-        atPos(start, if (name == nme.ERROR) start else nameOffset) {
+        val result = atPos(start, if (name == nme.ERROR) start else nameOffset) {
           ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
         }
+        if (in.isInSubScript_header) {
+          scriptFormalParameters       += result 
+        }
+        result
       }
       def paramClause(): List[ValDef] = {
         if (in.token == RPAREN  ) return Nil
