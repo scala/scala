@@ -288,10 +288,16 @@ trait Scanners extends ScannersCommon {
         prev copyFrom this
         val nextLastOffset = charOffset - 1
         fetchToken()
+        def resetOffset() {
+          offset = prev.offset
+          lastOffset = prev.lastOffset
+        }
         if (token == CLASS) {
           token = CASECLASS
+          resetOffset()
         } else if (token == OBJECT) {
           token = CASEOBJECT
+          resetOffset()
         } else {
           lastOffset = nextLastOffset
           next copyFrom this
