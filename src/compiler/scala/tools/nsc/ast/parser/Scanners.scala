@@ -113,6 +113,11 @@ trait Scanners extends ScannersCommon {
       cbuf.append(c)
     }
 
+    /** Determines whether this scanner should emit identifier deprecation warnings,
+     *  e.g. when seeing `macro` or `then`, which are planned to become keywords in future versions of Scala.
+     */
+    protected def emitIdentifierDeprecationWarnings = true
+
     /** Clear buffer and set name and token */
     private def finishNamed(idtoken: Int = IDENTIFIER) {
       name = newTermName(cbuf.toString)
@@ -122,7 +127,7 @@ trait Scanners extends ScannersCommon {
         val idx = name.start - kwOffset
         if (idx >= 0 && idx < kwArray.length) {
           token = kwArray(idx)
-          if (token == IDENTIFIER && allowIdent != name)
+          if (token == IDENTIFIER && allowIdent != name && emitIdentifierDeprecationWarnings)
             deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
         }
       }
@@ -1487,6 +1492,10 @@ trait Scanners extends ScannersCommon {
 
     def improves(patches1: List[BracePatch]): Boolean =
       imbalanceMeasure > new ParensAnalyzer(unit, patches1).imbalanceMeasure
+
+    // don't emit deprecation warnings about identifiers like `macro` or `then`
+    // when skimming through the source file trying to heal braces
+    override def emitIdentifierDeprecationWarnings = false
 
     override def error(offset: Int, msg: String) {}
   }
