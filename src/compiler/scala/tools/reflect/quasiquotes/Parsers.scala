@@ -1,4 +1,5 @@
 package scala.tools.reflect
+package quasiquotes
 
 import scala.tools.nsc.ast.parser.{Parsers => ScalaParser}
 import scala.tools.nsc.ast.parser.Tokens._
@@ -8,7 +9,7 @@ import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 trait Parsers { self: Quasiquotes =>
   import global._
 
-  class QParser extends {
+  abstract class Parser extends {
 
     val global: self.global.type = self.global
 
@@ -57,7 +58,9 @@ trait Parsers { self: Quasiquotes =>
     }
   }
 
-  class TQParser extends QParser {
+  object TermParser extends Parser
+
+  object TypeParser extends Parser {
 
     override def wrapCode(code: String) = super.wrapCode("type T = " + code)
 

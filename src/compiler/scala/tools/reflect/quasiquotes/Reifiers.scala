@@ -1,4 +1,5 @@
 package scala.tools.reflect
+package quasiquotes
 
 import scala.tools.nsc.Global
 import scala.reflect.reify.{Reifier => ReflectReifier}
@@ -14,7 +15,7 @@ trait Reifiers { self: Quasiquotes =>
 
   type Placeholders = Map[String, (Tree, String)]
 
-  abstract class QuasiquoteReifier(val universe: Tree, val placeholders: Placeholders) extends {
+  abstract class Reifier(val universe: Tree, val placeholders: Placeholders) extends {
 
     val global: self.global.type = self.global
     val mirror = EmptyTree
@@ -49,7 +50,7 @@ trait Reifiers { self: Quasiquotes =>
     }
   }
 
-  class ApplyReifier(universe: Tree, placeholders: Placeholders) extends QuasiquoteReifier(universe, placeholders) {
+  class ApplyReifier(universe: Tree, placeholders: Placeholders) extends Reifier(universe, placeholders) {
 
     object SubsToTree {
 
@@ -120,7 +121,7 @@ trait Reifiers { self: Quasiquotes =>
         nme.flatten)
   }
 
-  class UnapplyReifier(universe: Tree, placeholders: Placeholders) extends QuasiquoteReifier(universe, placeholders) {
+  class UnapplyReifier(universe: Tree, placeholders: Placeholders) extends Reifier(universe, placeholders) {
 
     override def reifyBasicTree(tree: Tree): Tree = tree match {
       case SimpleTree(name) =>
@@ -130,10 +131,6 @@ trait Reifiers { self: Quasiquotes =>
           mirrorBuildCall("Applied", reify(fun), reifyList(targs), reifyList(argss))
         else
           mirrorBuildCall("Applied2", reify(fun), reifyList(argss))
-      case global.emptyValDef =>
-        mirrorBuildCall("EmptyValDefLike")
-      case global.pendingSuperCall =>
-        mirrorBuildCall("PendingSuperCallLike")
       case _ =>
         super.reifyBasicTree(tree)
     }
