@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -9,7 +9,7 @@ package scala.tools.partest
 package nest
 
 import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
-import scala.tools.nsc.io.{ File => SFile }
+import scala.reflect.io.{ Directory, File => SFile, FileOperationException }
 import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.{ ClassPath, FakePos }
@@ -41,7 +41,6 @@ class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends Co
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
   def this(cp: String) = this(cp, _ => ())
 
-  deprecation.value = true
   nowarnings.value  = false
   encoding.value    = "UTF-8"
   classpath.value   = cp
@@ -70,11 +69,27 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     s
   }
 
-  private def updatePluginPath(options: String): String = {
+  implicit class Copier(f: SFile) {
+    // But what if f is bigger than CHUNK?!
+    def copyTo(dest: Path) {
+      dest.toFile writeAll f.slurp
+    }
+  }
+
+  // plugin path can be relative to test root, or cwd is out
+  private def updatePluginPath(options: String, out: Option[File], srcdir: Directory): String = {
     val dir = fileManager.testRootDir
-    def absolutize(path: String) = Path(path) match {
+    def pathOrCwd(p: String) =
+      if (p == "." && out.isDefined) {
+        val plugxml = "scalac-plugin.xml"
+        val pout = Path(out.get)
+        val pd = (srcdir / plugxml).toFile
+        if (pd.exists) pd copyTo (pout / plugxml)
+        pout
+      } else Path(p)
+    def absolutize(path: String) = pathOrCwd(path) match {
       case x if x.isAbsolute  => x.path
-      case x                  => (fileManager.testRootDir / x).toAbsolute.path
+      case x                  => (dir / x).toAbsolute.path
     }
 
     val (opt1, opt2) = (options split "\\s").toList partition (_ startsWith "-Xplugin:")
@@ -91,17 +106,21 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     }
     val logWriter = new FileWriter(log)
 
+    // this api has no notion of srcdir, so fake it
+    val fstFile = SFile(files(0))
+    val srcdir = fstFile.parent
+
     // check whether there is a ".flags" file
+    def convertFlags(f: SFile) = updatePluginPath(f.slurp(), out, srcdir)
     val logFile = basename(log.getName)
     val flagsFileName = "%s.flags" format (logFile.substring(0, logFile.lastIndexOf("-")))
-    val argString = (io.File(log).parent / flagsFileName) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
+    val argString = (SFile(log).parent / flagsFileName) ifFile (convertFlags) getOrElse ""
 
     // slurp local flags (e.g., "A_1.flags")
-    val fstFile = SFile(files(0))
     def isInGroup(num: Int) = fstFile.stripExtension endsWith ("_" + num)
     val inGroup = (1 to 9) flatMap (group => if (isInGroup(group)) List(group) else List())
     val localFlagsList = if (inGroup.nonEmpty) {
-      val localArgString = (fstFile.parent / (fstFile.stripExtension + ".flags")) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
+      val localArgString = (srcdir / (fstFile.stripExtension + ".flags")) ifFile (convertFlags) getOrElse ""
       localArgString.split(' ').toList.filter(_.length > 0)
     } else List()
 
@@ -141,8 +160,10 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       NestUI.verbose("compiling "+toCompile)
       NestUI.verbose("with classpath: "+global.classPath.toString)
       NestUI.verbose("and java classpath: "+ propOrEmpty("java.class.path"))
-      try new global.Run compile toCompile
-      catch {
+      try {
+        if (command.shouldStopWithInfo) logWriter append (command getInfoMessage global)
+        else new global.Run compile toCompile
+      } catch {
         case FatalError(msg) =>
           testRep.error(null, "fatal error: " + msg)
           return CompilerCrashed
@@ -153,7 +174,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     }
     finally logWriter.close()
 
-    if (testRep.hasErrors) CompileFailed
+    if (testRep.hasErrors || command.shouldStopWithInfo) CompileFailed
     else CompileSuccess
   }
 }

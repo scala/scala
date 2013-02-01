@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -36,10 +36,6 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       while (itertable(idx) eq null) {
         idx += 1
       }
-    }
-
-    private def checkbounds() = if (idx >= itertable.length) {
-      throw new IndexOutOfBoundsException(idx.toString)
     }
 
     def newIterator(index: Int, until: Int, totalsize: Int): IterableSplitter[T]
@@ -102,11 +98,5 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       }
       count
     }
-
-    private def check() = if (table.slice(idx, until).count(_ != null) != remaining) {
-      println("Invariant broken: " + debugInformation)
-      assert(false)
-    }
   }
-
 }

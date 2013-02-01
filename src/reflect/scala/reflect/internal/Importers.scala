@@ -316,7 +316,6 @@ trait Importers extends api.Importers { self: SymbolTable =>
     def importName(name: from.Name): Name =
       if (name.isTypeName) newTypeName(name.toString) else newTermName(name.toString)
     def importTypeName(name: from.TypeName): TypeName = importName(name).toTypeName
-    def importTermName(name: from.TermName): TermName = importName(name).toTermName
 
     def importModifiers(mods: from.Modifiers): Modifiers =
       new Modifiers(mods.flags, importName(mods.privateWithin), mods.annotations map importTree)
@@ -334,6 +333,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
           new ModuleDef(importModifiers(mods), importName(name).toTermName, importTemplate(impl))
         case from.emptyValDef =>
           emptyValDef
+        case from.pendingSuperCall =>
+          pendingSuperCall
         case from.ValDef(mods, name, tpt, rhs) =>
           new ValDef(importModifiers(mods), importName(name).toTermName, importTree(tpt), importTree(rhs))
         case from.DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -427,18 +428,18 @@ trait Importers extends api.Importers { self: SymbolTable =>
       }
       addFixup({
         if (mytree != null) {
-          val mysym = if (tree.hasSymbol) importSymbol(tree.symbol) else NoSymbol
+          val mysym = if (tree.hasSymbolField) importSymbol(tree.symbol) else NoSymbol
           val mytpe = importType(tree.tpe)
 
           mytree match {
             case mytt: TypeTree =>
               val tt = tree.asInstanceOf[from.TypeTree]
-              if (mytree.hasSymbol) mytt.symbol = mysym
+              if (mytree.hasSymbolField) mytt.symbol = mysym
               if (tt.wasEmpty) mytt.defineType(mytpe) else mytt.setType(mytpe)
               if (tt.original != null) mytt.setOriginal(importTree(tt.original))
             case _ =>
-              if (mytree.hasSymbol) mytree.symbol = importSymbol(tree.symbol)
-              mytree.tpe = importType(tree.tpe)
+              if (mytree.hasSymbolField) mytree.symbol = importSymbol(tree.symbol)
+              mytree setType importType(tree.tpe)
           }
         }
       })

@@ -1,5 +1,5 @@
 /*  NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author
  */
 
@@ -60,7 +60,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // The constructor parameter corresponding to an accessor
       def parameter(acc: Symbol): Symbol =
-        parameterNamed(nme.getterName(acc.originalName))
+        parameterNamed(nme.getterName(acc.originalName.toTermName))
 
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$` afterwards.
@@ -68,7 +68,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + nme.NAME_JOIN_STRING)
 
         (constrParams filter matchesName) match {
-          case Nil    => assert(false, name + " not in " + constrParams) ; null
+          case Nil    => abort(name + " not in " + constrParams)
           case p :: _ => p
         }
       }
@@ -127,7 +127,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         import CODE._
         val result = mkAssign(to, Ident(from))
 
-        if (from.name != nme.OUTER) result
+        if (from.name != nme.OUTER ||
+            from.tpe.typeSymbol.isPrimitiveValueClass) result
         else localTyper.typedPos(to.pos) {
           IF (from OBJ_EQ NULL) THEN Throw(NewFromConstructor(NPEConstructor)) ELSE result
         }
@@ -280,7 +281,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           specializedStats find {
             case Assign(sel @ Select(This(_), _), rhs) =>
               (    (sel.symbol hasFlag SPECIALIZED)
-                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name)) == nme.localToGetter(sym.name))
+                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name.toTermName)) == nme.localToGetter(sym.name.toTermName))
               )
             case _ => false
           }
@@ -398,7 +399,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       def addGetter(sym: Symbol): Symbol = {
         val getr = addAccessor(
-          sym, nme.getterName(sym.name), getterFlags(sym.flags))
+          sym, nme.getterName(sym.name.toTermName), getterFlags(sym.flags))
         getr setInfo MethodType(List(), sym.tpe)
         defBuf += localTyper.typedPos(sym.pos)(DefDef(getr, Select(This(clazz), sym)))
         getr
@@ -407,7 +408,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       def addSetter(sym: Symbol): Symbol = {
         sym setFlag MUTABLE
         val setr = addAccessor(
-          sym, nme.getterToSetter(nme.getterName(sym.name)), setterFlags(sym.flags))
+          sym, nme.getterToSetter(nme.getterName(sym.name.toTermName)), setterFlags(sym.flags))
         setr setInfo MethodType(setr.newSyntheticValueParams(List(sym.tpe)), UnitClass.tpe)
         defBuf += localTyper.typed {
           //util.trace("adding setter def for "+setr) {
@@ -421,7 +422,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       def ensureAccessor(sym: Symbol)(acc: => Symbol) =
         if (sym.owner == clazz && !sym.isMethod && sym.isPrivate) { // there's an access to a naked field of the enclosing class
-          var getr = acc
+          val getr = acc
           getr makeNotPrivate clazz
           getr
         } else {
@@ -510,7 +511,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               sym = closureClass,
               constrMods = Modifiers(0),
               vparamss = List(List(outerFieldDef)),
-              argss = ListOfNil,
               body = List(applyMethodDef),
               superPos = impl.pos)
           }
@@ -528,7 +528,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         (pre ::: supercalls, rest)
       }
 
-      var (uptoSuperStats, remainingConstrStats) = splitAtSuper(constrStatBuf.toList)
+      val (uptoSuperStats, remainingConstrStats0) = splitAtSuper(constrStatBuf.toList)
+      var remainingConstrStats = remainingConstrStats0
 
       /** XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
        *  but excluding it includes too much.  The constructor sequence being mimicked

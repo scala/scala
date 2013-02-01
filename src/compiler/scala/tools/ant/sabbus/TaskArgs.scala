@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Ant Tasks                      **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -98,6 +98,4 @@ trait TaskArgs extends CompilationPathProperty {
     val parts = a.getParts
     if(parts eq null) Seq[String]() else parts.toSeq
   }
-
-  def isMSIL = compTarget exists (_ == "msil")
 }

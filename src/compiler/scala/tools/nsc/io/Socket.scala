@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -28,13 +28,10 @@ object Socket {
     private val optHandler = handlerFn[Option[T]](_ => None)
     private val eitherHandler = handlerFn[Either[Throwable, T]](x => Left(x))
 
-    def getOrElse[T1 >: T](alt: T1): T1 = opt getOrElse alt
     def either: Either[Throwable, T]    = try Right(f()) catch eitherHandler
     def opt: Option[T]                  = try Some(f()) catch optHandler
   }
 
-  def newIPv4Server(port: Int = 0)        = new Box(() => preferringIPv4(new ServerSocket(0)))
-  def newServer(port: Int = 0)            = new Box(() => new ServerSocket(0))
   def localhost(port: Int)                = apply(InetAddress.getLocalHost(), port)
   def apply(host: InetAddress, port: Int) = new Box(() => new Socket(new JSocket(host, port)))
   def apply(host: String, port: Int)      = new Box(() => new Socket(new JSocket(host, port)))

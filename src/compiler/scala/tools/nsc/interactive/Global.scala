@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2012 Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -8,30 +8,31 @@ package interactive
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
-import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
-import scala.tools.nsc.util.{ WorkScheduler, MultiHashMap }
+import scala.tools.nsc.util.MultiHashMap
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, RangePosition, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.ast._
-import scala.tools.nsc.io.Pickler._
 import scala.tools.nsc.typechecker.DivergentImplicit
-import scala.annotation.tailrec
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
+import scala.annotation.elidable
 import scala.language.implicitConversions
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
-  extends scala.tools.nsc.Global(settings, _reporter)
-     with CompilerControl
-     with RangePositions
-     with ContextTrees
-     with RichCompilationUnits
-     with ScratchPadMaker
-     with Picklers {
+class Global(settings: Settings, _reporter: Reporter, projectName: String = "")  extends {
+  /* Is the compiler initializing? Early def, so that the field is true during the
+   *  execution of the super constructor.
+   */
+  private var initializing = true
+} with scala.tools.nsc.Global(settings, _reporter)
+  with CompilerControl
+  with RangePositions
+  with ContextTrees
+  with RichCompilationUnits
+  with ScratchPadMaker
+  with Picklers {
 
   import definitions._
 
@@ -68,6 +69,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
   override def forInteractive = true
+  override def forScaladoc = settings.isScaladoc
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
@@ -205,7 +207,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
 
   protected[interactive] var minRunId = 1
 
-  private var interruptsEnabled = true
+  private[interactive] var interruptsEnabled = true
 
   private val NoResponse: Response[_] = new Response[Any]
 
@@ -355,7 +357,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
             }
 
             // don't forget to service interrupt requests
-            val iqs = scheduler.dequeueAllInterrupts(_.execute())
+            scheduler.dequeueAllInterrupts(_.execute())
 
             debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
             debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
@@ -393,47 +395,23 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     if (typerRun != currentTyperRun) demandNewCompilerRun()
   }
 
-  def debugInfo(source : SourceFile, start : Int, length : Int): String = {
-    println("DEBUG INFO "+source+"/"+start+"/"+length)
-    val end = start+length
-    val pos = rangePos(source, start, start, end)
-
-    val tree = locateTree(pos)
-    val sw = new StringWriter
-    val pw = new PrintWriter(sw)
-    newTreePrinter(pw).print(tree)
-    pw.flush
-
-    val typed = new Response[Tree]
-    askTypeAt(pos, typed)
-    val typ = typed.get.left.toOption match {
-      case Some(tree) =>
-        val sw = new StringWriter
-        val pw = new PrintWriter(sw)
-        newTreePrinter(pw).print(tree)
-        pw.flush
-        sw.toString
-      case None => "<None>"
-    }
-
-    val completionResponse = new Response[List[Member]]
-    askTypeCompletion(pos, completionResponse)
-    val completion = completionResponse.get.left.toOption match {
-      case Some(members) =>
-        members mkString "\n"
-      case None => "<None>"
-    }
-
-    source.content.view.drop(start).take(length).mkString+" : "+source.path+" ("+start+", "+end+
-    ")\n\nlocateTree:\n"+sw.toString+"\n\naskTypeAt:\n"+typ+"\n\ncompletion:\n"+completion
-  }
-
   // ----------------- The Background Runner Thread -----------------------
 
   private var threadId = 0
 
   /** The current presentation compiler runner */
-  @volatile private[interactive] var compileRunner = newRunnerThread()
+  @volatile private[interactive] var compileRunner: Thread = newRunnerThread()
+
+  /** Check that the currenyly executing thread is the presentation compiler thread.
+   *
+   *  Compiler initialization may happen on a different thread (signalled by globalPhase being NoPhase)
+   */
+  @elidable(elidable.WARNING)
+  override def assertCorrectThread() {
+    assert(initializing || (Thread.currentThread() eq compileRunner),
+        "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
+        " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
+  }
 
   /** Create a new presentation compiler runner.
    */
@@ -832,8 +810,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     respond(response) { scopeMembers(pos) }
   }
 
-  private val Dollar = newTermName("$")
-
   private class Members[M <: Member] extends LinkedHashMap[Name, Set[M]] {
     override def default(key: Name) = Set()
 
@@ -849,7 +825,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     def add(sym: Symbol, pre: Type, implicitlyAdded: Boolean)(toMember: (Symbol, Type) => M) {
       if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
         add(sym.accessed, pre, implicitlyAdded)(toMember)
-      } else if (!sym.name.decodedName.containsName(Dollar) && !sym.isSynthetic && sym.hasRawInfo) {
+      } else if (!sym.name.decodedName.containsName("$") && !sym.isSynthetic && sym.hasRawInfo) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
         matching(sym, symtpe, this(sym.name)) match {
           case Some(m) =>
@@ -972,7 +948,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     for (sym <- ownerTpe.members)
       addTypeMember(sym, pre, sym.owner != ownerTpe.typeSymbol, NoSymbol)
     members.allMembers #:: {
-      //print("\nadd pimped")
+      //print("\nadd enrichment")
       val applicableViews: List[SearchResult] =
         if (ownerTpe.isErroneous) List()
         else new ImplicitSearch(
@@ -1041,6 +1017,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
     }
   }
 
+  @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
   def getInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) {
     try {
       interruptsEnabled = false
@@ -1053,15 +1030,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
   }
 
   // ---------------- Helper classes ---------------------------
-
-  /** A transformer that replaces tree `from` with tree `to` in a given tree */
-  class TreeReplacer(from: Tree, to: Tree) extends Transformer {
-    override def transform(t: Tree): Tree = {
-      if (t == from) to
-      else if ((t.pos includes from.pos) || t.pos.isTransparent) super.transform(t)
-      else t
-    }
-  }
 
   /** The typer run */
   class TyperRun extends Run {
@@ -1110,6 +1078,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
         alt
     }
   }
+
+  /** The compiler has been initialized. Constructors are evaluated in textual order,
+   *  so this is set to true only after all super constructors and the primary constructor
+   *  have been executed.
+   */
+  initializing = false
 }
 
 object CancelException extends Exception

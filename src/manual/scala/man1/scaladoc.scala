@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Stephane Micheloud
  */
 
@@ -75,7 +75,10 @@ object scaladoc extends Command {
           "Define the overall version number of the documentation, typically the version of the library being documented."),
         Definition(
           CmdOption("doc-source-url", Argument("url")),
-          "Define a URL to be concatenated with source locations for link to source files."))),
+          "Define a URL to be concatenated with source locations for link to source files."),
+        Definition(
+          CmdOption("doc-external-doc", Argument("external-doc")),
+          "Define a comma-separated list of classpath_entry_path#doc_URL pairs describing external dependencies."))),
 
     Section("Compiler Options",
       DefinitionList(

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -275,7 +275,7 @@ class XIncludeFilter extends XMLFilterImpl {
     try {
       val uc = source.openConnection()
       val in = new BufferedInputStream(uc.getInputStream())
-      var encodingFromHeader = uc.getContentEncoding()
+      val encodingFromHeader = uc.getContentEncoding()
       var contentType = uc.getContentType()
       if (encodingFromHeader != null)
         encoding = encodingFromHeader

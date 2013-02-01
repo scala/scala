@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,7 +11,7 @@ package scala.collection
 package mutable
 
 import generic._
-import scala.annotation.{migration, bridge}
+import scala.annotation.migration
 import parallel.mutable.ParMap
 
 /** A template trait for mutable maps.
@@ -49,8 +49,6 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
      with Cloneable[This]
      with Parallelizable[(A, B), ParMap[A, B]]
 { self =>
-
-  import scala.collection.Traversable
 
   /** A common implementation of `newBuilder` for all mutable maps
    *    in terms of `empty`.

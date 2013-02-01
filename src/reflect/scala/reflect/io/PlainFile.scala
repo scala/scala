@@ -1,25 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-
 
 package scala.reflect
 package io
 
 import java.io.{ FileInputStream, FileOutputStream, IOException }
-import PartialFunction._
-/** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
-object PlainFile {
-  /**
-   * If the specified File exists, returns an abstract file backed
-   * by it. Otherwise, returns null.
-   */
-  def fromPath(file: Path): PlainFile =
-    if (file.isDirectory) new PlainDirectory(file.toDirectory)
-    else if (file.isFile) new PlainFile(file)
-    else null
-}
+
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
   override def isDirectory = true
@@ -28,7 +16,7 @@ class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
 }
 
 /** This class implements an abstract file backed by a File.
- * 
+ *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class PlainFile(val givenPath: Path) extends AbstractFile {
@@ -77,10 +65,6 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
    * specified name. If there is no such file, returns null. The
    * argument "directory" tells whether to look for a directory or
    * or a regular file.
-   *
-   * @param name      ...
-   * @param directory ...
-   * @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile = {
     val child = givenPath / name

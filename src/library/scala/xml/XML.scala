@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -44,8 +44,6 @@ object MinimizeMode extends Enumeration {
    */
   val Never = Value
 }
-
-import Source._
 
 /** The object `XML` provides constants, and functions to load
  *  and save XML elements. Use this when data binding is not desired, i.e.

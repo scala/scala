@@ -1,12 +1,10 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2012 LAMP/EPFL
+ * Copyright 2006-2013 LAMP/EPFL
  * @author  Lex Spoon
  */
 
 package scala.tools.nsc
 
-import java.net.URL
-import scala.tools.util.PathResolver
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }

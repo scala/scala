@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -29,11 +29,6 @@ class AbstractFileReader(val file: AbstractFile) {
    */
   var bp: Int = 0
 
-  /** return byte at offset 'pos'
-   */
-  @throws(classOf[IndexOutOfBoundsException])
-  def byteAt(pos: Int): Byte = buf(pos)
-
   /** read a byte
    */
   @throws(classOf[IndexOutOfBoundsException])
@@ -45,7 +40,7 @@ class AbstractFileReader(val file: AbstractFile) {
 
   /** read some bytes
    */
-  def nextBytes(len: Int): Array[Byte] = {
+  def nextBytes(len: Int): Array[Byte] = { // used in ide
     bp += len
     buf.slice(bp - len, bp)
   }

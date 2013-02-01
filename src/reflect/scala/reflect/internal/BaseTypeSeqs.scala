@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.reflect
@@ -60,11 +60,11 @@ trait BaseTypeSeqs {
         elems(i) match {
           case rtp @ RefinedType(variants, decls) =>
             // can't assert decls.isEmpty; see t0764
-            //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
+            //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
             //Console.println("compute closure of "+this+" => glb("+variants+")")
             pending += i
             try {
-              mergePrefixAndArgs(variants, -1, lubDepth(variants)) match {
+              mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
                 case Some(tp0) =>
                   pending(i) = false
                   elems(i) = tp0
@@ -115,7 +115,7 @@ trait BaseTypeSeqs {
     def map(f: Type => Type): BaseTypeSeq = {
 	  // inlined `elems map f` for performance
       val len = length
-      var arr = new Array[Type](len)
+      val arr = new Array[Type](len)
       var i = 0
       while (i < len) {
         arr(i) = f(elems(i))
@@ -158,7 +158,7 @@ trait BaseTypeSeqs {
     val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
     val buf = new mutable.ListBuffer[Type]
-    buf += tsym.tpe
+    buf += tsym.tpe_*
     var btsSize = 1
     if (parents.nonEmpty) {
       val nparents = parents.length
@@ -193,15 +193,23 @@ trait BaseTypeSeqs {
           i += 1
         }
         var minTypes: List[Type] = List()
+        def alreadyInMinTypes(tp: Type): Boolean = {
+          @annotation.tailrec def loop(tps: List[Type]): Boolean = tps match {
+            case Nil     => false
+            case x :: xs => (tp =:= x) || loop(xs)
+          }
+          loop(minTypes)
+        }
+
         i = 0
         while (i < nparents) {
           if (nextTypeSymbol(i) == minSym) {
             nextRawElem(i) match {
               case RefinedType(variants, decls) =>
                 for (tp <- variants)
-                  if (!(minTypes exists (tp =:= _))) minTypes = tp :: minTypes
+                  if (!alreadyInMinTypes(tp)) minTypes ::= tp
               case tp =>
-                if (!(minTypes exists (tp =:= _))) minTypes = tp :: minTypes
+                if (!alreadyInMinTypes(tp)) minTypes ::= tp
             }
             index(i) = index(i) + 1
           }

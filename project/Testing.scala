@@ -17,7 +17,7 @@ trait Testing { self: ScalaBuild.type =>
     autoScalaLibrary := false
   )
   lazy val continuationsTestsuiteSettings: Seq[Setting[_]] = testsuiteSettings ++ Seq(
-    scalacOptions in Test <++= (exportedProducts in Compile in continuationsPlugin) map { 
+    scalacOptions in Test <++= (exportedProducts in Compile in continuationsPlugin) map {
      case Seq(cpDir) => Seq("-Xplugin-require:continuations", "-P:continuations:enable", "-Xplugin:"+cpDir.data.getAbsolutePath)
     },
     partestDirs <<= baseDirectory apply { bd =>
@@ -27,14 +27,14 @@ trait Testing { self: ScalaBuild.type =>
     }
   )
   val testsuite = (
-    Project("testsuite", file(".")) 
+    Project("testsuite", file("."))
     settings (testsuiteSettings:_*)
-    dependsOn (scalaLibrary, scalaCompiler, fjbg, partest, scalacheck, actorsMigration)
+    dependsOn (scalaLibrary, scalaCompiler, partest, scalacheck)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
-    settings (continuationsTestsuiteSettings:_*) 
-    dependsOn (partest, scalaLibrary, scalaCompiler, fjbg, actorsMigration)
+    settings (continuationsTestsuiteSettings:_*)
+    dependsOn (partest, scalaLibrary, scalaCompiler)
   )
 
 }

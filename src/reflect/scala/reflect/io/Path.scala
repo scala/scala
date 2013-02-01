@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -27,7 +27,7 @@ import scala.language.implicitConversions
  *
  *  @author  Paul Phillips
  *  @since   2.8
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object Path {
@@ -49,27 +49,12 @@ object Path {
   implicit def string2path(s: String): Path = apply(s)
   implicit def jfile2path(jfile: JFile): Path = apply(jfile)
 
-  // java 7 style, we don't use it yet
-  // object AccessMode extends Enumeration {
-  //   val EXECUTE, READ, WRITE = Value
-  // }
-  // def checkAccess(modes: AccessMode*): Boolean = {
-  //   modes foreach {
-  //     case EXECUTE  => throw new Exception("Unsupported") // can't check in java 5
-  //     case READ     => if (!jfile.canRead()) return false
-  //     case WRITE    => if (!jfile.canWrite()) return false
-  //   }
-  //   true
-  // }
-
   def onlyDirs(xs: Iterator[Path]): Iterator[Directory] = xs filter (_.isDirectory) map (_.toDirectory)
   def onlyDirs(xs: List[Path]): List[Directory] = xs filter (_.isDirectory) map (_.toDirectory)
   def onlyFiles(xs: Iterator[Path]): Iterator[File] = xs filter (_.isFile) map (_.toFile)
-  def onlyFiles(xs: List[Path]): List[File] = xs filter (_.isFile) map (_.toFile)
 
   def roots: List[Path] = java.io.File.listRoots().toList map Path.apply
 
-  def apply(segments: Seq[String]): Path = apply(segments mkString java.io.File.separator)
   def apply(path: String): Path = apply(new JFile(path))
   def apply(jfile: JFile): Path =
     if (jfile.isFile) new File(jfile)
@@ -84,18 +69,12 @@ import Path._
 
 /** The Path constructor is private so we can enforce some
  *  semantics regarding how a Path might relate to the world.
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class Path private[io] (val jfile: JFile) {
   val separator = java.io.File.separatorChar
   val separatorStr = java.io.File.separator
-
-  // Validation: this verifies that the type of this object and the
-  // contents of the filesystem are in agreement.  All objects are
-  // valid except File objects whose path points to a directory and
-  // Directory objects whose path points to a file.
-  def isValid: Boolean = true
 
   // conversions
   def toFile: File = new File(jfile)
@@ -104,6 +83,7 @@ class Path private[io] (val jfile: JFile) {
   def toCanonical: Path = Path(jfile.getCanonicalPath())
   def toURI: URI = jfile.toURI()
   def toURL: URL = toURI.toURL()
+
   /** If this path is absolute, returns it: otherwise, returns an absolute
    *  path made up of root / this.
    */
@@ -136,7 +116,6 @@ class Path private[io] (val jfile: JFile) {
   def name: String = jfile.getName()
   def path: String = jfile.getPath()
   def normalize: Path = Path(jfile.getAbsolutePath())
-  def isRootPath: Boolean = roots exists (_ isSame this)
 
   def resolve(other: Path) = if (other.isAbsolute || isEmpty) other else /(other)
   def relativize(other: Path) = {
@@ -152,9 +131,8 @@ class Path private[io] (val jfile: JFile) {
     Path(createRelativePath(segments, other.segments))
   }
 
-  // derived from identity
-  def root: Option[Path] = roots find (this startsWith _)
   def segments: List[String] = (path split separator).toList filterNot (_.length == 0)
+
   /**
    * @return The path of the parent directory, or root if path is already root
    */
@@ -185,10 +163,6 @@ class Path private[io] (val jfile: JFile) {
     if (i < 0) ""
     else name.substring(i + 1)
   }
-  // def extension: String = (name lastIndexOf '.') match {
-  //   case -1   => ""
-  //   case idx  => name drop (idx + 1)
-  // }
   // compares against extensions in a CASE INSENSITIVE way.
   def hasExtension(ext: String, exts: String*) = {
     val lower = extension.toLowerCase
@@ -213,22 +187,18 @@ class Path private[io] (val jfile: JFile) {
   def canRead = jfile.canRead()
   def canWrite = jfile.canWrite()
   def exists = jfile.exists()
-  def notExists = try !jfile.exists() catch { case ex: SecurityException => false }
 
   def isFile = jfile.isFile()
   def isDirectory = jfile.isDirectory()
   def isAbsolute = jfile.isAbsolute()
-  def isHidden = jfile.isHidden()
   def isEmpty = path.length == 0
 
   // Information
   def lastModified = jfile.lastModified()
-  def lastModified_=(time: Long) = jfile setLastModified time // should use setXXX function?
   def length = jfile.length()
 
   // Boolean path comparisons
   def endsWith(other: Path) = segments endsWith other.segments
-  def startsWith(other: Path) = segments startsWith other.segments
   def isSame(other: Path) = toCanonical == other.toCanonical
   def isFresher(other: Path) = lastModified > other.lastModified
 
@@ -248,7 +218,6 @@ class Path private[io] (val jfile: JFile) {
 
   // deletions
   def delete() = jfile.delete()
-  def deleteIfExists() = if (jfile.exists()) delete() else false
 
   /** Deletes the path recursively. Returns false on failure.
    *  Use with caution!
@@ -269,16 +238,6 @@ class Path private[io] (val jfile: JFile) {
       raf.close()
       length == 0
     }
-
-  def touch(modTime: Long = System.currentTimeMillis) = {
-    createFile()
-    if (isFile)
-      lastModified = modTime
-  }
-
-  // todo
-  // def copyTo(target: Path, options ...): Boolean
-  // def moveTo(target: Path, options ...): Boolean
 
   override def toString() = path
   override def equals(other: Any) = other match {

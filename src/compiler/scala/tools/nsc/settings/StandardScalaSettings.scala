@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -41,16 +41,10 @@ trait StandardScalaSettings {
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")
   val target =          ChoiceSetting ("-target", "target", "Target platform for object files. All JVM 1.5 targets are deprecated.",
-                                       List("jvm-1.5", "jvm-1.5-fjbg", "jvm-1.5-asm", "jvm-1.6", "jvm-1.7", "msil"),
-                                       "jvm-1.6")
+                          List("jvm-1.5", "jvm-1.6", "jvm-1.7"), "jvm-1.6")
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.")
   val uniqid =         BooleanSetting ("-uniqid", "Uniquely tag all identifiers in debugging output.")
   val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")
   val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing.")
   val version =        BooleanSetting ("-version", "Print product version and exit.")
-
-  /** These are @<file> and -Dkey=val style settings, which don't
-   *  nicely map to identifiers.
-   */
-  val argfiles: BooleanSetting  // exists only to echo help message, should be done differently
 }

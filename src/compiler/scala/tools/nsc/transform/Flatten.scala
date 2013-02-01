@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -8,28 +8,23 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
-  import definitions._
+  import treeInfo.isQualifierSafeToElide
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
 
-  /** Updates the owning scope with the given symbol; returns the old symbol.
+  /** Updates the owning scope with the given symbol, unlinking any others.
    */
-  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = exitingFlatten {
+  private def replaceSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     val scope = sym.owner.info.decls
-    val old   = scope lookup sym.name andAlso scope.unlink
+    val old   = (scope lookupUnshadowedEntries sym.name).toList
+    old foreach (scope unlink _)
     scope enter sym
-
-    if (old eq NoSymbol)
-      log(s"lifted ${sym.fullLocationString}")
-    else
-      log(s"lifted ${sym.fullLocationString} after unlinking existing $old from scope.")
-
+    log(s"lifted ${sym.fullLocationString}" + ( if (old.isEmpty) "" else s" after unlinking $old from scope." ))
     old
   }
 
@@ -122,8 +117,14 @@ abstract class Flatten extends InfoTransform {
         case ClassDef(_, _, _, _) if sym.isNestedClass =>
           liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
-        case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
-          exitingFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
+        case Select(qual, name) if sym.isStaticModule && !sym.isTopLevel =>
+          exitingFlatten {
+            atPos(tree.pos) {
+              val ref = gen.mkAttributedRef(sym)
+              if (isQualifierSafeToElide(qual)) ref
+              else Block(List(qual), ref).setType(tree.tpe) // need to execute the qualifier but refer directly to the lifted module.
+            }
+          }
         case _ =>
           tree
       }

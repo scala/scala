@@ -5,7 +5,7 @@ import internal.Flags
 import java.lang.{Class => jClass, Package => jPackage}
 import scala.collection.mutable
 
-trait SymbolLoaders { self: SymbolTable =>
+private[reflect] trait SymbolLoaders { self: SymbolTable =>
 
   /** The standard completer for top-level classes
    *  @param clazz   The top-level class
@@ -57,7 +57,7 @@ trait SymbolLoaders { self: SymbolTable =>
    *  @param name    The simple name of the newly created class
    *  @param completer  The completer to be used to set the info of the class and the module
    */
-  protected def createClassModule(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
+  protected def initAndEnterClassAndModule(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
     assert(!(name.toString endsWith "[]"), name)
     val clazz = owner.newClass(name)
     val module = owner.newModule(name.toTermName)
@@ -67,7 +67,7 @@ trait SymbolLoaders { self: SymbolTable =>
       owner.info.decls enter clazz
       owner.info.decls enter module
     }
-    initClassModule(clazz, module, completer(clazz, module))
+    initClassAndModule(clazz, module, completer(clazz, module))
     (clazz, module)
   }
 
@@ -75,7 +75,7 @@ trait SymbolLoaders { self: SymbolTable =>
     List(clazz, module, module.moduleClass) foreach (_ setInfo info)
   }
 
-  protected def initClassModule(clazz: Symbol, module: Symbol, completer: LazyType) =
+  protected def initClassAndModule(clazz: Symbol, module: Symbol, completer: LazyType) =
     setAllInfos(clazz, module, completer)
 
   /** The type completer for packages.
@@ -116,9 +116,9 @@ trait SymbolLoaders { self: SymbolTable =>
         currentMirror.tryJavaClass(path) match {
           case Some(cls) =>
             val loadingMirror = currentMirror.mirrorDefining(cls)
-            val (clazz, module) =
+            val (_, module) =
               if (loadingMirror eq currentMirror) {
-                createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+                initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
               } else {
                 val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
                 val clazz = origOwner.info decl name.toTypeName

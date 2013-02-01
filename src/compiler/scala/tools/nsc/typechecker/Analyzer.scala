@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -16,7 +16,6 @@ trait Analyzer extends AnyRef
             with Typers
             with Infer
             with Implicits
-            with Variances
             with EtaExpansion
             with SyntheticMethods
             with Unapplies
@@ -95,14 +94,17 @@ trait Analyzer extends AnyRef
       }
       def apply(unit: CompilationUnit) {
         try {
-          unit.body = newTyper(rootContext(unit)).typed(unit.body)
+          val typer = newTyper(rootContext(unit))
+          unit.body = typer.typed(unit.body)
           if (global.settings.Yrangepos.value && !global.reporter.hasErrors) global.validatePositions(unit.body)
           for (workItem <- unit.toCheck) workItem()
-        } finally {
+          if (settings.lint.value)
+            typer checkUnused unit
+        }
+        finally {
           unit.toCheck.clear()
         }
       }
     }
   }
 }
-

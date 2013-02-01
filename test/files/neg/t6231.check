@@ -1,0 +1,6 @@
+t6231.scala:4: error: Implementation restriction: local trait Bug$X$1 is unable to automatically capture the
+free variable value ev$1 on behalf of anonymous class anonfun$qux$1. You can manually assign it to a val inside the trait,
+and refer that that val in anonymous class anonfun$qux$1. For more details, see SI-6231.
+      def qux = { () => ev }
+                        ^
+one error found

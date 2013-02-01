@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 package scala.reflect.internal.util
@@ -17,8 +17,6 @@ abstract class Set[T <: AnyRef] {
   def foreach[U](f: T => U): Unit = iterator foreach f
 
   def apply(x: T): Boolean = contains(x)
-
-  @deprecated("use `iterator` instead", "2.9.0") def elements = iterator
 
   def contains(x: T): Boolean =
     findEntry(x) ne null

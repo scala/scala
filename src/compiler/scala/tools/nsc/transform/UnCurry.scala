@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author
  */
 
@@ -61,24 +61,6 @@ abstract class UnCurry extends InfoTransform
 
 // uncurry and uncurryType expand type aliases
 
-  /** Traverse tree omitting local method definitions.
-   *  If a `return` is encountered, set `returnFound` to true.
-   *  Used for MSIL only.
-   */
-  private object lookForReturns extends Traverser {
-    var returnFound = false
-    override def traverse(tree: Tree): Unit =  tree match {
-      case Return(_) => returnFound = true
-      case DefDef(_, _, _, _, _, _) => ;
-      case _ => super.traverse(tree)
-    }
-    def found(tree: Tree) = {
-      returnFound = false
-      traverse(tree)
-      returnFound
-    }
-  }
-
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var needTryLift       = false
     private var inPattern         = false
@@ -112,8 +94,6 @@ abstract class UnCurry extends InfoTransform
     private lazy val serialVersionUIDAnnotation =
       AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
-    private var nprinted = 0
-
     // I don't have a clue why I'm catching TypeErrors here, but it's better
     // than spewing stack traces at end users for internal errors. Examples
     // which hit at this point should not be hard to come by, but the immediate
@@ -134,7 +114,8 @@ abstract class UnCurry extends InfoTransform
     def isByNameRef(tree: Tree) = (
          tree.isTerm
       && !byNameArgs(tree)
-      && tree.hasSymbolWhich(s => isByNameParamType(s.tpe))
+      && (tree.symbol ne null)
+      && (isByName(tree.symbol))
     )
 
     /** Uncurry a type of a tree node.
@@ -205,11 +186,8 @@ abstract class UnCurry extends InfoTransform
         val keyDef   = ValDef(key, New(ObjectClass.tpe))
         val tryCatch = Try(body, pat -> rhs)
 
-        body foreach {
-          case Try(t, catches, _) if catches exists treeInfo.catchesThrowable =>
-            unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
-          case _ =>
-        }
+        for (Try(t, catches, _) <- body ; cdef <- catches ; if treeInfo catchesThrowable cdef)
+          unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
 
         Block(List(keyDef), tryCatch)
       }
@@ -234,16 +212,11 @@ abstract class UnCurry extends InfoTransform
      *    }
      *    new $anon()
      *
-     * If `settings.XoldPatmat.value`, also synthesized AbstractPartialFunction subclasses (see synthPartialFunction).
-     *
      */
     def transformFunction(fun: Function): Tree =
       deEta(fun) match {
         // nullary or parameterless
         case fun1 if fun1 ne fun => fun1
-        case _ if fun.tpe.typeSymbol == PartialFunctionClass =>
-          // only get here when running under -Xoldpatmat
-          synthPartialFunction(fun)
         case _ =>
           val parents = (
             if (isFunctionType(fun.tpe)) addSerializable(abstractFunctionForFunctionType(fun.tpe))
@@ -257,7 +230,10 @@ abstract class UnCurry extends InfoTransform
 
           val applyMethodDef = {
             val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
-            methSym setInfoAndEnter MethodType(methSym newSyntheticValueParams formals, restpe)
+            val paramSyms = map2(formals, fun.vparams) {
+              (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
+            }
+            methSym setInfoAndEnter MethodType(paramSyms, restpe)
 
             fun.vparams foreach  (_.symbol.owner =  methSym)
             fun.body changeOwner (fun.symbol     -> methSym)
@@ -273,135 +249,11 @@ abstract class UnCurry extends InfoTransform
 
           localTyper.typedPos(fun.pos) {
             Block(
-              List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, List(applyMethodDef), fun.pos)),
+              List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
               Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
           }
 
       }
-
-    /** Transform a function node (x => body) of type PartialFunction[T, R] where
-     *    body = expr match { case P_i if G_i => E_i }_i=1..n
-     *  to (assuming none of the cases is a default case):
-     *
-     *    class $anon() extends AbstractPartialFunction[T, R] with Serializable {
-     *      def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 = (expr: @unchecked) match {
-     *        case P_1 if G_1 => E_1
-     *        ...
-     *        case P_n if G_n => E_n
-     *        case _ => default(expr)
-     *      }
-     *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {
-     *        case P_1 if G_1 => true
-     *        ...
-     *        case P_n if G_n => true
-     *        case _ => false
-     *      }
-     *    }
-     *    new $anon()
-     *
-     *  If there's a default case, the original match is used for applyOrElse, and isDefinedAt returns `true`
-     */
-    def synthPartialFunction(fun: Function) = {
-      if (!settings.XoldPatmat.value) debugwarn("Under the new pattern matching scheme, PartialFunction should have been synthesized during typers.")
-
-      val targs             = fun.tpe.typeArgs
-      val (formals, restpe) = (targs.init, targs.last)
-
-      val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
-      val parents   = addSerializable(appliedType(AbstractPartialFunctionClass, targs: _*))
-      anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-
-      // duplicate before applyOrElseMethodDef is run so that it does not mess up our trees and label symbols (we have a fresh set)
-      // otherwise `TreeSymSubstituter(fun.vparams map (_.symbol), params)` won't work as the subst has been run already
-      val bodyForIDA = {
-        val duped   = fun.body.duplicate
-        val oldParams = new mutable.ListBuffer[Symbol]()
-        val newParams = new mutable.ListBuffer[Symbol]()
-
-        val oldSyms0 =
-          duped filter {
-            case l@LabelDef(_, params, _) =>
-              params foreach {p =>
-                val oldSym = p.symbol
-                p.symbol = oldSym.cloneSymbol
-                oldParams += oldSym
-                newParams += p.symbol
-              }
-              true
-            case _ => false
-          } map (_.symbol)
-        val oldSyms = oldParams.toList ++ oldSyms0
-        val newSyms = newParams.toList ++ (oldSyms0 map (_.cloneSymbol))
-        // println("duping "+ oldSyms +" --> "+ (newSyms map (_.ownerChain)))
-
-        val substLabels = new TreeSymSubstituter(oldSyms, newSyms)
-
-        substLabels(duped)
-      }
-
-      // def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
-      val applyOrElseMethodDef = {
-        val methSym = anonClass.newMethod(fun.pos, nme.applyOrElse) setFlag (FINAL | OVERRIDE)
-
-        val List(argtpe)            = formals
-        val A1                      = methSym newTypeParameter(newTypeName("A1")) setInfo TypeBounds.upper(argtpe)
-        val B1                      = methSym newTypeParameter(newTypeName("B1")) setInfo TypeBounds.lower(restpe)
-        val methFormals             = List(A1.tpe, functionType(List(A1.tpe), B1.tpe))
-        val params@List(x, default) = methSym newSyntheticValueParams methFormals
-        methSym setInfoAndEnter polyType(List(A1, B1), MethodType(params, B1.tpe))
-
-        val substParam = new TreeSymSubstituter(fun.vparams map (_.symbol), List(x))
-        val body = localTyper.typedPos(fun.pos) { import CODE._
-          def defaultAction(scrut: Tree) = REF(default) APPLY (REF(x))
-
-          substParam(fun.body) match {
-            case orig@Match(selector, cases) =>
-              if (cases exists treeInfo.isDefaultCase) orig
-              else {
-                val defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, defaultAction(selector.duplicate))
-                Match(/*gen.mkUnchecked*/(selector), cases :+ defaultCase)
-              }
-
-          }
-        }
-        body.changeOwner(fun.symbol -> methSym)
-
-        val methDef = DefDef(methSym, body)
-
-        // Have to repack the type to avoid mismatches when existentials
-        // appear in the result - see SI-4869.
-        methDef.tpt setType localTyper.packedType(body, methSym)
-        methDef
-      }
-
-      val isDefinedAtMethodDef = {
-        val methSym = anonClass.newMethod(nme.isDefinedAt, fun.pos, FINAL)
-        val params  = methSym newSyntheticValueParams formals
-        methSym setInfoAndEnter MethodType(params, BooleanClass.tpe)
-
-        val substParam = new TreeSymSubstituter(fun.vparams map (_.symbol), params)
-        def doSubst(x: Tree) = substParam(resetLocalAttrsKeepLabels(x)) // see pos/t1761 for why `resetLocalAttrs`, but must keep label symbols around
-
-        val body = bodyForIDA match {
-          case Match(selector, cases) =>
-            if (cases exists treeInfo.isDefaultCase) TRUE_typed
-            else
-              doSubst(Match(/*gen.mkUnchecked*/(selector),
-                        (cases map (c => deriveCaseDef(c)(x => TRUE_typed))) :+ (
-                        DEFAULT ==> FALSE_typed)))
-
-        }
-        body.changeOwner(fun.symbol -> methSym)
-
-        DefDef(methSym, body)
-      }
-
-      localTyper.typedPos(fun.pos) {
-        Block(
-          List(ClassDef(anonClass, NoMods, ListOfNil, ListOfNil, List(applyOrElseMethodDef, isDefinedAtMethodDef), fun.pos)),
-          Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
-      }
-    }
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
       val isJava = fun.isJavaDefined
@@ -541,13 +393,6 @@ abstract class UnCurry extends InfoTransform
         finally needTryLift = saved
       }
 
-      /** A try or synchronized needs to be lifted anyway for MSIL if it contains
-       *  return statements. These are disallowed in the CLR. By lifting
-       *  such returns will be converted to throws.
-       */
-      def shouldBeLiftedAnyway(tree: Tree) = false && // buggy, see #1981
-        forMSIL && lookForReturns.found(tree)
-
       /** Transform tree `t` to { def f = t; f } where `f` is a fresh name
        */
       def liftTree(tree: Tree) = {
@@ -606,8 +451,6 @@ abstract class UnCurry extends InfoTransform
             }
           case ValDef(_, _, _, rhs) =>
             if (sym eq NoSymbol) throw new IllegalStateException("Encountered Valdef without symbol: "+ tree + " in "+ unit)
-            // a local variable that is mutable and free somewhere later should be lifted
-            // as lambda lifting (coming later) will wrap 'rhs' in an Ref object.
             if (!sym.owner.isSourceMethod)
               withNeedLift(true) { super.transform(tree) }
             else
@@ -616,19 +459,17 @@ abstract class UnCurry extends InfoTransform
             val fn1 = withInPattern(false)(transform(fn))
             val args1 = transformTrees(fn.symbol.name match {
               case nme.unapply    => args
-              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.symbol, fn.tpe, args.length))
+              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.pos, fn.symbol, fn.tpe, args.length))
               case _              => sys.error("internal error: UnApply node has wrong symbol")
             })
             treeCopy.UnApply(tree, fn1, args1)
 
           case Apply(fn, args) =>
-            if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head))
-              transform(treeCopy.Apply(tree, fn, List(liftTree(args.head))))
-            else
-              withNeedLift(true) {
-                val formals = fn.tpe.paramTypes
-                treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
-              }
+            val needLift = needTryLift || !fn.symbol.isLabel // SI-6749, no need to lift in args to label jumps.
+            withNeedLift(needLift) {
+              val formals = fn.tpe.paramTypes
+              treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
+            }
 
           case Assign(_: RefTree, _) =>
             withNeedLift(true) { super.transform(tree) }
@@ -647,7 +488,7 @@ abstract class UnCurry extends InfoTransform
             super.transform(tree)
 
           case Try(block, catches, finalizer) =>
-            if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
+            if (needTryLift) transform(liftTree(tree))
             else super.transform(tree)
 
           case CaseDef(pat, guard, body) =>
@@ -672,7 +513,7 @@ abstract class UnCurry extends InfoTransform
             tree1
         }
       )
-      assert(result.tpe != null, result + " tpe is null")
+      assert(result.tpe != null, result.shortClass + " tpe is null:\n" + result)
       result setType uncurryTreeType(result.tpe)
     }
 
@@ -691,46 +532,17 @@ abstract class UnCurry extends InfoTransform
         else
           tree
       }
-      
+
       def isThrowable(pat: Tree): Boolean = pat match {
-        case Typed(Ident(nme.WILDCARD), tpt) => 
+        case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableClass.tpe
-        case Bind(_, pat) => 
+        case Bind(_, pat) =>
           isThrowable(pat)
         case _ =>
           false
       }
-      
-      def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
 
-      def postTransformTry(tree: Try) = {
-        val body = tree.block
-        val catches = tree.catches
-        val finalizer = tree.finalizer
-        if (!settings.XoldPatmat.value) {
-          if (catches exists (cd => !treeInfo.isCatchCase(cd)))
-            debugwarn("VPM BUG! illegal try/catch " + catches)
-          tree
-        } else if (catches forall treeInfo.isCatchCase) {
-          tree
-        } else {
-          val exname = unit.freshTermName("ex$")
-          val cases =
-            if ((catches exists treeInfo.isDefaultCase) || isDefaultCatch(catches.last)) catches
-            else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
-          val catchall =
-            atPos(tree.pos) {
-              CaseDef(
-                Bind(exname, Ident(nme.WILDCARD)),
-                EmptyTree,
-                Match(Ident(exname), cases))
-            }
-          debuglog("rewrote try: " + catches + " ==> " + catchall);
-          val catches1 = localTyper.typedCases(
-            List(catchall), ThrowableClass.tpe, WildcardType)
-          treeCopy.Try(tree, body, catches1, finalizer)
-        }
-      }
+      def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
 
       tree match {
         /* Some uncurry post transformations add members to templates.
@@ -749,25 +561,34 @@ abstract class UnCurry extends InfoTransform
           }
 
         case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
-          val vparamss1 = vparamss0 match {
-            case _ :: Nil  => vparamss0
-            case _         => vparamss0.flatten :: Nil
-          }
+          val (newParamss, newRhs): (List[List[ValDef]], Tree) =
+            if (dependentParamTypeErasure isDependent dd)
+              dependentParamTypeErasure erase dd
+            else {
+              val vparamss1 = vparamss0 match {
+                case _ :: Nil => vparamss0
+                case _        => vparamss0.flatten :: Nil
+              }
+              (vparamss1, rhs0)
+            }
+
           val flatdd = copyDefDef(dd)(
-            vparamss = vparamss1,
+            vparamss = newParamss,
             rhs = nonLocalReturnKeys get dd.symbol match {
-              case Some(k) => atPos(rhs0.pos)(nonLocalReturnTry(rhs0, k, dd.symbol))
-              case None    => rhs0
+              case Some(k) => atPos(newRhs.pos)(nonLocalReturnTry(newRhs, k, dd.symbol))
+              case None    => newRhs
             }
           )
           addJavaVarargsForwarders(dd, flatdd)
 
         case tree: Try =>
-          postTransformTry(tree)
-          
+          if (tree.catches exists (cd => !treeInfo.isCatchCase(cd)))
+            devWarning("VPM BUG - illegal try/catch " + tree.catches)
+          tree
+
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
-          
+
         case Ident(name) =>
           assert(name != tpnme.WILDCARD_STAR, tree)
           applyUnary()
@@ -782,6 +603,104 @@ abstract class UnCurry extends InfoTransform
           if (tree.isType) TypeTree(tree.tpe) setPos tree.pos else tree
       }
     }
+
+    /**
+     * When we concatenate parameter lists, formal parameter types that were dependent
+     * on prior parameter values will no longer be correctly scoped.
+     *
+     * For example:
+     *
+     * {{{
+     *   def foo(a: A)(b: a.B): a.type = {b; b}
+     *   // after uncurry
+     *   def foo(a: A, b: a/* NOT IN SCOPE! */.B): a.B = {b; b}
+     * }}}
+     *
+     * This violates the principle that each compiler phase should produce trees that
+     * can be retyped (see [[scala.tools.nsc.typechecker.TreeCheckers]]), and causes
+     * a practical problem in `erasure`: it is not able to correctly determine if
+     * such a signature overrides a corresponding signature in a parent. (SI-6443).
+     *
+     * This transformation erases the dependent method types by:
+     *   - Widening the formal parameter type to existentially abstract
+     *     over the prior parameters (using `packSymbols`)
+     *   - Inserting casts in the method body to cast to the original,
+     *     precise type.
+     *
+     * For the example above, this results in:
+     *
+     * {{{
+     *   def foo(a: A, b: a.B forSome { val a: A }): a.B = { val b$1 = b.asInstanceOf[a.B]; b$1; b$1 }
+     * }}}
+     */
+    private object dependentParamTypeErasure {
+      sealed abstract class ParamTransform {
+        def param: ValDef
+      }
+      final case class Identity(param: ValDef) extends ParamTransform
+      final case class Packed(param: ValDef, tempVal: ValDef) extends ParamTransform
+
+      def isDependent(dd: DefDef): Boolean =
+        enteringUncurry {
+          val methType = dd.symbol.info
+          methType.isDependentMethodType && mexists(methType.paramss)(_.info exists (_.isImmediatelyDependent))
+        }
+
+      /**
+       * @return (newVparamss, newRhs)
+       */
+      def erase(dd: DefDef): (List[List[ValDef]], Tree) = {
+        import dd.{ vparamss, rhs }
+        val vparamSyms = vparamss flatMap (_ map (_.symbol))
+
+        val paramTransforms: List[ParamTransform] =
+          vparamss.flatten.map { p =>
+            val declaredType = p.symbol.info
+            // existentially abstract over value parameters
+            val packedType = typer.packSymbols(vparamSyms, declaredType)
+            if (packedType =:= declaredType) Identity(p)
+            else {
+              // Change the type of the param symbol
+              p.symbol updateInfo packedType
+
+              // Create a new param tree
+              val newParam: ValDef = copyValDef(p)(tpt = TypeTree(packedType))
+
+              // Within the method body, we'll cast the parameter to the originally
+              // declared type and assign this to a synthetic val. Later, we'll patch
+              // the method body to refer to this, rather than the parameter.
+              val tempVal: ValDef = {
+                val tempValName = unit freshTermName (p.name + "$")
+                val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(declaredType)
+                atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), declaredType)))
+              }
+              Packed(newParam, tempVal)
+            }
+          }
+
+        val allParams = paramTransforms map (_.param)
+        val (packedParams, tempVals) = paramTransforms.collect {
+          case Packed(param, tempVal) => (param, tempVal)
+        }.unzip
+
+        val rhs1 = localTyper.typedPos(rhs.pos) {
+          // Patch the method body to refer to the temp vals
+          val rhsSubstituted = rhs.substituteSymbols(packedParams map (_.symbol), tempVals map (_.symbol))
+          // The new method body: { val p$1 = p.asInstanceOf[<dependent type>]; ...; <rhsSubstituted> }
+          Block(tempVals, rhsSubstituted)
+        }
+
+        // update the type of the method after uncurry.
+        dd.symbol updateInfo {
+          val GenPolyType(tparams, tp) = dd.symbol.info
+          logResult("erased dependent param types for ${dd.symbol.info}") {
+            GenPolyType(tparams, MethodType(allParams map (_.symbol), tp.finalResultType))
+          }
+        }
+        (allParams :: Nil, rhs1)
+      }
+    }
+
 
     /* Analyzes repeated params if method is annotated as `varargs`.
      * If the repeated params exist, it saves them into the `repeatedParams` map,
@@ -805,10 +724,6 @@ abstract class UnCurry extends InfoTransform
       if (!dd.symbol.hasAnnotation(VarargsClass) || !repeatedParams.contains(dd.symbol))
         return flatdd
 
-      def toSeqType(tp: Type): Type = {
-        val arg = elementType(ArrayClass, tp)
-        seqType(arg)
-      }
       def toArrayType(tp: Type): Type = {
         val arg = elementType(SeqClass, tp)
         // to prevent generation of an `Object` parameter from `Array[T]` parameter later
@@ -843,7 +758,7 @@ abstract class UnCurry extends InfoTransform
       }
 
       // create the symbol
-      val forwsym = currentClass.newMethod(dd.name, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
+      val forwsym = currentClass.newMethod(dd.name.toTermName, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {

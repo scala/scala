@@ -1,6 +1,10 @@
 unchecked-impossible.scala:5: warning: fruitless type test: a value of type T2[Int,Int] cannot also be a Seq[A]
     case Seq(x) =>
             ^
-error: No warnings can be incurred under -Xfatal-warnings.
+unchecked-impossible.scala:5: error: pattern type is incompatible with expected type;
+ found   : Seq[A]
+ required: T2[Int,Int]
+    case Seq(x) =>
+            ^
 one warning found
 one error found

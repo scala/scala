@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Stepan Koltsov
  */
 
@@ -19,11 +19,8 @@ extends InteractiveReader
   val history = NoHistory
   val completion = NoCompletion
 
-  def init() = ()
   def reset() = ()
-  def eraseLine() = ()
   def redrawLine() = ()
-  def currentLine = ""
   def readOneLine(prompt: String): String = {
     if (interactive) {
       out.print(prompt)

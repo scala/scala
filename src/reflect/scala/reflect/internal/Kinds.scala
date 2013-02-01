@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -93,8 +93,8 @@ trait Kinds {
    *  If `sym2` is invariant, `sym1`'s variance is irrelevant. Otherwise they must be equal.
    */
   private def variancesMatch(sym1: Symbol, sym2: Symbol) = (
-       sym2.variance==0
-    || sym1.variance==sym2.variance
+       sym2.variance.isInvariant
+    || sym1.variance == sym2.variance
   )
 
   /** Check well-kindedness of type application (assumes arities are already checked) -- @M

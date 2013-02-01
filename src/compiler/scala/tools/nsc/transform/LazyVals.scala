@@ -68,7 +68,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       curTree = tree
 
       tree match {
-        
+
         case Block(_, _) =>
           val block1 = super.transform(tree)
           val Block(stats, expr) = block1
@@ -79,7 +79,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
               List(stat)
           })
           treeCopy.Block(block1, stats1, expr)
-          
+
         case DefDef(_, _, _, _, _, rhs) => atOwner(tree.symbol) {
           val (res, slowPathDef) = if (!sym.owner.isClass && sym.isLazy) {
             val enclosingClassOrDummyOrMethod = {
@@ -94,14 +94,15 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
               } else
                 sym.owner
             }
+            debuglog(s"determined enclosing class/dummy/method for lazy val as $enclosingClassOrDummyOrMethod given symbol $sym")
             val idx = lazyVals(enclosingClassOrDummyOrMethod)
             lazyVals(enclosingClassOrDummyOrMethod) = idx + 1
             val (rhs1, sDef) = mkLazyDef(enclosingClassOrDummyOrMethod, transform(rhs), idx, sym)
             sym.resetFlag((if (lazyUnit(sym)) 0 else LAZY) | ACCESSOR)
             (rhs1, sDef)
-          } else            
+          } else
             (transform(rhs), EmptyTree)
-            
+
           val ddef1 = deriveDefDef(tree)(_ => if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
           if (slowPathDef != EmptyTree) Block(slowPathDef, ddef1) else ddef1
         }
@@ -188,19 +189,20 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         case _ => prependStats(bmps, rhs)
       }
     }
-    
+
     def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                       stats: List[Tree], retVal: Tree): Tree = {
-      val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name), lzyVal.pos, STABLE | PRIVATE)
+      val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, STABLE | PRIVATE)
       defSym setInfo MethodType(List(), lzyVal.tpe.resultType)
       defSym.owner = lzyVal.owner
+      debuglog(s"crete slow compute path $defSym with owner ${defSym.owner} for lazy val $lzyVal")
       if (bitmaps.contains(lzyVal))
         bitmaps(lzyVal).map(_.owner = defSym)
       val rhs: Tree = (gen.mkSynchronizedCheck(clazz, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
       DEF(defSym).mkTree(addBitmapDefs(lzyVal, BLOCK(rhs, retVal))) setSymbol defSym
     }
-  
-  
+
+
     def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                        stats: List[Tree], retVal: Tree): (Tree, Tree) = {
       val slowPathDef: Tree = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal)
@@ -219,7 +221,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *  Similarly as for normal lazy val members (see Mixin), the result will be a tree of the form
      *  { if ((bitmap&n & MASK) == 0) this.l$compute()
      *    else l$
-     *    
+     *
      *    def l$compute() = { synchronized(enclosing_class_or_dummy) {
      *      if ((bitmap$n & MASK) == 0) {
      *       l$ = <rhs>
@@ -248,6 +250,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
       def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask, bitmapRef), UNIT)
 
+      debuglog(s"create complete lazy def in $methOrClass for $lazyVal")
       val (block, res) = tree match {
         case Block(List(assignment), res) if !lazyUnit(lazyVal) =>
           (mkBlock(assignment),  res)

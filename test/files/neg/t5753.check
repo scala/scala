@@ -1,0 +1,4 @@
+Test_2.scala:9: error: macro implementation not found: foo (the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)
+ println(foo(42))
+            ^
+one error found

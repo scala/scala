@@ -1,0 +1,4 @@
+t6566b.scala:3: error: covariant type T occurs in invariant position in type T of type MyType
+    type MyType = T
+         ^
+one error found

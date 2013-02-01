@@ -1,11 +1,12 @@
 package scala.reflect.reify
 package phases
 
+import scala.collection.{ mutable }
+
 trait Metalevels {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   /**
    *  Makes sense of cross-stage bindings.
@@ -102,7 +103,7 @@ trait Metalevels {
    */
   val metalevels = new Transformer {
     var insideSplice = false
-    var inlineableBindings = scala.collection.mutable.Map[TermName, Tree]()
+    val inlineableBindings = mutable.Map[TermName, Tree]()
 
     def withinSplice[T](op: => T) = {
       val old = insideSplice
@@ -124,7 +125,7 @@ trait Metalevels {
         withinSplice { super.transform(TreeSplice(ReifiedTree(universe, mirror, symtab1, rtree, tpe, rtpe, concrete))) }
       case TreeSplice(splicee) =>
         if (reifyDebug) println("entering splice: " + splicee)
-        val breaches = splicee filter (sub => sub.hasSymbol && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
+        val breaches = splicee filter (sub => sub.hasSymbolField && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
         if (!insideSplice && breaches.nonEmpty) {
           // we used to convert dynamic splices into runtime evals transparently, but we no longer do that
           // why? see comments above

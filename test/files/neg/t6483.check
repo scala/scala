@@ -1,0 +1,9 @@
+t6483.scala:7: error: implementation restriction: qualified super reference is not allowed in value class
+This restriction is planned to be removed in subsequent releases.
+  override def foo = super[T].foo // error
+                     ^
+t6483.scala:20: error: implementation restriction: nested class is not allowed in value class
+This restriction is planned to be removed in subsequent releases.
+    class Inner extends T {
+          ^
+two errors found

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -33,11 +33,17 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
     while (i < len) { f(this(i)); i += 1 }
   }
 
-  override /*IterableLike*/
-  def forall(p: A => Boolean): Boolean = prefixLength(p(_)) == length
+  private def prefixLengthImpl(p: A => Boolean, expectTrue: Boolean): Int = {
+    var i = 0
+    while (i < length && p(apply(i)) == expectTrue) i += 1
+    i
+  }
 
   override /*IterableLike*/
-  def exists(p: A => Boolean): Boolean = prefixLength(!p(_)) != length
+  def forall(p: A => Boolean): Boolean = prefixLengthImpl(p, expectTrue = true) == length
+
+  override /*IterableLike*/
+  def exists(p: A => Boolean): Boolean = prefixLengthImpl(p, expectTrue = false) != length
 
   override /*IterableLike*/
   def find(p: A => Boolean): Option[A] = {

@@ -1,0 +1,16 @@
+t6526.scala:8: error: could not optimize @tailrec annotated method inner: it contains a recursive call not in tail position
+    @tailrec def inner(i: Int): Int = 1 + inner(i)
+                                        ^
+t6526.scala:14: error: could not optimize @tailrec annotated method inner: it contains a recursive call not in tail position
+    @tailrec def inner(i: Int): Int = 1 + inner(i)
+                                        ^
+t6526.scala:20: error: could not optimize @tailrec annotated method inner: it contains a recursive call not in tail position
+    @tailrec def inner(i: Int): Int = 1 + inner(i)
+                                        ^
+t6526.scala:30: error: could not optimize @tailrec annotated method inner: it contains a recursive call not in tail position
+        @tailrec def inner(i: Int): Int = 1 + inner(i)
+                                            ^
+t6526.scala:39: error: could not optimize @tailrec annotated method inner: it contains a recursive call not in tail position
+    def inner(i: Int): Int = 1 + inner(i)
+                               ^
+5 errors found

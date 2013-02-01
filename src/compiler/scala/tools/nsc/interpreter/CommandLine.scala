@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Lex Spoon
  */
 
@@ -10,5 +10,4 @@ package interpreter
  */
 class CommandLine(arguments: List[String], error: String => Unit) extends CompilerCommand(arguments, error) {
   override def cmdName = "scala"
-  override lazy val fileEndings = List(".scalaint")
 }

@@ -1,6 +1,5 @@
 package scala.tools.nsc.io
 
-import scala.annotation.unchecked
 import Lexer._
 import java.io.Writer
 import scala.language.implicitConversions
@@ -71,14 +70,6 @@ abstract class Pickler[T] {
    */
   def wrapped [U] (in: T => U)(out: U => T): Pickler[U] = wrappedPickler(this)(in)(out)
 
-  /** A pickler obtained from the current pickler by also admitting `null` as
-   *  a handled value, represented as the token `null`.
-   *
-   *  @param  fromNull    an implicit evidence parameter ensuring that the type of values
-   *                      handled by this pickler contains `null`.
-   */
-  def orNull(implicit fromNull: Null <:< T): Pickler[T] = nullablePickler(this)
-
   /** A conditional pickler obtained from the current pickler.
    *  @param   cond   the condition to test to find out whether pickler can handle
    *                  some Scala value.
@@ -93,9 +84,6 @@ abstract class Pickler[T] {
 }
 
 object Pickler {
-
-  var picklerDebugMode = false
-
   /** A base class representing unpickler result. It has two subclasses:
    *  `UnpickleSucess` for successful unpicklings and `UnpickleFailure` for failures,
    *  where a value of the given type `T` could not be unpickled from input.
@@ -175,17 +163,6 @@ object Pickler {
     def ~ [T](y: T): S ~ T = new ~ (x, y)
   }
 
-  /** A converter from binary functions to functions over `~`-pairs
-   */
-  implicit def fromTilde[T1, T2, R](f: (T1, T2) => R): T1 ~ T2 => R = { case x1 ~ x2 => f(x1, x2) }
-
-  /** An converter from unctions returning Options over pair to functions returning `~`-pairs
-   *  The converted function will raise a `MatchError` where the original function returned
-   *  a `None`. This converter is useful for turning `unapply` methods of case classes
-   *  into wrapper methods that can be passed as second argument to `wrap`.
-   */
-  implicit def toTilde[T1, T2, S](f: S => Option[(T1, T2)]): S => T1 ~ T2 = { x => (f(x): @unchecked) match { case Some((x1, x2)) => x1 ~ x2 } }
-
   /** Same as `p.labelled(label)`.
    */
   def labelledPickler[T](label: String, p: Pickler[T]): Pickler[T] = new Pickler[T] {
@@ -248,16 +225,6 @@ object Pickler {
                 "no pickler found for "+x+" of class "+x.getClass.getName)
       def unpickle(rd: Lexer) = p.unpickle(rd) orElse qq.unpickle(rd)
     }
-
-  /** Same as `p.orNull`
-   */
-  def nullablePickler[T](p: Pickler[T])(implicit fromNull: Null <:< T): Pickler[T] = new Pickler[T] {
-    def pickle(wr: Writer, x: T) =
-      if (x == null) wr.write("null") else p.pickle(wr, x)
-    def unpickle(rd: Lexer): Unpickled[T] =
-      if (rd.token == NullLit) nextSuccess(rd, fromNull(null))
-      else p.unpickle(rd)
-  }
 
   /** A conditional pickler for singleton objects. It represents these
    *  with the object's underlying class as a label.
@@ -330,21 +297,8 @@ object Pickler {
   implicit val longPickler: Pickler[Long] =
     tokenPickler("integer literal") { case IntLit(s) => s.toLong }
 
-  /** A pickler for values of type `Double`, represented as floating point literals */
-  implicit val doublePickler: Pickler[Double] =
-    tokenPickler("floating point literal") { case FloatLit(s) => s.toDouble }
-
-  /** A pickler for values of type `Byte`, represented as integer literals */
-  implicit val bytePickler: Pickler[Byte] = longPickler.wrapped { _.toByte } { _.toLong }
-
-  /** A pickler for values of type `Short`, represented as integer literals */
-  implicit val shortPickler: Pickler[Short] = longPickler.wrapped { _.toShort } { _.toLong }
-
   /** A pickler for values of type `Int`, represented as integer literals */
   implicit val intPickler: Pickler[Int] = longPickler.wrapped { _.toInt } { _.toLong }
-
-  /** A pickler for values of type `Float`, represented as floating point literals */
-  implicit val floatPickler: Pickler[Float] = doublePickler.wrapped { _.toFloat } { _.toLong }
 
   /** A conditional pickler for the boolean value `true` */
   private val truePickler =
@@ -373,52 +327,15 @@ object Pickler {
     }
   }
 
-  /** A pickler for values of type `Char`, represented as string literals of length 1 */
-  implicit val charPickler: Pickler[Char] =
-    stringPickler
-      .wrapped { s => require(s.length == 1, "single character string literal expected, but "+quoted(s)+" found"); s(0) } { _.toString }
-
-  /** A pickler for pairs, represented as `~`-pairs */
-  implicit def tuple2Pickler[T1: Pickler, T2: Pickler]: Pickler[(T1, T2)] =
-    (pkl[T1] ~ pkl[T2])
-      .wrapped { case x1 ~ x2 => (x1, x2) } { case (x1, x2) => x1 ~ x2 }
-      .labelled ("tuple2")
-
   /** A pickler for 3-tuples, represented as `~`-tuples */
   implicit def tuple3Pickler[T1, T2, T3](implicit p1: Pickler[T1], p2: Pickler[T2], p3: Pickler[T3]): Pickler[(T1, T2, T3)] =
     (p1 ~ p2 ~ p3)
       .wrapped { case x1 ~ x2 ~ x3 => (x1, x2, x3) } { case (x1, x2, x3) => x1 ~ x2 ~ x3 }
       .labelled ("tuple3")
 
-  /** A pickler for 4-tuples, represented as `~`-tuples */
-  implicit def tuple4Pickler[T1, T2, T3, T4](implicit p1: Pickler[T1], p2: Pickler[T2], p3: Pickler[T3], p4: Pickler[T4]): Pickler[(T1, T2, T3, T4)] =
-    (p1 ~ p2 ~ p3 ~ p4)
-      .wrapped { case x1 ~ x2 ~ x3 ~ x4 => (x1, x2, x3, x4) } { case (x1, x2, x3, x4) => x1 ~ x2 ~ x3 ~ x4 }
-      .labelled ("tuple4")
-
-  /** A conditional pickler for the `scala.None` object */
-  implicit val nonePickler = singletonPickler(None)
-
-  /** A conditional pickler for instances of class `scala.Some` */
-  implicit def somePickler[T: Pickler]: CondPickler[Some[T]] =
-    pkl[T]
-      .wrapped { Some(_) } { _.get }
-      .asClass (classOf[Some[T]])
-
-  /** A pickler for optional values */
-  implicit def optionPickler[T: Pickler]: Pickler[Option[T]] = nonePickler | somePickler[T]
-
   /** A pickler for list values */
   implicit def listPickler[T: Pickler]: Pickler[List[T]] =
     iterPickler[T] .wrapped { _.toList } { _.iterator } .labelled ("scala.List")
-
-  /** A pickler for vector values */
-  implicit def vectorPickler[T: Pickler]: Pickler[Vector[T]] =
-    iterPickler[T] .wrapped { Vector() ++ _ } { _.iterator } .labelled ("scala.Vector")
-
-  /** A pickler for array values */
-  implicit def array[T : ClassTag : Pickler]: Pickler[Array[T]] =
-    iterPickler[T] .wrapped { _.toArray} { _.iterator } .labelled ("scala.Array")
 }
 
 /** A subclass of Pickler can indicate whether a particular value can be pickled by instances

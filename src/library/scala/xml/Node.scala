@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -55,7 +55,7 @@ abstract class Node extends NodeSeq {
   def scope: NamespaceBinding = TopScope
 
   /**
-   *  convenience, same as <code>getNamespace(this.prefix)</code>
+   *  convenience, same as `getNamespace(this.prefix)`
    */
   def namespace = getNamespace(this.prefix)
 
@@ -64,8 +64,8 @@ abstract class Node extends NodeSeq {
    * checks if scope is `'''null'''`.
    *
    * @param pre the prefix whose namespace name we would like to obtain
-   * @return    the namespace if <code>scope != null</code> and prefix was
-   *            found, else <code>null</code>
+   * @return    the namespace if `scope != null` and prefix was
+   *            found, else `null`
    */
   def getNamespace(pre: String): String = if (scope eq null) null else scope.getURI(pre)
 
@@ -74,8 +74,8 @@ abstract class Node extends NodeSeq {
    * Same as `attributes.getValue(key)`
    *
    * @param  key of queried attribute.
-   * @return value of <code>UnprefixedAttribute</code> with given key
-   *         in attributes, if it exists, otherwise <code>null</code>.
+   * @return value of `UnprefixedAttribute` with given key
+   *         in attributes, if it exists, otherwise `null`.
    */
   final def attribute(key: String): Option[Seq[Node]] = attributes.get(key)
 

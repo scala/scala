@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 package backend
 
-import scala.tools.nsc.backend.icode._
 import scala.collection.{ mutable, immutable }
 
 /** Scala primitive operations are represented as methods in `Any` and

@@ -13,7 +13,10 @@ variances.scala:21: error: covariant type A occurs in invariant position in supe
 variances.scala:74: error: covariant type A occurs in contravariant position in type => test.Covariant.T[A]{val m: A => A} of value x
     val x: T[A] {
         ^
+variances.scala:89: error: covariant type T occurs in invariant position in type T of type A
+    type A = T
+         ^
 variances.scala:90: error: covariant type T occurs in contravariant position in type => test.TestAlias.B[C.this.A] of method foo
     def foo: B[A]
         ^
-6 errors found
+7 errors found

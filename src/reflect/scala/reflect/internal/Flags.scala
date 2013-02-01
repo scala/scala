@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -275,7 +275,7 @@ class Flags extends ModifierFlags {
    *  Getters of immutable values also get STABLE.
    */
   final val GetterFlags = ~(PRESUPER | MUTABLE)
-  final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR)
+  final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR | IMPLICIT)
 
   /** When a symbol for a default getter is created, it inherits these
    *  flags from the method with the default.  Other flags applied at creation
@@ -508,4 +508,4 @@ class Flags extends ModifierFlags {
   final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 }
 
-object Flags extends Flags { }
+object Flags extends Flags

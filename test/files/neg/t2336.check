@@ -1,4 +1,4 @@
-t2336.scala:6: error: type Foo[Int] is not a stable prefix
+t2336.scala:6: error: Foo[Int] is not a legal prefix for a constructor
   new Foo[Int]#Bar(0)
                ^
 one error found

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -10,10 +10,11 @@ package scala.collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
-import Wrappers._
 import scala.language.implicitConversions
 
 trait WrapAsJava {
+  import Wrappers._
+
   /**
    * Implicitly converts a Scala Iterator to a Java Iterator.
    * The returned Java Iterator is backed by the provided Scala
@@ -231,27 +232,6 @@ trait WrapAsJava {
     //case JConcurrentMapWrapper(wrapped) => wrapped
     case JMapWrapper(wrapped) => wrapped.asInstanceOf[ju.Map[A, B]]
     case _ => new MapWrapper(m)
-  }
-
-  /**
-   * Implicitly converts a Scala mutable `ConcurrentMap` to a Java
-   * `ConcurrentMap`.
-   *
-   * The returned Java `ConcurrentMap` is backed by the provided Scala
-   * `ConcurrentMap` and any side-effects of using it via the Java interface
-   * will be visible via the Scala interface and vice versa.
-   *
-   * If the Scala `ConcurrentMap` was previously obtained from an implicit or
-   * explicit call of `asScalaConcurrentMap(java.util.concurrect.ConcurrentMap)`
-   * then the original Java ConcurrentMap will be returned.
-   *
-   * @param m The `ConcurrentMap` to be converted.
-   * @return A Java `ConcurrentMap` view of the argument.
-   */
-  @deprecated("Use `concurrent.Map` instead of `ConcurrentMap`.", "2.10.0")
-  implicit def asJavaConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B]): juc.ConcurrentMap[A, B] = m match {
-    case JConcurrentMapDeprecatedWrapper(wrapped) => wrapped
-    case _ => new ConcurrentMapDeprecatedWrapper(m)
   }
 
   /**

@@ -1,16 +1,14 @@
 package scala.tools.nsc.io
 
-import java.io.{Reader, Writer, StringReader, StringWriter}
-import scala.collection.mutable.{Buffer, ArrayBuffer}
-import scala.math.BigInt
+import java.io.Reader
 
 /** Companion object of class `Lexer` which defines tokens and some utility concepts
  *  used for tokens and lexers
  */
 object Lexer {
 
-  /** An exception raised if a if input does not correspond to what's expected
-   *  @param   rdr   the lexer form which the bad input is read
+  /** An exception raised if an input does not correspond to what's expected
+   *  @param   rdr   the lexer from which the bad input is read
    *  @param   msg   the error message
    */
   class MalformedInput(val rdr: Lexer, val msg: String) extends Exception("Malformed JSON input at "+rdr.tokenPos+": "+msg)

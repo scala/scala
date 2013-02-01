@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
@@ -8,7 +8,6 @@ package scala.tools.nsc.doc.html.page
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.model.{Package, DocTemplateEntity}
 import scala.tools.nsc.doc.html.{Page, HtmlFactory}
-import java.nio.channels.Channels
 import scala.util.parsing.json.{JSONObject, JSONArray}
 
 class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {

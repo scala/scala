@@ -1,11 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
 package scala.tools.nsc
 
-import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream }
+import java.io.PrintStream
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.reflect.internal.util.FakePos //Position
 import scala.tools.util.SocketServer
@@ -28,8 +28,6 @@ class StandardCompileServer extends SocketServer {
   var reporter: ConsoleReporter = _
   var shutdown = false
   var verbose = false
-
-  val versionMsg = "Fast " + Properties.versionMsg
 
   val MaxCharge = 0.8
 
@@ -57,9 +55,6 @@ class StandardCompileServer extends SocketServer {
     runtime.gc()
     (totalMemory - freeMemory).toDouble / maxMemory.toDouble > MaxCharge
   }
-
-  protected def newOfflineCompilerCommand(arguments: List[String], settings: FscSettings): OfflineCompilerCommand =
-    new OfflineCompilerCommand(arguments, settings)
 
   /** Problematically, Settings are only considered equal if every setting
    *  is exactly equal.  In fsc this immediately breaks down because the randomly
@@ -92,10 +87,11 @@ class StandardCompileServer extends SocketServer {
 
     val args        = input.split("\0", -1).toList
     val newSettings = new FscSettings(fscError)
+    val command     = new OfflineCompilerCommand(args, newSettings)
     this.verbose    = newSettings.verbose.value
-    val command     = newOfflineCompilerCommand(args, newSettings)
 
     info("Settings after normalizing paths: " + newSettings)
+    if (!command.files.isEmpty) info("Input files after normalizing paths: " + (command.files mkString ","))
     printMemoryStats()
 
     // Update the idle timeout if given
@@ -173,11 +169,22 @@ object CompileServer extends StandardCompileServer {
   /** A directory holding redirected output */
   private lazy val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
 
-  private def redirect(setter: PrintStream => Unit, filename: String) {
-    setter(new PrintStream((redirectDir / filename).createFile().bufferedOutput()))
-  }
+  private def createRedirect(filename: String) =
+    new PrintStream((redirectDir / filename).createFile().bufferedOutput())
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) =
+    execute(() => (), args)
+
+  /**
+   * Used for internal testing. The callback is called upon
+   * server start, notifying the caller that the server is
+   * ready to run. WARNING: the callback runs in the
+   * server's thread, blocking the server from doing any work
+   * until the callback is finished. Callbacks should be kept
+   * simple and clients should not try to interact with the
+   * server while the callback is processing.
+   */
+  def execute(startupCallback : () => Unit, args: Array[String]) {
     val debug = args contains "-v"
 
     if (debug) {
@@ -185,14 +192,16 @@ object CompileServer extends StandardCompileServer {
       echo("Redirect dir is " + redirectDir)
     }
 
-    redirect(System.setOut, "scala-compile-server-out.log")
-    redirect(System.setErr, "scala-compile-server-err.log")
-    System.err.println("...starting server on socket "+port+"...")
-    System.err.flush()
-    compileSocket setPort port
-    run()
+    Console.withErr(createRedirect("scala-compile-server-err.log")) {
+      Console.withOut(createRedirect("scala-compile-server-out.log")) {
+        Console.err.println("...starting server on socket "+port+"...")
+        Console.err.flush()
+        compileSocket setPort port
+        startupCallback()
+        run()
 
-    compileSocket deletePort port
-    sys exit 0
+        compileSocket deletePort port
+      }
+    }
   }
 }

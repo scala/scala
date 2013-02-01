@@ -5,7 +5,6 @@ trait GenAnnotationInfos {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   // usually annotations are reified as their originals from Modifiers
   // however, when reifying free and tough types, we're forced to reify annotation infos as is

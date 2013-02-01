@@ -1,12 +1,11 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
 
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.ast.parser.Tokens.EOF
 
 trait ExprTyper {
@@ -15,10 +14,11 @@ trait ExprTyper {
   import repl._
   import global.{ reporter => _, Import => _, _ }
   import definitions._
-  import syntaxAnalyzer.{ UnitParser, UnitScanner, token2name }
+  import syntaxAnalyzer.UnitParser
   import naming.freshInternalVarName
 
-  object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {
+  object codeParser {
+    val global: repl.global.type = repl.global
     def applyRule[T](code: String, rule: UnitParser => T): T = {
       reporter.reset()
       val scanner = newUnitParser(code)
@@ -29,11 +29,7 @@ trait ExprTyper {
 
       result
     }
-
-    def defns(code: String) = stmts(code) collect { case x: DefTree => x }
-    def expr(code: String)  = applyRule(code, _.expr())
     def stmts(code: String) = applyRule(code, _.templateStats())
-    def stmt(code: String)  = stmts(code).last  // guaranteed nonempty
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
@@ -46,10 +42,6 @@ trait ExprTyper {
       else Some(trees)
     }
   }
-  // def parsesAsExpr(line: String) = {
-  //   import codeParser._
-  //   (opt expr line).isDefined
-  // }
 
   def symbolOfLine(code: String): Symbol = {
     def asExpr(): Symbol = {

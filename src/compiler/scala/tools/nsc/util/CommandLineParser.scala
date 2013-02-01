@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package util
 
 import scala.util.parsing.combinator._
-import scala.util.parsing.input.{ Reader }
 import scala.util.parsing.input.CharArrayReader.EofCh
 import scala.collection.mutable.ListBuffer
 
@@ -22,7 +21,6 @@ import scala.collection.mutable.ListBuffer
 trait ParserUtil extends Parsers {
   protected implicit class ParserPlus[+T](underlying: Parser[T]) {
     def !~>[U](p: => Parser[U]): Parser[U] = (underlying ~! p) ^^ { case a~b  => b }
-    def <~![U](p: => Parser[U]): Parser[T] = (underlying ~! p) ^^ { case a~b  => a }
   }
 }
 
@@ -38,7 +36,6 @@ case class CommandLine(
   def withUnaryArgs(xs: List[String]) = copy(unaryArguments = xs)
   def withBinaryArgs(xs: List[String]) = copy(binaryArguments = xs)
 
-  def originalArgs = args
   def assumeBinary = true
   def enforceArity = true
   def onlyKnownOptions = false
@@ -106,7 +103,6 @@ case class CommandLine(
 
   def isSet(arg: String) = args contains arg
   def get(arg: String) = argMap get arg
-  def getOrElse(arg: String, orElse: => String) = if (isSet(arg)) apply(arg) else orElse
   def apply(arg: String) = argMap(arg)
 
   override def toString() = "CommandLine(\n%s)\n" format (args map ("  " + _ + "\n") mkString)
@@ -116,7 +112,6 @@ object CommandLineParser extends RegexParsers with ParserUtil {
   override def skipWhitespace = false
 
   def elemExcept(xs: Elem*): Parser[Elem] = elem("elemExcept", x => x != EofCh && !(xs contains x))
-  def elemOf(xs: Elem*): Parser[Elem]     = elem("elemOf", xs contains _)
   def escaped(ch: Char): Parser[String] = "\\" + ch
   def mkQuoted(ch: Char): Parser[String] = (
       elem(ch) !~> rep(escaped(ch) | elemExcept(ch)) <~ ch ^^ (_.mkString)

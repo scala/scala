@@ -1,5 +1,6 @@
+package scala.xml.dtd.impl
+
 import scala.collection._
-import scala.util.regexp._
 
 abstract class S2 {
   val lang: WordExp

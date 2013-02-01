@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -110,7 +110,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends scala.collec
     } else Seq(this.asInstanceOf[IterRepr])
 
     private def convertToArrayBuffer(chainhead: Entry): mutable.ArrayBuffer[T] = {
-      var buff = mutable.ArrayBuffer[Entry]()
+      val buff = mutable.ArrayBuffer[Entry]()
       var curr = chainhead
       while (curr ne null) {
         buff += curr

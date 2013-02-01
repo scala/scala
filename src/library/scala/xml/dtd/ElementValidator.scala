@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,10 +12,12 @@ package scala.xml
 package dtd
 
 import PartialFunction._
+import scala.collection.mutable
+
 import ContentModel.ElemName
 import MakeValidationException._    // @todo other exceptions
-import scala.util.automata._
-import scala.collection.mutable
+
+import impl._
 
 /** validate children and/or attributes of an element
  *  exceptions are created but not thrown.
@@ -61,7 +63,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
    */
   def check(md: MetaData): Boolean = {
     val len: Int = exc.length
-    var ok = new mutable.BitSet(adecls.length)
+    val ok = new mutable.BitSet(adecls.length)
 
     for (attr <- md) {
       def attrStr = attr.value.toString

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,6 +7,14 @@ package scala.reflect
 package internal
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
+
+  /** An ADT to represent the results of symbol name lookups.
+   */
+  sealed trait NameLookup { def symbol: Symbol ; def isSuccess = false }
+  case class LookupSucceeded(qualifier: Tree, symbol: Symbol) extends NameLookup { override def isSuccess = true }
+  case class LookupAmbiguous(msg: String) extends NameLookup { def symbol = NoSymbol }
+  case class LookupInaccessible(symbol: Symbol, msg: String) extends NameLookup
+  case object LookupNotFound extends NameLookup { def symbol = NoSymbol }
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket
@@ -17,15 +25,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     var next: ScopeEntry = null
 
+    def depth = owner.nestingLevel
     override def hashCode(): Int = sym.name.start
-    override def toString(): String = sym.toString()
+    override def toString() = s"$sym (depth=$depth)"
   }
 
-  /**
-   *  @param sym   ...
-   *  @param owner ...
-   *  @return      ...
-   */
   private def newScopeEntry(sym: Symbol, owner: Scope): ScopeEntry = {
     val e = new ScopeEntry(sym, owner)
     e.next = owner.elems
@@ -92,8 +96,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** enter a scope entry
-     *
-     *  @param e ...
      */
     protected def enterEntry(e: ScopeEntry) {
       elemsCache = null
@@ -110,8 +112,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** enter a symbol
-     *
-     *  @param sym ...
      */
     def enter[T <: Symbol](sym: T): T = {
       enterEntry(newScopeEntry(sym, this))
@@ -119,8 +119,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
-     *
-     *  @param sym ...
      */
     def enterUnique(sym: Symbol) {
       assert(lookup(sym.name) == NoSymbol, (sym.fullLocationString, lookup(sym.name).fullLocationString))
@@ -175,8 +173,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** remove entry
-     *
-     *  @param e ...
      */
     def unlink(e: ScopeEntry) {
       if (elems == e) {
@@ -208,14 +204,48 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
-    /** lookup a symbol
-     *
-     *  @param name ...
-     *  @return     ...
+    /** Lookup a module or a class, filtering out matching names in scope
+     *  which do not match that requirement.
+     */
+    def lookupModule(name: Name): Symbol = lookupAll(name.toTermName) find (_.isModule) getOrElse NoSymbol
+    def lookupClass(name: Name): Symbol  = lookupAll(name.toTypeName) find (_.isClass) getOrElse NoSymbol
+
+    /** True if the name exists in this scope, false otherwise. */
+    def containsName(name: Name) = lookupEntry(name) != null
+
+    /** Lookup a symbol.
      */
     def lookup(name: Name): Symbol = {
       val e = lookupEntry(name)
-      if (e eq null) NoSymbol else e.sym
+      if (e eq null) NoSymbol
+      else if (lookupNextEntry(e) eq null) e.sym
+      else {
+        // We shouldn't get here: until now this method was picking a random
+        // symbol when there was more than one with the name, so this should
+        // only be called knowing that there are 0-1 symbols of interest. So, we
+        // can safely return an overloaded symbol rather than throwing away the
+        // rest of them. Most likely we still break, but at least we will break
+        // in an understandable fashion (unexpectedly overloaded symbol) rather
+        // than a non-deterministic bizarre one (see any bug involving overloads
+        // in package objects.)
+        val alts = lookupAll(name).toList
+        def alts_s = alts map (s => s.defString) mkString " <and> "
+        devWarning(s"scope lookup of $name found multiple symbols: $alts_s")
+        // FIXME - how is one supposed to create an overloaded symbol without
+        // knowing the correct owner? Using the symbol owner is not correct;
+        // say for instance this is List's scope and the symbols are its three
+        // mkString members. Those symbols are owned by TraversableLike, which
+        // is no more meaningful an owner than NoSymbol given that we're in
+        // List. Maybe it makes no difference who owns the overloaded symbol, in
+        // which case let's establish that and have a canonical creation method.
+        //
+        // FIXME - a similar question for prefix, although there are more
+        // clues from the symbols on that one, as implemented here. In general
+        // the distinct list is one type and lub becomes the identity.
+        // val prefix = lub(alts map (_.info.prefix) distinct)
+        // Now using NoSymbol and NoPrefix always to avoid forcing info (SI-6664)
+        NoSymbol.newOverloaded(NoPrefix, alts)
+      }
     }
 
     /** Returns an iterator yielding every symbol with given name in this scope.
@@ -223,7 +253,20 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
       var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
-      def next(): Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
+      def next(): Symbol = try e.sym finally e = lookupNextEntry(e)
+    }
+
+    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
+      var e = lookupEntry(name)
+      def hasNext: Boolean = e ne null
+      def next(): ScopeEntry = try e finally e = lookupNextEntry(e)
+    }
+
+    def lookupUnshadowedEntries(name: Name): Iterator[ScopeEntry] = {
+      lookupEntry(name) match {
+        case null => Iterator.empty
+        case e    => lookupAllEntries(name) filter (e1 => (e eq e1) || (e.depth == e1.depth && e.sym != e1.sym))
+      }
     }
 
     /** lookup a symbol entry matching given name.
@@ -287,36 +330,16 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def iterator: Iterator[Symbol] = toList.iterator
 
-/*
-    /** Does this scope contain an entry for `sym`?
-     */
-    def contains(sym: Symbol): Boolean = lookupAll(sym.name) contains sym
-
-    /** A scope that contains all symbols of this scope and that also contains `sym`.
-     */
-    def +(sym: Symbol): Scope =
-      if (contains(sym)) this
-      else {
-        val result = cloneScope
-        result enter sym
-        result
-      }
-
-    /** A scope that contains all symbols of this scope except `sym`.
-     */
-    def -(sym: Symbol): Scope =
-      if (!contains(sym)) this
-      else {
-        val result = cloneScope
-        result unlink sym
-        result
-      }
-*/
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    override def filter(p: Symbol => Boolean): Scope =
-      if (!(toList forall p)) newScopeWith(toList filter p: _*) else this
-
+    override def filterNot(p: Symbol => Boolean): Scope = (
+      if (toList exists p) newScopeWith(toList filterNot p: _*)
+      else this
+    )
+    override def filter(p: Symbol => Boolean): Scope = (
+      if (toList forall p) this
+      else newScopeWith(toList filter p: _*)
+    )
     @deprecated("Use `toList.reverse` instead", "2.10.0")
     def reverse: List[Symbol] = toList.reverse
 

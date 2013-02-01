@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2012 LAMP/EPFL
+ * Copyright 2007-2013 LAMP/EPFL
  * @author Lex Spoon
  * Updated by Anders Bach Nielsen
  */
@@ -18,8 +18,12 @@ abstract class PluginComponent extends SubComponent {
   /** Internal flag to tell external from internal phases */
   final override val internal = false
 
-  /** Phases supplied by plugins should not have give the runsRightAfter constraint,
-   * but can override it */
+  /** Phases supplied by plugins should not have to supply the
+   *  runsRightAfter constraint, but can override it.
+   */
   val runsRightAfter: Option[String] = None
+
+  /** Useful for -Xshow-phases. */
+  def description: String = ""
 
 }

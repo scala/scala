@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,10 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
-import reporters._
-import scala.reflect.internal.util.{Position, NoPosition}
 import util.DocStrings._
-import scala.reflect.internal.Chars._
 import scala.collection.mutable
 
 /*
@@ -19,10 +16,16 @@ import scala.collection.mutable
  */
 trait DocComments { self: Global =>
 
-  var cookedDocComments = Map[Symbol, String]()
+  val cookedDocComments = mutable.HashMap[Symbol, String]()
 
   /** The raw doc comment map */
   val docComments = mutable.HashMap[Symbol, DocComment]()
+
+  def clearDocComments() {
+    cookedDocComments.clear()
+    docComments.clear()
+    defs.clear()
+  }
 
   /** Associate comment with symbol `sym` at position `pos`. */
   def docComment(sym: Symbol, docStr: String, pos: Position = NoPosition) =
@@ -55,25 +58,20 @@ trait DocComments { self: Global =>
    *  If a symbol does not have a doc comment but some overridden version of it does,
    *  the doc comment of the overridden version is copied instead.
    */
-  def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.get(sym) match {
-    case Some(comment) =>
-      comment
-    case None =>
-      val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
+  def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.getOrElseUpdate(sym, {
+    val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
                        else DocComment(docStr).template
-      val comment = superComment(sym) match {
-        case None =>
-          if (ownComment.indexOf("@inheritdoc") != -1)
-            reporter.warning(sym.pos, "The comment for " + sym +
-                " contains @inheritdoc, but no parent comment is available to inherit from.")
-          ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
-        case Some(sc) =>
-          if (ownComment == "") sc
-          else expandInheritdoc(sc, merge(sc, ownComment, sym), sym)
-      }
-      cookedDocComments += (sym -> comment)
-      comment
-  }
+    superComment(sym) match {
+      case None =>
+        if (ownComment.indexOf("@inheritdoc") != -1)
+          reporter.warning(sym.pos, "The comment for " + sym +
+              " contains @inheritdoc, but no parent comment is available to inherit from.")
+        ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
+      case Some(sc) =>
+        if (ownComment == "") sc
+        else expandInheritdoc(sc, merge(sc, ownComment, sym), sym)
+    }
+  })
 
   /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
    *
@@ -122,8 +120,6 @@ trait DocComments { self: Global =>
     }
     getDocComment(sym) map getUseCases getOrElse List()
   }
-
-  def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym.enclClass)
 
   /** Returns the javadoc format of doc comment string `s`, including wiki expansion
    */
@@ -324,7 +320,7 @@ trait DocComments { self: Global =>
   }
 
   /** Expand variable occurrences in string `str`, until a fix point is reached or
-   *  a expandLimit is exceeded.
+   *  an expandLimit is exceeded.
    *
    *  @param str   The string to be expanded
    *  @param sym   The symbol for which doc comments are generated
@@ -464,7 +460,7 @@ trait DocComments { self: Global =>
         //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
         //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
         //findIn(sites)
-        findIn(site.ownerChain ::: List(definitions.EmptyPackage))
+        findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
       }
 
       def getType(str: String, variable: String): Type = {

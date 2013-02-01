@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -62,11 +62,8 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     writeByte((x & 0x7f).toInt)
   }
 
-  /** Write a natural number <code>x</code> at position <code>pos</code>.
+  /** Write a natural number `x` at position `pos`.
    *  If number is more than one byte, shift rest of array to make space.
-   *
-   *  @param pos ...
-   *  @param x   ...
    */
   def patchNat(pos: Int, x: Int) {
     def patchNatPrefix(x: Int) {
@@ -81,7 +78,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     if (y != 0) patchNatPrefix(y)
   }
 
-  /** Write a long number <code>x</code> in signed big endian format, base 256.
+  /** Write a long number `x` in signed big endian format, base 256.
    *
    *  @param x The long number to be written.
    */
@@ -93,9 +90,6 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   }
 
   // -- Basic input routines --------------------------------------------
-
-  /** Peek at the current byte without moving the read index */
-  def peekByte(): Int = bytes(readIndex)
 
   /** Read a byte */
   def readByte(): Int = {
@@ -151,18 +145,14 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     result.toIndexedSeq
   }
 
-  /** Perform operation <code>op</code> until the condition
-   *  <code>readIndex == end</code> is satisfied.
+  /** Perform operation `op` until the condition
+   *  `readIndex == end` is satisfied.
    *  Concatenate results into a list.
-   *
-   *  @param end ...
-   *  @param op  ...
-   *  @return    ...
    */
   def until[T](end: Int, op: () => T): List[T] =
     if (readIndex == end) List() else op() :: until(end, op);
 
-  /** Perform operation <code>op</code> the number of
+  /** Perform operation `op` the number of
    *  times specified.  Concatenate the results into a list.
    */
   def times[T](n: Int, op: ()=>T): List[T] =

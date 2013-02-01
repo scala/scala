@@ -1,5 +1,5 @@
 /* scaladoc, a documentation generator for Scala
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  * @author  Geoffrey Washburn
  */
@@ -10,7 +10,6 @@ import java.io.File.pathSeparator
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.reflect.internal.util.FakePos
-import Properties.msilLibPath
 
 /** The main class for scaladoc, a front-end for the Scala compiler
  *  that generates documentation from source files.
@@ -42,12 +41,8 @@ class ScalaDoc {
       reporter.warning(null, "Phases are restricted when using Scaladoc")
     else if (docSettings.help.value || !hasFiles)
       reporter.echo(command.usageMsg)
-    else try {
-      if (docSettings.target.value == "msil")
-        msilLibPath foreach (x => docSettings.assemrefs.value += (pathSeparator + x))
-
-      new DocFactory(reporter, docSettings) document command.files
-    }
+    else
+      try { new DocFactory(reporter, docSettings) document command.files }
     catch {
       case ex @ FatalError(msg) =>
         if (docSettings.debug.value) ex.printStackTrace()

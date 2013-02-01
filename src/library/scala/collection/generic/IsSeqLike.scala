@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2012, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -30,7 +30,7 @@ package generic
   *    // == List(2, 4)
   * }}}
   *
-  * @see [[scala.collection.generic.Seq]]
+  * @see [[scala.collection.Seq]]
   * @see [[scala.collection.generic.IsTraversableLike]]
   */
 trait IsSeqLike[Repr] {

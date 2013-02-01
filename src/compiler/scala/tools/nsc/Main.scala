@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,15 +7,10 @@ package scala.tools.nsc
 
 import java.io.File
 import File.pathSeparator
-
-import scala.tools.nsc.interactive.{ RefinedBuildManager, SimpleBuildManager }
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.reflect.internal.util.{ BatchSourceFile, FakePos } //{Position}
-import Properties.msilLibPath
 
 /** The main class for NSC, a compiler for the programming
- *  language Scala. 
+ *  language Scala.
  */
 object Main extends Driver with EvalLoop {
 
@@ -46,28 +41,7 @@ object Main extends Driver with EvalLoop {
       askShutdown
       false
     }
-    else if (settings.Ybuilderdebug.value != "none") {
-      def fileSet(files : List[String]) = Set.empty ++ (files map AbstractFile.getFile)
-
-      val buildManager = settings.Ybuilderdebug.value match {
-        case "simple"   => new SimpleBuildManager(settings)
-        case _          => new RefinedBuildManager(settings)
-      }
-      buildManager.addSourceFiles(fileSet(command.files))
-
-      // enter resident mode
-      loop { line =>
-        val args = line.split(' ').toList
-        val command = new CompilerCommand(args.toList, settings)
-        buildManager.update(fileSet(command.files), Set.empty)
-      }
-      false
-    }
-    else {
-      if (settings.target.value == "msil")
-        msilLibPath foreach (x => settings.assemrefs.value += (pathSeparator + x))
-      true
-    }
+    else true
 
   override def newCompiler(): Global =
     if (settings.Yrangepos.value) new Global(settings, reporter) with interactive.RangePositions

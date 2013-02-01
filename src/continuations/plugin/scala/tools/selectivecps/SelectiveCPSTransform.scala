@@ -2,13 +2,8 @@
 
 package scala.tools.selectivecps
 
-import scala.collection._
-
-import scala.tools.nsc._
 import scala.tools.nsc.transform._
 import scala.tools.nsc.plugins._
-
-import scala.tools.nsc.ast.TreeBrowsers
 import scala.tools.nsc.ast._
 
 /**
@@ -21,6 +16,8 @@ abstract class SelectiveCPSTransform extends PluginComponent with
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.atOwner             // methods to type trees
+
+  override def description = "@cps-driven transform of selectiveanf assignments"
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "selectivecps"
@@ -56,7 +53,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
       case _ =>
         getExternalAnswerTypeAnn(tp) match {
           case Some((res, outer)) =>
-            appliedType(Context.tpe, List(removeAllCPSAnnotations(tp), res, outer))
+            appliedType(Context.tpeHK, List(removeAllCPSAnnotations(tp), res, outer))
           case _ =>
             removeAllCPSAnnotations(tp)
         }
@@ -90,7 +87,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             //gen.mkAttributedSelect(gen.mkAttributedSelect(gen.mkAttributedSelect(gen.mkAttributedIdent(ScalaPackage),
             //ScalaPackage.tpe.member("util")), ScalaPackage.tpe.member("util").tpe.member("continuations")), MethShiftR)
             //gen.mkAttributedRef(ModCPS.tpe,  MethShiftR) // TODO: correct?
-            debuglog("funR.tpe = " + funR.tpe)
+            debuglog("funR.tpe: " + funR.tpe)
             Apply(
                 TypeApply(funR, targs).setType(appliedType(funR.tpe, targs.map((t:Tree) => t.tpe))),
                 args.map(transform(_))
@@ -102,12 +99,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           debuglog("found shiftUnit: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethShiftUnitR) // TODO: correct?
-            debuglog("funR.tpe = " + funR.tpe)
+            debuglog("funR.tpe: " + funR.tpe)
             Apply(
                 TypeApply(funR, List(targs(0), targs(1))).setType(appliedType(funR.tpe,
                     List(targs(0).tpe, targs(1).tpe))),
                 args.map(transform(_))
-            ).setType(appliedType(Context.tpe, List(targs(0).tpe,targs(1).tpe,targs(1).tpe)))
+            ).setType(appliedType(Context.tpeHK, List(targs(0).tpe,targs(1).tpe,targs(1).tpe)))
           }
 
         case Apply(TypeApply(fun, targs), args)
@@ -115,7 +112,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           log("found reify: " + tree)
           atPos(tree.pos) {
             val funR = gen.mkAttributedRef(MethReifyR) // TODO: correct?
-            debuglog("funR.tpe = " + funR.tpe)
+            debuglog("funR.tpe: " + funR.tpe)
             Apply(
                 TypeApply(funR, targs).setType(appliedType(funR.tpe, targs.map((t:Tree) => t.tpe))),
                 args.map(transform(_))
@@ -192,13 +189,13 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           val targettp = transformCPSType(tree.tpe)
 
           val pos = catches.head.pos
-          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
-          val funDef = localTyper.typed(atPos(pos) {
+          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass, ThrowableClass.tpe, targettp))
+          val funDef = localTyper.typedPos(pos) {
             ValDef(funSym, Match(EmptyTree, catches1))
-          })
-          val expr2 = localTyper.typed(atPos(pos) {
+          }
+          val expr2 = localTyper.typedPos(pos) {
             Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
-          })
+          }
 
           val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
 
@@ -223,7 +220,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             val pos = finalizer.pos
             val finalizer2 = duplicateTree(finalizer1)
             val fun = Function(List(), finalizer2)
-            val expr3 = localTyper.typed(atPos(pos) { Apply(Select(expr2, expr2.tpe.member("mapFinally")), List(fun)) })
+            val expr3 = localTyper.typedPos(pos) { Apply(Select(expr2, expr2.tpe.member("mapFinally")), List(fun)) }
 
             val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
             chown.traverse(finalizer2)
@@ -290,7 +287,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
                 val body1 = (new TreeSymSubstituter(List(vd.symbol), List(ctxValSym)))(body)
 
-                val body2 = localTyper.typed(atPos(vd.symbol.pos) { body1 })
+                val body2 = localTyper.typedPos(vd.symbol.pos) { body1 }
 
                 // in theory it would be nicer to look for an @cps annotation instead
                 // of testing for Context
@@ -304,7 +301,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
               def applyCombinatorFun(ctxR: Tree, body: Tree) = {
                 val arg = currentOwner.newValueParameter(name, ctxR.pos).setInfo(tpe)
                 val body1 = (new TreeSymSubstituter(List(vd.symbol), List(arg)))(body)
-                val fun = localTyper.typed(atPos(vd.symbol.pos) { Function(List(ValDef(arg)), body1) }) // types body as well
+                val fun = localTyper.typedPos(vd.symbol.pos) { Function(List(ValDef(arg)), body1) } // types body as well
                 arg.owner = fun.symbol
                 body1.changeOwner(currentOwner -> fun.symbol)
 
@@ -328,9 +325,9 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
                 debuglog("will use method:"+methodName)
 
-                localTyper.typed(atPos(vd.symbol.pos) {
+                localTyper.typedPos(vd.symbol.pos) {
                   Apply(Select(ctxR, ctxR.tpe.member(methodName)), List(fun))
-                })
+                }
               }
 
               def mkBlock(stms: List[Tree], expr: Tree) = if (stms.nonEmpty) Block(stms, expr) else expr
@@ -350,14 +347,14 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   val ctxSym = currentOwner.newValue(newTermName("" + vd.symbol.name + cpsNames.shiftSuffix)).setInfo(rhs1.tpe)
                   val ctxDef = localTyper.typed(ValDef(ctxSym, rhs1))
                   def ctxRef = localTyper.typed(Ident(ctxSym))
-                  val argSym = currentOwner.newValue(vd.symbol.name).setInfo(tpe)
+                  val argSym = currentOwner.newValue(vd.symbol.name.toTermName).setInfo(tpe)
                   val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member(cpsNames.getTrivialValue))))
-                  val switchExpr = localTyper.typed(atPos(vd.symbol.pos) {
+                  val switchExpr = localTyper.typedPos(vd.symbol.pos) {
                     val body2 = mkBlock(bodyStms, bodyExpr).duplicate // dup before typing!
                     If(Select(ctxRef, ctxSym.tpe.member(cpsNames.isTrivial)),
                       applyTrivial(argSym, mkBlock(argDef::bodyStms, bodyExpr)),
                       applyCombinatorFun(ctxRef, body2))
-                  })
+                  }
                   (List(ctxDef), switchExpr)
                 } else {
                   // ctx.flatMap { <lhs> => ... }

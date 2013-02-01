@@ -1,0 +1,55 @@
+C(2,3)
+()
+{
+  case class C extends AnyRef with Product with Serializable {
+    <caseaccessor> <paramaccessor> private[this] val x: Int = _;
+    <stable> <caseaccessor> <accessor> <paramaccessor> def x: Int = C.this.x;
+    <caseaccessor> <paramaccessor> private[this] val y: Int = _;
+    <stable> <caseaccessor> <accessor> <paramaccessor> def y: Int = C.this.y;
+    def <init>(x: Int, y: Int): C = {
+      C.super.<init>();
+      ()
+    };
+    <synthetic> def copy(x: Int = x, y: Int = y): C = new C(x, y);
+    <synthetic> def copy$default$1: Int = C.this.x;
+    <synthetic> def copy$default$2: Int = C.this.y;
+    override <synthetic> def productPrefix: String = "C";
+    <synthetic> def productArity: Int = 2;
+    <synthetic> def productElement(x$1: Int): Any = x$1 match {
+      case 0 => C.this.x
+      case 1 => C.this.y
+      case _ => throw new IndexOutOfBoundsException(x$1.toString())
+    };
+    override <synthetic> def productIterator: Iterator[Any] = runtime.this.ScalaRunTime.typedProductIterator[Any](C.this);
+    <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]();
+    override <synthetic> def hashCode(): Int = {
+      <synthetic> var acc: Int = -889275714;
+      acc = Statics.this.mix(acc, x);
+      acc = Statics.this.mix(acc, y);
+      Statics.this.finalizeHash(acc, 2)
+    };
+    override <synthetic> def toString(): String = ScalaRunTime.this._toString(C.this);
+    override <synthetic> def equals(x$1: Any): Boolean = C.this.eq(x$1.asInstanceOf[Object]).||(x$1 match {
+  case (_: C) => true
+  case _ => false
+}.&&({
+      <synthetic> val C$1: C = x$1.asInstanceOf[C];
+      C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y)).&&(C$1.canEqual(C.this))
+    }))
+  };
+  <synthetic> object C extends scala.runtime.AbstractFunction2[Int,Int,C] with Serializable {
+    def <init>(): C.type = {
+      C.super.<init>();
+      ()
+    };
+    final override def toString(): String = "C";
+    case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
+    case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
+      scala.this.None
+    else
+      Some.apply[(Int, Int)](Tuple2.apply[Int, Int](x$0.x, x$0.y));
+    <synthetic> private def readResolve(): Object = C
+  };
+  scala.this.Predef.println(C.apply(2, 3))
+}
+error!

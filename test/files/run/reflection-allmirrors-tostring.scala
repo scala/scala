@@ -26,18 +26,18 @@ object Test extends App {
   println(cm.reflect(new C))
 
   val im = cm.reflect(new C)
-  println(im.reflectField(typeOf[C].member(newTermName("f1")).asTerm))
-  println(im.reflectField(typeOf[C].member(newTermName("f2")).asTerm))
-  println(im.reflectMethod(typeOf[C].member(newTermName("m1")).asMethod))
-  println(im.reflectMethod(typeOf[C].member(newTermName("m2")).asMethod))
-  println(im.reflectMethod(typeOf[C].member(newTermName("m3")).asMethod))
-  println(im.reflectMethod(typeOf[C].member(newTermName("m4")).asMethod))
-  println(im.reflectMethod(typeOf[C].member(newTermName("m5")).asMethod))
-  println(im.reflectClass(typeOf[C].member(newTypeName("C")).asClass))
-  println(im.reflectModule(typeOf[C].member(newTermName("M")).asModule))
+  println(im.reflectField(typeOf[C].member(TermName("f1")).asTerm))
+  println(im.reflectField(typeOf[C].member(TermName("f2")).asTerm))
+  println(im.reflectMethod(typeOf[C].member(TermName("m1")).asMethod))
+  println(im.reflectMethod(typeOf[C].member(TermName("m2")).asMethod))
+  println(im.reflectMethod(typeOf[C].member(TermName("m3")).asMethod))
+  println(im.reflectMethod(typeOf[C].member(TermName("m4")).asMethod))
+  println(im.reflectMethod(typeOf[C].member(TermName("m5")).asMethod))
+  println(im.reflectClass(typeOf[C].member(TypeName("C")).asClass))
+  println(im.reflectModule(typeOf[C].member(TermName("M")).asModule))
 
   val c = cm.staticClass("C")
-  val cc = typeOf[C].member(newTypeName("C")).asClass
+  val cc = typeOf[C].member(TypeName("C")).asClass
   println(cm.reflectClass(c).reflectConstructor(c.typeSignature.member(nme.CONSTRUCTOR).asMethod))
   println(im.reflectClass(cc).reflectConstructor(cc.typeSignature.member(nme.CONSTRUCTOR).asMethod))
 }

@@ -1,0 +1,22 @@
+[[syntax trees at end of                specialize]] // newSource1
+package <empty> {
+  class Foo extends Object {
+    def <init>(): Foo = {
+      Foo.super.<init>();
+      ()
+    };
+    private[this] val f: Int => Int = {
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1$mcII$sp with Serializable {
+        def <init>(): anonymous class $anonfun = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(param: Int): Int = $anonfun.this.apply$mcII$sp(param);
+        <specialized> def apply$mcII$sp(param: Int): Int = param
+      };
+      (new anonymous class $anonfun(): Int => Int)
+    };
+    <stable> <accessor> def f(): Int => Int = Foo.this.f
+  }
+}
+

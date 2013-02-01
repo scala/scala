@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Burak Emir
  */
 
@@ -10,10 +10,8 @@ import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
-import scala.reflect.internal.util.SourceFile
-import scala.xml.{ Text, TextBuffer }
+import scala.xml.TextBuffer
 import scala.xml.parsing.MarkupParserCommon
-import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
 import scala.reflect.internal.Chars.{ SU, LF }
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
@@ -26,12 +24,6 @@ import scala.reflect.internal.Chars.{ SU, LF }
 // I rewrote most of these, but not as yet the library versions: so if you are
 // tempted to touch any of these, please be aware of that situation and try not
 // to let it get any worse.  -- paulp
-
-/** This trait ...
- *
- *  @author  Burak Emir
- *  @version 1.0
- */
 trait MarkupParsers {
   self: Parsers =>
 
@@ -51,7 +43,7 @@ trait MarkupParsers {
 
   class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends MarkupParserCommon {
 
-    import Tokens.{ EMPTY, LBRACE, RBRACE }
+    import Tokens.{ LBRACE, RBRACE }
 
     type PositionType = Position
     type InputType    = CharArrayReader
@@ -89,7 +81,7 @@ trait MarkupParsers {
 
     var xEmbeddedBlock = false
 
-    private var debugLastStartElement = new mutable.Stack[(Int, String)]
+    private val debugLastStartElement = new mutable.Stack[(Int, String)]
     private def debugLastPos = debugLastStartElement.top._1
     private def debugLastElem = debugLastStartElement.top._2
 
@@ -124,7 +116,6 @@ trait MarkupParsers {
         val start = curOffset
         val key = xName
         xEQ
-        val delim = ch
         val mid = curOffset
         val value: Tree = ch match {
           case '"' | '\'' =>
@@ -219,9 +210,6 @@ trait MarkupParsers {
 
     /** Returns true if it encounters an end tag (without consuming it),
      *  appends trees to ts as side-effect.
-     *
-     *  @param ts ...
-     *  @return   ...
      */
     private def content_LT(ts: ArrayBuffer[Tree]): Boolean = {
       if (ch == '/')
@@ -410,7 +398,7 @@ trait MarkupParsers {
      *                  | Name [S] '/' '>'
      */
     def xPattern: Tree = {
-      var start = curOffset
+      val start = curOffset
       val qname = xName
       debugLastStartElement.push((start, qname))
       xSpaceOpt

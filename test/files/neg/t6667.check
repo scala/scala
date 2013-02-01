@@ -1,0 +1,13 @@
+t6667.scala:8: error: ambiguous implicit values:
+ both value inScope1 in object Test of type => C
+ and value inScope2 in object Test of type => C
+ match expected type C
+  implicitly[C]: Unit // C.companion was used; whereas the ambiguity should abort the implicit search.
+            ^
+t6667.scala:9: error: ambiguous implicit values:
+ both value inScope1 in object Test of type => C
+ and value inScope2 in object Test of type => C
+ match expected type C
+  implicitly[C]       // ambiguity reported, rather than falling back to C.companion
+            ^
+two errors found

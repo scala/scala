@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -18,7 +18,7 @@ import scala.annotation.meta.getter
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
  *
  *  Implementation note: since efficiency is important for data structures this implementation
- *  uses <code>null</code> to represent empty trees. This also means pattern matching cannot
+ *  uses `null` to represent empty trees. This also means pattern matching cannot
  *  easily be used. The API represented by the RedBlackTree object tries to hide these
  *  optimizations behind a reasonably clean API.
  *
@@ -82,7 +82,7 @@ object RedBlackTree {
     f((tree.key, tree.value))
     if (tree.right ne null) _foreach(tree.right, f)
   }
-  
+
   def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)
 
   private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U) {
@@ -90,7 +90,7 @@ object RedBlackTree {
     f((tree.key))
     if (tree.right ne null) _foreachKey(tree.right, f)
   }
-  
+
   def iterator[A, B](tree: Tree[A, B]): Iterator[(A, B)] = new EntriesIterator(tree)
   def keysIterator[A, _](tree: Tree[A, _]): Iterator[A] = new KeysIterator(tree)
   def valuesIterator[_, B](tree: Tree[_, B]): Iterator[B] = new ValuesIterator(tree)

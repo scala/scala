@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,8 +11,8 @@
 package scala.xml
 package transform
 
-/** a RewriteRule, when applied to a term, yields either
- *  the resulting of rewriting or the term itself it the rule
+/** A RewriteRule, when applied to a term, yields either
+ *  the result of rewriting the term or the term itself if the rule
  *  is not applied.
  *
  *  @author  Burak Emir

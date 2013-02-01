@@ -1,0 +1,10 @@
+Test_2.scala:2: error: cto may only be used as an argument to m
+  M.cto // error
+    ^
+Test_2.scala:3: error: cto may only be used as an argument to m
+  M.m(M.cto, ()) // error
+        ^
+Test_2.scala:5: error: cto may only be used as an argument to m
+  M.cto // error
+    ^
+three errors found

@@ -158,13 +158,14 @@ trait HasFlags {
     else nonAccess + " " + access
   }
 
+  // Guess this can't be deprecated seeing as it's in the reflect API.
+  def isParameter = hasFlag(PARAM)
+
   // Backward compat section
   @deprecated( "Use isTrait", "2.10.0")
   def hasTraitFlag = hasFlag(TRAIT)
   @deprecated("Use hasDefault", "2.10.0")
   def hasDefaultFlag = hasFlag(DEFAULTPARAM)
-  @deprecated("Use isValueParameter or isTypeParameter", "2.10.0")
-  def isParameter = hasFlag(PARAM)
   @deprecated("Use flagString", "2.10.0")
   def defaultFlagString = flagString
   @deprecated("Use flagString(mask)", "2.10.0")

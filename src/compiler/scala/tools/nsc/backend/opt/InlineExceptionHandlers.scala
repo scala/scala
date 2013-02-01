@@ -1,10 +1,9 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  */
 
 package scala.tools.nsc
 package backend.opt
-import scala.util.control.Breaks._
 
 /**
   * This optimization phase inlines the exception handlers so that further phases can optimize the code better
@@ -53,7 +52,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
   import icodes._
   import icodes.opcodes._
 
-  val phaseName = "inlineExceptionHandlers"
+  val phaseName = "inlinehandlers"
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new InlineExceptionHandlersPhase(p)

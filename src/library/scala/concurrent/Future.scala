@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -58,7 +58,7 @@ import scala.reflect.ClassTag
  *  Instead, the future is completed with a ExecutionException with one of the exceptions above
  *  as the cause.
  *  If a future is failed with a `scala.runtime.NonLocalReturnControl`,
- *  it is completed with a value instead from that throwable instead instead.
+ *  it is completed with a value from that throwable instead.
  *
  *  @define nonDeterministic
  *  Note: using this method yields nondeterministic dataflow programs.
@@ -522,29 +522,6 @@ trait Future[+T] extends Awaitable[T] {
     p.future
   }
 
-  /** Creates a new future which holds the result of either this future or `that` future, depending on
-   *  which future was completed first.
-   *
-   *  $nonDeterministic
-   *
-   *  Example:
-   *  {{{
-   *  val f = future { sys.error("failed") }
-   *  val g = future { 5 }
-   *  val h = f either g
-   *  await(h, 0) // evaluates to either 5 or throws a runtime exception
-   *  }}}
-   */
-  def either[U >: T](that: Future[U]): Future[U] = {
-    val p = Promise[U]()
-    val completePromise: PartialFunction[Try[U], _] = { case result => p tryComplete result }
-
-    this onComplete completePromise
-    that onComplete completePromise
-
-    p.future
-  }
-
 }
 
 
@@ -698,9 +675,9 @@ object Future {
   // by just not ever using it itself. scala.concurrent
   // doesn't need to create defaultExecutionContext as
   // a side effect.
-  private[concurrent] object InternalCallbackExecutor extends ExecutionContext {
-    override def execute(runnable: Runnable): Unit =
-      runnable.run()
+  private[concurrent] object InternalCallbackExecutor extends ExecutionContext with BatchingExecutor {
+    override protected def unbatchedExecute(r: Runnable): Unit =
+      r.run()
     override def reportFailure(t: Throwable): Unit =
       throw new IllegalStateException("problem in scala.concurrent internal callback", t)
   }

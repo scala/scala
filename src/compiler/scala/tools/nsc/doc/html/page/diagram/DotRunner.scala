@@ -10,12 +10,10 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
-import java.io.IOException
 import scala.sys.process._
 import scala.concurrent.SyncVar
 
 import model._
-import model.diagram._
 
 /** This class takes care of running the graphviz dot utility */
 class DotRunner(settings: doc.Settings) {
@@ -183,7 +181,7 @@ class DotProcess(settings: doc.Settings) {
 
   private[this] def outputFn(stdOut: InputStream): Unit = {
     val reader = new BufferedReader(new InputStreamReader(stdOut))
-    var buffer: StringBuilder = new StringBuilder()
+    val buffer: StringBuilder = new StringBuilder()
     try {
       var line = reader.readLine
       while (!error && line != null) {
@@ -209,7 +207,6 @@ class DotProcess(settings: doc.Settings) {
 
   private[this] def errorFn(stdErr: InputStream): Unit = {
     val reader = new BufferedReader(new InputStreamReader(stdErr))
-    var buffer: StringBuilder = new StringBuilder()
     try {
       var line = reader.readLine
       while (line != null) {

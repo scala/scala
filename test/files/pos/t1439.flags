@@ -1,1 +1,1 @@
--unchecked -Xfatal-warnings -Xoldpatmat -language:higherKinds
+-unchecked -Xfatal-warnings -language:higherKinds

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Ant Tasks                      **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -80,7 +80,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
 
   private def createMapper() = {
     val mapper = new GlobPatternMapper()
-    val extension = if (isMSIL) "*.msil" else "*.class"
+    val extension = "*.class"
     mapper setTo extension
     mapper setFrom "*.scala"
 
@@ -103,9 +103,6 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
     compilationPath foreach (settings.classpath = _)
     sourcePath foreach (settings.sourcepath = _)
     settings.extraParams = extraArgsFlat
-
-    if (isMSIL)
-      settings.sourcedir = sourceDir
 
     val mapper = createMapper()
 

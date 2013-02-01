@@ -1,0 +1,4 @@
+Test_2.scala:2: error: these type parameters must be specified
+  def x = Macros.foo
+                 ^
+one error found

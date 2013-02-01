@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -47,7 +47,6 @@ class PrettyPrinter(width: Int, step: Int) {
     val tmp = width - cur
     if (s.length <= tmp)
       return List(Box(ind, s))
-    val sb = new StringBuilder()
     var i = s indexOf ' '
     if (i > tmp || i == -1) throw new BrokenException() // cannot break
 

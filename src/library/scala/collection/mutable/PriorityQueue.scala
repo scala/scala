@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -140,14 +140,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     }
     b.result
   }
-
-  /** Returns the element with the highest priority in the queue,
-   *  or throws an error if there is no element contained in the queue.
-   *
-   *  @return   the element with the highest priority.
-   */
-  @deprecated("Use `head` instead.", "2.9.0")
-  def max: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.

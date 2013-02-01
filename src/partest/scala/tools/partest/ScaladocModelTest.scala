@@ -1,18 +1,16 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author Vlad Ureche
  */
 
 package scala.tools.partest
 
-import scala.tools.partest._
-import java.io._
 import scala.tools.nsc._
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.doc.{Settings, DocFactory, Universe}
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
-import scala.tools.nsc.doc.model.comment._
+import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.reporters.ConsoleReporter
 
 /** A class for testing scaladoc model generation
@@ -87,7 +85,7 @@ abstract class ScaladocModelTest extends DirectTest {
     settings = new Settings(_ => ())
     settings.scaladocQuietRun = true // yaay, no more "model contains X documentable templates"!
     val args = extraSettings + " " + scaladocSettings
-    val command = new ScalaDoc.Command((CommandLineParser tokenize (args)), settings)
+    new ScalaDoc.Command((CommandLineParser tokenize (args)), settings) // side-effecting, I think
     val docFact = new DocFactory(new ConsoleReporter(settings), settings)
     docFact
   }

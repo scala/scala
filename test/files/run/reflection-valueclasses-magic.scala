@@ -3,11 +3,17 @@ import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.{currentMirror => cm}
 import scala.reflect.ClassTag
 
+package scala {
+  object ExceptionUtils {
+    def unwrapThrowable(ex: Throwable): Throwable = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+  }
+}
+
 object Test extends App {
   def key(sym: Symbol) = {
     sym match {
       // initialize parameter symbols
-      case meth: MethodSymbol => meth.params.flatten.map(_.typeSignature)
+      case meth: MethodSymbol => meth.paramss.flatten.map(_.typeSignature)
     }
     sym + ": " + sym.typeSignature
   }
@@ -35,14 +41,14 @@ object Test extends App {
         println(s"[${result.getClass}] =======> $result")
       } catch {
         case ex: Throwable =>
-          val realex = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+          val realex = scala.ExceptionUtils.unwrapThrowable(ex)
           println(realex.getClass + ": " + realex.getMessage)
       }
-    val meth = tpe.declaration(newTermName(method).encodedName.toTermName)
+    val meth = tpe.declaration(TermName(method).encodedName.toTermName)
     val testees = if (meth.isMethod) List(meth.asMethod) else meth.asTerm.alternatives.map(_.asMethod)
     testees foreach (testee => {
-      val convertedArgs = args.zipWithIndex.map { case (arg, i) => convert(arg, testee.params.flatten.apply(i).typeSignature) }
-      print(s"testing ${tpe.typeSymbol.name}.$method(${testee.params.flatten.map(_.typeSignature).mkString(','.toString)}) with receiver = $receiver and args = ${convertedArgs.map(arg => arg + ' '.toString + arg.getClass).toList}: ")
+      val convertedArgs = args.zipWithIndex.map { case (arg, i) => convert(arg, testee.paramss.flatten.apply(i).typeSignature) }
+      print(s"testing ${tpe.typeSymbol.name}.$method(${testee.paramss.flatten.map(_.typeSignature).mkString(','.toString)}) with receiver = $receiver and args = ${convertedArgs.map(arg => arg + ' '.toString + arg.getClass).toList}: ")
       wrap(cm.reflect(receiver).reflectMethod(testee)(convertedArgs: _*))
     })
   }

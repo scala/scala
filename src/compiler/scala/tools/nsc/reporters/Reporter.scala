@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2012 LAMP/EPFL
+ * Copyright 2002-2013 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package reporters
 
 import scala.reflect.internal.util._
-import scala.reflect.internal.util.StringOps._
 
 /**
  * This interface provides methods to issue information, warning and
@@ -20,9 +19,15 @@ abstract class Reporter {
   class Severity(val id: Int) extends severity.Value {
     var count: Int = 0
   }
-  val INFO    = new Severity(0)
-  val WARNING = new Severity(1)
-  val ERROR   = new Severity(2)
+  val INFO    = new Severity(0) {
+    override def toString: String = "INFO"
+  }
+  val WARNING = new Severity(1) {
+    override def toString: String = "WARNING"
+  }
+  val ERROR   = new Severity(2) {
+    override def toString: String = "ERROR"
+  }
 
   /** Whether very long lines can be truncated.  This exists so important
    *  debugging information (like printing the classpath) is not rendered

@@ -1,6 +1,12 @@
 package scala.reflect
 package macros
 
+/**
+ * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *
+ *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  provides facilities to communicate with the compiler's infrastructure.
+ */
 trait Infrastructure {
   self: Context =>
 

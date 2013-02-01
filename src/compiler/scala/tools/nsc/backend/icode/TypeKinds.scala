@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -55,7 +55,7 @@ trait TypeKinds { self: ICodes =>
 
     def toType: Type = reversePrimitiveMap get this map (_.tpe) getOrElse {
       this match {
-        case REFERENCE(cls) => cls.tpe
+        case REFERENCE(cls) => cls.tpe_*
         case ARRAY(elem)    => arrayType(elem.toType)
         case _              => abort("Unknown type kind.")
       }
@@ -66,7 +66,6 @@ trait TypeKinds { self: ICodes =>
     def isValueType               = false
     def isBoxedType               = false
     final def isRefOrArrayType    = isReferenceType || isArrayType
-    final def isRefArrayOrBoxType = isRefOrArrayType || isBoxedType
     final def isNothingType       = this == NothingReference
     final def isNullType          = this == NullReference
     final def isInterfaceType     = this match {
@@ -114,8 +113,6 @@ trait TypeKinds { self: ICodes =>
     }
   }
 
-  var lubs0 = 0
-
   /**
    * The least upper bound of two typekinds. They have to be either
    * REFERENCE or ARRAY kinds.
@@ -140,7 +137,6 @@ trait TypeKinds { self: ICodes =>
      *  sifting through the parents for a class type.
      */
     def lub0(tk1: TypeKind, tk2: TypeKind): Type = enteringUncurry {
-      import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.isTrait)
 
@@ -431,11 +427,4 @@ trait TypeKinds { self: ICodes =>
     primitiveTypeMap.getOrElse(sym, newReference(sym))
   private def primitiveOrClassType(sym: Symbol, targs: List[Type]) =
     primitiveTypeMap.getOrElse(sym, arrayOrClassType(sym, targs))
-
-  def msil_mgdptr(tk: TypeKind): TypeKind = (tk: @unchecked) match {
-    case REFERENCE(cls)  => REFERENCE(loaders.clrTypes.mdgptrcls4clssym(cls))
-    // TODO have ready class-symbols for the by-ref versions of built-in valuetypes
-    case _ => abort("cannot obtain a managed pointer for " + tk)
-  }
-
 }

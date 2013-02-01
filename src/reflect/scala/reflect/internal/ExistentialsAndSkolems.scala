@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,7 +7,6 @@ package scala.reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
-import util._
 
 /** The name of this trait defines the eventual intent better than
  *  it does the initial contents.

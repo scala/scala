@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -76,25 +76,12 @@ trait Primitives { self: ICodes =>
 
   /** Pretty printer for primitives */
   class PrimitivePrinter(out: PrintWriter) {
-
     def print(s: String): PrimitivePrinter = {
       out.print(s)
       this
     }
 
     def print(o: AnyRef): PrimitivePrinter = print(o.toString())
-
-    def printPrimitive(prim: Primitive) = prim match {
-      case Negation(kind) =>
-        print("!")
-
-      case Test(op, kind, zero) =>
-        print(op).print(kind)
-
-      case Comparison(op, kind) =>
-        print(op).print("(").print(kind)
-
-    }
   }
 
   /** This class represents a comparison operation. */

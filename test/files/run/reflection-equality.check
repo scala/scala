@@ -24,12 +24,12 @@ cs: reflect.runtime.universe.ClassSymbol = class X
 
 scala> val ts: Type = cs.typeSignature
 ts: reflect.runtime.universe.Type = 
-java.lang.Object {
+scala.AnyRef {
   def <init>(): X
   def methodIntIntInt(x: scala.Int,y: scala.Int): scala.Int
 }
 
-scala> val ms: MethodSymbol = ts.declaration(newTermName("methodIntIntInt")).asMethod
+scala> val ms: MethodSymbol = ts.declaration(TermName("methodIntIntInt")).asMethod
 ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
 
 scala> val MethodType( _, t1 ) = ms.typeSignature

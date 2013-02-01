@@ -1,26 +1,26 @@
-unchecked-abstract.scala:16: warning: abstract type H in type Con[M.this.H] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Con[H]])
+unchecked-abstract.scala:16: warning: abstract type H in type Contravariant[M.this.H] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Contravariant[H]])
                                        ^
-unchecked-abstract.scala:21: warning: abstract type H in type Con[M.this.H] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Con[H]])
+unchecked-abstract.scala:21: warning: abstract type H in type Contravariant[M.this.H] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Contravariant[H]])
                                        ^
-unchecked-abstract.scala:27: warning: abstract type T in type Inv[M.this.T] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Inv[T]])
+unchecked-abstract.scala:27: warning: abstract type T in type Invariant[M.this.T] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Invariant[T]])
                                        ^
-unchecked-abstract.scala:28: warning: abstract type L in type Inv[M.this.L] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Inv[L]])
+unchecked-abstract.scala:28: warning: abstract type L in type Invariant[M.this.L] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Invariant[L]])
                                        ^
-unchecked-abstract.scala:31: warning: abstract type H in type Inv[M.this.H] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Inv[H]])
+unchecked-abstract.scala:31: warning: abstract type H in type Invariant[M.this.H] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Invariant[H]])
                                        ^
-unchecked-abstract.scala:33: warning: abstract type L in type Inv[M.this.L] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Inv[L]])
+unchecked-abstract.scala:33: warning: abstract type L in type Invariant[M.this.L] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Invariant[L]])
                                        ^
-unchecked-abstract.scala:36: warning: abstract type H in type Inv[M.this.H] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Inv[H]])
+unchecked-abstract.scala:36: warning: abstract type H in type Invariant[M.this.H] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Invariant[H]])
                                        ^
-unchecked-abstract.scala:37: warning: abstract type T in type Inv[M.this.T] is unchecked since it is eliminated by erasure
-    /*   warn */ println(x.isInstanceOf[Inv[T]])
+unchecked-abstract.scala:37: warning: abstract type T in type Invariant[M.this.T] is unchecked since it is eliminated by erasure
+    /*   warn */ println(x.isInstanceOf[Invariant[T]])
                                        ^
 error: No warnings can be incurred under -Xfatal-warnings.
 8 warnings found

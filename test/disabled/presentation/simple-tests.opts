@@ -12,7 +12,7 @@
 # running partest from. Run it from the root scala checkout for these files to resolve correctly
 # (by default when running 'ant test', or 'test/partest'). Paths use Unix separators, the test
 # framework translates them to the platform dependent representation.
--bootclasspath lib/scala-compiler.jar:lib/scala-library.jar:lib/fjbg.jar
+-bootclasspath lib/scala-compiler.jar:lib/scala-library.jar
 
 # the following line would test using the quick compiler
-# -bootclasspath build/quick/classes/compiler:build/quick/classes/library:lib/fjbg.jar
+# -bootclasspath build/quick/classes/compiler:build/quick/classes/library

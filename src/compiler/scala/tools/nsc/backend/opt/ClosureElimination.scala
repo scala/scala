@@ -1,5 +1,5 @@
  /* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
+ * Copyright 2005-2013 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -7,7 +7,6 @@ package scala.tools.nsc
 package backend.opt
 
 import scala.tools.nsc.backend.icode.analysis.LubException
-import scala.tools.nsc.symtab._
 
 /**
  *  @author Iulian Dragos
@@ -120,7 +119,7 @@ abstract class ClosureElimination extends SubComponent {
 
             case LOAD_FIELD(f, false) /* if accessible(f, m.symbol) */ =>
               def replaceFieldAccess(r: Record) {
-                val Record(cls, bindings) = r
+                val Record(cls, _) = r
                 info.getFieldNonRecordValue(r, f) foreach { v =>
                         bb.replaceInstruction(i, DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil)
                         debuglog(s"replaced $i with $v")
@@ -147,18 +146,18 @@ abstract class ClosureElimination extends SubComponent {
                 case _ =>
               }
 
-            case UNBOX(_) =>
+            case UNBOX(boxType) =>
               info.stack match {
                 case Deref(LocalVar(loc1)) :: _ if info.bindings isDefinedAt LocalVar(loc1) =>
                   val value = info.getBinding(loc1)
                   value match {
-                    case Boxed(LocalVar(loc2)) =>
+                    case Boxed(LocalVar(loc2)) if loc2.kind == boxType =>
                       bb.replaceInstruction(i, DROP(icodes.ObjectReference) :: valueToInstruction(info.getBinding(loc2)) :: Nil)
                       debuglog("replaced " + i + " with " + info.getBinding(loc2))
                     case _ =>
                       ()
                   }
-                case Boxed(LocalVar(loc1)) :: _ =>
+                case Boxed(LocalVar(loc1)) :: _ if loc1.kind == boxType =>
                   val loc2 = info.getAlias(loc1)
                   bb.replaceInstruction(i, DROP(icodes.ObjectReference) :: valueToInstruction(Deref(LocalVar(loc2))) :: Nil)
                   debuglog("replaced " + i + " with " + LocalVar(loc2))
@@ -188,25 +187,17 @@ abstract class ClosureElimination extends SubComponent {
       case Boxed(LocalVar(v)) =>
         LOAD_LOCAL(v)
     }
-
-    /** is field 'f' accessible from method 'm'? */
-    def accessible(f: Symbol, m: Symbol): Boolean =
-      f.isPublic || (f.isProtected && (f.enclosingPackageClass == m.enclosingPackageClass))
   } /* class ClosureElim */
 
 
   /** Peephole optimization. */
   abstract class PeepholeOpt {
-
-    private var method: IMethod = NoIMethod
-
     /** Concrete implementations will perform their optimizations here */
     def peep(bb: BasicBlock, i1: Instruction, i2: Instruction): Option[List[Instruction]]
 
     var liveness: global.icodes.liveness.LivenessAnalysis = null
 
     def apply(m: IMethod): Unit = if (m.hasCode) {
-      method = m
       liveness = new global.icodes.liveness.LivenessAnalysis
       liveness.init(m)
       liveness.run

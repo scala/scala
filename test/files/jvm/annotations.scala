@@ -101,6 +101,12 @@ object Test4 {
 
     type myAnn = SourceAnnotation @beanGetter @field
     @BeanProperty @myAnn("http://eppli.com") var z = 0
+
+    type myAnn2[T] = SourceAnnotation @beanGetter @field
+    @BeanProperty @myAnn2[String]("http://eppli.com") var z2 = 0
+
+    type myAnn3[CC[_]] = SourceAnnotation @beanGetter @field
+    @BeanProperty @myAnn3[List]("http://eppli.com") var z3 = 0
   }
   class Foo10(@SourceAnnotation("on param 1") val name: String)
   class Foo11(@(SourceAnnotation @scala.annotation.meta.field)("on param 2") val name: String)
