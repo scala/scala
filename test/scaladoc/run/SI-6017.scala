@@ -16,7 +16,9 @@ object Test extends ScaladocModelTest {
         val index = IndexModelFactory.makeIndex(universe)
 
         val indexPage = new Index(universe, index)
-        assert(indexPage.letters.length == 1)
+        val letters = indexPage.letters
+        assert(letters.length > 1)
+        assert(letters(0).toString == "<span>#</span>")
       }
       case _ => assert(false)
     }
