@@ -4,12 +4,12 @@ import scala.tools.reflect.Eval
 object B { override def toString = "object" }
 class C { override def toString = "class" }
 
-package foo {
+package foo1 {
   object B { override def toString = "package > object" }
   class C { override def toString = "package > class" }
 }
 
-object foo {
+object Foo2 {
   object B { override def toString = "object > object" }
   class C { override def toString = "object > class" }
 }
@@ -20,14 +20,14 @@ object packageless {
     println(reify(B).eval)
     println(new C)
     println(reify(new C).eval)
-    println(foo.B)
-    println(reify(foo.B).eval)
-    println(new foo.C)
-    println(reify(new foo.C).eval)
-    println(_root_.foo.B)
-    println(reify(_root_.foo.B).eval)
-    println(new _root_.foo.C)
-    println(reify(new _root_.foo.C).eval)
+    println(Foo2.B)
+    println(reify(Foo2.B).eval)
+    println(new Foo2.C)
+    println(reify(new Foo2.C).eval)
+    println(_root_.foo1.B)
+    println(reify(_root_.foo1.B).eval)
+    println(new _root_.foo1.C)
+    println(reify(new _root_.foo1.C).eval)
   }
 }
 
@@ -38,14 +38,14 @@ package packageful {
       println(reify(B).eval)
       println(new C)
       println(reify(new C).eval)
-      println(foo.B)
-      println(reify(foo.B).eval)
-      println(new foo.C)
-      println(reify(new foo.C).eval)
-      println(_root_.foo.B)
-      println(reify(_root_.foo.B).eval)
-      println(new _root_.foo.C)
-      println(reify(new _root_.foo.C).eval)
+      println(Foo2.B)
+      println(reify(Foo2.B).eval)
+      println(new Foo2.C)
+      println(reify(new Foo2.C).eval)
+      println(_root_.foo1.B)
+      println(reify(_root_.foo1.B).eval)
+      println(new _root_.foo1.C)
+      println(reify(new _root_.foo1.C).eval)
     }
   }
 }
