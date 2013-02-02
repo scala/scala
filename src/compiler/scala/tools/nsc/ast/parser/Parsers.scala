@@ -526,9 +526,10 @@ self =>
      *  }}}
      */
     def acceptStatSep(): Unit = in.token match {
-      case NEWLINE | NEWLINES => in.nextToken()
-      case _                  => //TBD: throw this comment away, once things work. Was: if (!in.afterLineEnd()) // New condition: Subscript sections may eat ahead newlines, so a previously seen newline is also ok
-                                      accept(SEMI)       // Note: this needs be tested
+      case NEWLINE | NEWLINES                 => in.nextToken()
+      case _ if (in.prevWasInSubScript_script 
+             &&  in.afterLineEnd())           =>       // Note: this needs be tested
+      case _                                  => accept(SEMI)
                                  
     }
     def acceptStatSepOpt()    = if (!isStatSeqEnd) acceptStatSep()
@@ -1227,8 +1228,7 @@ self =>
                                                       newTermName(raw_mathDot),
                                                       newTermName(raw_space)
                                                      )
-                                                     
-    
+
     final val setSubScriptUnaryPrefixOp : Set[Name] = Set(raw.MINUS, raw.TILDE, raw.BANG)
     final val setSubScriptUnaryPostfixOp: Set[Name] = Set(raw.STAR)
 
@@ -1255,7 +1255,8 @@ self =>
     @inline final def inSubscriptArgumentParens[T](body: => T): T = {
       accept(LPAREN); in.isInSubScript_nativeCode =  true; val ret = body 
                       in.isInSubScript_nativeCode = false 
-      accept(RPAREN);                                          ret
+      accept(RPAREN); 
+      ret
     }
     def  makeParameterTransferFunction(exp   : Tree): Tree = {
       val vparams = List(
@@ -1330,34 +1331,40 @@ self =>
         WHILE           -> "while"    ,     
         IF              -> "if"       ,
         ELSE            -> "if_else"  ,    
+        DEF             -> "declare" ,
+        VAL             -> "localval" ,
+        VAR             -> "localvar" ,
         LPAREN_PLUS_RPAREN       -> "empty"       ,
         LPAREN_MINUS_RPAREN      -> "deadlock"    ,
         LPAREN_PLUS_MINUS_RPAREN -> "neutral"     ,
         LPAREN_SEMI_RPAREN       -> "skip"        ,
         DOT             -> "optionalBreak"        ,
         DOT2            -> "optionalBreak_loop"   ,
-        DOT3            -> "loop"        
+        DOT3            -> "loop"
     )
     val mapTokenToDSLFunName = mapTokenToDSLFunString map {case(k,v) => (k, newTermName("_"+v): Name)}
-      
+    val break_Name = newTermName("_break")
+    
     val mapTokenToVMNodeString = Map[Int,String](
         LBRACE          -> "code_normal",
         LBRACE_ASTERISK -> "code_threaded",
         LBRACE_QMARK    -> "code_unsure",
         LBRACE_EMARK    -> "code_tiny",
         LBRACE_DOT      -> "code_eh",
-        LBRACE_DOT3     -> "code_eh_loop"  ,      
-        WHILE           -> "while"    ,     
+        LBRACE_DOT3     -> "code_eh_loop",
+        WHILE           -> "while"    ,
         IF              -> "if"       ,
         ELSE            -> "if_else"  ,
+        VAL             -> "LocalVariable" ,
+        VAR             -> "LocalVariable" ,
         0               -> "any"
     )
     val mapTokenToVMNodeTypeName = mapTokenToVMNodeString map {case(k,v) => (k, newTypeName("N_"+v): Name)}
 
-    def dslFunForBreak       : Tree = Select(sSubScriptDSL, newTermName("_break"))
-    def dslFunFor(token: Int): Tree = Select(sSubScriptDSL, mapTokenToDSLFunName(token))
-    def vmNodeFor(token: Int): Tree = Select(sSubScriptVM , mapTokenToVMNodeTypeName(token))
-    def vmNodeOf (tree: Tree): Tree = tree match {
+    def dslFunForBreak       : Select = Select(sSubScriptDSL, break_Name)
+    def dslFunFor(token: Int): Select = Select(sSubScriptDSL, mapTokenToDSLFunName(token))
+    def vmNodeFor(token: Int): Select = Select(sSubScriptVM , mapTokenToVMNodeTypeName(token))
+    def vmNodeOf (tree: Tree): Tree   = tree match {
       case (Apply(fun, Function(List(ValDef(_,_, nodeType,_)),block)::_)) => nodeType
       case _ => Select(sSubScriptVM , mapTokenToVMNodeTypeName(0))
     }
@@ -1497,13 +1504,12 @@ self =>
     // the following aims to provide a context for Script data.
     // it is a quick hack; 
     // context sensitive transformations should be moved to a later compiler phase
-    var scriptFormalParameters = new ListBuffer[ValDef]
-    var scriptLocalVariables   = new ListBuffer[ValDef] // should be in a context stack; now the scope becomes too big 
-    var scriptLocalValues      = new ListBuffer[ValDef]
+    var scriptFormalParameters = new scala.collection.mutable.HashMap[Name,Tree]
+    var scriptLocalVariables   = new scala.collection.mutable.HashMap[Name,Tree] // should be in a context stack; now the scope becomes too big 
+    var scriptLocalValues      = new scala.collection.mutable.HashMap[Name,Tree]
     
     def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
       in.isInSubScript_script = true
-      in.isInSubScript_header = true
       in.nextToken
       val result = new ListBuffer[Tree]
       val doMultipleScripts = in.token == DOT2
@@ -1525,10 +1531,12 @@ self =>
 	      }
 	      
 	      if (!mustExit) {
+              in.isInSubScript_header = true
 		      val nameOffset = in.offset
 		      val name = ident()
 		      
 		      val scriptDef = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+		        
 		        val Flags_SCRIPT = Flags.CASEACCESSOR // TBD
 		        var newmods = mods | Flags_SCRIPT
 		        // contextBoundBuf is for context bounded type parameters of the form
@@ -1597,15 +1605,22 @@ self =>
 		        
 		        // add for each variable and value: val _c = subscript.DSL._declare[Char]('c)
 		        val variablesAndValuesDeclarations = new ListBuffer[Tree]
-		        // TBD
+		        for ((vn,vt) <- scriptLocalVariables ++ scriptLocalValues) {
+		          val vSym               = Apply(scalaDot(nme.Symbol), List(Literal(Constant(vn.toString))))
+		          val underscored_v_name = newTermName(underscore_prefix(vn.toString))
+		          val tp                 = AppliedTypeTree(vmNodeFor(VAL), List(vt))
+		          val declare_typed      = TypeApply      (dslFunFor(VAL), List(vt))
+		          val rhs                = Apply(declare_typed, List(vSym))
+		          val valDef             = ValDef(NoMods, underscored_v_name, tp, rhs)
+		        }
 		        val rhs_withVariablesAndValuesDeclarations = variablesAndValuesDeclarations append rhs_withAdjustedScriptLocalData
 		        
 		        val underscored_script_name = newTermName(underscore_prefix(name.toString))
 		        val underscored_param_defs  = underscored_param_defs_and_bindings map (_._1)
 		        val paramBindings           = underscored_param_defs_and_bindings map (_._2)
-		        val scriptNameAsSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
-	            val scriptBody = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), 
-	                                   List(rhs_withAdjustedScriptLocalData))
+		        val scriptNameAsSym         = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
+	            val scriptBody              = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), 
+	                                                List(rhs_withAdjustedScriptLocalData))
 	            
 	            // to enable moving this all to a later phase, we should create a ScriptDef rather than a DefDef
 		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, scriptBody)
@@ -1614,9 +1629,9 @@ self =>
 	          
 	          result+=scriptDef
 	      }
-	      scriptFormalParameters = new ListBuffer[ValDef]   
-	      scriptLocalVariables   = new ListBuffer[ValDef]   
-	      scriptLocalValues      = new ListBuffer[ValDef]   
+	      scriptFormalParameters.clear
+	      scriptLocalVariables  .clear
+	      scriptLocalValues     .clear
 	                                                             
 	      if (!doMultipleScripts) mustExit = true
       }
@@ -1760,7 +1775,10 @@ self =>
       while (moreTerms)
         
       val allTermsArePathsOrLiterals = ts.forall(t =>
-            t match {case Ident(_) | Select(_,_) | Literal(_) => true case _ => false}
+            t match {
+              case Select(sSubScriptDSL, _)            => false
+              case Select(_,_) | Ident(_) | Literal(_) => true 
+              case _ => false}
           )
       
       if (allTermsArePathsOrLiterals) {ScriptApply(EmptyTree, ts.toList)}
@@ -1769,10 +1787,11 @@ self =>
     }
 
  
-    def simpleNativeValueExpr(): Tree = {
-      in.isInSubScript_nativeCode = true
+    def simpleNativeValueExpr(allowBraces: Boolean = false): Tree = {
+      
       val ret = in.token match {
-        case LPAREN           => {in.nextToken();val r = expr(); accept(RPAREN); r}
+        case LBRACE if  allowBraces => in.isInSubScript_nativeCode=true; in.nextToken(); val r=block(); in.isInSubScript_nativeCode=false; accept(RBRACE); r
+        case LPAREN if !allowBraces => in.isInSubScript_nativeCode=true; in.nextToken(); val r=expr (); in.isInSubScript_nativeCode=false; accept(RPAREN); r
         case IDENTIFIER 
         |    BACKQUOTED_IDENT 
         |    THIS 
@@ -1780,6 +1799,7 @@ self =>
         case _ if (isLiteral) => atPos(in.offset)(literal())
       }
       in.isInSubScript_nativeCode = false
+      newLinesOpt() // NEWLINEs may have remained from the "native code mode" scanning
       ret
     }
 
@@ -1817,7 +1837,8 @@ self =>
           if (tok == BACKQUOTED_IDENT) Ident(name) updateAttachment BackquotedIdentifierAttachment
           else Ident(name)
       }
-      val tp  = typedOpt()
+      accept(COLON) // optionality for the typer is not supported yet...would require some work since the type is needed (?) at the start of the method generated for the script
+      val tp  = exprSimpleType() 
       val rhs =
         if (tp.isEmpty || in.token == EQUALS || !newmods.isMutable) {
           accept(EQUALS)
@@ -1829,13 +1850,17 @@ self =>
         }
         else {newmods = newmods | Flags.DEFERRED; EmptyTree}
       
-      // TBD: val result = ValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
-      // val c = initializer ===> subscript.DSL._val(_c, here => initializer)   likewise for var
+      // TBD: val result = ScriptValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
+      // val c = initializer ===> subscript.DSL._val(_c, here: subscript.DSL.N_localvar[Char] => initializer)   likewise for var
+      val vIdent          = Ident(newTermName(underscore_prefix(name.toString)))
+      val  sFunValOrVar   = dslFunFor(if (mods.isMutable) VAR else VAL)
+      val sNodeValOrVar   = vmNodeFor(if (mods.isMutable) VAR else VAL)
+      val typer           = AppliedTypeTree(sNodeValOrVar, List(tp))
+      val initializerCode = blockToFunction_here (rhs, typer, rhs.pos)
+      if (mods.isMutable) scriptLocalVariables += name->tp
+      else                scriptLocalValues    += name->tp
 
-      val result = null
-      if (mods.isMutable) scriptLocalVariables += result
-      else                scriptLocalValues    += result
-      result
+      atPos(pos) {Apply(sFunValOrVar, List(vIdent, initializerCode))}
     }
 
     def unaryPostfixScriptTerm (): Tree = {
@@ -1870,7 +1895,7 @@ self =>
         def parseAnnotation = {
           atPos(in.skipToken()) {
             val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
-            val annotationCode = expr(); accept(COLON); newLinesOpt()
+            val annotationCode = simpleNativeValueExpr(allowBraces = true); accept(COLON)
             val body           = stripParens(unaryPrefixScriptTerm())
             
             Apply(dslFunFor(AT), List(blockToFunction_there(annotationCode, vmNodeOf(body), startPos), body))
@@ -1954,12 +1979,12 @@ self =>
  
      */
     def simpleScriptTerm (isNegated: Boolean = false): Tree = atPos(in.offset) {
-      
-      in.token match {
+      val currentToken = in.token
+      currentToken match {
       case IF =>
         def parseIf = atPos(in.skipToken()) {
           val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
-          val cond  = simpleNativeValueExpr();  newLinesOpt()
+          val cond  = simpleNativeValueExpr()
           val thenp = scriptExpr()
           if (in.token == ELSE) {
                in.nextToken(); 
@@ -1973,8 +1998,8 @@ self =>
         def parseWhile    = atPos(in.skipToken()) {
           val startPos    = r2p(in.offset, in.offset, in.lastOffset max in.offset)
           val lname: Name = freshTermName(nme.WHILE_PREFIX)
-          val cond        = simpleNativeValueExpr(); newLinesOpt()
-          Apply(dslFunFor(in.token), List(blockToFunction_here(cond, vmNodeFor(in.token), startPos)))
+          val cond        = simpleNativeValueExpr()
+          Apply(dslFunFor(WHILE), List(blockToFunction_here(cond, vmNodeFor(WHILE), startPos)))
         }
         parseWhile
       case LPAREN_PLUS_RPAREN           
@@ -1983,9 +2008,9 @@ self =>
          | LPAREN_SEMI_RPAREN               
          | DOT                              
          | DOT2                             
-         | DOT3                         => Apply(dslFunFor(in.token), Nil) // TBD: transform here?
-      case IDENTIFIER if (isBreakIdent) => Apply(dslFunForBreak, Nil)
-      case LPAREN                       => atPos(in.offset)(inScriptParens(scriptExpr()))
+         | DOT3                         => atPos(in.offset){in.nextToken(); dslFunFor(currentToken)} // TBD: transform in later phase
+      case IDENTIFIER if (isBreakIdent) => atPos(in.offset){in.nextToken(); dslFunForBreak         }
+      case LPAREN                       => atPos(in.offset){inScriptParens(scriptExpr())}
       case LBRACE           
          | LBRACE_DOT              
          | LBRACE_DOT3         
@@ -1995,14 +2020,25 @@ self =>
          | LBRACE_CARET                 => scriptBlockExpr()
         
       case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER => 
-        val t = path(thisOK = true, typeOK = false); // scriptSimpleExprRest(t, canApply = canApply)
+        val p = path(thisOK = true, typeOK = false); // scriptSimpleExprRest(t, canApply = canApply)
 	      in.token match {
-	        case LPAREN => return atPos(t.pos.startOrPoint, in.offset) {ScriptApply(t, scriptArgumentExprs())}
-	        case IDENTIFIER if (isQMark || isQMark2)  => ??? // parse constraint
-	        case _      => t
+	        case LPAREN => return atPos(p.pos.startOrPoint, in.offset) {ScriptApply(p, scriptArgumentExprs())}
+	        case IDENTIFIER if (isQMark || isQMark2)  => val isOutputParam = isQMark
+	             var paramConstraint: Tree = null
+                 in.nextToken
+                 if (in.token==IF_QMARK) {
+                   in.nextToken
+                   paramConstraint = simpleNativeValueExpr()
+                 }
+                 if (isOutputParam) makeActualOutputParameter  (p, paramConstraint)
+                 else p match {
+                        case Ident(formalParamName) => makeActualAdaptingParameter(formalParamName, paramConstraint)
+                        case _ => syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); p
+                      }
+	        case _      => p
 	      }
       case _ if (isLiteral) => atPos(in.offset)(literal(isNegated))
-      case NEW    => ???
+      case NEW    => syntaxError(in.offset, "'new' expressions not yet supported in script bodies"); EmptyTree
       case _      => syntaxErrorOrIncomplete("illegal start of simple expression", true); errorTermTree
     }
     }
@@ -2134,7 +2170,7 @@ self =>
         def parseTry = atPos(in.skipToken()) {
           val body = in.token match {
             case LBRACE => inBracesOrUnit(block())
-            case LPAREN => inParensOrUnit(expr())
+            case LPAREN => inParensOrUnit(expr ())
             case _ => expr()
           }
           def catchFromExpr() = List(makeCatchFromExpr(expr()))
@@ -2919,9 +2955,9 @@ self =>
         if (in.isInSubScript_header) { // TBD: clean up
           if (in.token==IDENTIFIER)
             in.name match {
-              case nme.QMARKkw   
+              case nme.QMARKkw
                  | nme.QMARK2kw => annots = Ident(in.name)::annots; in.nextToken()
-              case _            => 
+              case _            =>
             }
         }
         var tpt =
@@ -2948,13 +2984,13 @@ self =>
             mods |= Flags.DEFAULTPARAM
             expr()
           } else EmptyTree
-        val result = atPos(start, if (name == nme.ERROR) start else nameOffset) {
-          ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
-        }
+        val termName = name.toTermName
         if (in.isInSubScript_header) {
-          scriptFormalParameters       += result 
+          scriptFormalParameters += termName->tpt
         }
-        result
+        atPos(start, if (name == nme.ERROR) start else nameOffset) {
+          ValDef((mods | implicitmod | bynamemod) withAnnotations annots, termName, tpt, default)
+        }
       }
       def paramClause(): List[ValDef] = {
         if (in.token == RPAREN  ) return Nil

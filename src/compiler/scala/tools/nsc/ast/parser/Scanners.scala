@@ -83,10 +83,11 @@ trait Scanners extends ScannersCommon {
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
     
-    var isInSubScript_script     = false
-    var isInSubScript_header     = false
-    var isInSubScript_nativeCode      = false
-    def isInSubScript_expression = isInSubScript_script && !isInSubScript_header && !isInSubScript_nativeCode
+    var prevWasInSubScript_script = false
+    var isInSubScript_script      = false
+    var isInSubScript_header      = false
+    var isInSubScript_nativeCode  = false
+    def isInSubScript_expression  = isInSubScript_script && !isInSubScript_header && !isInSubScript_nativeCode
 
     def isAtEnd = charOffset >= buf.length
 
@@ -196,6 +197,7 @@ trait Scanners extends ScannersCommon {
     /** Produce next token, filling TokenData fields of Scanner.
      */
     def nextToken() {
+      prevWasInSubScript_script = isInSubScript_script
       val lastToken = token
       
       // Adapt sepRegions according to last token
@@ -465,7 +467,7 @@ trait Scanners extends ScannersCommon {
           nextChar()
           if ('0' <= ch && ch <= '9') {putChar('.'); getFraction()}
           else                   {            token = DOT }
-          if (isInSubScript_script) {
+          if (isInSubScript_header || isInSubScript_expression) {
                  if  (ch == '.') {nextChar()
                   if (ch == '.') {nextChar(); token = DOT3}
                   else           {            token = DOT2}}
@@ -479,7 +481,7 @@ trait Scanners extends ScannersCommon {
                   else           {syntaxError( "'..' unexpected")}}
           } 
         case '{' => nextChar(); token = LBRACE
-          if (isInSubScript_script) {
+          if (isInSubScript_expression) {
             (ch: @switch) match {
               case '?' => nextChar(); token = LBRACE_QMARK
               case '!' => nextChar(); token = LBRACE_EMARK
@@ -494,7 +496,7 @@ trait Scanners extends ScannersCommon {
             }
           }
         case '(' => nextChar(); token = LPAREN
-          if (isInSubScript_script) { // (+)  (-)  (+-)  (;)
+          if (isInSubScript_expression) { // (+)  (-)  (+-)  (;)
             var isSpecialOperand = false            
             val lookahead = lookaheadReader
             lookahead.nextChar()
@@ -516,7 +518,7 @@ trait Scanners extends ScannersCommon {
             }
           }          
         case ')' => nextChar(); token = RPAREN
-        case ';' => if (!isInSubScript_script) {nextChar(); token = SEMI}
+        case ';' => if (!isInSubScript_expression) {nextChar(); token = SEMI}
                     else   {putChar(ch); nextChar(); getOperatorRest()}
         case ',' => nextChar(); token = COMMA
         case '}' => nextChar(); token = RBRACE
@@ -652,9 +654,12 @@ trait Scanners extends ScannersCommon {
 
     private def getOperatorRest(): Unit = {
       if (isInSubScript_header) { // after seeing += and = for header definitions, stop there to allow prefix operators as in x =|| y z
-        val cbuf_toString = cbuf.toString
-        if (cbuf_toString=="="
-        ||  cbuf_toString=="+=") {finishNamed(); return}
+        cbuf.toString match {
+          case "="       if(ch!='>')  => finishNamed(); return
+          case "+="                   => finishNamed(); return
+          case "?" | "??" if(ch==':') => finishNamed(); return // allow parameters lists like (p?:Char, pp??:Char)
+          case _                      =>
+        }
       }
       (ch: @switch) match {
         case '/' =>
@@ -664,9 +669,9 @@ trait Scanners extends ScannersCommon {
         case '~' | '!' | '@' | '#' | '%' |
              '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
-             '|' | '\\'                  =>      putChar(ch); nextChar(); getOperatorRest()
+             '|' | '\\'                  =>                 putChar(ch); nextChar(); getOperatorRest()
         case _ => if (isSpecial(ch)
-                  ||  isInSubScript_script && ch==';') {putChar(ch); nextChar(); getOperatorRest()}
+                  ||  isInSubScript_expression && ch==';') {putChar(ch); nextChar(); getOperatorRest()}
                   else finishNamed()
       }
     }
