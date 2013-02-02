@@ -70,7 +70,19 @@ object FutureTests extends MinimalScalaTest {
       //FIXME should check
     }
   }
-  
+
+  "The default ExecutionContext" should {
+    "report uncaught exceptions" in {
+      val p = Promise[Throwable]()
+      val logThrowable: Throwable => Unit = p.trySuccess(_)
+      val ec: ExecutionContext = ExecutionContext.fromExecutor(null, logThrowable)
+
+      val t = new NotImplementedError("foo")
+      val f = Future(throw t)(ec)
+      Await.result(p.future, 2.seconds) mustBe t
+    }
+  }
+
   "A future with global ExecutionContext" should {
     import ExecutionContext.Implicits._
 
