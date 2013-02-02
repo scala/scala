@@ -732,7 +732,7 @@ trait Types extends api.Types { self: SymbolTable =>
         val trivial = (
              this.isTrivial
           || phase.erasedTypes && pre.typeSymbol != ArrayClass
-          || pre.normalize.isTrivial && !isPossiblePrefix(clazz)
+          || skipPrefixOf(pre, clazz)
         )
         if (trivial) this
         else {
@@ -4341,14 +4341,15 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def isPossiblePrefix(clazz: Symbol) = clazz.isClass && !clazz.isPackageClass
 
+  private def skipPrefixOf(pre: Type, clazz: Symbol) = (
+    (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
+  )
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
     var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
 
-    private def skipPrefixOf(pre: Type, clazz: Symbol) = (
-      (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
-    )
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
         private def canRewriteThis(sym: Symbol) = (
@@ -4381,8 +4382,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def apply(tp: Type): Type =
-      if (skipPrefixOf(pre, clazz)) tp
-      else tp match {
+      tp match {
         case ThisType(sym) =>
           def toPrefix(pre: Type, clazz: Symbol): Type =
             if (skipPrefixOf(pre, clazz)) tp

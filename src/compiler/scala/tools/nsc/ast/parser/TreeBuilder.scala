@@ -249,7 +249,7 @@ abstract class TreeBuilder {
 
   /** Create tree representing a while loop */
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
-    val continu = atPos(o2p(body.pos.endOrPoint)) { Apply(Ident(lname), Nil) }
+    val continu = atPos(o2p(body.pos pointOrElse wrappingPos(List(cond, body)).pos.endOrPoint)) { Apply(Ident(lname), Nil) }
     val rhs = If(cond, Block(List(body), continu), Literal(Constant()))
     LabelDef(lname, Nil, rhs)
   }
