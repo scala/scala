@@ -18,6 +18,9 @@ abstract class DeadCodeElimination extends SubComponent {
   import icodes.opcodes._
   import definitions.RuntimePackage
 
+  /** The block and index where an instruction is located */
+  type InstrLoc = (BasicBlock, Int)
+  
   val phaseName = "dce"
 
   /** Create a new phase */
@@ -55,10 +58,10 @@ abstract class DeadCodeElimination extends SubComponent {
     val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis;
 
     /** Use-def chain: give the reaching definitions at the beginning of given instruction. */
-    var defs: immutable.Map[(BasicBlock, Int), immutable.Set[rdef.lattice.Definition]] = immutable.HashMap.empty
+    var defs: immutable.Map[InstrLoc, immutable.Set[rdef.lattice.Definition]] = immutable.HashMap.empty
 
     /** Useful instructions which have not been scanned yet. */
-    val worklist: mutable.Set[(BasicBlock, Int)] = new mutable.LinkedHashSet
+    val worklist: mutable.Set[InstrLoc] = new mutable.LinkedHashSet
 
     /** what instructions have been marked as useful? */
     val useful: mutable.Map[BasicBlock, mutable.BitSet] = perRunCaches.newMap()
@@ -67,16 +70,16 @@ abstract class DeadCodeElimination extends SubComponent {
     var accessedLocals: List[Local] = Nil
     
     /** Map from a local and a basic block to the instructions that store to that local in that basic block */
-    val localStores = mutable.Map[(Local, BasicBlock), mutable.BitSet]()
+    val localStores = mutable.Map[(Local, BasicBlock), mutable.BitSet]() withDefault {_ => mutable.BitSet()}
     
     /** Stores that clobber previous stores to array or ref locals. See SI-5313 */
-    val clobbers = mutable.Set[(BasicBlock, Int)]()
+    val clobbers = mutable.Set[InstrLoc]()
 
     /** the current method. */
     var method: IMethod = _
 
     /** Map instructions who have a drop on some control path, to that DROP instruction. */
-    val dropOf: mutable.Map[(BasicBlock, Int), List[(BasicBlock, Int)]] = perRunCaches.newMap()
+    val dropOf: mutable.Map[InstrLoc, List[InstrLoc]] = perRunCaches.newMap()
 
     def dieCodeDie(m: IMethod) {
       if (m.hasCode) {
@@ -135,14 +138,9 @@ abstract class DeadCodeElimination extends SubComponent {
               if (necessary) worklist += ((bb, idx))
               // add it to the localStores map
               val key = (l, bb)
-              val set = if(localStores contains key) 
-                localStores(key)
-              else {
-                val set = new mutable.BitSet
-                localStores.put(key, set)
-                set                
-              }
+              val set = localStores(key)
               set += idx
+              localStores(key) = set
 
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
@@ -345,8 +343,8 @@ abstract class DeadCodeElimination extends SubComponent {
       }
     }
 
-    private def computeCompensations(m: IMethod): mutable.Map[(BasicBlock, Int), List[Instruction]] = {
-      val compensations: mutable.Map[(BasicBlock, Int), List[Instruction]] = new mutable.HashMap
+    private def computeCompensations(m: IMethod): mutable.Map[InstrLoc, List[Instruction]] = {
+      val compensations: mutable.Map[InstrLoc, List[Instruction]] = new mutable.HashMap
 
       m foreachBlock { bb =>
         assert(bb.closed, "Open block in computeCompensations")
@@ -385,7 +383,7 @@ abstract class DeadCodeElimination extends SubComponent {
       res
     }
 
-    private def findInstruction(bb: BasicBlock, i: Instruction): (BasicBlock, Int) = {
+    private def findInstruction(bb: BasicBlock, i: Instruction): InstrLoc = {
       for (b <- linearizer.linearizeAt(method, bb)) {
         val idx = b.toList indexWhere (_ eq i)
         if (idx != -1)
