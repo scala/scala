@@ -7,7 +7,7 @@ object Test extends IcodeTest {
 
   override def code =
     """class Foo {
-      def foo = true
+      def randomBoolean = util.Random.nextInt % 2 == 0
       def bar = {
         var kept1 = new Object
         val result = new java.lang.ref.WeakReference(kept1)
@@ -19,7 +19,7 @@ object Test extends IcodeTest {
         var erased4 = erased2 // and this
         val erased5 = erased4 // and this
         var kept2: Object = new Object // ultimately can't be eliminated 
-        while(foo) {
+        while(randomBoolean) {
           val kept3 = kept2
           kept2 = null // this can't, because it clobbers kept2, which is used
           erased4 = null // safe to eliminate       
@@ -36,6 +36,12 @@ object Test extends IcodeTest {
         kept5 = null // can't eliminate it's a clobber and it's used
         print(kept5)
         kept5 = null // can eliminate because we don't care about clobbers of nulls
+        while(randomBoolean) {
+          var kept6: AnyRef = null // not used, but have to keep because it clobbers the next used store
+                                   // on the back edge of the loop
+          kept6 = new Object // used
+          println(kept6)
+        }
         result
       }
     }""".stripMargin
