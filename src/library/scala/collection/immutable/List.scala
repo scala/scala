@@ -305,6 +305,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     result
   }
+  
+  override def foldRight[B](z: B)(op: (A, B) => B): B =
+    reverse.foldLeft(z)((right, left) => op(left, right))
 
   override def stringPrefix = "List"
 

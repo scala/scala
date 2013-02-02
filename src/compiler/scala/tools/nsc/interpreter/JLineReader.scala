@@ -34,6 +34,11 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
   }
 
   class JLineConsoleReader extends ConsoleReader with ConsoleReaderHelper {
+    // working around protected/trait/java insufficiencies.
+    def goBack(num: Int): Unit = back(num)
+    if ((history: History) ne NoHistory)
+      this setHistory history
+
     def readOneKey(prompt: String) = {
       this.print(prompt)
       this.flush()
@@ -45,8 +50,6 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
     // A hook for running code after the repl is done initializing.
     lazy val postInit: Unit = {
       this setBellEnabled false
-      if ((history: History) ne NoHistory)
-        this setHistory history
 
       if (completion ne NoCompletion) {
         val argCompletor: ArgumentCompleter =

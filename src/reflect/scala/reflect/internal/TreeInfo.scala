@@ -253,22 +253,24 @@ abstract class TreeInfo {
    * in the position `for { <tree> <- expr }` based only
    * on information at the `parser` phase? To qualify, there
    * may be no subtree that will be interpreted as a
-   * Stable Identifier Pattern.
+   * Stable Identifier Pattern, nor any type tests, even
+   * on TupleN. See SI-6968.
    *
    * For instance:
    *
    * {{{
-   * foo @ (bar, (baz, quux))
+   * (foo @ (bar @ _)) = 0
    * }}}
    *
-   * is a variable pattern; if the structure matches,
-   * then the remainder is inevitable.
+   * is a not a variable pattern; if only binds names.
    *
    * The following are not variable patterns.
    *
    * {{{
-   *   foo @ (bar, (`baz`, quux)) // back quoted ident, not at top level
-   *   foo @ (bar, Quux)          // UpperCase ident, not at top level
+   *   `bar`
+   *   Bar
+   *   (a, b)
+   *   _: T
    * }}}
    *
    * If the pattern is a simple identifier, it is always
@@ -297,10 +299,6 @@ abstract class TreeInfo {
       tree match {
         case Bind(name, pat)  => isVarPatternDeep0(pat)
         case Ident(name)      => isVarPattern(tree)
-        case Apply(sel, args) =>
-          (    isReferenceToScalaMember(sel, TupleClass(args.size).name.toTermName)
-            && (args forall isVarPatternDeep0)
-            )
         case _                => false
       }
     }
