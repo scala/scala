@@ -1,0 +1,13 @@
+t6963b.scala:2: error: An Array will no longer match as Seq[_].
+  def f1(x: Any) = x.isInstanceOf[Seq[_]]
+                                 ^
+t6963b.scala:4: error: An Array will no longer match as Seq[_].
+    case _: Seq[_]  => true
+          ^
+t6963b.scala:16: error: An Array will no longer match as Seq[_].
+    case (Some(_: Seq[_]), Nil, _)        => 1
+                ^
+t6963b.scala:17: error: An Array will no longer match as Seq[_].
+    case (None, List(_: List[_], _), _)   => 2
+                    ^
+four errors found
