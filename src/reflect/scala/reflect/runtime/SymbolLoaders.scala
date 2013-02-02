@@ -15,38 +15,16 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    *  is found, a package is created instead.
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
-//    def makePackage() {
-//      println("wrong guess; making package "+clazz)
-//      val ptpe = newPackageType(module.moduleClass)
-//      for (sym <- List(clazz, module, module.moduleClass)) {
-//        sym setFlag Flags.PACKAGE
-//        sym setInfo ptpe
-//      }
-//    }
-
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
-//      try {
-      atPhaseNotLaterThan(picklerPhase) {
-        val loadingMirror = mirrorThatLoaded(sym)
-        val javaClass = loadingMirror.javaClass(clazz.javaClassName)
-        loadingMirror.unpickleClass(clazz, module, javaClass)
-//      } catch {
-//        case ex: ClassNotFoundException => makePackage()
-//        case ex: NoClassDefFoundError => makePackage()
-          // Note: We catch NoClassDefFoundError because there are situations
-          // where a package and a class have the same name except for capitalization.
-          // It seems in this case the class is loaded even if capitalization differs
-          // but then a NoClassDefFound error is issued with a ("wrong name: ...")
-          // reason. (I guess this is a concession to Windows).
-          // The present behavior is a bit too forgiving, in that it masks
-          // all class load errors, not just wrong name errors. We should try
-          // to be more discriminating. To get on the right track simply delete
-          // the clause above and load a collection class such as collection.Iterable.
-          // You'll see an error that class `parallel` has the wrong name.
-//      }
-      }
+      if (isCompilerUniverse) atPhaseNotLaterThan(picklerPhase) { completeImpl(sym) }
+      else completeImpl(sym)
+    }
+    private def completeImpl(sym: Symbol) = {
+      val loadingMirror = mirrorThatLoaded(sym)
+      val javaClass = loadingMirror.javaClass(clazz.javaClassName)
+      loadingMirror.unpickleClass(clazz, module, javaClass)
     }
     override def load(sym: Symbol) = complete(sym)
   }
@@ -98,45 +76,63 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   }
 
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
-      with SynchronizedScope {
+                                          with SynchronizedScope {
     assert(pkgClass.isType)
-    // disable fingerprinting as we do not know entries beforehand
-    private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
-    override def lookupEntry(name: Name): ScopeEntry = {
-      val e = super.lookupEntry(name)
-      if (e != null)
-        e
-      else if (isInvalidClassName(name) || (negatives contains name))
-        null
-      else {
+
+    // materializing multiple copies of the same symbol in PackageScope is a very popular bug
+    // this override does its best to guard against it
+    override def enter[T <: Symbol](sym: T): T = {
+      val existing = super.lookupEntry(sym.name)
+      assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
+      super.enter(sym)
+    }
+
+    // package scopes need to synchronize on the GIL
+    // because lookupEntry might cause changes to the global symbol table
+    override protected lazy val syncLock = gil
+    private val negatives = new mutable.HashSet[Name]
+    override def lookupEntry(name: Name): ScopeEntry = syncLock.synchronized {
+      def lookupExisting: Option[ScopeEntry] = {
+        val e = super.lookupEntry(name)
+        if (e != null)
+          Some(e)
+        else if (isInvalidClassName(name) || (negatives contains name))
+          Some(null) // TODO: omg
+        else
+          None
+      }
+      def materialize: ScopeEntry = {
         val path =
           if (pkgClass.isEmptyPackageClass) name.toString
           else pkgClass.fullName + "." + name
         val currentMirror = mirrorThatLoaded(pkgClass)
         currentMirror.tryJavaClass(path) match {
           case Some(cls) =>
-            val loadingMirror = currentMirror.mirrorDefining(cls)
-            val (clazz, module) =
-              if (loadingMirror eq currentMirror) {
-                initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-              } else {
-                val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
-                val clazz = origOwner.info decl name.toTypeName
-                val module = origOwner.info decl name.toTermName
-                assert(clazz != NoSymbol)
-                assert(module != NoSymbol)
-                pkgClass.info.decls enter clazz
-                pkgClass.info.decls enter module
-                (clazz, module)
-              }
-            debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
-            lookupEntry(name)
+            lookupExisting getOrElse {
+              val loadingMirror = currentMirror.mirrorDefining(cls)
+              val (clazz, module) =
+                if (loadingMirror eq currentMirror) {
+                  initAndEnterClassAndModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+                } else {
+                  val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
+                  val clazz = origOwner.info decl name.toTypeName
+                  val module = origOwner.info decl name.toTermName
+                  assert(clazz != NoSymbol)
+                  assert(module != NoSymbol)
+                  pkgClass.info.decls enter clazz
+                  pkgClass.info.decls enter module
+                  (clazz, module)
+                }
+              debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
+              lookupEntry(name)
+            }
           case none =>
             debugInfo("*** not found : "+path)
             negatives += name
             null
         }
       }
+      lookupExisting getOrElse materialize
     }
   }
 
