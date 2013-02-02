@@ -262,7 +262,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
-    new Global(settings, reporter) with ReplGlobal
+    new Global(settings, reporter) with ReplGlobal {
+      override def toString: String = "<global>"
+    }
   }
 
   /** Parent classloader.  Overridable. */
