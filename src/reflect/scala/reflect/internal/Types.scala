@@ -586,9 +586,9 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
      *  Functions on types are also implemented as PolyTypes.
      *
-     *  Example: (in the below, <List> is the type constructor of List)
-     *    TypeRef(pre, <List>, List()) is replaced by
-     *    PolyType(X, TypeRef(pre, <List>, List(X)))
+     *  Example: (in the below, `<List>` is the type constructor of List)
+     *    TypeRef(pre, `<List>`, List()) is replaced by
+     *    PolyType(X, TypeRef(pre, `<List>`, List(X)))
      */
     def normalize = this // @MAT
 
@@ -4982,6 +4982,24 @@ trait Types extends api.Types { self: SymbolTable =>
         mapOver(tp)
       }
     }
+  }
+
+  /**
+   * {{{
+   *   class C { object O { class E }}
+   *   object D extends C
+   *
+   *   (D.type).memberType(E)    == C.this.O.E
+   *   deepMemberType(D.type, E) == D.O.E
+   * }}}
+   */
+  def deepMemberType(pre: Type, sym: Symbol) = {
+    def unifyPrefix(tp: Type): Type = tp match {
+      case TypeRef(NoPrefix, _, _)      => tp
+      case TypeRef(otherPre, sym, args) => copyTypeRef(tp, unifyPrefix(pre memberType otherPre.typeSymbol), sym, args)
+      case _                            => tp
+    }
+    unifyPrefix(pre memberType sym)
   }
 
   /** The most deeply nested owner that contains all the symbols
