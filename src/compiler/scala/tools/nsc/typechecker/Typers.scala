@@ -1011,7 +1011,7 @@ trait Typers extends Modes with Adaptations with Tags {
                   val bounds = if (variance == 1) TypeBounds.upper(tpSym.tpe) else TypeBounds.lower(tpSym.tpe)
                   // origin must be the type param so we can deskolemize
                   val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
-                  // println(s"mapping $tpSym to $skolem : $bounds  -- pt= $pt  in ${context.owner} at ${context.tree}")
+                  // println("mapping "+ tpSym +" to "+ skolem + " : "+ bounds +" -- pt= "+ pt +" in "+ context.owner +" at "+ context.tree )
                   skolems += skolem
                   skolem.tpe
                 case tp1 => tp1
@@ -1029,9 +1029,6 @@ trait Typers extends Modes with Adaptations with Tags {
             freeVars foreach ctorContext.scope.enter
             newTyper(ctorContext).infer.inferConstructorInstance(tree1, clazz.typeParams, ptSafe)
 
-            val undetSkolems = clazz.typeParams map (fv => ctorContext.owner.newExistentialSkolem(fv, fv))
-            tree1 setType tree1.tpe.substSym(clazz.typeParams, undetSkolems) // the determined ones are gone by now
-
             // simplify types without losing safety,
             // so that we get rid of unnecessary type slack, and so that error messages don't unnecessarily refer to skolems
             val extrapolate = new ExistentialExtrapolation(freeVars) extrapolate (_: Type)
@@ -1042,7 +1039,6 @@ trait Typers extends Modes with Adaptations with Tags {
               case tp => tp
             }
 
-            // println(s"extrapolated $tree1: ${tree1.tpe} to $extrapolated")
             // once the containing CaseDef has been type checked (see typedCase),
             // tree1's remaining type-slack skolems will be deskolemized (to the method type parameter skolems)
             tree1 setType extrapolated
