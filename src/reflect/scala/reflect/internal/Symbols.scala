@@ -1188,6 +1188,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *       to generate a type of kind *
      *  for a term symbol, its usual type.
      *  See the tpe/tpeHK overrides in TypeSymbol for more.
+     *
+     *  For type symbols, `tpe` is different than `info`. `tpe` returns a typeRef
+     *  to the type symbol, `info` returns the type information of the type symbol,
+     *  e.g. a ClassInfoType for classes or a TypeBounds for abstract types.
      */
     def tpe: Type = info
     def tpeHK: Type = tpe

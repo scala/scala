@@ -9,6 +9,7 @@ import scala.tools.nsc.MissingRequirementError
 abstract class CPSAnnotationChecker extends CPSUtils with Modes {
   val global: Global
   import global._
+  import analyzer.{AnalyzerPlugin, Typer}
   import definitions._
 
   //override val verbose = true
@@ -18,12 +19,12 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
    *  Checks whether @cps annotations conform
    */
   object checker extends AnnotationChecker {
-    private def addPlusMarker(tp: Type)  = tp withAnnotation newPlusMarker()
-    private def addMinusMarker(tp: Type) = tp withAnnotation newMinusMarker()
+    private[CPSAnnotationChecker] def addPlusMarker(tp: Type)  = tp withAnnotation newPlusMarker()
+    private[CPSAnnotationChecker] def addMinusMarker(tp: Type) = tp withAnnotation newMinusMarker()
 
-    private def cleanPlus(tp: Type) =
+    private[CPSAnnotationChecker] def cleanPlus(tp: Type) =
       removeAttribs(tp, MarkerCPSAdaptPlus, MarkerCPSTypes)
-    private def cleanPlusWith(tp: Type)(newAnnots: AnnotationInfo*) =
+    private[CPSAnnotationChecker] def cleanPlusWith(tp: Type)(newAnnots: AnnotationInfo*) =
       cleanPlus(tp) withAnnotations newAnnots.toList
 
     /** Check annotations to decide whether tpe1 <:< tpe2 */
@@ -116,8 +117,13 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else
         bounds
     }
+  }
 
-    override def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = {
+  object plugin extends AnalyzerPlugin {
+
+    import checker._
+
+    override def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Boolean = {
       if (!cpsEnabled) return false
       vprintln("can adapt annotations? " + tree + " / " + tree.tpe + " / " + Integer.toHexString(mode) + " / " + pt)
 
@@ -183,7 +189,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
       } else false
     }
 
-    override def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
+    override def adaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Tree = {
       if (!cpsEnabled) return tree
 
       vprintln("adapt annotations " + tree + " / " + tree.tpe + " / " + modeString(mode) + " / " + pt)
@@ -239,14 +245,15 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
      *  is in tail position. Therefore, we are making sure that only the types of return expressions
      *  are adapted which will either be removed, or lead to an error.
      */
-    override def adaptTypeOfReturn(tree: Tree, pt: Type, default: => Type): Type = {
+    override def pluginsTypedReturn(default: Type, typer: Typer, tree: Return, pt: Type): Type = {
+      val expr = tree.expr
       // only adapt if method's result type (pt) is cps type
       val annots = cpsParamAnnotation(pt)
       if (annots.nonEmpty) {
-        // return type of `tree` without plus marker, but only if it doesn't have other cps annots
-        if (hasPlusMarker(tree.tpe) && !hasCpsParamTypes(tree.tpe))
-          tree.setType(removeAttribs(tree.tpe, MarkerCPSAdaptPlus))
-        tree.tpe
+        // return type of `expr` without plus marker, but only if it doesn't have other cps annots
+        if (hasPlusMarker(expr.tpe) && !hasCpsParamTypes(expr.tpe))
+          expr.setType(removeAttribs(expr.tpe, MarkerCPSAdaptPlus))
+        expr.tpe
       } else default
     }
 
@@ -393,7 +400,7 @@ abstract class CPSAnnotationChecker extends CPSUtils with Modes {
     /** Modify the type that has thus far been inferred
      *  for a tree.  All this should do is add annotations. */
 
-    override def addAnnotations(tree: Tree, tpe: Type): Type = {
+    override def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Int, pt: Type): Type = {
       import scala.util.control._
       if (!cpsEnabled) {
         if (Exception.failAsValue(classOf[MissingRequirementError])(false)(hasCpsParamTypes(tpe)))
