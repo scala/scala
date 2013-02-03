@@ -24,13 +24,14 @@
     If not, see <http://www.gnu.org/licenses/>
 */
 
-//package subscript.swing
+package subscript.swing
 import scala.swing._
 import scala.swing.event._
 import subscript._
 import subscript.DSL._
 import subscript.Predef._
 import subscript.vm._
+
 
 /*
  * SimpleSubscriptApplication: a SimpleSwingApplication
@@ -223,12 +224,12 @@ object Scripts {
  implicit def script ..
     key(comp: Component, keyCode ?? : Char     ) = event(         KeyTypedScriptReactor[N_code_eh](comp, keyCode ))
    vkey(comp: Component, keyValue?? : Key.Value) = event(        VKeyTypedScriptReactor[N_code_eh](comp, keyValue))
-   stateChange(slider: Slider)                  = event(SliderStateChangedScriptReactor[N_code_eh](slider))
-   clicked(b:Button)                            = event(           ClickedScriptReactor[N_code_eh](b))
+   stateChange(slider: Slider)                   = event(SliderStateChangedScriptReactor[N_code_eh](slider))
+   clicked(b:Button)                             = event(           ClickedScriptReactor[N_code_eh](b))
 
  def script ..
-  event     (r:ScriptReactor[N_code_eh     ])                           =  @gui: @{r.subscribe(there); there.onDeactivate{()=>r.unsubscribe}; there.onSuccess{()=>r.acknowledgeEventHandled}}: {.     .}
-  event_loop(r:ScriptReactor[N_code_eh_loop], task: MousEvent=>Unit)    =  @gui: @{r.subscribe(there); there.onDeactivate{()=>r.unsubscribe}; there.onSuccess{()=>r.acknowledgeEventHandled}}: {... ...}
+  event     (r:ScriptReactor[N_code_eh     ])                           =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {.     .}
+  event_loop(r:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {... ...}
        anyEvent(comp: Component)                        = event(          AnyEventScriptReactor[N_code_eh](comp))                                                    
            windowClosing(w: Window)                     = event(     WindowClosingScriptReactor[N_code_eh](w))
      mousePresses(c: Component, task: MouseEvent=>Unit) = event_loop( MousePressedScriptReactor[N_code_eh_loop](c), task)
@@ -246,7 +247,7 @@ object Scripts {
 */
 /*
   def _event(_r:FormalInputParameter[ScriptReactor[N_code_eh]])  = {
-   _script(this, 'event, _r~'r) {
+   
        _at{gui0} (_at{(there:N_code_eh) => {_r.value.subscribe(there); 
                         there.onDeactivate{_r.value.unsubscribe}; 
                         there.onSuccess   {_r.value.acknowledgeEventHandled}}}

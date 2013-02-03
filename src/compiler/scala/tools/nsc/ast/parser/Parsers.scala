@@ -1301,8 +1301,10 @@ self =>
      * i.e.: here: NodeType => block
      */
     def blockToFunction_here (block: Tree, nodeType: Tree, pos: Position): Function = blockToFunction(block, nodeType, pos,  here_Name)
-    def blockToFunction_there(block: Tree, nodeType: Tree, pos: Position): Function = blockToFunction(block, nodeType, pos, there_Name)
-  
+    def blockToFunction_there(block: Tree, nodeType: Tree, pos: Position): Function = blockToFunction(block, nodeType, pos, there_Name) //  TBD Clean up
+    //{ val vparams = List(makeParam(there_Name, TypeTree()))
+    //  Function(vparams , block)
+    //}
     
     def subScriptDSLFunForOperator(op: Tree, spaceOp: Name, newlineOp: Name): Tree = {
       val operatorName      : Name = op match {case Ident(name:Name) => if (name==SPACE_Name) spaceOp else if (name==NEWLINE_Name) newlineOp else name}
@@ -1346,27 +1348,39 @@ self =>
     val break_Name = newTermName("_break")
     
     val mapTokenToVMNodeString = Map[Int,String](
-        LBRACE          -> "code_normal",
-        LBRACE_ASTERISK -> "code_threaded",
-        LBRACE_QMARK    -> "code_unsure",
-        LBRACE_EMARK    -> "code_tiny",
-        LBRACE_DOT      -> "code_eh",
-        LBRACE_DOT3     -> "code_eh_loop",
-        WHILE           -> "while"    ,
-        IF              -> "if"       ,
-        ELSE            -> "if_else"  ,
-        VAL             -> "LocalVariable" ,
-        VAR             -> "LocalVariable" ,
-        0               -> "any"
+        LBRACE                   -> "code_normal",
+        LBRACE_ASTERISK          -> "code_threaded",
+        LBRACE_QMARK             -> "code_unsure",
+        LBRACE_EMARK             -> "code_tiny",
+        LBRACE_DOT               -> "code_eh",
+        LBRACE_DOT3              -> "code_eh_loop",
+        IF                       -> "if"       ,
+        ELSE                     -> "if_else"  ,
+        VAL                      -> "LocalVariable" ,
+        VAR                      -> "LocalVariable" ,
+        0                        -> "CallGraphNodeTrait_1",
+
+        // unused:
+        AT                       -> "annotation"         ,
+        DOT                      -> "optional_break"     ,
+        DOT2                     -> "optional_break_loop",
+        DOT3                     -> "loop"               ,
+        LPAREN_PLUS_RPAREN       -> "epsilon"            ,
+        LPAREN_MINUS_RPAREN      -> "delta"              ,
+        LPAREN_PLUS_MINUS_RPAREN -> "nu"                 ,
+        WHILE                    -> "while"       
     )
     val mapTokenToVMNodeTypeName = mapTokenToVMNodeString map {case(k,v) => (k, newTypeName("N_"+v): Name)}
-
+    
     def dslFunForBreak       : Select = Select(sSubScriptDSL, break_Name)
     def dslFunFor(token: Int): Select = Select(sSubScriptDSL, mapTokenToDSLFunName(token))
     def vmNodeFor(token: Int): Select = Select(sSubScriptVM , mapTokenToVMNodeTypeName(token))
-    def vmNodeOf (tree: Tree): Tree   = tree match {
+    
+    val any_TypeName  = newTypeName("Any")
+
+    def vmNodeOf (tree: Tree): Tree   = tree match { // for @ nodes; these need to know the node type of their operand; very messy...
       case (Apply(fun, Function(List(ValDef(_,_, nodeType,_)),block)::_)) => nodeType
-      case _ => Select(sSubScriptVM , mapTokenToVMNodeTypeName(0))
+      case _ => Ident(any_TypeName)
     }
       
     def eatNewlines(): Boolean = {
@@ -1898,7 +1912,8 @@ self =>
             val annotationCode = simpleNativeValueExpr(allowBraces = true); accept(COLON)
             val body           = stripParens(unaryPrefixScriptTerm())
             
-            Apply(dslFunFor(AT), List(blockToFunction_there(annotationCode, vmNodeOf(body), startPos), body))
+            val applyAnnotationCode = Apply(dslFunFor(AT), List(blockToFunction_there(annotationCode, vmNodeOf(body), startPos)))
+            Apply(applyAnnotationCode, List(body))
           }
         }
         parseAnnotation
