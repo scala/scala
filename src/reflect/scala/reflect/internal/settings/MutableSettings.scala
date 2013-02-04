@@ -47,6 +47,4 @@ abstract class MutableSettings extends AbsSettings {
   def XoldPatmat: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting
   def XfullLubs: BooleanSetting
-  def companionsInPkgObjs: BooleanSetting
-  
 }
