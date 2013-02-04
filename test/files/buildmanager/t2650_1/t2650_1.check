@@ -1,6 +1,6 @@
 builder > A.scala B.scala
 compiling Set(A.scala, B.scala)
-warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warning(s); re-run with -feature for details
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)

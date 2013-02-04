@@ -2,7 +2,38 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> def method : String = { implicit def f(s: Symbol) = "" ; 'symbol }
-warning: there were 1 feature warnings; re-run with -feature for details
-method: String
 
-scala> 
+Failed to initialize the REPL due to an unexpected error.
+This is a bug, please, report it along with the error diagnostics printed below.
+java.lang.NoSuchMethodError: scala.tools.nsc.Global$ConditionalWarning.warnings()Lscala/collection/mutable/ListBuffer;
+	at scala.tools.nsc.interpreter.IMain$ReadEvalPrint$$anonfun$10.apply(IMain.scala:789)
+	at scala.tools.nsc.interpreter.IMain$ReadEvalPrint$$anonfun$10.apply(IMain.scala:789)
+	at scala.collection.TraversableLike$$anonfun$flatMap$1.apply(TraversableLike.scala:251)
+	at scala.collection.TraversableLike$$anonfun$flatMap$1.apply(TraversableLike.scala:251)
+	at scala.collection.immutable.List.foreach(List.scala:312)
+	at scala.collection.TraversableLike$class.flatMap(TraversableLike.scala:251)
+	at scala.collection.AbstractTraversable.flatMap(Traversable.scala:105)
+	at scala.tools.nsc.interpreter.IMain$ReadEvalPrint.updateRecentWarnings(IMain.scala:789)
+	at scala.tools.nsc.interpreter.IMain$ReadEvalPrint.compileAndSaveRun(IMain.scala:800)
+	at scala.tools.nsc.interpreter.IMain$ReadEvalPrint.compile(IMain.scala:759)
+	at scala.tools.nsc.interpreter.IMain.bind(IMain.scala:616)
+	at scala.tools.nsc.interpreter.IMain.bind(IMain.scala:659)
+	at scala.tools.nsc.interpreter.IMain$$anonfun$quietBind$1.apply(IMain.scala:658)
+	at scala.tools.nsc.interpreter.IMain$$anonfun$quietBind$1.apply(IMain.scala:658)
+	at scala.tools.nsc.interpreter.IMain.beQuietDuring(IMain.scala:232)
+	at scala.tools.nsc.interpreter.IMain.quietBind(IMain.scala:658)
+	at scala.tools.nsc.interpreter.ILoop$$anonfun$process$1$$anonfun$apply$mcZ$sp$2.apply$mcV$sp(ILoop.scala:838)
+	at scala.tools.nsc.interpreter.ILoopInit$class.runThunks(ILoopInit.scala:122)
+	at scala.tools.nsc.interpreter.ILoop.runThunks(ILoop.scala:42)
+	at scala.tools.nsc.interpreter.ILoopInit$class.postInitialization(ILoopInit.scala:95)
+	at scala.tools.nsc.interpreter.ILoop.postInitialization(ILoop.scala:42)
+	at scala.tools.nsc.interpreter.ILoopInit$$anonfun$createAsyncListener$1.apply$mcV$sp(ILoopInit.scala:63)
+	at scala.tools.nsc.interpreter.ILoopInit$$anonfun$createAsyncListener$1.apply(ILoopInit.scala:60)
+	at scala.tools.nsc.interpreter.ILoopInit$$anonfun$createAsyncListener$1.apply(ILoopInit.scala:60)
+	at scala.tools.nsc.io.package$$anon$3.call(package.scala:40)
+	at java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+	at java.lang.Thread.run(Thread.java:680)
+.
