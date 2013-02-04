@@ -548,7 +548,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   var exitConfirmed = false
   
   override def _live  = _script(this, 'live) {_par_or2(_seq(_threaded0{awaitMessageBeingHandled(true)}, 
-                                                      _if0{shouldStep} (_par_or(_seq(_at{gui0} (_tiny0{updateDisplay}), _stepCommand), 
+                                                      _if0{shouldStep} (_par_or(_seq(_at{gui} (_tiny0{updateDisplay}), _stepCommand), 
                                                                                _if_else0{autoCheckBox.selected}(_threaded0{waitForStepTimeout}, _deadlock))), 
                                                       _normal0{messageBeingHandled=false}, 
                                                       _loop
@@ -557,7 +557,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
                                                 )}
   def   _stepCommand  = _script(this, 'stepCommand ) {_clicked(stepButton)}
   def   _exitCommand  = _script(this, 'exitCommand ) {_clicked(exitButton)} // windowClosing
-  def   _exitDebugger = _script(this, 'exitDebugger) {_seq(  _exitCommand, _at{gui0}(_while0{!confirmExit}))}
+  def   _exitDebugger = _script(this, 'exitDebugger) {_seq(  _exitCommand, _at{gui}(_while0{!confirmExit}))}
 //def   _exitDebugger = _script('exitDebugger) {_seq(  _exitCommand, _at{gui}(_normal{exitConfirmed=confirmExit}), _while{!exitConfirmed})}
   
   override def live = _execute(_live, false) //), new SimpleScriptDebugger)
