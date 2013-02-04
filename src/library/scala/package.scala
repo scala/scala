@@ -95,10 +95,7 @@ package object scala {
   val Equiv = scala.math.Equiv
 
   type Fractional[T] = scala.math.Fractional[T]
-  val Fractional = scala.math.Fractional
-
   type Integral[T] = scala.math.Integral[T]
-  val Integral = scala.math.Integral
 
   type Numeric[T] = scala.math.Numeric[T]
   val Numeric = scala.math.Numeric
