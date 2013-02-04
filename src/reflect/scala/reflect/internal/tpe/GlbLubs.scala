@@ -251,8 +251,11 @@ private[internal] trait GlbLubs {
       else if (isNumericSubType(t2, t1)) t1
       else IntTpe)
 
-  private val lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
-  private val glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  def lubResults = _lubResults
+
+  private val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  def glbResults = _glbResults
 
   /** Given a list of types, finds all the base classes they have in
     *  common, then returns a list of type constructors derived directly

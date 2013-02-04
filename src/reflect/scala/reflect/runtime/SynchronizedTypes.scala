@@ -2,8 +2,9 @@ package scala
 package reflect
 package runtime
 
-import scala.collection.mutable.WeakHashMap
-import java.lang.ref.WeakReference
+import scala.collection.mutable
+import java.lang.ref.{WeakReference => jWeakRef}
+import scala.ref.{WeakReference => sWeakRef}
 import scala.reflect.internal.Depth
 
 /** This trait overrides methods in reflect.internal, bracketing
@@ -17,7 +18,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   // we can keep this lock fine-grained, because super.unique just updates the cache
   // and, in particular, doesn't call any reflection APIs which makes deadlocks impossible
   private lazy val uniqueLock = new Object
-  private val uniques = WeakHashMap[Type, WeakReference[Type]]()
+  private val uniques = mutable.WeakHashMap[Type, jWeakRef[Type]]()
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized {
     // we need to have weak uniques for runtime reflection
     // because unlike the normal compiler universe, reflective universe isn't organized in runs
@@ -31,7 +32,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
       val result = if (inCache.isDefined) inCache.get.get else null
       if (result ne null) result.asInstanceOf[T]
       else {
-        uniques(tp) = new WeakReference(tp)
+        uniques(tp) = new jWeakRef(tp)
         tp
       }
     } else {
@@ -39,36 +40,50 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
     }
   }
 
-  class SynchronizedUndoLog extends UndoLog {
-    final override def lock(): Unit = gil.lock()
-    final override def unlock(): Unit = gil.unlock()
-  }
+  private lazy val _skolemizationLevel = mkThreadLocalStorage(0)
+  override def skolemizationLevel = _skolemizationLevel.get
+  override def skolemizationLevel_=(value: Int) = _skolemizationLevel.set(value)
 
-  override protected def newUndoLog = new SynchronizedUndoLog
+  private lazy val _undoLog = mkThreadLocalStorage(new UndoLog)
+  override def undoLog = _undoLog.get
 
-  override protected def baseTypeOfNonClassTypeRef(tpe: NonClassTypeRef, clazz: Symbol) =
-    gilSynchronized { super.baseTypeOfNonClassTypeRef(tpe, clazz) }
+  private lazy val _intersectionWitness = mkThreadLocalStorage(perRunCaches.newWeakMap[List[Type], sWeakRef[Type]]())
+  override def intersectionWitness = _intersectionWitness.get
 
-  override def isSameType(tp1: Type, tp2: Type): Boolean =
-    gilSynchronized { super.isSameType(tp1, tp2) }
+  private lazy val _volatileRecursions = mkThreadLocalStorage(0)
+  override def volatileRecursions = _volatileRecursions.get
+  override def volatileRecursions_=(value: Int) = _volatileRecursions.set(value)
 
-  override def isDifferentType(tp1: Type, tp2: Type): Boolean =
-    gilSynchronized { super.isDifferentType(tp1, tp2) }
+  private lazy val _pendingVolatiles = mkThreadLocalStorage(new mutable.HashSet[Symbol])
+  override def pendingVolatiles = _pendingVolatiles.get
 
-  override def isSubType(tp1: Type, tp2: Type, depth: Depth): Boolean =
-    gilSynchronized { super.isSubType(tp1, tp2, depth) }
+  private lazy val _subsametypeRecursions = mkThreadLocalStorage(0)
+  override def subsametypeRecursions = _subsametypeRecursions.get
+  override def subsametypeRecursions_=(value: Int) = _subsametypeRecursions.set(value)
 
-  override def glb(ts: List[Type]): Type =
-    gilSynchronized { super.glb(ts) }
+  private lazy val _pendingSubTypes = mkThreadLocalStorage(new mutable.HashSet[SubTypePair])
+  override def pendingSubTypes = _pendingSubTypes.get
 
-  override def lub(ts: List[Type]): Type =
-    gilSynchronized { super.lub(ts) }
+  private lazy val _basetypeRecursions = mkThreadLocalStorage(0)
+  override def basetypeRecursions = _basetypeRecursions.get
+  override def basetypeRecursions_=(value: Int) = _basetypeRecursions.set(value)
 
-  override protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean =
-    gilSynchronized { super.explain(op, p, tp1, arg2) }
+  private lazy val _pendingBaseTypes = mkThreadLocalStorage(new mutable.HashSet[Type])
+  override def pendingBaseTypes = _pendingBaseTypes.get
 
-  override protected def typeToString(tpe: Type): String =
-    gilSynchronized(super.typeToString(tpe))
+  private lazy val _lubResults = mkThreadLocalStorage(new mutable.HashMap[(Depth, List[Type]), Type])
+  override def lubResults = _lubResults.get
+
+  private lazy val _glbResults = mkThreadLocalStorage(new mutable.HashMap[(Depth, List[Type]), Type])
+  override def glbResults = _glbResults.get
+
+  private lazy val _indent = mkThreadLocalStorage("")
+  override def indent = _indent.get
+  override def indent_=(value: String) = _indent.set(value)
+
+  private lazy val _tostringRecursions = mkThreadLocalStorage(0)
+  override def tostringRecursions = _tostringRecursions.get
+  override def tostringRecursions_=(value: Int) = _tostringRecursions.set(value)
 
   /* The idea of caches is as follows.
    * When in reflexive mode, a cache is either null, or one sentinal

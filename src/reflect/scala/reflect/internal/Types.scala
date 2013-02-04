@@ -115,14 +115,17 @@ trait Types
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
-  var skolemizationLevel = 0
+  private var _skolemizationLevel = 0
+  def skolemizationLevel = _skolemizationLevel
+  def skolemizationLevel_=(value: Int) = _skolemizationLevel = value
 
   /** A map from lists to compound types that have the given list as parents.
    *  This is used to avoid duplication in the computation of base type sequences and baseClasses.
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  private val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  def intersectionWitness = _intersectionWitness
 
   /** A proxy for a type (identified by field `underlying`) that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
@@ -1974,8 +1977,12 @@ trait Types
     def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
-  private var volatileRecursions: Int = 0
-  private val pendingVolatiles = new mutable.HashSet[Symbol]
+  private var _volatileRecursions: Int = 0
+  def volatileRecursions = _volatileRecursions
+  def volatileRecursions_=(value: Int) = _volatileRecursions = value
+
+  private val _pendingVolatiles = new mutable.HashSet[Symbol]
+  def pendingVolatiles = _pendingVolatiles
 
   class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) {
     require(args0.nonEmpty, this)
@@ -3943,9 +3950,12 @@ trait Types
    */
   final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
 
-  private var basetypeRecursions: Int = 0
-  private val pendingBaseTypes = new mutable.HashSet[Type]
+  private var _basetypeRecursions: Int = 0
+  def basetypeRecursions = _basetypeRecursions
+  def basetypeRecursions_=(value: Int) = _basetypeRecursions = value
 
+  private val _pendingBaseTypes = new mutable.HashSet[Type]
+  def pendingBaseTypes = _pendingBaseTypes
 
   /** Does this type have a prefix that begins with a type variable,
    *  or is it a refinement type? For type prefixes that fulfil this condition,
@@ -4445,7 +4455,9 @@ trait Types
   }
 
   /** The current indentation string for traces */
-  protected[internal] var indent: String = ""
+  private var _indent: String = ""
+  protected def indent = _indent
+  protected def indent_=(value: String) = _indent = value
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {

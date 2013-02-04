@@ -29,6 +29,19 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.treeInfo
     this.gil
     // inaccessible: this.uniqueLock
+    // inaccessible: this._skolemizationLevel
+    // inaccessible: this._undoLog
+    // inaccessible: this._intersectionWitness
+    // inaccessible: this._volatileRecursions
+    // inaccessible: this._pendingVolatiles
+    // inaccessible: this._subsametypeRecursions
+    // inaccessible: this._pendingSubTypes
+    // inaccessible: this._basetypeRecursions
+    // inaccessible: this._pendingBaseTypes
+    // inaccessible: this._lubResults
+    // inaccessible: this._glbResults
+    // inaccessible: this._indent
+    // inaccessible: this._tostringRecursions
     // inaccessible: this.nextIdLock
     // inaccessible: this.freshExistentialNameLock
     // inaccessible: this.mirrors
@@ -166,7 +179,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.unwrapToStableClass
     this.unwrapWrapperTypes
     this.RecoverableCyclicReference
-    this.undoLog
+    // inaccessible: this._undoLog
     // inaccessible: this.numericLoBound
     // inaccessible: this.numericHiBound
     this.TypeConstraint
