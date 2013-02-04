@@ -32,7 +32,6 @@ import subscript.DSL._
 import subscript.Predef._
 import subscript.vm._
 
-
 /*
  * SimpleSubscriptApplication: a SimpleSwingApplication
  * with an abstract "live" script that is started in a new thread
@@ -42,8 +41,8 @@ abstract class SimpleSubscriptApplication extends SimpleSwingApplication{
     super.startup(args)
     new Thread{override def run={live;quit}}.start()
   }
-  def _live: N_call => Unit
-  def  live: ScriptExecutor
+  def _live: _scriptType
+  def  live: ScriptExecutor = _execute(_live)
 }
 
 /*
@@ -52,8 +51,8 @@ abstract class SimpleSubscriptApplication extends SimpleSwingApplication{
  */
 object Scripts {
 
-  def gui [N<:CallGraphNodeTrait[_]] = (there:N)=>{there.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
-//def gui1[N<:CallGraphNodeTrait[_]](implicit n:N) = {n.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}             
+  def gui[N<:CallGraphNodeTrait[_]] = (there:N) =>{there.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}  
+//def gui[N<:CallGraphNodeTrait[_]](implicit n:N) = {n.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}             
 
   /*
    * A registry for the ScriptExecutor for which the most recent GUI event had been consumed
@@ -218,7 +217,7 @@ object Scripts {
   * The following subscript code has manually been compiled into Scala; see below
     The redirections to the swing thread using "@gui:" are needed 
     because enabling and disabling the button etc must there be done
-  */
+    
  implicit def script ..
    stateChange(slider: Slider)                   = event(SliderStateChangedScriptReactor[N_code_eh](slider))
    clicked(b:Button)                             = event(           ClickedScriptReactor[N_code_eh](b))
@@ -233,9 +232,9 @@ object Scripts {
 
      guard(comp: Component, test: () => Boolean)        = if (test()) .. else ... anyEvent(comp)
 
-      key2(comp: Component, keyCode ?? : Char     )     = event(         KeyTypedScriptReactor[N_code_eh](comp, keyCode ))
-     vkey2(comp: Component, keyValue?? : Key.Value)     = event(        VKeyTypedScriptReactor[N_code_eh](comp, keyValue))
-/*
+       key2(comp: Component, keyCode ?? : Char     )     = event(         KeyTypedScriptReactor[N_code_eh](comp, keyCode ))
+      vkey2(comp: Component, keyValue?? : Key.Value)     = event(        VKeyTypedScriptReactor[N_code_eh](comp, keyValue))
+
 
  Note: the manual compilation yielded for the first annotation the type
   
@@ -244,10 +243,10 @@ object Scripts {
  All the complicated generic type parameters on TemplateNodes and CallGraphNodes were needed
  to make it easy enforceable that "there" and even "there.there" would be of the proper type
 */
-/*
+  
   def _event(_r:FormalInputParameter[ScriptReactor[N_code_eh]])  = {
-   
-       _at{gui0} (_at{(there:N_code_eh) => {_r.value.subscribe(there); 
+   _script(this, 'event, _r~'r) {
+       _at{gui} (_at{(there:N_code_eh) => {_r.value.subscribe(there); 
                         there.onDeactivate{_r.value.unsubscribe}; 
                         there.onSuccess   {_r.value.acknowledgeEventHandled}}}
          (_eventhandling0{})
@@ -256,7 +255,7 @@ object Scripts {
   }
   def _event_loop[E<:Event](_r:FormalInputParameter[ScriptReactor[N_code_eh_loop]], task: E=>Unit)  = {
    _script(this, 'event_loop, _r~'r) {
-       _at{gui0} (_at{(there:N_code_eh_loop) => {_r.value.subscribe(there); 
+       _at{gui} (_at{(there:N_code_eh_loop) => {_r.value.subscribe(there); 
                              there.onDeactivate{_r.value.unsubscribe}; 
                              there.onSuccess   {_r.value.acknowledgeEventHandled}}}
          (_eventhandling_loop0{task.apply(_r.value.currentEvent.asInstanceOf[E])})
@@ -266,9 +265,9 @@ object Scripts {
   // in principle, _key could call _event, but that is one call level deeper, which is unhandy for the GraphicalScriptDebugger
   // _key0 is a version that calls _event
   // likewise for _clicked and _clicked0
-  implicit def  _key(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {
+  implicit def _key2(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {
      _script(this,  'key, _p~'p, _k~??'k) { 
-       _at{gui0} (_at{(there:N_code_eh) => {val _r = KeyTypedScriptReactor[N_code_eh](_p.value, _k) 
+       _at{gui} (_at{(there:N_code_eh) => {val _r = KeyTypedScriptReactor[N_code_eh](_p.value, _k) 
                                              _r.value.subscribe(there); 
                           there.onDeactivate{_r.value.unsubscribe}; 
                           there.onSuccess   {_r.value.acknowledgeEventHandled}}}
@@ -278,7 +277,7 @@ object Scripts {
   }           
   implicit def  _clicked(_b: FormalInputParameter[Button])  = {
      _script(this,  'clicked, _b~'b) { 
-       _at{gui0} (_at{(there:N_code_eh) => {val _r = ClickedScriptReactor[N_code_eh](_b.value) 
+       _at{gui} (_at{(there:N_code_eh) => {val _r = ClickedScriptReactor[N_code_eh](_b.value) 
                                              _r.value.subscribe(there); 
                           there.onDeactivate{_r.value.unsubscribe}; 
                           there.onSuccess   {_r.value.acknowledgeEventHandled}}}
@@ -286,10 +285,10 @@ object Scripts {
       )
     }
   }           
-  implicit def  _key0(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {_script(this,  'key, _p~'p, _k~??'k) {_event( KeyTypedScriptReactor[N_code_eh](_p.value, _k))}}
-  implicit def _vkey (_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Key.Value])  = {_script(this, 'vkey, _p~'p, _k~??'k) {_event(VKeyTypedScriptReactor[N_code_eh](_p.value, _k))}}
+//implicit def  _key0(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {_script(this,  'key, _p~'p, _k~??'k) {_event( KeyTypedScriptReactor[N_code_eh](_p.value, _k))}}
+  implicit def _vkey2(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Key.Value])  = {_script(this, 'vkey, _p~'p, _k~??'k) {_event(VKeyTypedScriptReactor[N_code_eh](_p.value, _k))}}
                 
-  implicit def _clicked0(_b: FormalInputParameter[Button     ]) = {_script(this,       'clicked, _b~'b) {_event( ClickedScriptReactor[N_code_eh](_b.value))} }
+//implicit def _clicked0(_b: FormalInputParameter[Button     ]) = {_script(this,       'clicked, _b~'b) {_event( ClickedScriptReactor[N_code_eh](_b.value))} }
            def _anyEvent(_c: FormalInputParameter[Component  ]) = {_script(this,      'anyEvent, _c~'c) {_event(AnyEventScriptReactor[N_code_eh](_c.value))} }
            def _windowClosing(_w: FormalInputParameter[Window]) = {_script(this, 'windowClosing, _w~'w) {_event(WindowClosingScriptReactor[N_code_eh](_w.value))} }
 
@@ -306,5 +305,4 @@ object Scripts {
                    _script(this, 'guard, _comp~'comp, _test~'test) {
                      _seq(_if_else((n:N_if_else) => _test.value.apply) (_optionalBreak_loop, _loop), _anyEvent(_comp.value))
                    } }
-*/           
 }

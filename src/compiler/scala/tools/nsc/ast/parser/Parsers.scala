@@ -1377,8 +1377,8 @@ self =>
         LBRACE_DOT3              -> "code_eh_loop",
         IF                       -> "if"       ,
         ELSE                     -> "if_else"  ,
-        VAL                      -> "LocalVariable" ,
-        VAR                      -> "LocalVariable" ,
+        VAL                      -> "localvar" ,
+        VAR                      -> "localvar" ,
         0                        -> "CallGraphNodeTrait_1",
 
         // unused:
@@ -1788,7 +1788,7 @@ self =>
       val ts  = new ListBuffer[Tree]
       var moreTerms = true
       do  {
-        ts += scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators)
+        ts += scriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)
         //if (!areNewLinesSpecialSeparators) eatNewlines()
         if (areSpacesCommas 
         || !isSubScriptTermStarter(in)
@@ -1800,12 +1800,51 @@ self =>
       else Apply(Ident(raw_space), ts.toList)
     }
 
-    def scriptCommaExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
+ 
+    def simpleNativeValueExpr(allowBraces: Boolean = false): Tree = {
+      
+      val ret = in.token match {
+        case LBRACE if  allowBraces => in.isInSubScript_nativeCode=true; in.nextToken(); val r=block(); in.isInSubScript_nativeCode=false; accept(RBRACE); r
+        case LPAREN if !allowBraces => in.isInSubScript_nativeCode=true; in.nextToken(); val r=expr (); in.isInSubScript_nativeCode=false; accept(RPAREN); r
+        case IDENTIFIER 
+        |    BACKQUOTED_IDENT 
+        |    THIS 
+        |    SUPER            => path(thisOK = true, typeOK = false)
+        case _ if (isLiteral) => atPos(in.offset)(literal())
+        case _ => {syntaxError(in.offset, "native value expresion expected"); EmptyTree}
+      }
+      in.isInSubScript_nativeCode = false
+      newLinesOpt() // NEWLINEs may have remained from the "native code mode" scanning
+      ret
+    }
+
+/*
+  scriptTerm              =+ unary
+                             variableDeclaration 
+                                valueDeclaration 
+                              privateDeclaration 
+ 
+  valueDeclaration        = "val" identifier; . ":" typer  ; "=" simpleValueExpression
+  variableDeclaration     = "var" identifier;   ":" typer %; "=" simpleValueExpression
+   privateDeclaration      = "private" identifiers
+
+  unary                   = ..(unaryPrefixOperator + directive); scriptCommaExpression;
+                            .. unaryPostfixOperator
+                            
+  scriptCommaExpression   = simpleScriptTerm .. ","
+ 
+  directive               = "@" scalaCode ":"
+ 
+  unaryPrefixOperator     =+ "!"  "-"  "~"
+  unaryPostfixOperator    =+ "*"  "**"
+ */
+
+    def scriptCommaExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean, isNegated: Boolean): Tree = {
       val oldOffset = in.offset
       val ts  = new ListBuffer[Tree]
       var moreTerms = true
       do  {
-        ts += scriptTerm()
+        ts += simpleScriptTerm(isNegated)
         if   (in.token==COMMA) {in.nextToken()/*; eatNewlines()*/}
         else if (!areSpacesCommas 
              ||  !isSubScriptTermStarter(in)) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
@@ -1827,46 +1866,12 @@ self =>
       else {syntaxError(oldOffset, "terms in comma expression should be path or literal"); ts.head}
     }
 
- 
-    def simpleNativeValueExpr(allowBraces: Boolean = false): Tree = {
-      
-      val ret = in.token match {
-        case LBRACE if  allowBraces => in.isInSubScript_nativeCode=true; in.nextToken(); val r=block(); in.isInSubScript_nativeCode=false; accept(RBRACE); r
-        case LPAREN if !allowBraces => in.isInSubScript_nativeCode=true; in.nextToken(); val r=expr (); in.isInSubScript_nativeCode=false; accept(RPAREN); r
-        case IDENTIFIER 
-        |    BACKQUOTED_IDENT 
-        |    THIS 
-        |    SUPER            => path(thisOK = true, typeOK = false)
-        case _ if (isLiteral) => atPos(in.offset)(literal())
-      }
-      in.isInSubScript_nativeCode = false
-      newLinesOpt() // NEWLINEs may have remained from the "native code mode" scanning
-      ret
-    }
 
-/*
-  scriptTerm              =+ unary
-                             variableDeclaration 
-                                valueDeclaration 
-                              privateDeclaration 
- 
-  valueDeclaration        = "val" identifier; . ":" typer  ; "=" simpleValueExpression
-  variableDeclaration     = "var" identifier;   ":" typer %; "=" simpleValueExpression
-   privateDeclaration      = "private" identifiers
-
-  unary                   = ..(unaryPrefixOperator + directive); simpleTerm;
-                            .. unaryPostfixOperator
- 
-  directive               = "@" scalaCode ":"
- 
-  unaryPrefixOperator     =+ "!"  "-"  "~"
-  unaryPostfixOperator    =+ "*"  "**"
- */
-    def scriptTerm(): Tree = (in.token: @scala.annotation.switch) match {
+    def scriptTerm(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = (in.token: @scala.annotation.switch) match {
       case VAL     => scriptLocalValOrVar((NoMods                ) withPosition(VAL , tokenRange(in)))
       case VAR     => scriptLocalValOrVar((NoMods | Flags.MUTABLE) withPosition(VAR , tokenRange(in)))
       case PRIVATE => ??? // TBD
-      case _       => unaryPostfixScriptTerm()
+      case _       => unaryPostfixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)
     }
     def scriptLocalValOrVar(mods: Modifiers): Tree = {
       val pos = in.offset
@@ -1881,7 +1886,7 @@ self =>
       accept(COLON) // optionality for the typer is not supported yet...would require some work since the type is needed (?) at the start of the method generated for the script
       val tp  = exprSimpleType() 
       val rhs =
-        if (tp.isEmpty || in.token == EQUALS || !newmods.isMutable) {
+        if (tp.isEmpty || in.token == EQUALS || !newmods.isMutable || true /*FTTB enforce initialisation*/) {
           accept(EQUALS)
           if (!tp.isEmpty && newmods.isMutable &&
               lhs.isInstanceOf[Ident] && in.token == USCORE) {
@@ -1893,19 +1898,28 @@ self =>
       
       // TBD: val result = ScriptValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
       // val c = initializer ===> subscript.DSL._val(_c, here: subscript.DSL.N_localvar[Char] => initializer)   likewise for var
+      
       val vIdent          = Ident(newTermName(underscore_prefix(name.toString)))
       val  sFunValOrVar   = dslFunFor(if (mods.isMutable) VAR else VAL)
       val sNodeValOrVar   = vmNodeFor(if (mods.isMutable) VAR else VAL)
-      val typer           = AppliedTypeTree(sNodeValOrVar, List(tp))
+      
+    //val typer           = AppliedTypeTree(sNodeValOrVar, List(tp)) this does NOT work; need a wildcard type
+      val typer           = placeholderTypeBoundary{
+        AppliedTypeTree(sNodeValOrVar, List(wildcardType(pos))) // note: wildcardType fills placeholderTypes, used by placeholderTypes
+      }
+        
       val initializerCode = blockToFunction_here (rhs, typer, rhs.pos)
       if (mods.isMutable) scriptLocalVariables += name->tp
       else                scriptLocalValues    += name->tp
 
-      atPos(pos) {Apply(sFunValOrVar, List(vIdent, initializerCode))}
+      atPos(pos) {
+        if (rhs.isEmpty) {dslFunFor(LPAREN_PLUS_MINUS_RPAREN)} // neutral; there is no value to provide
+        else Apply(sFunValOrVar, List(vIdent, initializerCode))
+      }
     }
 
-    def unaryPostfixScriptTerm (): Tree = {
-      var result = unaryPrefixScriptTerm()
+    def unaryPostfixScriptTerm (areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
+      var result = unaryPrefixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)
       while (isSubScriptUnaryPostfixOp(in)) {
         result = atPos(in.offset) {
           val name = nme.toUnaryName(rawIdent().toTermName)
@@ -1916,7 +1930,7 @@ self =>
       result
     }
     
-    def unaryPrefixScriptTerm (): Tree = 
+    def unaryPrefixScriptTerm (areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = 
       if (isSubScriptUnaryPrefixOp(in)) {
         val oldOffset = in.offset
         val name = in.name
@@ -1924,10 +1938,10 @@ self =>
         in.nextToken
         atPos(in.offset) {
           if (name == nme.UNARY_- && isNumericLit && in.offset==oldOffset+1) {
-            simpleScriptTerm(isNegated = true)
+            scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators, isNegated = true)
           }
           else {
-            Select(stripParens(unaryPrefixScriptTerm()), name)
+            Select(stripParens(unaryPrefixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)), name)
           }
         }
       }
@@ -1937,14 +1951,14 @@ self =>
           atPos(in.skipToken()) {
             val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
             val annotationCode = simpleNativeValueExpr(allowBraces = true); accept(COLON)
-            val body           = stripParens(unaryPrefixScriptTerm())
+            val body           = stripParens(unaryPrefixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators))
             
             val applyAnnotationCode = Apply(dslFunFor(AT), List(blockToFunction_there(annotationCode, vmNodeOf(body), startPos)))
             Apply(applyAnnotationCode, List(body))
           }
         }
         parseAnnotation
-      case _ => simpleScriptTerm()
+      case _ => scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators, isNegated = false)
     }
     
     /*

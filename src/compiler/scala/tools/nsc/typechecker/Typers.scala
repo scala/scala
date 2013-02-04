@@ -4508,27 +4508,28 @@ trait Typers extends Modes with Adaptations with Tags {
           
           // 2nd try: a parameter conversion to ActualValueParameter and script call
           if (args.isEmpty) {
-              silent(op => op.typed(Apply(sSubScriptVM_ActualValueParameter, List(copied_fun1))),
+              silent(op => {
+                      val tree1        = op.typed(Apply(sSubScriptVM_ActualValueParameter, List(copied_fun1))) // _b(ActualValueParameter(a))
+	                  val nodeType     = op.sSubScriptVM_N_call
+	                  val fun_template = op.sSubScriptDSL_call
+	                  val tree2        = Apply(tree1, List(here_Ident)) // (_b(ActualValueParameter(a)))(here)
+	             
+	                  // blockToFunction adds "here" to the context
+	                  val function_here_to_code = op.blockToFunction(tree2, nodeType, tree.pos) // here=>(_b(ActualValueParameter(a))))(here)
+	                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
+	
+	                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
+	                  op.typed(apply_template)
+                   },
                    if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                    if ((mode & EXPRmode) != 0) tree  else context.tree) match {
                 case SilentTypeError  (err)  => err_conversion_scriptResolution = err
-                case SilentResultValue(tree1) => // _b(ActualValueParameter(a))
-              
-                  val nodeType     = sSubScriptVM_N_call
-                  val fun_template = sSubScriptDSL_call
-                  val tree2        = Apply(tree1, List(here_Ident)) // (_b(ActualValueParameter(a)))(here)
-             
-                  // blockToFunction adds "here" to the context
-                  val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>(_b(ActualValueParameter(a))))(here)
-                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
-
-                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
-                  tree_conversion_scriptResolution = typed(apply_template)
+                case SilentResultValue(tree2) => tree_conversion_scriptResolution = tree2
               }
           }
           
           // 3rd try: a method call
-          silent(op => op.typed(fun, forFunMode(mode), funpt),
+          silent(op => op.typed(copied_fun2, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
             case SilentTypeError  (err)  => err_notFound_methodResolution = err

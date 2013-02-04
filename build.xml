@@ -497,6 +497,10 @@ INITIALISATION
       <pathelement location="${build-libs.dir}/classes/forkjoin"/>
       <path refid="lib.extra"/>
     </path>
+    <path id="quick.compilation.path.subscript">
+      <pathelement location="${build-quick.dir}/classes/scala-swing"/>
+      <path refid="quick.compilation.path"/>
+    </path>
     <path id="strap.compilation.path">
       <pathelement location="${build-strap.dir}/classes/library"/>
       <pathelement location="${build-libs.dir}/classes/forkjoin"/>
@@ -928,6 +932,7 @@ QUICK BUILD (QUICK)
         <include name="library/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
+        <include name="subscript/**"/>
         <include name="actors/**"/>
       </srcfiles>
     </uptodate>
@@ -1005,7 +1010,19 @@ QUICK BUILD (QUICK)
     </scalacfork>
   </target>
 
-  <target name="quick.lib.done" depends="quick.swing, quick.lib">
+  <target name="quick.subscript" depends="quick.swing, quick.lib">
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/subscript"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath refid="quick.compilation.path.subscript"/>
+    </scalacfork>
+  </target>
+
+  <target name="quick.lib.done" depends="quick.subscript, quick.swing, quick.lib">
     <stopwatch name="quick.lib.timer" action="total"/>
     <touch file="${build-quick.dir}/library.complete" verbose="no"/>
   </target>
@@ -1357,6 +1374,7 @@ PACKED QUICK BUILD (PACK)
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <exclude name="scala/swing/**"/>
+        <exclude name="scala/subscript/**"/>
         <exclude name="scala/actors/**"/>
       </fileset>
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
@@ -1376,7 +1394,15 @@ PACKED QUICK BUILD (PACK)
     </jar>
   </target>
 
-  <target name="pack.pre-reflect" depends="pack.lib, pack.swing">
+  <target name="pack.subscript" depends="pack.lib" if="has.java6">
+    <jar destfile="${build-pack.dir}/lib/scala-subscript.jar">
+      <fileset dir="${build-quick.dir}/classes/library">
+        <include name="scala/subscript/**"/>
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="pack.pre-reflect" depends="pack.lib, pack.swing, pack.subscript">
     <uptodate
       property="pack.reflect.available"
       targetfile="${build-pack.dir}/lib/scala-reflect.jar"
@@ -1596,6 +1622,7 @@ OSGi Artifacts
     <make-bundle name="scala-actors" version="${osgi.version.number}" />
     <make-bundle name="scala-reflect" version="${osgi.version.number}" />
     <make-bundle name="scala-compiler" version="${osgi.version.number}" />
+    <make-bundle name="scala-subscript" version="${osgi.version.number}" />
     <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
     <touch file="${build-osgi.dir}/bundles.complete" verbose="no"/>
     <stopwatch name="osgi.bundle.timer" action="total"/>
@@ -1679,6 +1706,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
         <include name="swing/**"/>
+        <include name="subscript/**"/>
         <include name="actors/**"/>
       </srcfiles>
     </uptodate>
@@ -1756,7 +1784,19 @@ BOOTSTRAPPING BUILD (STRAP)
     </scalacfork>
   </target>
 
-  <target name="strap.lib.done" depends="strap.swing, strap.lib">
+  <target name="strap.subscript" if="has.java6" unless="strap.lib.available" depends="strap.lib">
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/subscript"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath refid="strap.compilation.path"/>
+    </scalacfork>
+  </target>
+
+  <target name="strap.lib.done" depends="strap.subscript, strap.swing, strap.lib">
     <touch file="${build-strap.dir}/library.complete" verbose="no"/>
     <stopwatch name="strap.lib.timer" action="total"/>
   </target>
@@ -2131,6 +2171,7 @@ DOCUMENTATION
       <source-includes>
         <include name="library/**"/>
         <include name="swing/**"/>
+        <include name="subscript/**"/>
         <include name="actors/**"/>
         <include name="reflect/**"/>
       </source-includes>
@@ -2162,6 +2203,7 @@ DOCUMENTATION
         <files includes="${src.dir}/library"/>
         <files includes="${src.dir}/reflect"/>
         <files includes="${src.dir}/swing"/>
+        <files includes="${src.dir}/subscript"/>
         <files includes="${src.dir}/continuations/library"/>
       </src>
       <include name="**/*.scala"/>
@@ -2403,6 +2445,7 @@ BOOTRAPING TEST AND TEST SUITE
       <compilationpath>
         <path refid="pack.classpath"/>
         <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <pathelement location="${pack.dir}/lib/scala-subscript.jar"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
@@ -2418,6 +2461,7 @@ BOOTRAPING TEST AND TEST SUITE
       <compilationpath>
         <path refid="pack.classpath"/>
         <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <pathelement location="${pack.dir}/lib/scala-subscript.jar"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
       <anttests dir="${partest.dir}/${partest.srcdir}/ant" includes="*build.xml"/>
@@ -2433,6 +2477,7 @@ BOOTRAPING TEST AND TEST SUITE
       <compilationpath>
         <path refid="pack.classpath"/>
         <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <pathelement location="${pack.dir}/lib/scala-subscript.jar"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
       <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
@@ -2467,6 +2512,7 @@ BOOTRAPING TEST AND TEST SUITE
       <compilationpath>
         <path refid="pack.classpath"/>
         <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <pathelement location="${pack.dir}/lib/scala-subscript.jar"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
       <postests  dir="${partest.dir}/${partest.srcdir}/subscript" includes="*.scala"/>
@@ -2590,6 +2636,7 @@ DISTRIBUTION
     <copy-bundle name="scala-library"/>
     <copy-bundle name="scala-reflect"/>
     <copy-bundle name="scala-swing"/>
+    <copy-bundle name="scala-subscript"/>
     <copy-bundle name="scala-actors"/>
     <copy-bundle name="scala-compiler"/>
     <copy toDir="${dist.dir}/bin">
@@ -2644,6 +2691,9 @@ DISTRIBUTION
     </jar>
     <jar destfile="${dist.dir}/src/scala-swing-src.jar">
       <fileset dir="${src.dir}/swing"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scala-subscript-src.jar">
+      <fileset dir="${src.dir}/subscript"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-compiler-src.jar">
       <fileset dir="${src.dir}/compiler"/>
@@ -2731,6 +2781,7 @@ STABLE REFERENCE (STARR)
     <jar destfile="${basedir}/lib/scala-library-src.jar">
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/swing"/>
+      <fileset dir="${basedir}/src/subscript"/>
       <fileset dir="${basedir}/src/actors"/>
       <fileset dir="${basedir}/src/forkjoin"/>
     </jar>
@@ -2831,6 +2882,9 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/swing"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/subscript"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/partest"/>
