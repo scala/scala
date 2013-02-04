@@ -1042,6 +1042,7 @@ abstract class ClassfileParser {
     def parseExceptions(len: Int) {
       val nClasses = in.nextChar
       for (n <- 0 until nClasses) {
+        // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (SI-7065)
         val cls = pool.getClassSymbol(in.nextChar.toInt)
         sym.addThrowsAnnotation(cls)
       }

@@ -616,7 +616,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      */
     private def copyAnnotations(sym: Symbol, jann: AnnotatedElement) {
       sym setAnnotations (jann.getAnnotations map JavaAnnotationProxy).toList
-      // FIXME: we're not using getGenericExceptionTypes here to be consistent with ClassfileParser
+      // SI-7065: we're not using getGenericExceptionTypes here to be consistent with ClassfileParser
       val jexTpes = jann match {
         case jm: jMethod => jm.getExceptionTypes.toList
         case jconstr: jConstructor[_] => jconstr.getExceptionTypes.toList
