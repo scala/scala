@@ -28,12 +28,18 @@ object Test extends InteractiveTest {
        |trait Commented {}
        |class User(c: %sCommented)""".stripMargin.format(comment, tags take nTags mkString "\n", caret)
 
-  override def main(args: Array[String]) {
-    val documenter = new Doc(settings) {
-      val global: compiler.type = compiler
-
+  override lazy val compiler = {
+    new {
+      override val settings = {
+        prepareSettings(Test.this.settings)
+        Test.this.settings
+      }
+    } with Global(settings, compilerReporter) with Doc {
       def chooseLink(links: List[LinkTo]): LinkTo = links.head
     }
+  }
+
+  override def runDefaultTests() {
     for (i <- 1 to tags.length) {
       val markedText = text(i)
       val idx = markedText.indexOf(caret)
@@ -52,7 +58,10 @@ object Test extends InteractiveTest {
           treeResponse.get.left.toOption match {
             case Some(tree) =>
               val sym = tree.tpe.typeSymbol
-              documenter.retrieve(sym, sym.owner) match {
+              val res = compiler.ask { () =>
+                compiler.getDocumentation(sym, sym.owner, compiler.unitOfFile(sym.sourceFile).source)
+              }
+              res match {
                case Some(HtmlResult(comment)) =>
                  import comment._
                  val tags: List[(String, Iterable[Body])] =
