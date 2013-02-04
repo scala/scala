@@ -3924,6 +3924,7 @@ trait Typers extends Modes with Adaptations with Tags {
     }
     
       val here_Name = newTermName("here")
+      val actualValueParameter_Name = newTermName("ActualValueParameter")
       val normalCode_NodeString = "N_code_normal"
       val scriptCall_NodeString = "N_call"
       val normalCode_NodeName   = newTypeName(normalCode_NodeString)
@@ -3944,6 +3945,7 @@ trait Typers extends Modes with Adaptations with Tags {
       def sSubScriptDSL_call         : Tree = Select(sSubScriptDSL, name_fun_call)
       
       def here_Ident                 : Tree = Ident(here_Name)
+      def sSubScriptVM_ActualValueParameter: Tree = Select(sSubScriptVM, actualValueParameter_Name)
       
       def underscore_name(name: Name) = newTermName("_"+name)
       // copied from Parsers.scala:
@@ -4449,30 +4451,46 @@ trait Typers extends Modes with Adaptations with Tags {
           val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos ) else null
 
           def onError(reportError: => Tree): Tree = {
-                  if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+            if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
                   reportError
           }
-          var  err_scriptResolution: AbsTypeError = null
-          var  err_methodResolution: AbsTypeError = null
-          var tree_scriptResolution: Tree = null
-          var tree_methodResolution: Tree = null
+          var             err_scriptResolution: AbsTypeError = null
+          var  err_conversion_scriptResolution: AbsTypeError = null
+          var    err_notFound_methodResolution: AbsTypeError = null
+          var             err_methodResolution: AbsTypeError = null
+          var            tree_scriptResolution: Tree = null
+          var tree_conversion_scriptResolution: Tree = null
+          var            tree_methodResolution: Tree = null
           
           // resolve script and method calls
           // Note: : a script named "a" becomes method "_a"
           //
           // - script call: a(here.toString) ===> _call  {here=>(_a(here.toString))(here)}
-          // - mednot call: a(here.toString) ===> _normal{here=>  a(here.toString)}
-
-          // first try a script call
+          // - method call: a(here.toString) ===> _normal{here=>  a(here.toString)}
+          //
+          // If these don't work, try implicit conversions to a script:
+          // - implicit 1:   a   ===>    ActualValueParameter(a) ===> _call{here=>(_b(   ActualValueParameter(a)))(here)}
+          // - implicit 2:   a?  ===>   ActualOutputParameter(a) ===> _call{here=>(_b(  ActualOutputParameter(a)))(here)}
+          // - implicit 3:   a?? ===> ActualAdaptingParameter(a) ===> _call{here=>(_b(ActualAdaptingParameter(a)))(here)}
+          //
+          //
+          // Note: the question marks have been transformed already in the Parser phase to ActualOutputParameter and ActualAdaptingParameter (TBD?)
+          // a transformation to ActualValueParameter still needs to be done.
+          // 
           
-          val underscored_fun = fun match {
-            case Ident(name) => Ident(underscore_name(name))
+          val copied_fun1 = fun.duplicate // make sure typing in 2nd and 3rd tries do not conflict
+          val copied_fun2 = fun.duplicate 
+          
+          // 1st try: a script call
+          
+          val underscored_fun = atPos(fun.pos) {fun match {
+            case Ident(name) => {Ident(underscore_name(name))}
             case Select(qual, selector) =>  Select(qual, underscore_name(selector))
-          }
-          
+          }}
           silent(op => op.typed(underscored_fun, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                  if ((mode & EXPRmode) != 0) tree  else context.tree) match {
+            case SilentTypeError  (err)  => err_scriptResolution = err
             case SilentResultValue(fun1) =>
               
               val nodeType     = sSubScriptVM_N_call
@@ -4486,31 +4504,54 @@ trait Typers extends Modes with Adaptations with Tags {
 
               // by now the ScriptApply has been rewritten into 3 nested normal Apply's, so this can be typed:
               tree_scriptResolution = typed(apply_template)
-              
-            case SilentTypeError(err) => err_scriptResolution = err
           }
           
-          // next try a method call
+          // 2nd try: a parameter conversion to ActualValueParameter and script call
+          if (args.isEmpty) {
+              silent(op => op.typed(Apply(sSubScriptVM_ActualValueParameter, List(copied_fun1))),
+                   if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
+                   if ((mode & EXPRmode) != 0) tree  else context.tree) match {
+                case SilentTypeError  (err)  => err_conversion_scriptResolution = err
+                case SilentResultValue(tree1) => // _b(ActualValueParameter(a))
+              
+                  val nodeType     = sSubScriptVM_N_call
+                  val fun_template = sSubScriptDSL_call
+                  val tree2        = Apply(tree1, List(here_Ident)) // (_b(ActualValueParameter(a)))(here)
+             
+                  // blockToFunction adds "here" to the context
+                  val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>(_b(ActualValueParameter(a))))(here)
+                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
+
+                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
+                  tree_conversion_scriptResolution = typed(apply_template)
+              }
+          }
           
-          silent(op => op.typed(            fun, forFunMode(mode), funpt),
+          // 3rd try: a method call
+          silent(op => op.typed(fun, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
+            case SilentTypeError  (err)  => err_notFound_methodResolution = err
             case SilentResultValue(fun1) =>
               
               val nodeType    : Tree = sSubScriptVM_N_code_normal
               val fun_template: Tree = sSubScriptDSL_N_code_normal
               val tree1       : Tree = Apply(fun1, args) //a(here.toString)
-              var tree2       : Tree = tree1
               
-              // blockToFunction adds "here" to the context
-              val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>a(here.toString)
-              val apply_template        = Apply(fun_template, List(function_here_to_code)) // _normal{here=>  a(here.toString)}
+              silent(op => op.typed(tree1)) match { // does the method with the arguments exist?
+                case SilentTypeError  (err)  => err_methodResolution = err
+                case SilentResultValue(tree2) =>
+                  // blockToFunction adds "here" to the context
+                  val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>a(here.toString)
+                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _normal{here=>  a(here.toString)}
 
-              // by now the ScriptApply has been rewritten into 2 or 3 nested Applies, so this can be typed:
-              tree_methodResolution = typed(apply_template)
-              
-            case SilentTypeError(err) => err_methodResolution = err
+                  // by now the ScriptApply has been rewritten into 2 or 3 nested Applies, so this can be typed:
+                  tree_methodResolution = typed(apply_template)
+              }
           }
+          
+          // wrap up the results
+          
           if   (tree_scriptResolution != null) {
             if (tree_methodResolution != null) {
               val err = AmbiguousTypeError(tree, tree.pos, "call may be both to a script and a method") 
@@ -4518,8 +4559,13 @@ trait Typers extends Modes with Adaptations with Tags {
             }
             else tree_scriptResolution
           }
-          else if (tree_methodResolution != null) tree_methodResolution
-          else {onError({issue(err_scriptResolution); setError(tree)})} // ignore err_methodResolution
+          // Note: a variable like "button" of type Button will result in a "def button = ..." method
+          // so let tree_conversion_scriptResolution prevail over tree_methodResolution
+          // or would more ambiguitiy checking be needed?
+          else if (tree_conversion_scriptResolution != null) tree_conversion_scriptResolution
+          else if (           tree_methodResolution != null) tree_methodResolution
+          else onError({issue(err_scriptResolution); setError(tree)})
+          // allways: ignore err_conversion_scriptResolution and err_methodResolution
       }
 
       // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
@@ -4552,7 +4598,7 @@ trait Typers extends Modes with Adaptations with Tags {
           }
       }
       def typedScriptApply(tree: ScriptApply): Tree = tree match {
-        case ScriptApply(EmptyTree, fun::args) => typedScriptApply(ScriptApply(fun, args))
+        case ScriptApply(EmptyTree, fun::args) => typedScriptApply(atPos(tree.pos){ScriptApply(fun, args)})
         case ScriptApply(fun, args) => normalTypedScriptApply(tree, fun, args)
       }
 

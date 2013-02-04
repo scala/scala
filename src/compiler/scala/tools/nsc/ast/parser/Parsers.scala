@@ -464,7 +464,22 @@ self =>
 	         | RBRACE_QMARK   
 	         | RBRACE_EMARK                              
 	         | RBRACE_ASTERISK                             
-	         | RBRACE_CARET   => if (                nbraces == 0) return; nbraces -= 1
+	         | RBRACE_CARET   => if (nbraces == 0) {
+	                               // the parser did not eat any token when e.g. "*}" was expected but "}" seen. 
+	                               // Therefore eat the token in case of such a mismatch:
+                                   targetToken match {
+							       case RBRACE            
+								      | RBRACE_DOT              
+								      | RBRACE_DOT3         
+								      | RBRACE_QMARK   
+								      | RBRACE_EMARK                              
+								      | RBRACE_ASTERISK                             
+								      | RBRACE_CARET   => in.nextToken()
+							       case _ =>
+                                   }
+	                               return
+	                             }
+	                             nbraces -= 1
           case LBRACE            
 	         | LBRACE_DOT              
 	         | LBRACE_DOT3         
@@ -510,6 +525,12 @@ self =>
       if (  token != in.token) {syntaxErrorOrIncomplete(expectedMsg(token), false)
         if (token == RPAREN 
         ||  token == RBRACE 
+        ||  token == RBRACE_DOT     
+        ||  token == RBRACE_DOT3    
+        ||  token == RBRACE_QMARK   
+        ||  token == RBRACE_EMARK   
+        ||  token == RBRACE_ASTERISK
+        ||  token == RBRACE_CARET    
         ||  token == RBRACKET)
           if (in.parenBalance(token) + assumedClosingParens(token) < 0)
                                        assumedClosingParens(token) += 1
@@ -1334,8 +1355,8 @@ self =>
         IF              -> "if"       ,
         ELSE            -> "if_else"  ,    
         DEF             -> "declare" ,
-        VAL             -> "localval" ,
-        VAR             -> "localvar" ,
+        VAL             -> "val" ,
+        VAR             -> "var" ,
         LPAREN_PLUS_RPAREN       -> "empty"       ,
         LPAREN_MINUS_RPAREN      -> "deadlock"    ,
         LPAREN_PLUS_MINUS_RPAREN -> "neutral"     ,
@@ -1569,6 +1590,7 @@ self =>
 		            EmptyTree
 		          } else {
 		            if (in.token == EQUALS) {
+		              in.isInSubScript_header = false
 		              linePosOfScriptEqualsSym = in.offset - in.lineStartOffset
 		              in.nextToken()
 		            } 
@@ -1615,29 +1637,31 @@ self =>
 		            case _ => super.transform(tree)
 		          }
 		        }
-		        val rhs_withAdjustedScriptLocalData = scriptLocalDataTransformer.transform(rhs)
+		        val rhs_withAdjustedScriptLocalDataTransformed = scriptLocalDataTransformer.transform(rhs)
 		        
 		        // add for each variable and value: val _c = subscript.DSL._declare[Char]('c)
-		        val variablesAndValuesDeclarations = new ListBuffer[Tree]
+		        val rhs_withVariablesAndValuesDeclarations = new ListBuffer[Tree]
 		        for ((vn,vt) <- scriptLocalVariables ++ scriptLocalValues) {
 		          val vSym               = Apply(scalaDot(nme.Symbol), List(Literal(Constant(vn.toString))))
 		          val underscored_v_name = newTermName(underscore_prefix(vn.toString))
-		          val tp                 = AppliedTypeTree(vmNodeFor(VAL), List(vt))
-		          val declare_typed      = TypeApply      (dslFunFor(VAL), List(vt))
+		        //val tp                 = AppliedTypeTree(vmNodeFor(VAL), List(vt))
+		          val declare_typed      = TypeApply      (dslFunFor(DEF), List(vt))
 		          val rhs                = Apply(declare_typed, List(vSym))
-		          val valDef             = ValDef(NoMods, underscored_v_name, tp, rhs)
+		          val valDef             = ValDef(NoMods, underscored_v_name, TypeTree(), rhs)
+		          rhs_withVariablesAndValuesDeclarations += valDef
 		        }
-		        val rhs_withVariablesAndValuesDeclarations = variablesAndValuesDeclarations append rhs_withAdjustedScriptLocalData
 		        
 		        val underscored_script_name = newTermName(underscore_prefix(name.toString))
 		        val underscored_param_defs  = underscored_param_defs_and_bindings map (_._1)
 		        val paramBindings           = underscored_param_defs_and_bindings map (_._2)
 		        val scriptNameAsSym         = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
-	            val scriptBody              = Apply(Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings), 
-	                                                List(rhs_withAdjustedScriptLocalData))
+	            val scriptHeader            = Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings) 
+	            val scriptHeaderAndBody     = Apply(scriptHeader, List(rhs_withAdjustedScriptLocalDataTransformed))
 	            
+	            val scriptHeaderAndLocalsAndBody = rhs_withVariablesAndValuesDeclarations
+	            scriptHeaderAndLocalsAndBody += scriptHeaderAndBody
 	            // to enable moving this all to a later phase, we should create a ScriptDef rather than a DefDef
-		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, scriptBody)
+		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, makeBlock(scriptHeaderAndLocalsAndBody toList))
 		      }
 	          signalParseProgress(scriptDef.pos)
 	          
@@ -1788,14 +1812,17 @@ self =>
       }
       while (moreTerms)
         
-      val allTermsArePathsOrLiterals = ts.forall(t =>
+      val allTermsArePathsOrLiterals: Boolean = {
+          ts.forall(t =>
             t match {
-              case Select(sSubScriptDSL, _)            => false
-              case Select(_,_) | Ident(_) | Literal(_) => true 
+              case Select(Select(_,n: TermName), _) if n.toString==nameDSL.toString => false
+              case Select(_,_)                      => true 
+              case Ident(_) | Literal(_) => true 
+           //case Select(_,_) | Ident(_) | Literal(_) => true 
               case _ => false}
           )
-      
-      if (allTermsArePathsOrLiterals) {ScriptApply(EmptyTree, ts.toList)}
+      }
+      if (allTermsArePathsOrLiterals) atPos(ts.head.pos.startOrPoint) {ScriptApply(EmptyTree, ts.toList)}
       else if (ts.length == 1)  ts.head
       else {syntaxError(oldOffset, "terms in comma expression should be path or literal"); ts.head}
     }
@@ -2080,10 +2107,10 @@ self =>
         var formalParamName: Name = null
         var exp = expr() match {
           case a @ Assign(id, rhs) if maybeNamed => atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-          case Apply(Select(lhs                   , nme.QMARKkw ), Nil) =>   isOutputParam = true; lhs
-          case Apply(Select(Ident(formalParamName), nme.QMARK2kw), Nil) => isAdaptingParam = true; Ident(formalParamName)
-          case Apply(Select(lhs                   , nme.QMARK2kw), Nil) =>  syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); lhs
-          case e                                                    => e
+          case Apply(Select(lhs                   , n), Nil) if (n.toString=="$qmark") =>   isOutputParam = true; lhs
+          case Apply(Select(Ident(formalParamName), n), Nil) if (n.toString=="$qmark$qmark") => isAdaptingParam = true; Ident(formalParamName)
+          case Apply(Select(lhs                   , n), Nil) if (n.toString=="$qmark$qmark") => syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); lhs
+          case e                                                                                    => e
         }
         if (isOutputParam || isAdaptingParam) {
           if (in.token==IF_QMARK) {

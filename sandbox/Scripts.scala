@@ -222,8 +222,6 @@ object Scripts {
     because enabling and disabling the button etc must there be done
   */
  implicit def script ..
-    key(comp: Component, keyCode ?? : Char     ) = event(         KeyTypedScriptReactor[N_code_eh](comp, keyCode ))
-   vkey(comp: Component, keyValue?? : Key.Value) = event(        VKeyTypedScriptReactor[N_code_eh](comp, keyValue))
    stateChange(slider: Slider)                   = event(SliderStateChangedScriptReactor[N_code_eh](slider))
    clicked(b:Button)                             = event(           ClickedScriptReactor[N_code_eh](b))
 
@@ -231,11 +229,14 @@ object Scripts {
   event     (r:ScriptReactor[N_code_eh     ])                           =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {.     .}
   event_loop(r:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {... ...}
        anyEvent(comp: Component)                        = event(          AnyEventScriptReactor[N_code_eh](comp))                                                    
-           windowClosing(w: Window)                     = event(     WindowClosingScriptReactor[N_code_eh](w))
+    windowClosing(w: Window)                            = event(     WindowClosingScriptReactor[N_code_eh](w))
      mousePresses(c: Component, task: MouseEvent=>Unit) = event_loop( MousePressedScriptReactor[N_code_eh_loop](c), task)
    mouseDraggings(c: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedScriptReactor[N_code_eh_loop](c), task)
 
      guard(comp: Component, test: () => Boolean)        = if (test()) .. else ... anyEvent(comp)
+
+       key(comp: Component, keyCode ?? : Char     )     = event(         KeyTypedScriptReactor[N_code_eh](comp, keyCode ))
+      vkey(comp: Component, keyValue?? : Key.Value)     = event(        VKeyTypedScriptReactor[N_code_eh](comp, keyValue))
 /*
 
  Note: the manual compilation yielded for the first annotation the type
