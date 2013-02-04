@@ -84,16 +84,8 @@ trait Trees { self: Universe =>
      *
      *  Unfortunately `emptyValDef` is also considered to be `isEmpty`, but this is deemed to be
      *  a conceptual mistake pending a fix in https://issues.scala-lang.org/browse/SI-6762.
-     *
-     *  @see `canHaveAttrs`
      */
     def isEmpty: Boolean
-
-    /** Can this tree carry attributes (i.e. symbols, types or positions)?
-     *  Typically the answer is yes, except for the `EmptyTree` null object and
-     *  two special singletons: `emptyValDef` and `pendingSuperCall`.
-     */
-    def canHaveAttrs: Boolean
 
     /** The canonical way to test if a Tree represents a term.
      */
