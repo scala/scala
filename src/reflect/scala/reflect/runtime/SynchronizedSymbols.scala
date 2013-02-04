@@ -61,6 +61,8 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       }
     }
 
+    override def isStable: Boolean = gilSynchronized { super.isStable }
+
 // ------ creators -------------------------------------------------------------------
 
     override protected def createAbstractTypeSymbol(name: TypeName, pos: Position, newFlags: Long): AbstractTypeSymbol =
