@@ -39,7 +39,7 @@ trait Contexts { self: Analyzer =>
   def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
     LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
 
-  private val startContext = {
+  private lazy val startContext = {
     NoContext.make(
     Template(List(), emptyValDef, List()) setSymbol global.NoSymbol setType global.NoType,
     rootMirror.RootClass,
@@ -361,6 +361,16 @@ trait Contexts { self: Analyzer =>
       c
     }
 
+    /**
+     * A context for typing constructor parameter ValDefs, super or self invocation arguments and default getters
+     * of constructors. These expressions need to be type checked in a scope outside the class, cf. spec 5.3.1.
+     *
+     * This method is called by namer / typer where `this` is the context for the constructor DefDef. The
+     * owner of the resulting (new) context is the outer context for the Template, i.e. the context for the
+     * ClassDef. This means that class type parameters will be in scope. The value parameters of the current
+     * constructor are also entered into the new constructor scope. Members of the class however will not be
+     * accessible.
+     */
     def makeConstructorContext = {
       var baseContext = enclClass.outer
       while (baseContext.tree.isInstanceOf[Template])
@@ -380,6 +390,8 @@ trait Contexts { self: Analyzer =>
           enterLocalElems(c.scope.elems)
         }
       }
+      // Enter the scope elements of this (the scope for the constructor DefDef) into the new constructor scope.
+      // Concretely, this will enter the value parameters of constructor.
       enterElems(this)
       argContext
     }
