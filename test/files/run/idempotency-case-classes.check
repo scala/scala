@@ -42,7 +42,7 @@ C(2,3)
       C.super.<init>();
       ()
     };
-    final override def toString(): String = "C";
+    final override <synthetic> def toString(): String = "C";
     case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
     case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
       scala.this.None

@@ -1180,6 +1180,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  Since tpe forwards to tpe_*, if you call it on a type symbol with unapplied
      *  type parameters, the type returned will contain dummies types.  These will
      *  hide legitimate errors or create spurious ones if used as normal types.
+     *
+     *  For type symbols, `tpe` is different than `info`. `tpe` returns a typeRef
+     *  to the type symbol, `info` returns the type information of the type symbol,
+     *  e.g. a ClassInfoType for classes or a TypeBounds for abstract types.
      */
     final def tpe: Type = tpe_*
 

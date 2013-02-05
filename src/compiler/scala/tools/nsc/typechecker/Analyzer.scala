@@ -24,6 +24,7 @@ trait Analyzer extends AnyRef
             with TypeDiagnostics
             with ContextErrors
             with StdAttachments
+            with AnalyzerPlugins
 {
   val global : Global
   import global._
