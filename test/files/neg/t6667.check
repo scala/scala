@@ -1,4 +1,5 @@
-t6667.scala:8: error: ambiguous implicit values:
+t6667.scala:8: error: Search of in-scope implicits was ambiguous, and the implicit scope was searched. In Scala 2.11.0, this code will not compile. See SI-6667. 
+ambiguous implicit values:
  both value inScope1 in object Test of type => C
  and value inScope2 in object Test of type => C
  match expected type C

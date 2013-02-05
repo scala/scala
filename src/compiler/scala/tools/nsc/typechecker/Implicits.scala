@@ -1319,12 +1319,17 @@ trait Implicits {
 
         // `materializeImplicit` does some preprocessing for `pt`
         // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
-        if (result.isFailure && !wasAmbigious) result = searchImplicit(implicitsOfExpectedType, false)
+        if (result.isFailure) result = searchImplicit(implicitsOfExpectedType, false)
 
         if (result.isFailure) {
           context.updateBuffer(previousErrs)
           if (Statistics.canEnable) Statistics.stopTimer(oftypeFailNanos, failstart)
         } else {
+          if (wasAmbigious && settings.lint.value)
+            reporter.warning(tree.pos,
+              "Search of in-scope implicits was ambiguous, and the implicit scope was searched. In Scala 2.11.0, this code will not compile. See SI-6667. \n" +
+                previousErrs.map(_.errMsg).mkString("\n"))
+
           if (Statistics.canEnable) Statistics.stopTimer(oftypeSucceedNanos, succstart)
           if (Statistics.canEnable) Statistics.incCounter(oftypeImplicitHits)
         }
