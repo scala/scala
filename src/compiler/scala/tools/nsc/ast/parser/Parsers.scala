@@ -2103,7 +2103,7 @@ self =>
     def annotationExpr(): Tree = atPos(in.offset) {
       val t = exprSimpleType()
       if (in.token == LPAREN) New(t, multipleArgumentExprs())
-      else New(t, Nil)
+      else New(t, ListOfNil)
     }
 
 /* -------- PARAMETERS ------------------------------------------- */

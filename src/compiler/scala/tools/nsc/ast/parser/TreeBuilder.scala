@@ -237,7 +237,7 @@ abstract class TreeBuilder {
           atPos(npos) {
             New(
               Ident(x) setPos npos.focus,
-              Nil)
+              ListOfNil)
           }
         )
       }
