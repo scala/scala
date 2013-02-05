@@ -13,8 +13,12 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
   // therefore we don't have a danger of a deadlock from having a fine-grained lock for name creation
   private lazy val nameLock = new Object
 
-  override def newTermName(s: String): TermName = nameLock.synchronized { super.newTermName(s) }
-  override def newTypeName(s: String): TypeName = nameLock.synchronized { super.newTypeName(s) }
+  // these three methods are the only gateways into name hashtable manipulations
+  // we need to protected them with a lock, because they are by far not atomic
+  override protected def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName =
+    nameLock.synchronized { super.newTermName(cs, offset, len, cachedString) }
+  override protected def toTypeName(termName: TermName): TypeName = nameLock.synchronized { super.toTypeName(termName) }
+  override protected def toTermName(typeName: TypeName): TermName = nameLock.synchronized { super.toTermName(typeName) }
 
 // BaseTypeSeqs
 
