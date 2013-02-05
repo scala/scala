@@ -110,11 +110,6 @@ object REPL {
       show(completeResult)
     }
 
-    def doTypedTree(file: String) {
-      comp.askType(toSourceFile(file), true, typedResult)
-      show(typedResult)
-    }
-
     def doStructure(file: String) {
       comp.askParsedEntered(toSourceFile(file), false, structureResult)
       show(structureResult)
@@ -175,10 +170,8 @@ object REPL {
           comp.askReload(List(toSourceFile(file)), reloadResult)
           Thread.sleep(millis.toInt)
           println("ask type now")
-          comp.askType(toSourceFile(file), false, typedResult)
+          comp.askLoadedTyped(toSourceFile(file), typedResult)
           typedResult.get
-        case List("typed", file) =>
-          doTypedTree(file)
         case List("typeat", file, off1, off2) =>
           doTypeAt(makePos(file, off1, off2))
         case List("typeat", file, off1) =>
