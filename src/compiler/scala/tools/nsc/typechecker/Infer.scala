@@ -475,7 +475,7 @@ trait Infer extends Checkable {
      *  If no minimal type variables exist that make the
      *  instantiated type a subtype of `pt`, return null.
      */
-    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean = false): (List[Type], List[TypeVar]) = {
+    def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean = false): (List[Type], List[TypeVar]) = {
       val tvars = tparams map freshVar
       val instResTp = restpe.instantiateTypeParams(tparams, tvars)
       if ( if (useWeaklyCompatible) isWeaklyCompatible(instResTp, pt) else isCompatible(instResTp, pt) ) {
@@ -1148,10 +1148,15 @@ trait Infer extends Checkable {
         if (runtime != null) {
           val c = macroContext(newTyper(context), EmptyTree, tree)
           val tic = new c.InferExprInstanceContext(tree, tparams, pt, treeTp, keepNothings, useWeaklyCompatible)
-          runtime(MacroArgs(c, List(tic))).asInstanceOf[List[Symbol]]
-        } else {
-          inferExprInstance(tree, tparams, pt, treeTp0, keepNothings, useWeaklyCompatible, allowMacroHelpers = false)
+          runtime(MacroArgs(c, List(tic)))
+          val tparams1 = ListBuffer[Symbol]()
+          map2(tic.unknowns, tic.inferences){
+            case (tparam, Some(targ)) => substExpr(tree, List(tparam), List(targ), pt)
+            case (tparam, None) => tparams1 += tparam
+          }
+          if (tparams.length > tparams1.length) return tparams1.toList
         }
+        inferExprInstance(tree, tparams, pt, treeTp0, keepNothings, useWeaklyCompatible, allowMacroHelpers = false)
       } else {
         val (targs, tvars) = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
         printInference(
@@ -1218,10 +1223,15 @@ trait Infer extends Checkable {
             if (runtime != null) {
               val c = macroContext(newTyper(context), EmptyTree, tree)
               val tic = new c.InferMethodInstanceContext(tree, undetparams, pt0)
-              runtime(MacroArgs(c, List(tic))).asInstanceOf[List[Symbol]]
-            } else {
-              inferMethodInstance(fn, undetparams, args, pt0, allowMacroHelpers = false)
+              runtime(MacroArgs(c, List(tic)))
+              val tparams1 = ListBuffer[Symbol]()
+              map2(tic.unknowns, tic.inferences) {
+                case (tparam, Some(targ)) => substExpr(Apply(fn, args), List(tparam), List(targ), WildcardType)
+                case (tparam, None) => tparams1 += tparam
+              }
+              if (undetparams.length > tparams1.length) return tparams1.toList
             }
+            inferMethodInstance(fn, undetparams, args, pt0, allowMacroHelpers = false)
           } else {
             val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
             val formals = formalTypes(mt.paramTypes, args.length)

@@ -1,37 +1,37 @@
 package scala.reflect.macros
 package runtime
 
+import scala.collection.mutable.ArrayBuffer
+
 trait Infer {
   self: Context =>
 
   import universe._
 
-  trait TypeInferenceContext extends TypeInferenceContextApi
+  abstract class TypeInferenceContext(val tree: Tree, val unknowns: List[Symbol], val expectedType: Type, val actualType: Type) extends TypeInferenceContextApi {
+    val _inferences = ArrayBuffer[Option[Type]]()
+    def inferences = _inferences.toList
+    inferDefault()
 
-  class InferExprInstanceContext(val tree: Tree, var unknowns: List[Symbol], val expectedType: Type, val actualType: Type,
-                                 val keepNothings: Boolean, val useWeaklyCompatible: Boolean)
-                                 extends TypeInferenceContext {
     def infer(sym: Symbol, tpe: Type): Unit = {
-      callsiteTyper.infer.substExpr(tree, List(sym), List(tpe), expectedType)
-      unknowns = unknowns diff List(sym)
+      val i = unknowns.indexOf(sym)
+      assert(i != -1, s"unknowns = $unknowns, sym = $sym")
+      _inferences(i) = Some(tpe)
     }
+
     def inferDefault(): Unit = {
-      val stillUnknown = callsiteTyper.infer.inferExprInstance(tree, unknowns, expectedType, actualType, keepNothings, useWeaklyCompatible, allowMacroHelpers = false)
-      unknowns = stillUnknown
+      _inferences.clear()
+      _inferences ++= unknowns.map(_ => None)
     }
   }
 
-  class InferMethodInstanceContext(val tree: Tree, var unknowns: List[Symbol], val expectedType: Type)
-                                   extends TypeInferenceContext {
-    val Apply(fn, args) = tree
-    def actualType = fn.tpe
-    def keepNothings = true
+  class InferExprInstanceContext(tree: Tree, unknowns: List[Symbol], expectedType: Type, actualType: Type,
+                                 val keepNothings: Boolean, val useWeaklyCompatible: Boolean)
+                                 extends TypeInferenceContext(tree, unknowns, expectedType, actualType)
+
+  class InferMethodInstanceContext(tree: Tree, unknowns: List[Symbol], expectedType: Type)
+                                   extends TypeInferenceContext(tree, unknowns, expectedType, tree.asInstanceOf[Apply].fun.tpe) {
+    def keepNothings = false
     def useWeaklyCompatible = false
-    def infer(sym: Symbol, tpe: Type): Unit = ??? // TODO: implement this
-    def inferDefault(): Unit = {
-      // TODO: don't forget to call `notifyUndetparamsInferred`
-      val stillUnknown = callsiteTyper.infer.inferMethodInstance(fn, unknowns, args, expectedType, allowMacroHelpers = false)
-      unknowns = stillUnknown
-    }
   }
 }
