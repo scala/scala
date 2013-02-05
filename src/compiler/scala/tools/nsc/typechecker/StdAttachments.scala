@@ -21,14 +21,12 @@ trait StdAttachments {
    */
   case class SuperCallArgsAttachment(argss: List[List[Tree]])
 
-  /** Convenience method for `SuperCallArgsAttachment`.
+  /** Extractor for `SuperCallArgsAttachment`.
    *  Compared with `MacroRuntimeAttachment` this attachment has different a usage pattern,
    *  so it really benefits from a dedicated extractor.
    */
-  def superCallArgs(tree: Tree): Option[List[List[Tree]]] =
-    tree.attachments.get[SuperCallArgsAttachment] collect { case SuperCallArgsAttachment(argss) => argss }
-
-  /** Determines whether the given tree has an associated SuperCallArgsAttachment.
-   */
-  def hasSuperArgs(tree: Tree): Boolean = superCallArgs(tree).nonEmpty
+  object CarriesSuperCallArgs {
+    def unapply(tree: Tree): Option[List[List[Tree]]] =
+      tree.attachments.get[SuperCallArgsAttachment] collect { case SuperCallArgsAttachment(argss) => argss }
+  }
 }

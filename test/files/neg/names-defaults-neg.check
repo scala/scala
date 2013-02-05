@@ -100,7 +100,7 @@ Error occurred in an application involving default arguments.
   ^
 names-defaults-neg.scala:86: error: module extending its companion class cannot use default constructor arguments
     object C extends C()
-                     ^
+             ^
 names-defaults-neg.scala:90: error: deprecated parameter name x has to be distinct from any other parameter name (deprecated or not).
   def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
                                            ^

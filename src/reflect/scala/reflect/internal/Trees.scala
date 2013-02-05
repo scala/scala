@@ -36,7 +36,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def isDef = false
 
     def isEmpty = false
-    def isDummy = false
 
     /** The canonical way to test if a Tree represents a term.
      */
@@ -227,6 +226,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
   abstract class DefTree extends SymTree with NameTree with DefTreeApi {
     def name: Name
     override def isDef = true
+  }
+
+  case object EmptyTree extends TermTree {
+    val asList = List(this)
+    super.tpe_=(NoType)
+    override def tpe_=(t: Type) =
+      if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
+    override def isEmpty = true
   }
 
   abstract class MemberDef extends DefTree with MemberDefApi {
@@ -592,7 +599,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
         case _: ApplyToImplicitArgs => new ApplyToImplicitArgs(fun, args)
         case _: ApplyImplicitView => new ApplyImplicitView(fun, args)
         // TODO: ApplyConstructor ???
-        case self.pendingSuperCall => self.pendingSuperCall
         case _ => new Apply(fun, args)
       }).copyAttrs(tree)
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
@@ -955,23 +961,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
 
-  trait DummyTree extends Tree {
+  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
     override def isEmpty = true
-    override def isDummy = true
-
-    private def unsupported(what: String, args: Any*) =
-      throw new UnsupportedOperationException(s"$what($args) inapplicable for "+self.toString)
-
     super.setPos(NoPosition)
-    override def setPos(pos: Position) = unsupported("setPos", pos)
-
-    super.setType(NoType)
-    override def tpe_=(t: Type) = if (t != NoType) unsupported("tpe_=", t)
+    override def setPos(pos: Position) = { assert(false); this }
   }
-
-  case object EmptyTree extends TermTree with DummyTree { val asList = List(this) }
-  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with DummyTree
-  object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with DummyTree
 
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     atPos(sym.pos) {
