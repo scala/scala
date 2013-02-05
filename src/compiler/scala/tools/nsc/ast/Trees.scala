@@ -337,7 +337,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         else
           super.transform {
             tree match {
-              case tree if !tree.canHaveAttrs =>
+              case tree if tree.isDummy =>
                 tree
               case tpt: TypeTree =>
                 if (tpt.original != null)

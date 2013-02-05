@@ -75,15 +75,8 @@ trait Trees { self: Universe =>
     def isDef: Boolean
 
     /** Is this tree one of the empty trees?
-     *
      *  Empty trees are: the `EmptyTree` null object, `TypeTree` instances that don't carry a type
      *  and the special `emptyValDef` singleton.
-     *
-     *  In the compiler the `isEmpty` check and the derived `orElse` method are mostly used
-     *  as a check for a tree being a null object (`EmptyTree` for term trees and empty TypeTree for type trees).
-     *
-     *  Unfortunately `emptyValDef` is also considered to be `isEmpty`, but this is deemed to be
-     *  a conceptual mistake pending a fix in https://issues.scala-lang.org/browse/SI-6762.
      */
     def isEmpty: Boolean
 
@@ -2923,8 +2916,7 @@ trait Trees { self: Universe =>
       trees mapConserve (tree => transform(tree).asInstanceOf[TypeDef])
     /** Transforms a `ValDef`. */
     def transformValDef(tree: ValDef): ValDef =
-      if (tree eq emptyValDef) tree
-      else transform(tree).asInstanceOf[ValDef]
+      if (tree.isEmpty) tree else transform(tree).asInstanceOf[ValDef]
     /** Transforms a list of `ValDef` nodes. */
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
       trees mapConserve (transformValDef(_))

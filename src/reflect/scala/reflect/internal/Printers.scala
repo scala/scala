@@ -435,7 +435,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case tree =>
           xprintTree(this, tree)
       }
-      if (printTypes && tree.isTerm && tree.canHaveAttrs) {
+      if (printTypes && tree.isTerm && !tree.isEmpty) {
         print("{", if (tree.tpe eq null) "<null>" else tree.tpe.toString, "}")
       }
     }
