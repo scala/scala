@@ -2,7 +2,7 @@ import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror => cm}
 
 class Bean {
-  @JavaAnnotationWithNestedEnum(JavaAnnotationWithNestedEnum.Value.VALUE)
+  @JavaAnnotationWithNestedEnum_1(JavaAnnotationWithNestedEnum_1.Value.VALUE)
   def value = 1
 }
 
