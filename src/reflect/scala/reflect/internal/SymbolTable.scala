@@ -208,6 +208,8 @@ abstract class SymbolTable extends macros.Universe
     finally popPhase(saved)
   }
 
+  def slowButSafeAtPhase[T](ph: Phase)(op: => T): T =
+    if (isCompilerUniverse) atPhase(ph)(op) else op
 
   /** Since when it is to be "at" a phase is inherently ambiguous,
    *  a couple unambiguously named methods.
@@ -219,6 +221,9 @@ abstract class SymbolTable extends macros.Universe
 
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (isAtPhaseAfter(target)) atPhase(target)(op) else op
+
+  def slowButSafeAtPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+    if (isCompilerUniverse) atPhaseNotLaterThan(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
