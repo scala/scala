@@ -18,7 +18,16 @@ import scala.collection.parallel.immutable.ParVector
 
 /** Companion object to the Vector class
  */
-object Vector extends IndexedSeqFactory[Vector] {
+object Vector extends SeqFactory[Vector] {
+  // left lying around for binary compatibility check
+  private[collection] class VectorReusableCBF extends GenericCanBuildFrom[Nothing] {    
+    override def apply() = newBuilder[Nothing]
+  }      
+  // left lying around for binary compatibility check
+  private val VectorReusableCBF: GenericCanBuildFrom[Nothing] = new VectorReusableCBF
+  
+  override lazy val ReusableCBF  = 
+      scala.collection.IndexedSeq.ReusableCBF.asInstanceOf[GenericCanBuildFrom[Nothing]]  
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

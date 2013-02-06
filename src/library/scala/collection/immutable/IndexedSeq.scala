@@ -31,7 +31,9 @@ trait IndexedSeq[+A] extends Seq[A]
  *  @define coll indexed sequence
  *  @define Coll `IndexedSeq`
  */
-object IndexedSeq extends IndexedSeqFactory[IndexedSeq] {
+object IndexedSeq extends SeqFactory[IndexedSeq] {
+  override lazy val ReusableCBF  = 
+      scala.collection.IndexedSeq.ReusableCBF.asInstanceOf[GenericCanBuildFrom[Nothing]]
   class Impl[A](buf: ArrayBuffer[A]) extends AbstractSeq[A] with IndexedSeq[A] with Serializable {
     def length = buf.length
     def apply(idx: Int) = buf.apply(idx)
