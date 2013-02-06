@@ -1,0 +1,32 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> import language.experimental.macros, reflect.macros.Context
+import language.experimental.macros
+import reflect.macros.Context
+
+scala> def macroImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[List[T]] = {
+  val r = c.universe.reify { List(t.splice) }
+  c.Expr[List[T]]( c.resetLocalAttrs(r.tree) )
+}
+macroImpl: [T](c: scala.reflect.macros.Context)(t: c.Expr[T])(implicit evidence$1: c.WeakTypeTag[T])c.Expr[List[T]]
+
+scala> def demo[T](t: T): List[T] = macro macroImpl[T]
+demo: [T](t: T)List[T]
+
+scala> def m[T](t: T): List[List[T]] =
+  demo( List((t,true)) collect { case (x,true) => x } )
+m: [T](t: T)List[List[T]]
+
+scala> m(List(1))
+res0: List[List[List[Int]]] = List(List(List(1)))
+
+scala> // Showing we haven't added unreachable warnings
+
+scala> List(1) collect { case x => x }
+res1: List[Int] = List(1)
+
+scala> List("") collect { case x => x }
+res2: List[String] = List("")
+
+scala> 

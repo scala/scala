@@ -297,6 +297,7 @@ trait StdNames {
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"
     val CONSTRUCTOR: NameType              = "<init>"
+    val DEFAULT_CASE: NameType             = "defaultCase$"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val INITIALIZER: NameType              = CONSTRUCTOR // Is this buying us something?
