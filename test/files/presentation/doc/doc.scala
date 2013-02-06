@@ -1,5 +1,5 @@
 import scala.tools.nsc.doc
-import scala.tools.nsc.doc.base.LinkTo
+import scala.tools.nsc.doc.base._
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.interactive._
 import scala.tools.nsc.interactive.tests._
@@ -28,12 +28,33 @@ object Test extends InteractiveTest {
        |trait Commented {}
        |class User(c: %sCommented)""".stripMargin.format(comment, tags take nTags mkString "\n", caret)
 
-  override def main(args: Array[String]) {
-    val documenter = new Doc(settings) {
-      val global: compiler.type = compiler
-
+  override lazy val compiler = {
+    new {
+      override val settings = {
+        prepareSettings(Test.this.settings)
+        Test.this.settings
+      }
+    } with Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase {
+      val global: this.type = this
       def chooseLink(links: List[LinkTo]): LinkTo = links.head
+      def internalLink(sym: Symbol, site: Symbol) = None
+      def toString(link: LinkTo) = link.toString
+
+      def getComment(sym: Symbol, source: SourceFile) = {
+        val docResponse = new Response[(String, String, Position)]
+        askDocComment(sym, sym.owner, source, docResponse)
+        docResponse.get.left.toOption flatMap {
+          case (expanded, raw, pos) =>
+            if (expanded.isEmpty)
+              None
+            else
+              Some(ask { () => parseAtSymbol(expanded, raw, pos, Some(sym.owner)) })
+        }
+      }
     }
+  }
+
+  override def runDefaultTests() {
     for (i <- 1 to tags.length) {
       val markedText = text(i)
       val idx = markedText.indexOf(caret)
@@ -52,18 +73,17 @@ object Test extends InteractiveTest {
           treeResponse.get.left.toOption match {
             case Some(tree) =>
               val sym = tree.tpe.typeSymbol
-              documenter.retrieve(sym, sym.owner) match {
-               case Some(HtmlResult(comment)) =>
-                 import comment._
-                 val tags: List[(String, Iterable[Body])] =
-                   List(("@example", example), ("@version", version), ("@since", since.toList), ("@todo", todo), ("@note",  note), ("@see", see))
-                 val str = ("body:" + body + "\n") + 
-                   tags.map{ case (name, bodies) => name + ":" + bodies.mkString("\n") }.mkString("\n")
-                 reporter.println(str)
-               case Some(_) => reporter.println("Got unexpected result")
-               case None => reporter.println("Got no result")
+              compiler.getComment(sym, batch) match {
+                case None => println("Got no doc comment")
+                case Some(comment) =>
+                  import comment._
+                  val tags: List[(String, Iterable[Body])] =
+                    List(("@example", example), ("@version", version), ("@since", since.toList), ("@todo", todo), ("@note",  note), ("@see", see))
+                  val str = ("body:" + body + "\n") + 
+                    tags.map{ case (name, bodies) => name + ":" + bodies.mkString("\n") }.mkString("\n")
+                  println(str)
               }
-            case None => reporter.println("Couldn't find a typedTree")
+            case None => println("Couldn't find a typedTree")
           }
       }
     }
