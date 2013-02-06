@@ -8,7 +8,7 @@
 
 package scala.collection
 
-import parallel.Combiner
+import parallel.{ Combiner, TaskSupport, setTaskSupport }
 
 /** This trait describes collections which can be turned into parallel collections
  *  by invoking the method `par`. Parallelizable collections may be parametrized with
@@ -40,6 +40,12 @@ trait Parallelizable[+A, +ParRepr <: Parallel] extends Any {
     val cb = parCombiner
     for (x <- seq) cb += x
     cb.result
+  }
+
+  def parWith(implicit taskSupport: TaskSupport): ParRepr = {
+    val cb = parCombiner
+    for (x <- seq) cb += x
+    setTaskSupport(cb.result, taskSupport)
   }
 
   /** The default `par` implementation uses the combiner provided by this method

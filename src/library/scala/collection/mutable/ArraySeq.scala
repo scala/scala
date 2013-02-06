@@ -12,6 +12,8 @@ package scala.collection
 package mutable
 
 import generic._
+import parallel.TaskSupport
+import parallel.setTaskSupport
 import parallel.mutable.ParArray
 
 /** A class for polymorphic arrays of elements that's represented
@@ -56,6 +58,9 @@ extends AbstractSeq[A]
   val array: Array[AnyRef] = new Array[AnyRef](length)
 
   override def par = ParArray.handoff(array.asInstanceOf[Array[A]], length)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(ParArray.handoff(array.asInstanceOf[Array[A]], length), taskSupport)
 
   def apply(idx: Int): A = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)

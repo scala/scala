@@ -7,26 +7,17 @@
 \*                                                                      */
 
 
-package scala
-package collection.parallel.mutable
+package scala.collection
+package parallel.mutable
 
+import collection.GenTraversableOnce
 
+import generic.{ GenericParTemplate, GenericCompanion, GenericParCompanion, CanCombineFrom, CanBuildFrom, ParFactory, Sizing }
 
-import scala.collection.generic.GenericParTemplate
-import scala.collection.generic.GenericCompanion
-import scala.collection.generic.GenericParCompanion
-import scala.collection.generic.CanCombineFrom
-import scala.collection.generic.CanBuildFrom
-import scala.collection.generic.ParFactory
-import scala.collection.generic.Sizing
-import scala.collection.parallel.Combiner
-import scala.collection.parallel.SeqSplitter
-import scala.collection.parallel.ParSeqLike
-import scala.collection.parallel.Task
-import scala.collection.parallel.CHECK_RATE
-import scala.collection.mutable.ArraySeq
-import scala.collection.mutable.Builder
-import scala.collection.GenTraversableOnce
+import parallel.{ setTaskSupport, Combiner, SeqSplitter, ParSeqLike, Task, CHECK_RATE }
+
+import mutable.{ ArraySeq, Builder }
+
 import scala.reflect.ClassTag
 
 
@@ -588,7 +579,7 @@ self =>
     tasksupport.executeAndWaitResult(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
-    (new ParArray[S](targarrseq)).asInstanceOf[That]
+    setTaskSupport((new ParArray[S](targarrseq)).asInstanceOf[That], tasksupport)
   } else super.map(f)(bf)
 
   override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[ParArray[T], U, That]): That =
@@ -604,7 +595,7 @@ self =>
       })
 
       // wrap the array into a parallel array
-      (new ParArray[U](targarrseq)).asInstanceOf[That]
+      setTaskSupport((new ParArray[U](targarrseq)).asInstanceOf[That], tasksupport)
     } else super.scan(z)(op)(cbf)
 
   /* tasks */

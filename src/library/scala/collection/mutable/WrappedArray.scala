@@ -13,8 +13,11 @@ package mutable
 
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
-import scala.collection.generic._
-import scala.collection.parallel.mutable.ParArray
+
+import generic._
+import parallel.TaskSupport
+import parallel.setTaskSupport
+import parallel.mutable.ParArray
 
 /**
  *  A class representing `Array[T]`.
@@ -60,6 +63,9 @@ extends AbstractSeq[T]
   def array: Array[T]
 
   override def par = ParArray.handoff(array)
+
+  override def parWith(implicit taskSupport: TaskSupport) =
+    setTaskSupport(ParArray.handoff(array), taskSupport)
 
   private def elementClass: Class[_] =
     arrayElementClass(array.getClass)

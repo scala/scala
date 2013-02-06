@@ -6,13 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala
-package collection
+package scala.collection
 package immutable
 
 import generic._
-import scala.annotation.unchecked.{ uncheckedVariance=> uV }
+import parallel.TaskSupport
+import parallel.setTaskSupport
 import parallel.immutable.ParHashMap
+
+import scala.annotation.unchecked.{ uncheckedVariance => uV }
 
 /** This class implements immutable maps using a hash trie.
  *
@@ -105,6 +107,8 @@ class HashMap[A, +B] extends AbstractMap[A, B]
   protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = that
 
   override def par = ParHashMap.fromTrie(this)
+
+  override def parWith(implicit taskSupport: TaskSupport) = setTaskSupport(ParHashMap.fromTrie(this), taskSupport)
 
 }
 

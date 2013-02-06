@@ -33,11 +33,12 @@ import scala.collection.generic.Sizing
  *  @since 2.9
  */
 trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
-  
+
   @transient
   @volatile
+  @deprecated("Mutating `_combinerTaskSupport` will not be allowed in a future release.", "2.11.0")
   var _combinerTaskSupport = defaultTaskSupport
-  
+
   def combinerTaskSupport = {
     val cts = _combinerTaskSupport
     if (cts eq null) {
@@ -45,9 +46,10 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
       defaultTaskSupport
     } else cts
   }
-  
+
+  @deprecated("Mutating `_combinerTaskSupport` will not be allowed in a future release.", "2.11.0")
   def combinerTaskSupport_=(cts: TaskSupport) = _combinerTaskSupport = cts
-  
+
   /** Combines the contents of the receiver builder and the `other` builder,
    *  producing a new builder containing both their elements.
    *
@@ -81,7 +83,7 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
    *  By default, this method returns `false`.
    */
   def canBeShared: Boolean = false
-  
+
   /** Constructs the result and sets the appropriate tasksupport object to the resulting collection
    *  if this is applicable.
    */
@@ -89,24 +91,6 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
     val res = result
     setTaskSupport(res, combinerTaskSupport)
   }
-  
+
 }
-
-
-/*
-private[collection] trait EnvironmentPassingCombiner[-Elem, +To] extends Combiner[Elem, To] {
-  abstract override def result = {
-    val res = super.result
-    res
-  }
-}
-*/
-
-
-
-
-
-
-
-
 

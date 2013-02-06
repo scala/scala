@@ -185,21 +185,12 @@ self: ParIterableLike[T, Repr, Sequential] =>
   /** Changes the task support object which is responsible for scheduling and
    *  load-balancing tasks to processors.
    *
-   *  A task support object can be changed in a parallel collection after it
-   *  has been created, but only during a quiescent period, i.e. while there
-   *  are no concurrent invocations to parallel collection methods.
-   *
-   *  Here is a way to change the task support of a parallel collection:
-   *
-   *  {{{
-   *  import scala.collection.parallel._
-   *  val pc = mutable.ParArray(1, 2, 3)
-   *  pc.tasksupport = new ForkJoinTaskSupport(
-   *    new scala.concurrent.forkjoin.ForkJoinPool(2))
-   *  }}}
+   * This method is used internally by the framework. Clients should specify
+   * the task support when creating the parallel collection with a `parWith` method.
    *
    *  @see [[scala.collection.parallel.TaskSupport]]
    */
+  @deprecated("//TODO", "2.11.0")
   def tasksupport_=(ts: TaskSupport) = _tasksupport = ts
 
   def seq: Sequential
@@ -247,6 +238,10 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def iterator: Splitter[T] = splitter
 
   override def par: Repr = repr
+
+  override def parWith(implicit taskSupport: TaskSupport): Repr =
+     // I think there's a better way to do it ---v
+    if (taskSupport eq tasksupport) repr else seq.parWith(taskSupport).asInstanceOf[Repr]
 
   /** Denotes whether this parallel collection has strict splitters.
    *
@@ -498,23 +493,14 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new Map[S, That](f, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.map(f)(bf2seq(bf)), tasksupport)
-  /*bf ifParallel { pbf =>
-    tasksupport.executeAndWaitResult(new Map[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.map(f)(bf2seq(bf))*/
 
   def collect[S, That](pf: PartialFunction[T, S])(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new Collect[S, That](pf, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.collect(pf)(bf2seq(bf)), tasksupport)
-  /*bf ifParallel { pbf =>
-    tasksupport.executeAndWaitResult(new Collect[S, That](pf, pbf, splitter) mapResult { _.result })
-  } otherwise seq.collect(pf)(bf2seq(bf))*/
 
   def flatMap[S, That](f: T => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     tasksupport.executeAndWaitResult(new FlatMap[S, That](f, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.flatMap(f)(bf2seq(bf)), tasksupport)
-  /*bf ifParallel { pbf =>
-    tasksupport.executeAndWaitResult(new FlatMap[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.flatMap(f)(bf2seq(bf))*/
 
   /** Tests whether a predicate holds for all elements of this $coll.
    *
@@ -566,26 +552,24 @@ self: ParIterableLike[T, Repr, Sequential] =>
    */
   protected[this] def combinerFactory = {
     val combiner = newCombiner
-    combiner.combinerTaskSupport = tasksupport
     if (combiner.canBeShared) new CombinerFactory[T, Repr] {
-      val shared = combiner
+      val shared = setTaskSupport(combiner, tasksupport)
       def apply() = shared
       def doesShareCombiners = true
     } else new CombinerFactory[T, Repr] {
-      def apply() = newCombiner
+      def apply() = setTaskSupport(newCombiner, tasksupport)
       def doesShareCombiners = false
     }
   }
 
   protected[this] def combinerFactory[S, That](cbf: () => Combiner[S, That]) = {
     val combiner = cbf()
-    combiner.combinerTaskSupport = tasksupport
     if (combiner.canBeShared) new CombinerFactory[S, That] {
-      val shared = combiner
+      val shared = setTaskSupport(combiner, tasksupport)
       def apply() = shared
       def doesShareCombiners = true
     } else new CombinerFactory[S, That] {
-      def apply() = cbf()
+      def apply() = setTaskSupport(cbf(), tasksupport)
       def doesShareCombiners = false
     }
   }
