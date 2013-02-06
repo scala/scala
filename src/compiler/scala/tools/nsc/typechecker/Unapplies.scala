@@ -100,7 +100,7 @@ trait Unapplies extends ast.TreeDSL
     def createFun      = gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
     def parents        = if (inheritFromFun) List(createFun) else Nil
     def toString       = DefDef(
-      Modifiers(OVERRIDE | FINAL),
+      Modifiers(OVERRIDE | FINAL | SYNTHETIC),
       nme.toString_,
       Nil,
       ListOfNil,

@@ -258,8 +258,8 @@ trait Infer extends Checkable {
       tp1 // @MAT aliases already handled by subtyping
   }
 
-  private val stdErrorClass = rootMirror.RootClass.newErrorClass(tpnme.ERROR)
-  private val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
+  private lazy val stdErrorClass = rootMirror.RootClass.newErrorClass(tpnme.ERROR)
+  private lazy val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
 
   /** The context-dependent inferencer part */
   class Inferencer(context: Context) extends InferencerContextErrors with InferCheckable {

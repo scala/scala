@@ -653,9 +653,10 @@ trait Definitions extends api.StandardDefinitions {
       case tp                     => tp
     }
 
-    def abstractFunctionForFunctionType(tp: Type) =
-      if (isFunctionType(tp)) abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
-      else NoType
+    def abstractFunctionForFunctionType(tp: Type) = {
+      assert(isFunctionType(tp), tp)
+      abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
+    }
 
     def isFunctionType(tp: Type): Boolean = tp.dealiasWiden match {
       case TypeRef(_, sym, args) if args.nonEmpty =>

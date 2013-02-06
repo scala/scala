@@ -213,15 +213,22 @@ abstract class UnCurry extends InfoTransform
      *    new $anon()
      *
      */
-    def transformFunction(fun: Function): Tree =
+    def transformFunction(fun: Function): Tree = {
+      fun.tpe match {
+        // can happen when analyzer plugins assign refined types to functions, e.g.
+        // (() => Int) { def apply(): Int @typeConstraint }
+        case RefinedType(List(funTp), decls) =>
+          debuglog(s"eliminate refinement from function type ${fun.tpe}")
+          fun.tpe = funTp
+        case _ =>
+          ()
+      }
+
       deEta(fun) match {
         // nullary or parameterless
         case fun1 if fun1 ne fun => fun1
         case _ =>
-          val parents = (
-            if (isFunctionType(fun.tpe)) addSerializable(abstractFunctionForFunctionType(fun.tpe))
-            else addSerializable(ObjectClass.tpe, fun.tpe)
-          )
+          val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
           val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
@@ -254,6 +261,7 @@ abstract class UnCurry extends InfoTransform
           }
 
       }
+    }
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
       val isJava = fun.isJavaDefined
