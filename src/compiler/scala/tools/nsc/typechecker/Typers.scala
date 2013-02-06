@@ -1911,33 +1911,6 @@ trait Typers extends Modes with Adaptations with Tags {
         })
       }
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
-
-      // SI-5954. On second compile of a companion class contained in a package object we end up
-      // with some confusion of names which leads to having two symbols with the same name in the
-      // same owner. Until that can be straightened out we can't allow companion objects in package
-      // objects. But this code also tries to be friendly by distinguishing between case classes and
-      // user written companion pairs
-      def restrictPackageObjectMembers(mdef : ModuleDef) = for (m <- mdef.symbol.info.members) {
-        // ignore synthetic objects, because the "companion" object to a case class is synthetic and
-        // we only want one error per case class
-        if (!m.isSynthetic) {
-          // can't handle case classes in package objects
-          if (m.isCaseClass) pkgObjectRestriction(m, mdef, "case")
-          // can't handle companion class/object pairs in package objects
-          else if ((m.isClass && m.companionModule != NoSymbol && !m.companionModule.isSynthetic) ||
-                   (m.isModule && m.companionClass != NoSymbol && !m.companionClass.isSynthetic))
-                     pkgObjectRestriction(m, mdef, "companion")
-        }
-
-        def pkgObjectRestriction(m : Symbol, mdef : ModuleDef, restricted : String) = {
-          val pkgName = mdef.symbol.ownerChain find (_.isPackage) map (_.decodedName) getOrElse mdef.symbol.toString
-          context.error(if (m.pos.isDefined) m.pos else mdef.pos, s"implementation restriction: package object ${pkgName} cannot contain ${restricted} ${m}. Instead, ${m} should be placed directly in package ${pkgName}.")
-        }
-      }
-
-      if (!settings.companionsInPkgObjs.value && mdef.symbol.isPackageObject)
-        restrictPackageObjectMembers(mdef)
-
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
     }
     /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
