@@ -20,7 +20,7 @@ trait Positions extends scala.reflect.internal.Positions {
         // When we prune due to encountering a position, traverse the
         // pruned children so we can warn about those lacking positions.
         t.children foreach { c =>
-          if (!c.canHaveAttrs) ()
+          if ((c eq EmptyTree) || (c eq emptyValDef)) ()
           else if (c.pos == NoPosition) {
             reporter.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase)
             inform("parent: " + treeSymStatus(t))

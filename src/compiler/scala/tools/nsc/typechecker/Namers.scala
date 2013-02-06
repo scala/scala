@@ -857,8 +857,13 @@ trait Namers extends MethodSynthesis {
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
-        if (tpt.tpe.isError) AnyRefClass.tpe
-        else tpt.tpe
+        val tp = tpt.tpe
+        val inheritsSelf = tp.typeSymbol == owner
+        if (inheritsSelf)
+          InheritsItselfError(tpt)
+
+        if (inheritsSelf || tp.isError) AnyRefClass.tpe
+        else tp
       }
 
       val parents = typer.parentTypes(templ) map checkParent

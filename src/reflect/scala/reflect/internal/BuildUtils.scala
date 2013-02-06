@@ -47,6 +47,8 @@ trait BuildUtils { self: SymbolTable =>
 
     def flagsFromBits(bits: Long): FlagSet = bits
 
+    def emptyValDef: ValDef = self.emptyValDef
+
     def This(sym: Symbol): Tree = self.This(sym)
 
     def Select(qualifier: Tree, sym: Symbol): Select = self.Select(qualifier, sym)

@@ -15,5 +15,5 @@ t5696.scala:38: error: too many argument lists for constructor invocation
       ^
 t5696.scala:46: error: too many argument lists for constructor invocation
   object x extends G(1)(2) {}
-                   ^
+           ^
 6 errors found

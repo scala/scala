@@ -75,25 +75,10 @@ trait Trees { self: Universe =>
     def isDef: Boolean
 
     /** Is this tree one of the empty trees?
-     *
      *  Empty trees are: the `EmptyTree` null object, `TypeTree` instances that don't carry a type
      *  and the special `emptyValDef` singleton.
-     *
-     *  In the compiler the `isEmpty` check and the derived `orElse` method are mostly used
-     *  as a check for a tree being a null object (`EmptyTree` for term trees and empty TypeTree for type trees).
-     *
-     *  Unfortunately `emptyValDef` is also considered to be `isEmpty`, but this is deemed to be
-     *  a conceptual mistake pending a fix in https://issues.scala-lang.org/browse/SI-6762.
-     *
-     *  @see `canHaveAttrs`
      */
     def isEmpty: Boolean
-
-    /** Can this tree carry attributes (i.e. symbols, types or positions)?
-     *  Typically the answer is yes, except for the `EmptyTree` null object and
-     *  two special singletons: `emptyValDef` and `pendingSuperCall`.
-     */
-    def canHaveAttrs: Boolean
 
     /** The canonical way to test if a Tree represents a term.
      */
@@ -2420,15 +2405,6 @@ trait Trees { self: Universe =>
    */
   val emptyValDef: ValDef
 
-  /** An empty superclass constructor call corresponding to:
-   *    super.<init>()
-   *  This is used as a placeholder in the primary constructor body in class templates
-   *  to denote the insertion point of a call to superclass constructor after the typechecker
-   *  figures out the superclass of a given template.
-   *  @group Trees
-   */
-  val pendingSuperCall: Apply
-
 // ---------------------- factories ----------------------------------------------
 
   /** A factory method for `ClassDef` nodes.
@@ -2931,8 +2907,7 @@ trait Trees { self: Universe =>
       trees mapConserve (tree => transform(tree).asInstanceOf[TypeDef])
     /** Transforms a `ValDef`. */
     def transformValDef(tree: ValDef): ValDef =
-      if (tree eq emptyValDef) tree
-      else transform(tree).asInstanceOf[ValDef]
+      if (tree.isEmpty) tree else transform(tree).asInstanceOf[ValDef]
     /** Transforms a list of `ValDef` nodes. */
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
       trees mapConserve (transformValDef(_))

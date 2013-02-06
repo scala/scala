@@ -1,6 +1,6 @@
-[53]            T5064.super.<init>()
-[53]            T5064.super.<init>
-[53]            this
+[12]            T5064.super.<init>()
+[12]            T5064.super.<init>
+[12]            this
 [16:23]         immutable.this.List.apply(scala.this.Predef.wrapIntArray(Array[Int]{1}))
 [16:20]         immutable.this.List.apply
 <16:20>         immutable.this.List
