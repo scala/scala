@@ -128,7 +128,7 @@ quant)
 
   class Counter(val prefix: String, val phases: Seq[String]) extends Quantity with Ordered[Counter] {
     var value: Int = 0
-    def compare(that: Counter): Int =
+    def compareTo(that: Counter): Int =
       if (this.value < that.value) -1
       else if (this.value > that.value) 1
       else 0
@@ -179,7 +179,7 @@ quant)
 
   class StackableTimer(prefix: String, underlying: Timer) extends SubTimer(prefix, underlying) with Ordered[StackableTimer] {
     var specificNanos: Long = 0
-    def compare(that: StackableTimer): Int =
+    def compareTo(that: StackableTimer): Int =
       if (this.specificNanos < that.specificNanos) -1
       else if (this.specificNanos > that.specificNanos) 1
       else 0

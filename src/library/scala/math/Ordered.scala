@@ -68,7 +68,8 @@ trait Ordered[A] extends Any with java.lang.Comparable[A] {
    *   - `x > 0` when  `this > that`
    *
    */
-  def compare(that: A): Int
+  @deprecated("Use method `compareTo` instead.", "2.11.0")
+  final def compare(that: A): Int = compareTo(that)
 
   /** Returns true if `this` is less than `that`
     */
@@ -85,14 +86,10 @@ trait Ordered[A] extends Any with java.lang.Comparable[A] {
   /** Returns true if `this` is greater than or equal to `that`.
     */
   def >= (that: A): Boolean = (this compare that) >= 0
-
-  /** Result of comparing `this` with operand `that`.
-    */
-  def compareTo(that: A): Int = compare(that)
 }
 
 object Ordered {
   /** Lens from `Ordering[T]` to `Ordered[T]` */
   implicit def orderingToOrdered[T](x: T)(implicit ord: Ordering[T]): Ordered[T] =
-    new Ordered[T] { def compare(that: T): Int = ord.compare(x, that) }
+    new Ordered[T] { def compareTo(that: T): Int = ord.compare(x, that) }
 }

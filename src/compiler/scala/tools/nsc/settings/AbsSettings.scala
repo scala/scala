@@ -113,7 +113,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     def isForDebug   = name endsWith "-debug" // by convention, i.e. -Ytyper-debug
     def isDeprecated = deprecationMessage.isDefined
 
-    def compare(that: Setting): Int = name compare that.name
+    def compareTo(that: Setting): Int = name compareTo that.name
 
     /** Equality tries to sidestep all the drama and define it simply and
      *  in one place: two AbsSetting objects are equal if their names and

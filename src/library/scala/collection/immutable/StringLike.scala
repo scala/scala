@@ -70,7 +70,7 @@ self =>
     buf.toString
   }
 
-  override def compare(other: String) = toString compareTo other
+  def compareTo(other: String) = toString compareTo other
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
