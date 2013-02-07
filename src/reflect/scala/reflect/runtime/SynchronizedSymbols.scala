@@ -6,14 +6,11 @@ import scala.reflect.io.AbstractFile
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
-  // we can keep this lock fine-grained, because nextId is just a simple increment, which makes deadlocks impossible
-  private lazy val nextIdLock = new Object
-  override protected def nextId() = nextIdLock.synchronized { super.nextId() }
+  private lazy val atomicIds = new java.util.concurrent.atomic.AtomicInteger(0)
+  override protected def nextId() = atomicIds.incrementAndGet()
 
-  // we can keep this lock fine-grained, because freshExistentialName is just a simple increment, which makes deadlocks impossible
-  private lazy val freshExistentialNameLock = new Object
-  override protected def freshExistentialName(suffix: String) =
-    freshExistentialNameLock.synchronized { super.freshExistentialName(suffix) }
+  private lazy val atomicExistentialIds = new java.util.concurrent.atomic.AtomicInteger(0)
+  override protected def nextExistentialId() = atomicExistentialIds.incrementAndGet()
 
   // Set the fields which point companions at one another.  Returns the module.
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =

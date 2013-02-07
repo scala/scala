@@ -32,11 +32,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = immutable.Map.empty[Symbol, Int]
 
-  private var nextexid = 0
-  protected def freshExistentialName(suffix: String) = {
-    nextexid += 1
-    newTypeName("_" + nextexid + suffix)
-  }
+  private var existentialIds = 0
+  protected def nextExistentialId() = { existentialIds += 1; existentialIds }
+  protected def freshExistentialName(suffix: String) = newTypeName("_" + nextExistentialId() + suffix)
 
   // Set the fields which point companions at one another.  Returns the module.
   def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol = {

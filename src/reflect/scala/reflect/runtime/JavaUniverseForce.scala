@@ -42,8 +42,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     // inaccessible: this._glbResults
     // inaccessible: this._indent
     // inaccessible: this._tostringRecursions
-    // inaccessible: this.nextIdLock
-    // inaccessible: this.freshExistentialNameLock
+    // inaccessible: this.atomicIds
+    // inaccessible: this.atomicExistentialIds
     // inaccessible: this.mirrors
     this.rootMirror
     this.treeBuild
