@@ -26,7 +26,7 @@ import scala.reflect.internal.util.Collections._
 
 private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
-  private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
+  lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
   private def createMirror(owner: Symbol, cl: ClassLoader): Mirror = {
     val jm = new JavaMirror(owner, cl)
@@ -67,6 +67,18 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     override lazy val RootClass = new RootClass with SynchronizedModuleClassSymbol
     override lazy val EmptyPackage = new EmptyPackage with SynchronizedTermSymbol
     override lazy val EmptyPackageClass = new EmptyPackageClass with SynchronizedModuleClassSymbol
+
+    override def init() = {
+      super.init()
+
+      // see an explanation of this in JavaUniverse.init()
+      RootPackage
+      RootClass
+      EmptyPackage
+      EmptyPackageClass
+      unpickler
+      rootLoader
+    }
 
     /** The lazy type for root.
      */

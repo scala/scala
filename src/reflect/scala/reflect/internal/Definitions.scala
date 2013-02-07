@@ -1189,7 +1189,7 @@ trait Definitions extends api.StandardDefinitions {
     /** Is the symbol that of a parent which is added during parsing? */
     lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
 
-    private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
+    lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
 
     /** Is symbol a value class? */
     def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym

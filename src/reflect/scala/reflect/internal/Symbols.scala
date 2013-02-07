@@ -108,7 +108,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def setter: Symbol = setter(owner)
   }
 
-  private[Symbols] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
+  case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
 
   /** The class for all symbols */
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
