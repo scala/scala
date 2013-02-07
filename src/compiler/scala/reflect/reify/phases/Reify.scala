@@ -28,7 +28,10 @@ trait Reify extends GenSymbols
       finally currents = currents.tail
     }
   }
-  def currentQuantified = flatCollect(reifyStack.currents)({ case ExistentialType(quantified, _) => quantified })
+  def boundSymbolsInCallstack = flatCollect(reifyStack.currents) {
+    case ExistentialType(quantified, _) => quantified
+    case PolyType(typeParams, _) => typeParams
+  }
   def current = reifyStack.currents.head
   def currents = reifyStack.currents
 

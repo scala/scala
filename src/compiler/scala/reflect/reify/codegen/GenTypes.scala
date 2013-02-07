@@ -69,8 +69,7 @@ trait GenTypes {
   def reificationIsConcrete: Boolean = state.reificationIsConcrete
 
   def spliceType(tpe: Type): Tree = {
-    val quantified = currentQuantified
-    if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
+    if (tpe.isSpliceable && !(boundSymbolsInCallstack contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)
 
       val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.WeakTypeTag.toString
