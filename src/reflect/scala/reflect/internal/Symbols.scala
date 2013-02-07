@@ -110,10 +110,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       children
     }
 
+    def selfType = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      typeOfThis
+    }
+
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
-    def selfType: Type                    = typeOfThis
     def typeSignature: Type               = { fullyInitializeSymbol(this); info }
     def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
 
