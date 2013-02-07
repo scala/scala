@@ -225,7 +225,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** Called from parser, which signals hereby that a method definition has been parsed.
    */
   override def signalParseProgress(pos: Position) {
-    checkForMoreWork(pos)
+    // We only want to be interruptible when running on the PC thread.
+    if(onCompilerThread) {
+      checkForMoreWork(pos)
+    }
   }
 
   /** Called from typechecker, which signals hereby that a node has been completely typechecked.
@@ -447,7 +450,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   @elidable(elidable.WARNING)
   override def assertCorrectThread() {
-    assert(initializing || (Thread.currentThread() eq compileRunner),
+    assert(initializing || onCompilerThread,
         "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
         " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
   }
