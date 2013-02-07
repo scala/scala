@@ -38,7 +38,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
   protected class DefaultPosAssigner extends PosAssigner {
     var pos: Position = _
     override def traverse(t: Tree) {
-      if (!t.canHaveAttrs) ()
+      if (t eq EmptyTree) ()
       else if (t.pos == NoPosition) {
         t.setPos(pos)
         super.traverse(t)   // TODO: bug? shouldn't the traverse be outside of the if?

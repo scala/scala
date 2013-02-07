@@ -59,6 +59,8 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def flagsFromBits(bits: Long): FlagSet
 
+    def emptyValDef: ValDef
+
     def This(sym: Symbol): Tree
 
     def Select(qualifier: Tree, sym: Symbol): Select

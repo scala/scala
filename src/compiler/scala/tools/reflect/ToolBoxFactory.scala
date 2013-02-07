@@ -230,6 +230,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                   emptyValDef,
                   NoMods,
                   List(),
+                  List(List()),
                   List(methdef),
                   NoPosition))
           trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymkinds.value))

@@ -205,26 +205,20 @@ abstract class TreeBuilder {
    */
   def makeAnonymousNew(stats: List[Tree]): Tree = {
     val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
-    makeNew(Nil, emptyValDef, stats1, NoPosition, NoPosition)
+    makeNew(Nil, emptyValDef, stats1, ListOfNil, NoPosition, NoPosition)
   }
 
   /** Create positioned tree representing an object creation <new parents { stats }
    *  @param npos  the position of the new
    *  @param cpos  the position of the anonymous class starting with parents
    */
-  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree],
+  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]],
               npos: Position, cpos: Position): Tree =
     if (parents.isEmpty)
-      makeNew(List(scalaAnyRefConstr), self, stats, npos, cpos)
-    else if (parents.tail.isEmpty && stats.isEmpty) {
-      // `Parsers.template` no longer differentiates tpts and their argss
-      // e.g. `C()` will be represented as a single tree Apply(Ident(C), Nil)
-      // instead of parents = Ident(C), argss = Nil as before
-      // this change works great for things that are actually templates
-      // but in this degenerate case we need to perform postprocessing
-      val app = treeInfo.dissectApplied(parents.head)
-      atPos(npos union cpos) { New(app.callee, app.argss) }
-    } else {
+      makeNew(List(scalaAnyRefConstr), self, stats, argss, npos, cpos)
+    else if (parents.tail.isEmpty && stats.isEmpty)
+      atPos(npos union cpos) { New(parents.head, argss) }
+    else {
       val x = tpnme.ANON_CLASS_NAME
       atPos(npos union cpos) {
         Block(
@@ -232,12 +226,12 @@ abstract class TreeBuilder {
             atPos(cpos) {
               ClassDef(
                 Modifiers(FINAL), x, Nil,
-                Template(parents, self, NoMods, ListOfNil, stats, cpos.focus))
+                Template(parents, self, NoMods, ListOfNil, argss, stats, cpos.focus))
             }),
           atPos(npos) {
             New(
               Ident(x) setPos npos.focus,
-              Nil)
+              ListOfNil)
           }
         )
       }
