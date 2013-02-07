@@ -127,6 +127,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def setter: Symbol = setter(owner)
   }
 
+  private[Symbols] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
+
   /** The class for all symbols */
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
           extends SymbolContextApiImpl
@@ -2393,7 +2395,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
 
-    private case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
     private def symbolKind: SymbolKind = {
       var kind =
         if (isTermMacro) ("term macro", "macro method", "MACM")
