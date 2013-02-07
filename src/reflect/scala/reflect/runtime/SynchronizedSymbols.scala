@@ -3,6 +3,7 @@ package reflect
 package runtime
 
 import scala.reflect.io.AbstractFile
+import scala.collection.{ immutable, mutable }
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
@@ -11,6 +12,10 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   private lazy val atomicExistentialIds = new java.util.concurrent.atomic.AtomicInteger(0)
   override protected def nextExistentialId() = atomicExistentialIds.incrementAndGet()
+
+  private lazy val _recursionTable = mkThreadLocalStorage(immutable.Map.empty[Symbol, Int])
+  override def recursionTable = _recursionTable.get
+  override def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable.set(value)
 
   // Set the fields which point companions at one another.  Returns the module.
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =

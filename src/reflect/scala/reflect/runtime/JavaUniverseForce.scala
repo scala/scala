@@ -44,6 +44,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     // inaccessible: this._tostringRecursions
     // inaccessible: this.atomicIds
     // inaccessible: this.atomicExistentialIds
+    // inaccessible: this._recursionTable
     // inaccessible: this.mirrors
     this.rootMirror
     this.treeBuild
