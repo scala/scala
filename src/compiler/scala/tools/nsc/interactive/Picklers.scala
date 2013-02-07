@@ -165,6 +165,11 @@ trait Picklers { self: Global =>
       .wrapped { case sym ~ source => new AskLinkPosItem(sym, source, new Response) } { item => item.sym ~ item.source }
       .asClass (classOf[AskLinkPosItem])
 
+  implicit def askDocCommentItem: CondPickler[AskDocCommentItem] =
+    (pkl[Symbol] ~ pkl[Symbol] ~ pkl[SourceFile])
+      .wrapped { case sym ~ site ~ source => new AskDocCommentItem(sym, site, source, new Response) } { item => item.sym ~ item.site ~ item.source }
+      .asClass (classOf[AskDocCommentItem])
+
   implicit def askLoadedTypedItem: CondPickler[AskLoadedTypedItem] =
     pkl[SourceFile]
       .wrapped { source => new AskLoadedTypedItem(source, new Response) } { _.source }
@@ -182,5 +187,5 @@ trait Picklers { self: Global =>
 
   implicit def action: Pickler[() => Unit] =
     reloadItem | askTypeAtItem | askTypeItem | askTypeCompletionItem | askScopeCompletionItem |
-    askToDoFirstItem | askLinkPosItem | askLoadedTypedItem | askParsedEnteredItem | emptyAction
+    askToDoFirstItem | askLinkPosItem | askDocCommentItem | askLoadedTypedItem | askParsedEnteredItem | emptyAction
 }
