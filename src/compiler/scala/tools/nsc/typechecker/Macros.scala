@@ -333,9 +333,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       def param(tree: Tree): Symbol =
         paramCache.getOrElseUpdate(tree.symbol, {
           val sym = tree.symbol
-          val sigParam = makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe))
-          if (sym.isSynthetic) sigParam.flags |= SYNTHETIC
-          sigParam
+          val ValDef(mods, _, _, _) = tree
+          val flags = sym.flags | (mods.flags & SYNTHETIC)
+          makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe), flags)
         })
 
       val paramss = List(ctxParam) :: mmap(vparamss)(param)
