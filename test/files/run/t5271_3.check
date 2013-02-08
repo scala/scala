@@ -15,7 +15,7 @@
     }
   };
   val c = C.apply(2, 2);
-  scala.this.Predef.println(c.foo.$times(c.bar).$eq$eq(C.qwe))
+  Predef.println(c.foo.$times(c.bar).$eq$eq(C.qwe))
 }
 true
 ()

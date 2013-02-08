@@ -1,1 +1,2 @@
-List(2)
+reflective toolbox has failed:
+unresolved free type variables (namely: C defined by <local Test> in reify_newimpl_30.scala:7:11). have you forgot to use TypeTag annotations for type parameters external to a reifee? if you have troubles tracking free type variables, consider using -Xlog-free-types

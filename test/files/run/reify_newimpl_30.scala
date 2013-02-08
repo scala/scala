@@ -1,5 +1,5 @@
 import scala.reflect.runtime.universe._
-import scala.tools.reflect.ToolBox
+import scala.tools.reflect.{ ToolBox, ToolBoxError }
 import scala.tools.reflect.Eval
 
 object Test extends App {
@@ -9,7 +9,8 @@ object Test extends App {
       val code = reify {
         List[C#T](2)
       }
-      println(code.eval)
+      try { println(code.eval) }
+      catch { case e: ToolBoxError => println(e.getMessage) }
     }
 
     new C

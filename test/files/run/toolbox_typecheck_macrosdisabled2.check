@@ -19,7 +19,7 @@
       def apply[U <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Tree = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-        $u.Apply.apply($u.Select.apply($u.Select.apply($u.build.Ident($m.staticPackage("scala")), $u.newTermName("Array")), $u.newTermName("apply")), scala.collection.immutable.List.apply[$u.Literal]($u.Literal.apply($u.Constant.apply(2))))
+        $u.Apply.apply($u.Select.apply($u.build.Ident($m.staticModule("scala.Array")), $u.newTermName("apply")), scala.collection.immutable.List.apply[$u.Literal]($u.Literal.apply($u.Constant.apply(2))))
       }
     };
     new $treecreator1()
