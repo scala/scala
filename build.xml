@@ -2656,11 +2656,11 @@ Binary compatibility testing
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
-      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.4"/>
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5-SNAPSHOT"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
-      <dependency groupId="org.scala-lang" artifactId="scala-library" version="2.10.0-RC2"/>
-      <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="2.10.0-RC2"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-library" version="2.10.0"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="2.10.0"/>
     </artifact:dependencies>
   </target>
 
@@ -2673,6 +2673,9 @@ Binary compatibility testing
          <arg value="${org.scala-lang:scala-library:jar}"/>
          <arg value="--curr"/>
          <arg value="${build-pack.dir}/lib/scala-library.jar"/>
+         <arg value="--filters"/>
+         <arg value="${basedir}/bincompat-backward.whitelist.conf"/>
+         <arg value="--generate-filters"/>
          <classpath>
            <path refid="mima.classpath"/>
          </classpath>
@@ -2685,6 +2688,39 @@ Binary compatibility testing
          <arg value="${org.scala-lang:scala-reflect:jar}"/>
          <arg value="--curr"/>
          <arg value="${build-pack.dir}/lib/scala-reflect.jar"/>
+         <arg value="--filters"/>
+         <arg value="${basedir}/bincompat-backward.whitelist.conf"/>
+         <arg value="--generate-filters"/>
+         <classpath>
+           <path refid="mima.classpath"/>
+         </classpath>
+    </java>
+    <java
+       fork="true"
+       failonerror="true"
+       classname="com.typesafe.tools.mima.cli.Main">
+         <arg value="--curr"/>
+         <arg value="${org.scala-lang:scala-library:jar}"/>
+         <arg value="--prev"/>
+         <arg value="${build-pack.dir}/lib/scala-library.jar"/>
+         <arg value="--filters"/>
+         <arg value="${basedir}/bincompat-forward.whitelist.conf"/>
+         <arg value="--generate-filters"/>
+         <classpath>
+           <path refid="mima.classpath"/>
+         </classpath>
+    </java>
+    <java
+       fork="true"
+       failonerror="true"
+       classname="com.typesafe.tools.mima.cli.Main">
+         <arg value="--curr"/>
+         <arg value="${org.scala-lang:scala-reflect:jar}"/>
+         <arg value="--prev"/>
+         <arg value="${build-pack.dir}/lib/scala-reflect.jar"/>
+         <arg value="--filters"/>
+         <arg value="${basedir}/bincompat-forward.whitelist.conf"/>
+         <arg value="--generate-filters"/>
          <classpath>
            <path refid="mima.classpath"/>
          </classpath>
