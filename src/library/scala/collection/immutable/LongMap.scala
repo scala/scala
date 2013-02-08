@@ -12,6 +12,7 @@ package immutable
 
 import scala.collection.generic.{ CanBuildFrom, BitOperations }
 import scala.collection.mutable.{ Builder, MapBuilder }
+import scala.annotation.tailrec
 
 /** Utility class for long maps.
  *  @author David MacIver
@@ -416,5 +417,20 @@ extends AbstractMap[Long, T]
 
   def ++[S >: T](that: LongMap[S]) =
     this.unionWith[S](that, (key, x, y) => y)
+
+  @tailrec
+  final def firstKey: Long = this match {
+    case LongMap.Bin(_, _, l, r) => l.firstKey
+    case LongMap.Tip(k, v) => k
+    case LongMap.Nil => sys.error("Empty set")
+  }
+
+  @tailrec
+  final def lastKey: Long = this match {
+    case LongMap.Bin(_, _, l, r) => r.lastKey
+    case LongMap.Tip(k , v) => k
+    case LongMap.Nil => sys.error("Empty set")
+  }
+
 }
 
