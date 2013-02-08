@@ -38,6 +38,7 @@ abstract class SymbolTable extends macros.Universe
                               with StdAttachments
                               with StdCreators
                               with BuildUtils
+                              with PrivateWithin
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
