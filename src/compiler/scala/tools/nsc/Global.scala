@@ -1193,13 +1193,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Collects for certain classes of warnings during this run. */
   class ConditionalWarning(what: String, option: Settings#BooleanSetting) {
-    val warnings = new mutable.ListBuffer[(Position, String)]
+    val warnings = mutable.LinkedHashMap[Position, String]()
     def warn(pos: Position, msg: String) =
       if (option.value) reporter.warning(pos, msg)
-      else warnings += ((pos, msg))
+      else if (!(warnings contains pos)) warnings += ((pos, msg))
     def summarize() =
       if (option.isDefault && warnings.nonEmpty)
-        reporter.warning(NoPosition, "there were %d %s warnings; re-run with %s for details".format(warnings.size, what, option.name))
+        reporter.warning(NoPosition, "there were %d %s warning(s); re-run with %s for details".format(warnings.size, what, option.name))
   }
 
   def newUnitParser(code: String)      = new syntaxAnalyzer.UnitParser(newCompilationUnit(code))
