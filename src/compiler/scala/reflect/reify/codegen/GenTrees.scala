@@ -153,10 +153,12 @@ trait GenTrees {
         else mirrorCall(nme.Ident, reify(name))
 
       case Select(qual, name) =>
-        if (sym == NoSymbol || sym.name == name)
-          reifyProduct(tree)
-        else
-          reifyProduct(Select(qual, sym.name))
+        if (qual.symbol != null && qual.symbol.isPackage) {
+          mirrorBuildCall(nme.Ident, reify(sym))
+        } else {
+          val effectiveName = if (sym != null && sym != NoSymbol) sym.name else name
+          reifyProduct(Select(qual, effectiveName))
+        }
 
       case _ =>
         throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
@@ -197,7 +199,7 @@ trait GenTrees {
           }
         }
         else tree match {
-          case Select(qual, name) if !qual.symbol.isPackage && !qual.symbol.isPackageObject && qual.symbol != definitions.PredefModule =>
+          case Select(qual, name) if !qual.symbol.isPackage =>
             if (reifyDebug) println(s"reifying Select($qual, $name)")
             mirrorCall(nme.Select, reify(qual), reify(name))
           case SelectFromTypeTree(qual, name) =>

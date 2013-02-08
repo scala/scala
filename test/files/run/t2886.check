@@ -1,4 +1,4 @@
-((x: String) => {
+((x: Predef.String) => {
   val x$1 = x;
   val x$2 = x;
   Test.this.test(x$2, x$1)
