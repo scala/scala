@@ -274,7 +274,7 @@ class Flags extends ModifierFlags {
    *  from Modifiers.  Others which may be applied at creation time are:
    *  SYNTHETIC.
    */
-  final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
+  final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM | STABLE
   final val BeanPropertyFlags   = DEFERRED | OVERRIDE | STATIC
   final val VarianceFlags       = COVARIANT | CONTRAVARIANT
 

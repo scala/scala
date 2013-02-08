@@ -1,2 +1,2 @@
-Apply(Select(New(AppliedTypeTree(Ident(scala.collection.immutable.HashMap#<id>), List(Ident(newTypeName("String")#<id>), Ident(newTypeName("String")#<id>)))), nme.CONSTRUCTOR), List())
-Apply(Select(New(AppliedTypeTree(Ident(scala.collection.mutable.HashMap#<id>), List(Ident(newTypeName("String")#<id>), Ident(newTypeName("String")#<id>)))), nme.CONSTRUCTOR), List())
+Apply(Select(New(AppliedTypeTree(Ident(scala.collection.immutable.HashMap#<id>), List(Select(Ident(scala.Predef#<id>), newTypeName("String")), Select(Ident(scala.Predef#<id>), newTypeName("String"))))), nme.CONSTRUCTOR), List())
+Apply(Select(New(AppliedTypeTree(Ident(scala.collection.mutable.HashMap#<id>), List(Select(Ident(scala.Predef#<id>), newTypeName("String")), Select(Ident(scala.Predef#<id>), newTypeName("String"))))), nme.CONSTRUCTOR), List())
