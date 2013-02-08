@@ -4698,23 +4698,39 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
 
-    override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
-      object trans extends TypeMapTransformer {
+    object mapTreeSymbols extends TypeMapTransformer {
+      val strictCopy = newStrictTreeCopier
 
-        def termMapsTo(sym: Symbol) = from indexOf sym match {
-          case -1   => None
-          case idx  => Some(to(idx))
-        }
+      def termMapsTo(sym: Symbol) = from indexOf sym match {
+        case -1   => None
+        case idx  => Some(to(idx))
+      }
 
-        override def transform(tree: Tree) = {
-          termMapsTo(tree.symbol) match {
-            case Some(tosym) => tree.symbol = tosym
-            case None => ()
-          }
-          super.transform(tree)
+      // if tree.symbol is mapped to another symbol, passes the new symbol into the
+      // constructor `trans` and sets the symbol and the type on the resulting tree.
+      def transformIfMapped(tree: Tree)(trans: Symbol => Tree) = termMapsTo(tree.symbol) match {
+        case Some(toSym) => trans(toSym) setSymbol toSym setType tree.tpe
+        case None => tree
+      }
+
+      // changes trees which refer to one of the mapped symbols. trees are copied before attributes are modified.
+      override def transform(tree: Tree) = {
+        // super.transform maps symbol references in the types of `tree`. it also copies trees where necessary.
+        super.transform(tree) match {
+          case id @ Ident(_) =>
+            transformIfMapped(id)(toSym =>
+              strictCopy.Ident(id, toSym.name))
+
+          case sel @ Select(qual, name) =>
+            transformIfMapped(sel)(toSym =>
+              strictCopy.Select(sel, qual, toSym.name))
+
+          case tree => tree
         }
       }
-      trans.transform(tree)
+    }
+    override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
+      mapTreeSymbols.transform(tree)
     }
   }
 
