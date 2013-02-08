@@ -586,9 +586,9 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
      *  Functions on types are also implemented as PolyTypes.
      *
-     *  Example: (in the below, <List> is the type constructor of List)
-     *    TypeRef(pre, <List>, List()) is replaced by
-     *    PolyType(X, TypeRef(pre, <List>, List(X)))
+     *  Example: (in the below, `<List>` is the type constructor of List)
+     *    TypeRef(pre, `<List>`, List()) is replaced by
+     *    PolyType(X, TypeRef(pre, `<List>`, List(X)))
      */
     def normalize = this // @MAT
 
@@ -4972,6 +4972,51 @@ trait Types extends api.Types { self: SymbolTable =>
         mapOver(tp)
       }
     }
+  }
+
+  /**
+   * A more persistent version of `Type#memberType` which does not require
+   * that the symbol is a direct member of the prefix.
+   *
+   * For instance:
+   *
+   * {{{
+   * class C[T] {
+   *   sealed trait F[A]
+   *   object X {
+   *     object S1 extends F[T]
+   *   }
+   *   class S2 extends F[T]
+   * }
+   * object O extends C[Int] {
+   *   def foo(f: F[Int]) = f match {...} // need to enumerate sealed subtypes of the scrutinee here.
+   * }
+   * class S3 extends O.F[String]
+   *
+   * nestedMemberType(<S1>, <O.type>, <C>) = O.X.S1.type
+   * nestedMemberType(<S2>, <O.type>, <C>) = O.S2.type
+   * nestedMemberType(<S3>, <O.type>, <C>) = S3.type
+   * }}}
+   *
+   * @param sym    The symbol of the subtype
+   * @param pre    The prefix from which the symbol is seen
+   * @param owner
+   */
+  def nestedMemberType(sym: Symbol, pre: Type, owner: Symbol): Type = {
+    def loop(tp: Type): Type =
+      if (tp.isTrivial) tp
+      else if (tp.prefix.typeSymbol isNonBottomSubClass owner) {
+        val widened = tp match {
+          case _: ConstantType => tp        // Java enum constants: don't widen to the enum type!
+          case _               => tp.widen  // C.X.type widens to C.this.X.type, otherwise `tp asSeenFrom (pre, C)` has no effect.
+        }
+        widened asSeenFrom (pre, tp.typeSymbol.owner)
+      }
+      else loop(tp.prefix) memberType tp.typeSymbol
+
+    val result = loop(sym.tpeHK)
+    assert(sym.isTerm || result.typeSymbol == sym, s"($result).typeSymbol = ${result.typeSymbol}; expected ${sym}")
+    result
   }
 
   /** The most deeply nested owner that contains all the symbols
