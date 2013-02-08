@@ -62,13 +62,6 @@ class C4 extends C({
   object Nested { def xx = x}
   Nested.xx
 })
-class C5 extends C({
-  def x = "".toString
-  val y = {
-    object Nested { def xx = x}
-    Nested.xx
-  }
-})
 
 // okay, for same reason as O6
 class C6 extends C({
@@ -114,19 +107,15 @@ class C14(a: Any) {
   }
 }
 
-class C15(a: Any) {
-  def this() = {
-    this({
-      def x = "".toString
-      val y = {
-        object Nested { def xx = x}
-        Nested.xx
-      }
-    })
-  }
-}
-
 class COuter extends C({
   def foo = 0
   class CInner extends C({foo})
 })
+
+
+class CEarly(a: Any) extends {
+  val early = {def x = "".toString
+    object Nested { def xx = x}
+    Nested.xx
+  }
+} with AnyRef 
