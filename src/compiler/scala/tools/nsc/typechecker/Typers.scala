@@ -4483,11 +4483,12 @@ trait Typers extends Modes with Adaptations with Tags {
           
           // 1st try: a script call
           
-          val underscored_fun = atPos(fun.pos) {fun match {
+          val underscored_fun = fun match {
             case Ident(name) => {Ident(underscore_name(name))}
             case Select(qual, selector) =>  Select(qual, underscore_name(selector))
-          }}
-          silent(op => op.typed(underscored_fun, forFunMode(mode), funpt),
+            case _ => null
+          }
+          if (underscored_fun != null) silent(op => op.typed(atPos(fun.pos) {underscored_fun}, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                  if ((mode & EXPRmode) != 0) tree  else context.tree) match {
             case SilentTypeError  (err)  => err_scriptResolution = err

@@ -1,4 +1,4 @@
-//package life
+package life
 
 import scala.swing._
 import scala.swing.event._
@@ -58,13 +58,13 @@ class BasicLifeFrameApplication extends SimpleSubscriptApplication {
   def  minSpeed = speedSlider.min
   def  maxSpeed = speedSlider.max
   def  speed    = speedSlider.value
-  def setSpeed(s: Int) {
+  def setSpeedValue(s: Int) {
     speedLabel.text = "Speed: " + s
     speedSlider.value = s  
   }
   def digit2Speed(c: Char) = if (c=='0') maxSpeed else minSpeed+(c-'1')
   
-  setSpeed(7)
+  setSpeedValue(7)
   
   override def _live = _script(this, 'live) {_threaded0{Thread.sleep(34567)}}
   override def  live = _execute(_live)

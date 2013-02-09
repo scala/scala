@@ -1,4 +1,4 @@
-//package life
+package life
 
 import scala.math._
 import scala.swing._
@@ -50,36 +50,38 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
      }
      def doMouseDrag (e: MouseEvent): Unit = board.mouseDragToggle(e)
     
-   implicit def script..
-	  key(c: Char     ??) =  key(top, c)  //key(top, c??) // TBD in subscript-scalac parser: recognize the ??
-	 vkey(k: Key.Value??) = vkey(top, k) //vkey(top, k??)
+     def chr(c:Any) = c.asInstanceOf[Int].toChar
+     
+  implicit def script..
+    key(c??: Char     ) =  key2(top, c)  //key(top, c??) // TBD in subscript-scalac parser: recognize the ??
+   vkey(k??: Key.Value) = vkey2(top, k) //vkey(top, k??)
 
-   def script..
+def script..
 	 randomizeCommand  = randomizeButton + 'r'
 	     clearCommand  =     clearButton + 'c'
 	      stepCommand  =      stepButton + ' '
-	      exitCommand  =      exitButton + windowClosing
+	      exitCommand  =      exitButton + windowClosing(top)
 	multiStepStartCmd  =     startButton + Key.Enter
 	 multiStepStopCmd  =      stopButton + Key.Enter
 	
-	exit               =   exitCommand var r:Boolean=false @gui: {r=confirmExit} while (!r)
+	doExit             =   exitCommand var r:Boolean=false @gui: {r=confirmExit} while (!r)
 	
-       boardControl    = ...; (..singleStep) multiStep || clear || randomize
+       boardControl    = ...; (..singleStep) multiStep || noise || clear || randomize
 
-      do1Step          = {*board.calculateGeneration*} @gui: {!board.repaint!}
+      do1Step          = {*board.calculateGeneration*} @gui: {!board.validate!}
       
       noise            = 'n'; ... @gui: board.doRandomize {*sleep*}
-      randomize        =   randomizeCommand @gui: {!board.doRandomize!}
+      randomize        =   randomizeCommand @gui: {!board.doRandomize()!}
       clear            =       clearCommand @gui: {!board.doClear!}
       singleStep       =        stepCommand do1Step
-       multiStep       = multiStepStartCmd; ...do1Step {*sleep*} / multiStepStopCmd
+       multiStep       = multiStepStartCmd; ... do1Step {*sleep*} / multiStepStopCmd
 
       speedControl     = ...; speedKeyInput + speedButtonInput + speedSliderInput
                     
-    setSpeed(s: Int)   = @gui: {!setSpeed(s)!}
+    setSpeed(s: Int)   = @gui: {!setSpeedValue(s)!}
 
       speedKeyInput    = times(10) 
-                       + val c=(here.pass_up1+'0').toChar key,c setSpeed(digit2Speed(c))
+                       + val c:Any=(pass_up1(here)+'0') key(chr(c)) setSpeed(digit2Speed(chr(c))) // TBD: make here an implicit parameter
                               
    speedButtonInput = if (speed>minSpeed) speedDecButton
                     + if (speed<maxSpeed) speedIncButton
@@ -97,10 +99,11 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
     mousePressInput = mousePresses  (board, (e: MouseEvent) => doMouseDown(e))
     mouseDragInput  = mouseDraggings(board, (e: MouseEvent) => doMouseDrag(e))  
 
+override def script..
     live            = boardControl 
                    || mouseInput 
                    || speedControl  
-                   || exit
+                   || doExit
                    
   /* the subscript code above had manually been compiled into Scala:
    * 

@@ -1,4 +1,4 @@
-//package life
+package life
 
 import java.awt.{Graphics, Image}
 import java.awt.image.{BufferedImage}

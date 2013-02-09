@@ -223,7 +223,7 @@ object Scripts {
    stateChange(slider: Slider)                   = event(SliderStateChangedScriptReactor[N_code_eh](slider))
    clicked(b:Button)                             = event(           ClickedScriptReactor[N_code_eh](b))
 
- def script ..
+ def script ..   // TBD: uncomment /*@gui:*/ and make it compile
   event     (r:ScriptReactor[N_code_eh     ])                           =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {.     .}
   event_loop(r:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {... ...}
        anyEvent(comp: Component)                        = event(          AnyEventScriptReactor[N_code_eh](comp))                                                    

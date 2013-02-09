@@ -1703,6 +1703,8 @@ self =>
  
     case class ScriptOpInfo(operand: Tree, operatorName: Name, offset: Offset, length: Int)
     
+    var areSpacesCommas              = false
+    var areNewLinesSpecialSeparators = false
     def scriptExpr(location: Int): Tree = {
  
       var scriptOperatorStack: List[ScriptOpInfo] = Nil
@@ -1742,8 +1744,10 @@ self =>
         }
       }
 
-      var areSpacesCommas              = false
-      var areNewLinesSpecialSeparators = false
+      var savedAreSpacesCommas              = areSpacesCommas
+      var savedAreNewLinesSpecialSeparators = areNewLinesSpecialSeparators
+      areSpacesCommas              = false
+      areNewLinesSpecialSeparators = false
       // prefix ops...
       if      (in.token == COMMA ) {areSpacesCommas = true; in.nextToken()}
       else if (isSubScriptInfixOp(in)) {polishOp1 = in.name; in.nextToken()}
@@ -1751,7 +1755,7 @@ self =>
       
       var moreTerms = true
       do {
-        top = scriptSpaceExpression(areSpacesCommas, areNewLinesSpecialSeparators)
+        top = scriptSpaceExpression()
         //if (!areNewLinesSpecialSeparators) eatNewlines()
         if (isSubScriptInfixOp(in, areNewLinesSpecialSeparators)) {
            reduceScriptOperatorStack(subScriptInfixOpPrecedence(operatorName(in)))
@@ -1770,7 +1774,12 @@ self =>
 	  
 	  val   spaceOp: Name = if (polishOp1!=null) polishOp1 else SEMI_Name
       val newlineOp: Name = if (polishOp1!=null) polishOp1 else spaceOp
-	  replaceOperatorsByFunctions(top, spaceOp, newlineOp)
+	  val result = replaceOperatorsByFunctions(top, spaceOp, newlineOp)
+      
+      areSpacesCommas              = savedAreSpacesCommas
+      areNewLinesSpecialSeparators = savedAreNewLinesSpecialSeparators
+      
+      result
     }
     
     def replaceOperatorsByFunctions(top: Tree, spaceOp: Name, newlineOp: Name): Tree = {
@@ -1784,11 +1793,11 @@ self =>
     }
     
     
-    def scriptSpaceExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
+    def scriptSpaceExpression(): Tree = {
       val ts  = new ListBuffer[Tree]
       var moreTerms = true
       do  {
-        ts += scriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)
+        ts += scriptTerm()
         //if (!areNewLinesSpecialSeparators) eatNewlines()
         if (areSpacesCommas 
         || !isSubScriptTermStarter(in)
@@ -1839,7 +1848,7 @@ self =>
   unaryPostfixOperator    =+ "*"  "**"
  */
 
-    def scriptCommaExpression(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean, isNegated: Boolean): Tree = {
+    def scriptCommaExpression(isNegated: Boolean): Tree = {
       val oldOffset = in.offset
       val ts  = new ListBuffer[Tree]
       var moreTerms = true
@@ -1867,11 +1876,11 @@ self =>
     }
 
 
-    def scriptTerm(areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = (in.token: @scala.annotation.switch) match {
+    def scriptTerm(): Tree = (in.token: @scala.annotation.switch) match {
       case VAL     => scriptLocalValOrVar((NoMods                ) withPosition(VAL , tokenRange(in)))
       case VAR     => scriptLocalValOrVar((NoMods | Flags.MUTABLE) withPosition(VAR , tokenRange(in)))
       case PRIVATE => ??? // TBD
-      case _       => unaryPostfixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)
+      case _       => unaryPostfixScriptTerm()
     }
     def scriptLocalValOrVar(mods: Modifiers): Tree = {
       val pos = in.offset
@@ -1918,8 +1927,8 @@ self =>
       }
     }
 
-    def unaryPostfixScriptTerm (areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = {
-      var result = unaryPrefixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)
+    def unaryPostfixScriptTerm (): Tree = {
+      var result = unaryPrefixScriptTerm()
       while (isSubScriptUnaryPostfixOp(in)) {
         result = atPos(in.offset) {
           val name = nme.toUnaryName(rawIdent().toTermName)
@@ -1930,7 +1939,7 @@ self =>
       result
     }
     
-    def unaryPrefixScriptTerm (areSpacesCommas: Boolean, areNewLinesSpecialSeparators: Boolean): Tree = 
+    def unaryPrefixScriptTerm (): Tree = 
       if (isSubScriptUnaryPrefixOp(in)) {
         val oldOffset = in.offset
         val name = in.name
@@ -1938,10 +1947,10 @@ self =>
         in.nextToken
         atPos(in.offset) {
           if (name == nme.UNARY_- && isNumericLit && in.offset==oldOffset+1) {
-            scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators, isNegated = true)
+            scriptCommaExpression(isNegated = true)
           }
           else {
-            Select(stripParens(unaryPrefixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators)), name)
+            Select(stripParens(unaryPrefixScriptTerm()), name)
           }
         }
       }
@@ -1951,14 +1960,14 @@ self =>
           atPos(in.skipToken()) {
             val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
             val annotationCode = simpleNativeValueExpr(allowBraces = true); accept(COLON)
-            val body           = stripParens(unaryPrefixScriptTerm(areSpacesCommas, areNewLinesSpecialSeparators))
+            val body           = stripParens(unaryPrefixScriptTerm())
             
             val applyAnnotationCode = Apply(dslFunFor(AT), List(blockToFunction_there(annotationCode, vmNodeOf(body), startPos)))
             Apply(applyAnnotationCode, List(body))
           }
         }
         parseAnnotation
-      case _ => scriptCommaExpression(areSpacesCommas, areNewLinesSpecialSeparators, isNegated = false)
+      case _ => scriptCommaExpression(isNegated = false)
     }
     
     /*
@@ -2041,10 +2050,10 @@ self =>
         def parseIf = atPos(in.skipToken()) {
           val startPos = r2p(in.offset, in.offset, in.lastOffset max in.offset)
           val cond  = simpleNativeValueExpr()
-          val thenp = scriptExpr()
+          val thenp = scriptTerm()
           if (in.token == ELSE) {
                in.nextToken(); 
-               val elsep = scriptExpr()
+               val elsep = scriptTerm()
                Apply(Apply(dslFunFor(ELSE), List(blockToFunction_here(cond, vmNodeFor(ELSE), startPos))),List(thenp, elsep))
           }
           else Apply(Apply(dslFunFor(  IF), List(blockToFunction_here(cond, vmNodeFor(  IF), startPos))),List(thenp))

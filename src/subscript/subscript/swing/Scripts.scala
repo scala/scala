@@ -24,7 +24,7 @@
     If not, see <http://www.gnu.org/licenses/>
 */
 
-package subscript.swing
+package subscript.swing_old
 import scala.swing._
 import scala.swing.event._
 import subscript._
