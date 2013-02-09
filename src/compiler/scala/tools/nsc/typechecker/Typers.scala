@@ -2037,7 +2037,7 @@ trait Typers extends Modes with Adaptations with Tags {
             val alias = (
               superAcc.initialize.alias
                 orElse (superAcc getter superAcc.owner)
-                filter (alias => superClazz.info.nonPrivateMember(alias.name) != alias)
+                filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias)
             )
             if (alias.exists && !alias.accessed.isVariable) {
               val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
