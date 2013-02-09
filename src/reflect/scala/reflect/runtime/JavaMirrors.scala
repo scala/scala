@@ -574,7 +574,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
-                initClassAndModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
+                initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
             }
         }
       } catch {
@@ -1053,7 +1053,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       val owner = sOwner(jclazz)
       val name = scalaSimpleName(jclazz)
       val completer = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
-      initAndEnterClassAndModule(owner, name, completer)._1
+      createClassModule(owner, name, completer) match { case (clazz, module) => clazz }
     }
 
     /**
