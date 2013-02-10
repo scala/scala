@@ -159,6 +159,20 @@ trait CompilerControl { self: Global =>
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
     postWorkItem(new AskLinkPosItem(sym, source, response))
 
+  /** Sets sync var `response` to doc comment information for a given symbol.
+   *
+   *  @param   sym      The symbol whose doc comment should be retrieved (might come from a classfile)
+   *  @param   site     The place where sym is observed.
+   *  @param   source   The source file that's supposed to contain the definition
+   *  @param   response A response that will be set to the following:
+   *                    If `source` contains a definition of a given symbol that has a doc comment,
+   *                    the (expanded, raw, position) triplet for a comment, otherwise ("", "", NoPosition).
+   *  Note: This operation does not automatically load `source`. If `source`
+   *  is unloaded, it stays that way.
+   */
+  def askDocComment(sym: Symbol, site: Symbol, source: SourceFile, response: Response[(String, String, Position)]) =
+    postWorkItem(new AskDocCommentItem(sym, site, source, response))
+
   /** Sets sync var `response` to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    *  @pre  source is loaded
@@ -371,6 +385,14 @@ trait CompilerControl { self: Global =>
   case class AskLinkPosItem(val sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
     def apply() = self.getLinkPos(sym, source, response)
     override def toString = "linkpos "+sym+" in "+source
+
+    def raiseMissing() =
+      response raise new MissingResponse
+  }
+
+  case class AskDocCommentItem(val sym: Symbol, val site: Symbol, val source: SourceFile, response: Response[(String, String, Position)]) extends WorkItem {
+    def apply() = self.getDocComment(sym, site, source, response)
+    override def toString = "doc comment "+sym+" in "+source
 
     def raiseMissing() =
       response raise new MissingResponse
