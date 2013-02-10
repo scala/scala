@@ -1,9 +1,8 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
 import scala.reflect.io.AbstractFile
 
-private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
+private[reflect] trait SynchronizedSymbols extends scala.reflect.internal.Symbols { self: SymbolTable =>
 
   override protected def nextId() = synchronized { super.nextId() }
 

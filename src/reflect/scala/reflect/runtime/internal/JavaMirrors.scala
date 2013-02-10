@@ -1,5 +1,4 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
 import scala.ref.WeakReference
 import scala.collection.mutable.WeakHashMap
@@ -11,12 +10,13 @@ import java.lang.reflect.{
   GenericDeclaration, GenericArrayType, ParameterizedType, WildcardType, AnnotatedElement }
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
-import internal.MissingRequirementError
-import internal.pickling.ByteCodecs
-import internal.ClassfileConstants._
-import internal.pickling.UnPickler
+import scala.reflect.internal.MissingRequirementError
+import scala.reflect.internal.pickling.ByteCodecs
+import scala.reflect.internal.ClassfileConstants._
+import scala.reflect.internal.pickling.UnPickler
+import scala.reflect.{ClassTag, classTag}
 import scala.collection.mutable.{ HashMap, ListBuffer }
-import internal.Flags._
+import scala.reflect.internal.Flags._
 //import scala.tools.nsc.util.ScalaClassLoader
 //import scala.tools.nsc.util.ScalaClassLoader._
 import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
@@ -24,7 +24,7 @@ import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 import scala.reflect.internal.util.Collections._
 
-private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
+private[reflect] trait JavaMirrors extends scala.reflect.internal.SymbolTable with scala.reflect.api.JavaUniverse { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 

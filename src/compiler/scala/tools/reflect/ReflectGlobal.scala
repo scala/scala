@@ -9,7 +9,7 @@ import scala.tools.nsc.Settings
  *  infos, instead of reading class or source files.
  */
 class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val rootClassLoader: ClassLoader)
-  extends Global(currentSettings, reporter) with scala.tools.reflect.ReflectSetup with scala.reflect.runtime.SymbolTable {
+  extends Global(currentSettings, reporter) with scala.tools.reflect.ReflectSetup with scala.reflect.runtime.internal.SymbolTable {
 
   override def transformedType(sym: Symbol) =
     erasure.transformInfo(sym,

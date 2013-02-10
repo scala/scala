@@ -1,5 +1,4 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
 import scala.collection.mutable.WeakHashMap
 import java.lang.ref.WeakReference
@@ -7,7 +6,7 @@ import java.lang.ref.WeakReference
 /** This trait overrides methods in reflect.internal, bracketing
  *  them in synchronized { ... } to make them thread-safe
  */
-private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTable =>
+private[reflect] trait SynchronizedTypes extends scala.reflect.internal.Types { self: SymbolTable =>
 
   // No sharing of map objects:
   override protected def commonOwnerMap = new CommonOwnerMap

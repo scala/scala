@@ -1,6 +1,8 @@
 package scala.reflect
 package api
 
+import scala.reflect.runtime.internal.ReflectionUtils.{show => showClassLoader}
+
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
@@ -42,7 +44,7 @@ trait JavaMirrors { self: JavaUniverse =>
    */
   trait JavaMirror extends scala.reflect.api.Mirror[self.type] with RuntimeMirror {
     val classLoader: ClassLoader
-    override def toString = s"JavaMirror with ${runtime.ReflectionUtils.show(classLoader)}"
+    override def toString = s"JavaMirror with ${showClassLoader(classLoader)}"
   }
 
   /** Creates a runtime reflection mirror from a JVM classloader.
