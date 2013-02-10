@@ -291,6 +291,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                      currentClass.isTrait
                   && sym.isProtected
                   && sym.enclClass != currentClass
+                  && !sym.owner.isPackageClass
                   && !sym.owner.isTrait
                   && (sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass)
                   && (qual.symbol.info.member(sym.name) ne NoSymbol)
