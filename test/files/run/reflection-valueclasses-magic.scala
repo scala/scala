@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 
 package scala {
   object ExceptionUtils {
-    def unwrapThrowable(ex: Throwable): Throwable = scala.reflect.runtime.ReflectionUtils.unwrapThrowable(ex)
+    def unwrapThrowable(ex: Throwable): Throwable = scala.reflect.runtime.internal.ReflectionUtils.unwrapThrowable(ex)
   }
 }
 

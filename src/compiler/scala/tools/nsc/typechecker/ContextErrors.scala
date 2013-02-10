@@ -10,7 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
 import symtab.Flags.{ PRIVATE, PROTECTED, IS_ERROR }
 import scala.compat.Platform.EOL
-import scala.reflect.runtime.ReflectionUtils
+import scala.reflect.runtime.internal.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.NonFatal
 import scala.tools.nsc.util.stackTraceString
