@@ -1,7 +1,6 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
-import internal.Flags
+import scala.reflect.internal.Flags
 import java.lang.{Class => jClass, Package => jPackage}
 import scala.collection.mutable
 

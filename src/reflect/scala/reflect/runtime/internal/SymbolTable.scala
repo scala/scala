@@ -1,5 +1,4 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
 import scala.reflect.internal.Flags._
 
@@ -8,7 +7,7 @@ import scala.reflect.internal.Flags._
  *  It can be used either from a reflexive universe (class scala.reflect.runtime.JavaUniverse), or else from
  *  a runtime compiler that uses reflection to get a class information (class scala.tools.reflect.ReflectGlobal)
  */
-private[scala] trait SymbolTable extends internal.SymbolTable with JavaMirrors with SymbolLoaders with SynchronizedOps {
+private[scala] trait SymbolTable extends scala.reflect.internal.SymbolTable with JavaMirrors with SymbolLoaders with SynchronizedOps {
 
   def info(msg: => String) =
     if (settings.verbose.value) println("[reflect-compiler] "+msg)

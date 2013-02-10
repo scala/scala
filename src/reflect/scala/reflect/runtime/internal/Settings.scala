@@ -1,5 +1,4 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
 import scala.reflect.internal.settings.MutableSettings
 

@@ -6,14 +6,14 @@ package scala.reflect
 package object runtime {
 
   /** The entry point into Scala runtime reflection.
-   * 
+   *
    * To use Scala runtime reflection, simply use or import `scala.reflect.runtime.universe._`
    *
    * See [[scala.reflect.api.Universe]] or the
    * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
    * for more details.
    */
-  lazy val universe: api.JavaUniverse = new runtime.JavaUniverse
+  lazy val universe: api.JavaUniverse = new scala.reflect.runtime.internal.JavaUniverse
 
   /** The runtime reflection mirror that corresponds to the current lexical context.
    *  It's typically equivalent to `universe.runtimeMirror(getClass.getClassLoader)` invoked at the call site.
