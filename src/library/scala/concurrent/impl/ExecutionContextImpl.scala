@@ -25,7 +25,7 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
     case some => some
   }
 
-  private val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
+  private[this] val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
     def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
   }
 
@@ -96,11 +96,24 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
     }
   }
 
+
   def execute(runnable: Runnable): Unit = executor match {
     case fj: ForkJoinPool =>
       val fjt = runnable match {
         case t: ForkJoinTask[_] => t
-        case r => new ExecutionContextImpl.AdaptedForkJoinTask(r)
+        case runnable => new ForkJoinTask[Unit] {
+          final override def setRawResult(u: Unit): Unit = ()
+          final override def getRawResult(): Unit = ()
+          final override def exec(): Boolean = try { runnable.run(); true } catch {
+            case anything: Throwable ⇒
+              val t = Thread.currentThread
+              t.getUncaughtExceptionHandler match {
+                case null ⇒
+                case some ⇒ some.uncaughtException(t, anything)
+              }
+              throw anything
+          }
+        }
       }
       Thread.currentThread match {
         case fjw: ForkJoinWorkerThread if fjw.getPool eq fj => fjt.fork()
@@ -112,23 +125,7 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
   def reportFailure(t: Throwable) = reporter(t)
 }
 
-
 private[concurrent] object ExecutionContextImpl {
-
-  final class AdaptedForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
-    final override def setRawResult(u: Unit): Unit = ()
-    final override def getRawResult(): Unit = ()
-    final override def exec(): Boolean = try { runnable.run(); true } catch {
-      case anything: Throwable ⇒
-        val t = Thread.currentThread
-        t.getUncaughtExceptionHandler match {
-          case null ⇒ 
-          case some ⇒ some.uncaughtException(t, anything)
-        }
-        throw anything
-    }
-  }
-
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl = new ExecutionContextImpl(e, reporter)
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutionContextExecutorService =
     new ExecutionContextImpl(es, reporter) with ExecutionContextExecutorService {
