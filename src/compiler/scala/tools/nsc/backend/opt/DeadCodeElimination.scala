@@ -90,7 +90,7 @@ abstract class DeadCodeElimination extends SubComponent {
         accessedLocals = m.params.reverse
         m.code.blocks ++= linearizer.linearize(m)
         collectRDef(m)
-        mark
+        mark()
         sweep(m)
         accessedLocals = accessedLocals.distinct
         val diff = m.locals diff accessedLocals
@@ -112,10 +112,25 @@ abstract class DeadCodeElimination extends SubComponent {
         useful(bb) = new mutable.BitSet(bb.size)
         var rd = rdef.in(bb);
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
+
+          // utility for adding to worklist
+          def moveToWorkList() = moveToWorkListIf(true)
+
+          // utility for (conditionally) adding to worklist
+          def moveToWorkListIf(cond: Boolean) =
+            if (cond) {
+              debuglog("in worklist:     " + i)
+              worklist += ((bb, idx))
+            } else {
+              debuglog("not in worklist: " + i)
+            }
+
+          // instruction-specific logic
           i match {
 
             case LOAD_LOCAL(_) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
+              moveToWorkListIf(false)
 
             case STORE_LOCAL(l) =>
               /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
@@ -134,7 +149,8 @@ abstract class DeadCodeElimination extends SubComponent {
                   case _                   => false
                 }
               }
-              if (necessary) worklist += ((bb, idx))
+              moveToWorkListIf(necessary)
+
               // add it to the localStores map
               val key = (l, bb)
               val set = localStores(key)
@@ -143,10 +159,15 @@ abstract class DeadCodeElimination extends SubComponent {
 
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
-                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
-            case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); debuglog("marking " + m1)
+                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() =>
+              moveToWorkList()
+
+            case CALL_METHOD(m1, _) if isSideEffecting(m1) =>
+              moveToWorkList()
+
             case CALL_METHOD(m1, SuperCall(_)) =>
-              worklist += ((bb, idx)) // super calls to constructor
+              moveToWorkList() // super calls to constructor
+
             case DROP(_) =>
               val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
                 val (bb1, idx1) = p
@@ -155,14 +176,15 @@ abstract class DeadCodeElimination extends SubComponent {
                   case LOAD_EXCEPTION(_) | DUP(_) | LOAD_MODULE(_) => true
                   case _ =>
                     dropOf((bb1, idx1)) = (bb,idx) :: dropOf.getOrElse((bb1, idx1), Nil)
-//                    println("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
+                    debuglog("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
                     false
                 }
               }
-              if (necessary) worklist += ((bb, idx))
+              moveToWorkListIf(necessary)
             case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
-              worklist += ((bb, idx)) // SI-4859 Module initialization might side-effect.
+              moveToWorkList() // SI-4859 Module initialization might side-effect.
             case _ => ()
+              moveToWorkListIf(false)
           }
           rd = rdef.interpret(bb, idx, rd)
         }
@@ -191,12 +213,23 @@ abstract class DeadCodeElimination extends SubComponent {
           worklist += ((bb1, idx1))
         }
 
+        // DROP logic -- if an instruction is useful, its drops are also useful
+        // and we don't mark the DROPs as useful directly but add them to the
+        // worklist so we also mark their reaching defs as useful - see SI-7060
         if (!useful(bb)(idx)) {
           useful(bb) += idx
           dropOf.get(bb, idx) foreach {
-              for ((bb1, idx1) <- _)
-                useful(bb1) += idx1
+            for ((bb1, idx1) <- _) {
+              /*
+               * SI-7060: A drop that we now mark as useful can be reached via several paths,
+               * so we should follow by marking all its reaching definition as useful too:
+               */
+              debuglog("\tAdding: " + bb1(idx1) + " to the worklist, as a useful DROP.")
+              worklist += ((bb1, idx1))
+            }
           }
+
+          // per-instruction logic
           instr match {
             case LOAD_LOCAL(l1) =>
               for ((l2, bb1, idx1) <- defs((bb, idx)) if l1 == l2; if !useful(bb1)(idx1)) {
@@ -302,14 +335,16 @@ abstract class DeadCodeElimination extends SubComponent {
     def sweep(m: IMethod) {
       val compensations = computeCompensations(m)
 
+      debuglog("Sweeping: " + m)
+
       m foreachBlock { bb =>
-//        Console.println("** Sweeping block " + bb + " **")
+        debuglog(bb + ":")
         val oldInstr = bb.toList
         bb.open
         bb.clear
         for (Pair(i, idx) <- oldInstr.zipWithIndex) {
           if (useful(bb)(idx)) {
-//            log(" " + i + " is useful")
+            debuglog(" * " + i + " is useful")
             bb.emit(i, i.pos)
             compensations.get(bb, idx) match {
               case Some(is) => is foreach bb.emit
@@ -335,7 +370,7 @@ abstract class DeadCodeElimination extends SubComponent {
                 bb emit STORE_LOCAL(l)
               case _ => ()
             }
-            debuglog("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
+            debuglog("   " + i + " [swept]")
           }
         }
 
@@ -356,6 +391,7 @@ abstract class DeadCodeElimination extends SubComponent {
               val defs = rdef.findDefs(bb, idx, 1, depth)
               for (d <- defs) {
                 val (bb, idx) = d
+                debuglog("rdef: "+ bb(idx))
                 bb(idx) match {
                   case DUP(_) if idx > 0 =>
                     bb(idx - 1) match {
