@@ -1,5 +1,4 @@
-package scala.reflect
-package runtime
+package scala.reflect.runtime.internal
 
 import scala.collection.mutable.WeakHashMap
 import java.lang.ref.WeakReference

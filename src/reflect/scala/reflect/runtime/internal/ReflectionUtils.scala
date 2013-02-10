@@ -3,7 +3,7 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.runtime
+package scala.reflect.runtime.internal
 
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
