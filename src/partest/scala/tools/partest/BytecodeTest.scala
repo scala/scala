@@ -3,9 +3,10 @@ package scala.tools.partest
 import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
 import scala.tools.asm
-import asm.ClassReader
+import asm.{ ClassReader }
 import asm.tree.{ClassNode, MethodNode, InsnList}
 import java.io.InputStream
+import AsmNode._
 
 /**
  * Provides utilities for inspecting bytecode using ASM library.
@@ -29,13 +30,14 @@ import java.io.InputStream
  *
  */
 abstract class BytecodeTest extends ASMConverters {
+  import instructions._
 
   /** produce the output to be compared against a checkfile */
   protected def show(): Unit
 
   def main(args: Array[String]): Unit = show
 
-// asserts
+  // asserts
   def sameBytecode(methA: MethodNode, methB: MethodNode) = {
     val isa = instructions.fromMethod(methA)
     val isb = instructions.fromMethod(methB)
@@ -43,7 +45,32 @@ abstract class BytecodeTest extends ASMConverters {
     else diffInstructions(isa, isb)
   }
 
-  import instructions._
+  // Do these classes have all the same methods, with the same names, access,
+  // descriptors and generic signatures? Method bodies are not considered, and
+  // the names of the classes containing the methods are substituted so they do
+  // not appear as differences.
+  def sameMethodAndFieldSignatures(clazzA: ClassNode, clazzB: ClassNode): Boolean = {
+    val ms1 = clazzA.fieldsAndMethods.toIndexedSeq
+    val ms2 = clazzB.fieldsAndMethods.toIndexedSeq
+    val name1 = clazzA.name
+    val name2 = clazzB.name
+
+    if (ms1.length != ms2.length) {
+      println("Different member counts in $name1 and $name2")
+      false
+    }
+    else (ms1, ms2).zipped forall { (m1, m2) =>
+      val c1 = m1.characteristics
+      val c2 = m2.characteristics.replaceAllLiterally(name2, name1)
+      if (c1 == c2)
+        println(s"[ok] $m1")
+      else
+        println(s"[fail]\n  in $name1: $c1\n  in $name2: $c2")
+
+      c1 == c2
+    }
+  }
+
   // bytecode is equal modulo local variable numbering
   def equalsModuloVar(a: Instruction, b: Instruction) = (a, b) match {
     case _ if a == b => true

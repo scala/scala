@@ -35,10 +35,16 @@ object Test extends InteractiveTest {
         Test.this.settings
       }
     } with Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase {
+      outer =>
+
       val global: this.type = this
       def chooseLink(links: List[LinkTo]): LinkTo = links.head
       def internalLink(sym: Symbol, site: Symbol) = None
       def toString(link: LinkTo) = link.toString
+
+      override lazy val analyzer = new {
+        val global: outer.type = outer
+      } with doc.ScaladocAnalyzer
 
       def getComment(sym: Symbol, source: SourceFile) = {
         val docResponse = new Response[(String, String, Position)]

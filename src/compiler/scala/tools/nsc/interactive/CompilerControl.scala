@@ -256,15 +256,12 @@ trait CompilerControl { self: Global =>
   }
 
   /** Returns parse tree for source `source`. No symbols are entered. Syntax errors are reported.
-   *  Can be called asynchronously from presentation compiler.
+   *
+   *  This method is thread-safe and as such can safely run outside of the presentation
+   *  compiler thread.
    */
-  def parseTree(source: SourceFile): Tree = ask { () =>
-    getUnit(source) match {
-      case Some(unit) if unit.status >= JustParsed =>
-        unit.body
-      case _ =>
-        new UnitParser(new CompilationUnit(source)).parse()
-    }
+  def parseTree(source: SourceFile): Tree = {
+    new UnitParser(new CompilationUnit(source)).parse()
   }
 
   /** Asks for a computation to be done quickly on the presentation compiler thread */

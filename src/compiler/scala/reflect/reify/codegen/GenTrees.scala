@@ -155,21 +155,23 @@ trait GenTrees {
         else mirrorCall(nme.Ident, reify(name))
 
       case Select(qual, name) =>
-        if (sym == NoSymbol || sym.name == name)
-          reifyProduct(tree)
-        else
-          reifyProduct(Select(qual, sym.name))
+        if (qual.symbol != null && qual.symbol.isPackage) {
+          mirrorBuildCall(nme.Ident, reify(sym))
+        } else {
+          val effectiveName = if (sym != null && sym != NoSymbol) sym.name else name
+          reifyProduct(Select(qual, effectiveName))
+        }
 
       case _ =>
         throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
     }
   }
 
-  private def reifyBoundType(tree: Tree): Tree = {
+  private def reifyBoundType(tree: RefTree): Tree = {
     val sym = tree.symbol
     val tpe = tree.tpe
 
-    def reifyBoundType(tree: Tree): Tree = {
+    def reifyBoundType(tree: RefTree): Tree = {
       assert(tpe != null, "unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
 
       // if a symbol or a type of the scrutinee are local to reifee
@@ -177,7 +179,7 @@ trait GenTrees {
       // then we can reify the scrutinee as a symless AST and that will definitely be hygienic
       // why? because then typechecking of a scrutinee doesn't depend on the environment external to the quasiquote
       // otherwise we need to reify the corresponding type
-      if (sym.isLocalToReifee || tpe.isLocalToReifee)
+      if (sym.isLocalToReifee || tpe.isLocalToReifee || treeInfo.isWildcardStarType(tree))
         reifyProduct(tree)
       else {
         if (reifyDebug) println("reifying bound type %s (underlying type is %s)".format(sym, tpe))
@@ -198,13 +200,19 @@ trait GenTrees {
               mirrorBuildCall(nme.TypeTree, spliced)
           }
         }
-        else if (sym.isLocatable) {
-          if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
-          mirrorBuildCall(nme.Ident, reify(sym))
-        }
-        else {
-          if (reifyDebug) println("tpe is not locatable: reify as TypeTree(%s)".format(tpe))
-          mirrorBuildCall(nme.TypeTree, reify(tpe))
+        else tree match {
+          case Select(qual, name) if !qual.symbol.isPackage =>
+            if (reifyDebug) println(s"reifying Select($qual, $name)")
+            mirrorCall(nme.Select, reify(qual), reify(name))
+          case SelectFromTypeTree(qual, name) =>
+            if (reifyDebug) println(s"reifying SelectFromTypeTree($qual, $name)")
+            mirrorCall(nme.SelectFromTypeTree, reify(qual), reify(name))
+          case _ if sym.isLocatable =>
+            if (reifyDebug) println(s"tpe is locatable: reify as Ident($sym)")
+            mirrorBuildCall(nme.Ident, reify(sym))
+          case _ =>
+            if (reifyDebug) println(s"tpe is not locatable: reify as TypeTree($tpe)")
+            mirrorBuildCall(nme.TypeTree, reify(tpe))
         }
       }
     }

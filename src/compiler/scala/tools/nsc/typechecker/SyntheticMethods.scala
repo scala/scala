@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.collection.{ mutable, immutable }
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
 
@@ -48,6 +49,10 @@ trait SyntheticMethods extends ast.TreeDSL {
     else if (clazz.isDerivedValueClass) valueSymbols
     else Nil
   }
+  private lazy val renamedCaseAccessors = perRunCaches.newMap[Symbol, mutable.Map[TermName, TermName]]()
+  /** Does not force the info of `caseclazz` */
+  final def caseAccessorName(caseclazz: Symbol, paramName: TermName) =
+    (renamedCaseAccessors get caseclazz).fold(paramName)(_(paramName))
 
   /** Add the synthetic methods to case classes.
    */
@@ -369,6 +374,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       def isRewrite(sym: Symbol) = sym.isCaseAccessorMethod && !sym.isPublic
 
       for (ddef @ DefDef(_, _, _, _, _, _) <- templ.body ; if isRewrite(ddef.symbol)) {
+        val original = ddef.symbol
         val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
           newAcc.makePublic
           newAcc resetFlag (ACCESSOR | PARAMACCESSOR)
@@ -377,6 +383,8 @@ trait SyntheticMethods extends ast.TreeDSL {
         // TODO: shouldn't the next line be: `original resetFlag CASEACCESSOR`?
         ddef.symbol resetFlag CASEACCESSOR
         lb += logResult("case accessor new")(newAcc)
+        val renamedInClassMap = renamedCaseAccessors.getOrElseUpdate(clazz, mutable.Map() withDefault(x => x))
+        renamedInClassMap(original.name.toTermName) = newAcc.symbol.name.toTermName
       }
 
       (lb ++= templ.body ++= synthesize()).toList

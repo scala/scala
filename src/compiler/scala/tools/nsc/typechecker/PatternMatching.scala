@@ -105,9 +105,6 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
   import definitions._
   import analyzer._ //Typer
 
-
-  case class DefaultOverrideMatchAttachment(default: Tree)
-
   object vpmName {
     val one       = newTermName("one")
     val drop      = newTermName("drop")
@@ -217,11 +214,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     // However this is a pain (at least the way I'm going about it)
     // and I have to think these detailed errors are primarily useful
     // for beginners, not people writing nested pattern matches.
-    def checkMatchVariablePatterns(m: Match) {
+    def checkMatchVariablePatterns(cases: List[CaseDef]) {
       // A string describing the first variable pattern
       var vpat: String = null
       // Using an iterator so we can recognize the last case
-      val it = m.cases.iterator
+      val it = cases.iterator
 
       def addendum(pat: Tree) = {
         matchingSymbolInScope(pat) match {
@@ -264,7 +261,15 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       */
     def translateMatch(match_ : Match): Tree = {
       val Match(selector, cases) = match_
-      checkMatchVariablePatterns(match_)
+
+      val (nonSyntheticCases, defaultOverride) = cases match {
+        case init :+ last if treeInfo isSyntheticDefaultCase last =>
+          (init, Some(((scrut: Tree) => last.body)))
+        case _ =>
+          (cases, None)
+      }
+
+      checkMatchVariablePatterns(nonSyntheticCases)
 
       // we don't transform after uncurry
       // (that would require more sophistication when generating trees,
@@ -291,14 +296,11 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       // pt is the skolemized version
       val pt = repeatedToSeq(ptUnCPS)
 
-      // the alternative to attaching the default case override would be to simply
-      // append the default to the list of cases and suppress the unreachable case error that may arise (once we detect that...)
-      val matchFailGenOverride = match_.attachments.get[DefaultOverrideMatchAttachment].map{case DefaultOverrideMatchAttachment(default) => ((scrut: Tree) => default)}
-
+      // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
       val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      val combined = combineCases(selector, selectorSym, cases map translateCase(selectorSym, pt), pt, matchOwner, matchFailGenOverride)
+      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatNanos, start)
       combined
@@ -2814,7 +2816,9 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
               // compare to the fully known type `tp` (modulo abstract types),
               // so that we can rule out stuff like: sealed trait X[T]; class XInt extends X[Int] --> XInt not valid when enumerating X[String]
               // however, must approximate abstract types in
-              val subTp       = appliedType(pre.memberType(sym), sym.typeParams.map(_ => WildcardType))
+
+              val memberType  = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
+              val subTp       = appliedType(memberType, sym.typeParams.map(_ => WildcardType))
               val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
               // patmatDebug("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))

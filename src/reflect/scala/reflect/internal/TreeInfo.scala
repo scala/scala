@@ -92,12 +92,15 @@ abstract class TreeInfo {
       tree.symbol.isStable && isExprSafeToInline(qual)
     case TypeApply(fn, _) =>
       isExprSafeToInline(fn)
+    case Apply(Select(free @ Ident(_), nme.apply), _) if free.symbol.name endsWith nme.REIFY_FREE_VALUE_SUFFIX =>
+      // see a detailed explanation of this trick in `GenSymbols.reifyFreeTerm`
+      free.symbol.hasStableFlag && isExprSafeToInline(free)
     case Apply(fn, List()) =>
-      /* Note: After uncurry, field accesses are represented as Apply(getter, Nil),
-       * so an Apply can also be pure.
-       * However, before typing, applications of nullary functional values are also
-       * Apply(function, Nil) trees. To prevent them from being treated as pure,
-       * we check that the callee is a method. */
+      // Note: After uncurry, field accesses are represented as Apply(getter, Nil),
+      // so an Apply can also be pure.
+      // However, before typing, applications of nullary functional values are also
+      // Apply(function, Nil) trees. To prevent them from being treated as pure,
+      // we check that the callee is a method.
       fn.symbol.isMethod && !fn.symbol.isLazy && isExprSafeToInline(fn)
     case Typed(expr, _) =>
       isExprSafeToInline(expr)
@@ -421,6 +424,13 @@ abstract class TreeInfo {
     case _                   => false
   }
 
+  /** Is the argument a wildcard star type of the form `_*`?
+   */
+  def isWildcardStarType(tree: Tree): Boolean = tree match {
+    case Ident(tpnme.WILDCARD_STAR) => true
+    case _                          => false
+  }
+
   /** Is this pattern node a catch-all (wildcard or variable) pattern? */
   def isDefaultCase(cdef: CaseDef) = cdef match {
     case CaseDef(pat, EmptyTree, _) => isWildcardArg(pat)
@@ -442,6 +452,13 @@ abstract class TreeInfo {
     case Bind(name, _)  => name
     case Ident(name)    => name
     case _              => nme.NO_NAME
+  }
+
+  /** Is this pattern node a synthetic catch-all case, added during PartialFuction synthesis before we know
+    * whether the user provided cases are exhaustive. */
+  def isSyntheticDefaultCase(cdef: CaseDef) = cdef match {
+    case CaseDef(Bind(nme.DEFAULT_CASE, _), EmptyTree, _) => true
+    case _                                                => false
   }
 
   /** Does this CaseDef catch Throwable? */

@@ -1,4 +1,4 @@
-// if you ever think you've fixed the underlying reason for the implementation restrictions
+// if you ever think you've fixed the underlying reason for the warning
 // imposed by SI-5954, then here's a test that should pass with two "succes"es
 //
 //import scala.tools.partest._
