@@ -67,7 +67,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           case t                                  => t
         }
         acc setInfoAndEnter (tpe cloneInfo acc)
-        storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
+        // Diagnostic for SI-7091
+        if (!accDefs.contains(clazz))
+          reporter.error(sel.pos, s"Internal error: unable to store accessor definition in ${clazz}. clazz.isPackage=${clazz.isPackage}. Accessor required for ${sel} (${showRaw(sel)})")
+        else storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
         acc
       }
 
