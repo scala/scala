@@ -16,25 +16,22 @@ t6666.scala:54: error: Implementation restriction: access of value x$7 in class 
 t6666.scala:58: error: Implementation restriction: access of method x$8 in class C3 from anonymous class 9, would require illegal premature access to the unconstructed `this` of class C3
   F.hof(() => x)
               ^
-t6666.scala:62: error: Implementation restriction: access of method x$9 in class C4 from object Nested$5, would require illegal premature access to the unconstructed `this` of class C4
+t6666.scala:62: error: Implementation restriction: access of method x$9 in class C4 from object Nested$4, would require illegal premature access to the unconstructed `this` of class C4
   object Nested { def xx = x}
                            ^
-t6666.scala:68: error: Implementation restriction: access of method x$10 in class C5 from object Nested$6, would require illegal premature access to the unconstructed `this` of class C5
-    object Nested { def xx = x}
-                             ^
-t6666.scala:83: error: Implementation restriction: access of method x$12 in class C11 from anonymous class 12, would require illegal premature access to the unconstructed `this` of class C11
+t6666.scala:76: error: Implementation restriction: access of method x$11 in class C11 from anonymous class 12, would require illegal premature access to the unconstructed `this` of class C11
       F.byname(x)
                ^
-t6666.scala:102: error: Implementation restriction: access of method x$13 in class C13 from anonymous class 13, would require illegal premature access to the unconstructed `this` of class C13
+t6666.scala:95: error: Implementation restriction: access of method x$12 in class C13 from anonymous class 13, would require illegal premature access to the unconstructed `this` of class C13
       F.hof(() => x)
                   ^
-t6666.scala:111: error: Implementation restriction: access of method x$14 in class C14 from object Nested$7, would require illegal premature access to the unconstructed `this` of class C14
+t6666.scala:104: error: Implementation restriction: access of method x$13 in class C14 from object Nested$5, would require illegal premature access to the unconstructed `this` of class C14
       object Nested { def xx = x}
                                ^
-t6666.scala:122: error: Implementation restriction: access of method x$15 in class C15 from object Nested$8, would require illegal premature access to the unconstructed `this` of class C15
-        object Nested { def xx = x}
-                                 ^
-t6666.scala:131: error: Implementation restriction: access of method foo$1 in class COuter from class CInner$1, would require illegal premature access to the unconstructed `this` of class COuter
+t6666.scala:112: error: Implementation restriction: access of method foo$1 in class COuter from class CInner$1, would require illegal premature access to the unconstructed `this` of class COuter
   class CInner extends C({foo})
                           ^
-13 errors found
+t6666.scala:118: error: Implementation restriction: access of method x$14 in class CEarly from object Nested$6, would require illegal premature access to the unconstructed `this` of class CEarly
+    object Nested { def xx = x}
+                             ^
+12 errors found
