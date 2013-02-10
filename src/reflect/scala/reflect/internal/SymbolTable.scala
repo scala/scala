@@ -38,7 +38,6 @@ abstract class SymbolTable extends macros.Universe
                               with StdAttachments
                               with StdCreators
                               with BuildUtils
-                              with PrivateWithin
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
@@ -352,6 +351,21 @@ abstract class SymbolTable extends macros.Universe
    */
   implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
 
+  def importPrivateWithinFromJavaFlags(sym: Symbol, jflags: Int): Symbol = {
+    import ClassfileConstants._
+    if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
+      // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
+      // apparently occurs when processing v45.3 bytecode.
+      if (sym.enclosingTopLevelClass != NoSymbol)
+        sym.privateWithin = sym.enclosingTopLevelClass.owner
+
+    // protected in java means package protected. #3946
+    if ((jflags & JAVA_ACC_PROTECTED) != 0)
+      if (sym.enclosingTopLevelClass != NoSymbol)
+        sym.privateWithin = sym.enclosingTopLevelClass.owner
+
+    sym
+  }
 }
 
 object SymbolTableStats {
