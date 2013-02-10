@@ -75,20 +75,31 @@ trait Infer extends Checkable {
    * @throws TypeError when the unapply[Seq] definition is ill-typed
    * @returns (null, null) when the expected number of sub-patterns cannot be satisfied by the given extractor
    *
-   * From the spec:
+   * This is the spec currently implemented -- TODO: update it.
+   *
    *   8.1.8 ExtractorPatterns
    *
    *   An extractor pattern x(p1, ..., pn) where n ≥ 0 is of the same syntactic form as a constructor pattern.
    *   However, instead of a case class, the stable identifier x denotes an object which has a member method named unapply or unapplySeq that matches the pattern.
-   *   An unapply method in an object x matches the pattern x(p1, ..., pn) if it takes exactly one argument and one of the following applies:
    *
-   *   n = 0 and unapply’s result type is Boolean.
+   *   An `unapply` method with result type `R` in an object `x` matches the
+   *   pattern `x(p_1, ..., p_n)` if it takes exactly one argument and, either:
+   *     - `n = 0` and `R =:= Boolean`, or
+   *     - `n = 1` and `R <:< Option[T]`, for some type `T`.
+   *        The argument pattern `p1` is typed in turn with expected type `T`.
+   *     - Or, `n > 1` and `R <:< Option[Product_n[T_1, ..., T_n]]`, for some
+   *       types `T_1, ..., T_n`. The argument patterns `p_1, ..., p_n` are
+   *       typed with expected types `T_1, ..., T_n`.
    *
-   *   n = 1 and unapply’s result type is Option[T], for some type T.
-   *     the (only) argument pattern p1 is typed in turn with expected type T
+   *   An `unapplySeq` method in an object `x` matches the pattern `x(p_1, ..., p_n)`
+   *   if it takes exactly one argument and its result type is of the form `Option[S]`,
+   *   where either:
+   *     - `S` is a subtype of `Seq[U]` for some element type `U`, (set `m = 0`)
+   *     - or `S` is a `ProductX[T_1, ..., T_m]` and `T_m <: Seq[U]` (`m <= n`).
    *
-   *   n > 1 and unapply’s result type is Option[(T1, ..., Tn)], for some types T1, ..., Tn.
-   *     the argument patterns p1, ..., pn are typed in turn with expected types T1, ..., Tn
+   *   The argument patterns `p_1, ..., p_n` are typed with expected types
+   *   `T_1, ..., T_m, U, ..., U`. Here, `U` is repeated `n-m` times.
+   *
    */
   def extractorFormalTypes(pos: Position, resTp: Type, nbSubPats: Int, unappSym: Symbol): (List[Type], List[Type]) = {
     val isUnapplySeq     = unappSym.name == nme.unapplySeq
@@ -100,31 +111,34 @@ trait Infer extends Checkable {
       else toRepeated
     }
 
+    // empty list --> error, otherwise length == 1
+    lazy val optionArgs = resTp.baseType(OptionClass).typeArgs
+    // empty list --> not a ProductN, otherwise product element types
+    def productArgs = getProductArgs(optionArgs.head)
+
     val formals =
-      if (nbSubPats == 0 && booleanExtractor && !isUnapplySeq)  Nil
-      else resTp.baseType(OptionClass).typeArgs match {
-        case optionTArg :: Nil =>
-          def productArgs = getProductArgs(optionTArg)
+      // convert Seq[T] to the special repeated argument type
+      // so below we can use formalTypes to expand formals to correspond to the number of actuals
+      if (isUnapplySeq) {
+        if (optionArgs.nonEmpty)
+          productArgs match {
+            case Nil => List(seqToRepeatedChecked(optionArgs.head))
+            case normalTps :+ seqTp => normalTps :+ seqToRepeatedChecked(seqTp)
+          }
+        else throw new TypeError(s"result type $resTp of unapplySeq defined in ${unappSym.fullLocationString} does not conform to Option[_]")
+      } else {
+        if (booleanExtractor && nbSubPats == 0) Nil
+        else if (optionArgs.nonEmpty)
           if (nbSubPats == 1) {
-            if (isUnapplySeq) List(seqToRepeatedChecked(optionTArg))
-            else {
-              val productArity = productArgs.size
-              if (productArity > 1 && settings.lint.value)
-                global.currentUnit.warning(pos, s"extractor pattern binds a single value to a Product${productArity} of type ${optionTArg}")
-              List(optionTArg)
-            }
+            val productArity = productArgs.size
+            if (productArity > 1 && settings.lint.value)
+              global.currentUnit.warning(pos, s"extractor pattern binds a single value to a Product${productArity} of type ${optionArgs.head}")
+            optionArgs
           }
           // TODO: update spec to reflect we allow any ProductN, not just TupleN
-          else productArgs match {
-            case Nil if isUnapplySeq => List(seqToRepeatedChecked(optionTArg))
-            case tps if isUnapplySeq => tps.init :+ seqToRepeatedChecked(tps.last)
-            case tps => tps
-          }
-        case _ =>
-          if (isUnapplySeq)
-            throw new TypeError(s"result type $resTp of unapplySeq defined in ${unappSym.owner+unappSym.owner.locationString} not in {Option[_], Some[_]}")
-          else
-            throw new TypeError(s"result type $resTp of unapply defined in ${unappSym.owner+unappSym.owner.locationString} not in {Boolean, Option[_], Some[_]}")
+          else productArgs
+        else
+          throw new TypeError(s"result type $resTp of unapply defined in ${unappSym.fullLocationString} does not conform to Option[_] or Boolean")
       }
 
     // for unapplySeq, replace last vararg by as many instances as required by nbSubPats
