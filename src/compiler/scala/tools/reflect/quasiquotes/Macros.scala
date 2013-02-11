@@ -4,7 +4,7 @@ package quasiquotes
 import scala.tools.nsc.Global
 import scala.reflect.macros.runtime.Context
 import java.util.UUID.randomUUID
-import scala.collection.SortedMap
+import scala.collection.immutable.ListMap
 
 trait Macros { self: Quasiquotes =>
   import c.universe._
@@ -30,16 +30,16 @@ trait Macros { self: Quasiquotes =>
     /** Generates scala code to be parsed by parser and placeholders map from incoming args and parts. */
     def generate(args: List[Tree], parts: List[String]): (String, Placeholders) = {
       val sb = new StringBuilder()
-      var placeholders = SortedMap[String, (Tree, String)]()
+      var placeholders = ListMap[String, (Tree, Int)]()
 
       foreach2(args, parts.init) { (tree, p) =>
         val (part, cardinality) =
           if (p.endsWith("..."))
-            (p.stripSuffix("..."), "...")
+            (p.stripSuffix("..."), 2)
           else if (p.endsWith(".."))
-            (p.stripSuffix(".."), "..")
+            (p.stripSuffix(".."), 1)
           else
-            (p, "")
+            (p, 0)
         val freshname = c.fresh(nme.QUASIQUOTE_PREFIX)
         sb.append(part)
         sb.append(freshname)
@@ -70,7 +70,8 @@ trait Macros { self: Quasiquotes =>
 
   trait ApplyMacro extends AbstractMacro {
 
-    def reifier(universe: Tree, placeholders: Placeholders): Reifier = new ApplyReifier(universe, placeholders)
+    def reifier(universe: Tree, placeholders: Placeholders): Reifier =
+      new ApplyReifier(universe, placeholders)
 
     def extract = c.macroApplication match {
       case q"$universe.QuasiQuote($stringContext.apply(..$parts0)).${_}.apply(..$args)" =>
@@ -94,7 +95,8 @@ trait Macros { self: Quasiquotes =>
 
   trait UnapplyMacro extends AbstractMacro {
 
-    def reifier(universe: Tree, placeholders: Placeholders): Reifier = new UnapplyReifier(universe, placeholders)
+    def reifier(universe: Tree, placeholders: Placeholders): Reifier =
+      new UnapplyReifier(universe, placeholders)
 
     def extract = c.macroApplication match {
       case q"$universe.QuasiQuote($stringContext.apply(..$parts0)).${_}.unapply(${_})" =>
@@ -114,7 +116,7 @@ trait Macros { self: Quasiquotes =>
     def wrap(universe: Tree, placeholders: Placeholders, reified: Tree) = {
 
       val unapplyBody =
-        if(isVariablePattern(reified))
+        if(reified.isInstanceOf[Bind])
           q"Some(tree)"
         else if (placeholders.size == 0)
           q"$reified.equalsStructure(tree)"
@@ -153,11 +155,6 @@ trait Macros { self: Quasiquotes =>
       unapplySelector.setType(memberType(universe.tpe, tpnme.Tree))
 
       q"$modulePackage.$moduleName.unapply($universe)($unapplySelector)"
-    }
-
-    def isVariablePattern(tree: Tree) = tree match {
-      case _: Bind => true
-      case _ => false
     }
   }
 

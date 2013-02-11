@@ -4,8 +4,7 @@ package quasiquotes
 import scala.tools.nsc.Global
 import scala.reflect.reify.{Reifier => ReflectReifier}
 import scala.reflect.macros
-import scala.collection.Map
-import scala.collection.mutable
+import scala.collection.immutable.ListMap
 
 trait Reifiers { self: Quasiquotes =>
   import global._
@@ -13,7 +12,7 @@ trait Reifiers { self: Quasiquotes =>
   import global.treeInfo._
   import global.definitions._
 
-  type Placeholders = Map[String, (Tree, String)]
+  type Placeholders = ListMap[String, (Tree, Int)]
 
   abstract class Reifier(val universe: Tree, val placeholders: Placeholders) extends {
 
@@ -25,13 +24,10 @@ trait Reifiers { self: Quasiquotes =>
 
   } with ReflectReifier with Types {
 
-    val u = nme.UNIVERSE_SHORT
-
-    override def reifyTree(tree: Tree) = reifyBasicTree(tree)
-
-    // Extractor that matches simple identity-like trees which
-    // correspond to placeholders within quasiquote.
-    object SimpleTree {
+    /** Extractor that matches simple identity-like trees which
+     *  correspond to placeholders within quasiquote.
+     */
+    object Placeholder {
 
       def unapply(tree: Tree): Option[String] = {
         val name = tree match {
@@ -48,74 +44,104 @@ trait Reifiers { self: Quasiquotes =>
           None
       }
     }
+
+    override def reifyTree(tree: Tree): Tree = reifyBasicTree(tree)
   }
 
   class ApplyReifier(universe: Tree, placeholders: Placeholders) extends Reifier(universe, placeholders) {
 
-    object SubsToTree {
+    object CorrespondsTo {
 
-      def unapply(name: Name): Option[(Tree, String)] =
-        unapply(name.toString)
+      def unapply(name: Name): Option[(Tree, Type)] = unapply(name.toString)
 
-      def unapply(name: String): Option[(Tree, String)] =
+      def unapply(name: String): Option[(Tree, Type)] =
         placeholders.get(name).flatMap { case (tree, card) =>
-          if (tree.tpe <:< treeType) {
-            if (card != "")
-              throw new Exception(s"Incorrect cardinality, expected '', got '$card'")
-            Some((tree, card))
-          } else if (tree.tpe <:< iterableTreeType) {
-            if (card != "..")
-              throw new Exception(s"Incorrect cardinality, expected '..', but got '$card'")
-            Some((wrapIterable(tree), card))
-          } else if (tree.tpe <:< iterableIterableTreeType) {
-            if (card != "...")
-              throw new Exception(s"Incorrect cardinality, expected '...', but got '$card'")
-            Some((wrapIterable2(tree), card))
-          } else {
-            val liftType = appliedType(liftableType, List(tree.tpe))
-            val lift = c.inferImplicitValue(liftType, silent = true)
-            if (lift != EmptyTree) {
-              if (card != "")
-                throw new Exception(s"Incorrect cardinality, expected '', but got '$card'")
-              Some((wrapLift(lift, tree), card))
-            } else
-              None
+          (card, tree.tpe) match {
+            case (0, tpe) if tpe <:< treeType || tpe <:< nameType =>
+              Some((tree, tpe))
+            case (0, LiftableType(lift)) =>
+              Some((wrapLift(lift, tree), treeType))
+            case (card, iterable) if card > 0 && iterable <:< iterableType =>
+              extractIterableN(card, iterable).map {
+                case tpe if tpe <:< treeType =>
+                  Some((wrapIterableN(tree, card) { t => t }, iterableN(card, tpe)))
+                case LiftableType(lift) =>
+                  Some((wrapIterableN(tree, card) { t => wrapLift(lift, t) }, iterableN(card, treeType)))
+                case tpe =>
+                  c.abort(tree.pos, s"Can't splice an Iterable of non-liftable type $tpe.")
+              }.getOrElse {
+                c.abort(tree.pos, s"Incorrect cardinality.")
+              }
+            case (card, tpe) =>
+              c.abort(tree.pos, s"Splicing of type $tpe with '${fmtCard(card)}' cardinality isn't supported.")
           }
         }
 
-      def wrapLift(lift: Tree, tree: Tree) = q"$lift($universe, $tree).asInstanceOf[$u.Tree]"
-      def wrapIterable(tree: Tree) = q"$tree.toList"
-      def wrapIterable2(tree: Tree) = q"$tree.map { _.toList }.toList"
-    }
+      def wrapLift(lift: Tree, tree: Tree) =
+        q"$lift($u, $tree).asInstanceOf[$u.Tree]"
 
-    object SubsToNameTree {
+      def wrapIterableN(tree: Tree, n: Int)(default: Tree => Tree): Tree = n match {
+        case 0 => default(tree)
+        case _ =>
+          val x: TermName = c.freshName()
+          val wrapped = wrapIterableN(Ident(x), n - 1)(default)
+          q"$tree.map { $x => $wrapped }.toList"
+      }
 
-      def unapply(name: Name): Option[Tree] =
-        placeholders.get(name.toString).collect { case (tree, _) if tree.tpe <:< nameType => tree }
+      object LiftableType {
+        def unapply(tpe: Type): Option[Tree] = {
+          val liftType = appliedType(liftableType, List(tpe))
+          val lift = c.inferImplicitValue(liftType, silent = true)
+          if (lift != EmptyTree)
+            Some(lift)
+          else
+            None
+        }
+      }
+
+      def iterableN(n: Int, tpe: Type): Type =
+        if (n == 0)
+          tpe
+        else
+          appliedType(IterableClass.toType, List(iterableN(n - 1, tpe)))
+
+      def extractIterableN(n: Int, tpe: Type): Option[Type] =
+        if (n == 0)
+          Some(tpe)
+        else
+          if (tpe <:< iterableType)
+            extractIterableN(n - 1, tpe.typeArguments(0))
+          else
+            None
     }
 
     override def reifyBasicTree(tree: Tree): Tree = tree match {
-      case SimpleTree(SubsToTree(tree, "")) => tree
-      case Apply(f, List(SimpleTree(SubsToTree(argss, "...")))) =>
+      case Placeholder(CorrespondsTo(tree, tpe)) if tpe <:< treeType => tree
+      case Apply(f, List(Placeholder(CorrespondsTo(argss, tpe)))) if tpe <:< iterableIterableTreeType =>
         val f1 = reifyTree(f)
         q"$argss.foldLeft[$u.Tree]($f1) { $u.Apply(_, _) }"
-      case _ => super.reifyBasicTree(tree)
+      case Placeholder(name) if placeholders(name)._2 > 0 =>
+        val (tree, card) = placeholders(name)
+        c.abort(tree.pos, s"Can't splice tree with '${fmtCard(card)}' cardinality in this position.")
+      case _ =>
+        super.reifyBasicTree(tree)
     }
 
-    override def reifyName(name: Name): Tree =
-      if (!placeholders.contains(name.toString))
+    override def reifyName(name: Name): Tree = name match {
+      case CorrespondsTo(tree, tpe) =>
+        if (tpe <:< nameType)
+          tree
+        else
+          c.abort(tree.pos, s"Name expected but ${tpe} found.")
+      case _ =>
         super.reifyName(name)
-      else
-        name match {
-          case SubsToNameTree(tree) => tree
-          case _ => throw new Exception(s"Name expected but ${placeholders(name.toString)._1.tpe} found [$name:${placeholders(name.toString)}]")
-      }
+    }
 
     override def reifyList(xs: List[Any]): Tree =
       Select(
         mkList(xs.map {
-          case SimpleTree(SubsToTree(tree, "..")) => tree
-          case List(SimpleTree(SubsToTree(tree, "..."))) => tree
+          case Placeholder(CorrespondsTo(tree, tpe)) if tpe <:< iterableTreeType => tree
+          case List(Placeholder(CorrespondsTo(tree, tpe))) if tpe <:< iterableIterableTreeType => tree
           case x @ _ => mkList(List(reify(x)))
         }),
         nme.flatten)
@@ -124,7 +150,7 @@ trait Reifiers { self: Quasiquotes =>
   class UnapplyReifier(universe: Tree, placeholders: Placeholders) extends Reifier(universe, placeholders) {
 
     override def reifyBasicTree(tree: Tree): Tree = tree match {
-      case SimpleTree(name) =>
+      case Placeholder(name) =>
         Bind(TermName(name), Ident(nme.WILDCARD))
       case Applied(fun, targs, argss) if fun != tree =>
         if (targs.length > 0)
@@ -138,25 +164,25 @@ trait Reifiers { self: Quasiquotes =>
     override def scalaFactoryCall(name: String, args: Tree*): Tree =
       call("scala." + name, args: _*)
 
-    override def reifyName(name: Name): Tree = {
+    override def reifyName(name: Name): Tree =
       if (!placeholders.contains(name.toString))
         super.reifyName(name)
       else {
         Bind(TermName(name.toString), Ident(nme.WILDCARD))
       }
-    }
+
     override def reifyModifiers(m: global.Modifiers) =
       mirrorFactoryCall(nme.Modifiers, mirrorBuildCall("FlagsAsBits", reify(m.flags)), reify(m.privateWithin), reify(m.annotations))
 
     override def reifyList(xs: List[Any]): Tree = {
       val last = if (xs.length > 0) xs.last else EmptyTree
       last match {
-        case SimpleTree(name) if placeholders(name)._2 == ".." =>
+        case Placeholder(name) if placeholders(name)._2 == 1 =>
           val bnd = Bind(TermName(name), Ident(nme.WILDCARD))
           xs.init.foldRight[Tree](bnd) { (el, rest) =>
             scalaFactoryCall("collection.immutable.$colon$colon", reify(el), rest)
           }
-        case List(SimpleTree(name)) if placeholders(name)._2 == "..." =>
+        case List(Placeholder(name)) if placeholders(name)._2 == 2 =>
           val bnd = Bind(TermName(name), Ident(nme.WILDCARD))
           xs.init.foldRight[Tree](bnd) { (el, rest) =>
             scalaFactoryCall("collection.immutable.$colon$colon", reify(el), rest)
@@ -177,8 +203,9 @@ trait Reifiers { self: Quasiquotes =>
     lazy val treeType = memberType(universeType, tpnme.Tree)
     lazy val typeDefType = memberType(universeType, tpnme.TypeDef)
     lazy val liftableType = LiftableClass.toType
-    lazy val iterableTreeType = appliedType(IterableClass.toType, List(treeType))
-    lazy val iterableIterableTreeType = appliedType(IterableClass.toType, List(iterableTreeType))
+    lazy val iterableType = typeOf[Iterable[_]]//IterableClass.toType
+    lazy val iterableTreeType = appliedType(iterableType, List(treeType))
+    lazy val iterableIterableTreeType = appliedType(iterableType, List(iterableTreeType))
     lazy val optionTreeType = appliedType(OptionClass.toType, List(treeType))
     lazy val optionNameType = appliedType(OptionClass.toType, List(nameType))
   }
@@ -187,4 +214,6 @@ trait Reifiers { self: Quasiquotes =>
     val sym = thistype.typeSymbol.typeSignature.member(name)
     sym.asType.toType.typeConstructor.asSeenFrom(thistype, sym.owner)
   }
+
+  def fmtCard(cardinality: Int) = "." * (cardinality + 1)
 }

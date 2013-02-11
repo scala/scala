@@ -140,7 +140,7 @@ object TermConstructionProps extends Properties("construction")
     q"type $name = $t.type" ≈ q"type $name = ${SingletonTypeTree(t)}"
   }
 
-// TODO: this test needs to be fixed
+  // TODO: this test needs to be fixed
   // property("splice tree into super") = forAll { (T: TypeName, t: Tree) =>
   //   q"$t.super[$T]" ≈ Super(This(t), T)
   // }
