@@ -45,6 +45,7 @@ trait StandardScalaSettings {
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.")
   val uniqid =         BooleanSetting ("-uniqid", "Uniquely tag all identifiers in debugging output.")
   val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")
+  val usemanifestcp =  BooleanSetting ("-usemanifestcp", "Utilize the manifest in classpath resolution.")
   val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing.")
   val version =        BooleanSetting ("-version", "Print product version and exit.")
 }
