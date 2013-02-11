@@ -97,23 +97,6 @@ trait AskTypeAt extends AskCommand {
   }
 }
 
-
-trait AskType extends AskCommand {
-  import compiler.Tree
-
-  protected def askType(source: SourceFile, forceReload: Boolean)(implicit reporter: Reporter): Response[Tree] = {
-    ask {
-      compiler.askType(source, forceReload, _)
-    }
-  }
-
-  protected def askType(sources: Seq[SourceFile], forceReload: Boolean)(implicit reporter: Reporter): Seq[Response[Tree]] = {
-    for(source <- sources) yield
-      askType(source, forceReload)
-  }
-}
-
-
 trait AskLoadedTyped extends AskCommand {
   import compiler.Tree
 

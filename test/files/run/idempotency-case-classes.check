@@ -50,6 +50,6 @@ C(2,3)
       Some.apply[(Int, Int)](Tuple2.apply[Int, Int](x$0.x, x$0.y));
     <synthetic> private def readResolve(): Object = C
   };
-  scala.this.Predef.println(C.apply(2, 3))
+  Predef.println(C.apply(2, 3))
 }
 error!

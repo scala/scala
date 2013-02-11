@@ -3,16 +3,17 @@ package scala.tools.partest
 import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
 import scala.tools.asm
-import asm.ClassReader
+import asm.{ ClassReader }
 import asm.tree.{ClassNode, MethodNode, InsnList}
 import java.io.InputStream
+import AsmNode._
 
 /**
- * Providies utilities for inspecting bytecode using ASM library.
+ * Provides utilities for inspecting bytecode using ASM library.
  *
  * HOW TO USE
  * 1. Create subdirectory in test/files/jvm for your test. Let's name it $TESTDIR.
- * 2. Create $TESTDIR/BytecodeSrc_1.scala that contains Scala source file which you
+ * 2. Create $TESTDIR/BytecodeSrc_1.scala that contains Scala source file that you
  *    want to inspect the bytecode for. The '_1' suffix signals to partest that it
  *    should compile this file first.
  * 3. Create $TESTDIR/Test.scala:
@@ -28,18 +29,85 @@ import java.io.InputStream
  * See test/files/jvm/bytecode-test-example for an example of bytecode test.
  *
  */
-abstract class BytecodeTest {
+abstract class BytecodeTest extends ASMConverters {
+  import instructions._
 
   /** produce the output to be compared against a checkfile */
   protected def show(): Unit
 
   def main(args: Array[String]): Unit = show
 
+  // asserts
+  def sameBytecode(methA: MethodNode, methB: MethodNode) = {
+    val isa = instructions.fromMethod(methA)
+    val isb = instructions.fromMethod(methB)
+    if (isa == isb) println("bytecode identical")
+    else diffInstructions(isa, isb)
+  }
+
+  // Do these classes have all the same methods, with the same names, access,
+  // descriptors and generic signatures? Method bodies are not considered, and
+  // the names of the classes containing the methods are substituted so they do
+  // not appear as differences.
+  def sameMethodAndFieldSignatures(clazzA: ClassNode, clazzB: ClassNode): Boolean = {
+    val ms1 = clazzA.fieldsAndMethods.toIndexedSeq
+    val ms2 = clazzB.fieldsAndMethods.toIndexedSeq
+    val name1 = clazzA.name
+    val name2 = clazzB.name
+
+    if (ms1.length != ms2.length) {
+      println("Different member counts in $name1 and $name2")
+      false
+    }
+    else (ms1, ms2).zipped forall { (m1, m2) =>
+      val c1 = m1.characteristics
+      val c2 = m2.characteristics.replaceAllLiterally(name2, name1)
+      if (c1 == c2)
+        println(s"[ok] $m1")
+      else
+        println(s"[fail]\n  in $name1: $c1\n  in $name2: $c2")
+
+      c1 == c2
+    }
+  }
+
+  // bytecode is equal modulo local variable numbering
+  def equalsModuloVar(a: Instruction, b: Instruction) = (a, b) match {
+    case _ if a == b => true
+    case (VarOp(op1, _), VarOp(op2, _)) if op1 == op2 => true
+    case _ => false
+  }
+
+  def similarBytecode(methA: MethodNode, methB: MethodNode, similar: (Instruction, Instruction) => Boolean) = {
+    val isa = fromMethod(methA)
+    val isb = fromMethod(methB)
+    if (isa == isb) println("bytecode identical")
+    else if ((isa, isb).zipped.forall { case (a, b) => similar(a, b) }) println("bytecode similar")
+    else diffInstructions(isa, isb)
+  }
+
+  def diffInstructions(isa: List[Instruction], isb: List[Instruction]) = {
+    val len = Math.max(isa.length, isb.length)
+    if (len > 0 ) {
+      val width = isa.map(_.toString.length).max
+      val lineWidth = len.toString.length
+      (1 to len) foreach { line =>
+        val isaPadded = isa.map(_.toString) orElse Stream.continually("")
+        val isbPadded = isb.map(_.toString) orElse Stream.continually("")
+        val a = isaPadded(line-1)
+        val b = isbPadded(line-1)
+
+        println(s"""$line${" " * (lineWidth-line.toString.length)} ${if (a==b) "==" else "<>"} $a${" " * (width-a.length)} | $b""")
+      }
+    }
+  }
+
+// loading
   protected def getMethod(classNode: ClassNode, name: String): MethodNode =
     classNode.methods.asScala.find(_.name == name) getOrElse
       sys.error(s"Didn't find method '$name' in class '${classNode.name}'")
 
-  protected def loadClassNode(name: String): ClassNode = {
+  protected def loadClassNode(name: String, skipDebugInfo: Boolean = true): ClassNode = {
     val classBytes: InputStream = (for {
       classRep <- classpath.findClass(name)
       binary <- classRep.binary
@@ -47,7 +115,7 @@ abstract class BytecodeTest {
 
     val cr = new ClassReader(classBytes)
     val cn = new ClassNode()
-    cr.accept(cn, 0)
+    cr.accept(cn, if (skipDebugInfo) ClassReader.SKIP_DEBUG else 0)
     cn
   }
 

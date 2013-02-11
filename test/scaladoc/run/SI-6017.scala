@@ -16,6 +16,11 @@ object Test extends ScaladocModelTest {
         val index = IndexModelFactory.makeIndex(universe)
         // Because "STAR" and "Star" are different
         assert(index.firstLetterIndex('s').keys.toSeq.length == 2)
+
+        val indexPage = new Index(universe, index)
+        val letters = indexPage.letters
+        assert(letters.length > 1)
+        assert(letters(0).toString == "<span>#</span>")
       }
       case _ => assert(false)
     }

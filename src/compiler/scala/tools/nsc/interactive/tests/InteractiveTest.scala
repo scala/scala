@@ -47,7 +47,6 @@ abstract class InteractiveTest
   with AskShutdown
   with AskReload
   with AskLoadedTyped
-  with AskType
   with PresentationCompilerInstance
   with CoreTestDefs
   with InteractiveTestSettings { self =>

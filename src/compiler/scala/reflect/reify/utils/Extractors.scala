@@ -263,12 +263,12 @@ trait Extractors {
   }
 
   object BoundType {
-    def unapply(tree: Tree): Option[Tree] = tree match {
-      case Select(_, name) if name.isTypeName =>
+    def unapply(tree: Tree): Option[RefTree] = tree match {
+      case tree @ Select(_, name) if name.isTypeName =>
         Some(tree)
-      case SelectFromTypeTree(_, name) if name.isTypeName =>
+      case tree @ SelectFromTypeTree(_, _) =>
         Some(tree)
-      case Ident(name) if name.isTypeName =>
+      case tree @ Ident(name) if name.isTypeName =>
         Some(tree)
       case _ =>
         None

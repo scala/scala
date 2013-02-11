@@ -8,7 +8,7 @@
     }
   };
   val c = C.apply(2, 2);
-  scala.this.Predef.println(c.foo.$times(c.bar))
+  Predef.println(c.foo.$times(c.bar))
 }
 4
 ()

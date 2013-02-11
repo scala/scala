@@ -11,10 +11,7 @@
       [64]case5()[84]{
         [84]<synthetic> val o7: [84]Option[Int] = [84][84]Case3.unapply([84]x1);
         [84]if ([84]o7.isEmpty.unary_!)
-          [84]{
-            [90]val nr: [90]Int = [90]o7.get;
-            [97][97]matchEnd4([97]())
-          }
+          [97][97]matchEnd4([97]())
         else
           [84][84]case6()
       };
@@ -38,10 +35,7 @@
         [195]<synthetic> val o7: [195]Option[List[Int]] = [195][195]Case4.unapplySeq([195]x1);
         [195]if ([195]o7.isEmpty.unary_!)
           [195]if ([195][195][195][195]o7.get.!=([195]null).&&([195][195][195][195]o7.get.lengthCompare([195]1).==([195]0)))
-            [195]{
-              [201]val nr: [201]Int = [201][201]o7.get.apply([201]0);
-              [208][208]matchEnd4([208]())
-            }
+            [208][208]matchEnd4([208]())
           else
             [195][195]case6()
         else

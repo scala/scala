@@ -12,7 +12,7 @@ import typechecker.Analyzer
 import scala.reflect.internal.util.BatchSourceFile
 
 trait ScaladocAnalyzer extends Analyzer {
-  val global : ScaladocGlobal
+  val global : Global // generally, a ScaladocGlobal
   import global._
 
   override def newTyper(context: Context): ScaladocTyper = new ScaladocTyper(context)
