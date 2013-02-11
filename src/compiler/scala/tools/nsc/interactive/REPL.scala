@@ -59,7 +59,7 @@ object REPL {
 
   def main(args: Array[String]) {
     process(args)
-    /*sys.*/exit(if (reporter.hasErrors) 1 else 0)// Don't use sys yet as this has to run on 2.8.2 also.
+    sys.exit(if (reporter.hasErrors) 1 else 0)
   }
 
   def loop(action: (String) => Unit) {
@@ -182,7 +182,7 @@ object REPL {
           println(instrument(arguments, line.toInt))
         case List("quit") =>
           comp.askShutdown()
-          exit(1) // Don't use sys yet as this has to run on 2.8.2 also.
+          sys.exit(1)
         case List("structure", file) =>
           doStructure(file)
         case _ =>

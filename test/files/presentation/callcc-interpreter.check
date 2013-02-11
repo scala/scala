@@ -59,7 +59,8 @@ retrieved 63 members
 [accessible:  true] `type NamecallccInterpreter.Name`
 [accessible:  true] `value __leftOfArrowcallccInterpreter.type`
 [accessible:  true] `value __resultOfEnsuringcallccInterpreter.type`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatcallccInterpreter.type`
+[accessible:  true] `value __thingToAddcallccInterpreter.type`
 [accessible:  true] `value term0callccInterpreter.App`
 [accessible:  true] `value term1callccInterpreter.App`
 [accessible:  true] `value term2callccInterpreter.Add`

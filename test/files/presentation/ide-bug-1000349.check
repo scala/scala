@@ -35,5 +35,6 @@ retrieved 36 members
 [accessible:  true] `method →[B](y: B)(Foo, B)`
 [accessible:  true] `value __leftOfArrowFoo`
 [accessible:  true] `value __resultOfEnsuringFoo`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatFoo`
+[accessible:  true] `value __thingToAddFoo`
 ================================================================================
