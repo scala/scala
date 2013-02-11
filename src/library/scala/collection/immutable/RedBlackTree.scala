@@ -91,9 +91,9 @@ object RedBlackTree {
     if (tree.right ne null) _foreachKey(tree.right, f)
   }
 
-  def iterator[A, B](tree: Tree[A, B]): Iterator[(A, B)] = new EntriesIterator(tree)
-  def keysIterator[A, _](tree: Tree[A, _]): Iterator[A] = new KeysIterator(tree)
-  def valuesIterator[_, B](tree: Tree[_, B]): Iterator[B] = new ValuesIterator(tree)
+  def iterator[A, B](tree: Tree[A, B], start: Option[A] = None)(implicit ordering: Ordering[A]): Iterator[(A, B)] = new EntriesIterator(tree, start)
+  def keysIterator[A, _](tree: Tree[A, _], start: Option[A] = None)(implicit ordering: Ordering[A]): Iterator[A] = new KeysIterator(tree, start)
+  def valuesIterator[A, B](tree: Tree[A, B], start: Option[A] = None)(implicit ordering: Ordering[A]): Iterator[B] = new ValuesIterator(tree, start)
 
   @tailrec
   def nth[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
@@ -425,7 +425,7 @@ object RedBlackTree {
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
-  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B]) extends Iterator[R] {
+  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(implicit ordering: Ordering[A]) extends Iterator[R] {
     protected[this] def nextResult(tree: Tree[A, B]): R
 
     override def hasNext: Boolean = lookahead ne null
@@ -481,7 +481,23 @@ object RedBlackTree {
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0
-    private[this] var lookahead: Tree[A, B] = findLeftMostOrPopOnEmpty(root)
+    private[this] var lookahead: Tree[A, B] = start map startFrom getOrElse findLeftMostOrPopOnEmpty(root)
+    
+    /**
+     * Find the leftmost subtree whose key is equal to the given key, or if no such thing, 
+     * the leftmost subtree with the key that would be "next" after it according
+     * to the ordering. Along the way build up the iterator's path stack so that "next"
+     * functionality works.
+     */
+    private[this] def startFrom(key: A) : Tree[A,B] = if (root eq null) null else {
+      @tailrec def find(tree: Tree[A, B]): Tree[A, B] = 
+        if (tree == null) popNext
+        else find(
+          if (ordering.lteq(key, tree.key)) goLeft(tree)
+          else goRight(tree)
+        )      
+      find(root)
+    }
    
     private[this] def goLeft(tree: Tree[A, B]) = {
       pushNext(tree)
@@ -491,15 +507,15 @@ object RedBlackTree {
     private[this] def goRight(tree: Tree[A, B]) = tree.right
   }
 
-  private[this] class EntriesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, (A, B)](tree) {
+  private[this] class EntriesIterator[A, B](tree: Tree[A, B], focus: Option[A])(implicit ordering: Ordering[A]) extends TreeIterator[A, B, (A, B)](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = (tree.key, tree.value)
   }
 
-  private[this] class KeysIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, A](tree) {
+  private[this] class KeysIterator[A, B](tree: Tree[A, B], focus: Option[A])(implicit ordering: Ordering[A]) extends TreeIterator[A, B, A](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = tree.key
   }
 
-  private[this] class ValuesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, B](tree) {
+  private[this] class ValuesIterator[A, B](tree: Tree[A, B], focus: Option[A])(implicit ordering: Ordering[A]) extends TreeIterator[A, B, B](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = tree.value
   }
 }

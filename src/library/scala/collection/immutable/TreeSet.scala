@@ -144,6 +144,7 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
    *  @return the new iterator
    */
   def iterator: Iterator[A] = RB.keysIterator(tree)
+  override def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
   override def foreach[U](f: A =>  U) = RB.foreachKey(tree, f)
 

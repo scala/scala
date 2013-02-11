@@ -116,8 +116,25 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
     resolve.avl.contains(elem, ordering)
   }
 
+  // TODO see the discussion on keysIteratorFrom
   override def iterator: Iterator[A] = resolve.avl.iterator
     .dropWhile(e => !isLeftAcceptable(from, ordering)(e))
       .takeWhile(e => isRightAcceptable(until, ordering)(e))
+  
+  // TODO because TreeSets are potentially ranged views into other TreeSets
+  // what this really needs to do is walk the whole stack of tree sets, find
+  // the highest "from", and then do a tree walk of the underlying avl tree
+  // to find that spot in max(O(stack depth), O(log tree.size)) time which
+  // should effectively be O(log size) since ranged views are rare and
+  // even more rarely deep. With the following implementation it's
+  // O(N log N) to get an iterator from a start point.  
+  // But before engaging that endeavor I think mutable.TreeSet should be
+  // based on the same immutable RedBlackTree that immutable.TreeSet is
+  // based on. There's no good reason to have these two collections based
+  // on two different balanced binary trees. That'll save
+  // having to duplicate logic for finding the starting point of a
+  // sorted binary tree iterator, logic that has already been
+  // baked into RedBlackTree.
+  override def keysIteratorFrom(start: A) = from(start).iterator
 
 }
