@@ -1,4 +1,4 @@
-package subscript.vm
+package subscript.swing
 
 import java.awt.{Font, BasicStroke, Stroke, Color => AWTColor}
 import java.awt.geom.AffineTransform
@@ -7,6 +7,7 @@ import scala.swing._
 import subscript.swing._
 import subscript.swing.Scripts._
 import subscript.DSL._
+import subscript.vm._
 
 /*
  * Graphical script debugger

@@ -4496,6 +4496,29 @@ trait Typers extends Modes with Adaptations with Tags {
               
               val nodeType     = sSubScriptVM_N_call
               val fun_template = sSubScriptDSL_call
+              
+              /* the following code would wrap not-yet-wrapped arguments in an ActualValueParameter
+               *  However, this does not work out well since the type parameter of ActualValueParameter
+               *  cannot be made covariant.
+               *  No problem though because there is an implicit conversion to ActualValueParameter
+               *
+              def actualParameterPacked(v: List[_]) = !v.isEmpty && (v.head match {
+                case Select(subscriptVm, wrapperClass) => wrapperClass.toString match {
+                    case "ActualValueParameter" | "ActualOutputParameter" | 
+                   "ActualConstrainedParameter" | "ActualAdaptingParameter" => true
+                    case _ => false
+                  }
+                case _ => false
+              })
+              val actualValueParameter_Name = newTermName("ActualValueParameter")
+              val wrappedArgs = args.map{ arg => arg match {
+                case a @ Apply(wrapper, valueList) if actualParameterPacked(valueList) => a
+                case _ => Apply(Select(sSubScriptVM, actualValueParameter_Name), List(arg))
+              }}
+              val tree1        = Apply( fun1, wrappedArgs)             // _a(here.toString)
+              * 
+              */
+              
               val tree1        = Apply( fun1, args)             // _a(here.toString)
               val tree2        = Apply(tree1, List(here_Ident)) // (_a(here.toString))(here)
              

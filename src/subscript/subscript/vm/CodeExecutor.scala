@@ -29,6 +29,7 @@ import scala.collection.mutable._
 
 // Executors that execute any call to Scala code in the application:
 // code fragments, script calls, parameter checks, tests in if and while, annotations
+trait CodeExecutor // to make an empty class file so that ant will not get confused
 trait CodeExecutorTrait {
   // graph operations such as aaStarted may only be done when called from executor!
   var canceled = false // TBD(?) inspect this flag before execution

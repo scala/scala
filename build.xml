@@ -932,7 +932,8 @@ QUICK BUILD (QUICK)
         <include name="library/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
-        <include name="subscript/**"/>
+        <include name="subscript/subscript/*"/>
+        <include name="subscript/subscript/vm/*"/>
         <include name="actors/**"/>
       </srcfiles>
     </uptodate>
@@ -1017,7 +1018,8 @@ QUICK BUILD (QUICK)
       params="${scalac.args.quick}"
       srcdir="${src.dir}/subscript"
       jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
+        <include name="subscript/*.scala"/>
+        <include name="subscript/vm/*.scala"/>
       <compilationpath refid="quick.compilation.path.subscript"/>
     </scalacfork>
   </target>
@@ -1126,7 +1128,32 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-plugins" depends="quick.comp">
+  <target name="quick.subscript.swing" depends="quick.comp, quick.swing, quick.lib">
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/subscript"
+      jvmargs="${scalacfork.jvmargs}">
+        <include name="subscript/swing/*.scala"/>
+      <compilationpath refid="quick.compilation.path.subscript"/>
+    </scalacfork>
+  </target>
+
+  <target name="quick.subscript.examples" depends="quick.comp, quick.subscript.swing, quick.swing, quick.lib">
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/subscript"
+      jvmargs="${scalacfork.jvmargs}">
+        <include name="subscript/examples/*.scala"/>
+        <include name="subscript/examples/*/*.scala"/>
+      <compilationpath refid="quick.compilation.path.subscript"/>
+    </scalacfork>
+  </target>
+
+  <target name="quick.pre-plugins" depends="quick.subscript.examples, quick.comp">
     <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">
       <srcfiles dir="${src.dir}/continuations"/>
     </uptodate>
@@ -1397,7 +1424,8 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.subscript" depends="pack.lib" if="has.java6">
     <jar destfile="${build-pack.dir}/lib/scala-subscript.jar">
       <fileset dir="${build-quick.dir}/classes/library">
-        <include name="scala/subscript/**"/>
+        <include name="scala/subscript/subscript/*.scala"/>
+        <include name="scala/subscript/subscript/vm/*.scala"/>
       </fileset>
     </jar>
   </target>
@@ -2408,7 +2436,7 @@ DOCUMENTATION
   </target>
 
 <!-- ===========================================================================
-BOOTRAPING TEST AND TEST SUITE
+BOOSTRAPPING TEST AND TEST SUITE
 ============================================================================ -->
 
   <target name="test.stability" depends="strap.done, init">

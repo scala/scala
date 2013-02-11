@@ -39,6 +39,7 @@ Overview of formal and actual parameter use
 ||`                    `||`                               `||` formalParam if(c)?? `||`    ActualAdaptingParameter(_formalParam, {=>c}) `||
 
  */
+trait Data // to make an empty class file so that ant will not get confused
 
 trait FormalParameter[T<:Any] {
   def value: T

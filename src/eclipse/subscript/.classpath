@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="compiler"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/subscript"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib/ant/ant.jar"/>
