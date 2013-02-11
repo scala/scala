@@ -43,7 +43,6 @@ private[reflect] class Settings extends MutableSettings {
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
   val breakCycles       = new BooleanSetting(false)
-  val companionsInPkgObjs = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
   val maxClassfileName  = new IntSetting(255)

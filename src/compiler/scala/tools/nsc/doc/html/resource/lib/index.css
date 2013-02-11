@@ -206,13 +206,17 @@ h1 {
   border-right:0;
 }
 
-#letters > a {
+#letters > a, #letters > span {
 /*  font-family: monospace;*/
   color: #858484;
   font-weight: bold;
   font-size: 8pt;
   text-shadow: #ffffff 0 1px 0;
   padding-right: 2px;
+}
+
+#letters > span {
+  color: #bbb;
 }
   
 #tpl {

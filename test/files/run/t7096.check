@@ -1,0 +1,2 @@
+testing symbol List(method foo, class Base, package ano, package <root>), param value x, xRefs List(x)
+testing symbol List(method foo, class Sub, package ano, package <root>), param value x, xRefs List(x)

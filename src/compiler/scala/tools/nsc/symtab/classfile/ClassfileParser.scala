@@ -547,8 +547,8 @@ abstract class ClassfileParser {
     skipMembers() // methods
     if (!isScala) {
       clazz setFlag sflags
-      setPrivateWithin(clazz, jflags)
-      setPrivateWithin(staticModule, jflags)
+      importPrivateWithinFromJavaFlags(clazz, jflags)
+      importPrivateWithinFromJavaFlags(staticModule, jflags)
       clazz.setInfo(classInfo)
       moduleClass setInfo staticInfo
       staticModule.setInfo(moduleClass.tpe)
@@ -611,7 +611,7 @@ abstract class ClassfileParser {
         if (isEnum) ConstantType(Constant(sym))
         else info
       }
-      setPrivateWithin(sym, jflags)
+      importPrivateWithinFromJavaFlags(sym, jflags)
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
 
@@ -662,7 +662,7 @@ abstract class ClassfileParser {
               info = MethodType(newParams, clazz.tpe)
           }
         sym.setInfo(info)
-        setPrivateWithin(sym, jflags)
+        importPrivateWithinFromJavaFlags(sym, jflags)
         parseAttributes(sym, info)
         if ((jflags & JAVA_ACC_VARARGS) != 0) {
           sym.setInfo(arrayToRepeated(sym.info))
@@ -1037,14 +1037,9 @@ abstract class ClassfileParser {
     def parseExceptions(len: Int) {
       val nClasses = in.nextChar
       for (n <- 0 until nClasses) {
+        // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (SI-7065)
         val cls = pool.getClassSymbol(in.nextChar.toInt)
-        val tp = if (cls.isMonomorphicType) cls.tpe else {
-          debuglog(s"Encountered polymorphic exception `${cls.fullName}` while parsing class file.")
-          // in case we encounter polymorphic exception the best we can do is to convert that type to
-          // monomorphic one by introducing existientals, see SI-7009 for details
-          typer.packSymbols(cls.typeParams, cls.tpe)
-        }
-        sym.addAnnotation(appliedType(definitions.ThrowsClass, tp), Literal(Constant(tp)))
+        sym.addThrowsAnnotation(cls)
       }
     }
 
@@ -1253,19 +1248,6 @@ abstract class ClassfileParser {
 
   protected def getScope(flags: Int): Scope =
     if (isStatic(flags)) staticScope else instanceScope
-
-  private def setPrivateWithin(sym: Symbol, jflags: Int) {
-    if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
-      // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
-      // apparently occurs when processing v45.3 bytecode.
-      if (sym.enclosingTopLevelClass != NoSymbol)
-        sym.privateWithin = sym.enclosingTopLevelClass.owner
-
-    // protected in java means package protected. #3946
-    if ((jflags & JAVA_ACC_PROTECTED) != 0)
-      if (sym.enclosingTopLevelClass != NoSymbol)
-        sym.privateWithin = sym.enclosingTopLevelClass.owner
-  }
 
   private def isPrivate(flags: Int)     = (flags & JAVA_ACC_PRIVATE) != 0
   private def isStatic(flags: Int)      = (flags & JAVA_ACC_STATIC) != 0

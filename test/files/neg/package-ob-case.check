@@ -2,8 +2,6 @@ package-ob-case.scala:3: warning: it is not recommended to define classes/object
 If possible, define class X in package foo instead.
     case class X(z: Int) { }
                ^
-package-ob-case.scala:3: error: implementation restriction: package object foo cannot contain case class X. Instead, class X should be placed directly in package foo.
-    case class X(z: Int) { }
-               ^
+error: No warnings can be incurred under -Xfatal-warnings.
 one warning found
 one error found

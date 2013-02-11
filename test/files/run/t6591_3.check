@@ -1,0 +1,1 @@
+Block(List(ValDef(Modifiers(), TermName("v"), Select(This(TypeName("A")), TypeName("I")), Apply(Select(New(Select(This(TypeName("A")), TypeName("I"))), nme.CONSTRUCTOR), List()))), Ident(TermName("v")))
