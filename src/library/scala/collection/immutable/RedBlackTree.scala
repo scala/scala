@@ -425,32 +425,28 @@ object RedBlackTree {
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
-  private[this] abstract class TreeIterator[A, B, R](tree: Tree[A, B]) extends Iterator[R] {
+  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B]) extends Iterator[R] {
     protected[this] def nextResult(tree: Tree[A, B]): R
 
-    override def hasNext: Boolean = next ne null
+    override def hasNext: Boolean = lookahead ne null
 
-    override def next: R = next match {
+    override def next: R = lookahead match {
       case null =>
         throw new NoSuchElementException("next on empty iterator")
       case tree =>
-        next = findNext(tree.right)
+        lookahead = findLeftMostOrPopOnEmpty(goRight(tree))
         nextResult(tree)
     }
 
     @tailrec
-    private[this] def findNext(tree: Tree[A, B]): Tree[A, B] = {
-      if (tree eq null) popPath()
+    private[this] def findLeftMostOrPopOnEmpty(tree: Tree[A, B]): Tree[A, B] =
+      if (tree eq null) popNext()
       else if (tree.left eq null) tree
-      else {
-        pushPath(tree)
-        findNext(tree.left)
-      }
-    }
+      else findLeftMostOrPopOnEmpty(goLeft(tree))
 
-    private[this] def pushPath(tree: Tree[A, B]) {
+    private[this] def pushNext(tree: Tree[A, B]) {
       try {
-        path(index) = tree
+        stackOfNexts(index) = tree
         index += 1
       } catch {
         case _: ArrayIndexOutOfBoundsException =>
@@ -462,17 +458,17 @@ object RedBlackTree {
            * An exception handler is used instead of an if-condition to optimize the normal path.
            * This makes a large difference in iteration speed!
            */
-          assert(index >= path.length)
-          path :+= null
-          pushPath(tree)
+          assert(index >= stackOfNexts.length)
+          stackOfNexts :+= null
+          pushNext(tree)
       }
     }
-    private[this] def popPath(): Tree[A, B] = if (index == 0) null else {
+    private[this] def popNext(): Tree[A, B] = if (index == 0) null else {
       index -= 1
-      path(index)
+      stackOfNexts(index)
     }
 
-    private[this] var path = if (tree eq null) null else {
+    private[this] var stackOfNexts = if (root eq null) null else {
       /*
        * According to "Ralf Hinze. Constructing red-black trees" [http://www.cs.ox.ac.uk/ralf.hinze/publications/#P5]
        * the maximum height of a red-black tree is 2*log_2(n + 2) - 2.
@@ -481,11 +477,18 @@ object RedBlackTree {
        *
        * We also don't store the deepest nodes in the path so the maximum path length is further reduced by one.
        */
-      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(tree.count + 2 - 1)) - 2 - 1
+      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(root.count + 2 - 1)) - 2 - 1
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0
-    private[this] var next: Tree[A, B] = findNext(tree)
+    private[this] var lookahead: Tree[A, B] = findLeftMostOrPopOnEmpty(root)
+   
+    private[this] def goLeft(tree: Tree[A, B]) = {
+      pushNext(tree)
+      tree.left
+    }
+    
+    private[this] def goRight(tree: Tree[A, B]) = tree.right
   }
 
   private[this] class EntriesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, (A, B)](tree) {
