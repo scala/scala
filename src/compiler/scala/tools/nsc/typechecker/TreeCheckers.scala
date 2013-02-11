@@ -313,6 +313,9 @@ abstract class TreeCheckers extends Analyzer {
         }
         for {
           sym <- referencedSymbols
+          // Accessors are known to steal the type of the underlying field without cloning existential symbols at the new owner.
+          // This happens in Namer#accessorTypeCompleter. We just look the other way here.
+          if !tree.symbol.isAccessor
           if (sym.isTypeParameter || sym.isLocal) && !(tree.symbol hasTransOwner sym.owner)
         } errorFn(s"The symbol, tpe or info of tree `(${tree}) : ${info}` refers to a out-of-scope symbol, ${sym.fullLocationString}. tree.symbol.ownerChain: ${tree.symbol.ownerChain.mkString(", ")}")
       }
