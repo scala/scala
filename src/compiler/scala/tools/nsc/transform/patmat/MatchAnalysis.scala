@@ -192,27 +192,27 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
       }
     }
 
-    private[this] val uniqueEqualityProps = new scala.collection.mutable.HashMap[(Tree, Tree), Eq]
-    private[this] val uniqueNonNullProps = new scala.collection.mutable.HashMap[Tree, Not]
-    private[this] val uniqueTypeProps = new scala.collection.mutable.HashMap[(Tree, Type), Eq]
-
-    def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
-      uniqueEqualityProps getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
-
-    def uniqueNonNullProp (testedPath: Tree): Prop =
-      uniqueNonNullProps getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
-
-    def uniqueTypeProp(testedPath: Tree, pt: Type): Prop =
-      uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
-
     class TreeMakersToPropsIgnoreNullChecks(root: Symbol) extends TreeMakersToProps(root) {
-      override def nonNullProp(p: Tree): Prop = True
+      override def uniqueNonNullProp(p: Tree): Prop = True
     }
 
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
     class TreeMakersToProps(val root: Symbol) {
+      prepareNewAnalysis() // reset hash consing for Var and Const
+
+      private[this] val uniqueEqualityProps = new scala.collection.mutable.HashMap[(Tree, Tree), Eq]
+      private[this] val uniqueNonNullProps = new scala.collection.mutable.HashMap[Tree, Not]
+      private[this] val uniqueTypeProps = new scala.collection.mutable.HashMap[(Tree, Type), Eq]
+
+      def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
+        uniqueEqualityProps getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
+
       // overridden in TreeMakersToPropsIgnoreNullChecks
-      def nonNullProp(p: Tree): Prop = uniqueNonNullProp(p)
+      def uniqueNonNullProp (testedPath: Tree): Prop =
+        uniqueNonNullProps getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
+
+      def uniqueTypeProp(testedPath: Tree, pt: Type): Prop =
+        uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
       private val pointsToBound = scala.collection.mutable.HashSet(root)
@@ -303,9 +303,9 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
                 def and(a: Result, b: Result)                         = And(a, b)
                 def outerTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
                 def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
-                  val p = binderToUniqueTree(b);                        And(nonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
+                  val p = binderToUniqueTree(b);                        And(uniqueNonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
                 }
-                def nonNullTest(testedBinder: Symbol)                 = nonNullProp(binderToUniqueTree(testedBinder))
+                def nonNullTest(testedBinder: Symbol)                 = uniqueNonNullProp(binderToUniqueTree(testedBinder))
                 def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat))
                 def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat)) // TODO: eq, not ==
                 def tru                                               = True
@@ -313,7 +313,7 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
               ttm.renderCondition(condStrategy)
             case EqualityTestTreeMaker(prevBinder, patTree, _)        => uniqueEqualityProp(binderToUniqueTree(prevBinder), unique(patTree))
             case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map this)))
-            case ProductExtractorTreeMaker(testedBinder, None)        => nonNullProp(binderToUniqueTree(testedBinder))
+            case ProductExtractorTreeMaker(testedBinder, None)        => uniqueNonNullProp(binderToUniqueTree(testedBinder))
             case SubstOnlyTreeMaker(_, _)                             => True
             case GuardTreeMaker(guard) =>
               guard.tpe match {
@@ -364,7 +364,8 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
     def approximateMatchConservative(root: Symbol, cases: List[List[TreeMaker]]): List[List[Test]] =
       (new TreeMakersToProps(root)).approximateMatch(cases)
 
-    def prepareNewAnalysis() = { Var.resetUniques(); Const.resetUniques() }
+    // resets hash consing -- only supposed to be called by TreeMakersToProps
+    def prepareNewAnalysis(): Unit = { Var.resetUniques(); Const.resetUniques() }
 
     object Var extends VarExtractor {
       private var _nextId = 0
@@ -723,7 +724,6 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
-      prepareNewAnalysis()
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
@@ -796,7 +796,6 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
       var backoff = false
-      prepareNewAnalysis()
 
       val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
       val tests = approx.approximateMatch(cases, approx.onUnknown { tm =>

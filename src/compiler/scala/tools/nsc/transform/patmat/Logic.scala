@@ -79,6 +79,9 @@ trait Logic { self: PatternMatching =>
       def unapply(v: Var): Some[Tree]
     }
 
+    // resets hash consing -- only supposed to be called by TreeMakersToProps
+    def prepareNewAnalysis(): Unit
+
     trait AbsVar {
       // indicate we may later require a prop for V = C
       def registerEquality(c: Const): Unit
