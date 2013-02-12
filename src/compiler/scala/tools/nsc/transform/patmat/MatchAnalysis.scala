@@ -153,13 +153,12 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
   /**
    * Represent a match as a formula in propositional logic that encodes whether the match matches (abstractly: we only consider types)
    *
-   * TODO: remove duplication between Cond and Prop
    */
   trait TreeMakerApproximation extends TreeMakers with FirstOrderLogic with CheckableTypeAnalysis { self: CodegenCore =>
     object Test {
       var currId = 0
     }
-    case class Test(cond: Cond, treeMaker: TreeMaker) {
+    case class Test(prop: Prop, treeMaker: TreeMaker) {
       // private val reusedBy = new scala.collection.mutable.HashSet[Test]
       var reuses: Option[Test] = None
       def registerReuseBy(later: Test): Unit = {
@@ -170,51 +169,9 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
 
       val id = { Test.currId += 1; Test.currId}
       override def toString =
-        "T"+ id + "C("+ cond +")"  //+ (reuses map ("== T"+_.id) getOrElse (if(reusedBy.isEmpty) treeMaker else reusedBy mkString (treeMaker+ " -->(", ", ",")")))
+        "T"+ id + "C("+ prop +")"  //+ (reuses map ("== T"+_.id) getOrElse (if(reusedBy.isEmpty) treeMaker else reusedBy mkString (treeMaker+ " -->(", ", ",")")))
     }
 
-    // TODO: remove Cond, replace by Prop from Logic
-    object Cond {
-      var currId = 0
-    }
-
-    abstract class Cond {
-      val id = { Cond.currId += 1; Cond.currId}
-    }
-
-    case object TrueCond extends Cond  {override def toString = "T"}
-    case object FalseCond extends Cond {override def toString = "F"}
-
-    case class AndCond(a: Cond, b: Cond) extends Cond {override def toString = a +"/\\"+ b}
-    case class OrCond(a: Cond, b: Cond)  extends Cond {override def toString = "("+a+") \\/ ("+ b +")"}
-
-    case class EqualityCond(val testedPath: Tree, val rhs: Tree) extends Cond {
-      override def toString = testedPath +" == "+ rhs +"#"+ id
-    }
-
-    case class NonNullCond(val testedPath: Tree) extends Cond {
-      override def toString = testedPath +" ne null " +"#"+ id
-    }
-
-    case class TypeCond(val testedPath: Tree, val pt: Type) extends Cond {
-      override def toString = testedPath +" : "+ pt +"#"+ id
-    }
-
-//    class OuterEqCond(val testedPath: Tree, val expectedType: Type) extends Cond {
-//      val expectedOuter = expectedTp.prefix match {
-//        case ThisType(clazz)  => THIS(clazz)
-//        case pre              => REF(pre.prefix, pre.termSymbol)
-//      }
-//
-//      // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
-//      // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
-//      val outer = expectedTp.typeSymbol.newMethod(vpmName.outer) setInfo expectedTp.prefix setFlag SYNTHETIC
-//
-//      (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
-//    }
-
-    def /\(conds: Iterable[Cond]) = if (conds.isEmpty) TrueCond else conds.reduceLeft(AndCond(_, _))
-    def \/(conds: Iterable[Cond]) = if (conds.isEmpty) FalseCond else conds.reduceLeft(OrCond(_, _))
 
     object IrrefutableExtractorTreeMaker {
       // will an extractor with unapply method of methodtype `tp` always succeed?
@@ -235,22 +192,27 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
       }
     }
 
-    private[this] val uniqueEqualityConds = new scala.collection.mutable.HashMap[(Tree, Tree), EqualityCond]
-    private[this] val uniqueNonNullConds = new scala.collection.mutable.HashMap[Tree, NonNullCond]
-    private[this] val uniqueTypeConds = new scala.collection.mutable.HashMap[(Tree, Type), TypeCond]
+    private[this] val uniqueEqualityProps = new scala.collection.mutable.HashMap[(Tree, Tree), Eq]
+    private[this] val uniqueNonNullProps = new scala.collection.mutable.HashMap[Tree, Not]
+    private[this] val uniqueTypeProps = new scala.collection.mutable.HashMap[(Tree, Type), Eq]
 
-    def uniqueEqualityCond(testedPath: Tree, rhs: Tree): EqualityCond = uniqueEqualityConds getOrElseUpdate((testedPath, rhs), EqualityCond(testedPath, rhs))
-    def uniqueNonNullCond (testedPath: Tree): NonNullCond = uniqueNonNullConds getOrElseUpdate(testedPath, NonNullCond(testedPath))
-    def uniqueTypeCond(testedPath: Tree, pt: Type): TypeCond = uniqueTypeConds getOrElseUpdate((testedPath, pt), TypeCond(testedPath, pt))
+    def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
+      uniqueEqualityProps getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
 
-    class TreeMakersToCondsIgnoreNullChecks(root: Symbol) extends TreeMakersToConds(root) {
-      override def nonNullCond(p: Tree): Cond = TrueCond
+    def uniqueNonNullProp (testedPath: Tree): Prop =
+      uniqueNonNullProps getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
+
+    def uniqueTypeProp(testedPath: Tree, pt: Type): Prop =
+      uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
+
+    class TreeMakersToPropsIgnoreNullChecks(root: Symbol) extends TreeMakersToProps(root) {
+      override def nonNullProp(p: Tree): Prop = True
     }
 
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
-    class TreeMakersToConds(val root: Symbol) {
+    class TreeMakersToProps(val root: Symbol) {
       // overridden in TreeMakersToPropsIgnoreNullChecks
-      def nonNullCond(p: Tree): Cond = uniqueNonNullCond(p)
+      def nonNullProp(p: Tree): Prop = uniqueNonNullProp(p)
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
       private val pointsToBound = scala.collection.mutable.HashSet(root)
@@ -295,7 +257,7 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
 
       // note that the sequencing of operations is important: must visit in same order as match execution
       // binderToUniqueTree uses the type of the first symbol that was encountered as the type for all future binders
-      abstract class TreeMakerToCond extends (TreeMaker => Cond) {
+      abstract class TreeMakerToProp extends (TreeMaker => Prop) {
         // requires(if (!substitutionComputed))
         def updateSubstitution(subst: Substitution): Unit = {
           // find part of substitution that replaces bound symbols by new symbols, and reverse that part
@@ -320,43 +282,43 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
           // patmatDebug("accumSubst: "+ accumSubst)
         }
 
-        def handleUnknown(tm: TreeMaker): Cond
+        def handleUnknown(tm: TreeMaker): Prop
 
         /** apply itself must render a faithful representation of the TreeMaker
          *
-         * Concretely, TrueCond must only be used to represent a TreeMaker that is sure to match and that does not do any computation at all
-         * e.g., doCSE relies on apply itself being sound in this sense (since it drops TreeMakers that are approximated to TrueCond -- SI-6077)
+         * Concretely, True must only be used to represent a TreeMaker that is sure to match and that does not do any computation at all
+         * e.g., doCSE relies on apply itself being sound in this sense (since it drops TreeMakers that are approximated to True -- SI-6077)
          *
          * handleUnknown may be customized by the caller to approximate further
          *
          * TODO: don't ignore outer-checks
          */
-        def apply(tm: TreeMaker): Cond = {
+        def apply(tm: TreeMaker): Prop = {
           if (!substitutionComputed) updateSubstitution(tm.subPatternsAsSubstitution)
 
           tm match {
             case ttm@TypeTestTreeMaker(prevBinder, testedBinder, pt, _)   =>
               object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
-                type Result                                           = Cond
-                def and(a: Result, b: Result)                         = AndCond(a, b)
-                def outerTest(testedBinder: Symbol, expectedTp: Type) = TrueCond // TODO OuterEqCond(testedBinder, expectedType)
+                type Result                                           = Prop
+                def and(a: Result, b: Result)                         = And(a, b)
+                def outerTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
                 def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
-                  val p = binderToUniqueTree(b);                        AndCond(nonNullCond(p), uniqueTypeCond(p, uniqueTp(pt)))
+                  val p = binderToUniqueTree(b);                        And(nonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
                 }
-                def nonNullTest(testedBinder: Symbol)                 = nonNullCond(binderToUniqueTree(testedBinder))
-                def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityCond(binderToUniqueTree(testedBinder), unique(pat))
-                def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueEqualityCond(binderToUniqueTree(testedBinder), unique(pat)) // TODO: eq, not ==
-                def tru                                               = TrueCond
+                def nonNullTest(testedBinder: Symbol)                 = nonNullProp(binderToUniqueTree(testedBinder))
+                def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat))
+                def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat)) // TODO: eq, not ==
+                def tru                                               = True
               }
               ttm.renderCondition(condStrategy)
-            case EqualityTestTreeMaker(prevBinder, patTree, _)        => uniqueEqualityCond(binderToUniqueTree(prevBinder), unique(patTree))
+            case EqualityTestTreeMaker(prevBinder, patTree, _)        => uniqueEqualityProp(binderToUniqueTree(prevBinder), unique(patTree))
             case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map this)))
-            case ProductExtractorTreeMaker(testedBinder, None)        => nonNullCond(binderToUniqueTree(testedBinder))
-            case SubstOnlyTreeMaker(_, _)                             => TrueCond
+            case ProductExtractorTreeMaker(testedBinder, None)        => nonNullProp(binderToUniqueTree(testedBinder))
+            case SubstOnlyTreeMaker(_, _)                             => True
             case GuardTreeMaker(guard) =>
               guard.tpe match {
-                case ConstantType(Constant(true))  => TrueCond
-                case ConstantType(Constant(false)) => FalseCond
+                case ConstantType(Constant(true))  => True
+                case ConstantType(Constant(false)) => False
                 case _                             => handleUnknown(tm)
               }
             case ExtractorTreeMaker(_, _, _) |
@@ -367,60 +329,51 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
       }
 
 
-      private val irrefutableExtractor: PartialFunction[TreeMaker, Cond] = {
+      private val irrefutableExtractor: PartialFunction[TreeMaker, Prop] = {
         // the extra condition is None, the extractor's result indicates it always succeeds,
         // (the potential type-test for the argument is represented by a separate TypeTestTreeMaker)
-        case IrrefutableExtractorTreeMaker(_, _) => TrueCond
+        case IrrefutableExtractorTreeMaker(_, _) => True
       }
 
       // special-case: interpret pattern `List()` as `Nil`
       // TODO: make it more general List(1, 2) => 1 :: 2 :: Nil  -- not sure this is a good idea...
-      private val rewriteListPattern: PartialFunction[TreeMaker, Cond] = {
+      private val rewriteListPattern: PartialFunction[TreeMaker, Prop] = {
         case p @ ExtractorTreeMaker(_, _, testedBinder)
           if testedBinder.tpe.typeSymbol == ListClass && p.checkedLength == Some(0) =>
-            uniqueEqualityCond(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
+            uniqueEqualityProp(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
       }
       val fullRewrite      = (irrefutableExtractor orElse rewriteListPattern)
       val refutableRewrite = irrefutableExtractor
 
-      @inline def onUnknown(handler: TreeMaker => Cond) = new TreeMakerToCond {
+      @inline def onUnknown(handler: TreeMaker => Prop) = new TreeMakerToProp {
         def handleUnknown(tm: TreeMaker) = handler(tm)
       }
 
       // used for CSE -- rewrite all unknowns to False (the most conserative option)
-      object conservative extends TreeMakerToCond {
-        def handleUnknown(tm: TreeMaker) = FalseCond
+      object conservative extends TreeMakerToProp {
+        def handleUnknown(tm: TreeMaker) = False
       }
 
-      final def approximateMatch(cases: List[List[TreeMaker]], treeMakerToCond: TreeMakerToCond = conservative) ={
-        val testss = cases.map { _ map (tm => Test(treeMakerToCond(tm), tm)) }
+      final def approximateMatch(cases: List[List[TreeMaker]], treeMakerToProp: TreeMakerToProp = conservative) ={
+        val testss = cases.map { _ map (tm => Test(treeMakerToProp(tm), tm)) }
         substitutionComputed = true // a second call to approximateMatch should not re-compute the substitution (would be wrong)
         testss
       }
     }
 
     def approximateMatchConservative(root: Symbol, cases: List[List[TreeMaker]]): List[List[Test]] =
-      (new TreeMakersToConds(root)).approximateMatch(cases)
+      (new TreeMakersToProps(root)).approximateMatch(cases)
 
     def prepareNewAnalysis() = { Var.resetUniques(); Const.resetUniques() }
 
-    def condToProp(t: Cond): Prop = t match {
-      case AndCond(a, b) => And(condToProp(a), condToProp(b))
-      case OrCond(a, b) => Or(condToProp(a), condToProp(b))
-      case TrueCond => True
-      case FalseCond => False
-      case TypeCond(p, pt) => Eq(Var(p), TypeConst(checkableType(pt)))
-      case EqualityCond(p, q) => Eq(Var(p), ValueConst(q))
-      case NonNullCond(p) => Not(Eq(Var(p), NullConst))
-    }
-
-    object Var {
+    object Var extends VarExtractor {
       private var _nextId = 0
       def nextId = {_nextId += 1; _nextId}
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
       private val uniques = new mutable.HashMap[Tree, Var]
       def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
+      def unapply(v: Var) = Some(v.path)
     }
     class Var(val path: Tree, staticTp: Type) extends AbsVar {
       private[this] val id: Int = Var.nextId
@@ -681,7 +634,7 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
     }
 
     // p is a unique type or a constant value
-    object ValueConst {
+    object ValueConst extends ValueConstExtractor {
       def fromType(tp: Type) = {
         assert(tp.isInstanceOf[SingletonType])
         val toString = tp match {
@@ -739,7 +692,7 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
     // into a proposition that is satisfiable if the case may match
     def symbolicCase(tests: List[Test]): Prop = {
       val testsBeforeBody = tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker])
-      /\(testsBeforeBody.map(t => condToProp(t.cond)))
+      /\(testsBeforeBody.map(t => t.prop))
     }
 
     def showTreeMakers(cases: List[List[TreeMaker]]) = {
@@ -770,19 +723,19 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
+      prepareNewAnalysis()
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
       // don't rewrite List-like patterns, as List() and Nil need to distinguished for unreachability
-      val approx = new TreeMakersToConds(prevBinder)
-      def approximate(default: Cond) = approx.approximateMatch(cases, approx.onUnknown { tm =>
+      val approx = new TreeMakersToProps(prevBinder)
+      def approximate(default: Prop) = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.refutableRewrite.applyOrElse(tm, (_: TreeMaker) => default )
       })
 
-      val testCasesOk   = approximate(TrueCond)
-      val testCasesFail = approximate(FalseCond)
+      val testCasesOk   = approximate(True)
+      val testCasesFail = approximate(False)
 
-      prepareNewAnalysis()
 
       val propsCasesOk   = testCasesOk   map symbolicCase
       val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t)))
@@ -835,7 +788,7 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
     // exhaustivity
 
     def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (uncheckableType(prevBinder.info)) Nil else {
-      // customize TreeMakersToConds (which turns a tree of tree makers into a more abstract DAG of tests)
+      // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
       //   otherwise the common (xs: List[Any]) match { case List() => case x :: xs => } is deemed unexhaustive
       // - back off (to avoid crying exhaustive too often) when:
@@ -843,21 +796,20 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
       var backoff = false
+      prepareNewAnalysis()
 
-      val approx = new TreeMakersToCondsIgnoreNullChecks(prevBinder)
+      val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
       val tests = approx.approximateMatch(cases, approx.onUnknown { tm =>
-        approx.fullRewrite.applyOrElse[TreeMaker, Cond](tm, {
-          case BodyTreeMaker(_, _) => TrueCond // irrelevant -- will be discarded by symbolCase later
+        approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
+          case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
           case _ => // patmatDebug("backing off due to "+ tm)
             backoff = true
-            FalseCond
+            False
         })
       })
 
       if (backoff) Nil else {
         val prevBinderTree = approx.binderToUniqueTree(prevBinder)
-
-        prepareNewAnalysis()
 
         val symbolicCases = tests map symbolicCase
 
@@ -867,9 +819,9 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
         // val nonNullScrutineeCond =
         //   assume non-null for all the components of the tuple we're matching on (if we're matching on a tuple)
         //   if (isTupleType(prevBinder.tpe))
-        //     prevBinder.tpe.typeArgs.mapWithIndex{case (_, i) => NonNullCond(codegen.tupleSel(prevBinderTree)(i))}.reduceLeft(AndCond)
+        //     prevBinder.tpe.typeArgs.mapWithIndex{case (_, i) => NonNullProp(codegen.tupleSel(prevBinderTree)(i))}.reduceLeft(And)
         //   else
-        //     NonNullCond(prevBinderTree)
+        //     NonNullProp(prevBinderTree)
         // val matchFails = And(symbolic(nonNullScrutineeCond), Not(symbolicCases reduceLeft (Or(_, _))))
 
         // when does the match fail?

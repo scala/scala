@@ -23,7 +23,7 @@ import scala.reflect.internal.util.HashSet
 trait Logic { self: PatternMatching =>
   import PatternMatchingStats._
   val global: Global
-  import global.{Type, currentUnit, Position}
+  import global.{Type, Tree, currentUnit, Position}
 
   import debugging.patmatDebug
 
@@ -64,9 +64,20 @@ trait Logic { self: PatternMatching =>
       def apply(tp: Type): Const
     }
 
-    def NullConst: Const
+    type ValueConst <: Const
+    def ValueConst: ValueConstExtractor
+    trait ValueConstExtractor {
+      def apply(p: Tree): Const
+    }
+
+    val NullConst: Const
 
     type Var <: AbsVar
+    val Var: VarExtractor
+    trait VarExtractor {
+      def apply(x: Tree): Var
+      def unapply(v: Var): Some[Tree]
+    }
 
     trait AbsVar {
       // indicate we may later require a prop for V = C

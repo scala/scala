@@ -50,30 +50,31 @@ trait Optimization { self: PatternMatching =>
       val testss = approximateMatchConservative(prevBinder, cases)
 
       // interpret:
-      val dependencies = new mutable.LinkedHashMap[Test, Set[Cond]]
-      val tested = new mutable.HashSet[Cond]
+      val dependencies = new mutable.LinkedHashMap[Test, Set[Prop]]
+      val tested = new mutable.HashSet[Prop]
 
+      // TODO: use SAT solver instead of hashconsing props and approximating implication by subset/equality
       def storeDependencies(test: Test) = {
-        val cond = test.cond
+        val cond = test.prop
 
-        def simplify(c: Cond): Set[Cond] = c match {
-          case AndCond(a, b) => simplify(a) ++ simplify(b)
-          case OrCond(_, _)   => Set(FalseCond) // TODO: make more precise
-          case NonNullCond(_) => Set(TrueCond)  // not worth remembering
-          case _ => Set(c)
+        def simplify(c: Prop): Set[Prop] = c match {
+          case And(a, b)                  => simplify(a) ++ simplify(b)
+          case Or(_, _)                   => Set(False) // TODO: make more precise
+          case Not(Eq(Var(_), NullConst)) => Set(True)  // not worth remembering
+          case _                          => Set(c)
         }
         val conds = simplify(cond)
 
-        if (conds(FalseCond)) false // stop when we encounter a definite "no" or a "not sure"
+        if (conds(False)) false // stop when we encounter a definite "no" or a "not sure"
         else {
-          val nonTrivial = conds filterNot (_ == TrueCond)
+          val nonTrivial = conds filterNot (_ == True)
           if (nonTrivial nonEmpty) {
             tested ++= nonTrivial
 
             // is there an earlier test that checks our condition and whose dependencies are implied by ours?
             dependencies find {
               case (priorTest, deps) =>
-                ((simplify(priorTest.cond) == nonTrivial) || // our conditions are implied by priorTest if it checks the same thing directly
+                ((simplify(priorTest.prop) == nonTrivial) || // our conditions are implied by priorTest if it checks the same thing directly
                  (nonTrivial subsetOf deps)                  // or if it depends on a superset of our conditions
                 ) && (deps subsetOf tested)                 // the conditions we've tested when we are here in the match satisfy the prior test, and hence what it tested
             } foreach {
@@ -109,9 +110,9 @@ trait Optimization { self: PatternMatching =>
       val collapsed = testss map { tests =>
         // map tests to the equivalent list of treemakers, replacing shared prefixes by a reusing treemaker
         // if there's no sharing, simply map to the tree makers corresponding to the tests
-        var currDeps = Set[Cond]()
+        var currDeps = Set[Prop]()
         val (sharedPrefix, suffix) = tests span { test =>
-          (test.cond == TrueCond) || (for(
+          (test.prop == True) || (for(
               reusedTest <- test.reuses;
               nextDeps <- dependencies.get(reusedTest);
               diff <- (nextDeps -- currDeps).headOption;
@@ -129,15 +130,15 @@ trait Optimization { self: PatternMatching =>
 
             patmatDebug("sharedPrefix: "+ sharedPrefix)
             patmatDebug("suffix: "+ sharedPrefix)
-            // if the shared prefix contains interesting conditions (!= TrueCond)
+            // if the shared prefix contains interesting conditions (!= True)
             // and the last of such interesting shared conditions reuses another treemaker's test
             // replace the whole sharedPrefix by a ReusingCondTreeMaker
-            for (lastShared <- sharedPrefix.reverse.dropWhile(_.cond == TrueCond).headOption;
+            for (lastShared <- sharedPrefix.reverse.dropWhile(_.prop == True).headOption;
                  lastReused <- lastShared.reuses)
               yield ReusingCondTreeMaker(sharedPrefix, reusedOrOrig) :: suffix.map(_.treeMaker)
           }
 
-        collapsedTreeMakers getOrElse tests.map(_.treeMaker) // sharedPrefix need not be empty (but it only contains TrueCond-tests, which are dropped above)
+        collapsedTreeMakers getOrElse tests.map(_.treeMaker) // sharedPrefix need not be empty (but it only contains True-tests, which are dropped above)
       }
       okToCall = true // TODO: remove (debugging)
 
