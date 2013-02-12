@@ -33,7 +33,7 @@ object M1 {
       if (0 < amount && amount <= balance) {
         balance = balance - amount;
         balance
-      } else error("insufficient funds");
+      } else sys.error("insufficient funds");
   }
 
   def test0 = {
@@ -520,7 +520,7 @@ abstract class CircuitSimulator() extends BasicCircuitSimulator() {
 	val w1 = new Wire();
 	val w2 = new Wire();
 	val w3 = new Wire();
-	
+
     andGate(in, ctrl(1), w3);
     andGate(in, ctrl(1), w2);
     andGate(in, ctrlN(1), w1);
