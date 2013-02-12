@@ -6,9 +6,9 @@ class MailBox {
 abstract class Actor {
  private val in = new MailBox
 
- def send(msg: in.Message) =  error("foo")
+ def send(msg: in.Message) =  sys.error("foo")
 
- def unstable: Actor = error("foo")
+ def unstable: Actor = sys.error("foo")
 
  def dubiousSend(msg: MailBox#Message): Nothing =
    unstable.send(msg) // in.Message becomes unstable.Message, but that's ok since Message is a concrete type member

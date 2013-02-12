@@ -315,10 +315,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
     /** Common conversion targets that affect any class in Scala */
     val commonConversionTargets = Set(
-      "scala.Predef.any2stringfmt",
-      "scala.Predef.any2stringadd",
-      "scala.Predef.any2ArrowAssoc",
-      "scala.Predef.any2Ensuring",
+      "scala.Predef.StringFormat",
+      "scala.Predef.StringAdd",
+      "scala.Predef.ArrowAssoc",
+      "scala.Predef.Ensuring",
       "scala.collection.TraversableOnce.alternateImplicit")
 
     /** There's a reason all these are specialized by hand but documenting each of them is beyond the point */

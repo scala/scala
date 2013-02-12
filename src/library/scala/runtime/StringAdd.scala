@@ -9,6 +9,7 @@
 package scala.runtime
 
 /** A wrapper class that adds string concatenation `+` to any value */
+@deprecated("Use Predef.StringAdd", "2.11.0")
 final class StringAdd(val self: Any) extends AnyVal {
   def +(other: String) = String.valueOf(self) + other
 }

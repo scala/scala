@@ -33,8 +33,9 @@ retrieved 39 members
 [accessible:  true] `method →[B](y: B)(Pong, B)`
 [accessible:  true] `value __leftOfArrowPong`
 [accessible:  true] `value __resultOfEnsuringPong`
+[accessible:  true] `value __stringToFormatPong`
+[accessible:  true] `value __thingToAddPong`
 [accessible:  true] `value nameString`
-[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `value pingPing`
@@ -75,8 +76,9 @@ retrieved 39 members
 [accessible:  true] `method →[B](y: B)(Ping, B)`
 [accessible:  true] `value __leftOfArrowPing`
 [accessible:  true] `value __resultOfEnsuringPing`
+[accessible:  true] `value __stringToFormatPing`
+[accessible:  true] `value __thingToAddPing`
 [accessible:  true] `value pongPong`
-[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 ================================================================================

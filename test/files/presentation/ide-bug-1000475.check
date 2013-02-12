@@ -32,7 +32,8 @@ retrieved 35 members
 [accessible:  true] `method →[B](y: B)(Object, B)`
 [accessible:  true] `value __leftOfArrowObject`
 [accessible:  true] `value __resultOfEnsuringObject`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatObject`
+[accessible:  true] `value __thingToAddObject`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 ================================================================================
@@ -69,7 +70,8 @@ retrieved 35 members
 [accessible:  true] `method →[B](y: B)(Object, B)`
 [accessible:  true] `value __leftOfArrowObject`
 [accessible:  true] `value __resultOfEnsuringObject`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatObject`
+[accessible:  true] `value __thingToAddObject`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 ================================================================================
@@ -106,7 +108,8 @@ retrieved 35 members
 [accessible:  true] `method →[B](y: B)(Object, B)`
 [accessible:  true] `value __leftOfArrowObject`
 [accessible:  true] `value __resultOfEnsuringObject`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatObject`
+[accessible:  true] `value __thingToAddObject`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 ================================================================================
