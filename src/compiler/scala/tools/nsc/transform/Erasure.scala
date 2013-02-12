@@ -21,6 +21,7 @@ abstract class Erasure extends AddInterfaces
   import global._
   import definitions._
   import CODE._
+  import treeInfo._
 
   val phaseName: String = "erasure"
 
@@ -357,41 +358,27 @@ abstract class Erasure extends AddInterfaces
 
   override def newTyper(context: Context) = new Eraser(context)
 
-  private def safeToRemoveUnbox(cls: Symbol): Boolean =
-    (cls == definitions.NullClass) || isBoxedValueClass(cls)
+  private def isSafelyRemovableUnbox(fn: Tree, arg: Tree): Boolean = {
+    isUnbox(fn.symbol) && {
+      val cls = arg.tpe.typeSymbol
+      (cls == definitions.NullClass) || isBoxedValueClass(cls)
+    }
+  }
 
   /** An extractor object for unboxed expressions (maybe subsumed by posterasure?) */
   object Unboxed {
     def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(fn, List(arg)) if isUnbox(fn.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
-        Some(arg)
-      case Apply(
-        TypeApply(
-          cast @ Select(
-            Apply(
-              sel @ Select(arg, acc),
-              List()),
-            asinstanceof),
-          List(tpt)),
-        List())
-      if cast.symbol == Object_asInstanceOf &&
-        tpt.tpe.typeSymbol.isDerivedValueClass &&
-        sel.symbol == tpt.tpe.typeSymbol.derivedValueClassUnbox =>
-        Some(arg)
-      case _ =>
-        None
+      case Apply(fn, arg :: Nil) if isSafelyRemovableUnbox(fn, arg) => Some(arg)
+      case ValueClass.Cast(arg)                                     => Some(arg)
+      case _                                                        => None
     }
   }
-
   /** An extractor object for boxed expressions (maybe subsumed by posterasure?) */
   object Boxed {
     def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)) if (tpt.tpe.typeSymbol.isDerivedValueClass) =>
-        Some(arg)
-      case LabelDef(name, params, Boxed(rhs)) =>
-        Some(treeCopy.LabelDef(tree, name, params, rhs) setType rhs.tpe)
-      case _ =>
-        None
+      case ValueClass.Box(_, arg)     => Some(arg)
+      case LabelDef(_, _, Boxed(rhs)) => Some(deriveLabelDef(tree)(_ => rhs) setType rhs.tpe)
+      case _                          => None
     }
   }
 
@@ -599,7 +586,7 @@ abstract class Erasure extends AddInterfaces
                *  This is important for specialization: calls to the super constructor should not box/unbox specialized
                *  fields (see TupleX). (ID)
                */
-              case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
+              case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
                 log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
                 arg
               case _ =>
