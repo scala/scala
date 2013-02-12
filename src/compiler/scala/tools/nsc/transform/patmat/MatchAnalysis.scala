@@ -691,10 +691,8 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
 
     // turns a case (represented as a list of abstract tests)
     // into a proposition that is satisfiable if the case may match
-    def symbolicCase(tests: List[Test]): Prop = {
-      val testsBeforeBody = tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker])
-      /\(testsBeforeBody.map(t => t.prop))
-    }
+    protected final def caseWithoutBodyToProp(tests: List[Test]): Prop =
+      /\(tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker]).map(t => t.prop))
 
     def showTreeMakers(cases: List[List[TreeMaker]]) = {
       patmatDebug("treeMakers:")
@@ -733,12 +731,8 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
         approx.refutableRewrite.applyOrElse(tm, (_: TreeMaker) => default )
       })
 
-      val testCasesOk   = approximate(True)
-      val testCasesFail = approximate(False)
-
-
-      val propsCasesOk   = testCasesOk   map symbolicCase
-      val propsCasesFail = testCasesFail map (t => Not(symbolicCase(t)))
+      val propsCasesOk   = approximate(True)  map caseWithoutBodyToProp
+      val propsCasesFail = approximate(False) map (t => Not(caseWithoutBodyToProp(t)))
 
       try {
         val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
@@ -798,20 +792,17 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
       var backoff = false
 
       val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
-      val tests = approx.approximateMatch(cases, approx.onUnknown { tm =>
+      val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
           case _ => // patmatDebug("backing off due to "+ tm)
             backoff = true
             False
         })
-      })
+      }) map caseWithoutBodyToProp
 
       if (backoff) Nil else {
         val prevBinderTree = approx.binderToUniqueTree(prevBinder)
-
-        val symbolicCases = tests map symbolicCase
-
 
         // TODO: null tests generate too much noise, so disabled them -- is there any way to bring them back?
         // assuming we're matching on a non-null scrutinee (prevBinder), when does the match fail?
@@ -829,7 +820,6 @@ trait Analysis extends TypeAnalysis { self: PatternMatching =>
   // debug output:
         patmatDebug("analysing:")
         showTreeMakers(cases)
-        showTests(tests)
 
         // patmatDebug("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
         // patmatDebug("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
