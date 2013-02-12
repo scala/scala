@@ -72,26 +72,6 @@ trait CodeGen { self: PatternMatching =>
 
     def codegen: AbsCodegen
 
-    def typesConform(tp: Type, pt: Type) = ((tp eq pt) || (tp <:< pt))
-
-    // we use subtyping as a model for implication between instanceof tests
-    // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
-    // unfortunately this is not true in general:
-    // SI-6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefClass.tpe)
-    def instanceOfTpImplies(tp: Type, tpImplied: Type) = {
-      val tpValue    = tp.typeSymbol.isPrimitiveValueClass
-
-      // pretend we're comparing to Any when we're actually comparing to AnyVal or AnyRef
-      // (and the subtype is respectively a value type or not a value type)
-      // this allows us to reuse subtyping as a model for implication between instanceOf tests
-      // the latter don't see a difference between AnyRef, Object or Any when comparing non-value types -- SI-6022
-      val tpImpliedNormalizedToAny =
-        if (tpImplied =:= (if (tpValue) AnyValClass.tpe else AnyRefClass.tpe)) AnyClass.tpe
-        else tpImplied
-
-      tp <:< tpImpliedNormalizedToAny
-    }
-
     abstract class CommonCodegen extends AbsCodegen { import CODE._
       def fun(arg: Symbol, body: Tree): Tree           = Function(List(ValDef(arg)), body)
       def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
@@ -100,7 +80,7 @@ trait CodeGen { self: PatternMatching =>
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
-      def _asInstanceOf(b: Symbol, tp: Type): Tree = if (typesConform(b.info, tp)) REF(b) else gen.mkCastPreservingAnnotations(REF(b), tp)
+      def _asInstanceOf(b: Symbol, tp: Type): Tree = if (b.info <:< tp) REF(b) else gen.mkCastPreservingAnnotations(REF(b), tp)
       def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, true, false)
 
       // duplicated out of frustration with cast generation
