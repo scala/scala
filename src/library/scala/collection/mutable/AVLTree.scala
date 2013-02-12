@@ -15,7 +15,7 @@ package mutable
  * An immutable AVL Tree implementation used by mutable.TreeSet
  *
  * @author Lucien Pereira
- *
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
  */
 private[mutable] sealed trait AVLTree[+A] extends Serializable {
   def balance: Int
@@ -65,12 +65,18 @@ private[mutable] sealed trait AVLTree[+A] extends Serializable {
   def doubleRightRotation[B >: A]: Node[B] = sys.error("Should not happen.")
 }
 
+/**
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ */
 private case object Leaf extends AVLTree[Nothing] {
   override val balance: Int = 0
 
   override val depth: Int = -1
 }
 
+/**
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ */
 private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree[A]) extends AVLTree[A] {
   override val balance: Int = right.depth - left.depth
 
@@ -205,6 +211,9 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
   }
 }
 
+/**
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ */
 private class AVLIterator[A](root: Node[A]) extends Iterator[A] {
   val stack = mutable.ArrayStack[Node[A]](root)
   diveLeft()
