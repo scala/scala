@@ -1612,10 +1612,14 @@ self =>
 		              vparamss.head map {p => 
 		                val pSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(p.name.toString)))) // TBD: ensure there is only 1 parameter list
 		                val underscored_p_name = newTermName(underscore_prefix(p.name.toString))
-		                val bindParam_Name = 
-		                    if      (p.mods.annotations contains Ident(nme.QMARKkw )) bind_outParam_Name
-		                    else if (p.mods.annotations contains Ident(nme.QMARK2kw)) bind_constrainedParam_Name
-		                    else                                                      bind_inParam_Name
+
+		                var bindParam_Name: TermName = bind_inParam_Name
+		                for (m<-p.mods.annotations) m match {
+		                  case Ident(k) if k.toString==nme.QMARKkw.toString  => bindParam_Name =        bind_outParam_Name
+		                  case Ident(k) if k.toString==nme.QMARK2kw.toString => bindParam_Name = bind_constrainedParam_Name
+		                  case _ =>
+		                }
+		                
 		                val select = Select(Ident(underscored_p_name), bindParam_Name)
 		                (makeParam(underscored_p_name, p.tpt), Apply(select, List(pSym)))
 		              }

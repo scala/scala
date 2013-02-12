@@ -53,6 +53,7 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
      def chr(c:Any) = c.asInstanceOf[Int].toChar
      
   implicit def script..
+  
     key(c??: Char     ) =  key2(top, c)  //key(top, c??) // TBD in subscript-scalac parser: recognize the ??
    vkey(k??: Key.Value) = vkey2(top, k) //vkey(top, k??)
 

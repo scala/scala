@@ -39,6 +39,7 @@ class LookupFrame2Application extends SimpleSubscriptApplication {
   
   def sleep(duration_ms: Long) = try {Thread.sleep(duration_ms)} catch {case e: InterruptedException => /*println("sleep interrupted")*/}
   def confirmExit: Boolean = Dialog.showConfirmation(null, "Are you sure?", "About to exit")==Dialog.Result.Yes
+  override def  live = _execute(_live())
   
   def script..
     searchCommand     = searchButton + Key.Enter

@@ -174,7 +174,7 @@ object Scripts {
         case _ => // no consume event option seems to be available
     } }
   }
-  
+ 
   /*
    * A ScriptReactor for key typed events
    */
@@ -221,20 +221,20 @@ object Scripts {
   */
  implicit def script ..
    stateChange(slider: Slider)                   = event(SliderStateChangedScriptReactor[N_code_eh](slider))
-   clicked(b:Button)                             = event(           ClickedScriptReactor[N_code_eh](b))
+   clicked(button:Button)                        = event(           ClickedScriptReactor[N_code_eh](button))
 
  def script ..   // TBD: uncomment /*@gui:*/ and make it compile
-  event     (r:ScriptReactor[N_code_eh     ])                           =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {.     .}
-  event_loop(r:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{r.subscribe(there); there.onDeactivate{r.unsubscribe}; there.onSuccess{r.acknowledgeEventHandled}}: {... ...}
+  event     (reactor:ScriptReactor[N_code_eh     ])                           =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
+  event_loop(reactor:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {... ...}
        anyEvent(comp: Component)                        = event(          AnyEventScriptReactor[N_code_eh](comp))                                                    
-    windowClosing(w: Window)                            = event(     WindowClosingScriptReactor[N_code_eh](w))
-     mousePresses(c: Component, task: MouseEvent=>Unit) = event_loop( MousePressedScriptReactor[N_code_eh_loop](c), task)
-   mouseDraggings(c: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedScriptReactor[N_code_eh_loop](c), task)
+    windowClosing(window: Window)                       = event(     WindowClosingScriptReactor[N_code_eh](window))
+     mousePresses(comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedScriptReactor[N_code_eh_loop](comp), task)
+   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedScriptReactor[N_code_eh_loop](comp), task)
 
      guard(comp: Component, test: () => Boolean)        = if (test()) .. else ... anyEvent(comp)
 
-      key2(comp: Component, keyCode ?? : Char     )     = event(         KeyTypedScriptReactor[N_code_eh](comp, keyCode ))
-     vkey2(comp: Component, keyValue?? : Key.Value)     = event(        VKeyTypedScriptReactor[N_code_eh](comp, keyValue))
+     key2(publisher: Publisher, keyCode ?? : Char     ) = event(         KeyTypedScriptReactor[N_code_eh](publisher, keyCode ))
+    vkey2(publisher: Publisher, keyValue?? : Key.Value) = event(        VKeyTypedScriptReactor[N_code_eh](publisher, keyValue))
 /*
 
  Note: the manual compilation yielded for the first annotation the type

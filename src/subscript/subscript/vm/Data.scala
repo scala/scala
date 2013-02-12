@@ -48,21 +48,20 @@ trait FormalParameter[T<:Any] {
   def isOutput     : Boolean
   def isForcing    : Boolean
   def isConstrained: Boolean
+  var name: Symbol = null
 }
-
-trait   FormalParameter_withName[T<:Any] extends FormalParameter[T] {var name: Symbol = null; def nameThis(n:Symbol) = {name=n; this}}
 
 trait       FormalInputParameter[T<:Any] extends FormalParameter[T] {
   def bindToFormalInputParameter
-  def ~(n:Symbol) = {bindToFormalInputParameter; asInstanceOf[FormalParameter_withName[T]].nameThis(n)}
+  def ~(n:Symbol) = {name=n; bindToFormalInputParameter; this}
 }
 trait      FormalOutputParameter[T<:Any] extends FormalParameter[T] {
   def bindToFormalOutputParameter
-  def ~?(n:Symbol) = {bindToFormalOutputParameter; asInstanceOf[FormalParameter_withName[T]].nameThis(n)}
+  def ~?(n:Symbol) = {name=n; bindToFormalOutputParameter; this}
 }
 trait FormalConstrainedParameter[T<:Any] extends FormalParameter[T] {
   def bindToFormalConstrainedParameter; 
-  def ~??(n:Symbol) = {bindToFormalConstrainedParameter; asInstanceOf[FormalParameter_withName[T]].nameThis(n)}
+  def ~??(n:Symbol) = {name=n; bindToFormalConstrainedParameter; this}
   var value: T
   def ~?? = ActualAdaptingParameter(this)
   def ~??(constraint: T=>Boolean) = ActualAdaptingParameter(this, constraint)
@@ -109,9 +108,17 @@ trait ParameterTransferrerTrait[T<:Any] extends ActualParameterTrait[T] {
 case class   ActualValueParameter[T<:Any](originalValue:T) extends ActualParameter[T] 
   with FormalInputParameter      [T]
   with FormalConstrainedParameter[T] {
-  def bindToFormalInputParameter {}
-  def bindToFormalConstrainedParameter = isForcing=true
-  def matches(aValue: T, doIsForcing: Boolean = isForcing) = if (doIsForcing) aValue==originalValue else true 
+  def bindToFormalInputParameter {/*println("bindToFormalInputParameter: "+name)*/}
+  def bindToFormalConstrainedParameter = {/*println("bindToFormalConstrainedParameter: "+name); */isForcing=true}
+  def matches(aValue: T, doIsForcing: Boolean = isForcing) = 
+    if (doIsForcing) {
+      //println("matches: "+name + " " + aValue + " <==> "+originalValue)
+      aValue==originalValue
+    } 
+    else {
+      //println("matches: "+name + " not forcing; isForcing="+isForcing + " originalValue: "+originalValue)
+      true 
+    }
   def isInput       = !isForcing  
   def isOutput      = false  
   var isForcing     = false // var, not def!!!

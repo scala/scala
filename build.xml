@@ -1153,7 +1153,7 @@ QUICK BUILD (QUICK)
     </scalacfork>
   </target>
 
-  <target name="quick.pre-plugins" depends="quick.subscript.examples, quick.comp">
+  <target name="quick.pre-plugins" depends="quick.subscript.swing, quick.comp">
     <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">
       <srcfiles dir="${src.dir}/continuations"/>
     </uptodate>
@@ -1424,8 +1424,8 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.subscript" depends="pack.lib" if="has.java6">
     <jar destfile="${build-pack.dir}/lib/scala-subscript.jar">
       <fileset dir="${build-quick.dir}/classes/library">
-        <include name="scala/subscript/subscript/*.scala"/>
-        <include name="scala/subscript/subscript/vm/*.scala"/>
+        <include name="scala/subscript/subscript/*"/>
+        <include name="scala/subscript/subscript/vm/*"/>
       </fileset>
     </jar>
   </target>
