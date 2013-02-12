@@ -34,6 +34,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     }
 
     def addThrowsAnnotation(throwableSym: Symbol): Self = {
+      // we call initialize due to the fact that we call Symbol.isMonomorphicType below
+      // and that method requires Symbol to be forced to give the right answers, see SI-7107 for details
+      throwableSym.initialize
       val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
         debuglog(s"Encountered polymorphic exception `${throwableSym.fullName}` while parsing class file.")
         // in case we encounter polymorphic exception the best we can do is to convert that type to
