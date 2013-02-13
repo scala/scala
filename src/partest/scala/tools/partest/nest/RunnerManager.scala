@@ -720,7 +720,7 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
         if (passed exists (x => !x)) {
           if (fileManager.showDiff || isPartestDebug)
             NestUI.normal(testDiff)
-          else if (fileManager.showLog)
+          if (fileManager.showLog)
             showLog(logFile)
         }
       }

@@ -630,7 +630,14 @@ trait Contexts { self: Analyzer =>
         new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
-      val pre = imp.qual.tpe
+      val qual = imp.qual
+
+      val pre =
+        if (qual.tpe.typeSymbol.isPackageClass)
+          // SI-6225 important if the imported symbol is inherited by the the package object.
+          singleType(qual.tpe, qual.tpe member nme.PACKAGE)
+        else
+          qual.tpe
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() =>
           List()

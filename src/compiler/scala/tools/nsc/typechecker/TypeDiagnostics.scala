@@ -525,17 +525,24 @@ trait TypeDiagnostics {
     }
 
     object checkDead {
-      private var expr: Symbol = NoSymbol
+      private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
+      // The method being applied to `tree` when `apply` is called.
+      private def expr = exprStack.top
 
       private def exprOK =
         (expr != Object_synchronized) &&
         !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
 
-      private def treeOK(tree: Tree) = tree.tpe != null && tree.tpe.typeSymbol == NothingClass
+      private def treeOK(tree: Tree) = {
+        val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
+        tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
+      }
 
-      def updateExpr(fn: Tree) = {
-        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor)
-          checkDead.expr = fn.symbol
+      @inline def updateExpr[A](fn: Tree)(f: => A) = {
+        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
+          exprStack push fn.symbol
+          try f finally exprStack.pop()
+        } else f
       }
       def apply(tree: Tree): Tree = {
         // Error suppression will squash some of these warnings unless we circumvent it.
