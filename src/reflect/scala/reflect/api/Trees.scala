@@ -480,26 +480,31 @@ trait Trees { self: Universe =>
     def impl: Template
   }
 
-  /** An object definition, e.g. `object Foo`.  Internally, objects are
-   *  quite frequently called modules to reduce ambiguity.
+  /** An object definition, e.g. `object Foo`.
    *  Eliminated by compiler phase refcheck.
    *  @group Trees
    *  @template
    */
-  type ModuleDef >: Null <: ImplDef with ModuleDefApi
+  type ObjectDef >: Null <: ImplDef with ObjectDefApi
 
-  /** A tag that preserves the identity of the `ModuleDef` abstract type from erasure.
+  @deprecated("Use `ObjectDef` instead.", "2.11.0")
+  type ModuleDef = ObjectDef
+
+  /** A tag that preserves the identity of the `ObjectDef` abstract type from erasure.
    *  Can be used for pattern matching, instance tests, serialization and likes.
    *  @group Tags
    */
-  implicit val ModuleDefTag: ClassTag[ModuleDef]
+  implicit val ObjectDefTag: ClassTag[ObjectDef]
 
-  /** The constructor/extractor for `ModuleDef` instances.
+  /** The constructor/extractor for `ObjectDef` instances.
    *  @group Extractors
    */
-  val ModuleDef: ModuleDefExtractor
+  val ObjectDef: ObjectDefExtractor
 
-  /** An extractor class to create and pattern match with syntax `ModuleDef(mods, name, impl)`.
+  @deprecated("Use `ObjectDef` instead.", "2.11.0")
+  def ModuleDef: ObjectDefExtractor = ObjectDef
+
+  /** An extractor class to create and pattern match with syntax `ObjectDef(mods, name, impl)`.
    *  This AST node corresponds to the following Scala code:
    *
    *    mods `object` name impl
@@ -509,19 +514,19 @@ trait Trees { self: Universe =>
    *    `extends` parents { defs }
    *  @group Extractors
    */
-  abstract class ModuleDefExtractor {
-    def apply(mods: Modifiers, name: TermName, impl: Template): ModuleDef
-    def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
+  abstract class ObjectDefExtractor {
+    def apply(mods: Modifiers, name: TermName, impl: Template): ObjectDef
+    def unapply(objectDef: ObjectDef): Option[(Modifiers, TermName, Template)]
   }
 
-  /** The API that all module defs support
+  /** The API that all object defs support
    *  @group API
    */
-  trait ModuleDefApi extends ImplDefApi { this: ModuleDef =>
+  trait ObjectDefApi extends ImplDefApi { this: ObjectDef =>
     /** @inheritdoc */
     def mods: Modifiers
 
-    /** The name of the module. */
+    /** The name of the object. */
     def name: TermName
 
     /** @inheritdoc */
@@ -2443,11 +2448,13 @@ trait Trees { self: Universe =>
   @deprecated("Use the canonical ClassDef constructor to create a class and then initialize its position and symbol manually", "2.10.1")
   def ClassDef(sym: Symbol, impl: Template): ClassDef
 
-  /** A factory method for `ModuleDef` nodes.
+  /** A factory method for `ObjectDef` nodes.
    *  @group Factories
    */
-  @deprecated("Use the canonical ModuleDef constructor to create an object and then initialize its position and symbol manually", "2.10.1")
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef
+  @deprecated("Use the canonical ObjectDef constructor to create an object and then initialize its position and symbol manually", "2.11.0")
+  def ObjectDef(sym: Symbol, impl: Template): ObjectDef
+  @deprecated("Use the canonical ObjectDef constructor to create an object and then initialize its position and symbol manually", "2.10.1")
+  def ModuleDef(sym: Symbol, impl: Template): ObjectDef = ObjectDef(sym, impl)
 
   /** A factory method for `ValDef` nodes.
    *  @group Factories
@@ -2647,10 +2654,14 @@ trait Trees { self: Universe =>
      */
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]): PackageDef
 
-    /** Creates a `ModuleDef` node from the given components, having a given `tree` as a prototype.
+    /** Creates a `ObjectDef` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
      */
-    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
+    def ObjectDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ObjectDef
+
+    @deprecated("Use `ObjectDef` instead.", "2.11.0")
+    def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ObjectDef =
+      ObjectDef(tree, mods, name, impl)
 
     /** Creates a `ValDef` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.

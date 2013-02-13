@@ -550,7 +550,7 @@ trait ModelFactoryImplicitSupport {
     // - private and protected members (not accessible following an implicit conversion)
     // - members starting with _ (usually reserved for internal stuff)
     localShouldDocument(aSym) && (!aSym.isConstructor) && (aSym.owner != AnyValClass) &&
-    (aSym.owner != AnyClass) && (aSym.owner != ObjectClass) &&
+    (aSym.owner != AnyClass) && (aSym.owner != JavaLangObjectClass) &&
     (!aSym.isProtected) && (!aSym.isPrivate) && (!aSym.name.startsWith("_")) &&
     (aSym.isMethod || aSym.isGetter || aSym.isSetter) &&
     (aSym.nameString != "getClass")

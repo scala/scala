@@ -202,7 +202,7 @@ trait Implicits {
     private def isStable(tp: Type): Boolean = tp match {
      case TypeRef(pre, sym, _) =>
        sym.isPackageClass ||
-       sym.isModuleClass && isStable(pre) /*||
+       sym.isObjectClass && isStable(pre) /*||
        sym.isAliasType && isStable(tp.normalize)*/
      case _ => tp.isStable
     }
@@ -958,8 +958,8 @@ trait Implicits {
             case None =>
               if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
                 val companion = companionSymbolOf(sym, context)
-                companion.moduleClass match {
-                  case mc: ModuleClassSymbol =>
+                companion.objectClass match {
+                  case mc: ObjectClassSymbol =>
                     val infos =
                       for (im <- mc.implicitMembers.toList) yield new ImplicitInfo(im.name, singleType(pre, companion), im)
                     if (infos.nonEmpty)
@@ -1157,7 +1157,7 @@ trait Implicits {
 
       /** Creates a tree representing one of the singleton manifests.*/
       def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
-        Select(gen.mkAttributedRef(FullManifestModule), name)
+        Select(gen.mkAttributedRef(FullManifestObject), name)
       }
 
       /** Re-wraps a type in a manifest before calling inferImplicit on the result */
@@ -1180,7 +1180,7 @@ trait Implicits {
           case TypeRef(pre, sym, args) =>
             if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
               findSingletonManifest(sym.name.toString)
-            } else if (sym == ObjectClass || sym == AnyRefClass) {
+            } else if (sym == JavaLangObjectClass || sym == AnyRefClass) {
               findSingletonManifest("Object")
             } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
               EmptyTree

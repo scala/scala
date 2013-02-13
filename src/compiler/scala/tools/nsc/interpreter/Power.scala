@@ -294,7 +294,9 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
   }
 
   trait ReplUtilities {
-    def module[T: ru.TypeTag] = ru.typeOf[T].typeSymbol.suchThat(_.isPackage)
+    @deprecated("Use `obj` instead.", "2.11.0")
+    def module[T: ru.TypeTag] = obj[T]
+    def obj[T: ru.TypeTag] = ru.typeOf[T].typeSymbol.suchThat(_.isPackage)
     def clazz[T: ru.TypeTag] = ru.typeOf[T].typeSymbol.suchThat(_.isClass)
     def info[T: ru.TypeTag : ClassTag] = InternalInfo[T]
     def ?[T: ru.TypeTag : ClassTag] = InternalInfo[T]

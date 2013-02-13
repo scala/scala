@@ -54,7 +54,7 @@ trait MemberHandlers {
     case member: DefDef if isTermMacro(member) => new TermMacroHandler(member)
     case member: DefDef                        => new DefHandler(member)
     case member: ValDef                        => new ValHandler(member)
-    case member: ModuleDef                     => new ModuleHandler(member)
+    case member: ObjectDef                     => new ObjectHandler(member)
     case member: ClassDef                      => new ClassHandler(member)
     case member: TypeDef                       => new TypeAliasHandler(member)
     case member: Assign                        => new AssignHandler(member)
@@ -159,7 +159,7 @@ trait MemberHandlers {
     }
   }
 
-  class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
+  class ObjectHandler(obj: ObjectDef) extends MemberDefHandler(obj) {
     override def definesTerm = Some(name.toTermName)
     override def definesValue = true
 
@@ -185,7 +185,7 @@ trait MemberHandlers {
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
-    def targetType = intp.global.rootMirror.getModuleIfDefined("" + expr) match {
+    def targetType = intp.global.rootMirror.getObjectIfDefined("" + expr) match {
       case NoSymbol => intp.typeOfExpression("" + expr)
       case sym      => sym.thisType
     }

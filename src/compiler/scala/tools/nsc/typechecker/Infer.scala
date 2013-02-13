@@ -602,7 +602,7 @@ trait Infer extends Checkable {
             if (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
             else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
             // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
-            else if (targ.typeSymbol.isModuleClass || tvar.constr.avoidWiden) targ
+            else if (targ.typeSymbol.isObjectClass || tvar.constr.avoidWiden) targ
             else targ.widen
           )
         ))
@@ -992,14 +992,14 @@ trait Infer extends Checkable {
        !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
        phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
 */
-    /** Is sym1 (or its companion class in case it is a module) a subclass of
-     *  sym2 (or its companion class in case it is a module)?
+    /** Is sym1 (or its companion class in case it is an object) a subclass of
+     *  sym2 (or its companion class in case it is an object)?
      */
     def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean = (
       (sym1 != sym2) && (sym1 != NoSymbol) && (
            (sym1 isSubClass sym2)
-        || (sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
-        || (sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
+        || (sym1.isObjectClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
+        || (sym2.isObjectClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
       )
     )
 
@@ -1038,7 +1038,7 @@ trait Infer extends Checkable {
 */
     private def covariantReturnOverride(ftpe1: Type, ftpe2: Type): Boolean = (ftpe1, ftpe2) match {
       case (MethodType(_, rtpe1), MethodType(_, rtpe2)) =>
-        rtpe1 <:< rtpe2 || rtpe2.typeSymbol == ObjectClass
+        rtpe1 <:< rtpe2 || rtpe2.typeSymbol == JavaLangObjectClass
       case _ =>
         false
     }
@@ -1438,7 +1438,7 @@ trait Infer extends Checkable {
       else intersect(pt, pattp)
     }
 
-    def inferModulePattern(pat: Tree, pt: Type) =
+    def inferObjectPattern(pat: Tree, pt: Type) =
       if (!(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
@@ -1449,6 +1449,8 @@ trait Infer extends Checkable {
         else
           PatternTypeIncompatibleWithPtError2(pat, pt1, pt)
       }
+    @deprecated("Use `inferObjectPattern` instead.", "2.11.0")
+    def inferModulePattern(pat: Tree, pt: Type) = inferObjectPattern(pat, pt)
 
     object toOrigin extends TypeMap {
       def apply(tp: Type): Type = tp match {
@@ -1527,7 +1529,7 @@ trait Infer extends Checkable {
         // todo: missing test case for bests.isEmpty
         bests match {
           case best :: Nil                              => tree setSymbol best setType (pre memberType best)
-          case best :: competing :: _ if alts0.nonEmpty => 
+          case best :: competing :: _ if alts0.nonEmpty =>
             // SI-6912 Don't give up and leave an OverloadedType on the tree.
             //         Originally I wrote this as `if (secondTry) ... `, but `tryTwice` won't attempt the second try
             //         unless an error is issued. We're not issuing an error, in the assumption that it would be

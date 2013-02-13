@@ -16,16 +16,16 @@ trait Synthetics {
   import global._
   import mirror.wrapMissing
 
-  // getClassIfDefined and getModuleIfDefined cannot be used here
+  // getClassIfDefined and getObjectIfDefined cannot be used here
   // because they don't work for stuff declared in the empty package
   // (as specified in SLS, code inside non-empty packages cannot see
   // declarations from the empty package, so compiler internals
   // default to ignoring contents of the empty package)
-  // to the contrast, staticModule and staticClass are designed
+  // to the contrast, staticObject and staticClass are designed
   // to be a part of the reflection API and, therefore, they
   // correctly resolve all names
   private def topLevelSymbol(name: Name): Symbol = wrapMissing {
-    if (name.isTermName) mirror.staticModule(name.toString)
+    if (name.isTermName) mirror.staticObject(name.toString)
     else mirror.staticClass(name.toString)
   }
 

@@ -46,7 +46,7 @@ trait GenJVMASM {
         sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
           "  Reason: " + msg
         // TODO: make this next claim true, if possible
-        //   by generating valid main methods as static in module classes
+        //   by generating valid main methods as static in object classes
         //   not sure what the jvm allows here
         // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
       )
@@ -55,14 +55,14 @@ trait GenJVMASM {
     def failNoForwarder(msg: String) = {
       fail(msg + ", which means no static forwarder can be generated.\n")
     }
-    val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
+    val possibles = if (sym.hasObjectFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
     val hasApproximate = possibles exists { m =>
       m.info match {
         case MethodType(p :: Nil, _) => p.tpe.typeSymbol == ArrayClass
         case _                       => false
       }
     }
-    // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
+    // At this point it's an object with a main-looking method, so either succeed or warn that it isn't.
     hasApproximate && {
       // Before erasure so we can identify generic mains.
       enteringErasure {

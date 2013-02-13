@@ -35,7 +35,7 @@ object Case3 extends Object {
     5	CZJUMP (BOOL)NE ? 3 : 6
     
   3: 
-    6	LOAD_MODULE object Predef
+    6	LOAD_OBJECT object Predef
     6	CONSTANT("case 0")
     6	CALL_METHOD scala.Predef.println (dynamic)
     6	LOAD_FIELD scala.runtime.BoxedUnit.UNIT
@@ -43,7 +43,7 @@ object Case3 extends Object {
     6	JUMP 7
     
   6: 
-    8	LOAD_MODULE object Predef
+    8	LOAD_OBJECT object Predef
     8	CONSTANT("default")
     8	CALL_METHOD scala.Predef.println (dynamic)
     8	LOAD_FIELD scala.runtime.BoxedUnit.UNIT
@@ -51,7 +51,7 @@ object Case3 extends Object {
     8	JUMP 7
     
   7: 
-    10	LOAD_MODULE object Predef
+    10	LOAD_OBJECT object Predef
     10	CONSTANT("done")
     10	CALL_METHOD scala.Predef.println (dynamic)
     10	RETURN(UNIT)

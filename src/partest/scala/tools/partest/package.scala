@@ -101,7 +101,7 @@ package object partest {
 
     c.Expr(Block(
       List(Apply(
-        Select(Ident(PredefModule), newTermName("println")),
+        Select(Ident(PredefObject), newTermName("println")),
         List(Apply(
           Select(Apply(
             Select(Ident(ScalaPackage), newTermName("StringContext")),

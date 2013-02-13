@@ -28,11 +28,11 @@ trait StandardDefinitions {
    *  @group API
    */
   trait DefinitionsApi extends StandardTypes {
-    /** The module class symbol of package `scala`. */
+    /** The object class symbol of package `scala`. */
     def ScalaPackageClass: ClassSymbol
 
-    /** The module symbol of package `scala`. */
-    def ScalaPackage: ModuleSymbol
+    /** The object symbol of package `scala`. */
+    def ScalaPackage: ObjectSymbol
 
     /** The class symbol of core class `scala.Any`. */
     def AnyClass   : ClassSymbol
@@ -41,7 +41,9 @@ trait StandardDefinitions {
     def AnyValClass: ClassSymbol
 
     /** The class symbol of core class `java.lang.Object`. */
-    def ObjectClass: ClassSymbol
+    def JavaLangObjectClass: ClassSymbol
+    @deprecated("Use `JavaLangObjectClass` instead.", "2.11.0")
+    def ObjectClass: ClassSymbol = JavaLangObjectClass
 
     /** The type symbol of core class `scala.AnyRef`. */
     def AnyRefClass: TypeSymbol
@@ -91,20 +93,20 @@ trait StandardDefinitions {
     /** The class symbol of class `scala.List`. */
     def ListClass   : ClassSymbol
 
-    /** The module symbol of module `scala.Predef`. */
-    def PredefModule: ModuleSymbol
+    /** The object symbol of object `scala.Predef`. */
+    def PredefObject: ObjectSymbol
 
-    /** The module class symbol of package `java.lang`. */
+    /** The object class symbol of package `java.lang`. */
     def JavaLangPackageClass: ClassSymbol
 
-    /** The module symbol of package `java.lang`. */
-    def JavaLangPackage: ModuleSymbol
+    /** The object symbol of package `java.lang`. */
+    def JavaLangPackage: ObjectSymbol
 
-    /** The module symbol of module `scala.Array`. */
-    def ArrayModule: ModuleSymbol
+    /** The object symbol of object `scala.Array`. */
+    def ArrayObject: ObjectSymbol
 
-    /** The method symbol of method `apply` in module `scala.Array`. */
-    def ArrayModule_overloadedApply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
+    /** The method symbol of method `apply` in object `scala.Array`. */
+    def ArrayObject_overloadedApply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
 
     /** The method symbol of method `apply` in class `scala.Array`. */
     def Array_apply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
@@ -195,23 +197,23 @@ trait StandardDefinitions {
      */
     def RepeatedParamClass: ClassSymbol
 
-    /** The module symbol of module `scala.List`. */
-    def ListModule: ModuleSymbol
+    /** The object symbol of object `scala.List`. */
+    def ListObject: ObjectSymbol
 
     /** The method symbol of method `apply` in class `scala.List`. */
     def List_apply: TermSymbol // todo. fix the bug in Definitions.getMemberMethod
 
-    /** The module symbol of module `scala.collection.immutable.Nil`. */
-    def NilModule: ModuleSymbol
+    /** The object symbol of object `scala.collection.immutable.Nil`. */
+    def NilObject: ObjectSymbol
 
     /** The class symbol of class `scala.Option`. */
     def OptionClass: ClassSymbol
 
-    /** The module symbol of module `scala.None`. */
-    def NoneModule: ModuleSymbol
+    /** The object symbol of object `scala.None`. */
+    def NoneObject: ObjectSymbol
 
-    /** The module symbol of module `scala.Some`. */
-    def SomeModule: ModuleSymbol
+    /** The object symbol of object `scala.Some`. */
+    def SomeObject: ObjectSymbol
 
     /** The array of class symbols for classes `scala.ProductX`.
      *   -  0th element is `Unit`
@@ -303,7 +305,9 @@ trait StandardDefinitions {
     val AnyRefTpe: Type
 
     /** The type of core type `Object`. */
-    val ObjectTpe: Type
+    val JavaLangObjectTpe: Type
+    @deprecated("Use `JavaLangObjectTpe` instead.", "2.11.0")
+    def ObjectTpe: Type = JavaLangObjectTpe
 
     /** The type of core type `Nothing`. */
     val NothingTpe: Type

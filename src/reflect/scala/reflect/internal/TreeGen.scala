@@ -75,9 +75,9 @@ abstract class TreeGen extends macros.TreeBuilder {
       case TypeRef(pre, sym, args) =>
         if (sym.isRoot) {
           mkAttributedThis(sym)
-        } else if (sym.isModuleClass) {
-          mkApplyIfNeeded(mkAttributedRef(pre, sym.sourceModule))
-        } else if (sym.isModule || sym.isClass) {
+        } else if (sym.isObjectClass) {
+          mkApplyIfNeeded(mkAttributedRef(pre, sym.sourceObject))
+        } else if (sym.isObject || sym.isClass) {
           assert(phase.erasedTypes, failMessage)
           mkAttributedThis(sym)
         } else if (sym.isType) {
@@ -192,7 +192,7 @@ abstract class TreeGen extends macros.TreeBuilder {
           // package object iself, but it also could be any superclass of the package
           // object.  In the latter case, we must go through the qualifier's info
           // to obtain the right symbol.
-          val packageObject = if (sym.owner.isModuleClass) sym.owner.sourceModule else qual.tpe member nme.PACKAGE
+          val packageObject = if (sym.owner.isObjectClass) sym.owner.sourceObject else qual.tpe member nme.PACKAGE
           Select(qual, nme.PACKAGE) setSymbol packageObject setType singleType(qual.tpe, packageObject)
         }
         else qual
@@ -247,7 +247,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     Literal(Constant(tp)) setType ConstantType(Constant(tp))
 
   /** Builds a list with given head and tail. */
-  def mkNil: Tree = mkAttributedRef(NilModule)
+  def mkNil: Tree = mkAttributedRef(NilObject)
 
   /** Builds a tree representing an undefined local, as in
    *    var x: T = _
@@ -279,7 +279,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(Constant())
     else Apply(
-      Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
+      Select(mkAttributedRef(TupleClass(elems.length).caseObject), nme.apply),
       elems)
 
   // tree1 AND tree2

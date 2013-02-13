@@ -51,7 +51,7 @@ abstract class CompilerTest extends DirectTest {
   class SymsInPackage(pkgName: String) {
     def pkg     = rootMirror.getPackage(pkgName)
     def classes = allMembers(pkg) filter (_.isClass)
-    def modules = allMembers(pkg) filter (_.isModule)
+    def objects = allMembers(pkg) filter (_.isObject)
     def symbols = classes ++ terms filterNot (_ eq NoSymbol)
     def terms   = allMembers(pkg) filter (s => s.isTerm && !s.isConstructor)
     def tparams = classes flatMap (_.info.typeParams)

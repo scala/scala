@@ -31,7 +31,7 @@ import scala.tools.nsc.settings.NoScalaVersion
  *    It performs the following transformations.
  *  </p>
  *  <ul>
- *   <li>Local modules are replaced by variables and classes</li>
+ *   <li>Local objects are replaced by variables and classes</li>
  *   <li>Calls to case factory methods are replaced by new's.</li>
  *   <li>Eliminate branches in a conditional if the condition is a constant</li>
  *  </ul>
@@ -59,7 +59,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
   override def changesBaseClasses = false
 
   override def transformInfo(sym: Symbol, tp: Type): Type = {
-    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    if (sym.isObject && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
     super.transformInfo(sym, tp)
   }
 
@@ -76,13 +76,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       rtp1 <:< rtp2
     case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
       rtp1 <:< rtp2
-    case (TypeRef(_, sym, _),  _) if sym.isModuleClass =>
+    case (TypeRef(_, sym, _),  _) if sym.isObjectClass =>
       overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix)
     case _ =>
       def classBoundAsSeen(tp: Type) = tp.typeSymbol.classBound.asSeenFrom(prefix, tp.typeSymbol.owner)
 
       (tp1 <:< tp2) || (  // object override check
-        tp1.typeSymbol.isModuleClass && tp2.typeSymbol.isModuleClass && {
+        tp1.typeSymbol.isObjectClass && tp2.typeSymbol.isObjectClass && {
           val cb1 = classBoundAsSeen(tp1)
           val cb2 = classBoundAsSeen(tp2)
           (cb1 <:< cb2) && {
@@ -275,7 +275,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           sym1.locationString +
           (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
            else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
-           else if (sym1.isModule) ""
+           else if (sym1.isObject) ""
            else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
            else "")
          else "")
@@ -328,7 +328,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def overrideTypeError() {
           if (noErrorType) {
             emitOverrideError(
-              if (member.isModule && other.isModule) objectOverrideErrorMsg
+              if (member.isObject && other.isObject) objectOverrideErrorMsg
               else overrideErrorMsg("has incompatible type")
             )
           }
@@ -539,7 +539,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
         def abstractClassError(mustBeMixin: Boolean, msg: String) {
           def prelude = (
-            if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
+            if (clazz.isAnonymousClass || clazz.isObjectClass) "object creation impossible"
             else if (mustBeMixin) clazz + " needs to be a mixin"
             else clazz + " needs to be abstract"
           ) + ", since"
@@ -727,7 +727,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // For non-AnyVal classes, prevent abstract methods in interfaces that override
         // final members in Object; see #4431
         for (decl <- clazz.info.decls.iterator) {
-          val overridden = decl.overriddenSymbol(ObjectClass)
+          val overridden = decl.overriddenSymbol(JavaLangObjectClass)
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
@@ -889,7 +889,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         stat match {
           case DefDef(_, _, _, _, _, _) if stat.symbol.isLazy                 =>
             enterSym(stat.symbol)
-          case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
+          case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ObjectDef(_, _, _) | ValDef(_, _, _, _) =>
             //assert(stat.symbol != NoSymbol, stat);//debug
             enterSym(stat.symbol.lazyAccessorOrSelf)
           case _ =>
@@ -946,7 +946,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
 
         /** Symbols which limit the warnings we can issue since they may be value types */
-        val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
+        val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, JavaLangObjectClass, ComparableClass, JavaSerializableClass)
 
         // Whether def equals(other: Any) has known behavior: it is the default
         // inherited from java.lang.Object, or it is a synthetically generated
@@ -1038,7 +1038,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // better to have lubbed and lost
           def warnIfLubless(): Unit = {
             val common = global.lub(List(actual.tpe, receiver.tpe))
-            if (ObjectClass.tpe <:< common)
+            if (JavaLangObjectClass.tpe <:< common)
               unrelatedTypes()
           }
           def eitherSubclasses = (actual isSubClass receiver) || (receiver isSubClass actual)
@@ -1108,61 +1108,61 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       finally popLevel()
     }
 
-    /** Eliminate ModuleDefs. In all cases the ModuleDef (carrying a module symbol) is
-     *  replaced with a ClassDef (carrying the corresponding module class symbol) with additional
+    /** Eliminate ObjectDefs. In all cases the ObjectDef (carrying a object symbol) is
+     *  replaced with a ClassDef (carrying the corresponding object class symbol) with additional
      *  trees created as follows:
      *
      *  1) A statically reachable object (either top-level or nested only in objects) receives
      *     no additional trees.
      *  2) An inner object which matches an existing member (e.g. implements an interface)
      *     receives an accessor DefDef to implement the interface.
-     *  3) An inner object otherwise receives a private ValDef which declares a module var
-     *     (the field which holds the module class - it has a name like Foo$module) and an
+     *  3) An inner object otherwise receives a private ValDef which declares a object var
+     *     (the field which holds the object class - it has a name like Foo$module) and an
      *     accessor for that field. The instance is created lazily, on first access.
      */
-    private def eliminateModuleDefs(moduleDef: Tree): List[Tree] = exitingRefchecks {
-      val ModuleDef(mods, name, impl) = moduleDef
-      val module        = moduleDef.symbol
-      val site          = module.owner
-      val moduleName    = module.name.toTermName
+    private def eliminateObjectDefs(objectDef: Tree): List[Tree] = exitingRefchecks {
+      val ObjectDef(mods, name, impl) = objectDef
+      val obj           = objectDef.symbol
+      val site          = obj.owner
+      val objectName    = obj.name.toTermName
       // The typer doesn't take kindly to seeing this ClassDef; we have to
       // set NoType so it will be ignored.
-      val cdef          = ClassDef(module.moduleClass, impl) setType NoType
+      val cdef          = ClassDef(obj.objectClass, impl) setType NoType
 
-      // Create the module var unless the immediate owner is a class and
-      // the module var already exists there. See SI-5012, SI-6712.
-      def findOrCreateModuleVar() = {
+      // Create the object var unless the immediate owner is a class and
+      // the object var already exists there. See SI-5012, SI-6712.
+      def findOrCreateObjectVar() = {
         val vsym = (
           if (site.isTerm) NoSymbol
-          else site.info decl nme.moduleVarName(moduleName)
+          else site.info decl nme.objectVarName(objectName)
         )
-        vsym orElse (site newModuleVarSymbol module)
+        vsym orElse (site newObjectVarSymbol obj)
       }
       def newInnerObject() = {
-        // Create the module var unless it is already in the module owner's scope.
-        // The lookup is on module.enclClass and not module.owner lest there be a
+        // Create the object var unless it is already in the object owner's scope.
+        // The lookup is on object.enclClass and not object.owner lest there be a
         // nullary method between us and the class; see SI-5012.
-        val moduleVar = findOrCreateModuleVar()
-        val rhs       = gen.newModule(module, moduleVar.tpe)
-        val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(moduleVar, rhs)
-        val accessor  = DefDef(module, body.changeOwner(moduleVar -> module))
+        val objectVar = findOrCreateObjectVar()
+        val rhs       = gen.newObject(obj, objectVar.tpe)
+        val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(objectVar, rhs)
+        val accessor  = DefDef(obj, body.changeOwner(objectVar -> obj))
 
-        ValDef(moduleVar) :: accessor :: Nil
+        ValDef(objectVar) :: accessor :: Nil
       }
       def matchingInnerObject() = {
-        val newFlags = (module.flags | STABLE) & ~MODULE
-        val newInfo  = NullaryMethodType(module.moduleClass.tpe)
-        val accessor = site.newMethod(moduleName, module.pos, newFlags) setInfoAndEnter newInfo
+        val newFlags = (obj.flags | STABLE) & ~OBJECT
+        val newInfo  = NullaryMethodType(obj.objectClass.tpe)
+        val accessor = site.newMethod(objectName, obj.pos, newFlags) setInfoAndEnter newInfo
 
-        DefDef(accessor, Select(This(site), module)) :: Nil
+        DefDef(accessor, Select(This(site), obj)) :: Nil
       }
       val newTrees = cdef :: (
-        if (module.isStatic)
-          if (module.isOverridingSymbol) matchingInnerObject() else Nil
+        if (obj.isStatic)
+          if (obj.isOverridingSymbol) matchingInnerObject() else Nil
         else
           newInnerObject()
       )
-      transformTrees(newTrees map localTyper.typedPos(moduleDef.pos))
+      transformTrees(newTrees map localTyper.typedPos(objectDef.pos))
     }
 
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
@@ -1174,7 +1174,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           debuglog("refsym = " + currentLevel.refsym)
           unit.error(currentLevel.refpos, "forward reference not allowed from self constructor invocation")
         }
-      case ModuleDef(_, _, _) => eliminateModuleDefs(tree)
+      case ObjectDef(_, _, _) => eliminateObjectDefs(tree)
       case ValDef(_, _, _, _) =>
         val tree1 = transform(tree) // important to do before forward reference check
         if (tree1.symbol.isLazy) tree1 :: Nil
@@ -1398,13 +1398,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       def isClassTypeAccessible(tree: Tree): Boolean = tree match {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
-        case Select(module, apply) =>
+        case Select(obj, apply) =>
           ( // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
             //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
-            treeInfo.isQualifierSafeToElide(module) &&
+            treeInfo.isQualifierSafeToElide(obj) &&
             // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
             // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
-            module.symbol.companionClass.isClass
+            obj.symbol.companionClass.isClass
           )
       }
 

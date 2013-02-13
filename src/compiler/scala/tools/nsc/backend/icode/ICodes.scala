@@ -98,13 +98,15 @@ abstract class ICodes extends AnyRef
     val global: ICodes.this.global.type = ICodes.this.global
   }
 
-  lazy val AnyRefReference: TypeKind    = REFERENCE(definitions.AnyRefClass)
-  lazy val BoxedUnitReference: TypeKind = REFERENCE(definitions.BoxedUnitClass)
-  lazy val NothingReference: TypeKind   = REFERENCE(definitions.NothingClass)
-  lazy val NullReference: TypeKind      = REFERENCE(definitions.NullClass)
-  lazy val ObjectReference: TypeKind    = REFERENCE(definitions.ObjectClass)
-  lazy val StringReference: TypeKind    = REFERENCE(definitions.StringClass)
-  lazy val ThrowableReference: TypeKind = REFERENCE(definitions.ThrowableClass)
+  lazy val AnyRefReference: TypeKind         = REFERENCE(definitions.AnyRefClass)
+  lazy val BoxedUnitReference: TypeKind      = REFERENCE(definitions.BoxedUnitClass)
+  lazy val NothingReference: TypeKind        = REFERENCE(definitions.NothingClass)
+  lazy val NullReference: TypeKind           = REFERENCE(definitions.NullClass)
+  lazy val JavaLangObjectReference: TypeKind = REFERENCE(definitions.JavaLangObjectClass)
+       @deprecated("Use `JavaLangObjectReference` instead.", "2.11.0")
+       def ObjectReference: TypeKind         = JavaLangObjectReference
+  lazy val StringReference: TypeKind         = REFERENCE(definitions.StringClass)
+  lazy val ThrowableReference: TypeKind      = REFERENCE(definitions.ThrowableClass)
 
   object icodeReader extends ICodeReader {
     lazy val global: ICodes.this.global.type = ICodes.this.global

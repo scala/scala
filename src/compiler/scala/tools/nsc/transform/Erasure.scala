@@ -16,8 +16,7 @@ abstract class Erasure extends AddInterfaces
                           with scala.reflect.internal.transform.Erasure
                           with typechecker.Analyzer
                           with TypingTransformers
-                          with ast.TreeDSL
-{
+                          with ast.TreeDSL {
   import global._
   import definitions._
   import CODE._
@@ -111,7 +110,7 @@ abstract class Erasure extends AddInterfaces
         if (tpe1 eq tpe) t
         else ExistentialType(tparams, tpe1)
       case t =>
-        if (boxedClass contains t.typeSymbol) ObjectClass.tpe
+        if (boxedClass contains t.typeSymbol) JavaLangObjectClass.tpe
         else tp
     }
     def apply(tp: Type): Type = tp.dealiasWiden match {
@@ -123,14 +122,14 @@ abstract class Erasure extends AddInterfaces
       case tp1 @ TypeRef(pre, sym, args) =>
         def argApply(tp: Type) = {
           val tp1 = apply(tp)
-          if (tp1.typeSymbol == UnitClass) ObjectClass.tpe
+          if (tp1.typeSymbol == UnitClass) JavaLangObjectClass.tpe
           else squashBoxed(tp1)
         }
         if (sym == ArrayClass && args.nonEmpty)
-          if (unboundedGenericArrayLevel(tp1) == 1) ObjectClass.tpe
+          if (unboundedGenericArrayLevel(tp1) == 1) JavaLangObjectClass.tpe
           else mapOver(tp1)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
-          ObjectClass.tpe
+          JavaLangObjectClass.tpe
         else if (sym == UnitClass)
           BoxedUnitClass.tpe
         else if (sym == NothingClass)
@@ -182,7 +181,7 @@ abstract class Erasure extends AddInterfaces
           // java is unthrilled about seeing interfaces inherit from classes
           val ok = parents filter (p => p.typeSymbol.isTrait || p.typeSymbol.isInterface)
           // traits should always list Object.
-          if (ok.isEmpty || ok.head.typeSymbol != ObjectClass) ObjectClass.tpe :: ok
+          if (ok.isEmpty || ok.head.typeSymbol != JavaLangObjectClass) JavaLangObjectClass.tpe :: ok
           else ok
         }
         else parents
@@ -193,7 +192,7 @@ abstract class Erasure extends AddInterfaces
     def boundsSig(bounds: List[Type]) = {
       val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
       val classPart = isClass match {
-        case Nil    => ":" // + boxedSig(ObjectClass.tpe)
+        case Nil    => ":" // + boxedSig(JavaLangObjectClass.tpe)
         case x :: _ => ":" + boxedSig(x)
       }
       classPart :: (isTrait map boxedSig) mkString ":"
@@ -204,7 +203,7 @@ abstract class Erasure extends AddInterfaces
       else tparams map paramSig mkString ("<", "", ">")
     )
 
-    // Anything which could conceivably be a module (i.e. isn't known to be
+    // Anything which could conceivably be an object (i.e. isn't known to be
     // a type parameter or similar) must go through here or the signature is
     // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
     def fullNameInSig(sym: Symbol) = "L" + enteringIcode(sym.javaBinaryName)
@@ -247,7 +246,7 @@ abstract class Erasure extends AddInterfaces
 
           // If args isEmpty, Array is being used as a type constructor
           if (sym == ArrayClass && args.nonEmpty) {
-            if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
+            if (unboundedGenericArrayLevel(tp) == 1) jsig(JavaLangObjectClass.tpe)
             else ARRAY_TAG.toString+(args map (jsig(_))).mkString
           }
           else if (isTypeParameterInSig(sym, sym0)) {
@@ -255,7 +254,7 @@ abstract class Erasure extends AddInterfaces
             "" + TVAR_TAG + sym.name + ";"
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
-            jsig(ObjectClass.tpe)
+            jsig(JavaLangObjectClass.tpe)
           else if (sym == UnitClass)
             jsig(BoxedUnitClass.tpe)
           else if (sym == NothingClass)
@@ -263,7 +262,7 @@ abstract class Erasure extends AddInterfaces
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
           else if (isPrimitiveValueClass(sym)) {
-            if (!primitiveOK) jsig(ObjectClass.tpe)
+            if (!primitiveOK) jsig(JavaLangObjectClass.tpe)
             else if (sym == UnitClass) jsig(BoxedUnitClass.tpe)
             else abbrvTag(sym).toString
           }
@@ -532,7 +531,7 @@ abstract class Erasure extends AddInterfaces
         val pt        = member.tpe.resultType
         lazy val zero =
           if      (_false.tpe <:< pt)    _false
-          else if (NoneModule.tpe <:< pt) REF(NoneModule)
+          else if (NoneObject.tpe <:< pt) REF(NoneObject)
           else EmptyTree
 
         if (guardExtractor && (zero ne EmptyTree)) {
@@ -603,7 +602,7 @@ abstract class Erasure extends AddInterfaces
                 log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
                 arg
               case _ =>
-                (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectClass.tpe
+                (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType JavaLangObjectClass.tpe
             }
             }
         }
@@ -729,7 +728,7 @@ abstract class Erasure extends AddInterfaces
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
-          val qual1 = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
+          val qual1 = typedQualifier(qual, NOmode, JavaLangObjectClass.tpe) // need to have an expected type, see #3037
 
           if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
             val noNullCheckNeeded = targ.tpe match {
@@ -764,14 +763,14 @@ abstract class Erasure extends AddInterfaces
           if (tree.symbol == NoSymbol) {
             tree
           } else if (name == nme.CONSTRUCTOR) {
-            if (tree.symbol.owner == AnyValClass) tree.symbol = ObjectClass.primaryConstructor
+            if (tree.symbol.owner == AnyValClass) tree.symbol = JavaLangObjectClass.primaryConstructor
             tree
           } else if (tree.symbol == Any_asInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
           else if (tree.symbol == Any_isInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
           else if (tree.symbol.owner == AnyClass)
-            adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
+            adaptMember(atPos(tree.pos)(Select(qual, getMember(JavaLangObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual)
             if ((isPrimitiveValueType(qual1.tpe) && !isPrimitiveValueMember(tree.symbol)) ||
@@ -1152,9 +1151,9 @@ abstract class Erasure extends AddInterfaces
                     // the overloading logic presently hidden away in a few different
                     // places to be properly exposed so we can just call "resolveOverload"
                     // after typer.  Until then:
-                    val alts    = ScalaRunTimeModule.info.member(nme.hash_).alternatives
+                    val alts    = ScalaRunTimeObject.info.member(nme.hash_).alternatives
                     def alt1    = alts find (_.info.paramTypes.head =:= qual.tpe)
-                    def alt2    = ScalaRunTimeModule.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
+                    def alt2    = ScalaRunTimeObject.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
                     val newTree = gen.mkRuntimeCall(nme.hash_, qual :: Nil) setSymbol (alt1 getOrElse alt2)
 
                     global.typer.typed(newTree)

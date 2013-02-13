@@ -16,7 +16,7 @@ import PickleFormat._
 import Flags._
 
 /**
- * Serialize a top-level module and/or class.
+ * Serialize a top-level object and/or class.
  *
  * @see EntryTags.scala for symbol table attribute format.
  *
@@ -56,7 +56,7 @@ abstract class Pickler extends SubComponent {
         tree match {
           case PackageDef(_, stats) =>
             stats foreach pickle
-          case ClassDef(_, _, _, _) | ModuleDef(_, _, _) =>
+          case ClassDef(_, _, _, _) | ObjectDef(_, _, _) =>
             val sym = tree.symbol
             val pickle = new Pickle(sym)
             add(sym, pickle)
@@ -193,7 +193,7 @@ abstract class Pickler extends SubComponent {
             putAnnotation(sym, annot)
         }
         else if (sym != NoSymbol) {
-          putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name)
+          putEntry(if (sym.isObjectClass) sym.name.toTermName else sym.name)
           if (!sym.owner.isRoot) putSymbol(sym.owner)
         }
       }
@@ -280,7 +280,7 @@ abstract class Pickler extends SubComponent {
           putTree(impl)
           putTrees(tparams)
 
-        case ModuleDef(mods, name, impl) =>
+        case ObjectDef(mods, name, impl) =>
           putMods(mods)
           putEntry(name)
           putTree(impl)
@@ -594,7 +594,7 @@ abstract class Pickler extends SubComponent {
           NONEsym
         case sym: Symbol if !isLocal(sym) =>
           val tag =
-            if (sym.isModuleClass) {
+            if (sym.isObjectClass) {
               writeRef(sym.name.toTermName); EXTMODCLASSref
             } else {
               writeRef(sym.name); EXTref
@@ -611,7 +611,7 @@ abstract class Pickler extends SubComponent {
         case sym: TermSymbol =>
           writeSymInfo(sym)
           if (sym.alias != NoSymbol) writeRef(sym.alias)
-          if (sym.isModule) MODULEsym else VALsym
+          if (sym.isObject) OBJECTsym else VALsym
         case NoType =>
           NOtpe
         case NoPrefix =>
@@ -701,8 +701,8 @@ abstract class Pickler extends SubComponent {
           writeRefs(tparams)
           TREE
 
-        case tree@ModuleDef(mods, name, impl) =>
-          writeNat(MODULEtree)
+        case tree@ObjectDef(mods, name, impl) =>
+          writeNat(OBJECTtree)
           writeRef(tree.tpe)
           writeRef(tree.symbol)
           writeRef(mods)

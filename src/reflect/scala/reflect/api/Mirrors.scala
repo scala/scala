@@ -18,7 +18,7 @@ package api
  *
  * <ul>
  * <li>'''“Classloader” mirrors'''. These mirrors translate names to symbols
- * (via methods `staticClass`/`staticModule`/`staticPackage`).</li>
+ * (via methods `staticClass`/`staticObject`/`staticPackage`).</li>
  * <li>'''"Invoker” mirrors'''. These mirrors implement reflective invocations
  * (via methods `MethodMirror.apply`, `FieldMirror.get`, etc). These "invoker"
  * mirrors are the types of mirrors that are most commonly used.</li>
@@ -30,7 +30,7 @@ package api
  *
  * The entry point to classloader `Mirror`s is via [[scala.reflect.macros.Context#mirror]].
  * Typical methods which use classloader `Mirror`s include [[scala.reflect.api.Mirror#staticClass]],
- * [[scala.reflect.api.Mirror#staticModule]], and [[scala.reflect.api.Mirror#staticPackage]]. For
+ * [[scala.reflect.api.Mirror#staticObject]], and [[scala.reflect.api.Mirror#staticPackage]]. For
  * example:
  * {{{
  *  import scala.reflect.macros.Context
@@ -43,7 +43,7 @@ package api
  *    def impl(c: Context): c.Expr[Location] = {
  *      import c.universe._
  *      val pos = c.macroApplication.pos
- *      val clsLocation = c.mirror.staticModule("Location") // get symbol of "Location" object
+ *      val clsLocation = c.mirror.staticObject("Location") // get symbol of "Location" object
  *      c.Expr(Apply(Ident(clsLocation), List(Literal(Constant(pos.source.path)), Literal(Constant(pos.line)), Literal(Constant(pos.column)))))
  *    }
  *  }
@@ -67,7 +67,7 @@ package api
  *
  * A classloader mirror can create invoker mirrors, which include: [[scala.reflect.api.Mirrors#InstanceMirror]],
  * [[scala.reflect.api.Mirrors#MethodMirror]], [[scala.reflect.api.Mirrors#FieldMirror]],
- * [[scala.reflect.api.Mirrors#ClassMirror]] and [[scala.reflect.api.Mirrors#ModuleMirror]].
+ * [[scala.reflect.api.Mirrors#ClassMirror]] and [[scala.reflect.api.Mirrors#ObjectMirror]].
  *
  * Examples of how these two types of `Mirror`s interact are available below.
  *
@@ -85,7 +85,7 @@ package api
  * }}}
  *
  * '''[[scala.reflect.api.Mirrors#InstanceMirror]]'''. Used for creating invoker `Mirror`s for methods
- * and fields and for inner classes and inner objects (modules). Entry point: `val im = m.reflect(<value>)`.
+ * and fields and for inner classes and inner objects. Entry point: `val im = m.reflect(<value>)`.
  * Example:
  * {{{
  *   scala> class C { def x = 2 }
@@ -97,7 +97,7 @@ package api
  *
  * '''[[scala.reflect.api.Mirrors#MethodMirror]]'''. Used for invoking instance methods (Scala only has
  * instance methods-- methods of objects are instance methods of object instances, obtainable
- * via `ModuleMirror.instance`). Entry point: `val mm = im.reflectMethod(<method symbol>)`.
+ * via `ObjectMirror.instance`). Entry point: `val mm = im.reflectMethod(<method symbol>)`.
  * Example:
  * {{{
  *   scala> val methodX = typeOf[C].declaration(newTermName("x")).asMethod
@@ -112,7 +112,7 @@ package api
  *
  * '''[[scala.reflect.api.Mirrors#FieldMirror]]'''. Used for getting/setting instance fields
  * (Scala only has instance fields-- fields of objects are instance methods of object instances
- * obtainable via ModuleMirror.instance). Entry point:
+ * obtainable via ObjectMirror.instance). Entry point:
  * `val fm = im.reflectMethod(<field or accessor symbol>)`.
  * Example:
  * {{{
@@ -154,7 +154,7 @@ package api
  *
  * '''[[scala.reflect.api.Mirrors#ClassMirror]]'''. Used for creating invoker mirrors for constructors.
  * Entry points: for ''static classes'' `val cm1 = m.reflectClass(<class symbol>)`,
- * for ''inner classes'' `val mm2 = im.reflectClass(<module symbol>)`.
+ * for ''inner classes'' `val om2 = im.reflectClass(<object symbol>)`.
  * Example:
  * {{{
  *   scala> case class C(x: Int)
@@ -180,24 +180,24 @@ package api
  *   res0: Any = C(2)
  * }}}
  *
- * '''[[scala.reflect.api.Mirrors#ModuleMirror]]'''. Used for getting singleton instances of objects.
- * Entry points: for ''static objects (modules)'' `val mm1 = m.reflectModule(<module symbol>)`,
- * for ''inner objects (modules)'' `val mm2 = im.reflectModule(<module symbol>)`.
+ * '''[[scala.reflect.api.Mirrors#ObjectMirror]]'''. Used for getting singleton instances of objects.
+ * Entry points: for ''static objects'' `val om1 = m.reflectObject(<object symbol>)`,
+ * for ''inner objects'' `val om2 = im.reflectObject(<object symbol>)`.
  * Example:
  * {{{
  *   scala> object C { def x = 2 }
- *   defined module C
+ *   defined object C
  *
  *   scala> val m = ru.runtimeMirror(getClass.getClassLoader)
  *   m: reflect.runtime.universe.Mirror = JavaMirror ...
  *
- *   scala> val objectC = typeOf[C.type].termSymbol.asModule
- *   objectC: reflect.runtime.universe.ModuleSymbol = object C
+ *   scala> val objectC = typeOf[C.type].termSymbol.asObject
+ *   objectC: reflect.runtime.universe.ObjectSymbol = object C
  *
- *   scala> val mm = m.reflectModule(objectC)
- *   mm: reflect.runtime.universe.ModuleMirror = module mirror for C (bound to null)
+ *   scala> val om = m.reflectObject(objectC)
+ *   om: reflect.runtime.universe.ObjectMirror = object mirror for C (bound to null)
  *
- *   scala> val obj = mm.instance
+ *   scala> val obj = om.instance
  *   obj: Any = C$@1005ec04
  * }}}
  *
@@ -296,17 +296,20 @@ trait Mirrors { self: Universe =>
      */
     def reflectClass(cls: ClassSymbol): ClassMirror
 
-    /** Reflects against an inner module symbol and returns a mirror
+    /** Reflects against an inner object symbol and returns a mirror
      *  that can be used to get the instance of the object or inspect its companion class.
      *
-     *  To get a module symbol by the name of the object you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the object>)).asModule`.
+     *  To get a object symbol by the name of the object you would like to reflect,
+     *  use `<this mirror>.symbol.typeSignature.member(newTermName(<name of the object>)).asObject`.
      *  For further information about member lookup refer to `Symbol.typeSignature`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the instance underlying this mirror.
      */
-    def reflectModule(mod: ModuleSymbol): ModuleMirror
+    def reflectObject(obj: ObjectSymbol): ObjectMirror
+
+    @deprecated("Use `reflectObject` instead.", "2.10.0")
+    def reflectModule(mod: ObjectSymbol): ObjectMirror = reflectObject(mod)
   }
 
   /** A mirror that reflects a field.
@@ -395,7 +398,7 @@ trait Mirrors { self: Universe =>
      *  of a runtime class or the companion object of a Scala class.
      *  One has:
      *
-     *    this.isStatic == this.isInstanceOf[ModuleMirror]
+     *    this.isStatic == this.isInstanceOf[ObjectMirror]
      *    !this.isStatic == this.isInstanceOf[ClassMirror]
      */
     def isStatic: Boolean
@@ -408,10 +411,10 @@ trait Mirrors { self: Universe =>
    *  See [[scala.reflect.api.package the overview page]] for details on how to use runtime reflection.
    *  @group Mirrors
    */
-  trait ModuleMirror extends TemplateMirror {
+  trait ObjectMirror extends TemplateMirror {
 
-    /** The Scala module symbol corresponding to the reflected object */
-    override def symbol: ModuleSymbol
+    /** The Scala object symbol corresponding to the reflected object */
+    override def symbol: ObjectSymbol
 
     /** If the reflected runtime class corresponds to a Scala object definition,
      *  returns the single instance representing that object.
@@ -468,16 +471,19 @@ trait Mirrors { self: Universe =>
      */
     def reflectClass(cls: ClassSymbol): ClassMirror
 
-    /** Reflects against a static module symbol and returns a mirror
+    /** Reflects against a static object symbol and returns a mirror
      *  that can be used to get the instance of the object or inspect its companion class.
      *
-     *  To get a module symbol by the name of its companion class you would like to reflect,
+     *  To get a object symbol by the name of its companion class you would like to reflect,
      *  use `<this mirror>.classSymbol(<runtime class loaded by its name>).companion.get`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be static, i.e. either top-level or nested within one or several static objects.
      */
-    def reflectModule(mod: ModuleSymbol): ModuleMirror
+    def reflectObject(obj: ObjectSymbol): ObjectMirror
+
+    @deprecated("Use `reflectObject` instead.", "2.10.0")
+    def reflectModule(mod: ObjectSymbol): ObjectMirror = reflectObject(mod)
   }
 
   /** The API of a mirror for a reflective universe.
@@ -505,12 +511,15 @@ trait Mirrors { self: Universe =>
      */
     def classSymbol(rtcls: RuntimeClass): ClassSymbol
 
-    /** A module symbol for the specified runtime class.
-     *  @return The module symbol for the runtime class in the current class loader.
+    /** An object symbol for the specified runtime class.
+     *  @return The object symbol for the runtime class in the current class loader.
      *  @throws java.lang.ClassNotFoundException if no class with that name exists
      *  @throws scala.reflect.internal.MissingRequirementError if no corresponding symbol exists
      *  to do: throws anything else?
      */
-    def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol
+    def objectSymbol(rtcls: RuntimeClass): ObjectSymbol
+
+    @deprecated("Use `objectSymbol` instead.", "2.10.0")
+    def moduleSymbol(rtcls: RuntimeClass): ObjectSymbol = objectSymbol(rtcls)
   }
 }

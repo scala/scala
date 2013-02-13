@@ -17,7 +17,7 @@ import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 
 /** <p>
- *    This module provides star expansion of '-classpath' option arguments, behaves the same as
+ *    This object provides star expansion of '-classpath' option arguments, behaves the same as
  *    java, see [http://java.sun.com/javase/6/docs/technotes/tools/windows/classpath.html]
  *  </p>
  *

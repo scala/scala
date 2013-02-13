@@ -438,12 +438,12 @@ trait MethodSynthesis {
      *      { z = <rhs>; z } where z can be an identifier or a field.
      */
     case class LazyValGetter(tree: ValDef) extends BaseGetter(tree) {
-      class ChangeOwnerAndModuleClassTraverser(oldowner: Symbol, newowner: Symbol)
+      class ChangeOwnerAndObjectClassTraverser(oldowner: Symbol, newowner: Symbol)
         extends ChangeOwnerTraverser(oldowner, newowner) {
 
         override def traverse(tree: Tree) {
           tree match {
-            case _: DefTree => change(tree.symbol.moduleClass)
+            case _: DefTree => change(tree.symbol.objectClass)
             case _          =>
           }
           super.traverse(tree)
@@ -461,7 +461,7 @@ trait MethodSynthesis {
           else gen.mkAssignAndReturn(basisSym, rhs1)
         )
         derivedSym.setPos(tree.pos) // cannot set it at createAndEnterSymbol because basisSym can possible stil have NoPosition
-        val ddefRes = atPos(tree.pos)(DefDef(derivedSym, new ChangeOwnerAndModuleClassTraverser(basisSym, derivedSym)(body)))
+        val ddefRes = atPos(tree.pos)(DefDef(derivedSym, new ChangeOwnerAndObjectClassTraverser(basisSym, derivedSym)(body)))
         // ValDef will have its position focused whereas DefDef will have original correct rangepos
         // ideally positions would be correct at the creation time but lazy vals are really a special case
         // here so for the sake of keeping api clean we fix positions manually in LazyValGetter

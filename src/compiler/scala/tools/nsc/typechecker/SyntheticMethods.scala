@@ -43,7 +43,7 @@ trait SyntheticMethods extends ast.TreeDSL {
   private def symbolsToSynthesize(clazz: Symbol): List[Symbol] = {
     if (clazz.isCase) {
       if (clazz.isDerivedValueClass) caseValueSymbols
-      else if (clazz.isModuleClass) caseSymbols
+      else if (clazz.isObjectClass) caseSymbols
       else caseObjectSymbols
     }
     else if (clazz.isDerivedValueClass) valueSymbols
@@ -103,10 +103,10 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_")))(mkThis :: _)
+      forwardMethod(method, getMember(ScalaRunTimeObject, (method.name prepend "_")))(mkThis :: _)
 
     def callStaticsMethod(name: String)(args: Tree*): Tree = {
-      val method = termMember(RuntimeStaticsModule, name)
+      val method = termMember(RuntimeStaticsObject, name)
       Apply(gen.mkAttributedRef(method), args.toList)
     }
 
@@ -122,7 +122,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
     def productIteratorMethod = {
       createMethod(nme.productIterator, iteratorOfType(accessorLub))(_ =>
-        gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(accessorLub), List(mkThis))
+        gen.mkMethodCall(ScalaRunTimeObject, nme.typedProductIterator, List(accessorLub), List(mkThis))
       )
     }
 
@@ -307,6 +307,8 @@ trait SyntheticMethods extends ast.TreeDSL {
       // Not needed, as reference equality is the default.
       // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ Ident(m.firstParam)))
     )
+    @deprecated("Use `caseObjectMethods` instead.", "2.11.0")
+    def caseModuleMethods = caseObjectMethods
 
     /** If you serialize a singleton and then deserialize it twice,
      *  you will have two instances of your singleton unless you implement
@@ -315,7 +317,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      *  for all case objects.)
      */
     def needsReadResolve = (
-         clazz.isModuleClass
+         clazz.isObjectClass
       && clazz.isSerializable
       && !hasConcreteImpl(nme.readResolve)
     )
@@ -324,7 +326,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       val methods = (
         if (clazz.isCase)
           if (clazz.isDerivedValueClass) valueCaseClassMethods
-          else if (clazz.isModuleClass) caseObjectMethods
+          else if (clazz.isObjectClass) caseObjectMethods
           else caseClassMethods
         else if (clazz.isDerivedValueClass) valueClassMethods
         else Nil
@@ -354,7 +356,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           // This method should be generated as private, but apparently if it is, then
           // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
           // For sure special methods like "readResolve" should not be mangled.
-          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
+          List(createMethod(nme.readResolve, Nil, JavaLangObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceObject) }))
         }
         else Nil
       )

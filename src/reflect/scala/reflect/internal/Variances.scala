@@ -35,7 +35,7 @@ trait Variances {
      *  @pre  sym.hasLocalFlag
      */
     @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {
-      if (site == sym.owner || site == sym.owner.moduleClass || site.isPackage) () // done
+      if (site == sym.owner || site == sym.owner.objectClass || site.isPackage) () // done
       else if (site.isTerm || site.isPrivateLocal) checkForEscape(sym, site.owner) // ok - recurse to owner
       else escapedLocals += sym
     }
@@ -149,7 +149,7 @@ trait Variances {
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(sym)
           super.traverse(tree)
-        // ModuleDefs need not be considered because they have been eliminated already
+        // ObjectDefs need not be considered because they have been eliminated already
         case ValDef(_, _, _, _) =>
           validateVariance(sym)
         case DefDef(_, _, tparams, vparamss, _, _) =>

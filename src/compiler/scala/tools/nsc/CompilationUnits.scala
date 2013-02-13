@@ -42,7 +42,7 @@ trait CompilationUnits { self: Global =>
     private[this] val _depends = mutable.HashSet[Symbol]()
     // SBT compatibility (SI-6875)
     //
-    // imagine we have a file named A.scala, which defines a trait named Foo and a module named Main
+    // imagine we have a file named A.scala, which defines a trait named Foo and an object named Main
     // Main contains a call to a macro, which calls c.introduceTopLevel to define a mock for Foo
     // c.introduceTopLevel creates a virtual file Virt35af32.scala, which contains a class named FooMock extending Foo,
     // and macro expansion instantiates FooMock. the stage is now set. let's see what happens next.

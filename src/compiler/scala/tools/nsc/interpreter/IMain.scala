@@ -161,7 +161,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   import global._
-  import definitions.{ ObjectClass, termMember, dropNullaryMethod}
+  import definitions.{ JavaLangObjectClass, termMember, dropNullaryMethod}
 
   lazy val runtimeMirror = ru.runtimeMirror(classLoader)
 
@@ -171,10 +171,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
            noFatal(runtimeMirror staticClass path)
     orElse noFatal(rootMirror staticClass path)
   )
-  def getModuleIfDefined(path: String) = (
-           noFatal(runtimeMirror staticModule path)
-    orElse noFatal(rootMirror staticModule path)
+  def getObjectIfDefined(path: String) = (
+           noFatal(runtimeMirror staticObject path)
+    orElse noFatal(rootMirror staticObject path)
   )
+  @deprecated("getObjectIfDefined", "2.11.0")
+  def getModuleIfDefined(path: String) = getObjectIfDefined(path)
 
   implicit class ReplTypeOps(tp: Type) {
     def andAlso(fn: Type => Type): Type = if (tp eq NoType) tp else fn(tp)
@@ -364,7 +366,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
       scopelog(f"[$mark$what%6s] $name%-25s $defn%s")
     }
-    if (ObjectClass isSubClass sym.owner) return
+    if (JavaLangObjectClass isSubClass sym.owner) return
     // unlink previous
     replScope lookupAll sym.name foreach { sym =>
       log("unlink")
@@ -387,7 +389,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     exitingTyper {
       req.defines filterNot (s => req.defines contains s.companionSymbol) foreach { newSym =>
         val oldSym = replScope lookup newSym.name.companionName
-        if (Seq(oldSym, newSym).permutations exists { case Seq(s1, s2) => s1.isClass && s2.isModule }) {
+        if (Seq(oldSym, newSym).permutations exists { case Seq(s1, s2) => s1.isClass && s2.isObject }) {
           replwarn(s"warning: previously defined $oldSym is not a companion to $newSym.")
           replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
         }
@@ -711,7 +713,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = getModuleIfDefined(readPath)   // the outermost wrapper
+      val readRoot  = getObjectIfDefined(readPath)   // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => exitingTyper(termMember(sym, name))
@@ -908,7 +910,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     else "" + (mostRecentlyHandledTree.get match {
       case x: ValOrDefDef           => x.name
       case Assign(Ident(name), _)   => name
-      case ModuleDef(_, name, _)    => name
+      case ObjectDef(_, name, _)    => name
       case _                        => naming.mostRecentVar
     })
 
@@ -935,9 +937,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     def value() = {
       val sym0    = symbolOfTerm(id)
       val sym     = (importToRuntime importSymbol sym0).asTerm
-      val module  = runtimeMirror.reflectModule(sym.owner.companionSymbol.asModule).instance
-      val module1 = runtimeMirror.reflect(module)
-      val invoker = module1.reflectField(sym)
+      val obj  = runtimeMirror.reflectObject(sym.owner.companionSymbol.asObject).instance
+      val object1 = runtimeMirror.reflect(obj)
+      val invoker = object1.reflectField(sym)
 
       invoker.get
     }

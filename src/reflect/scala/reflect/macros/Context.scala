@@ -67,7 +67,7 @@ trait Context extends Aliases
    *       |   }
    *       | }
    *  defined class Coll
-   *  defined module Macros
+   *  defined object Macros
    *
    *  scala> new Coll[Int]().filter(_ % 2 == 0)
    *  new Coll[Int]()

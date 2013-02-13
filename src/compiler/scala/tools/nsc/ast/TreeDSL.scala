@@ -74,7 +74,7 @@ trait TreeDSL {
         if (opSym == NoSymbol) ANY_==(other)
         else fn(target, opSym, other)
       }
-      def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS ObjectClass.tpe)
+      def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS JavaLangObjectClass.tpe)
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def ANY_!=  (other: Tree)     = fn(target, Any_!=, other)
       def OBJ_!=  (other: Tree)     = fn(target, Object_!=, other)
@@ -262,7 +262,7 @@ trait TreeDSL {
     def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
       case Nil                        => UNIT
       case List(tree) if flattenUnary => tree
-      case _                          => Apply(TupleClass(trees.length).companionModule, trees: _*)
+      case _                          => Apply(TupleClass(trees.length).companionObject, trees: _*)
     }
 
     /** Implicits - some of these should probably disappear **/

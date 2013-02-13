@@ -144,8 +144,8 @@ trait TypeDiagnostics {
     def patternMessage    = "pattern " + tree.tpe.finalResultType + valueParamsString(tree.tpe)
     def exprMessage       = "expression of type " + tree.tpe
     def overloadedMessage = s"overloaded method $sym with alternatives:\n" + alternativesString(tree)
-    def moduleMessage     = "" + sym
-    def defaultMessage    = moduleMessage + preResultString + tree.tpe
+    def objectMessage     = "" + sym
+    def defaultMessage    = objectMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
     if ((sym eq null) || (sym eq NoSymbol)) {
@@ -153,7 +153,7 @@ trait TypeDiagnostics {
       else exprMessage
     }
     else if (sym.isOverloaded) overloadedMessage
-    else if (sym.isModule) moduleMessage
+    else if (sym.isObject) objectMessage
     else if (sym.name == nme.apply) applyMessage
     else defaultMessage
   }
@@ -423,7 +423,7 @@ trait TypeDiagnostics {
         def localVars   = defnSymbols filter (t => t.isLocal && t.isVar)
 
         def qualifiesTerm(sym: Symbol) = (
-             (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocal)
+             (sym.isObject || sym.isMethod || sym.isPrivateLocal || sym.isLocal)
           && !nme.isLocalName(sym.name)
           && !sym.isParameter
           && !sym.isParamAccessor       // could improve this, but it's a pain
@@ -508,7 +508,7 @@ trait TypeDiagnostics {
             else if (sym.isVal || sym.isGetter && sym.accessed.isVal) "val"
             else if (sym.isSetter) "setter"
             else if (sym.isMethod) "method"
-            else if (sym.isModule) "object"
+            else if (sym.isObject) "object"
             else "term"
           )
           unit.warning(pos, s"$why $what in ${sym.owner} is never used")
@@ -602,7 +602,7 @@ trait TypeDiagnostics {
             }
             contextError(context0, pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
 
-            if (sym == ObjectClass)
+            if (sym == JavaLangObjectClass)
               throw new FatalError("cannot redefine root "+sym)
           }
         case _ =>

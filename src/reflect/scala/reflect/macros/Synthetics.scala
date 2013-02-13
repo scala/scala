@@ -12,7 +12,7 @@ package macros
  *  because static also embraces definitions nested in static objects
  *
  *  @define INTRODUCE_TOP_LEVEL Allowed definitions include classes (represented by `ClassDef` trees), traits (represented
- *  by `ClassDef` trees having the `TRAIT` flag set in `mods`) and objects (represented by `ModuleDef` trees).
+ *  by `ClassDef` trees having the `TRAIT` flag set in `mods`) and objects (represented by `ObjectDef` trees).
  *
  *  The definitions are put into the package with a prototype provided in `packagePrototype`.
  *  Supported prototypes are (see [[PackageSpec]] for more details):
@@ -31,7 +31,7 @@ package macros
  *  Only the multi-parameter overload of this method can be used to introduce companions.
  *  If companions are introduced by two different calls, then they will be put into different virtual files, and `scalac`
  *  will show an error about companions being defined in different files. By the way, this also means that there's currently no way
- *  to define a companion for an existing class or module
+ *  to define a companion for an existing class or object
  */
 trait Synthetics {
   self: Context =>
@@ -39,13 +39,13 @@ trait Synthetics {
   import universe._
 
   /** Looks up a top-level definition tree with a given fully-qualified name
-   *  (term name for modules, type name for classes). $TOPLEVEL_TREE.
+   *  (term name for objects, type name for classes). $TOPLEVEL_TREE.
    *  If such a tree does not exist, returns `EmptyTree`.
    */
   def topLevelDef(name: Name): Tree
 
   /** Returns a reference to a top-level definition tree with a given fully-qualified name
-   *  (term name for modules, type name for classes). $TOPLEVEL_TREE.
+   *  (term name for objects, type name for classes). $TOPLEVEL_TREE.
    *  If such a tree does not exist, returns `EmptyTree`.
    */
   def topLevelRef(name: Name): Tree

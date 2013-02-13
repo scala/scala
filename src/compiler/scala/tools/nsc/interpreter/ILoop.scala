@@ -284,7 +284,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())
 
-  // Still todo: modules.
+  // Still todo: objects.
   private def typeCommand(line0: String): Result = {
     line0.trim match {
       case ""                      => ":type [-v] <expression>"

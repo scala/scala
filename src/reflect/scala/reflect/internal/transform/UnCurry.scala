@@ -38,7 +38,7 @@ trait UnCurry {
           apply(seqType(arg))
         case TypeRef(pre, JavaRepeatedParamClass, arg :: Nil) =>
           apply(arrayType(
-            if (isUnboundedGeneric(arg)) ObjectClass.tpe else arg))
+            if (isUnboundedGeneric(arg)) JavaLangObjectClass.tpe else arg))
         case _ =>
           expandAlias(mapOver(tp))
       }

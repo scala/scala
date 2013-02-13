@@ -54,7 +54,7 @@ trait JavaPlatform extends Platform {
    *  case this is put to other uses.
    */
   def isMaybeBoxed(sym: Symbol) = {
-    (sym == ObjectClass) ||
+    (sym == JavaLangObjectClass) ||
     (sym == JavaSerializableClass) ||
     (sym == ComparableClass) ||
     (sym isNonBottomSubClass BoxedNumberClass) ||

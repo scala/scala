@@ -86,7 +86,7 @@ trait StdNames {
     def flattenedName(segments: Name*): NameType =
       compactify(segments mkString NAME_JOIN_STRING)
 
-    val MODULE_SUFFIX_STRING: String = NameTransformer.MODULE_SUFFIX_STRING
+    val OBJECT_SUFFIX_STRING: String = NameTransformer.OBJECT_SUFFIX_STRING
     val NAME_JOIN_STRING: String     = NameTransformer.NAME_JOIN_STRING
     val SINGLETON_SUFFIX: String     = ".type"
 
@@ -96,8 +96,8 @@ trait StdNames {
     val EMPTY_PACKAGE_NAME: NameType = "<empty>"
     val IMPL_CLASS_SUFFIX            = "$class"
     val IMPORT: NameType             = "<import>"
-    val MODULE_SUFFIX_NAME: NameType = MODULE_SUFFIX_STRING
-    val MODULE_VAR_SUFFIX: NameType  = "$module"
+    val OBJECT_SUFFIX_NAME: NameType = OBJECT_SUFFIX_STRING
+    val OBJECT_VAR_SUFFIX: NameType  = "$module"
     val PACKAGE: NameType            = "package"
     val ROOT: NameType               = "<root>"
     val SPECIALIZED_SUFFIX: NameType = "$sp"
@@ -299,7 +299,7 @@ trait StdNames {
     val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
     val MIXIN_CONSTRUCTOR: NameType        = "$init$"
-    val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
+    val OBJECT_INSTANCE_FIELD: NameType    = NameTransformer.OBJECT_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
     val OUTER_LOCAL: NameType              = OUTER + LOCAL_SUFFIX_STRING // "$outer ", note the space
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
@@ -327,7 +327,9 @@ trait StdNames {
     def isSetterName(name: Name)            = name endsWith SETTER_SUFFIX
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
-    def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_NAME
+    def isObjectName(name: Name)            = name endsWith OBJECT_SUFFIX_NAME
+    @deprecated("Use `isObjectName` instead.", "2.11.0")
+    def isModuleName(name: Name)            = isObjectName(name)
 
     /** Is name a variable name? */
     def isVariableName(name: Name): Boolean = {
@@ -424,8 +426,8 @@ trait StdNames {
       } else name.toTermName
     }
 
-    def stripModuleSuffix(name: Name): Name = (
-      if (isModuleName(name)) name dropRight MODULE_SUFFIX_STRING.length else name
+    def stripObjectSuffix(name: Name): Name = (
+      if (isObjectName(name)) name dropRight OBJECT_SUFFIX_STRING.length else name
     )
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
     def superName(name: Name): TermName         = newTermName(SUPER_PREFIX_STRING + name)
@@ -548,7 +550,9 @@ trait StdNames {
     val NoSymbol: NameType             = "NoSymbol"
     val Nothing: NameType              = "Nothing"
     val Null: NameType                 = "Null"
-    val Object: NameType               = "Object"
+    val JavaLangObject: NameType       = "Object"
+    @deprecated("Use `JavaLangObject` instead.", "2.11.0")
+    val Object: NameType               = JavaLangObject
     val RootPackage: NameType          = "RootPackage"
     val RootClass: NameType            = "RootClass"
     val Select: NameType               = "Select"
@@ -575,7 +579,9 @@ trait StdNames {
     val array_clone : NameType         = "array_clone"
     val array_length : NameType        = "array_length"
     val array_update : NameType        = "array_update"
-    val asModule: NameType             = "asModule"
+    val asObject: NameType             = "asObject"
+    @deprecated("Use `asObject` instead.", "2.11.0")
+    def asModule: NameType             = asObject
     val asType: NameType               = "asType"
     val asInstanceOf_ : NameType       = "asInstanceOf"
     val asInstanceOf_Ob : NameType     = "$asInstanceOf"
@@ -598,7 +604,9 @@ trait StdNames {
     val eq: NameType                   = "eq"
     val equalsNumChar : NameType       = "equalsNumChar"
     val equalsNumNum : NameType        = "equalsNumNum"
-    val equalsNumObject : NameType     = "equalsNumObject"
+    val equalsNumRef : NameType        = "equalsNumObject"
+    @deprecated("Use `equalsNumRef` instead.", "2.11.0")
+    val equalsNumObject : NameType     = equalsNumRef
     val equals_ : NameType             = "equals"
     val error: NameType                = "error"
     val ex: NameType                   = "ex"
@@ -634,7 +642,9 @@ trait StdNames {
     val materializeClassTag: NameType  = "materializeClassTag"
     val materializeWeakTypeTag: NameType = "materializeWeakTypeTag"
     val materializeTypeTag: NameType   = "materializeTypeTag"
-    val moduleClass : NameType         = "moduleClass"
+    val objectClass : NameType         = "objectClass"
+    @deprecated("Use `objectClass` instead.", "2.11.0")
+    def moduleClass: NameType          = objectClass
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"
@@ -667,15 +677,19 @@ trait StdNames {
     val setType: NameType              = "setType"
     val setTypeSignature: NameType     = "setTypeSignature"
     val splice: NameType               = "splice"
-    val staticClass : NameType         = "staticClass"
-    val staticModule : NameType        = "staticModule"
+    val staticClass: NameType          = "staticClass"
+    val staticObject: NameType         = "staticObject"
+    @deprecated("Use `staticObject` instead.", "2.11.0")
+    def staticModule: NameType         = staticObject
     val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
     val TermName: NameType             = "TermName"
     val this_ : NameType               = "this"
     val thisPrefix : NameType          = "thisPrefix"
     val toArray: NameType              = "toArray"
-    val toObjectArray : NameType       = "toObjectArray"
+    val toAnyRefArray : NameType       = "toObjectArray"
+    @deprecated("Use `toAnyRefArray` instead.", "2.11.0")
+    def toObjectArray : NameType       = toAnyRefArray
     val toString_ : NameType           = "toString"
     val toTypeConstructor: NameType    = "toTypeConstructor"
     val tpe : NameType                 = "tpe"
@@ -908,8 +922,8 @@ trait StdNames {
   val javanme = nme.javaKeywords
 
   object nme extends TermNames {
-    def moduleVarName(name: TermName): TermName =
-      newTermNameCached("" + name + MODULE_VAR_SUFFIX)
+    def objectVarName(name: TermName): TermName =
+      newTermNameCached("" + name + OBJECT_VAR_SUFFIX)
 
     def getCause         = sn.GetCause
     def getClass_        = sn.GetClass
@@ -1006,7 +1020,9 @@ trait StdNames {
     final val InvTargetException: TypeName = "java.lang.reflect.InvocationTargetException"
     final val MethodAsObject: TypeName     = "java.lang.reflect.Method"
     final val NPException: TypeName        = "java.lang.NullPointerException"
-    final val Object: TypeName             = "java.lang.Object"
+    final val JavaLangObject: TypeName     = "java.lang.Object"
+          @deprecated("Use `JavaObject` instead", "2.11.0")
+          def Object: TypeName             = JavaLangObject
     final val Throwable: TypeName          = "java.lang.Throwable"
 
     final val GetCause: TermName         = newTermName("getCause")

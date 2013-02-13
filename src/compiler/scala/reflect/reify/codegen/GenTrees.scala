@@ -128,7 +128,7 @@ trait GenTrees {
         assert(sym != NoSymbol, "unexpected: bound term that doesn't have a symbol: " + showRaw(tree))
         if (sym.isLocalToReifee)
           mirrorCall(nme.This, reify(qual))
-        else if (sym.isClass && !sym.isModuleClass) {
+        else if (sym.isClass && !sym.isObjectClass) {
           if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
           if (reifyDebug) println("Free: " + sym)
           mirrorBuildCall(nme.Ident, reifyFreeTerm(This(sym)))

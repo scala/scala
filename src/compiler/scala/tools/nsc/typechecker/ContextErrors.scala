@@ -320,7 +320,7 @@ trait ContextErrors {
                 ""
             )
             val notAnyRef = (
-              if (ObjectClass.info.member(name).exists) notAnyRefMessage(target)
+              if (JavaLangObjectClass.info.member(name).exists) notAnyRefMessage(target)
               else ""
             )
             companion + notAnyRef + semicolon
@@ -483,8 +483,11 @@ trait ContextErrors {
       def MultipleVarargError(tree: Tree) =
         NormalTypeError(tree, "when using named arguments, the vararg parameter has to be specified exactly once")
 
-      def ModuleUsingCompanionClassDefaultArgsErrror(tree: Tree) =
-        NormalTypeError(tree, "module extending its companion class cannot use default constructor arguments")
+      def ObjectUsingCompanionClassDefaultArgsErrror(tree: Tree) =
+        NormalTypeError(tree, "object extending its companion class cannot use default constructor arguments")
+      @deprecated("Use `ObjectUsingCompanionClassDefaultArgsErrror` instead.", "2.11.0")
+      def ModuleUsingCompanionClassDefaultArgsErrror(tree: Tree) = ObjectUsingCompanionClassDefaultArgsErrror(tree)
+
 
       def NotEnoughArgsError(tree: Tree, fun0: Tree, missing0: List[Symbol]) = {
         def notEnoughArgumentsMsg(fun: Tree, missing: List[Symbol]) = {
@@ -944,7 +947,7 @@ trait ContextErrors {
           val sym   = pat.tpe.typeSymbol
           val clazz = sym.companionClass
           val addendum = (
-            if (sym.isModuleClass && clazz.isCaseClass && (clazz isSubClass pt1.typeSymbol)) {
+            if (sym.isObjectClass && clazz.isCaseClass && (clazz isSubClass pt1.typeSymbol)) {
               // TODO: move these somewhere reusable.
               val typeString = clazz.typeParams match {
                 case Nil  => "" + clazz.name
@@ -1049,7 +1052,7 @@ trait ContextErrors {
         issueNormalTypeError(tree, "`BeanProperty' annotation can be applied only to non-private fields")
 
       def DoubleDefError(currentSym: Symbol, prevSym: Symbol) = {
-        val s1 = if (prevSym.isModule) "case class companion " else ""
+        val s1 = if (prevSym.isObject) "case class companion " else ""
         val s2 = if (prevSym.isSynthetic) "(compiler-generated) " + s1 else ""
         val s3 = if (prevSym.isCase) "case class " + prevSym.name else "" + prevSym
         val where = if (currentSym.isTopLevel != prevSym.isTopLevel) {

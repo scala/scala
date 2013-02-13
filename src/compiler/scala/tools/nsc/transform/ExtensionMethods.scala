@@ -60,14 +60,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     }
   }
 
-  private def companionModuleForce(sym: Symbol) = {
-    sym.andAlso(_.owner.initialize) // See SI-6976. `companionModule` only calls `rawInfo`. (Why?)
-    sym.companionModule
+  private def companionObjectForce(sym: Symbol) = {
+    sym.andAlso(_.owner.initialize) // See SI-6976. `companionObject` only calls `rawInfo`. (Why?)
+    sym.companionObject
   }
 
   /** Return the extension method that corresponds to given instance method `meth`. */
   def extensionMethod(imeth: Symbol): Symbol = enteringPhase(currentRun.refchecksPhase) {
-    val companionInfo = companionModuleForce(imeth.owner).info
+    val companionInfo = companionObjectForce(imeth.owner).info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty,
@@ -158,7 +158,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       val thisParamType = appliedType(clazz, tparamsFromClass map (_.tpeHK): _*)
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       val resultType    = MethodType(List(thisParam), dropNullaryMethod(methodResult))
-      val selfParamType = singleType(currentOwner.companionModule.thisType, thisParam)
+      val selfParamType = singleType(currentOwner.companionObject.thisType, thisParam)
 
       def fixres(tp: Type)    = tp substThisAndSym (clazz, selfParamType, clazz.typeParams, tparamsFromClass)
       def fixtparam(tp: Type) = tp substSym (clazz.typeParams, tparamsFromClass)
@@ -189,7 +189,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           /* This is currently redundant since value classes may not
              wrap over other value classes anyway.
             checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
-            extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
+            extensionDefs(currentOwner.companionObject) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
@@ -200,12 +200,12 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val origThis      = currentOwner
           val origTpeParams = tparams.map(_.symbol) ::: origThis.typeParams   // method type params ++ class type params
           val origParams    = vparamss.flatten map (_.symbol)
-          val companion     = origThis.companionModule
+          val companion     = origThis.companionObject
 
           def makeExtensionMethodSymbol = {
             val extensionName = extensionNames(origMeth).head.toTermName
             val extensionMeth = (
-              companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
+              companion.objectClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
                 setAnnotations origMeth.annotations
             )
             companion.info.decls.enter(extensionMeth)
@@ -253,13 +253,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       super.transformStats(stats, exprOwner) map {
-        case md @ ModuleDef(_, _, _) =>
-          val extraStats = extensionDefs remove md.symbol match {
-            case Some(defns) => defns.toList map (defn => atOwner(md.symbol)(localTyper.typedPos(md.pos.focus)(defn.duplicate)))
+        case od @ ObjectDef(_, _, _) =>
+          val extraStats = extensionDefs remove od.symbol match {
+            case Some(defns) => defns.toList map (defn => atOwner(od.symbol)(localTyper.typedPos(od.pos.focus)(defn.duplicate)))
             case _           => Nil
           }
-          if (extraStats.isEmpty) md
-          else deriveModuleDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ extraStats))
+          if (extraStats.isEmpty) od
+          else deriveObjectDef(od)(tmpl => deriveTemplate(tmpl)(_ ++ extraStats))
         case stat =>
           stat
       }

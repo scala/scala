@@ -8,9 +8,9 @@ class Foo{
  import Test._
  def foo = {
   val classTag = implicitly[ClassTag[R.type]]
-  val sym = cm.moduleSymbol(classTag.runtimeClass)
+  val sym = cm.objectSymbol(classTag.runtimeClass)
   try {
-    val cls = cm.reflect(this).reflectModule(sym)
+    val cls = cm.reflect(this).reflectObject(sym)
     cls.instance
     println("this indicates a failure")
   } catch {
