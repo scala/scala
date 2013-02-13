@@ -9,10 +9,12 @@ package transform
  *  performs peephole optimizations.
  */
 trait PostErasure extends InfoTransform with TypingTransformers {
-
   val global: Global
+
   import global._
-  import definitions._
+  import treeInfo._
+  import treeInfo.{ ValueClass => VC }
+  import definitions.{ Object_==, Object_!= }
 
   val phaseName: String = "posterasure"
 
@@ -21,51 +23,26 @@ trait PostErasure extends InfoTransform with TypingTransformers {
 
   object elimErasedValueType extends TypeMap {
     def apply(tp: Type) = tp match {
-      case ConstantType(Constant(tp: Type)) =>
-        ConstantType(Constant(apply(tp)))
-      case ErasedValueType(tref) =>
-        enteringPhase(currentRun.erasurePhase)(erasure.erasedValueClassArg(tref))
-      case _ => mapOver(tp)
+      case ConstantType(Constant(tp: Type)) => ConstantType(Constant(apply(tp)))
+      case ErasedValueType(tref)            => enteringErasure(erasure.erasedValueClassArg(tref))
+      case _                                => mapOver(tp)
     }
   }
 
   def transformInfo(sym: Symbol, tp: Type) = elimErasedValueType(tp)
 
   class PostErasureTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    override def transform(tree: Tree) = {
+      def finish(res: Tree) = logResult(s"Value class simplification\n  Old: $tree\n  New")(res)
+      def compare(lhs: Tree, cmp: Symbol, rhs: Tree) =
+        finish(localTyper typed (Apply(Select(lhs, cmp) setPos tree.pos, rhs :: Nil) setPos tree.pos))
 
-    override def transform(tree: Tree) =
       super.transform(tree) setType elimErasedValueType(tree.tpe) match {
-        case // new C(arg).underlying  ==>  arg
-          Apply(sel @ Select(
-            Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)),
-            acc), List())
-        if enteringPhase(currentRun.erasurePhase) {
-          tpt.tpe.typeSymbol.isDerivedValueClass &&
-          sel.symbol == tpt.tpe.typeSymbol.derivedValueClassUnbox
-        } =>
-          if (settings.debug.value) log("Removing "+tree+" -> "+arg)
-          arg
-        case // new C(arg1) == new C(arg2)  ==>  arg1 == arg2
-          Apply(sel @ Select(
-            Apply(Select(New(tpt1), nme.CONSTRUCTOR), List(arg1)),
-            cmp),
-            List(Apply(Select(New(tpt2), nme.CONSTRUCTOR), List(arg2))))
-        if enteringPhase(currentRun.erasurePhase) {
-          tpt1.tpe.typeSymbol.isDerivedValueClass &&
-          (sel.symbol == Object_== || sel.symbol == Object_!=) &&
-          tpt2.tpe.typeSymbol == tpt1.tpe.typeSymbol
-        } =>
-          val result = Apply(Select(arg1, cmp) setPos sel.pos, List(arg2)) setPos tree.pos
-          log("shortcircuiting equality "+tree+" -> "+result)
-          localTyper.typed(result)
-
-        case // arg.asInstanceOf[T]  ==>  arg      if arg.tpe == T
-          Apply(TypeApply(cast @ Select(arg, asinstanceof), List(tpt)), List())
-        if cast.symbol == Object_asInstanceOf && arg.tpe =:= tpt.tpe => // !!! <:< ?
-          if (settings.debug.value) log("Shortening "+tree+" -> "+arg)
-          arg
-        case tree1 =>
-          tree1
+        case VC.Underlying(arg)                                   => finish(arg)            //      new C(arg).underlying  ==>  arg
+        case AsInstanceOf(arg, tpe) if arg.tpe <:< tpe            => finish(arg)            //        arg.asInstanceOf[T]  ==>  arg
+        case VC.BinaryOp(lhs, cmp @ (Object_== | Object_!=), rhs) => compare(lhs, cmp, rhs) // new C(arg1) == new C(arg2)  ==>  arg1 == arg2
+        case tree                                                 => tree
       }
+    }
   }
 }

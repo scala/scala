@@ -48,7 +48,7 @@ package <empty> {
       };
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
       <synthetic> <stable> <artifact> def T$MethodLocalObject$$$outer(): T = MethodLocalObject$2.this.$outer;
-      <synthetic> <stable> <artifact> def T$MethodLocalTrait$$$outer(): T = MethodLocalObject$2.this.$outer
+      <synthetic> <stable> <artifact> def T$MethodLocalTrait$$$outer(): T = MethodLocalObject$2.this.$outer.$asInstanceOf[T]()
     };
     final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
       MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1);
