@@ -3238,8 +3238,6 @@ trait Typers extends Adaptations with Tags {
                 // but behaves as if it were (=> T) => T) we need to know what is the actual
                 // target of a call.  Since this information is no longer available from
                 // typedArg, it is recorded here.
-                checkDead.updateExpr(fun)
-
                 val args1 =
                   // no expected type when jumping to a match label -- anything goes (this is ok since we're typing the translation of well-typed code)
                   // ... except during erasure: we must take the expected type into account as it drives the insertion of casts!
@@ -3274,7 +3272,9 @@ trait Typers extends Adaptations with Tags {
                 else
                   constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
               }
-              handleMonomorphicCall
+              checkDead.updateExpr(fun) {
+                handleMonomorphicCall
+              }
             } else if (needsInstantiation(tparams, formals, args)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
               inferExprInstance(fun, tparams)
