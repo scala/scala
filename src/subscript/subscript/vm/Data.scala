@@ -66,7 +66,7 @@ trait FormalConstrainedParameter[T<:Any] extends FormalParameter[T] {
   def ~?? = ActualAdaptingParameter(this)
   def ~??(constraint: T=>Boolean) = ActualAdaptingParameter(this, constraint)
 }
-case class CommunicationParameter[T<:Any](n: Symbol) extends FormalParameter_withName[T] {
+case class CommunicationParameter[T<:Any](n: Symbol) extends FormalParameter[T] {
   name = n // TBD: improve, now we have both n and name as fields
   
     // we need here the default value for R (false, 0, null or a "Unit")
@@ -88,7 +88,7 @@ case class CommunicationParameter[T<:Any](n: Symbol) extends FormalParameter_wit
   var isConstrained = false
 }
 
-trait ActualParameterTrait[T<:Any] extends FormalParameter_withName[T] {
+trait ActualParameterTrait[T<:Any] extends FormalParameter[T] {
   def originalValue: T
   def value: T
   def transfer {}  
@@ -123,6 +123,8 @@ case class   ActualValueParameter[T<:Any](originalValue:T) extends ActualParamet
   def isOutput      = false  
   var isForcing     = false // var, not def!!!
   def isConstrained = false
+  
+  if (originalValue.isInstanceOf[ActualValueParameter[_]]) Thread.dumpStack
 }
 case class  ActualOutputParameter[T<:Any](originalValue:T, transferFunction: T=>Unit) extends ActualParameter[T] 
   with ParameterTransferrerTrait [T]

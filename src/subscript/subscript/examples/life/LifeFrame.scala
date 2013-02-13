@@ -65,21 +65,21 @@ def script..
 	multiStepStartCmd  =     startButton + Key.Enter
 	 multiStepStopCmd  =      stopButton + Key.Enter
 	
-	doExit             =   exitCommand var r:Boolean=false @gui: {r=confirmExit} while (!r)
+	doExit             =   exitCommand var r:Boolean=false @{gui(there)}: {r=confirmExit} while (!r)
 	
-       boardControl    = ...; (..singleStep) multiStep || noise || clear || randomize
+       boardControl    = ...; noise / (..singleStep) multiStep || clear || randomize
 
-      do1Step          = {*board.calculateGeneration*} @gui: {!board.validate!}
+      do1Step          = {*board.calculateGeneration*} @{gui(there)}: {!board.validate!}
       
-      noise            = 'n'; ... @gui: board.doRandomize {*sleep*}
-      randomize        =   randomizeCommand @gui: {!board.doRandomize()!}
-      clear            =       clearCommand @gui: {!board.doClear!}
+      noise            = 'n'; ... @{gui(there)}: board.doRandomize {*sleep*}
+      randomize        =   randomizeCommand @{gui(there)}: {!board.doRandomize()!}
+      clear            =       clearCommand @{gui(there)}: {!board.doClear!}
       singleStep       =        stepCommand do1Step
        multiStep       = multiStepStartCmd; ... do1Step {*sleep*} / multiStepStopCmd
 
       speedControl     = ...; speedKeyInput + speedButtonInput + speedSliderInput
                     
-    setSpeed(s: Int)   = @gui: {!setSpeedValue(s)!}
+    setSpeed(s: Int)   = @{gui(there)}: {!setSpeedValue(s)!}
 
       speedKeyInput    = times(10) 
                        + val c:Any=(pass_up1(here)+'0') key(chr(c)) setSpeed(digit2Speed(chr(c))) // TBD: make here an implicit parameter

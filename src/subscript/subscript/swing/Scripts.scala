@@ -52,7 +52,14 @@ abstract class SimpleSubscriptApplication extends SimpleSwingApplication{
  */
 object Scripts {
 
-  def gui [N<:CallGraphNodeTrait[_]] = (there:N)=>{there.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
+  def gui1[N<:CallGraphNodeTrait[_]](there:N) = {there.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
+  def gui [N<:Any](there:N)                   = {there.asInstanceOf[CallGraphNodeTrait[_]]adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
+  // note that in some cases the type of the "there" parameter is inferred as Any.
+  // This is for the time being a workaround:
+  // only at the typing phase a refinement call is resoled into either a script call or a method call (=> code fragment)
+  // so only then the type of there should be determined.
+  // this would require some rework of the compiler: generating code for @...: should only be done in the typer phase
+  
 //def gui1[N<:CallGraphNodeTrait[_]](implicit n:N) = {n.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}             
 
   /*
@@ -143,7 +150,7 @@ object Scripts {
     def publisher = comp
     val listenedEvent: MousePressed = null
     override def canDisableOnUnsubscribe = false
-    private var myReaction: PartialFunction[Event,Unit] = {case e: MousePressed => 
+    private var myReaction: PartialFunction[Event,Unit] = {case e: MousePressed =>
       currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
@@ -213,28 +220,33 @@ object Scripts {
     }
   }
   
-  
  /*
   * The following subscript code has manually been compiled into Scala; see below
     The redirections to the swing thread using "@gui:" are needed 
     because enabling and disabling the button etc must there be done
   */
- implicit def script ..
+ implicit def script ..  // TBD: handle tabs in scanner so that line position becomes reasonable
    stateChange(slider: Slider)                   = event(SliderStateChangedScriptReactor[N_code_eh](slider))
    clicked(button:Button)                        = event(           ClickedScriptReactor[N_code_eh](button))
 
  def script ..   // TBD: uncomment /*@gui:*/ and make it compile
-  event     (reactor:ScriptReactor[N_code_eh     ])                           =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
-  event_loop(reactor:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {... ...}
-       anyEvent(comp: Component)                        = event(          AnyEventScriptReactor[N_code_eh](comp))                                                    
-    windowClosing(window: Window)                       = event(     WindowClosingScriptReactor[N_code_eh](window))
-     mousePresses(comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedScriptReactor[N_code_eh_loop](comp), task)
-   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedScriptReactor[N_code_eh_loop](comp), task)
+  event (reactor:ScriptReactor[N_code_eh     ]) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
+  event_loop(reactor:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
+                                                                                            {... task.apply(reactor.currentEvent.asInstanceOf[MouseEvent]) ...}
+  // TBD: MouseEvent should become type parameter, as in the following (which does not compile)
+  //event_loop[E<:Event](reactor:ScriptReactor[N_code_eh_loop], task: E=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
+  //                                                                                                {... task.apply(reactor.currentEvent.asInstanceOf[E]) ...}
+       anyEvent(comp: Component)                           = event(          AnyEventScriptReactor[N_code_eh](comp))                                                    
+    windowClosing(window: Window)                          = event(     WindowClosingScriptReactor[N_code_eh](window))
+     mousePresses(comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedScriptReactor[N_code_eh_loop](comp), _task) // _task because implicit conversion is otherwise not applied
+   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedScriptReactor[N_code_eh_loop](comp), _task)
 
-     guard(comp: Component, test: () => Boolean)        = if (test()) .. else ... anyEvent(comp)
+     guard(comp: Component, test: () => Boolean)           = if (test()) .. else ... anyEvent(comp)
 
-     key2(publisher: Publisher, keyCode ?? : Char     ) = event(         KeyTypedScriptReactor[N_code_eh](publisher, keyCode ))
-    vkey2(publisher: Publisher, keyValue?? : Key.Value) = event(        VKeyTypedScriptReactor[N_code_eh](publisher, keyValue))
+     key2(publisher: Publisher, keyCode ?? : Char     )    = event(         KeyTypedScriptReactor[N_code_eh](publisher, _keyCode ))
+    vkey2(publisher: Publisher, keyValue?? : Key.Value)    = event(        VKeyTypedScriptReactor[N_code_eh](publisher, _keyValue))
+    
+    
 /*
 
  Note: the manual compilation yielded for the first annotation the type

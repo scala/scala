@@ -46,20 +46,20 @@ class LookupFrame2Application extends SimpleSubscriptApplication {
     cancelCommand     = cancelButton + Key.Escape 
     exitCommand       =   exitButton + windowClosing(top)
     
-    doExit            =   exitCommand var r: Boolean =false @gui: {r=confirmExit} while (!r)
-    cancelSearch      = cancelCommand @gui: showCanceledText
+    doExit            =   exitCommand var r: Boolean =false @{gui(there)}: {r=confirmExit} while (!r)
+    cancelSearch      = cancelCommand @{gui(there)}: showCanceledText
     
     live              = ...searchSequence || doExit
     searchSequence    = guard(searchTF, ()=> !searchTF.text.isEmpty); // searchCommand should not be active if the text field is empty
                         searchCommand; 
                         showSearchingText searchInDatabase showSearchResults / cancelSearch
     
-    showSearchingText = @gui: {outputTA.text = "Searching: "+searchTF.text}
-    showCanceledText  = @gui: {outputTA.text = "Searching Canceled"}
-    showSearchResults = @gui: {outputTA.text = "Results: 1, 2, 3" }
+    showSearchingText = @{gui(there)}: {outputTA.text = "Searching: "+searchTF.text}
+    showCanceledText  = @{gui(there)}: {outputTA.text = "Searching Canceled"}
+    showSearchResults = @{gui(there)}: {outputTA.text = "Results: 1, 2, 3" }
     searchInDatabase  = {*sleep(5000)*}||progressMonitor
     
-    progressMonitor   = ... @gui:{outputTA.text+=here.pass} {*sleep(200)*}
+    progressMonitor   = ... @{gui(there)}:{outputTA.text+=here.pass} {*sleep(200)*}
     
   implicit def script vkey(k??: Key.Value) = vkey2(top, k) // vkey2(top, ActualAdaptingParameter(_k)) //vkey2(top, k??)
 /*

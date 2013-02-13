@@ -1529,6 +1529,18 @@ self =>
  
  */
 
+    def      isOutputParameter (p: ValDef): Boolean =      isOutputAnnotation(p)
+    def isConstrainedParameter (p: ValDef): Boolean = isConstrainedAnnotation(p)
+    def      isOutputAnnotation(p: ValDef): Boolean = annotationsContainIdent(p, nme.QMARKkw )
+    def isConstrainedAnnotation(p: ValDef): Boolean = annotationsContainIdent(p, nme.QMARK2kw)
+    def annotationsContainIdent(p: ValDef, kw: TermName): Boolean = {
+                for (m<-p.mods.annotations) m match {
+                  case Ident(k) if k.toString==kw.toString  => return true
+                  case _ =>
+                }
+                return false
+    }
+
     var scriptExpressionParenthesesNestingLevel = 0
     
     @inline final def inScriptParens[T](body: => T): T = {
@@ -1613,17 +1625,20 @@ self =>
 		                val pSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(p.name.toString)))) // TBD: ensure there is only 1 parameter list
 		                val underscored_p_name = newTermName(underscore_prefix(p.name.toString))
 
-		                var bindParam_Name: TermName = bind_inParam_Name
-		                for (m<-p.mods.annotations) m match {
-		                  case Ident(k) if k.toString==nme.QMARKkw.toString  => bindParam_Name =        bind_outParam_Name
-		                  case Ident(k) if k.toString==nme.QMARK2kw.toString => bindParam_Name = bind_constrainedParam_Name
-		                  case _ =>
-		                }
+		                var (bindParam_Name, tpt) = 
+		                  if (isConstrainedParameter(p)) (bind_constrainedParam_Name, makeFormalConstrainedParameter(p.tpt))
+		                  else if (isOutputParameter(p)) (        bind_outParam_Name, makeFormalOutputParameter     (p.tpt))
+		                  else                           (         bind_inParam_Name, makeFormalInputParameter      (p.tpt))
 		                
 		                val select = Select(Ident(underscored_p_name), bindParam_Name)
-		                (makeParam(underscored_p_name, p.tpt), Apply(select, List(pSym)))
+		                
+		                (makeParam(underscored_p_name, tpt), Apply(select, List(pSym)))
 		              }
 		            }
+		        
+    
+		        
+		        
 		        // now all parameters and local values should be available in the list buffers.
 		        // transform the tree so that the identifiers are replaced appropriately
 		        // Note: actual adapting parameters have already got an underscore in their name prefix (...)
@@ -3029,7 +3044,7 @@ self =>
               case _            =>
             }
         }
-        var tpt =
+        val tpt =
           if (settings.YmethodInfer.value && !owner.isTypeName && in.token != COLON) {
             TypeTree()
           } else { // XX-METHOD-INFER
@@ -3042,11 +3057,6 @@ self =>
             }
             paramType()
           }
-        if (in.isInSubScript_header) {
-          tpt = if      (annots contains Ident(nme.QMARKkw ))      makeFormalOutputParameter(tpt)
-		        else if (annots contains Ident(nme.QMARK2kw)) makeFormalConstrainedParameter(tpt)
-		        else                                                makeFormalInputParameter(tpt)
-        }
         val default =
           if (in.token == EQUALS) {
             in.nextToken()

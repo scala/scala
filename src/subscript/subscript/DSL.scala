@@ -40,8 +40,8 @@ import subscript.vm._
  */
 object DSL {
   type _scriptType = N_call=>Unit
-  def _script   (owner : AnyRef, name        : Symbol      , p: FormalParameter_withName[_]*)(_t: TemplateChildNode): _scriptType = {(_c: N_call) => _c.calls(T_script    (owner, "script"       , name,     _t), p:_*)}
-  def _comscript(owner : AnyRef, communicator: Communicator, p: FormalParameter_withName[_]*)                       : _scriptType = {(_c: N_call) => _c.calls(T_commscript(owner, "communicator" , communicator), p:_*)}
+  def _script   (owner : AnyRef, name        : Symbol      , p: FormalParameter[_]*)(_t: TemplateChildNode): _scriptType = {(_c: N_call) => _c.calls(T_script    (owner, "script"       , name,     _t), p:_*)}
+  def _comscript(owner : AnyRef, communicator: Communicator, p: FormalParameter[_]*)                       : _scriptType = {(_c: N_call) => _c.calls(T_commscript(owner, "communicator" , communicator), p:_*)}
   
 // TBD: communication scripts
 //  def _communication(owner: Any, names: Symbol*): N_communication => TemplateNode = {

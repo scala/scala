@@ -286,11 +286,11 @@ case class N_call(template: T_call) extends CallGraphTreeParentNode[T_call] with
   def communicator: Communicator = if (t_commcallee==null) null else t_commcallee.communicator
   def stopPending {if (communicator!=null) {communicator.removePendingCall(this)}}
   var actualParameters: scala.collection.immutable.Seq[ActualParameter[_<:Any]] = Nil
-  def calls(t: T_script, args: FormalParameter_withName[_]*): Unit = {
+  def calls(t: T_script, args: FormalParameter[_]*): Unit = {
     this.actualParameters = args.toList.map(_.asInstanceOf[ActualParameter[_]])
     this.t_callee = t
   }
-  def calls(t: T_commscript, args: FormalParameter_withName[_]*): Unit = {
+  def calls(t: T_commscript, args: FormalParameter[_]*): Unit = {
     this.actualParameters = args.toList.map(_.asInstanceOf[ActualParameter[_]])
     this.t_commcallee = t
   }
