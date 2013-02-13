@@ -1,10 +1,19 @@
 ################################################################################
                               THE SCALA REPOSITORY
+                               SUBSCRIPT BRANCH
 ################################################################################
 
-This document describes the Scala core (core library and compiler) repository
-and how to build it. For information about Scala as a language, you can visit
-the web site http://www.scala-lang.org/
+This document describes a branch  of the Scala core (core library and compiler) 
+repository and how to build it. This particular branch supports the language
+extension named SubScript.
+
+This file has been derived from the README.rst of the main Scala branch;
+SubScript issues have been added.
+
+For information about Scala and SubScript as languages, you can visit the 
+web sites:
+http://www.scala-lang.org/
+http://www.subscript-lang.org/
 
 Part I. The repository layout
 --------------------------------------------------------------------------------                            
@@ -29,6 +38,8 @@ build script or user-created if needed.  This is not a complete listing. ::
    |   +--actors/               The sources of the Actor library.
    |   +--compiler/             The sources of the Scala compiler.
    |   +--library/              The sources of the core Scala library.
+   |   +--subscript/            The sources of the core SubScript library.
+   |   +--subscript/examples    The sources of SubScript example applications
    |   ---swing/                The sources of the Swing library.
    +--target/       †           Build products output directory for sbt.
    +--test/                     The Scala test suite.
@@ -65,6 +76,12 @@ description of the four layers that SABBUS uses, from bottom to top:
   up-to-date in relation to the source code.
 
 - ``strap``: a test layer used to check stability of the build.
+
+Note: the file subscript.swing.Scripts uses the SubScript syntax and can 
+therefore not be compiled with the starr compiler; it needs to be compiled
+with the locker compiler or quick compiler.
+
+SubScript examples are not built with the usual ant targets.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^
   DEPENDANT CHANGES:
@@ -114,6 +131,10 @@ Part III. Common use-cases
   Incrementally builds quick, and then uses it to compile and run the file
   ``sandbox/test.scala``. This is a typical debug cycle.
 
+- ``ant quick.subscript.examples``
+
+  Builds the SubScript example applications.
+ 
 - ``ant replacelocker``
   
   "unfreezes" locker by updating it to match the current source code.
@@ -202,10 +223,17 @@ http://www.scala-lang.org/sites/default/files/contributor_agreement.pdf
 Before submitting a pull-request, please make sure you have followed the guidelines
 outlined in our `Pull Request Policy <https://github.com/scala/scala/wiki/Pull-Request-Policy>`_.
 
+Part V. Contributing to SubScript
+--------------------------------------------------------------------------------
+
+Contributors are welcome. The official SubScript website is: www.subscript-lang.org
+
+As of writing there are no mailing lists, and bug and issue trackers.
+
 ------------------
 
 
 
 Thank you!
 
-The Scala Team
+The Scala Team + The SubScript Team

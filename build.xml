@@ -1650,7 +1650,7 @@ OSGi Artifacts
     <make-bundle name="scala-actors" version="${osgi.version.number}" />
     <make-bundle name="scala-reflect" version="${osgi.version.number}" />
     <make-bundle name="scala-compiler" version="${osgi.version.number}" />
-    <make-bundle name="scala-subscript" version="${osgi.version.number}" />
+<!--<make-bundle name="scala-subscript" version="${osgi.version.number}" /> N.A. FTTB -->
     <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
     <touch file="${build-osgi.dir}/bundles.complete" verbose="no"/>
     <stopwatch name="osgi.bundle.timer" action="total"/>
@@ -2664,7 +2664,7 @@ DISTRIBUTION
     <copy-bundle name="scala-library"/>
     <copy-bundle name="scala-reflect"/>
     <copy-bundle name="scala-swing"/>
-    <copy-bundle name="scala-subscript"/>
+<!--copy-bundle name="scala-subscript"/> N.A. FTTB -->
     <copy-bundle name="scala-actors"/>
     <copy-bundle name="scala-compiler"/>
     <copy toDir="${dist.dir}/bin">
