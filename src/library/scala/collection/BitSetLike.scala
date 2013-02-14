@@ -98,8 +98,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     fromBitMaskNoCopy(a)
   }
 
-  def iterator: Iterator[Int] = new AbstractIterator[Int] {
-    private var current = 0
+  def iterator: Iterator[Int] = iteratorFrom(0)
+  
+  override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
+    private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
       while (current < end && !self.contains(current)) current += 1
