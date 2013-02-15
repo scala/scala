@@ -785,7 +785,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
       }
       val desugared = atPos(original.pos)(gen.mkApply(macroRef, targs, argss))
       val desugared1 = unsuppressMacroExpansion(prepare(suppressMacroExpansion(desugared)))
-      if (desugared1.isErrorTyped) onFailure(desugared1)
+      if (desugared1 == EmptyTree || desugared1.isErrorTyped) onFailure(desugared1)
       else super.expand(desugared1)
     }
   }
@@ -825,7 +825,10 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
     object expander extends MacroTypeExpander[Tree](PARENT_ROLE, typer, original, tpt, targs, argss) {
       override def isTemplateLike = true
       override def template = Some(templ)
-      override def prepare(desugared: Tree) = typer.typedPrimaryConstrBody(templ)(desugared)
+      override def prepare(desugared: Tree) = {
+        if (typer.context.owner.isTrait) typer.typed(desugared, EXPRmode, WildcardType)
+        else typer.typedPrimaryConstrBody(templ)(desugared)
+      }
       override def onSuccess(expanded: Tree) = {
         val expanded1 = expanded match {
           // AnyRef emitted here is just a dummy that let's the compiler know
