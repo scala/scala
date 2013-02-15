@@ -8,7 +8,7 @@ import scala.reflect.internal.util.Position
 /** Trait encapsulating the creation of a presentation compiler's instance.*/
 private[tests] trait PresentationCompilerInstance extends TestSettings {
   protected val settings = new Settings
-  protected val docSettings = new doc.Settings(_ => ())
+  protected val withDocComments = false
 
   protected val compilerReporter: CompilerReporter = new InteractiveReporter {
     override def compiler = PresentationCompilerInstance.this.compiler
@@ -16,7 +16,9 @@ private[tests] trait PresentationCompilerInstance extends TestSettings {
 
   protected lazy val compiler: Global = {
     prepareSettings(settings)
-    new Global(settings, compilerReporter)
+    new Global(settings, compilerReporter) {
+      override def forScaladoc = withDocComments
+    }
   }
 
   /**
