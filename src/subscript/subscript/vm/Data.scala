@@ -50,16 +50,19 @@ trait FormalParameter[T<:Any] {
   def isConstrained: Boolean
   var name: Symbol = null
 }
-
+trait FormalParameter_readWrite[T<:Any] extends FormalParameter[T] {
+  def value_=(v: T)
+}
 trait       FormalInputParameter[T<:Any] extends FormalParameter[T] {
   def bindToFormalInputParameter
   def ~(n:Symbol) = {name=n; bindToFormalInputParameter; this}
 }
-trait      FormalOutputParameter[T<:Any] extends FormalParameter[T] {
+trait      FormalOutputParameter[T<:Any] extends FormalParameter_readWrite[T] {
   def bindToFormalOutputParameter
   def ~?(n:Symbol) = {name=n; bindToFormalOutputParameter; this}
+  var value: T
 }
-trait FormalConstrainedParameter[T<:Any] extends FormalParameter[T] {
+trait FormalConstrainedParameter[T<:Any] extends FormalParameter_readWrite[T] {
   def bindToFormalConstrainedParameter; 
   def ~??(n:Symbol) = {name=n; bindToFormalConstrainedParameter; this}
   var value: T

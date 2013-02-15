@@ -1140,7 +1140,7 @@ QUICK BUILD (QUICK)
     </scalacfork>
   </target>
 
-  <target name="quick.subscript.examples" depends="quick.comp, quick.subscript.swing, quick.swing, quick.lib">
+  <target name="quick.subscript.examples" depends="quick.subscript.swing">
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="quick.classpath"

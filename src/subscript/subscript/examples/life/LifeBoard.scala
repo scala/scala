@@ -1,11 +1,10 @@
 package life
 
-import java.awt.{Graphics, Image}
+import java.awt.{Graphics, Image, Color, Point}
 import java.awt.image.{BufferedImage}
 import javax.swing.{JPanel}
 import scala.swing._
 import scala.swing.event._
-import java.awt.Color
 
 class LifeBoard(var cellColumns: Int = 200, var cellRows: Int = 150) extends Panel {
     type CellState = Boolean
@@ -27,13 +26,18 @@ class LifeBoard(var cellColumns: Int = 200, var cellRows: Int = 150) extends Pan
     // functions for mouse input
     //////////////////////////////////////////////
 
-    def mouseDownToggle (e: MouseEvent) {currentX = -1; toggleMousePoint (e.point.x,e.point.y)}
-    def mouseDragToggle (e: MouseEvent) {               toggleMousePoint (e.point.x,e.point.y)}
+    def mouseDownToggle(p: Point) {currentX = -1; toggleAtMousePoint(p.x,p.y)}
+    def mouseDragSet   (p: Point) {                  setAtMousePoint(p.x,p.y)}
 
-    def toggleMousePoint (x: Int, y: Int) {
+    def toggleAtMousePoint (x: Int, y: Int) {
         if (bufferedImage==null) createCells
         if (bufferedImage==null) return
         invertAt(x,y)
+    }
+    def setAtMousePoint (x: Int, y: Int) {
+        if (bufferedImage==null) createCells
+        if (bufferedImage==null) return
+        setAt(x,y)
     }
 
     //////////////////////////////////////////////
@@ -123,19 +127,35 @@ class LifeBoard(var cellColumns: Int = 200, var cellRows: Int = 150) extends Pan
     }
 
     def invertAt (x: Int, y: Int)  = invertCell (x/cellSizeX, y/cellSizeY)
+    def    setAt (x: Int, y: Int)  =    setCell (x/cellSizeX, y/cellSizeY)
 
     def invertCell (cellX: Int, cellY: Int) {
         if (     cellX < 0 || cellX >= cellColumns 
               || cellY < 0 || cellY >= cellRows)
             return;
 
-        if (cellX == currentX 
-        &&  cellY == currentY) return;
+        if (cellX == currentX
+        &&  cellY == currentY) return
 
         currentX = cellX
         currentY = cellY
 
         setCellValue(cellX, cellY, !cells(cellX)(cellY))
+    }
+    def setCell (cellX: Int, cellY: Int) {
+        if (     cellX < 0 || cellX >= cellColumns 
+              || cellY < 0 || cellY >= cellRows)
+            return;
+
+        if (cellX == currentX 
+        &&  cellY == currentY) return
+
+        currentX = cellX
+        currentY = cellY
+        
+        if (cells(cellX)(cellY)) return
+
+        setCellValue(cellX, cellY, true)
     }
 
     def setCellValue(cellX: Int, cellY: Int, value: Boolean) {
