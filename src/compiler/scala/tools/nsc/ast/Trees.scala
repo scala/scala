@@ -335,14 +335,17 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 else tree
               case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
                 transform(fn)
-              case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
-                tree
               case EmptyTree =>
                 tree
               case _ =>
                 val dupl = tree.duplicate
-                if (tree.hasSymbol && (!localOnly || (locals contains tree.symbol)) && !(keepLabels && tree.symbol.isLabel))
-                  dupl.symbol = NoSymbol
+                if (dupl.hasSymbol) {
+                  val sym = dupl.symbol
+                  val vetoScope = localOnly && !(locals contains sym)
+                  val vetoLabel = keepLabels && sym.isLabel
+                  val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
+                  if (!(vetoScope || vetoLabel || vetoThis)) dupl.symbol = NoSymbol
+                }
                 dupl.tpe = null
                 dupl
             }
