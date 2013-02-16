@@ -6,26 +6,16 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
+import scala.tools.nsc.symtab._
 import scala.language.postfixOps
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.Types
+import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.HashSet
 
 
-trait Logic { self: PatternMatching =>
+trait Logic extends Debugging  {
   import PatternMatchingStats._
-  val global: Global
-  import global.{Type, Tree, currentUnit, Position}
-
-  import debugging.patmatDebug
 
   private def max(xs: Seq[Int]) = if (xs isEmpty) 0 else xs max
   private def alignedColumns(cols: Seq[AnyRef]): Seq[String] = {
@@ -54,6 +44,9 @@ trait Logic { self: PatternMatching =>
   // http://users.encs.concordia.ca/~ta_ahmed/ms_thesis.pdf
   // propositional logic with constants and equality
   trait PropositionalLogic {
+    type Type
+    type Tree
+
     class Prop
     case class Eq(p: Var, q: Const) extends Prop
 
@@ -172,14 +165,11 @@ trait Logic { self: PatternMatching =>
       import scala.tools.cmd.FromString.IntFromString
       val max = sys.props.get("scalac.patmat.analysisBudget").collect(IntFromString.orElse{case "off" => Integer.MAX_VALUE}).getOrElse(256)
 
-      abstract class Exception extends RuntimeException("CNF budget exceeded") {
-        val advice: String
-        def warn(pos: Position, kind: String) = currentUnit.uncheckedWarning(pos, s"Cannot check match for $kind.\n$advice")
-      }
+      abstract class Exception(val advice: String) extends RuntimeException("CNF budget exceeded")
 
-      object exceeded extends Exception {
-        val advice = s"(The analysis required more space than allowed. Please try with scalac -Dscalac.patmat.analysisBudget=${AnalysisBudget.max*2} or -Dscalac.patmat.analysisBudget=off.)"
-      }
+      object exceeded extends Exception(
+          s"(The analysis required more space than allowed. Please try with scalac -Dscalac.patmat.analysisBudget=${AnalysisBudget.max*2} or -Dscalac.patmat.analysisBudget=off.)")
+
     }
 
     // convert finite domain propositional logic with subtyping to pure boolean propositional logic
@@ -229,7 +219,7 @@ trait Logic { self: PatternMatching =>
       val eqAxioms = formulaBuilder
       @inline def addAxiom(p: Prop) = addFormula(eqAxioms, eqFreePropToSolvable(p))
 
-      patmatDebug("removeVarEq vars: "+ vars)
+      debug.patmat("removeVarEq vars: "+ vars)
       vars.foreach { v =>
         // if v.domainSyms.isEmpty, we must consider the domain to be infinite
         // otherwise, since the domain fully partitions the type of the value,
@@ -253,8 +243,8 @@ trait Logic { self: PatternMatching =>
         }
       }
 
-      patmatDebug("eqAxioms:\n"+ cnfString(toFormula(eqAxioms)))
-      patmatDebug("pure:"+ pure.map(p => cnfString(p)).mkString("\n"))
+      debug.patmat("eqAxioms:\n"+ cnfString(toFormula(eqAxioms)))
+      debug.patmat("pure:"+ pure.map(p => cnfString(p)).mkString("\n"))
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
@@ -402,7 +392,7 @@ trait Logic { self: PatternMatching =>
       //
       if (Statistics.canEnable) patmatCNFSizes(res.size).value += 1
 
-//      patmatDebug("cnf for\n"+ p +"\nis:\n"+cnfString(res))
+//      debug.patmat("cnf for\n"+ p +"\nis:\n"+cnfString(res))
       res
     }
   }
@@ -430,19 +420,19 @@ trait Logic { self: PatternMatching =>
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
     def findAllModelsFor(f: Formula): List[Model] = {
       val vars: Set[Sym] = f.flatMap(_ collect {case l: Lit => l.sym}).toSet
-      // patmatDebug("vars "+ vars)
+      // debug.patmat("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
       def negateModel(m: Model) = clause(m.toSeq.map{ case (sym, pos) => Lit(sym, !pos) } : _*)
 
       def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 10): List[Model]=
         if (recursionDepthAllowed == 0) models
         else {
-          patmatDebug("find all models for\n"+ cnfString(f))
+          debug.patmat("find all models for\n"+ cnfString(f))
           val model = findModelFor(f)
           // if we found a solution, conjunct the formula with the model's negation and recurse
           if (model ne NoModel) {
             val unassigned = (vars -- model.keySet).toList
-            patmatDebug("unassigned "+ unassigned +" in "+ model)
+            debug.patmat("unassigned "+ unassigned +" in "+ model)
             def force(lit: Lit) = {
               val model = withLit(findModelFor(dropUnit(f, lit)), lit)
               if (model ne NoModel) List(model)
@@ -451,7 +441,7 @@ trait Logic { self: PatternMatching =>
             val forced = unassigned flatMap { s =>
               force(Lit(s, true)) ++ force(Lit(s, false))
             }
-            patmatDebug("forced "+ forced)
+            debug.patmat("forced "+ forced)
             val negated = negateModel(model)
             findAllModels(f :+ negated, model :: (forced ++ models), recursionDepthAllowed - 1)
           }
@@ -479,7 +469,7 @@ trait Logic { self: PatternMatching =>
     def findModelFor(f: Formula): Model = {
       @inline def orElse(a: Model, b: => Model) = if (a ne NoModel) a else b
 
-      patmatDebug("DPLL\n"+ cnfString(f))
+      debug.patmat("DPLL\n"+ cnfString(f))
 
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaDPLL) else null
 
@@ -489,7 +479,7 @@ trait Logic { self: PatternMatching =>
         else f.find(_.size == 1) match {
           case Some(unitClause) =>
             val unitLit = unitClause.head
-            // patmatDebug("unit: "+ unitLit)
+            // debug.patmat("unit: "+ unitLit)
             withLit(findModelFor(dropUnit(f, unitLit)), unitLit)
           case _ =>
             // partition symbols according to whether they appear in positive and/or negative literals
@@ -509,12 +499,12 @@ trait Logic { self: PatternMatching =>
               // (since equality on literals is in terms of equality
               //  of the underlying symbol and its positivity, simply construct a new Lit)
               val pureLit = Lit(pureSym, pos(pureSym))
-              // patmatDebug("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
+              // debug.patmat("pure: "+ pureLit +" pures: "+ pures +" impures: "+ impures)
               val simplified = f.filterNot(_.contains(pureLit))
               withLit(findModelFor(simplified), pureLit)
             } else {
               val split = f.head.head
-              // patmatDebug("split: "+ split)
+              // debug.patmat("split: "+ split)
               orElse(findModelFor(f :+ clause(split)), findModelFor(f :+ clause(-split)))
             }
         }
@@ -524,8 +514,13 @@ trait Logic { self: PatternMatching =>
         satisfiableWithModel
     }
   }
+}
 
+trait ScalaLogic extends Logic { self: PatternMatching =>
   trait TreesAndTypesDomain extends PropositionalLogic with CheckableTreeAndTypeAnalysis {
+    type Type = global.Type
+    type Tree = global.Tree
+
     // resets hash consing -- only supposed to be called by TreeMakersToProps
     def prepareNewAnalysis(): Unit = { Var.resetUniques(); Const.resetUniques() }
 
@@ -542,7 +537,7 @@ trait Logic { self: PatternMatching =>
       private[this] val id: Int = Var.nextId
 
       // private[this] var canModify: Option[Array[StackTraceElement]] = None
-      private[this] def ensureCanModify() = {} //if (canModify.nonEmpty) patmatDebug("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
+      private[this] def ensureCanModify() = {} //if (canModify.nonEmpty) debug.patmat("BUG!"+ this +" modified after having been observed: "+ canModify.get.mkString("\n"))
 
       private[this] def observed() = {} //canModify = Some(Thread.currentThread.getStackTrace)
 
@@ -613,8 +608,8 @@ trait Logic { self: PatternMatching =>
             (lower != NullConst && !upper.isValue &&
              instanceOfTpImplies(if (lower.isValue) lower.wideTp else lower.tp, upper.tp))
 
-          // if(r) patmatDebug("implies    : "+(lower, lower.tp, upper, upper.tp))
-          // else  patmatDebug("NOT implies: "+(lower, upper))
+          // if(r) debug.patmat("implies    : "+(lower, lower.tp, upper, upper.tp))
+          // else  debug.patmat("NOT implies: "+(lower, upper))
 
 
         /** does V = C preclude V having value `other`?
@@ -630,8 +625,8 @@ trait Logic { self: PatternMatching =>
         def excludes(a: Const, b: Const): Boolean =
           a != b && ((a == NullConst || b == NullConst) || (a.isValue && b.isValue))
 
-          // if(r) patmatDebug("excludes    : "+(a, a.tp, b, b.tp))
-          // else  patmatDebug("NOT excludes: "+(a, b))
+          // if(r) debug.patmat("excludes    : "+(a, a.tp, b, b.tp))
+          // else  debug.patmat("NOT excludes: "+(a, b))
 
 /*
 [ HALF BAKED FANCINESS: //!equalitySyms.exists(common => implies(common.const, a) && implies(common.const, b)))
@@ -678,9 +673,9 @@ trait Logic { self: PatternMatching =>
           val (excluded, notExcluded) = todo partition (b => excludes(sym.const, b.const))
           val implied = notExcluded filter (b => implies(sym.const, b.const))
 
-          patmatDebug("eq axioms for: "+ sym.const)
-          patmatDebug("excluded: "+ excluded)
-          patmatDebug("implied: "+ implied)
+          debug.patmat("eq axioms for: "+ sym.const)
+          debug.patmat("excluded: "+ excluded)
+          debug.patmat("implied: "+ implied)
 
           excluded foreach { excludedSym => excludedPair += ExcludedPair(sym.const, excludedSym.const)}
 
@@ -729,11 +724,11 @@ trait Logic { self: PatternMatching =>
         uniques.get(tp).getOrElse(
           uniques.find {case (oldTp, oldC) => oldTp =:= tp} match {
             case Some((_, c)) =>
-              patmatDebug("unique const: "+ (tp, c))
+              debug.patmat("unique const: "+ (tp, c))
               c
             case _ =>
               val fresh = mkFresh
-              patmatDebug("uniqued const: "+ (tp, fresh))
+              debug.patmat("uniqued const: "+ (tp, fresh))
               uniques(tp) = fresh
               fresh
           })
@@ -749,12 +744,12 @@ trait Logic { self: PatternMatching =>
         if (!t.symbol.isStable) t.tpe.narrow
         else trees find (a => a.correspondsStructure(t)(sameValue)) match {
           case Some(orig) =>
-            patmatDebug("unique tp for tree: "+ (orig, orig.tpe))
+            debug.patmat("unique tp for tree: "+ (orig, orig.tpe))
             orig.tpe
           case _ =>
             // duplicate, don't mutate old tree (TODO: use a map tree -> type instead?)
             val treeWithNarrowedType = t.duplicate setType t.tpe.narrow
-            patmatDebug("uniqued: "+ (t, t.tpe, treeWithNarrowedType.tpe))
+            debug.patmat("uniqued: "+ (t, t.tpe, treeWithNarrowedType.tpe))
             trees += treeWithNarrowedType
             treeWithNarrowedType.tpe
         }
@@ -839,7 +834,7 @@ trait Logic { self: PatternMatching =>
       }
     }
     sealed class ValueConst(val tp: Type, val wideTp: Type, override val toString: String) extends Const {
-      // patmatDebug("VC"+(tp, wideTp, toString))
+      // debug.patmat("VC"+(tp, wideTp, toString))
       assert(!(tp =:= NullTp)) // TODO: assert(!tp.isStable)
       /*private[this] val id: Int = */Const.nextValueId
       def isValue = true
