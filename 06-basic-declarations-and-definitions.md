@@ -254,7 +254,7 @@ type $U$. If the type parameter clause `[$\mathit{tps}\,$]` is omitted, $t$ abst
 
 If a type declaration appears as a member declaration of a
 type, implementations of the type may implement $t$ with any type $T$
-for which $L \conforms T \conforms U$. It is a compile-time error if
+for which $L <: T <: U$. It is a compile-time error if
 $L$ does not conform to $U$.  Either or both bounds may be omitted.
 If the lower bound $L$ is absent, the bottom type
 `scala.Nothing` is assumed.  If the upper bound $U$ is absent,
@@ -357,12 +357,17 @@ constrain possible type arguments for the parameter.  It is a
 compile-time error if $L$ does not conform to $U$. $\pm$ is a _variance_, i.e.\ an optional prefix of either `+`, or
 `-`. One or more annotations may precede the type parameter.
 
-\comment{
+<!--
 The upper bound $U$ in a type parameter clauses may not be a final
-class. The lower bound may not denote a value type.\todo{Why}
-}
+class. The lower bound may not denote a value type.
 
-\comment{@M TODO this is a pretty awkward description of scoping and distinctness of binders}
+TODO: Why
+-->
+
+<!--
+TODO: this is a pretty awkward description of scoping and distinctness of binders
+-->
+
 The names of all type parameters must be pairwise different in their enclosing type parameter clause.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.\
 
 A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `$@a_1\ldots@a_n$ $\pm$ $t[\mathit{tps}\,]$ >: $L$ <: $U$`.  
