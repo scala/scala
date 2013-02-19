@@ -89,7 +89,7 @@ var         while       with        yield
 _    :    =    =>    <-    <:    <%     >:    #    @
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Unicode operators \\u21D2 ‘⇒’ and \\u2190 ‘←’, which have the ASCII 
+The Unicode operators \\u21D2 ‘$\Rightarrow$’ and \\u2190 ‘$\leftarrow$’, which have the ASCII 
 equivalents ‘=>’ and ‘<-’, are also reserved.
 
 (@) Here are examples of identifiers:
@@ -402,10 +402,10 @@ members of type `Boolean`{.scala}.
 
 ### Character Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 characterLiteral  ::=  ‘'’ printableChar ‘'’
                     |  ‘'’ charEscapeSeq ‘'’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A character literal is a single character enclosed in quotes.
 The character is either a printable unicode character or is described
@@ -426,10 +426,10 @@ the octal escape `'\12'` ([see here](#escape-sequences)).
 
 ### String Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 stringLiteral  ::=  ‘\"’ {stringElement} ‘\"’
 stringElement  ::=  printableCharNoDoubleQuote  |  charEscapeSeq
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A string literal is a sequence of characters in double quotes.  The
 characters are either printable unicode character or are described by
