@@ -19,14 +19,14 @@ import scala.util.control.NonFatal
 
 
 private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter: Throwable => Unit) extends ExecutionContextExecutor {
+  // Placed here since the creation of the executor needs to read this val
+  private val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
+    def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
+  }
 
   val executor: Executor = es match {
     case null => createExecutorService
     case some => some
-  }
-
-  private val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
-    def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
   }
 
   // Implement BlockContext on FJP threads
