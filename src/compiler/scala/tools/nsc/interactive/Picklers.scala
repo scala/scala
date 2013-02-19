@@ -166,8 +166,8 @@ trait Picklers { self: Global =>
       .asClass (classOf[AskLinkPosItem])
 
   implicit def askDocCommentItem: CondPickler[AskDocCommentItem] =
-    (pkl[Symbol] ~ pkl[Symbol] ~ pkl[SourceFile])
-      .wrapped { case sym ~ site ~ source => new AskDocCommentItem(sym, site, source, new Response) } { item => item.sym ~ item.site ~ item.source }
+    (pkl[Symbol] ~ pkl[SourceFile] ~ pkl[Symbol] ~ pkl[List[(Symbol,SourceFile)]])
+      .wrapped { case sym ~ source ~ site ~ fragments => new AskDocCommentItem(sym, source, site, fragments, new Response) } { item => item.sym ~ item.source ~ item.site ~ item.fragments }
       .asClass (classOf[AskDocCommentItem])
 
   implicit def askLoadedTypedItem: CondPickler[AskLoadedTypedItem] =
