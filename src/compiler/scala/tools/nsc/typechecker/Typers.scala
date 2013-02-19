@@ -138,11 +138,16 @@ trait Typers extends Modes with Adaptations with Tags {
             mkArg = mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
               context.errBuffer.find(_.kind == ErrorKinds.Divergent) match {
-                case Some(divergentImplicit) =>
+                case Some(divergentImplicit) if !settings.Xdivergence211.value =>
                   // DivergentImplicit error has higher priority than "no implicit found"
                   // no need to issue the problem again if we are still in silent mode
                   if (context.reportErrors) {
                     context.issue(divergentImplicit)
+                    context.condBufferFlush(_.kind  == ErrorKinds.Divergent)
+                  }
+                case Some(divergentImplicit: DivergentImplicitTypeError) if settings.Xdivergence211.value =>
+                  if (context.reportErrors) {
+                    context.issue(divergentImplicit.withPt(paramTp))
                     context.condBufferFlush(_.kind  == ErrorKinds.Divergent)
                   }
                 case None =>

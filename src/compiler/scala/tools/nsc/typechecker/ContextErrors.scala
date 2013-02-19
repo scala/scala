@@ -60,6 +60,24 @@ trait ContextErrors {
     def errPos = tree.pos
   }
 
+  // Unlike other type errors diverging implicit expansion
+  // will be re-issued explicitly on failed implicit argument search.
+  // This is because we want to:
+  // 1) provide better error message than just "implicit not found"
+  // 2) provide the type of the implicit parameter for which we got diverging expansion
+  //    (pt at the point of divergence gives less information to the user)
+  // Note: it is safe to delay error message generation in this case
+  // becasue we don't modify implicits' infos.
+  // only issued when -Xdivergence211 is turned on
+  case class DivergentImplicitTypeError(tree: Tree, pt0: Type, sym: Symbol) extends AbsTypeError {
+    def errPos: Position = tree.pos
+    def errMsg: String   = errMsgForPt(pt0)
+    def kind = ErrorKinds.Divergent
+    def withPt(pt: Type): AbsTypeError = NormalTypeError(tree, errMsgForPt(pt), kind)
+    private def errMsgForPt(pt: Type) =
+      s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
+  }
+
   case class AmbiguousTypeError(underlyingTree: Tree, errPos: Position, errMsg: String, kind: ErrorKind = ErrorKinds.Ambiguous) extends AbsTypeError
 
   case class PosAndMsgTypeError(errPos: Position, errMsg: String, kind: ErrorKind = ErrorKinds.Normal) extends AbsTypeError
@@ -73,6 +91,7 @@ trait ContextErrors {
       issueTypeError(SymbolTypeError(sym, msg))
     }
 
+    // only called when -Xdivergence211 is turned off
     def issueDivergentImplicitsError(tree: Tree, msg: String)(implicit context: Context) {
       issueTypeError(NormalTypeError(tree, msg, ErrorKinds.Divergent))
     }
@@ -1152,9 +1171,13 @@ trait ContextErrors {
     }
 
     def DivergingImplicitExpansionError(tree: Tree, pt: Type, sym: Symbol)(implicit context0: Context) =
-      issueDivergentImplicitsError(tree,
-          "diverging implicit expansion for type "+pt+"\nstarting with "+
-          sym.fullLocationString)
+      if (settings.Xdivergence211.value) {
+        issueTypeError(DivergentImplicitTypeError(tree, pt, sym))
+      } else {
+        issueDivergentImplicitsError(tree,
+            "diverging implicit expansion for type "+pt+"\nstarting with "+
+            sym.fullLocationString)
+      }
   }
 
   object NamesDefaultsErrorsGen {

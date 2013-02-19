@@ -80,7 +80,7 @@ trait Implicits {
       printTyping("typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
-    if (saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
+    if ((result.isFailure || !settings.Xdivergence211.value) && saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
       context.updateBuffer(implicitSearchContext.errBuffer.filter(err => err.kind == ErrorKinds.Ambiguous || err.kind == ErrorKinds.Divergent))
       debugwarn("update buffer: " + implicitSearchContext.errBuffer)
     }
@@ -152,11 +152,19 @@ trait Implicits {
 
     def isFailure          = false
     def isAmbiguousFailure = false
+    // only used when -Xdivergence211 is turned on
+    def isDivergent        = false
     final def isSuccess    = !isFailure
   }
 
   lazy val SearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
     override def isFailure = true
+  }
+
+  // only used when -Xdivergence211 is turned on
+  lazy val DivergentSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
+    override def isFailure   = true
+    override def isDivergent = true
   }
 
   lazy val AmbiguousSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
@@ -425,8 +433,10 @@ trait Implicits {
       (context.openImplicits find { case OpenImplicit(info, tp, tree1) => !info.sym.isMacro && tree1.symbol == tree.symbol && dominates(pt, tp)}) match {
          case Some(pending) =>
            //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
-           throw DivergentImplicit
+           if (settings.Xdivergence211.value) DivergentSearchFailure
+           else throw DivergentImplicit
          case None =>
+           def pre211DivergenceLogic() = {
            try {
              context.openImplicits = OpenImplicit(info, pt, tree) :: context.openImplicits
              // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
@@ -444,6 +454,24 @@ trait Implicits {
            } finally {
              context.openImplicits = context.openImplicits.tail
            }
+           }
+           def post211DivergenceLogic() = {
+             try {
+               context.openImplicits = OpenImplicit(info, pt, tree) :: context.openImplicits
+               // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
+               val result = typedImplicit0(info, ptChecked, isLocal)
+               if (result.isDivergent) {
+                 //println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
+                 if (context.openImplicits.tail.isEmpty && !pt.isErroneous)
+                   DivergingImplicitExpansionError(tree, pt, info.sym)(context)
+               }
+               result
+             } finally {
+               context.openImplicits = context.openImplicits.tail
+             }
+           }
+           if (settings.Xdivergence211.value) post211DivergenceLogic()
+           else pre211DivergenceLogic()
        }
     }
 
@@ -812,6 +840,9 @@ trait Implicits {
 
       /** Preventing a divergent implicit from terminating implicit search,
        *  so that if there is a best candidate it can still be selected.
+       *
+       *  The old way of handling divergence.
+       *  Only enabled when -Xdivergence211 is turned off.
        */
       private var divergence = false
       private val divergenceHandler: PartialFunction[Throwable, SearchResult] = {
@@ -822,6 +853,28 @@ trait Implicits {
             log("discarding divergent implicit during implicit search")
             SearchFailure
         }
+      }
+
+      /** Preventing a divergent implicit from terminating implicit search,
+       *  so that if there is a best candidate it can still be selected.
+       *
+       *  The new way of handling divergence.
+       *  Only enabled when -Xdivergence211 is turned on.
+       */
+      object DivergentImplicitRecovery {
+        // symbol of the implicit that caused the divergence.
+        // Initially null, will be saved on first diverging expansion.
+        private var implicitSym: Symbol    = _
+        private var countdown: Int = 1
+
+        def sym: Symbol = implicitSym
+        def apply(search: SearchResult, i: ImplicitInfo): SearchResult =
+          if (search.isDivergent && countdown > 0) {
+            countdown -= 1
+            implicitSym = i.sym
+            log("discarding divergent implicit ${implicitSym} during implicit search")
+            SearchFailure
+          } else search
       }
 
       /** Sorted list of eligible implicits.
@@ -850,11 +903,20 @@ trait Implicits {
       @tailrec private def rankImplicits(pending: Infos, acc: Infos): Infos = pending match {
         case Nil      => acc
         case i :: is  =>
-          def tryImplicitInfo(i: ImplicitInfo) =
+          def pre211tryImplicitInfo(i: ImplicitInfo) =
             try typedImplicit(i, ptChecked = true, isLocal)
             catch divergenceHandler
 
-          tryImplicitInfo(i) match {
+          def post211tryImplicitInfo(i: ImplicitInfo) =
+            DivergentImplicitRecovery(typedImplicit(i, ptChecked = true, isLocal), i)
+
+          {
+            if (settings.Xdivergence211.value) post211tryImplicitInfo(i)
+            else pre211tryImplicitInfo(i)
+          } match {
+            // only used if -Xdivergence211 is turned on
+            case sr if sr.isDivergent =>
+              Nil
             case sr if sr.isFailure =>
               // We don't want errors that occur during checking implicit info
               // to influence the check of further infos.
@@ -906,9 +968,10 @@ trait Implicits {
           /** If there is no winner, and we witnessed and caught divergence,
            *  now we can throw it for the error message.
            */
-          if (divergence)
-            throw DivergentImplicit
-          else invalidImplicits take 1 foreach { sym =>
+          if (divergence || DivergentImplicitRecovery.sym != null) {
+            if (settings.Xdivergence211.value) DivergingImplicitExpansionError(tree, pt, DivergentImplicitRecovery.sym)(context)
+            else throw DivergentImplicit
+          } else invalidImplicits take 1 foreach { sym =>
             def isSensibleAddendum = pt match {
               case Function1(_, out) => out <:< sym.tpe.finalResultType
               case tp                => tp <:< sym.tpe.finalResultType
@@ -1478,5 +1541,6 @@ object ImplicitsStats {
   val implicitCacheHits   = Statistics.newSubCounter("implicit cache hits", implicitCacheAccs)
 }
 
+// only used when -Xdivergence211 is turned off
 class DivergentImplicit extends Exception
 object DivergentImplicit extends DivergentImplicit
