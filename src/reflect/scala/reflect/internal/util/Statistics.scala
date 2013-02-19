@@ -109,7 +109,7 @@ quant)
    *  Quantities with non-empty prefix are printed in the statistics info.
    */
   trait Quantity {
-    if (prefix.nonEmpty) {
+    if (enabled && prefix.nonEmpty) {
       val key = s"${if (underlying != this) underlying.prefix else ""}/$prefix"
       qs(key) = this
     }
