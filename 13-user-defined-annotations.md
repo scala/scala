@@ -91,7 +91,7 @@ Java platform, the following annotations have a standard meaning.
 	the generated getter method is named `isX` instead of `getX`.
 
   * `@unchecked` \
-	When applied to the selector of a \lstinline@match@ expression,
+	When applied to the selector of a `match` expression,
 	this attribute suppresses any warnings about non-exhaustive pattern
 	matches which would otherwise be emitted. For instance, no warnings
 	would be produced for the method definition below.
