@@ -49,3 +49,15 @@ pandoc -f markdown \
       --template=resources/scala-ref-template.latex \
       -o build/ScalaReference.pdf \
       build/ScalaReference.md
+
+echo "building ebook to build/ScalaReference.epub"
+pandoc -f markdown \
+       -t epub \
+      --standalone \
+      --toc \
+      --chapters \
+      --number-sections \
+      --bibliography=Scala.bib \
+      --self-contained \
+      -o build/ScalaReference.epub \
+      build/ScalaReference.md
