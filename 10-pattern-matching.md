@@ -83,7 +83,7 @@ that value.
   Pattern2        ::=  varid `@' Pattern3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A pattern binder \lstinline|$x$@$p$| consists of a pattern variable $x$ and a 
+A pattern binder `$x$@$p$` consists of a pattern variable $x$ and a 
 pattern $p$. The type of the variable $x$ is the static type $T$ of the pattern $p$.
 This pattern matches any value $v$ matched by the pattern $p$, 
 provided the run-time type of $v$ is also an instance of $T$, 
@@ -170,8 +170,8 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A tuple pattern `($p_1 , \ldots , p_n$)` is an alias
-for the constructor pattern ~\lstinline@scala.Tuple$n$($p_1 , \ldots ,
-p_n$)@, where $n \geq 2$. The empty tuple
+for the constructor pattern `scala.Tuple$n$($p_1 , \ldots , p_n$)`, 
+where $n \geq 2$. The empty tuple
 `()`{.scala} is the unique value of type `scala.Unit`{.scala}.
 
 ### Extractor Patterns
@@ -300,14 +300,14 @@ Regular expression patterns have been discontinued in Scala from version 2.0.
 Later version of Scala provide a much simplified version of regular
 expression patterns that cover most scenarios of non-text sequence
 processing.  A _sequence pattern_ is a pattern that stands in a
-position where either (1) a pattern of a type \lstinline+T+ which is
+position where either (1) a pattern of a type `T` which is
 conforming to
-\lstinline+Seq[A]+ for some \lstinline+A+ is expected, or (2) a case
+`Seq[A]` for some `A` is expected, or (2) a case
 class constructor that has an iterated formal parameter
-\lstinline+A*+.  A wildcard star pattern \lstinline+_*+ in the
+`A*`.  A wildcard star pattern `_*` in the
 rightmost position stands for arbitrary long sequences. It can be
-bound to variables using \lstinline+@+, as usual, in which case the variable will have the
-type \lstinline+Seq[A]+.
+bound to variables using `@`, as usual, in which case the variable will have the
+type `Seq[A]`.
 
 ### Irrefutable Patterns
 
@@ -397,10 +397,10 @@ type parameters $a'_1 , \ldots , a'_n$ with lower bounds $L_1
 , \ldots , L_n$ and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$
 contains the constraints 
 
-$$\begin{array}
-a_i        &<:& \sigma U_i & (i = 1, \ldots , n)  \\ 
-\sigma L_i &<:& a_i        & (i = 1 , \ldots , n)
-\end{array}$$
+-------------  ------  --------------  ------------------------
+$a_i$          $<:$    $\sigma U_i$    $(i = 1, \ldots , n)$
+$\sigma L_i$   $<:$    $a_i$           $(i = 1 , \ldots , n)$
+-------------  ------  --------------  ------------------------
 
 where $\sigma$ is the substitution $[a'_1 := a_1 , \ldots , a'_n :=
 a_n]$.
