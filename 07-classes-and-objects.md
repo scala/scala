@@ -920,7 +920,7 @@ method is defined as follows:
 def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Again, $\Ts$ stands for the vector of types defined in the type parameter section $\mathit{tps}$
+Again, $\mathit{Ts}$ stands for the vector of types defined in the type parameter section $\mathit{tps}$
 and each $\mathit{xs}_i$ denotes the parameter names of the parameter section $\mathit{ps}'_i$. Every value
 parameter $\mathit{ps}'_{i,j}$ of the `copy` method has the form `$x_{i,j}$:$T_{i,j}$=this.$x_{i,j}$`,
 where $x_{i,j}$ and $T_{i,j}$ refer to the name and type of the corresponding class parameter
