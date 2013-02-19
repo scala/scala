@@ -458,8 +458,9 @@ SimpleExpr    ::=  SimpleExpr TypeArgs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A type application `$e$[$T_1 , \ldots , T_n$]` instantiates
-a polymorphic value $e$ of type ~\lstinline@[$a_1$ >: $L_1$ <: $U_1
-, \ldots , a_n$ >: $L_n$ <: $U_n$]$S$@~ with argument types
+a polymorphic value $e$ of type 
+`[$a_1$ >: $L_1$ <: $U_1, \ldots , a_n$ >: $L_n$ <: $U_n$]$S$` 
+with argument types
 `$T_1 , \ldots , T_n$`.  Every argument type $T_i$ must obey
 the corresponding bounds $L_i$ and $U_i$.  That is, for each $i = 1
 , \ldots , n$, we must have $\sigma L_i <: T_i <: \sigma
@@ -625,8 +626,6 @@ $e$, which defines the result of the block.
 Prefix, Infix, and Postfix Operations
 -------------------------------------
 
-\label{sec:infix-operations}
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 PostfixExpr     ::=  InfixExpr [id [nl]]
 InfixExpr       ::=  PrefixExpr
@@ -645,7 +644,7 @@ must be one of the identifiers ‘`+`’, ‘`-`’,
 equivalent to the postfix method application
 `e.unary_$\mathit{op}$`.
 
-\todo{Generalize to arbitrary operators}
+<!-- TODO: Generalize to arbitrary operators -->
 
 Prefix operators are different from normal function applications in
 that their operand expression need not be atomic. For instance, the
@@ -787,7 +786,7 @@ Annotated Expressions
 Expr1              ::=  PostfixExpr `:' Annotation {Annotation} 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An annotated expression ~\lstinline^$e$: @$a_1$ $\ldots$ @$a_n$^
+An annotated expression `$e$: @$a_1$ $\ldots$ @$a_n$`
 attaches [annotations](#user-defined-annotations) $a_1 , \ldots , a_n$ to the 
 expression $e$.
 
@@ -1322,7 +1321,7 @@ include at least the expressions of the following forms:
 - A class constructed with [`Predef.classOf`](#the-predef-object)
 - An element of an enumeration from the underlying platform
 - A literal array, of the form
-  \lstinline^Array$(c_1 , \ldots , c_n)$^,
+  `Array$(c_1 , \ldots , c_n)$`,
   where all of the $c_i$'s are themselves constant expressions
 - An identifier defined by a 
   [constant value definition](#value-declarations-and-definitions).
@@ -1350,7 +1349,8 @@ Statements used in the template of a class definition can also be
 declarations.  An expression that is used as a statement can have an
 arbitrary value type. An expression statement $e$ is evaluated by
 evaluating $e$ and discarding the result of the evaluation. 
-\todo{Generalize to implicit coercion?}
+
+<!-- Generalize to implicit coercion? -->
 
 Block statements may be definitions which bind local names in the
 block. The only modifier allowed in all block-local definitions is
@@ -1364,8 +1364,6 @@ statements in the order they are written.
 
 Implicit Conversions
 --------------------
-
-\label{sec:impl-conv}
 
 Implicit conversions can be applied to expressions whose type does not
 match their expected type, to qualifiers in selections, and to unapplied methods. The
@@ -1446,7 +1444,7 @@ _Implicit Application_ \
 _Eta Expansion_ \
   Otherwise, if the method is not a constructor, 
   and the expected type $\mathit{pt}$ is a function type
-  $(\mathit{Ts}') \Arrow T'$, [eta-expansion](#eta-expansion)
+  $(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion)
   is performed on the expression $e$.
 
 _Empty Application_ \
@@ -1659,10 +1657,7 @@ solutions exist, an optimal one for the type $T'$ is chosen.
 All or parts of an expected type $\mathit{pt}$ may be undefined. The rules for
 [conformance](#conformance) are extended to this case by adding
 the rule that for any type $T$ the following two statements are always
-true:
-\[
-   \mbox{\sl undefined} <: T \tab\mbox{and}\tab T <: \mbox{\sl undefined} .
-\]
+true: $\mathit{undefined} <: T$ and $T <: \mathit{undefined}$
 
 It is possible that no minimal or maximal solution for a type variable
 exists, in which case a compile-time error results. Because $<:$ is a
