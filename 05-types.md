@@ -172,7 +172,7 @@ parameters $a_1 , \ldots , a_n$.
 Say the type parameters have lower bounds $L_1 , \ldots , L_n$ and
 upper bounds $U_1 ,  \ldots , U_n$.  The parameterized type is
 well-formed if each actual type parameter
-_conforms to its bounds_, i.e. $σ L_i <: T_i <: σ U_i$ where $σ$ is the
+_conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
 (@param-types) Given the partial type definitions:
