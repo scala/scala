@@ -50,6 +50,7 @@ $endfor$
     <link rel="stylesheet" href="resources/blueprint-ie.css" type="text/css" media="screen, projection">
   <![endif]-->
   <link rel="stylesheet" href="resources/style.css" type="text/css" media="screen, projection"/>
+  <link rel="stylesheet" href="resources/fonts.css" type="text/css" media="screen, projection"/>
 
 </head>
 <body>

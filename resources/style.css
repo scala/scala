@@ -17,11 +17,10 @@ header .date {
 }
 
 pre {
-	margin-left: 3em;
-	margin-right: 3em;
+	margin-left: 1em;
+	margin-right: 1em;
 	padding: 1em;
 	background-color: #EEE;
-	border: 1px solid #333;
 }
 
 pre.math {
@@ -43,8 +42,8 @@ code {
 /* examples */
 ol[type="1"] {
 	list-style-type: none;
-	margin-left: 3em;
-	margin-right: 3em;
+	margin-left: 1em;
+	margin-right: 1em;
 	padding: 0;
 }
 
@@ -52,11 +51,11 @@ ol[type="1"] > li {
 	margin-top: 1em;
 	padding: 1em;
 	background-color: #E5ECF9;
-	border: 1px dashed black;
 }
 
 ol[type="1"] > li:before {
 	content: "Example ";
+	font-weight:bold;
 }
 
 #popoutTOC {
