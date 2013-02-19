@@ -19,26 +19,26 @@ Conversion from LaTeX - Guidelines
 
 ### Chapter conversion Checklist
 
-#. Convert all `\section{...}`
-#. Convert all `\subsection{...}`
-#. Convert all `\subsubsection{...}`
-#. Convert all `{\em ...}`
-#. Convert all `\lstlisting`
-#. Convert all `\lstinline`
-#. Convert all `\code`
-#. Convert all `\sref{sec:...}`
-#. Convert all `\begin{itemize}`
-#. Convert all `\begin{enumerate}`
-#. Convert all `\example`
-#. Convert all `\footnote`
-#. Convert all `\paragraph`
-#. Convert all `\begin{quote}`
-#. Delete all `\comment{...}`
-#. Convert all single quote pairs
-#. Convert all double quote pairs
-#. Look for manually defined enumerated lists (1. 2. 3. etc)
-#. Remove `%@M` comments
-#. Convert all extra macros (`\commadots`, etc)
+1. Convert all `\section{...}`
+1. Convert all `\subsection{...}`
+1. Convert all `\subsubsection{...}`
+1. Convert all `{\em ...}`
+1. Convert all `\lstlisting`
+1. Convert all `\lstinline`
+1. Convert all `\code`
+1. Convert all `\sref{sec:...}`
+1. Convert all `\begin{itemize}`
+1. Convert all `\begin{enumerate}`
+1. Convert all `\example`
+1. Convert all `\footnote`
+1. Convert all `\paragraph`
+1. Convert all `\begin{quote}`
+1. Delete all `\comment{...}`
+1. Convert all single quote pairs
+1. Convert all double quote pairs
+1. Look for manually defined enumerated lists (1. 2. 3. etc)
+1. Remove `%@M` comments
+1. Convert all extra macros (`\commadots`, etc)
 
 
 ### Code
@@ -120,6 +120,7 @@ compromise came up with here was to treat definitions like quotations:
   `` `like this` ``.
 - `\paragraph` (typically used for a non-numbered header) can be replaced by 
   a hard line break, which is a `\` followed immediately by a newline.
+- `\TODO` can be replaced by a markdown comment `<!-- TODO: ... -->`
 
 
 ### Unicode Character replacements
