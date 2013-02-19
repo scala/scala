@@ -1,5 +1,10 @@
 #!/bin/sh
-find . -name "*.md" | \
+
+if [ ! -d build ]; then
+    mkdir -p build
+fi
+
+echo "building Markdown source to build/ScalaReference.md"
 cat 01-title.md \
     02-preface.md \
     03-lexical-syntax.md \
@@ -17,8 +22,7 @@ cat 01-title.md \
     15-scala-syntax-summary.md \
     16-references.md > build/ScalaReference.md
 
-
-
+echo "building HTML spec to build/ScalaReference.html"
 pandoc -f markdown \
        -t html5 \
        --standalone \
@@ -33,14 +37,15 @@ pandoc -f markdown \
 
 cp -Rf resources build/
 
-# pdf generation - not working yet
-#pandoc -f markdown \
-#       --standalone \
-#       --toc \
-#       --chapters \
-#       --number-sections \
-#       --bibliography=Scala.bib \
-#       --self-contained \
-#       --latex-engine=xelatex \
-#       -o build/ScalaReference.pdf \
-#       build/ScalaReference.panmd
+echo "building PDF spec to build/ScalaReference.pdf"
+pandoc -f markdown \
+      --standalone \
+      --toc \
+      --chapters \
+      --number-sections \
+      --bibliography=Scala.bib \
+      --self-contained \
+      --latex-engine=xelatex \
+      --template=resources/scala-ref-template.latex \
+      -o build/ScalaReference.pdf \
+      build/ScalaReference.md
