@@ -726,8 +726,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       else if (clazz.isTrait && !(clazz isSubClass AnyValClass)) {
         // For non-AnyVal classes, prevent abstract methods in interfaces that override
         // final members in Object; see #4431
-        for (decl <- clazz.info.decls.iterator) {
-          val overridden = decl.overriddenSymbol(ObjectClass)
+        for (decl <- clazz.info.decls) {
+          // Have to use matchingSymbol, not a method involving overridden symbols,
+          // because the scala type system understands that an abstract method here does not
+          // override a concrete method in Object. The jvm, however, does not.
+          val overridden = decl.matchingSymbol(ObjectClass, ObjectClass.tpe)
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
@@ -1499,8 +1502,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // on Unit, in which case we had better let it slide.
         val isOk = (
              sym.isGetter
-          || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))
           || (sym.name containsName nme.DEFAULT_GETTER_STRING)
+          || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))
         )
         if (!isOk)
           unit.warning(sym.pos, s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead")
