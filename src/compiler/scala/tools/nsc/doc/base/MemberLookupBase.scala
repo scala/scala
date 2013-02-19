@@ -10,15 +10,15 @@ import comment._
 trait MemberLookupBase {
 
   val global: Global
-  val settings: doc.Settings
-
   import global._
+
   def internalLink(sym: Symbol, site: Symbol): Option[LinkTo]
   def chooseLink(links: List[LinkTo]): LinkTo
   def toString(link: LinkTo): String
+  def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal]
+  def warnNoLink: Boolean
 
   import global._
-  import definitions.{ NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
   import rootMirror.{RootPackage, EmptyPackage}
 
   private def isRoot(s: Symbol) = s.isRootSymbol || s.isEmptyPackage || s.isEmptyPackageClass
@@ -83,7 +83,7 @@ trait MemberLookupBase {
     }
     links match {
       case Nil =>
-        if (!settings.docNoLinkWarnings.value)
+        if (warnNoLink)
           reporter.warning(pos, "Could not find any member to link for \"" + query + "\".")
         // (4) if we still haven't found anything, create a tooltip
         Tooltip(query)
@@ -95,7 +95,7 @@ trait MemberLookupBase {
             if (link == chosen) " [chosen]" else ""
           toString(link) + chosenInfo + "\n"
         }
-        if (!settings.docNoLinkWarnings.value) {
+        if (warnNoLink) {
           val allLinks = links.map(linkToString).mkString
           reporter.warning(pos,
             s"""The link target \"$query\" is ambiguous. Several members fit the target:
@@ -197,29 +197,6 @@ trait MemberLookupBase {
     if (last_index < length)
       members ::= query.substring(last_index, length).replaceAll("\\\\\\.", ".")
     members.reverse
-  }
-
-
-  def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = {
-    val sym1 =
-      if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
-      else if (sym.isPackage) 
-        /* Get package object which has associatedFile ne null */
-        sym.info.member(newTermName("package"))
-      else sym
-    Option(sym1.associatedFile) flatMap (_.underlyingSource) flatMap { src =>
-      val path = src.path
-      settings.extUrlMapping get path map { url =>
-        LinkToExternal(name, url + "#" + name)
-      }
-    } orElse {
-      // Deprecated option.
-      settings.extUrlPackageMapping find {
-        case (pkg, _) => name startsWith pkg
-      } map {
-        case (_, url) => LinkToExternal(name, url + "#" + name)
-      }
-    }
   }
 
   def externalSignature(sym: Symbol) = {
