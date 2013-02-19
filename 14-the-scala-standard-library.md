@@ -5,7 +5,7 @@ The Scala standard library consists of the package `scala` with a
 number of classes and modules. Some of these classes are described in
 the following.
 
-![Class hierarchy of Scala](classhierarchy.pdf)
+![Class hierarchy of Scala](resources/classhierarchy.pdf)
 
 
 Root Classes
@@ -101,7 +101,7 @@ $x$ match {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 where the type $T'$ is the same as $T$ except if $T$ is
-of the form $D$ or $D[\tps]$ where $D$ is a type member of some outer
+of the form $D$ or $D[\mathit{tps}]$ where $D$ is a type member of some outer
 class $C$. In this case $T'$ is `$C$#$D$` (or
 `$C$#$D[tps]$`, respectively), whereas $T$ itself would
 expand to `$C$.this.$D[tps]$`. In other words, an
