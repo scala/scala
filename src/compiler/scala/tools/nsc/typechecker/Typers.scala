@@ -1658,7 +1658,35 @@ trait Typers extends Adaptations with Tags {
         )
     }
 
-    def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
+    def typedParentTypes(templ: Template): List[Tree] = {
+      // typedParentTypes can be called both from namer and from typer
+      // unfortunately if we try to compute syntheticParentTypes in namer
+      // we then get a "no progress in completing ..." error
+      // therefore synthesis of the Serializable parent type only happens
+      // if the owner of the template is already initialized
+      val syntheticParentTypes = {
+        val sym = context.tree.symbol
+        if (sym.isInitialized && sym.isModule) {
+          val clazz = sym.moduleClass
+          val linkedClass = companionSymbolOf(sym, context)
+          val noSerializable = (
+               (linkedClass eq NoSymbol)
+            || linkedClass.isErroneous
+            || !linkedClass.isSerializable
+            || clazz.isSerializable
+          )
+          if (noSerializable) Nil
+          else {
+            clazz.makeSerializable()
+            List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
+          }
+        } else Nil
+      }
+      val parents1 = templ.parents ++ syntheticParentTypes
+      typedParentTypes1(treeCopy.Template(templ, parents1, templ.self, templ.body))
+    }
+
+    def typedParentTypes1(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefClass.tpe)))
       case first :: rest =>
         try {
@@ -1841,22 +1869,8 @@ trait Typers extends Adaptations with Tags {
       val clazz     = mdef.symbol.moduleClass
       val typedMods = typedModifiers(mdef.mods)
       assert(clazz != NoSymbol, mdef)
-      val noSerializable = (
-           (linkedClass eq NoSymbol)
-        || linkedClass.isErroneous
-        || !linkedClass.isSerializable
-        || clazz.isSerializable
-      )
       val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
-        _.typedTemplate(mdef.impl, {
-          typedParentTypes(mdef.impl) ++ (
-            if (noSerializable) Nil
-            else {
-              clazz.makeSerializable()
-              List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
-            }
-          )
-        })
+        _.typedTemplate(mdef.impl, typedParentTypes(mdef.impl))
       }
       val impl2 = deriveTemplate(impl1)(_ => addSyntheticMethodsToCaseClasses(impl1.body, clazz, context))
 
