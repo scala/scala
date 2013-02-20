@@ -56,7 +56,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
   /** Add the synthetic methods to case classes.
    */
-  def addSyntheticMethods(templ: Template, clazz0: Symbol, context: Context): Template = {
+  def addSyntheticMethodsToCaseClasses(stats: List[Tree], clazz0: Symbol, context: Context): List[Tree] = {
     val syntheticsOk = (phase.id <= currentRun.typerPhase.id) && {
       symbolsToSynthesize(clazz0) filter (_ matchingSymbol clazz0.info isSynthetic) match {
         case Nil  => true
@@ -64,7 +64,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
     if (!syntheticsOk)
-      return templ
+      return stats
 
     val synthesizer = new ClassMethodSynthesis(
       clazz0,
@@ -76,9 +76,9 @@ trait SyntheticMethods extends ast.TreeDSL {
       if ((clazz0.info member nme.getClass_).isDeferred) {
         // XXX dummy implementation for now
         val getClassMethod = createMethod(nme.getClass_, getClassReturnType(clazz.tpe))(_ => NULL)
-        deriveTemplate(templ)(_ :+ getClassMethod)
+        stats :+ getClassMethod
       }
-      else templ
+      else stats
     }
 
     def accessors = clazz.caseFieldAccessors
@@ -373,7 +373,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       val lb = ListBuffer[Tree]()
       def isRewrite(sym: Symbol) = sym.isCaseAccessorMethod && !sym.isPublic
 
-      for (ddef @ DefDef(_, _, _, _, _, _) <- templ.body ; if isRewrite(ddef.symbol)) {
+      for (ddef @ DefDef(_, _, _, _, _, _) <- stats ; if isRewrite(ddef.symbol)) {
         val original = ddef.symbol
         val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
           newAcc.makePublic
@@ -387,15 +387,13 @@ trait SyntheticMethods extends ast.TreeDSL {
         renamedInClassMap(original.name.toTermName) = newAcc.symbol.name.toTermName
       }
 
-      (lb ++= templ.body ++= synthesize()).toList
+      (lb ++= stats ++= synthesize()).toList
     }
 
-    deriveTemplate(templ)(body =>
-      if (clazz.isCase) caseTemplateBody()
-      else synthesize() match {
-        case Nil  => body // avoiding unnecessary copy
-        case ms   => body ++ ms
-      }
-    )
+    if (clazz.isCase) caseTemplateBody()
+    else synthesize() match {
+      case Nil  => stats // avoiding unnecessary copy
+      case ms   => stats ++ ms
+    }
   }
 }

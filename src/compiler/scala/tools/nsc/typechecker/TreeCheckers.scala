@@ -170,12 +170,6 @@ abstract class TreeCheckers extends Analyzer {
   override def newTyper(context: Context): Typer = new TreeChecker(context)
 
   class TreeChecker(context0: Context) extends Typer(context0) {
-    override protected def finishMethodSynthesis(templ: Template, clazz: Symbol, context: Context): Template = {
-      // If we don't intercept this all the synthetics get added at every phase,
-      // with predictably unfortunate results.
-      templ
-    }
-
     // XXX check for tree.original on TypeTrees.
     private def treesDiffer(t1: Tree, t2: Tree) =
       errorFn(t1.pos, "trees differ\n old: " + treestr(t1) + "\n new: " + treestr(t2))

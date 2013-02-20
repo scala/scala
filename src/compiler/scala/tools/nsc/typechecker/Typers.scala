@@ -1797,7 +1797,7 @@ trait Typers extends Adaptations with Tags {
       val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
         _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       }
-      val impl2 = finishMethodSynthesis(impl1, clazz, context)
+      val impl2 = deriveTemplate(impl1)(_ => addSyntheticMethodsToCaseClasses(impl1.body, clazz, context))
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
 
@@ -1850,7 +1850,7 @@ trait Typers extends Adaptations with Tags {
           )
         })
       }
-      val impl2  = finishMethodSynthesis(impl1, clazz, context)
+      val impl2 = deriveTemplate(impl1)(_ => addSyntheticMethodsToCaseClasses(impl1.body, clazz, context))
 
       // SI-5954. On second compile of a companion class contained in a package object we end up
       // with some confusion of names which leads to having two symbols with the same name in the
@@ -1879,14 +1879,6 @@ trait Typers extends Adaptations with Tags {
         warnPackageObjectMembers(mdef)
 
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
-    }
-    /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
-     *  all the time, it is exposed here the module/class typing methods go through it.
-     *  ...but it turns out it's also the ideal spot for namer/typer coordination for
-     *  the tricky method synthesis scenarios, so we'll make it that.
-     */
-    protected def finishMethodSynthesis(templ: Template, clazz: Symbol, context: Context): Template = {
-      addSyntheticMethods(templ, clazz, context)
     }
     private def finishTemplateSynthesis[T <: ImplDef](implDef: T): T = deriveImplDef(implDef) {
       case ExpandedIntoTemplate(impl) => impl.removeAttachment[MacroExpansionAttachment]
