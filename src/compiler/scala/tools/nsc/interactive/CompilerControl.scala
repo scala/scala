@@ -164,17 +164,21 @@ trait CompilerControl { self: Global =>
 
   /** Sets sync var `response` to doc comment information for a given symbol.
    *
-   *  @param   sym      The symbol whose doc comment should be retrieved (might come from a classfile)
-   *  @param   site     The place where sym is observed.
-   *  @param   source   The source file that's supposed to contain the definition
-   *  @param   response A response that will be set to the following:
-   *                    If `source` contains a definition of a given symbol that has a doc comment,
-   *                    the (expanded, raw, position) triplet for a comment, otherwise ("", "", NoPosition).
-   *  Note: This operation does not automatically load `source`. If `source`
-   *  is unloaded, it stays that way.
+   *  @param   sym        The symbol whose doc comment should be retrieved (might come from a classfile)
+   *  @param   source     The source file that's supposed to contain the definition
+   *  @param   site       The symbol where 'sym' is observed
+   *  @param   overridden The list of overridden symbols together with their source files.
+   *  @param   response   A response that will be set to the following:
+   *                      If `source` contains a definition of a given symbol that has a doc comment,
+   *                      the (expanded, raw, position) triplet for a comment, otherwise ("", "", NoPosition).
+   *  Note: This operation does not automatically load sources that are not yet loaded.
    */
-  def askDocComment(sym: Symbol, site: Symbol, source: SourceFile, response: Response[(String, String, Position)]) =
-    postWorkItem(new AskDocCommentItem(sym, site, source, response))
+  def askDocComment(sym: Symbol, source: SourceFile, site: Symbol, overridden: List[(Symbol,SourceFile)], response: Response[(String, String, Position)]): Unit =
+    postWorkItem(new AskDocCommentItem(sym, source, site, overridden, response))
+
+  @deprecated("Use method that accepts overridden symbols", "2.10.2")
+  def askDocComment(sym: Symbol, site: Symbol, source: SourceFile, response: Response[(String, String, Position)]): Unit =
+    askDocComment(sym, source, site, List(), response)
 
   /** Sets sync var `response` to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
@@ -390,9 +394,9 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskDocCommentItem(val sym: Symbol, val site: Symbol, val source: SourceFile, response: Response[(String, String, Position)]) extends WorkItem {
-    def apply() = self.getDocComment(sym, site, source, response)
-    override def toString = "doc comment "+sym+" in "+source
+  case class AskDocCommentItem(val sym: Symbol, val source: SourceFile, val site: Symbol, val overridden: List[(Symbol,SourceFile)], response: Response[(String, String, Position)]) extends WorkItem {
+    def apply() = self.getDocComment(sym, source, site, overridden, response)
+    override def toString = "doc comment "+sym+" in "+source+" with overridden:"+overridden.mkString("(", ",", ")")
 
     def raiseMissing() =
       response raise new MissingResponse
