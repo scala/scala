@@ -1038,7 +1038,7 @@ abstract class GenICode extends SubComponent  {
       // A typical example is an overloaded type assigned after typer.
       log(s"GenICode#adapt($from, $to, $ctx, $pos)")
 
-      val conforms = (from <:< to) || (from == NullReference && to == NothingReference) // TODO why would we have null where we expect nothing?
+      val conforms = (from <:< to)
       def coerce(from: TypeKind, to: TypeKind) = ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos)
       def checkAssertions() {
         def msg = s"Can't convert from $from to $to in unit ${unit.source} at $pos"
@@ -1054,8 +1054,6 @@ abstract class GenICode extends SubComponent  {
         //   6:	athrow
         // So this case tacks on the ahtrow which makes the JVM happy because class Nothing is declared as a subclass of Throwable
         case NothingReference                                          => ctx.bb.emit(THROW(ThrowableClass)) ; ctx.bb.enterIgnoreMode()
-        // TODO why do we have this case? It's saying if we have a throwable and a non-throwable is expected then we should emit a cast? Why would we get here?
-        case ThrowableReference if !(ThrowableClass.tpe <:< to.toType) => ctx.bb.emit(CHECK_CAST(to)) // downcast throwables
         case _                                                         =>
           // widen subrange types
           if (from.isIntSizedType && to == LONG)
