@@ -112,8 +112,11 @@ trait Analyzer extends AnyRef
   object synthFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "synth"
-    val runsAfter = List[String]()
-    val runsRightAfter = Some("typer")
+    val runsAfter = List[String]("typer")
+    // sbt compat!! the "xsbt-api" phase wants to run strictly after typer, and we can't do anything about it
+    // so we have to give up to such persistence and potentially have sbt working incorrectly with introduced members
+    // val runsRightAfter = Some("typer")
+    val runsRightAfter = None
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       def apply(unit: CompilationUnit) {
         object transformer extends Transformer {
