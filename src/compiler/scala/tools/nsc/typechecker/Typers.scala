@@ -1708,7 +1708,7 @@ trait Typers extends Adaptations with Tags {
      *    <li>no two parents define same symbol.</li>
      *  </ul>
      */
-    def validateParentClasses(parents: List[Tree], selfType: Type) {
+    def validateParentClasses(clazz: Symbol, parents: List[Tree]) {
       val pending = ListBuffer[AbsTypeError]()
       def validateDynamicParent(parent: Symbol, parentPos: Position) =
         if (parent == DynamicClass) checkFeature(parentPos, DynamicsFeature)
@@ -1744,6 +1744,12 @@ trait Typers extends Adaptations with Tags {
             else
               pending += ParentSealedInheritanceError(parent, psym)
 
+          val selfType = (
+            if (clazz.isAnonymousClass && !phase.erasedTypes)
+              intersectionType(clazz.info.parents, clazz.owner)
+            else
+              clazz.typeOfThis
+          )
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
               !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
@@ -1926,17 +1932,11 @@ trait Typers extends Adaptations with Tags {
       if (self1.name != nme.WILDCARD)
         context.scope enter self1.symbol
 
-      val selfType = (
-        if (clazz.isAnonymousClass && !phase.erasedTypes)
-          intersectionType(clazz.info.parents, clazz.owner)
-        else
-          clazz.typeOfThis
-      )
       // the following is necessary for templates generated later
       assert(clazz.info.decls != EmptyScope, clazz)
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
-        validateParentClasses(parents1, selfType)
+        validateParentClasses(clazz, parents1)
       if (clazz.isCase)
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
