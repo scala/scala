@@ -1,18 +1,37 @@
 Scala Language Reference as Pandoc Markdown - Notes
 ===================================================
 
-General
+Prerequisites
+-------------
+
+In order to build the scala reference, you will require the following
+software packages:
+
+- Pandoc v1.10.1 or higher (http://johnmacfarlane.net/pandoc/)
+- TeX-Live (https://www.tug.org/texlive/)
+- The luximono font - this does not ship with TeX-Live by default due to
+  license restrictions, but it can be easily installed using
+  the ["getnonfreefonts" script](https://www.tug.org/fonts/getnonfreefonts/).
+  A short guide on using this to get luximono can be found on the 
+  TeX Stackexchange [here](http://tex.stackexchange.com/questions/22157/how-to-use-the-luximono-font-with-tex-live).
+- The Heuristica font - this is an extension of the free version of the Adobe
+  Utopia font. This must be installed as a system font for the PDF to
+  build, and you can find the appropriate font package for your system
+  here: https://code.google.com/p/evristika/
+
+
+General Advice for editors
 -------
 
 - All files must be saved as UTF-8: ensure your editors are configured
   appropriately.
+- Leave two empty lines between each section, regardless of level of nesting.
+  Leave two empty lines at the end of every markdown file that forms a part
+  of the main specification when compiled.
 - Use of the appropriate unicode characters instead of the latex modifiers
   for accents, etc. is necessary. For example, é instead of \'e. Make use of
   the fact that the content is unicode, google the necessary characters if
   you don't know how to type them directly.
-- Leave two empty lines between each section, regardless of level of nesting.
-  Leave two empty lines at the end of every markdown file that forms a part
-  of the main specification when compiled.
 
 Conversion from LaTeX - Guidelines
 ----------------------------------
