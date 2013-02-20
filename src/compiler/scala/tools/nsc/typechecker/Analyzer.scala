@@ -108,4 +108,22 @@ trait Analyzer extends AnyRef
       }
     }
   }
+
+  object synthFactory extends SubComponent {
+    val global: Analyzer.this.global.type = Analyzer.this.global
+    val phaseName = "synth"
+    val runsAfter = List[String]()
+    val runsRightAfter = Some("typer")
+    def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
+      def apply(unit: CompilationUnit) {
+        object transformer extends Transformer {
+          override def transform(tree: Tree): Tree = tree match {
+            case templ: Template => super.transform(templateOf(templ.symbol.owner))
+            case tree => super.transform(tree)
+          }
+        }
+        unit.body = transformer.transform(unit.body)
+      }
+    }
+  }
 }

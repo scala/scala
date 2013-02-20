@@ -1,23 +1,23 @@
-172c172
+144c144
 <   locals: value x$1, value x1
 ---
 >   locals: value x$1, value x1, variable boxed1
-174c174
+146c146
 <   blocks: [1,2,3,4]
 ---
 >   blocks: [1,3,4]
-186a187,188
+158a159,160
 >     92	STORE_LOCAL(variable boxed1)
 >     92	LOAD_LOCAL(variable boxed1)
-195,197d196
+167,169d168
 <     92	JUMP 2
 <     
 <   2: 
-247c246
+219c218
 <   blocks: [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18]
 ---
 >   blocks: [1,2,3,4,5,6,8,10,11,12,13,14,15,16,17,18]
-258,260d256
+230,232d228
 <     92	JUMP 7
 <     
 <   7: 

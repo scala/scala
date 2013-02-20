@@ -1830,22 +1830,8 @@ trait Typers extends Adaptations with Tags {
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
-        _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
-      }
-      val impl2 = deriveTemplate(impl1)(_ => addSyntheticMethodsToCaseClasses(impl1.body, clazz, context))
-      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
-        checkEphemeral(clazz, impl2.body)
-
-      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
-        if (!clazz.owner.isPackageClass)
-          unit.error(clazz.pos, "inner classes cannot be classfile annotations")
-        else restrictionWarning(cdef.pos, unit,
-          """|subclassing Classfile does not
-             |make your annotation visible at runtime.  If that is what
-             |you want, you must write the annotation class in Java.""".stripMargin)
-      }
-
+      val templateContext = context.make(cdef.impl, clazz, newScope)
+      val impl1 = typerReportAnyContextErrors(templateContext)(_.typedTemplate(cdef.impl))
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionSymbolOf(clazz, context)
@@ -1853,7 +1839,7 @@ trait Typers extends Adaptations with Tags {
             m.moduleClass.addAnnotation(AnnotationInfo(ann.atp, ann.args, List()))
         }
       }
-      treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
+      treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl1)
         .setType(NoType)
     }
 
@@ -1869,10 +1855,8 @@ trait Typers extends Adaptations with Tags {
       val clazz     = mdef.symbol.moduleClass
       val typedMods = typedModifiers(mdef.mods)
       assert(clazz != NoSymbol, mdef)
-      val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
-        _.typedTemplate(mdef.impl, typedParentTypes(mdef.impl))
-      }
-      val impl2 = deriveTemplate(impl1)(_ => addSyntheticMethodsToCaseClasses(impl1.body, clazz, context))
+      val templateContext = context.make(mdef.impl, clazz, newScope)
+      val impl1 = typerReportAnyContextErrors(templateContext)(_.typedTemplate(mdef.impl))
 
       // SI-5954. On second compile of a companion class contained in a package object we end up
       // with some confusion of names which leads to having two symbols with the same name in the
@@ -1900,7 +1884,7 @@ trait Typers extends Adaptations with Tags {
       if (mdef.symbol.isPackageObject)
         warnPackageObjectMembers(mdef)
 
-      treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
+      treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl1) setType NoType
     }
     private def finishTemplateSynthesis[T <: ImplDef](implDef: T): T = deriveImplDef(implDef) {
       case ExpandedIntoTemplate(impl) => impl.removeAttachment[MacroExpansionAttachment]
@@ -1924,13 +1908,33 @@ trait Typers extends Adaptations with Tags {
       if (txt eq context) namer.enterSym(tree)
       else newNamer(txt).enterSym(tree)
 
-    /** <!-- 2 --> Check that inner classes do not inherit from Annotation
-     */
-    def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
+    // TODO: I'm horrified by statefulness of template typechecking
+    def typedTemplate(templ: Template): Template = {
       val clazz = context.owner
       clazz.annotations.map(_.completeInfo)
-      if (templ.symbol == NoSymbol)
-        templ setSymbol clazz.newLocalDummy(templ.pos)
+      val templ1 = templateOf(clazz, orElse = templ) // TODO: why do we need orElse? how come a template hasn't been named at this point?
+      rememberTemplateAndContext(clazz, templ1, context.outer)
+      pretypecheckTemplate(clazz)
+      typecheckTemplateMembers(clazz)
+      templateOf(clazz)
+    }
+
+    /** The first step of template typechecking.
+     *  This method is followed up by `typecheckTemplateMembers`, which does member synthesis.
+     *
+     *  Performs symbol table initialization (e.g. setting up symbols for the template itself and for its selftype),
+     *  typechecks and validates parent types (I'm not writing the exact list of validations performed, because that list is going to eventually rot).
+     *
+     *  DOES NOT do anything related to the body of the template (except for the primary ctor synthesis, which is a hack anyway).
+     *  Here's the motivation. With the onset of c.introduceMember (codenamed as "macro annotations"), we need a way to inject members
+     *  into templates, which have already been typechecked. Therefore the old way of member synthesis no longer cuts it.
+     *  Instead of having a bunch of snippets injecting members before, in the middle and after typechecking, we need a
+     *  centralized routine, which is safe to be called multiple times. @see synthesizeAndTypecheckTemplate
+     */
+    def pretypecheckTemplate(clazz: Symbol): Unit = {
+      val templ = templateOf(clazz)
+      if (templ.symbol == NoSymbol) templ setSymbol clazz.newLocalDummy(templ.pos)
+
       val self1 = templ.self match {
         case vd @ ValDef(_, _, tpt, EmptyTree) =>
           val tpt1 = checkNoEscaping.privates(
@@ -1946,52 +1950,80 @@ trait Typers extends Adaptations with Tags {
       if (self1.name != nme.WILDCARD)
         context.scope enter self1.symbol
 
-      // the following is necessary for templates generated later
-      assert(clazz.info.decls != EmptyScope, clazz)
-      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
-      if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
+      val parents1 = newTyper(context.outer).typedParentTypes(templ)
+      if (!templ.isErrorTyped) // if typechecking parents has invalidated the template, don't validate it anymore
         validateParentClasses(clazz, parents1)
       if (clazz.isCase)
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
-
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
-        unit.error(clazz.pos, "inner classes cannot be classfile annotations")
-
+      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
+        if (!clazz.owner.isPackageClass)
+          unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+        else restrictionWarning(clazz.pos, unit,
+          """|subclassing Classfile does not
+             |make your annotation visible at runtime.  If that is what
+             |you want, you must write the annotation class in Java.""".stripMargin)
+      }
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
-        checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
+        checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType]) // TODO: from what I can see, this doesn't care about decls
+
+      val body = templ.body
+      val primaryCtor = treeInfo.firstConstructor(body)
+      val primaryCtor1 = primaryCtor match {
+        case DefDef(_, _, _, _, _, Block(earlyVals :+ global.pendingSuperCall, unit)) =>
+          val argss = superArgs(parents1.head) getOrElse Nil
+          val pos = wrappingPos(parents1.head.pos, argss.flatten)
+          val superCall = atPos(pos)(PrimarySuperCall(argss))
+          deriveDefDef(primaryCtor)(block => Block(earlyVals :+ superCall, unit) setPos pos) setPos pos
+        case _ => primaryCtor
+      }
+      val body1 = body mapConserve { case `primaryCtor` => primaryCtor1; case stat => stat }
+
+      val templ1 = treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe_*
+      rememberTemplate(clazz, templ1)
+    }
+
+    /** The second step of template typechecking (or, more correctly, all the steps except for the first one).
+     *  This method is called after `pretypecheckTemplate`, which does everything not related to template members.
+     *
+     *  There are two control flow paths which enter the method. The first one goes through `typedTemplate`, which does
+     *  the conventional whole-template typecheck. The second one starts in `c.introduceMember`, which injects new members
+     *  into the symbol table and then might need to patch the already typechecked template to include their defining trees.
+     *
+     *  Since `c.introduceMember` might be called multiple times by different macros, this method is designed to be idempotent.
+     *  You can call it repeatedly without the fear of entering symbols twice, synthesizing members multiple times or whatnot.
+     */
+    def typecheckTemplateMembers(clazz: Symbol): Unit = {
+      val templ = templateOf(clazz)
+      assert(templ.tpe != null, "this method can only be called on a pre-typechecked template")
+
+      // the following is necessary for templates that don't go through namer
+      assert(clazz.info.decls != EmptyScope, clazz)
+      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
 
       val body = {
-        val body =
-          if (isPastTyper || reporter.hasErrors) templ.body
-          else templ.body flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
-        val primaryCtor = treeInfo.firstConstructor(body)
-        val primaryCtor1 = primaryCtor match {
-          case DefDef(_, _, _, _, _, Block(earlyVals :+ global.pendingSuperCall, unit)) =>
-            val argss = superArgs(parents1.head) getOrElse Nil
-            val pos = wrappingPos(parents1.head.pos, argss.flatten)
-            val superCall = atPos(pos)(PrimarySuperCall(argss))
-            deriveDefDef(primaryCtor)(block => Block(earlyVals :+ superCall, unit) setPos pos) setPos pos
-          case _ => primaryCtor
+        if (isPastTyper || reporter.hasErrors) templ.body
+        else {
+          // TODO: migrate these syntheses to the templateOf thingie used by c.introduceMember
+          val body1 = templ.body flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
+          addSyntheticMethodsToCaseClasses(body1, clazz, context.outer)
         }
-        body mapConserve { case `primaryCtor` => primaryCtor1; case stat => stat }
       }
-
       val body1 = typedStats(body, templ.symbol)
 
       if (clazz.info.firstParent.typeSymbol == AnyValClass)
         validateDerivedValueClass(clazz, body1)
-
       if (clazz.isTrait) {
         for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
           unit.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.")
         }
       }
+      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
+        checkEphemeral(clazz, body1)
 
-      val templ1 = treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe_*
-      rememberTemplateAndContext(clazz, templ1, context)
-      templ1
+      val templ1 = deriveTemplate(templ)(_ => body1)
+      rememberTemplate(clazz, templ1)
     }
 
     /** Remove definition annotations from modifiers (they have been saved

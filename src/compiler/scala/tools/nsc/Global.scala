@@ -444,7 +444,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // phaseName = "patmat"
   object patmat extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
+    val runsAfter = List("synth")
     // patmat doesn't need to be right after typer, as long as we run before supperaccesors
     // (sbt does need to run right after typer, so don't conflict)
     val runsRightAfter = None
@@ -654,6 +654,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
+      analyzer.synthFactory   -> "finalization of template synthesis",
       patmat                  -> "translate match expressions",
       superAccessors          -> "add super accessors in traits and nested classes",
       extensionMethods        -> "add extension methods for inline classes",

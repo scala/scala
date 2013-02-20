@@ -8,8 +8,8 @@ trait TemplateSynthesis {
 
   import global._
 
-  private val templatesOf = new mutable.HashMap[Symbol, Template]()
-  private val contextsOf = new mutable.HashMap[Symbol, Context]()
+  private val templatesOf = perRunCaches.newMap[Symbol, Template]()
+  private val contextsOf = perRunCaches.newMap[Symbol, Context]()
 
   def templateOf(sym: Symbol, orElse: => Template = null): Template = templatesOf.get(sym) match {
     case Some(templ) => templ
