@@ -32,6 +32,11 @@ package macros
  *  If companions are introduced by two different calls, then they will be put into different virtual files, and `scalac`
  *  will show an error about companions being defined in different files. By the way, this also means that there's currently no way
  *  to define a companion for an existing class or module
+ *
+ *  @define INTRODUCE_MEMBER Can only target classes, traits and modules, which are being compiled during the same compilation run
+ *  (otherwise that would require bytecode rewriting working with arbitrary classes put on the classpath).
+ *  Ideally this method should work with all possible definitions, which one could put in classes, traits and modules, but this
+ *  is an early prototype, so stuff might fail // TODO: write up a doc
  */
 trait Synthetics {
   self: Context =>
@@ -40,25 +45,27 @@ trait Synthetics {
 
   /** Looks up a top-level definition tree with a given fully-qualified name
    *  (term name for modules, type name for classes). $TOPLEVEL_TREE.
-   *  If such a tree does not exist, returns `EmptyTree`.
+   *  If such a definition does not exist, returns `EmptyTree`.
    */
   def topLevelDef(name: Name): Tree
 
   /** Returns a reference to a top-level definition tree with a given fully-qualified name
-   *  (term name for modules, type name for classes). $TOPLEVEL_TREE.
-   *  If such a tree does not exist, returns `EmptyTree`.
+   *  (term name for modules, type name for classes), which carries a symbol referring to that definition. $TOPLEVEL_TREE.
+   *  If such a definition does not exist, returns `EmptyTree`.  // TODO: write a test which verifies the symbol
    */
   def topLevelRef(name: Name): Tree
 
   /** Adds a top-level definition to the compiler's symbol table. $INTRODUCE_TOP_LEVEL.
    *
-   *  Returns a fully-qualified reference to the introduced definition.
+   *  Returns a fully-qualified reference to the introduced definition,
+   *  which carries a symbol referring to that definition.
    */
   def introduceTopLevel[T: PackageSpec](packagePrototype: T, definition: ImplDef): RefTree
 
   /** Adds a list of top-level definitions to the compiler's symbol table. $INTRODUCE_TOP_LEVEL.
    *
-   *  Returns a list of fully-qualified references to the introduced definitions.
+   *  Returns a list of fully-qualified references to the introduced definitions,
+   *  each of which carries a symbol referring to the corresponding definition. // TODO: write a test which verifies the symbols
    */
   def introduceTopLevel[T: PackageSpec](packagePrototype: T, definitions: ImplDef*): List[RefTree]
 
@@ -103,4 +110,20 @@ trait Synthetics {
   protected def mkPackageDef(name: TermName, stats: List[Tree]): PackageDef
   protected def mkPackageDef(tree: RefTree, stats: List[Tree]): PackageDef
   protected def mkPackageDef(sym: Symbol, stats: List[Tree]): PackageDef
+
+  /** Adds a member to the compiler's symbol table. $INTRODUCE_MEMBER.
+   *
+   *  Returns a symbol referring the introduced definition.
+   */
+  def introduceMember(owner: Symbol, member: DefTree): Symbol
+
+  /** Adds a list of members to the compiler's symbol table. $INTRODUCE_MEMBER.
+   *
+   *  Returns a list of symbols referring the introduced definitions.
+   */
+  def introduceMembers(owner: Symbol, members: DefTree*): List[Symbol]
 }
+
+/** Indicates an error during one of the methods in [[scala.reflect.macros.Synthetics]].
+ */
+case class SynthesisException(val msg: String) extends Exception(msg)

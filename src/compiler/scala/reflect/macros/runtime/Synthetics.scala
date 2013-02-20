@@ -13,6 +13,7 @@ trait Synthetics {
   self: Context =>
 
   import global._
+  import analyzer._
   import mirror.wrapMissing
 
   // getClassIfDefined and getModuleIfDefined cannot be used here
@@ -62,5 +63,35 @@ trait Synthetics {
   protected def mkPackageDef(sym: Symbol, stats: List[Tree]) = {
     assert(sym hasFlag PACKAGE, s"expected a package or package class symbol, found: $sym")
     gen.mkPackageDef(sym.fullName.toString, stats)
+  }
+
+  def introduceMember(owner: Symbol, member: DefTree): Symbol = introduceMembers(owner, List(member): _*).head
+
+  // TODO: for now we support two cases
+  // 1) the defining tree hasn't yet been typechecked
+  // 2) the defining tree has been fully typechecked
+  // 3) what about middle ground? what if introduceMember is called from a macro which expands in a body of a defining's member?
+  // 4) what if the symbol hasn't been completed yet?
+  // 5) what if it's a mixture of 1 and 2?
+  // 6) what if owner has already been compiled
+  def introduceMembers(owner: Symbol, members: DefTree*): List[Symbol] = { // TODO: test how this works for the result of a template type macro
+    if (!currentRun.compiles(owner))
+      throw new SynthesisException(s"can only introduce members to symbols being currently compiled. $owner is not such a symbol")
+    if (phase.id > currentRun.typerPhase.id)
+      throw new SynthesisException(s"can only introduce members in typer. current phase is $phase")
+
+    val templ = templateOf(owner)
+    val templ1 = deriveTemplate(templ)(_ ++ members)
+
+    // step 1: enter members, so that their usages typecheck
+    val ownerContext = contextOf(owner)
+    val templContext = ownerContext.outer.make(templ1, owner, owner.info.decls) // TODO: can we trigger ImplDef completers without being haunted by cyclic ref errors?
+    newNamer(templContext).enterSyms(templ1.body)
+
+    // step 2: inject trees, so that their usages have backing bytecode
+    rememberTemplate(owner, templ1)
+    if (templ1.tpe != null) newTyper(templContext).typecheckTemplateMembers(owner)
+
+    members.toList map (_.symbol)
   }
 }
