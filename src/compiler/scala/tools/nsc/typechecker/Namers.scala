@@ -15,7 +15,7 @@ import symtab.Flags._
  *  @author Martin Odersky
  *  @version 1.0
  */
-trait Namers extends MethodSynthesis {
+trait Namers extends MethodSynthesis with TemplateSynthesis {
   self: Analyzer =>
 
   import global._
@@ -378,6 +378,7 @@ trait Namers extends MethodSynthesis {
         }
         else assignAndEnterSymbol(tree) setFlag inConstructorFlag
       }
+      rememberTemplateAndContext(clazz, tree.impl, context)
       clazz match {
         case csym: ClassSymbol if csym.isTopLevel => enterClassSymbol(tree, csym)
         case _                                    => clazz
@@ -439,6 +440,7 @@ trait Namers extends MethodSynthesis {
         m.moduleClass setFlag moduleClassFlags(moduleFlags)
         setPrivateWithin(tree, m.moduleClass)
       }
+      rememberTemplateAndContext(m, tree.impl, context)
       if (m.isTopLevel && !m.isPackage) {
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
@@ -936,6 +938,7 @@ trait Namers extends MethodSynthesis {
       expansions match {
         case templ1 :: _ =>
           linkExpandeeAndExpanded(templ, templ1)
+          rememberTemplate(context.owner, templ1)
           templateSig(templ1)
         case _ =>
           val parentTypes = parentTrees map (_.tpe) map (tpe => if (tpe.isError) AnyRefClass.tpe else tpe)

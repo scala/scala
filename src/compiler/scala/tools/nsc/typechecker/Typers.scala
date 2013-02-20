@@ -1678,7 +1678,9 @@ trait Typers extends Adaptations with Tags {
           if (treeInfo.hasUntypedPreSuperFields(templ.body))
             typedPrimaryConstrBody(templ)(EmptyTree)
 
-          supertpts mapConserve (tpt => checkNoEscaping.privates(context.owner, tpt))
+          val parents1 = supertpts mapConserve (tpt => checkNoEscaping.privates(context.owner, tpt))
+          rememberTemplate(context.owner, treeCopy.Template(templ, parents1, templ.self, templ.body))
+          parents1
         } catch {
           case ex: TypeError =>
             // fallback in case of cyclic errors
@@ -1973,7 +1975,9 @@ trait Typers extends Adaptations with Tags {
         }
       }
 
-      treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe_*
+      val templ1 = treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe_*
+      rememberTemplateAndContext(clazz, templ1, context)
+      templ1
     }
 
     /** Remove definition annotations from modifiers (they have been saved
