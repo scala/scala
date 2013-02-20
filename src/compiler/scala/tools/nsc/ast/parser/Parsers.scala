@@ -1703,7 +1703,7 @@ self =>
   operatorModifiers       = . ("," + naryOperatorDesignator) . naryOperatorDesignator
  
   scriptExpression_8      = scriptExpression_7 .. if newLineSignificant newLine else (-)
-  scriptExpression_7      = scriptExpression_6 .. (+ ";"  "-;")
+  scriptExpression_7      = scriptExpression_6 .. (+ ";"  ";-;" ";%;")
   scriptExpression_6      = scriptExpression_5 .. (+ "||"  "|"
                                                      "|+"  "|;"  "|/"
                                                      "||+" "||;" "||/"
@@ -1852,8 +1852,8 @@ self =>
                                 valueDeclaration 
                               privateDeclaration 
  
-  valueDeclaration        = "val" identifier; . ":" typer  ; "=" simpleValueExpression
-  variableDeclaration     = "var" identifier;   ":" typer %; "=" simpleValueExpression
+  valueDeclaration        = "val" identifier; . ":" typer ;   "=" simpleValueExpression
+  variableDeclaration     = "var" identifier (  ":" typer ;%; "=" simpleValueExpression)
    privateDeclaration      = "private" identifiers
 
   unary                   = ..(unaryPrefixOperator + directive); scriptCommaExpression;
@@ -2011,7 +2011,7 @@ self =>
                             whileTerm
                             forTerm
                             tryTerm
-                            ifTerm
+                            ifTerm     // ??? TBD: lift this to between scriptExpression_7 and scriptExpression_6
                             specialTerm 
                             "(" scriptExpression ")"
  
@@ -2106,7 +2106,7 @@ self =>
       case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER => 
         val p = path(thisOK = true, typeOK = false); // scriptSimpleExprRest(t, canApply = canApply)
 	      in.token match {
-	        case LPAREN => return atPos(p.pos.startOrPoint, in.offset) {ScriptApply(p, scriptArgumentExprs())}
+	        case LPAREN if in.offset==in.lastOffset => return atPos(p.pos.startOrPoint, in.offset) {ScriptApply(p, scriptArgumentExprs())} // no space acceptable before "("
 	        case IDENTIFIER if (isQMark || isQMark2)  => val isOutputParam = isQMark
 	             var paramConstraint: Tree = null
                  in.nextToken
