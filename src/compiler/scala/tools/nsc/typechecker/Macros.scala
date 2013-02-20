@@ -464,8 +464,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
         // expand varargs (nb! varargs can apply to any parameter section, not necessarily to the last one)
         val trees = map3(argss, paramss, signature)((args, defParams, implParams) => {
           val isVarargs = isVarArgsList(defParams)
-          if (defParams.length < args.length && !isVarargs) MacroTooManyArgumentsError(expandee)
-          if (defParams.length > args.length) MacroTooFewArgumentsError(expandee)
+          if (isVarargs) {
+            if (defParams.length > args.length + 1) MacroTooFewArgumentsError(expandee)
+          } else {
+            if (defParams.length < args.length) MacroTooManyArgumentsError(expandee)
+            if (defParams.length > args.length) MacroTooFewArgumentsError(expandee)
+          }
 
           val wrappedArgs = mapWithIndex(args)((arg, j) => {
             val fingerprint = implParams(min(j, implParams.length - 1))
