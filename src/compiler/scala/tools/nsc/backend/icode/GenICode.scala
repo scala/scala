@@ -275,6 +275,11 @@ abstract class GenICode extends SubComponent  {
         ctx1 = genLoad(args.head, ctx1, INT)
         generatedType = elem
         ctx1.bb.emit(LOAD_ARRAY_ITEM(elementType), tree.pos)
+        // it's tempting to just drop array loads of type Null instead
+        // of adapting them but array accesses can cause 
+        // ArrayIndexOutOfBounds so we can't. Besides, Array[Null] 
+        // probably isn't common enough to figure out an optimization
+        adaptNullRef(generatedType, expectedType, ctx1, tree.pos)
       }
       else if (scalaPrimitives.isArraySet(code)) {
         debugassert(args.length == 2,
@@ -790,7 +795,9 @@ abstract class GenICode extends SubComponent  {
               }
               generatedType =
                 if (sym.isClassConstructor) UNIT
-                else toTypeKind(sym.info.resultType);
+                else toTypeKind(sym.info.resultType)
+              // deal with methods that return Null
+              adaptNullRef(generatedType, expectedType, ctx1, tree.pos)
               ctx1
             }
           }
@@ -842,14 +849,15 @@ abstract class GenICode extends SubComponent  {
 
             if (sym.isModule) {
               genLoadModule(genLoadQualUnlessElidable, tree)
-            }
-            else if (sym.isStaticMember) {
-              val ctx1 = genLoadQualUnlessElidable
-              ctx1.bb.emit(LOAD_FIELD(sym, true) setHostClass hostClass, tree.pos)
-              ctx1
             } else {
-              val ctx1 = genLoadQualifier(tree, ctx)
-              ctx1.bb.emit(LOAD_FIELD(sym, false) setHostClass hostClass, tree.pos)
+              val isStatic = sym.isStaticMember
+              val ctx1 = if (isStatic) genLoadQualUnlessElidable
+                         else          genLoadQualifier(tree, ctx)
+              ctx1.bb.emit(LOAD_FIELD(sym, isStatic) setHostClass hostClass, tree.pos)
+              // it's tempting to drop field accesses of type Null instead of adapting them,
+              // but field access can cause static class init so we can't. Besides, fields
+              // of type Null probably aren't common enough to figure out an optimization
+              adaptNullRef(generatedType, expectedType, ctx1, tree.pos)
               ctx1
             }
           }
@@ -997,13 +1005,40 @@ abstract class GenICode extends SubComponent  {
 
       resCtx
     }
+    
+    /**
+     * If we have a method call, field load, or array element load of type Null then
+     * we need to convince the JVM that we have a null value because in Scala
+     * land Null is a subtype of all ref types, but in JVM land scala.runtime.Null$
+     * is not. Note we don't have to adapt loads of locals because the JVM type
+     * system for locals does have a null type which it tracks internally. As
+     * long as we adapt these other things, the JVM will know that a Scala local of
+     * type Null is holding a null.
+     */
+    private def adaptNullRef(from: TypeKind, to: TypeKind, ctx: Context, pos: Position) {
+      log(s"GenICode#adaptNullRef($from, $to, $ctx, $pos)")
+      
+      // Don't need to adapt null to unit because we'll just drop it anyway. Don't
+      // need to adapt to Object or AnyRef because the JVM is happy with 
+      // upcasting Null to them.
+      // We do have to adapt from NullReference to NullReference because we could be storing
+      // this value into a local of type Null and we want the JVM to see that it's
+      // a null value so we don't have to also adapt local loads.
+      if (from == NullReference && to != UNIT && to != ObjectReference && to != AnyRefReference) {
+        assert(to.isReferenceType, "Attempt to adapt a null to a non reference type")
+        // adapt by dropping what we've got and pushing a null which
+        // will convince the JVM we really do have null
+        ctx.bb.emit(DROP(from), pos)
+        ctx.bb.emit(CONSTANT(Constant(null)), pos)
+      }
+    }
 
     private def adapt(from: TypeKind, to: TypeKind, ctx: Context, pos: Position) {
       // An awful lot of bugs explode here - let's leave ourselves more clues.
       // A typical example is an overloaded type assigned after typer.
       log(s"GenICode#adapt($from, $to, $ctx, $pos)")
 
-      val conforms = (from <:< to) || (from == NullReference && to == NothingReference)
+      val conforms = (from <:< to) || (from == NullReference && to == NothingReference) // TODO why would we have null where we expect nothing?
       def coerce(from: TypeKind, to: TypeKind) = ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos)
       def checkAssertions() {
         def msg = s"Can't convert from $from to $to in unit ${unit.source} at $pos"
@@ -1011,8 +1046,15 @@ abstract class GenICode extends SubComponent  {
         assert(!from.isReferenceType && !to.isReferenceType, msg)
       }
       if (conforms) from match {
+        // The JVM doesn't have a Nothing equivalent, so it doesn't know that a method of type Nothing can't actually return. So for instance, with
+        //    def f: String = ???
+        // we need
+        //   0:	getstatic	#25; //Field scala/Predef$.MODULE$:Lscala/Predef$;
+        //   3:	invokevirtual	#29; //Method scala/Predef$.$qmark$qmark$qmark:()Lscala/runtime/Nothing$;
+        //   6:	athrow
+        // So this case tacks on the ahtrow which makes the JVM happy because class Nothing is declared as a subclass of Throwable
         case NothingReference                                          => ctx.bb.emit(THROW(ThrowableClass)) ; ctx.bb.enterIgnoreMode
-        case NullReference                                             => ctx.bb.emit(Seq(DROP(from), CONSTANT(Constant(null))))
+        // TODO why do we have this case? It's saying if we have a throwable and a non-throwable is expected then we should emit a cast? Why would we get here?
         case ThrowableReference if !(ThrowableClass.tpe <:< to.toType) => ctx.bb.emit(CHECK_CAST(to)) // downcast throwables
         case _                                                         =>
           // widen subrange types
