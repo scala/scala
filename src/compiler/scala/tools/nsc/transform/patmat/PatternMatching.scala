@@ -17,8 +17,8 @@ import scala.reflect.internal.util.Position
 
 /** Translate pattern matching.
   *
-  * Either into optimized if/then/else's,
-  * or virtualized as method calls (these methods form a zero-plus monad), similar in spirit to how for-comprehensions are compiled.
+  * Either into optimized if/then/else's, or virtualized as method calls (these methods form a zero-plus monad),
+  * similar in spirit to how for-comprehensions are compiled.
   *
   * For each case, express all patterns as extractor calls, guards as 0-ary extractors, and sequence them using `flatMap`
   * (lifting the body of the case into the monad using `one`).
@@ -37,12 +37,12 @@ import scala.reflect.internal.util.Position
 trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                       with Debugging
                       with Interface
-                      with Translation
-                      with TreeMaking
-                      with CodeGen
+                      with MatchTranslation
+                      with MatchTreeMaking
+                      with MatchCodeGen
                       with ScalaLogic
-                      with Analysis
-                      with Optimization {
+                      with MatchAnalysis
+                      with MatchOptimization {
   import global._
 
   val phaseName: String = "patmat"
@@ -70,13 +70,16 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       case _ => super.transform(tree)
     }
 
-    def translator: MatchTranslation with CodegenCore = {
+    // TODO: only instantiate new match translator when localTyper has changed
+    // override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A
+    // as this is the only time TypingTransformer changes it
+    def translator: MatchTranslator with CodegenCore = {
       new OptimizingMatchTranslator(localTyper)
     }
   }
 
-  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslation with TreeMakers with PureCodegen
-  class OptimizingMatchTranslator(val typer: analyzer.Typer)                    extends MatchTranslation with TreeMakers with MatchOptimizations
+  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with TreeMakers with PureCodegen
+  class OptimizingMatchTranslator(val typer: analyzer.Typer)                    extends MatchTranslator with TreeMakers with MatchOptimizations
 }
 
 trait HasGlobal {

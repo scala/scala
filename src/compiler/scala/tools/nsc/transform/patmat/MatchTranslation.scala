@@ -10,7 +10,9 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 
-trait Translation { self: PatternMatching  =>
+/** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
+ */
+trait MatchTranslation { self: PatternMatching  =>
   import PatternMatchingStats._
   import global.{phase, currentRun, Symbol,
     Apply, Bind, CaseDef, ClassInfoType, Ident, Literal, Match,
@@ -22,7 +24,7 @@ trait Translation { self: PatternMatching  =>
     repeatedToSeq, isRepeatedParamType, getProductArgs}
   import global.analyzer.{ErrorUtils, formalTypes}
 
-  trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
+  trait MatchTranslator extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
     import typer.context
 
     // Why is it so difficult to say "here's a name and a context, give me any
@@ -669,5 +671,4 @@ trait Translation { self: PatternMatching  =>
       }
     }
   }
-
 }

@@ -125,7 +125,7 @@ trait TreeAndTypeAnalysis extends Debugging {
   }
 }
 
-trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
+trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, CaseDef, atPos,
     Select, Block, ThisType, SingleType, NoPrefix, NoType, definitions, needsOuterTest,

@@ -12,7 +12,12 @@ import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.NoPosition
 
-trait CodeGen { self: PatternMatching =>
+/** Factory methods used by TreeMakers to make the actual trees.
+ *
+ * We have two modes in which to emit trees: optimized (the default)
+ * and pure (aka "virtualized": match is parametric in its monad).
+ */
+trait MatchCodeGen { self: PatternMatching =>
   import PatternMatchingStats._
   import global.{nme, treeInfo, definitions, gen, Tree, Type, Symbol, NoSymbol,
     appliedType, NoType, MethodType, newTermName, Name,

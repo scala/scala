@@ -13,7 +13,13 @@ import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.NoPosition
 
-trait Optimization { self: PatternMatching =>
+/** Optimize and analyze matches based on their TreeMaker-representation.
+ *
+ * The patmat translation doesn't rely on this, so it could be disabled in principle.
+ *
+ * TODO: split out match analysis
+ */
+trait MatchOptimization { self: PatternMatching =>
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
     ConstantType, Literal, Constant, gen, EmptyTree,

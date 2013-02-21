@@ -6,10 +6,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-//import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-//import transform._
-//import typechecker._
-//import symtab._
 import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.language.postfixOps
 import scala.collection.mutable
@@ -17,7 +13,12 @@ import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.NoPosition
 
-trait TreeMaking { self: PatternMatching =>
+/** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
+ *
+ * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions,
+ * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
+ */
+trait MatchTreeMaking { self: PatternMatching =>
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, CaseDef, atPos, settings,
     Select, Block, ThisType, SingleType, NoPrefix, NoType, needsOuterTest,
