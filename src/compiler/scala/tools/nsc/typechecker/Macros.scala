@@ -331,7 +331,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       def param(tree: Tree): Symbol = (
         cache.getOrElseUpdate(tree.symbol, {
           val sym = tree.symbol
-          makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe), sym getFlag SYNTHETIC)
+          makeParam(sym.name, sym.pos, implType(sym.isType, sym.tpe), sym.flags)
         })
       )
     }

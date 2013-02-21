@@ -7,8 +7,6 @@ import scala.tools.nsc.util._
 import scala.tools.nsc.io._
 
 object Test extends InteractiveTest {
-  override val settings: doc.Settings = docSettings
-
   val tags = Seq(
     "@example  `\"abb\".permutations = Iterator(abb, bab, bba)`",
     "@version 1.0, 09/07/2012",
@@ -29,22 +27,22 @@ object Test extends InteractiveTest {
        |class User(c: %sCommented)""".stripMargin.format(comment, tags take nTags mkString "\n", caret)
 
   override lazy val compiler = {
-    new {
-      override val settings = {
-        prepareSettings(Test.this.settings)
-        Test.this.settings
-      }
-    } with Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase {
+    prepareSettings(settings)
+    new Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase {
       outer =>
-
       val global: this.type = this
-      def chooseLink(links: List[LinkTo]): LinkTo = links.head
-      def internalLink(sym: Symbol, site: Symbol) = None
-      def toString(link: LinkTo) = link.toString
 
       override lazy val analyzer = new {
         val global: outer.type = outer
       } with doc.ScaladocAnalyzer
+
+      def chooseLink(links: List[LinkTo]): LinkTo = links.head
+      def internalLink(sym: Symbol, site: Symbol) = None
+      def toString(link: LinkTo) = link.toString
+      def warnNoLink = false
+      def findExternalLink(sym: Symbol, name: String) = None
+
+      override def forScaladoc = true
 
       def getComment(sym: Symbol, source: SourceFile) = {
         val docResponse = new Response[(String, String, Position)]
