@@ -32,6 +32,7 @@ classes (Unicode general category given in parentheses):
    \\u0020-\\u007F which are in none of the sets above, mathematical symbols(Sm) 
    and other symbols(So).
 
+\pagebreak[1]
 
 Identifiers
 -----------
