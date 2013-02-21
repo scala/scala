@@ -232,10 +232,10 @@ implement other traits).
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 case class Tuple$n$[+T1, … , +$T_n$](_1: T1, … , _n: $T_n$) 
-extends Product_n[T1, … , $T_n$] {}
+extends Product_n[T1, … , $T_n$]
 
 trait Product_n[+T1, … , +$T_n$] {
-  override def arity = $n$
+  override def productArity = $n$
   def _1: T1
   …
   def _n: $T_n$

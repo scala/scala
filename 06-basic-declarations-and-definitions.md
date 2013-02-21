@@ -83,7 +83,7 @@ value definition `val $p$ = $e$` is expanded as follows:
 1. If the pattern $p$ has bound variables $x_1 , \ldots , x_n$, where $n > 1$:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
-val $\$ x$ = $e$ match {case $p$ => {$x_1 , \ldots , x_n$}}
+val $\$ x$ = $e$ match {case $p$ => ($x_1 , \ldots , x_n$)}
 val $x_1$ = $\$ x$._1
 $\ldots$
 val $x_n$ = $\$ x$._n  .
@@ -117,7 +117,7 @@ $e$ match { case $p$ => ()}
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
     val x = f() match { case Some(x) => x }
 
-    val x$\$$ = mylist match { case x :: xs => {x, xs} }
+    val x$\$$ = mylist match { case x :: xs => (x, xs) }
     val x = x$\$$._1 
     val xs = x$\$$._2 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -184,7 +184,7 @@ type $T$ as follows:
 `0.0f`      if $T$ is `Float`
 `0.0d`      if $T$ is `Double`
 `false`     if $T$ is `Boolean`
-`{}`        if $T$ is `Unit`
+`()`        if $T$ is `Unit`
 `null`      for all other types $T$
 ----------  --------------------------------------------------
 
@@ -444,7 +444,7 @@ changes at the following constructs.
 <!-- TODO: handle type aliases --> 
 
 References to the type parameters in 
-[object-private values, variables, or methods](#modifiers) of the class are not 
+[object-private or object-protected values, variables, or methods](#modifiers) of the class are not 
 checked for their variance position. In these members the type parameter may 
 appear anywhere without restricting its legal variance annotations.
 
@@ -708,10 +708,10 @@ FunDef   ::=  FunSig [nl] ‘{’ Block ‘}’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Special syntax exists for procedures, i.e.\ functions that return the
-\verb@Unit@ value \verb@{}@. 
+`Unit` value `()`. 
 A procedure declaration is a function declaration where the result type
 is omitted. The result type is then implicitly completed to the
-\verb@Unit@ type. E.g., `def $f$($\mathit{ps}$)` is equivalent to
+`Unit` type. E.g., `def $f$($\mathit{ps}$)` is equivalent to
 `def $f$($\mathit{ps}$): Unit`.
 
 A procedure definition is a function definition where the result type

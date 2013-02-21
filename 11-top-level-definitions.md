@@ -155,8 +155,8 @@ passed to the `main` method as a parameter of type
 `Array[String]`.
 
 The `main` method of a program can be directly defined in the
-object, or it can be inherited. The scala library defines a class
-`scala.Application` that defines an empty inherited `main` method.
+object, or it can be inherited. The scala library defines a special class
+`scala.App` whose body acts as a `main` method.
 An objects $m$ inheriting from this class is thus a program, 
 which executes the initializaton code of the object $m$.
 
@@ -165,12 +165,13 @@ which executes the initializaton code of the object $m$.
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
     package test
-    object HelloWord {
-      def main(args: Array[String]) { println("hello world") }
+    object HelloWorld {
+      def main(args: Array[String]) { println("Hello World") }
     }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     This program can be started by the command
+
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     scala test.HelloWorld
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -184,12 +185,12 @@ which executes the initializaton code of the object $m$.
     would work as well. 
 
     `HelloWorld` can also be defined without a `main` method 
-    by inheriting from `Application` instead:
+    by inheriting from `App` instead:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
     package test 
-    object HelloWord extends Application {
-      println("hello world")
+    object HelloWorld extends App {
+      println("Hello World")
     }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

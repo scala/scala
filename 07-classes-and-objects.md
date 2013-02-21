@@ -524,7 +524,7 @@ the validity and meaning of a modifier are as follows.
   from templates inside $C$.
 
   An different form of qualification is `private[this]`. A member
-  $M$ marked with this modifier can be accessed only from within
+  $M$ marked with this modifier is called {\em object-protected}; it can be accessed only from within
   the object in which it is defined. That is, a selection $p.M$ is only
   legal if the prefix is `this` or `$O$.this`, for some
   class $O$ enclosing the reference. In addition, the restrictions for
