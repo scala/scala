@@ -4,9 +4,10 @@ Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   Type              ::=  FunctionArgTypes ‘=>’ Type
                       |  InfixType [ExistentialClause]
-  FunctionArgTypes  ::= InfixType
-                      | ‘(’ [ ParamType {‘,’ ParamType } ] ‘)’
-  ExistentialClause ::=  ‘forSome’ ‘{’ ExistentialDcl {semi ExistentialDcl} ‘}’
+  FunctionArgTypes  ::=  InfixType
+                      |  ‘(’ [ ParamType {‘,’ ParamType } ] ‘)’
+  ExistentialClause ::=  ‘forSome’ ‘{’ ExistentialDcl 
+                             {semi ExistentialDcl} ‘}’
   ExistentialDcl    ::=  ‘type’ TypeDcl 
                       |  ‘val’ ValDcl
   InfixType         ::=  CompoundType {id [nl] CompoundType}
