@@ -181,25 +181,24 @@ Multiple newline tokens are accepted in the following places (note
 that a semicolon in place of the newline would be illegal in every one
 of these cases):
 
-- between the condition of an 
-  conditional expression ([here](#conditional-expressions)) 
-  or while loop ([here](#while-loop-expressions)) and the next
+- between the condition of a 
+  [conditional expression](#conditional-expressions)
+  or [while loop](#while-loop-expressions) and the next
   following expression,
 - between the enumerators of a 
-  for-comprehension ([here](#for-comprehensions-and-for-loops))
+  [for-comprehension](#for-comprehensions-and-for-loops)
   and the next following expression, and
-- after the initial `type`{.scala} keyword in a type definition or
-  declaration ([here](#type-declarations-and-type-aliases)).
+- after the initial `type`{.scala} keyword in a 
+  [type definition or declaration](#type-declarations-and-type-aliases).
 
 A single new line token is accepted
 
 - in front of an opening brace ‘{’, if that brace is a legal
   continuation of the current statement or expression,
-- after an infix operator, if the first token on the next line can
-  start an expression ([here](#prefix-infix-and-postfix-operations)),
-- in front of a parameter clause 
-  ([here](#function-declarations-and-definitions)), and
-- after an annotation ([here](#user-defined-annotations)).
+- after an [infix operator](#prefix-infix-and-postfix-operations), 
+  if the first token on the next line can start an expression,
+- in front of a [parameter clause](#function-declarations-and-definitions), and
+- after an [annotation](#user-defined-annotations).
 
 (@) The following code contains four well-formed statements, each
     on two lines. The newline tokens between the two lines are not
@@ -319,7 +318,8 @@ Literal  ::=  [‘-’] integerLiteral
 ### Integer Literals
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
-integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral) [‘L’ | ‘l’]
+integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral) 
+                       [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
 hexNumeral      ::=  ‘0’ ‘x’ hexDigit {hexDigit}
 octalNumeral    ::=  ‘0’ octalDigit {octalDigit}
