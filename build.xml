@@ -22,7 +22,7 @@ END-USER TARGETS
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
-  <target name="test" depends="test.done, osgi.test, bc.run"
+  <target name="test" depends="test.done"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
 
   <target name="test-opt"
@@ -92,6 +92,7 @@ END-USER TARGETS
     <antcall target="starr.done"/>
     <antcall target="locker.clean"/>
     <antcall target="test.done"/>
+
   </target>
 
   <target name="replacestarr-opt"
@@ -2643,7 +2644,7 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt"/>
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, bc.run, osgi.test, test.stability, test.sbt"/>
 
 
 <!-- ===========================================================================
