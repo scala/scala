@@ -772,7 +772,10 @@ abstract class UnCurry extends InfoTransform
               case None    => newRhs
             }
           )
-          addJavaVarargsForwarders(dd, flatdd)
+          // SI-6900 We need to keep our symbols of the parameters in the tree
+          //         in line with those in the info of the DefDef, otherwise we'll
+          //         run into problems in TailCalls.
+          addJavaVarargsForwarders(dd, substituteInfoParamsIntoDefDef(flatdd))
 
         case tree: Try =>
           postTransformTry(tree)
