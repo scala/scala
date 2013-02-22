@@ -3228,45 +3228,40 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           }
 
           def rephraseGotos(detour: Map[BasicBlock, BasicBlock]) {
-            for(Pair(oldTarget, newTarget) <- detour.iterator) {
-              if(m.startBlock == oldTarget) {
-                m.code.startBlock = newTarget
-              }
-              for(eh <- m.exh; if eh.startBlock == oldTarget) {
-                eh.setStartBlock(newTarget)
-              }
-              for(b <- m.blocks; if !detour.isDefinedAt(b)) {
-                val idxLast = (b.size - 1)
-                b.lastInstruction match {
-                  case JUMP(whereto) =>
-                    if (whereto == oldTarget) {
-                      b.replaceInstruction(idxLast, JUMP(newTarget))
-                    }
-                  case CJUMP(succ, fail, cond, kind) =>
-                    if ((succ == oldTarget) || (fail == oldTarget)) {
-                      b.replaceInstruction(idxLast, CJUMP(detour.getOrElse(succ, succ),
-                                                          detour.getOrElse(fail, fail),
-                                                          cond, kind))
-                    }
-                  case CZJUMP(succ, fail, cond, kind) =>
-                    if ((succ == oldTarget) || (fail == oldTarget)) {
-                      b.replaceInstruction(idxLast, CZJUMP(detour.getOrElse(succ, succ),
-                                                           detour.getOrElse(fail, fail),
-                                                           cond, kind))
-                    }
-                  case SWITCH(tags, labels) =>
-                    if(labels exists (detour.isDefinedAt(_))) {
-                      val newLabels = (labels map { lab => detour.getOrElse(lab, lab) })
-                      b.replaceInstruction(idxLast, SWITCH(tags, newLabels))
-                    }
-                  case _ => ()
+            def lookup(b: BasicBlock) = detour.getOrElse(b, b)
+            
+            m.code.startBlock = lookup(m.code.startBlock)
+              
+            for(eh <- m.exh)
+              eh.setStartBlock(lookup(eh.startBlock))
+            
+            for (b <- m.blocks) {
+              def replaceLastInstruction(i: Instruction) = {
+                if (b.lastInstruction != i) {
+	              val idxLast = b.size - 1
+	              debuglog(s"In block $b, replacing last instruction ${b.lastInstruction} with ${i}")
+	              b.replaceInstruction(idxLast, i)
                 }
+              }
+              
+              b.lastInstruction match {
+                case JUMP(whereto) =>
+                  replaceLastInstruction(JUMP(lookup(whereto)))
+                case CJUMP(succ, fail, cond, kind) =>
+                  replaceLastInstruction(CJUMP(lookup(succ), lookup(fail), cond, kind))
+                case CZJUMP(succ, fail, cond, kind)  =>             
+                  replaceLastInstruction(CZJUMP(lookup(succ), lookup(fail), cond, kind))
+                case SWITCH(tags, labels) =>
+                  val newLabels = (labels map lookup)
+                  replaceLastInstruction(SWITCH(tags, newLabels))
+                case _ => ()                
               }
             }
           }
 
           /* remove from all containers that may contain a reference to */
           def elide(redu: BasicBlock) {
+            debuglog(s"Eliding jump only block $redu because it can be jumped around.")
             assert(m.startBlock != redu, "startBlock should have been re-wired by now")
             m.code.removeBlock(redu)
           }
