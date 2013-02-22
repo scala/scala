@@ -16,6 +16,13 @@ header .date {
 	color: #111;
 }
 
+p {
+	-moz-font-feature-settings:    "onum";
+	-ms-font-feature-settings:     "onum";
+	-webkit-font-feature-settings: "onum";
+	font-feature-settings:         "onum";
+}
+
 pre {
 	margin-left: 1em;
 	margin-right: 1em;
