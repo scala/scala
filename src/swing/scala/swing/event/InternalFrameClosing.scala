@@ -1,6 +1,6 @@
 package scala.swing
 
-import moreswing.swing.InternalFrame
+import scala.swing.InternalFrame
 
 /** Internal frame is in the process of being closed.
  *

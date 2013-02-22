@@ -1,6 +1,6 @@
 package scala.swing
 
-import moreswing.swing.InternalFrame
+import scala.swing.InternalFrame
 
 import scala.swing.event.UIEvent
 
