@@ -23,6 +23,7 @@ import plugins.Plugins
 import ast._
 import ast.parser._
 import typechecker._
+import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
