@@ -74,7 +74,7 @@ trait Macros { self: Quasiquotes =>
       new ApplyReifier(universe, placeholders)
 
     def extract = c.macroApplication match {
-      case q"$universe.QuasiQuote($stringContext.apply(..$parts0)).${_}.apply(..$args)" =>
+      case q"$universe.Quasiquote($stringContext.apply(..$parts0)).${_}.apply(..$args)" =>
         val parts = parts0.map {
           case Literal(Constant(s: String)) => s
           case part => c.abort(part.pos, "Quasiquotes can only be used with constant string arguments.")
@@ -83,7 +83,7 @@ trait Macros { self: Quasiquotes =>
           c.abort(c.enclosingPosition, "Imbalanced amount of arguments.")
         (universe, args, parts)
       case _ =>
-        c.abort(c.macroApplication.pos, "Couldn't parse call prefix tree ${c.macroApplication}.")
+        c.abort(c.macroApplication.pos, s"Couldn't parse call prefix tree ${c.macroApplication}.")
     }
 
     def wrap(universe: Tree, placeholders: Placeholders, reified: Tree): Tree =
@@ -99,7 +99,7 @@ trait Macros { self: Quasiquotes =>
       new UnapplyReifier(universe, placeholders)
 
     def extract = c.macroApplication match {
-      case q"$universe.QuasiQuote($stringContext.apply(..$parts0)).${_}.unapply(${_})" =>
+      case q"$universe.Quasiquote($stringContext.apply(..$parts0)).${_}.unapply(${_})" =>
         val parts = parts0.map{
           case Literal(Constant(s: String)) => s
           case part => c.abort(part.pos, "Quasiquotes can only be used with constant string arguments.")
@@ -110,7 +110,7 @@ trait Macros { self: Quasiquotes =>
         val args = List.fill(parts.length - 1)(EmptyTree)
         (universe, args, parts)
       case _ =>
-        c.abort(c.macroApplication.pos, "Couldn't parse call prefix tree ${c.macroApplication}.")
+        c.abort(c.macroApplication.pos, s"Couldn't parse call prefix tree ${c.macroApplication}.")
     }
 
     def wrap(universe: Tree, placeholders: Placeholders, reified: Tree) = {
