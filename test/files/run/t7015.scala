@@ -24,7 +24,7 @@ object Test {
     println(s"method that takes any: ${s(f)}")
   }
 
-  def f = null
+  def f: Null = null
 
   def g(x: String) = x
 
