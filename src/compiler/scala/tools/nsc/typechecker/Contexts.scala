@@ -573,8 +573,7 @@ trait Contexts { self: Analyzer =>
              (  superAccess
              || pre.isInstanceOf[ThisType]
              || phase.erasedTypes
-             || isProtectedAccessOK(sym)
-             || (sym.allOverriddenSymbols exists isProtectedAccessOK)
+             || (sym.overrideChain exists isProtectedAccessOK)
                 // that last condition makes protected access via self types work.
              )
         )

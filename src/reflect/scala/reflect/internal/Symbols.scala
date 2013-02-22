@@ -853,12 +853,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this a term symbol only defined in a refinement (so that it needs
      *  to be accessed by reflection)?
      */
-    def isOnlyRefinementMember: Boolean =
+    def isOnlyRefinementMember: Boolean = (
        isTerm && // type members are not affected
        owner.isRefinementClass && // owner must be a refinement class
        (owner.info decl name) == this && // symbol must be explicitly declared in the refinement (not synthesized from glb)
-       allOverriddenSymbols.isEmpty && // symbol must not override a symbol in a base class
+       !isOverridingSymbol && // symbol must not override a symbol in a base class
        !isConstant // symbol must not be a constant. Question: Can we exclude @inline methods as well?
+    )
 
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
@@ -959,14 +960,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
     def originalOwnerChain: List[Symbol] = this :: originalOwner.getOrElse(this, rawowner).originalOwnerChain
-
-    // All the symbols overridden by this symbol and this symbol at the head,
-    // or Nil if this is NoSymbol.
-    def overrideChain = (
-      if (this eq NoSymbol) Nil
-      else if (!owner.isClass) this :: Nil
-      else this :: allOverriddenSymbols
-    )
 
     // Non-classes skip self and return rest of owner chain; overridden in ClassSymbol.
     def enclClassChain: List[Symbol] = owner.enclClassChain
@@ -2070,81 +2063,111 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  @param ofclazz   The class containing the symbol's definition
      *  @param site      The base type from which member types are computed
      */
-    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol = {
-      //OPT cut down on #closures by special casing non-overloaded case
-      // was: ofclazz.info.nonPrivateDecl(name) filter (sym =>
-      //        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
-      val result = ofclazz.info.nonPrivateDecl(name)
-      def qualifies(sym: Symbol) = !sym.isTerm || (site.memberType(this) matches site.memberType(sym))
-      if ((result eq NoSymbol) || !result.isOverloaded && qualifies(result)) result
-      else result filter qualifies
-    }
+    final def matchingSymbol(ofclazz: Symbol, site: Type): Symbol =
+      matchingSymbolInternal(site, ofclazz.info nonPrivateDecl name)
 
     /** The non-private member of `site` whose type and name match the type of this symbol. */
     final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
-      site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
-        !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
+      matchingSymbolInternal(site, site.nonPrivateMemberAdmitting(name, admit))
 
-    /** The symbol, in class `ofclazz`, that is overridden by this symbol.
+    private def matchingSymbolInternal(site: Type, candidate: Symbol): Symbol = {
+      def qualifies(sym: Symbol) = !sym.isTerm || ((site memberType this) matches (site memberType sym))
+      //OPT cut down on #closures by special casing non-overloaded case
+      if (candidate.isOverloaded) candidate filter qualifies
+      else if (qualifies(candidate)) candidate
+      else NoSymbol
+    }
+
+    /** The symbol, in class `baseClass`, that is overridden by this symbol.
      *
-     *  @param ofclazz is a base class of this symbol's owner.
+     *  @param baseClass is a base class of this symbol's owner.
      */
-    final def overriddenSymbol(ofclazz: Symbol): Symbol =
-      if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, owner.thisType)
+    final def overriddenSymbol(baseClass: Symbol): Symbol = (
+      // concrete always overrides abstract, so don't let an abstract definition
+      // claim to be overriding an inherited concrete one.
+      matchingInheritedSymbolIn(baseClass) filter (res => res.isDeferred || !this.isDeferred)
+    )
+
+    private def matchingInheritedSymbolIn(baseClass: Symbol): Symbol =
+      if (canMatchInheritedSymbols) matchingSymbol(baseClass, owner.thisType) else NoSymbol
 
     /** The symbol overriding this symbol in given subclass `ofclazz`.
      *
      *  @param ofclazz is a subclass of this symbol's owner
      */
-    final def overridingSymbol(ofclazz: Symbol): Symbol =
-      if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
-
-    /** Returns all symbols overriden by this symbol. */
-    final def allOverriddenSymbols: List[Symbol] = (
-      if ((this eq NoSymbol) || !owner.isClass) Nil
-      else {
-        def loop(xs: List[Symbol]): List[Symbol] = xs match {
-          case Nil     => Nil
-          case x :: xs =>
-            overriddenSymbol(x) match {
-              case NoSymbol => loop(xs)
-              case sym      => sym :: loop(xs)
-            }
-        }
-        loop(owner.ancestors)
-      }
+    final def overridingSymbol(ofclazz: Symbol): Symbol = (
+      if (canMatchInheritedSymbols)
+        matchingSymbol(ofclazz, ofclazz.thisType)
+      else
+        NoSymbol
     )
+
+    /** If false, this symbol cannot possibly participate in an override,
+     *  either as overrider or overridee. For internal use; you should consult
+     *  with isOverridingSymbol. This is used by isOverridingSymbol to escape
+     *  the recursive knot.
+     */
+    private def canMatchInheritedSymbols = (
+         (this ne NoSymbol)
+      && owner.isClass
+      && !this.isClass
+      && !this.isConstructor
+    )
+
+    // All the symbols overridden by this symbol and this symbol at the head,
+    // or Nil if this is NoSymbol.
+    def overrideChain = (
+      if (this eq NoSymbol) Nil
+      else if (isOverridingSymbol) this :: allOverriddenSymbols
+      else this :: Nil
+    )
+
+    /** Returns all symbols overridden by this symbol. */
+    final def allOverriddenSymbols: List[Symbol] = {
+      def loop(xs: List[Symbol]): List[Symbol] = xs match {
+        case Nil     => Nil
+        case x :: xs =>
+          overriddenSymbol(x) match {
+            case NoSymbol => loop(xs)
+            case sym      => sym :: loop(xs)
+          }
+      }
+      if (isOverridingSymbol) loop(owner.ancestors) else Nil
+    }
 
     /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
-    // !!! When if ever will this answer differ from .isOverride?
-    // How/where is the OVERRIDE flag managed, as compared to how checks
-    // based on type membership will evaluate?
-    def isOverridingSymbol = owner.isClass && (
-      owner.ancestors exists (cls => matchingSymbol(cls, owner.thisType) != NoSymbol)
+    lazy val isOverridingSymbol = (
+         canMatchInheritedSymbols
+      && owner.ancestors.exists(base => overriddenSymbol(base) != NoSymbol)
     )
+
     /** Equivalent to allOverriddenSymbols.head (or NoSymbol if no overrides) but more efficient. */
     def nextOverriddenSymbol: Symbol = {
-      if ((this ne NoSymbol) && owner.isClass) owner.ancestors foreach { base =>
-        val sym = overriddenSymbol(base)
-        if (sym != NoSymbol)
-          return sym
+      @tailrec def loop(bases: List[Symbol]): Symbol = bases match {
+        case Nil          => NoSymbol
+        case base :: rest =>
+          val sym = overriddenSymbol(base)
+          if (sym == NoSymbol) loop(rest) else sym
       }
-      NoSymbol
+      if (isOverridingSymbol) loop(owner.ancestors) else NoSymbol
     }
 
     /** Returns all symbols overridden by this symbol, plus all matching symbols
      *  defined in parents of the selftype.
      */
-    final def extendedOverriddenSymbols: List[Symbol] =
-      if (!owner.isClass) Nil
-      else owner.thisSym.ancestors map overriddenSymbol filter (_ != NoSymbol)
+    final def extendedOverriddenSymbols: List[Symbol] = (
+      if (canMatchInheritedSymbols)
+        owner.thisSym.ancestors map overriddenSymbol filter (_ != NoSymbol)
+      else
+        Nil
+    )
 
     /** The symbol accessed by a super in the definition of this symbol when
      *  seen from class `base`. This symbol is always concrete.
      *  pre: `this.owner` is in the base class sequence of `base`.
      */
     final def superSymbol(base: Symbol): Symbol = {
-      var bcs = base.info.baseClasses.dropWhile(owner != _).tail
+      var bcs = base.info.baseClasses dropWhile (owner != _) drop 1
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)
