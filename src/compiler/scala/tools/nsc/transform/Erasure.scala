@@ -21,6 +21,7 @@ abstract class Erasure extends AddInterfaces
   import global._
   import definitions._
   import CODE._
+  import treeInfo._
 
   val phaseName: String = "erasure"
 
@@ -357,41 +358,10 @@ abstract class Erasure extends AddInterfaces
 
   override def newTyper(context: Context) = new Eraser(context)
 
-  private def safeToRemoveUnbox(cls: Symbol): Boolean =
-    (cls == definitions.NullClass) || isBoxedValueClass(cls)
-
-  /** An extractor object for unboxed expressions (maybe subsumed by posterasure?) */
-  object Unboxed {
-    def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(fn, List(arg)) if isUnbox(fn.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
-        Some(arg)
-      case Apply(
-        TypeApply(
-          cast @ Select(
-            Apply(
-              sel @ Select(arg, acc),
-              List()),
-            asinstanceof),
-          List(tpt)),
-        List())
-      if cast.symbol == Object_asInstanceOf &&
-        tpt.tpe.typeSymbol.isDerivedValueClass &&
-        sel.symbol == tpt.tpe.typeSymbol.derivedValueClassUnbox =>
-        Some(arg)
-      case _ =>
-        None
-    }
-  }
-
-  /** An extractor object for boxed expressions (maybe subsumed by posterasure?) */
-  object Boxed {
-    def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)) if (tpt.tpe.typeSymbol.isDerivedValueClass) =>
-        Some(arg)
-      case LabelDef(name, params, Boxed(rhs)) =>
-        Some(treeCopy.LabelDef(tree, name, params, rhs) setType rhs.tpe)
-      case _ =>
-        None
+  private def isSafelyRemovableUnbox(fn: Tree, arg: Tree): Boolean = {
+    isUnbox(fn.symbol) && {
+      val cls = arg.tpe.typeSymbol
+      (cls == definitions.NullClass) || isBoxedValueClass(cls)
     }
   }
 
@@ -578,12 +548,7 @@ abstract class Erasure extends AddInterfaces
         val tree1 = tree.tpe match {
           case ErasedValueType(tref) =>
             val clazz = tref.sym
-            tree match {
-              case Unboxed(arg) if arg.tpe.typeSymbol == clazz =>
-                log("shortcircuiting unbox -> box "+arg); arg
-              case _ =>
-                New(clazz, cast(tree, underlyingOfValueClass(clazz)))
-            }
+            New(clazz, cast(tree, underlyingOfValueClass(clazz)))
           case _ =>
             tree.tpe.typeSymbol match {
           case UnitClass  =>
@@ -599,7 +564,7 @@ abstract class Erasure extends AddInterfaces
                *  This is important for specialization: calls to the super constructor should not box/unbox specialized
                *  fields (see TupleX). (ID)
                */
-              case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
+              case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
                 log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
                 arg
               case _ =>
@@ -634,24 +599,18 @@ abstract class Erasure extends AddInterfaces
       case _ =>
         val tree1 = pt match {
           case ErasedValueType(tref) =>
-            tree match {
-              case Boxed(arg) if arg.tpe.isInstanceOf[ErasedValueType] =>
-                log("shortcircuiting box -> unbox "+arg)
-                arg
-              case _ =>
-                val clazz = tref.sym
-                log("not boxed: "+tree)
-                lazy val underlying = underlyingOfValueClass(clazz)
-                val tree0 =
-                  if (tree.tpe.typeSymbol == NullClass &&
-                      isPrimitiveValueClass(underlying.typeSymbol)) {
-                    // convert `null` directly to underlying type, as going
-                    // via the unboxed type would yield a NPE (see SI-5866)
-                    unbox1(tree, underlying)
-                  } else
-                    Apply(Select(adaptToType(tree, clazz.tpe), clazz.derivedValueClassUnbox), List())
-                cast(tree0, pt)
-            }
+            val clazz = tref.sym
+            log("not boxed: "+tree)
+            lazy val underlying = underlyingOfValueClass(clazz)
+            val tree0 =
+              if (tree.tpe.typeSymbol == NullClass &&
+                  isPrimitiveValueClass(underlying.typeSymbol)) {
+                // convert `null` directly to underlying type, as going
+                // via the unboxed type would yield a NPE (see SI-5866)
+                unbox1(tree, underlying)
+              } else
+                Apply(Select(adaptToType(tree, clazz.tpe), clazz.derivedValueClassUnbox), List())
+            cast(tree0, pt)
           case _ =>
             pt.typeSymbol match {
               case UnitClass  =>
