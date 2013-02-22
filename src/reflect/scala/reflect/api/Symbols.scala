@@ -946,7 +946,7 @@ trait Symbols { self: Universe =>
     def knownDirectSubclasses: Set[Symbol]
 
     /** The list of all base classes of this type (including its own typeSymbol)
-     *  in reverse linearization order, starting with the class itself and ending
+     *  in linearization order, starting with the class itself and ending
      *  in class Any.
      *
      *  @group Class
