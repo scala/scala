@@ -2515,21 +2515,13 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               jcode.emitSWITCH(flatKeys, flatBranches, defaultLabel, MIN_SWITCH_DENSITY)
 
             case JUMP(whereto) =>
-              if (nextBlock != whereto) {
+              if (nextBlock != whereto)
                 jcode goTo labels(whereto)
-              } else if (m.exh.exists(eh => eh.covers(b))) {
                 // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
-                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
-                val isSthgLeft = b.toList.exists {
-                  case _: LOAD_EXCEPTION => false
-                  case _: SCOPE_ENTER => false
-                  case _: SCOPE_EXIT => false
-                  case _: JUMP => false
-                  case _ => true
-                }
-                if (!isSthgLeft) {
-                  emit(asm.Opcodes.NOP)
-                }
+                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"              
+              else if (newNormal.isJumpOnly(b) && m.exh.exists(eh => eh.covers(b))) {
+                debugwarn("Had a jump only block that wasn't collapsed")
+                emit(asm.Opcodes.NOP)
               }
 
             case CJUMP(success, failure, cond, kind) =>
@@ -3084,8 +3076,29 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
    * TODO Eventually, these utilities should be moved to IMethod and reused from normalize() (there's nothing JVM-specific about them).
    */
   object newNormal {
-
-    def startsWithJump(b: BasicBlock): Boolean = { assert(b.nonEmpty, "empty block"); b.firstInstruction.isInstanceOf[JUMP] }
+    /**
+     * True if a block is "jump only" which is defined
+     * as being a block that consists only of 0 or more instructions that
+     * won't make it to the JVM followed by a JUMP.
+     */
+    def isJumpOnly(b: BasicBlock): Boolean = {
+      val nonICode = firstNonIcodeOnlyInstructions(b)
+      // by definition a block has to have a jump, conditional jump, return, or throw
+      assert(nonICode.hasNext, "empty block")
+      nonICode.next.isInstanceOf[JUMP]
+    }
+    
+    /**
+     * Returns the list of instructions in a block that follow all ICode only instructions,
+     * where an ICode only instruction is one that won't make it to the JVM
+     */
+    private def firstNonIcodeOnlyInstructions(b: BasicBlock): Iterator[Instruction] = {
+	  def isICodeOnlyInstruction(i: Instruction) = i match {
+	    case LOAD_EXCEPTION(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) => true
+	    case _ => false
+	  }
+	  b.iterator dropWhile isICodeOnlyInstruction
+    }
 
     /** Prune from an exception handler those covered blocks which are jump-only. */
     private def coverWhatCountsOnly(m: IMethod): Boolean = {
@@ -3093,7 +3106,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       var wasReduced = false
       for(h <- m.exh) {
-        val shouldntCover = (h.covered filter startsWithJump)
+        val shouldntCover = (h.covered filter isJumpOnly)
         if(shouldntCover.nonEmpty) {
           wasReduced = true
           h.covered --= shouldntCover // not removing any block on purpose.
@@ -3117,7 +3130,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         def isRedundant(eh: ExceptionHandler): Boolean = {
           (eh.cls != NoSymbol) && ( // TODO `eh.isFinallyBlock` more readable than `eh.cls != NoSymbol`
                 eh.covered.isEmpty
-            || (eh.covered forall startsWithJump)
+            || (eh.covered forall isJumpOnly)
           )
         }
 
@@ -3132,10 +3145,21 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       wasReduced
     }
 
-    private def isJumpOnly(b: BasicBlock): Option[BasicBlock] = {
-      b.toList match {
-        case JUMP(whereto) :: rest =>
-          assert(rest.isEmpty, "A block contains instructions after JUMP (looks like enterIgnoreMode() was itself ignored.)")
+    /**
+     * Returns the target of a block that is "jump only" which is defined
+     * as being a block that consists only of 0 or more instructions that
+     * won't make it to the JVM followed by a JUMP.
+     * 
+     * @param b The basic block to examine
+     * @return Some(target) if b is a "jump only" block or None if it's not
+     */
+    private def getJumpOnlyTarget(b: BasicBlock): Option[BasicBlock] = {
+      val nonICode = firstNonIcodeOnlyInstructions(b)
+              // by definition a block has to have a jump, conditional jump, return, or throw
+      assert(nonICode.nonEmpty, "empty block")
+      nonICode.next match {
+        case JUMP(whereto) =>
+          assert(!nonICode.hasNext, "A block contains instructions after JUMP (looks like enterIgnoreMode() was itself ignored.)")
           Some(whereto)
         case _ => None
       }
@@ -3167,12 +3191,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      *  Precondition: the BasicBlock given as argument starts with an unconditional JUMP.
      */
     private def finalDestination(start: BasicBlock): (BasicBlock, List[BasicBlock]) = {
-      assert(startsWithJump(start), "not the start of a (single or multi-hop) chain of JUMPs.")
+      if (settings.debug.value) assert(isJumpOnly(start), "not the start of a (single or multi-hop) chain of JUMPs.")
       var hops: List[BasicBlock] = Nil
       var prev = start
       var done = false
       do {
-        done = isJumpOnly(prev) match {
+        done = getJumpOnlyTarget(prev) match {
           case Some(dest) =>
             if (dest == start) { return (start, hops) } // leave infinite-loops in place
             hops ::= prev
@@ -3222,7 +3246,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
           /* "start" is relative in a cycle, but we call this helper with the "first" entry-point we found. */
           def realTarget(jumpStart: BasicBlock): Map[BasicBlock, BasicBlock] = {
-            assert(startsWithJump(jumpStart), "not part of a jump-chain")
+            if (settings.debug.value) assert(isJumpOnly(jumpStart), "not part of a jump-chain")
             val Pair(dest, redundants) = finalDestination(jumpStart)
             (for(skipOver <- redundants) yield Pair(skipOver, dest)).toMap
           }
@@ -3277,7 +3301,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         while(reachable.nonEmpty) {
           val h = reachable.head
           reachable = reachable.tail
-          if(startsWithJump(h)) {
+          if(isJumpOnly(h)) {
             val detour = realTarget(h)
             if(detour.nonEmpty) {
               wasReduced = true
