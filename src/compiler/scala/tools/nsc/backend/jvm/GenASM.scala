@@ -3100,51 +3100,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 	  b.iterator dropWhile isICodeOnlyInstruction
     }
 
-    /** Prune from an exception handler those covered blocks which are jump-only. */
-    private def coverWhatCountsOnly(m: IMethod): Boolean = {
-      assert(m.hasCode, "code-less method")
-
-      var wasReduced = false
-      for(h <- m.exh) {
-        val shouldntCover = (h.covered filter isJumpOnly)
-        if(shouldntCover.nonEmpty) {
-          wasReduced = true
-          h.covered --= shouldntCover // not removing any block on purpose.
-        }
-      }
-
-      wasReduced
-    }
-
-    /** An exception handler is pruned provided any of the following holds:
-     *   (1) it covers nothing (for example, this may result after removing unreachable blocks)
-     *   (2) each block it covers is of the form: JUMP(_)
-     * Return true iff one or more ExceptionHandlers were removed.
-     *
-     * A caveat: removing an exception handler, for whatever reason, means that its handler code (even if unreachable)
-     * won't be able to cause a class-loading-exception. As a result, behavior can be different.
-     */
-    private def elimNonCoveringExh(m: IMethod): Boolean = {
-      assert(m.hasCode, "code-less method")
-
-        def isRedundant(eh: ExceptionHandler): Boolean = {
-          (eh.cls != NoSymbol) && ( // TODO `eh.isFinallyBlock` more readable than `eh.cls != NoSymbol`
-                eh.covered.isEmpty
-            || (eh.covered forall isJumpOnly)
-          )
-        }
-
-      var wasReduced = false
-      val toPrune = (m.exh.toSet filter isRedundant)
-      if(toPrune.nonEmpty) {
-        wasReduced = true
-        for(h <- toPrune; r <- h.blocks) { m.code.removeBlock(r) } // TODO m.code.removeExh(h)
-        m.exh = (m.exh filterNot toPrune)
-      }
-
-      wasReduced
-    }
-
     /**
      * Returns the target of a block that is "jump only" which is defined
      * as being a block that consists only of 0 or more instructions that
@@ -3228,7 +3183,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      *  In more detail:
      *    Starting at each of the entry points (m.startBlock, the start block of each exception handler)
      *    rephrase those control-flow instructions targeting a jump-only block (which jumps to a final destination D) to target D.
-     *    The blocks thus skipped are also removed from IMethod.blocks.
+     *    The blocks thus skipped become eligible to removed by the reachability analyzer
      *
      *  Rationale for this normalization:
      *    test/files/run/private-inline.scala after -optimize is chock full of
@@ -3239,9 +3194,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      *    and thus ranges with identical (start, end) (i.e, identical after GenJVM omitted the JUMPs in question)
      *    could be weeded out to avoid "java.lang.ClassFormatError: Illegal exception table range"
      *    Now that visitTryCatchBlock() must be called before Labels are resolved,
-     *    this method gets rid of the BasicBlocks described above (to recap, consisting of just a JUMP).
+     *    renders the BasicBlocks described above (to recap, consisting of just a JUMP) unreachable.
      */
-    private def collapseJumpOnlyBlocks(m: IMethod): Boolean = {
+    private def collapseJumpOnlyBlocks(m: IMethod) {
       assert(m.hasCode, "code-less method")
 
           /* "start" is relative in a cycle, but we call this helper with the "first" entry-point we found. */
@@ -3285,9 +3240,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
           /* remove from all containers that may contain a reference to */
           def elide(redu: BasicBlock) {
-            debuglog(s"Eliding jump only block $redu because it can be jumped around.")
+            debuglog(s"Will elide jump only block $redu because it can be jumped around.")
             assert(m.startBlock != redu, "startBlock should have been re-wired by now")
-            m.code.removeBlock(redu)
           }
 
       var wasReduced = false
@@ -3315,25 +3269,59 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
       }
       assert(newTargets.intersect(elided).isEmpty, "contradiction: we just elided the final destionation of a jump-chain")
+    }
+    
+    /**
+     * Removes all blocks that are unreachable in a method using a standard reachability analysis.
+     */
+    def elimUnreachableBlocks(m: IMethod) {
+      assert(m.hasCode, "code-less method")      
+      
+      // assume nothing is reachable until we prove it can be reached
+      val reachable = mutable.Set[BasicBlock]()
+      
+      // the set of blocks that we know are reachable but have
+      // yet to be  marked reachable, initially only the start block
+      val worklist = mutable.Set(m.startBlock)
+      
+      while (!worklist.isEmpty) {
+        val block = worklist.head
+        worklist remove block
+        // we know that one is reachable
+        reachable add block
+        // so are its successors, so go back around and add the ones we still
+        // think are unreachable
+        worklist ++= (block.successors filterNot reachable)
+      }
+      
+      // exception handlers need to be told not to cover unreachable blocks
+      // and exception handlers that no longer cover any blocks need to be
+      // removed entirely
+      val unusedExceptionHandlers = mutable.Set[ExceptionHandler]()
+      for (exh <- m.exh) {
+        exh.covered = exh.covered filter reachable
+        if (exh.covered.isEmpty) {
+          unusedExceptionHandlers += exh
+        }
+      }
+      
+      // remove the unusued exception handler references
+      if (settings.debug.value) 
+        for (exh <- unusedExceptionHandlers) debuglog(s"eliding exception handler $exh because it does not cover any reachable blocks")
+      m.exh = m.exh filterNot unusedExceptionHandlers
 
-      wasReduced
+      // everything not in the reachable set is unreachable, unused, and unloved. buh bye
+      for (b <- m.blocks filterNot reachable) {
+    	  debuglog(s"eliding block $b because it is unreachable")
+    	  m.code removeBlock b
+      }
     }
 
     def normalize(m: IMethod) {
       if(!m.hasCode) { return }
       collapseJumpOnlyBlocks(m)
-      var wasReduced = false
-      do {
-        wasReduced = false
-        // Prune from an exception handler those covered blocks which are jump-only.
-        wasReduced |= coverWhatCountsOnly(m); icodes.checkValid(m) // TODO should be unnecessary now that collapseJumpOnlyBlocks(m) is in place
-        // Prune exception handlers covering nothing.
-        wasReduced |= elimNonCoveringExh(m);  icodes.checkValid(m)
-
-        // TODO see note in genExceptionHandlers about an ExceptionHandler.covered containing dead blocks (newNormal should remove them, but, where do those blocks come from?)
-      } while (wasReduced)
-
-      // TODO this would be a good time to remove synthetic local vars seeing no use, don't forget to call computeLocalVarsIndex() afterwards.
+      elimUnreachableBlocks(m)
+      icodes checkValid m
     }
 
   }
