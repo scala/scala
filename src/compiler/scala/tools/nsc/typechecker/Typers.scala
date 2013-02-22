@@ -4070,15 +4070,11 @@ trait Typers extends Adaptations with Tags {
         def resultingTypeTree(tpe: Type) = {
           // we need symbol-ful originals for reification
           // hence we go the extra mile to hand-craft tis guy
-          val original =
-            if (arg1.isType)
-              arg1 match {
-                case tt @ TypeTree() => Annotated(ann, tt.original)
-                // this clause is needed to correctly compile stuff like "new C @D" or "@(inline @getter)"
-                case _ => Annotated(ann, arg1)
-              }
-            else
-              tree
+          val original = arg1 match {
+            case tt @ TypeTree() => Annotated(ann, tt.original)
+            // this clause is needed to correctly compile stuff like "new C @D" or "@(inline @getter)"
+            case _ => Annotated(ann, arg1)
+          }
           original setType ann.tpe
           TypeTree(tpe) setOriginal original setPos tree.pos.focus
         }

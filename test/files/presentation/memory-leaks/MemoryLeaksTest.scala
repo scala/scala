@@ -25,7 +25,7 @@ import scala.tools.nsc.doc
 object Test extends InteractiveTest {
   final val mega = 1024 * 1024
 
-  override val settings: doc.Settings = docSettings
+  override val withDocComments = true
 
   override def execute(): Unit = memoryConsumptionTest()
 
