@@ -41,7 +41,7 @@ trait PatternMatching extends Transform with TypingTransformers
                       with MatchTreeMaking
                       with MatchCodeGen
                       with ScalaLogic
-                      with SimpleSolver
+                      with Solving
                       with MatchAnalysis
                       with MatchOptimization {
   import global._
