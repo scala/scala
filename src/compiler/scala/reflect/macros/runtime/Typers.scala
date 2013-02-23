@@ -46,19 +46,28 @@ trait Typers {
 
   private def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree = {
     import universe.analyzer.SearchResult
+    import scala.tools.nsc.typechecker.DivergentImplicit
     val context = callsiteTyper.context
     val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
     def wrapper (inference: => SearchResult) = wrapper1(inference)
-    wrapper(universe.analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos)) match {
-      case failure if failure.tree.isEmpty =>
-        macroLogVerbose("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-        if (!silent) {
-          if (context.hasErrors) throw new TypecheckException(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
-          else throw new TypecheckException(pos, "implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-        }
-        universe.EmptyTree
-      case success =>
-        success.tree
+    def fail(reason: Option[String]) = {
+      macroLogVerbose("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
+      if (!silent) {
+        if (context.hasErrors) throw new TypecheckException(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
+        else throw new TypecheckException(pos, reason getOrElse "implicit search has failed. to find out the reason, turn on -Xlog-implicits")
+      }
+      universe.EmptyTree
+    }
+    try {
+      wrapper(universe.analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos)) match {
+        case failure if failure.tree.isEmpty => fail(None)
+        case success => success.tree
+      }
+    } catch {
+      case ex: DivergentImplicit =>
+        if (universe.settings.Xdivergence211.value)
+          universe.debuglog("this shouldn't happen. DivergentImplicit exception has been thrown with -Xdivergence211 turned on: "+ex)
+        fail(Some("divergent implicit expansion"))
     }
   }
 

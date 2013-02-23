@@ -1,0 +1,4 @@
+Test_2.scala:2: error: silent = true does work!
+  println(implicitly[Complex[Foo]])
+                    ^
+one error found
