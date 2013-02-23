@@ -1,0 +1,7 @@
+t7171.scala:2: error: The outer reference in this type test cannot be checked at run time.
+  final case class A()
+                   ^
+t7171.scala:9: error: The outer reference in this type test cannot be checked at run time.
+    case _: A => true; case _ => false
+          ^
+two errors found
