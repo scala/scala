@@ -18,7 +18,7 @@ import scala.reflect.internal.util.NoPosition
  * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions,
  * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
  */
-trait MatchTreeMaking { self: PatternMatching =>
+trait MatchTreeMaking extends MatchCodeGen with Debugging {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, CaseDef, atPos, settings,
     Select, Block, ThisType, SingleType, NoPrefix, NoType, needsOuterTest,
@@ -30,9 +30,9 @@ trait MatchTreeMaking { self: PatternMatching =>
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // the making of the trees
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  trait TreeMakers extends TypedSubstitution { self: CodegenCore =>
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) =
-      (cases, Nil)
+  trait TreeMakers extends TypedSubstitution with CodegenCore {
+    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree])
+    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): Unit
 
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
       None
@@ -550,7 +550,9 @@ trait MatchTreeMaking { self: PatternMatching =>
                   }) None
               else matchFailGen
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, unchecked)
+            analyzeCases(scrutSym, casesNoSubstOnly, pt, unchecked)
+
+            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
 
             val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 

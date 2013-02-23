@@ -287,7 +287,11 @@ trait Logic extends Debugging  {
     def findModelFor(f: Formula): Model
     def findAllModelsFor(f: Formula): List[Model]
   }
+}
 
+// naive CNF translation and simple DPLL solver
+trait SimpleSolver extends Logic {
+  import PatternMatchingStats._
   trait CNF extends PropositionalLogic {
 
     /** Override Array creation for efficiency (to not go through reflection). */
@@ -397,7 +401,8 @@ trait Logic extends Debugging  {
     }
   }
 
-  trait DPLLSolver extends CNF {
+  // simple solver using DPLL
+  trait Solver extends CNF {
     // a literal is a (possibly negated) variable
     def Lit(sym: Sym, pos: Boolean = true) = new Lit(sym, pos)
     class Lit(val sym: Sym, val pos: Boolean) {
@@ -516,7 +521,7 @@ trait Logic extends Debugging  {
   }
 }
 
-trait ScalaLogic extends Logic { self: PatternMatching =>
+trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
   trait TreesAndTypesDomain extends PropositionalLogic with CheckableTreeAndTypeAnalysis {
     type Type = global.Type
     type Tree = global.Tree

@@ -24,7 +24,7 @@ trait MatchTranslation { self: PatternMatching  =>
     repeatedToSeq, isRepeatedParamType, getProductArgs}
   import global.analyzer.{ErrorUtils, formalTypes}
 
-  trait MatchTranslator extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
+  trait MatchTranslator extends TreeMakers {
     import typer.context
 
     // Why is it so difficult to say "here's a name and a context, give me any
