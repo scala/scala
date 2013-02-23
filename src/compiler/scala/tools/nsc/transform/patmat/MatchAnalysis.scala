@@ -6,21 +6,12 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
 import scala.language.postfixOps
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.Types
-import scala.reflect.internal.util.HashSet
+import scala.reflect.internal.util.Position
 
 trait TreeAndTypeAnalysis extends Debugging {
-  val global: Global
   import global.{Tree, Type, Symbol, definitions, analyzer,
     ConstantType, Literal, Constant,  appliedType, WildcardType, TypeRef, ModuleClassSymbol,
     nestedMemberType, TypeMap, Ident}
@@ -28,7 +19,6 @@ trait TreeAndTypeAnalysis extends Debugging {
   import definitions._
   import analyzer.Typer
 
-  import debugging.patmatDebug
 
   // we use subtyping as a model for implication between instanceof tests
   // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
@@ -70,7 +60,7 @@ trait TreeAndTypeAnalysis extends Debugging {
           Some(List(tp))
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
-          patmatDebug("enum unsealed "+ (tp, sym, sym.isSealed, isPrimitiveValueClass(sym)))
+          debug.patmat("enum unsealed "+ (tp, sym, sym.isSealed, isPrimitiveValueClass(sym)))
           None
         case sym =>
           val subclasses = (
@@ -78,7 +68,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             // symbols which are both sealed and abstract need not be covered themselves, because
             // all of their children must be and they cannot otherwise be created.
             filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x)))
-          patmatDebug("enum sealed -- subclasses: "+ (sym, subclasses))
+          debug.patmat("enum sealed -- subclasses: "+ (sym, subclasses))
 
           val tpApprox = typer.infer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
@@ -92,11 +82,11 @@ trait TreeAndTypeAnalysis extends Debugging {
               val memberType  = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
               val subTp       = appliedType(memberType, sym.typeParams.map(_ => WildcardType))
               val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
-              // patmatDebug("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
+              // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
               else None
             })
-          patmatDebug("enum sealed "+ (tp, tpApprox) + " as "+ validSubTypes)
+          debug.patmat("enum sealed "+ (tp, tpApprox) + " as "+ validSubTypes)
           Some(validSubTypes)
       }
 
@@ -118,7 +108,7 @@ trait TreeAndTypeAnalysis extends Debugging {
       }
 
       val res = typeArgsToWildcardsExceptArray(tp)
-      patmatDebug("checkable "+(tp, res))
+      debug.patmat("checkable "+(tp, res))
       res
     }
 
@@ -129,16 +119,15 @@ trait TreeAndTypeAnalysis extends Debugging {
       val checkable = (
            (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
         || enumerateSubtypes(tp).nonEmpty)
-      // if (!checkable) patmatDebug("deemed uncheckable: "+ tp)
+      // if (!checkable) debug.patmat("deemed uncheckable: "+ tp)
       !checkable
     }
   }
 }
 
-trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
+trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
   import PatternMatchingStats._
-  val global: Global
-  import global.{Tree, Type, Symbol, CaseDef, Position, atPos, NoPosition,
+  import global.{Tree, Type, Symbol, CaseDef, atPos,
     Select, Block, ThisType, SingleType, NoPrefix, NoType, definitions, needsOuterTest,
     ConstantType, Literal, Constant, gen, This, analyzer, EmptyTree, map2, NoSymbol, Traverser,
     Function, Typed, treeInfo, DefTree, ValDef, nme, appliedType, Name, WildcardType, Ident, TypeRef,
@@ -147,8 +136,6 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
 
   import definitions._
   import analyzer.{Typer, ErrorUtils, formalTypes}
-
-  import debugging.patmatDebug
 
   /**
    * Represent a match as a formula in propositional logic that encodes whether the match matches (abstractly: we only consider types)
@@ -196,8 +183,8 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
         uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
-      private val pointsToBound = scala.collection.mutable.HashSet(root)
-      private val trees         = scala.collection.mutable.HashSet.empty[Tree]
+      private val pointsToBound = mutable.HashSet(root)
+      private val trees         = mutable.HashSet.empty[Tree]
 
       // the substitution that renames variables to variables in pointsToBound
       private var normalize: Substitution  = EmptySubstitution
@@ -215,7 +202,7 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
       def unique(t: Tree, tpOverride: Type = NoType): Tree =
         trees find (a => a.correspondsStructure(t)(sameValue)) match {
           case Some(orig) =>
-            // patmatDebug("unique: "+ (t eq orig, orig))
+            // debug.patmat("unique: "+ (t eq orig, orig))
             orig
           case _ =>
             trees += t
@@ -253,14 +240,14 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
           // reverse substitution that would otherwise replace a variable we already encountered by a new variable
           // NOTE: this forgets the more precise type we have for these later variables, but that's probably okay
           normalize >>= Substitution(boundTo map (_.symbol), boundFrom map (CODE.REF(_)))
-          // patmatDebug ("normalize subst: "+ normalize)
+          // debug.patmat ("normalize subst: "+ normalize)
 
           val okSubst = Substitution(unboundFrom, unboundTo map (normalize(_))) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
           pointsToBound ++= ((okSubst.from, okSubst.to).zipped filter { (f, t) => pointsToBound exists (sym => t.exists(_.symbol == sym)) })._1
-          // patmatDebug("pointsToBound: "+ pointsToBound)
+          // debug.patmat("pointsToBound: "+ pointsToBound)
 
           accumSubst >>= okSubst
-          // patmatDebug("accumSubst: "+ accumSubst)
+          // debug.patmat("accumSubst: "+ accumSubst)
         }
 
         def handleUnknown(tm: TreeMaker): Prop
@@ -351,18 +338,21 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
       /\(tests.takeWhile(t => !t.treeMaker.isInstanceOf[BodyTreeMaker]).map(t => t.prop))
 
     def showTreeMakers(cases: List[List[TreeMaker]]) = {
-      patmatDebug("treeMakers:")
-      patmatDebug(alignAcrossRows(cases, ">>"))
+      debug.patmat("treeMakers:")
+      debug.patmat(alignAcrossRows(cases, ">>"))
     }
 
     def showTests(testss: List[List[Test]]) = {
-      patmatDebug("tests: ")
-      patmatDebug(alignAcrossRows(testss, "&"))
+      debug.patmat("tests: ")
+      debug.patmat(alignAcrossRows(testss, "&"))
     }
   }
 
   trait SymbolicMatchAnalysis extends TreeMakerApproximation  { self: CodegenCore =>
-    // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
+    def uncheckedWarning(pos: Position, msg: String) = global.currentUnit.uncheckedWarning(pos, msg)
+    def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
+
+  // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
     // right now hackily implement this by pruning counter-examples
     // unreachability would also benefit from a more faithful representation
 
@@ -403,8 +393,8 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
         var reachable  = true
         var caseIndex  = 0
 
-        patmatDebug("reachability, vars:\n"+ ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
-        patmatDebug("equality axioms:\n"+ cnfString(eqAxiomsOk))
+        debug.patmat("reachability, vars:\n"+ ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
+        debug.patmat("equality axioms:\n"+ cnfString(eqAxiomsOk))
 
         // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
         // termination: prefixRest.length decreases by 1
@@ -418,8 +408,8 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
             current = current.tail
             val model = findModelFor(andFormula(current.head, toFormula(prefix)))
 
-            // patmatDebug("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
-            // if (NoModel ne model) patmatDebug("reached: "+ modelString(model))
+            // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
+            // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
 
             reachable = NoModel ne model
           }
@@ -430,7 +420,7 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
         if (reachable) None else Some(caseIndex)
       } catch {
         case ex: AnalysisBudget.Exception =>
-          ex.warn(prevBinder.pos, "unreachability")
+          warn(prevBinder.pos, ex, "unreachability")
           None // CNF budget exceeded
       }
     }
@@ -451,7 +441,7 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
-          case _ => // patmatDebug("backing off due to "+ tm)
+          case _ => // debug.patmat("backing off due to "+ tm)
             backoff = true
             False
         })
@@ -474,11 +464,11 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
         val matchFails = Not(\/(symbolicCases))
 
   // debug output:
-        patmatDebug("analysing:")
+        debug.patmat("analysing:")
         showTreeMakers(cases)
 
-        // patmatDebug("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
-        // patmatDebug("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
+        // debug.patmat("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
+        // debug.patmat("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
 
         try {
           // find the models (under which the match fails)
@@ -493,7 +483,7 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
           pruned
         } catch {
           case ex : AnalysisBudget.Exception =>
-            ex.warn(prevBinder.pos, "exhaustivity")
+            warn(prevBinder.pos, ex, "exhaustivity")
             Nil // CNF budget exceeded
         }
       }
@@ -580,14 +570,14 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
       // ...
       val varAssignment = modelToVarAssignment(model)
 
-      patmatDebug("var assignment for model "+ model +":\n"+ varAssignmentString(varAssignment))
+      debug.patmat("var assignment for model "+ model +":\n"+ varAssignmentString(varAssignment))
 
       // chop a path into a list of symbols
       def chop(path: Tree): List[Symbol] = path match {
         case Ident(_) => List(path.symbol)
         case Select(pre, name) => chop(pre) :+ path.symbol
         case _ =>
-          // patmatDebug("don't know how to chop "+ path)
+          // debug.patmat("don't know how to chop "+ path)
           Nil
       }
 
@@ -647,7 +637,7 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
         def toCounterExample(beBrief: Boolean = false): CounterExample =
           if (!allFieldAssignmentsLegal) NoExample
           else {
-            patmatDebug("describing "+ (variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal))
+            debug.patmat("describing "+ (variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal))
             val res = prunedEqualTo match {
               // a definite assignment to a value
               case List(eq: ValueConst) if fields.isEmpty => ValueExample(eq)
@@ -688,7 +678,7 @@ trait Analysis extends TreeAndTypeAnalysis { self: PatternMatching =>
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
               case _ => NoExample
             }
-            patmatDebug("described as: "+ res)
+            debug.patmat("described as: "+ res)
             res
           }
 

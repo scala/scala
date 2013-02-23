@@ -6,33 +6,26 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
+import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.language.postfixOps
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.Types
-import scala.reflect.internal.util.HashSet
+import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.NoPosition
 
-trait TreeMaking { self: PatternMatching =>
+/** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
+ *
+ * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions,
+ * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
+ */
+trait MatchTreeMaking { self: PatternMatching =>
   import PatternMatchingStats._
-  val global: Global
-  import global.{Tree, Type, Symbol, CaseDef, Position, atPos, NoPosition, settings,
-    Select, Block, ThisType, SingleType, NoPrefix, NoType, definitions, needsOuterTest,
-    ConstantType, Literal, Constant, gen, This, analyzer, EmptyTree, map2, NoSymbol, Traverser,
-    Function, Typed, treeInfo, DefTree, ValDef, nme, appliedType, Name, WildcardType, Ident, TypeRef,
-    UniqueType, RefinedType, currentUnit, SingletonType, singleType, ModuleClassSymbol,
-    nestedMemberType, TypeMap, EmptyScope, Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw, newTermName}
+  import global.{Tree, Type, Symbol, CaseDef, atPos, settings,
+    Select, Block, ThisType, SingleType, NoPrefix, NoType, needsOuterTest,
+    ConstantType, Literal, Constant, gen, This, EmptyTree, map2, NoSymbol, Traverser,
+    Function, Typed, treeInfo, TypeRef, DefTree}
 
-  import definitions._
-  import analyzer.{Typer, ErrorUtils, formalTypes}
-
-  import debugging.patmatDebug
+  import global.definitions.{SomeClass, AnyRefClass, UncheckedClass, BooleanClass}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // the making of the trees
@@ -62,7 +55,7 @@ trait TreeMaking { self: PatternMatching =>
 
       private[TreeMakers] def incorporateOuterSubstitution(outerSubst: Substitution): Unit = {
         if (currSub ne null) {
-          patmatDebug("BUG: incorporateOuterSubstitution called more than once for "+ (this, currSub, outerSubst))
+          debug.patmat("BUG: incorporateOuterSubstitution called more than once for "+ (this, currSub, outerSubst))
           Thread.dumpStack()
         }
         else currSub = outerSubst >> substitution
@@ -172,7 +165,7 @@ trait TreeMaking { self: PatternMatching =>
         if (!emitVars) in
         else {
           // binders in `subPatBindersStored` that are referenced by tree `in`
-          val usedBinders = new collection.mutable.HashSet[Symbol]()
+          val usedBinders = new mutable.HashSet[Symbol]()
           // all potentially stored subpat binders
           val potentiallyStoredBinders = stored.unzip._1.toSet
           // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
@@ -391,7 +384,7 @@ trait TreeMaking { self: PatternMatching =>
     **/
     case class TypeTestTreeMaker(prevBinder: Symbol, testedBinder: Symbol, expectedTp: Type, nextBinderTp: Type)(override val pos: Position, extractorArgTypeTest: Boolean = false) extends CondTreeMaker {
       import TypeTestTreeMaker._
-      patmatDebug("TTTM"+(prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp))
+      debug.patmat("TTTM"+(prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp))
 
       lazy val outerTestNeeded = (
           !((expectedTp.prefix eq NoPrefix) || expectedTp.prefix.typeSymbol.isPackageClass)
@@ -527,7 +520,7 @@ trait TreeMaking { self: PatternMatching =>
     def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
       fixerUpper(owner, scrut.pos){
         def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
-        patmatDebug("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
+        debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         val (unchecked, requireSwitch) =
           if (settings.XnoPatmatAnalysis.value) (true, false)
@@ -581,27 +574,27 @@ trait TreeMaking { self: PatternMatching =>
         t match {
           case Function(_, _) if t.symbol == NoSymbol =>
             t.symbol = currentOwner.newAnonymousFunctionValue(t.pos)
-            patmatDebug("new symbol for "+ (t, t.symbol.ownerChain))
+            debug.patmat("new symbol for "+ (t, t.symbol.ownerChain))
           case Function(_, _) if (t.symbol.owner == NoSymbol) || (t.symbol.owner == origOwner) =>
-            patmatDebug("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))
+            debug.patmat("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))
             t.symbol.owner = currentOwner
           case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
-            patmatDebug("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
+            debug.patmat("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
             if(d.symbol.moduleClass ne NoSymbol)
               d.symbol.moduleClass.owner = currentOwner
 
             d.symbol.owner = currentOwner
           // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
-          patmatDebug("untouched "+ (t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain))
+          debug.patmat("untouched "+ (t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain))
           case _ =>
         }
         super.traverse(t)
       }
 
       // override def apply
-      // patmatDebug("before fixerupper: "+ xTree)
+      // debug.patmat("before fixerupper: "+ xTree)
       // currentRun.trackerFactory.snapshot()
-      // patmatDebug("after fixerupper")
+      // debug.patmat("after fixerupper")
       // currentRun.trackerFactory.snapshot()
     }
   }

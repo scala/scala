@@ -6,23 +6,19 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
+import scala.tools.nsc.Global
+import scala.tools.nsc.ast
 import scala.language.postfixOps
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
-import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.Types
-import scala.reflect.internal.util.HashSet
+import scala.reflect.internal.util.Position
 
 /** Translate pattern matching.
   *
-  * Either into optimized if/then/else's,
-  * or virtualized as method calls (these methods form a zero-plus monad), similar in spirit to how for-comprehensions are compiled.
+  * Either into optimized if/then/else's, or virtualized as method calls (these methods form a zero-plus monad),
+  * similar in spirit to how for-comprehensions are compiled.
   *
   * For each case, express all patterns as extractor calls, guards as 0-ary extractors, and sequence them using `flatMap`
   * (lifting the body of the case into the monad using `one`).
@@ -41,15 +37,12 @@ import scala.reflect.internal.util.HashSet
 trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                       with Debugging
                       with Interface
-                      with Translation
-                      with TreeMaking
-                      with CodeGen
-                      with Logic
-                      with Analysis
-                      with Optimization {
-
-  import PatternMatchingStats._
-  val global: Global
+                      with MatchTranslation
+                      with MatchTreeMaking
+                      with MatchCodeGen
+                      with ScalaLogic
+                      with MatchAnalysis
+                      with MatchOptimization {
   import global._
 
   val phaseName: String = "patmat"
@@ -75,29 +68,32 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
       case _ => super.transform(tree)
     }
 
-    def translator: MatchTranslation with CodegenCore = {
+    // TODO: only instantiate new match translator when localTyper has changed
+    // override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A
+    // as this is the only time TypingTransformer changes it
+    def translator: MatchTranslator with CodegenCore = {
       new OptimizingMatchTranslator(localTyper)
     }
   }
 
-  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslation with TreeMakers with PureCodegen
-  class OptimizingMatchTranslator(val typer: analyzer.Typer)                    extends MatchTranslation with TreeMakers with MatchOptimizations
+  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with TreeMakers with PureCodegen
+  class OptimizingMatchTranslator(val typer: analyzer.Typer)                    extends MatchTranslator with TreeMakers with MatchOptimizations
 }
 
-trait Debugging {
+trait HasGlobal {
   val global: Global
-  import global.settings
+}
 
-  // TODO: the inliner fails to inline the closures to patmatDebug
-  object debugging {
-    val printPatmat = settings.Ypatmatdebug.value
-    @inline final def patmatDebug(s: => String) = if (printPatmat) println(s)
+trait Debugging extends HasGlobal {
+  // TODO: the inliner fails to inline the closures to debug.patmat unless the method is nested in an object
+  object debug {
+    val printPatmat = global.settings.Ypatmatdebug.value
+    @inline final def patmat(s: => String) = if (printPatmat) println(s)
   }
 }
 
-trait Interface { self: ast.TreeDSL =>
-  val global: Global
-  import global.{newTermName, Position, Type, analyzer, ErrorType, Symbol, Tree}
+trait Interface { self: ast.TreeDSL with HasGlobal =>
+  import global.{newTermName, analyzer, Type, ErrorType, Symbol, Tree}
   import analyzer.Typer
 
   // 2.10/2.11 compatibility
@@ -179,6 +175,64 @@ trait Interface { self: ast.TreeDSL =>
       }
 
     protected def matchMonadSym: Symbol
+  }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// substitution
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  trait TypedSubstitution extends MatchMonadInterface {
+    object Substitution {
+      def apply(from: Symbol, to: Tree) = new Substitution(List(from), List(to))
+      // requires sameLength(from, to)
+      def apply(from: List[Symbol], to: List[Tree]) =
+        if (from nonEmpty) new Substitution(from, to) else EmptySubstitution
+    }
+
+    class Substitution(val from: List[Symbol], val to: List[Tree]) {
+      import global.{Transformer, Ident, NoType}
+
+      // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
+      // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
+      def apply(tree: Tree): Tree = {
+        // according to -Ystatistics 10% of translateMatch's time is spent in this method...
+        // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
+        if (!tree.exists { case i@Ident(_) => from contains i.symbol case _ => false}) tree
+        else (new Transformer {
+          private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
+            if (origTp == null || origTp == NoType) to
+            // important: only type when actually substing and when original tree was typed
+            // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
+            else typer.typed(to)
+
+          override def transform(tree: Tree): Tree = {
+            def subst(from: List[Symbol], to: List[Tree]): Tree =
+              if (from.isEmpty) tree
+              else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate.setPos(tree.pos), tree.tpe)
+              else subst(from.tail, to.tail)
+
+            tree match {
+              case Ident(_) => subst(from, to)
+              case _        => super.transform(tree)
+            }
+          }
+        }).transform(tree)
+      }
+
+
+      // the substitution that chains `other` before `this` substitution
+      // forall t: Tree. this(other(t)) == (this >> other)(t)
+      def >>(other: Substitution): Substitution = {
+        val (fromFiltered, toFiltered) = (from, to).zipped filter { (f, t) =>  !other.from.contains(f) }
+        new Substitution(other.from ++ fromFiltered, other.to.map(apply) ++ toFiltered) // a quick benchmarking run indicates the `.map(apply)` is not too costly
+      }
+      override def toString = (from.map(_.name) zip to) mkString("Substitution(", ", ", ")")
+    }
+
+    object EmptySubstitution extends Substitution(Nil, Nil) {
+      override def apply(tree: Tree): Tree = tree
+      override def >>(other: Substitution): Substitution = other
+    }
   }
 }
 
