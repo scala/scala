@@ -213,7 +213,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
         { if (shadowedImplicitMembers.isEmpty) NodeSeq.Empty else
             <div id="values" class="values members">
-              <h3>Shadowed Implict Value Members</h3>
+              <h3>Shadowed Implicit Value Members</h3>
               <ol>{ shadowedImplicitMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }

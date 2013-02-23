@@ -372,7 +372,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  This is assessed to be the case if the class is final,
      *  and all type parameters (if any) are invariant.
      */
-    def isFinalType = typeSymbol.hasOnlyBottomSubclasses
+    def isFinalType = typeSymbol.hasOnlyBottomSubclasses && prefix.isStable
 
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true

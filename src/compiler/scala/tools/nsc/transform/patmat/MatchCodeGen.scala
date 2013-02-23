@@ -6,30 +6,23 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
+import scala.tools.nsc.symtab.Flags.SYNTHETIC
 import scala.language.postfixOps
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
-import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.Types
-import scala.reflect.internal.util.HashSet
+import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.NoPosition
 
-trait CodeGen { self: PatternMatching =>
+/** Factory methods used by TreeMakers to make the actual trees.
+ *
+ * We have two modes in which to emit trees: optimized (the default)
+ * and pure (aka "virtualized": match is parametric in its monad).
+ */
+trait MatchCodeGen { self: PatternMatching =>
   import PatternMatchingStats._
-  val global: Global
-  import global.{Tree, Type, Symbol, CaseDef, Position, atPos, NoPosition,
-    Select, Block, ThisType, SingleType, NoPrefix, NoType, definitions, needsOuterTest,
-    ConstantType, Literal, Constant, gen, This, analyzer, EmptyTree, map2, NoSymbol, Traverser,
-    Function, Typed, treeInfo, DefTree, ValDef, nme, appliedType, Name, WildcardType, Ident, TypeRef,
-    UniqueType, RefinedType, currentUnit, SingletonType, singleType, ModuleClassSymbol,
-    nestedMemberType, TypeMap, EmptyScope, Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw, newTermName}
+  import global.{nme, treeInfo, definitions, gen, Tree, Type, Symbol, NoSymbol,
+    appliedType, NoType, MethodType, newTermName, Name,
+    Block, Literal, Constant, EmptyTree, Function, Typed, ValDef, LabelDef}
   import definitions._
-//  import analyzer.{Typer, ErrorUtils, formalTypes}
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // generate actual trees
