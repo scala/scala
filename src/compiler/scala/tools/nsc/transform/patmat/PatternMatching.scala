@@ -85,8 +85,8 @@ trait PatternMatching extends Transform with TypingTransformers
   }
 
   class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
-                                                             with MatchOptimizations
-                                                             with MatchAnalyses
+                                                             with MatchOptimizer
+                                                             with MatchAnalyzer
                                                              with Solver
 }
 
