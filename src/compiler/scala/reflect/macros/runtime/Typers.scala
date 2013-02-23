@@ -8,7 +8,7 @@ trait Typers {
 
   def openMacros: List[Context] = this :: universe.analyzer.openMacros
 
-  def openImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
+  def openImplicits: List[ImplicitCandidate] = callsiteTyper.context.openImplicits.map(_.toImplicitCandidate)
 
   /**
    * @see [[scala.tools.reflect.ToolBox.typeCheck]]
