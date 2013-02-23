@@ -185,7 +185,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos) match {
               case failure if failure.tree.isEmpty =>
                 trace("implicit search has failed. to find out the reason, turn on -Xlog-implicits: ")(failure.tree)
-                if (context.hasErrors) throw ToolBoxError("reflective implicit search has failed: %s".format(context.errBuffer.head.errMsg))
+                if (!silent) {
+                  if (context.hasErrors) throw ToolBoxError("reflective implicit search has failed: %s".format(context.errBuffer.head.errMsg))
+                  else throw new ToolBoxError("reflective implicit search has failed. to find out the reason, turn on -Xlog-implicits")
+                }
                 EmptyTree
               case success =>
                 success.tree
