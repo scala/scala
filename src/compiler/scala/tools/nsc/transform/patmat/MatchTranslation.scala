@@ -6,32 +6,26 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
 import scala.language.postfixOps
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.Types
-import scala.reflect.internal.util.HashSet
 
-trait Translation { self: PatternMatching  =>
+/** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
+ */
+trait MatchTranslation { self: PatternMatching  =>
   import PatternMatchingStats._
-  val global: Global
-  import global._
+  import global.{phase, currentRun, Symbol,
+    Apply, Bind, CaseDef, ClassInfoType, Ident, Literal, Match,
+    Alternative, Constant, EmptyTree, Select, Star, This, Throw, Typed, UnApply,
+    Type, MethodType, WildcardType, PolyType, ErrorType, NoType, TypeRef, typeRef,
+    Name, NoSymbol, Position, Tree, atPos, glb, rootMirror, treeInfo, nme, Transformer,
+    elimAnonymousClass, asCompactDebugString, hasLength, devWarning}
+  import global.definitions.{ThrowableClass, SeqClass, ScalaPackageClass, BooleanClass, UnitClass, RepeatedParamClass,
+    repeatedToSeq, isRepeatedParamType, getProductArgs}
+  import global.analyzer.{ErrorUtils, formalTypes}
 
-  import definitions._
-  import analyzer.{Typer, ErrorUtils, formalTypes}
-
-  import debugging.patmatDebug
-
-
-  trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
-    import typer.{typed, context, silent, reallyExists}
+  trait MatchTranslator extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
+    import typer.context
 
     // Why is it so difficult to say "here's a name and a context, give me any
     // matching symbol in scope" ? I am sure this code is wrong, but attempts to
@@ -133,7 +127,7 @@ trait Translation { self: PatternMatching  =>
       if (phase.id >= currentRun.uncurryPhase.id)
         devWarning(s"running translateMatch past uncurry (at $phase) on $selector match $cases")
 
-      patmatDebug("translating "+ cases.mkString("{", "\n", "}"))
+      debug.patmat("translating "+ cases.mkString("{", "\n", "}"))
 
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
 
@@ -249,14 +243,14 @@ trait Translation { self: PatternMatching  =>
         if (!extractor.isTyped) ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
         // if (extractor.resultInMonad == ErrorType) throw new TypeError(pos, "Unsupported extractor type: "+ extractor.tpe)
 
-        patmatDebug("translateExtractorPattern checking parameter type: "+ (patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType))
+        debug.patmat("translateExtractorPattern checking parameter type: "+ (patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType))
 
         // must use type `tp`, which is provided by extractor's result, not the type expected by binder,
         // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
         // (it will later result in a type test when `tp` is not a subtype of `b.info`)
         // TODO: can we simplify this, together with the Bound case?
         (extractor.subPatBinders, extractor.subPatTypes).zipped foreach { case (b, tp) =>
-          patmatDebug("changing "+ b +" : "+ b.info +" -> "+ tp)
+          debug.patmat("changing "+ b +" : "+ b.info +" -> "+ tp)
           b setInfo tp
         }
 
@@ -312,7 +306,7 @@ trait Translation { self: PatternMatching  =>
         case WildcardPattern() => noFurtherSubPats()
         case UnApply(unfun, args) =>
           // TODO: check unargs == args
-          // patmatDebug("unfun: "+ (unfun.tpe, unfun.symbol.ownerChain, unfun.symbol.info, patBinder.info))
+          // debug.patmat("unfun: "+ (unfun.tpe, unfun.symbol.ownerChain, unfun.symbol.info, patBinder.info))
           translateExtractorPattern(ExtractorCall(unfun, args))
 
         /** A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
@@ -379,7 +373,7 @@ trait Translation { self: PatternMatching  =>
       */
 
         case Bind(n, p) => // this happens in certain ill-formed programs, there'll be an error later
-          patmatDebug("WARNING: Bind tree with unbound symbol "+ patTree)
+          debug.patmat("WARNING: Bind tree with unbound symbol "+ patTree)
           noFurtherSubPats() // there's no symbol -- something's wrong... don't fail here though (or should we?)
 
         // case Star(_) | ArrayValue  => error("stone age pattern relics encountered!")
@@ -536,8 +530,8 @@ trait Translation { self: PatternMatching  =>
       // private val orig            = fun match {case tpt: TypeTree => tpt.original case _ => fun}
       // private val origExtractorTp = unapplyMember(orig.symbol.filter(sym => reallyExists(unapplyMember(sym.tpe))).tpe).tpe
       // private val extractorTp     = if (wellKinded(fun.tpe)) fun.tpe else existentialAbstraction(origExtractorTp.typeParams, origExtractorTp.resultType)
-      // patmatDebug("ExtractorCallProd: "+ (fun.tpe, existentialAbstraction(origExtractorTp.typeParams, origExtractorTp.resultType)))
-      // patmatDebug("ExtractorCallProd: "+ (fun.tpe, args map (_.tpe)))
+      // debug.patmat("ExtractorCallProd: "+ (fun.tpe, existentialAbstraction(origExtractorTp.typeParams, origExtractorTp.resultType)))
+      // debug.patmat("ExtractorCallProd: "+ (fun.tpe, args map (_.tpe)))
       private def constructorTp = fun.tpe
 
       def isTyped    = fun.isTyped
@@ -675,61 +669,6 @@ trait Translation { self: PatternMatching  =>
           Some((t.symbol, p))
         case _ => None
       }
-    }
-  }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// substitution
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  trait TypedSubstitution extends MatchMonadInterface {
-    object Substitution {
-      def apply(from: Symbol, to: Tree) = new Substitution(List(from), List(to))
-      // requires sameLength(from, to)
-      def apply(from: List[Symbol], to: List[Tree]) =
-        if (from nonEmpty) new Substitution(from, to) else EmptySubstitution
-    }
-
-    class Substitution(val from: List[Symbol], val to: List[Tree]) {
-      // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
-      // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
-      def apply(tree: Tree): Tree = {
-        // according to -Ystatistics 10% of translateMatch's time is spent in this method...
-        // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
-        if (!tree.exists { case i@Ident(_) => from contains i.symbol case _ => false}) tree
-        else (new Transformer {
-          private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
-            if (origTp == null || origTp == NoType) to
-            // important: only type when actually substing and when original tree was typed
-            // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
-            else typer.typed(to)
-
-          override def transform(tree: Tree): Tree = {
-            def subst(from: List[Symbol], to: List[Tree]): Tree =
-              if (from.isEmpty) tree
-              else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate.setPos(tree.pos), tree.tpe)
-              else subst(from.tail, to.tail)
-
-            tree match {
-              case Ident(_) => subst(from, to)
-              case _        => super.transform(tree)
-            }
-          }
-        }).transform(tree)
-      }
-
-
-      // the substitution that chains `other` before `this` substitution
-      // forall t: Tree. this(other(t)) == (this >> other)(t)
-      def >>(other: Substitution): Substitution = {
-        val (fromFiltered, toFiltered) = (from, to).zipped filter { (f, t) =>  !other.from.contains(f) }
-        new Substitution(other.from ++ fromFiltered, other.to.map(apply) ++ toFiltered) // a quick benchmarking run indicates the `.map(apply)` is not too costly
-      }
-      override def toString = (from.map(_.name) zip to) mkString("Substitution(", ", ", ")")
-    }
-
-    object EmptySubstitution extends Substitution(Nil, Nil) {
-      override def apply(tree: Tree): Tree = tree
-      override def >>(other: Substitution): Substitution = other
     }
   }
 }

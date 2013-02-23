@@ -6,33 +6,28 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.{ast, symtab, typechecker, transform, Global}
-import transform._
-import typechecker._
-import symtab._
-import Flags.{MUTABLE, METHOD, LABEL, SYNTHETIC, ARTIFACT}
+import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.language.postfixOps
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.Types
-import scala.reflect.internal.util.HashSet
+import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.NoPosition
 
-trait Optimization { self: PatternMatching =>
+/** Optimize and analyze matches based on their TreeMaker-representation.
+ *
+ * The patmat translation doesn't rely on this, so it could be disabled in principle.
+ *
+ * TODO: split out match analysis
+ */
+trait MatchOptimization { self: PatternMatching =>
   import PatternMatchingStats._
-  val global: Global
-  import global.{Tree, Type, Symbol, CaseDef, Position, atPos, NoPosition,
-    Select, Block, ThisType, SingleType, NoPrefix, NoType, definitions, needsOuterTest,
-    ConstantType, Literal, Constant, gen, This, analyzer, EmptyTree, map2, NoSymbol, Traverser,
-    Function, Typed, treeInfo, DefTree, ValDef, nme, appliedType, Name, WildcardType, Ident, TypeRef,
-    UniqueType, RefinedType, currentUnit, SingletonType, singleType, ModuleClassSymbol,
-    nestedMemberType, TypeMap, EmptyScope, Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw, newTermName}
+  import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
+    ConstantType, Literal, Constant, gen, EmptyTree,
+    Typed, treeInfo, nme, Ident,
+    Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw}
 
-  import definitions._
-  import analyzer.{Typer, ErrorUtils, formalTypes}
+  import global.definitions._
 
-  import debugging.patmatDebug
 
   ////
   trait CommonSubconditionElimination extends TreeMakerApproximation { self: OptimizedCodegen =>
@@ -44,7 +39,7 @@ trait Optimization { self: PatternMatching =>
      * we generalize sharing to implication, where b reuses a if a => b and priors(a) => priors(b) (the priors of a sub expression form the path through the decision tree)
      */
     def doCSE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
-      patmatDebug("before CSE:")
+      debug.patmat("before CSE:")
       showTreeMakers(cases)
 
       val testss = approximateMatchConservative(prevBinder, cases)
@@ -94,7 +89,7 @@ trait Optimization { self: PatternMatching =>
         tested.clear()
         tests dropWhile storeDependencies
       }
-      patmatDebug("dependencies: "+ dependencies)
+      debug.patmat("dependencies: "+ dependencies)
 
       // find longest prefix of tests that reuse a prior test, and whose dependent conditions monotonically increase
       // then, collapse these contiguous sequences of reusing tests
@@ -128,8 +123,8 @@ trait Optimization { self: PatternMatching =>
               case _ =>
             }
 
-            patmatDebug("sharedPrefix: "+ sharedPrefix)
-            patmatDebug("suffix: "+ sharedPrefix)
+            debug.patmat("sharedPrefix: "+ sharedPrefix)
+            debug.patmat("suffix: "+ sharedPrefix)
             // if the shared prefix contains interesting conditions (!= True)
             // and the last of such interesting shared conditions reuses another treemaker's test
             // replace the whole sharedPrefix by a ReusingCondTreeMaker
@@ -145,7 +140,7 @@ trait Optimization { self: PatternMatching =>
       // replace original treemakers that are reused (as determined when computing collapsed),
       // by ReusedCondTreeMakers
       val reusedMakers = collapsed mapConserve (_ mapConserve reusedOrOrig)
-      patmatDebug("after CSE:")
+      debug.patmat("after CSE:")
       showTreeMakers(reusedMakers)
       reusedMakers
     }
@@ -460,7 +455,7 @@ trait Optimization { self: PatternMatching =>
                   CaseDef(Alternative(switchableAlts), guard, body)
                 }
               case _ =>
-                // patmatDebug("can't emit switch for "+ makers)
+                // debug.patmat("can't emit switch for "+ makers)
                 None //failure (can't translate pattern to a switch)
             }
           }
