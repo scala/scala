@@ -115,7 +115,7 @@ class StandardCompileServer extends SocketServer {
 
     reporter = new ConsoleReporter(newSettings, in, out) {
       // disable prompts, so that compile server cannot block
-      override def displayPrompt = ()
+      override def displayPrompt() = ()
     }
     def isCompilerReusable: Boolean = {
       if (compiler == null) {

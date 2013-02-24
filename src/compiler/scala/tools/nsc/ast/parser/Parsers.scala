@@ -170,8 +170,8 @@ self =>
       val global: self.global.type = self.global
     }
 
-    def xmlLiteral : Tree = xmlp.xLiteral
-    def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
+    def xmlLiteral() : Tree = xmlp.xLiteral
+    def xmlLiteralPattern() : Tree = xmlp.xLiteralPattern
   }
 
   class OutlineParser(source: SourceFile) extends SourceFileParser(source) {

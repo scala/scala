@@ -131,7 +131,7 @@ abstract class TypeFlowAnalysis {
       init(m)
     }
 
-    def run = {
+    def run() = {
       timer.start
       // icodes.lubs0 = 0
       forwardAnalysis(blockTransfer)
