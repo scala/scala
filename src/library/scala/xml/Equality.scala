@@ -86,8 +86,8 @@ trait Equality extends scala.Equals {
    *  to maintain a semblance of order.
    */
   override def hashCode()         = basisForHashCode.##
-  override def equals(other: Any) = doComparison(other, false)
-  final def xml_==(other: Any)    = doComparison(other, true)
+  override def equals(other: Any) = doComparison(other, blithe = false)
+  final def xml_==(other: Any)    = doComparison(other, blithe = true)
   final def xml_!=(other: Any)    = !xml_==(other)
 
   /** The "blithe" parameter expresses the caller's unconcerned attitude
