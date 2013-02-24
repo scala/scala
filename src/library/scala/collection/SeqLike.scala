@@ -335,7 +335,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
       if (from > l) -1
       else if (tl < 1) clippedFrom
       else if (l < tl) -1
-      else SeqLike.kmpSearch(thisCollection, clippedFrom, l, that.seq, 0, tl, true)
+      else SeqLike.kmpSearch(thisCollection, clippedFrom, l, that.seq, 0, tl, forward = true)
     }
     else {
       var i = from
@@ -372,7 +372,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     if (end < 0) -1
     else if (tl < 1) clippedL
     else if (l < tl) -1
-    else SeqLike.kmpSearch(thisCollection, 0, clippedL+tl, that.seq, 0, tl, false)
+    else SeqLike.kmpSearch(thisCollection, 0, clippedL+tl, that.seq, 0, tl, forward = false)
   }
 
   /** Tests whether this $coll contains a given sequence as a slice.
@@ -778,7 +778,7 @@ object SeqLike {
       case _ =>
         // We had better not index into S directly!
         val iter = S.iterator.drop(m0)
-        val Wopt = kmpOptimizeWord(W, n0, n1, true)
+        val Wopt = kmpOptimizeWord(W, n0, n1, forward = true)
         val T = kmpJumpTable(Wopt, n1-n0)
         val cache = new Array[AnyRef](n1-n0)  // Ring buffer--need a quick way to do a look-behind
         var largest = 0
@@ -851,7 +851,7 @@ object SeqLike {
     else if (s1 - s0 < t1 - t0) -1            // Source is too short to find target
     else {
       // Nontrivial search
-      val ans = kmpSearch(source, s0, s1, target, t0, t1, true)
+      val ans = kmpSearch(source, s0, s1, target, t0, t1, forward = true)
       if (ans < 0) ans else ans - math.min(slen, sourceOffset)
     }
   }
@@ -883,7 +883,7 @@ object SeqLike {
     else if (fixed_s1 - s0 < t1 - t0) -1      // Source is too short to find target
     else {
       // Nontrivial search
-      val ans = kmpSearch(source, s0, fixed_s1, target, t0, t1, false)
+      val ans = kmpSearch(source, s0, fixed_s1, target, t0, t1, forward = false)
       if (ans < 0) ans else ans - s0
     }
   }

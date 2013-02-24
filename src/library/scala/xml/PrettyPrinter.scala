@@ -147,7 +147,7 @@ class PrettyPrinter(width: Int, step: Int) {
       case _ =>
         val test = {
           val sb = new StringBuilder()
-          Utility.serialize(node, pscope, sb, false)
+          Utility.serialize(node, pscope, sb, stripComments = false)
           if (doPreserve(node)) sb.toString
           else TextBuffer.fromString(sb.toString).toText(0).data
         }

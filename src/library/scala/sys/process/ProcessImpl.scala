@@ -17,7 +17,7 @@ private[process] trait ProcessImpl {
 
   /** Runs provided code in a new Thread and returns the Thread instance. */
   private[process] object Spawn {
-    def apply(f: => Unit): Thread = apply(f, false)
+    def apply(f: => Unit): Thread = apply(f, daemon = false)
     def apply(f: => Unit, daemon: Boolean): Thread = {
       val thread = new Thread() { override def run() = { f } }
       thread.setDaemon(daemon)
