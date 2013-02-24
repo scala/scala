@@ -250,7 +250,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
               if (ct.isReadOnly || (startgen eq in.gen)) in.rec_lookup(k, hc, lev + 5, this, startgen, ct)
               else {
                 if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_lookup(k, hc, lev, parent, startgen, ct)
-                else return RESTART // used to be throw RestartException
+                else RESTART // used to be throw RestartException
               }
             case sn: SNode[K, V] => // 2) singleton node
               if (sn.hc == hc && equal(sn.k, k, ct)) sn.v.asInstanceOf[AnyRef]

@@ -241,7 +241,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) j += 1
         else return false
       }
-      return true
+      true
     }
 
     override def exists(p: T => Boolean): Boolean = {
@@ -269,7 +269,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) return true
         else j += 1
       }
-      return false
+      false
     }
 
     override def find(p: T => Boolean): Option[T] = {
@@ -298,7 +298,7 @@ self =>
         if (p(elem)) return Some(elem)
         else j += 1
       }
-      return None
+      None
     }
 
     override def drop(n: Int): ParArrayIterator = {

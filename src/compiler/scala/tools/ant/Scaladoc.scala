@@ -78,7 +78,7 @@ class Scaladoc extends ScalaMatchingTask {
     val values = List("yes", "no", "on", "off")
     def getBooleanValue(value: String, flagName: String): Boolean =
       if (Flag.isPermissible(value))
-        return ("yes".equals(value) || "on".equals(value))
+        ("yes".equals(value) || "on".equals(value))
       else
         buildError("Unknown " + flagName + " flag '" + value + "'")
   }

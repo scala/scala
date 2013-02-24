@@ -230,9 +230,9 @@ trait Primitives { self: ICodes =>
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-      case AND => return "AND"
-      case OR  => return "OR"
-      case XOR => return "XOR"
+      case AND => "AND"
+      case OR  => "OR"
+      case XOR => "XOR"
       case _  => throw new RuntimeException("LogicalOp unknown case")
     }
   }
