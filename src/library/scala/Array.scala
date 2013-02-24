@@ -240,7 +240,7 @@ object Array extends FallbackArrayBuilding {
    */
   def concat[T: ClassTag](xss: Array[T]*): Array[T] = {
     val b = newBuilder[T]
-    b.sizeHint(xss.map(_.size).sum)
+    b.sizeHint(xss.map(_.length).sum)
     for (xs <- xss) b ++= xs
     b.result()
   }

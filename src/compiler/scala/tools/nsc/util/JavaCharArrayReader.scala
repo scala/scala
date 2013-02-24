@@ -35,7 +35,7 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
     ch match {
       case '\t' =>
       case CR =>
-        if (bp < buf.size && buf(bp) == LF) {
+        if (bp < buf.length && buf(bp) == LF) {
           ch = LF
           bp += 1
         }

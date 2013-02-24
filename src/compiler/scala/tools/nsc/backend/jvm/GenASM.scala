@@ -881,9 +881,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     }
 
     def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
-      val ca = new Array[Char](bytes.size)
+      val ca = new Array[Char](bytes.length)
       var idx = 0
-      while(idx < bytes.size) {
+      while(idx < bytes.length) {
         val b: Byte = bytes(idx)
         assert((b & ~0x7f) == 0)
         ca(idx) = b.asInstanceOf[Char]
@@ -900,7 +900,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       var prevOffset = 0
       var offset     = 0
       var encLength  = 0
-      while(offset < bSeven.size) {
+      while(offset < bSeven.length) {
         val deltaEncLength = (if(bSeven(offset) == 0) 2 else 1)
         val newEncLength = encLength.toLong + deltaEncLength
         if(newEncLength >= 65535) {

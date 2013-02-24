@@ -96,7 +96,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     val smDefined = in.readBoolean()
 
     table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
-    threshold = newThreshold(_loadFactor, table.size)
+    threshold = newThreshold(_loadFactor, table.length)
 
     if (smDefined) sizeMapInit(table.length) else sizemap = null
 

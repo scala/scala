@@ -39,7 +39,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Returns null. */
   def file: JFile = null
 
-  override def sizeOption: Option[Int] = Some(content.size)
+  override def sizeOption: Option[Int] = Some(content.length)
 
   def input : InputStream = new ByteArrayInputStream(content)
 

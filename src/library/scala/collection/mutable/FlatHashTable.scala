@@ -77,7 +77,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     assert(size >= 0)
 
     table = new Array(capacity(sizeForThreshold(size, _loadFactor)))
-    threshold = newThreshold(_loadFactor, table.size)
+    threshold = newThreshold(_loadFactor, table.length)
 
     seedvalue = in.readInt()
 
