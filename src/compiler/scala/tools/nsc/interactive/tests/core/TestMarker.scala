@@ -16,7 +16,7 @@ object TestMarker {
   }
 }
 
-abstract case class TestMarker(val marker: String) {
+abstract case class TestMarker(marker: String) {
   TestMarker.checkForDuplicate(this)
 }
 

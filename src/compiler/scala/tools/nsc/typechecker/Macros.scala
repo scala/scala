@@ -70,19 +70,19 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private case class MacroImplBinding(
     // Java class name of the class that contains the macro implementation
     // is used to load the corresponding object with Java reflection
-    val className: String,
+    className: String,
     // method name of the macro implementation
     // `className` and `methName` are all we need to reflectively invoke a macro implementation
     // because macro implementations cannot be overloaded
-    val methName: String,
+    methName: String,
     // flattens the macro impl's parameter lists having symbols replaced with metadata
     // currently metadata is an index of the type parameter corresponding to that type tag (if applicable)
     // f.ex. for: def impl[T: WeakTypeTag, U: WeakTypeTag, V](c: Context)(x: c.Expr[T]): (U, V) = ???
     // `signature` will be equal to List(-1, -1, 0, 1)
-    val signature: List[Int],
+    signature: List[Int],
     // type arguments part of a macro impl ref (the right-hand side of a macro definition)
     // these trees don't refer to a macro impl, so we can pickle them as is
-    val targs: List[Tree])
+    targs: List[Tree])
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
    *  with synthetic content that carries the payload described in `MacroImplBinding`.

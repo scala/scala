@@ -101,4 +101,4 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
 
 /** Represents an error during toolboxing
  */
-case class ToolBoxError(val message: String, val cause: Throwable = null) extends Throwable(message, cause)
+case class ToolBoxError(message: String, cause: Throwable = null) extends Throwable(message, cause)

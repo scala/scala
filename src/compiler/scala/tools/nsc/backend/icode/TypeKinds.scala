@@ -294,7 +294,7 @@ trait TypeKinds { self: ICodes =>
     else ARRAY(ArrayN(elem, dims - 1))
   }
 
-  final case class ARRAY(val elem: TypeKind) extends TypeKind {
+  final case class ARRAY(elem: TypeKind) extends TypeKind {
     override def toString    = "ARRAY[" + elem + "]"
     override def isArrayType = true
     override def dimensions  = 1 + elem.dimensions

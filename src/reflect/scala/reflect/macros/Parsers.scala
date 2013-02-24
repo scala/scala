@@ -19,4 +19,4 @@ trait Parsers {
 
 /** Indicates an error during [[scala.reflect.macros.Parsers#parse]].
  */
-case class ParseException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)
+case class ParseException(pos: scala.reflect.api.Position, msg: String) extends Exception(msg)

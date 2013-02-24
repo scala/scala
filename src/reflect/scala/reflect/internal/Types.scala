@@ -3024,7 +3024,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  Precondition for this class, enforced structurally: args.isEmpty && params.isEmpty.
    */
   abstract case class TypeVar(
-    val origin: Type,
+                               origin: Type,
     var constr: TypeConstraint
   ) extends Type {
     def untouchable = false   // by other typevars
