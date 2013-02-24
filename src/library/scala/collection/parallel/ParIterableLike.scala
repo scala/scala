@@ -820,7 +820,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   def zip[U >: T, S, That](that: GenIterable[S])(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf(repr).isCombiner && that.isParSeq) {
     val thatseq = that.asParSeq
-    tasksupport.executeAndWaitResult(new Zip(combinerFactory(() => bf(repr).asCombiner), splitter, thatseq.splitter) mapResult { _.resultWithTaskSupport });
+    tasksupport.executeAndWaitResult(new Zip(combinerFactory(() => bf(repr).asCombiner), splitter, thatseq.splitter) mapResult { _.resultWithTaskSupport })
   } else setTaskSupport(seq.zip(that)(bf2seq(bf)), tasksupport)
 
   def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[Repr, (U, Int), That]): That = this zip immutable.ParRange(0, size, 1, false)
@@ -831,11 +831,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
       new ZipAll(size max thatseq.length, thisElem, thatElem, combinerFactory(() => bf(repr).asCombiner), splitter, thatseq.splitter) mapResult {
         _.resultWithTaskSupport
       }
-    );
+    )
   } else setTaskSupport(seq.zipAll(that, thisElem, thatElem)(bf2seq(bf)), tasksupport)
 
   protected def toParCollection[U >: T, That](cbf: () => Combiner[U, That]): That = {
-    tasksupport.executeAndWaitResult(new ToParCollection(combinerFactory(cbf), splitter) mapResult { _.resultWithTaskSupport });
+    tasksupport.executeAndWaitResult(new ToParCollection(combinerFactory(cbf), splitter) mapResult { _.resultWithTaskSupport })
   }
 
   protected def toParMap[K, V, That](cbf: () => Combiner[(K, V), That])(implicit ev: T <:< (K, V)): That = {
@@ -1474,9 +1474,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   /* alias methods */
 
-  def /:[S](z: S)(op: (S, T) => S): S = foldLeft(z)(op);
+  def /:[S](z: S)(op: (S, T) => S): S = foldLeft(z)(op)
 
-  def :\[S](z: S)(op: (T, S) => S): S = foldRight(z)(op);
+  def :\[S](z: S)(op: (T, S) => S): S = foldRight(z)(op)
 
   /* debug information */
 

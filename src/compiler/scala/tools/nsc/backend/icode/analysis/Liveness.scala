@@ -77,7 +77,7 @@ abstract class Liveness {
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(lattice.bottom != in(b),
-            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"));
+            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"))
       }
     }
 

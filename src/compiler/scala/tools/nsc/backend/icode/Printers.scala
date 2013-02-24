@@ -27,7 +27,7 @@ trait Printers { self: ICodes =>
     def print(o: Any) { print(o.toString()) }
 
     def println(s: String) {
-      print(s);
+      print(s)
       println()
     }
 
@@ -35,7 +35,7 @@ trait Printers { self: ICodes =>
       out.println()
       var i = 0
       while (i < margin) {
-        print(" ");
+        print(" ")
         i += 1
       }
     }
@@ -53,26 +53,26 @@ trait Printers { self: ICodes =>
     }
 
     def printClass(cls: IClass) {
-      print(cls.symbol.toString()); print(" extends ");
-      printList(cls.symbol.info.parents, ", ");
-      indent(); println(" {");
-      println("// fields:");
-      cls.fields.foreach(printField); println();
-      println("// methods");
-      cls.methods.foreach(printMethod);
-      undent(); println();
+      print(cls.symbol.toString()); print(" extends ")
+      printList(cls.symbol.info.parents, ", ")
+      indent(); println(" {")
+      println("// fields:")
+      cls.fields.foreach(printField); println()
+      println("// methods")
+      cls.methods.foreach(printMethod)
+      undent(); println()
       println("}")
     }
 
     def printField(f: IField) {
-      print(f.symbol.keyString); print(" ");
-      print(f.symbol.nameString); print(": ");
-      println(f.symbol.info.toString());
+      print(f.symbol.keyString); print(" ")
+      print(f.symbol.nameString); print(": ")
+      println(f.symbol.info.toString())
     }
 
     def printMethod(m: IMethod) {
-      print("def "); print(m.symbol.name);
-      print("("); printList(printParam)(m.params, ", "); print(")");
+      print("def "); print(m.symbol.name)
+      print("("); printList(printParam)(m.params, ", "); print(")")
       print(": "); print(m.symbol.info.resultType)
 
       if (!m.isAbstractMethod) {
@@ -93,23 +93,23 @@ trait Printers { self: ICodes =>
     }
 
     def printParam(p: Local) {
-      print(p.sym.name); print(": "); print(p.sym.info);
+      print(p.sym.name); print(": "); print(p.sym.info)
       print(" ("); print(p.kind); print(")")
     }
 
     def printExceptionHandler(e: ExceptionHandler) {
-      indent();
-      println("catch (" + e.cls.simpleName + ") in " + e.covered.toSeq.sortBy(_.label) + " starting at: " + e.startBlock);
-      println("consisting of blocks: " + e.blocks);
-      undent();
-      println("with finalizer: " + e.finalizer);
-//      linearizer.linearize(e.startBlock) foreach printBlock;
+      indent()
+      println("catch (" + e.cls.simpleName + ") in " + e.covered.toSeq.sortBy(_.label) + " starting at: " + e.startBlock)
+      println("consisting of blocks: " + e.blocks)
+      undent()
+      println("with finalizer: " + e.finalizer)
+      //      linearizer.linearize(e.startBlock) foreach printBlock;
     }
 
     def printBlock(bb: BasicBlock) {
       print(bb.label)
       if (bb.loopHeader) print("[loop header]")
-      print(": ");
+      print(": ")
       if (settings.debug.value) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
       indent(); println()
       bb.toList foreach printInstruction

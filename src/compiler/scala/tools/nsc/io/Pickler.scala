@@ -167,7 +167,7 @@ object Pickler {
    */
   def labelledPickler[T](label: String, p: Pickler[T]): Pickler[T] = new Pickler[T] {
     def pickle(wr: Writer, x: T) = {
-      wr.write(quoted(label));
+      wr.write(quoted(label))
       wr.write("(")
       p.pickle(wr, x)
       wr.write(")")

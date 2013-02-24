@@ -36,7 +36,7 @@ trait Kinds {
     private def varStr(s: Symbol): String =
       if (s.isCovariant) "covariant"
       else if (s.isContravariant) "contravariant"
-      else "invariant";
+      else "invariant"
 
     private def qualify(a0: Symbol, b0: Symbol): String = if (a0.toString != b0.toString) "" else {
       if((a0 eq b0) || (a0.owner eq b0.owner)) ""

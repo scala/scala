@@ -969,7 +969,7 @@ abstract class Inliners extends SubComponent {
           }
 
           if(sameSymbols) { // TODO but this also amounts to recursive, ie should lead to adding to tfa.knownNever, right?
-            tfa.knownUnsafe += inc.sym;
+            tfa.knownUnsafe += inc.sym
             return DontInlineHere("sameSymbols (ie caller == callee)")
           }
 
@@ -1043,9 +1043,9 @@ abstract class Inliners extends SubComponent {
         if (caller.isInClosure)           score -= 2
         else if (caller.inlinedCalls < 1) score -= 1 // only monadic methods can trigger the first inline
 
-        if (inc.isSmall) score += 1;
+        if (inc.isSmall) score += 1
         // if (inc.hasClosureParam) score += 2
-        if (inc.isLarge) score -= 1;
+        if (inc.isLarge) score -= 1
         if (caller.isSmall && isLargeSum) {
           score -= 1
           debuglog(s"inliner score decreased to $score because small caller $caller would become large")
@@ -1054,8 +1054,8 @@ abstract class Inliners extends SubComponent {
         if (inc.isMonadic)          score += 3
         else if (inc.isHigherOrder) score += 1
 
-        if (inc.isInClosure)                 score += 2;
-        if (inlinedMethodCount(inc.sym) > 2) score -= 2;
+        if (inc.isInClosure)                 score += 2
+        if (inlinedMethodCount(inc.sym) > 2) score -= 2
         score
       }
     }

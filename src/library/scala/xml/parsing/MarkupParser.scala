@@ -105,7 +105,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
         lastChRead = curInput.next
         pos = curInput.pos
       } else {
-        val ilen = inpStack.length;
+        val ilen = inpStack.length
         //Console.println("  ilen = "+ilen+ " extIndex = "+extIndex);
         if ((ilen != extIndex) && (ilen > 0)) {
           /** for external source, inpStack == Nil ! need notify of eof! */
@@ -141,7 +141,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     xSpace
     val (md,scp) = xAttributes(TopScope)
     if (scp != TopScope)
-      reportSyntaxError("no xmlns definitions here, please.");
+      reportSyntaxError("no xmlns definitions here, please.")
     xToken('?')
     xToken('>')
     md
@@ -247,7 +247,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       case _:ProcInstr =>
       case _:Comment =>
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
-        reportSyntaxError("no entity references allowed here");
+        reportSyntaxError("no entity references allowed here")
       case s:SpecialNode =>
         if (s.toString.trim().length > 0) //non-empty text nodes not allowed
           elemCount += 2
@@ -328,7 +328,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     }
 
     if(!aMap.wellformed(scope))
-        reportSyntaxError( "double attribute");
+        reportSyntaxError( "double attribute")
 
     (aMap,scope)
   }
@@ -389,10 +389,10 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   /* todo: move this into the NodeBuilder class */
   def appendText(pos: Int, ts: NodeBuffer, txt: String): Unit = {
     if (preserveWS)
-      ts &+ handle.text(pos, txt);
+      ts &+ handle.text(pos, txt)
     else
       for (t <- TextBuffer.fromString(txt).toText) {
-        ts &+ handle.text(pos, t.text);
+        ts &+ handle.text(pos, t.text)
       }
   }
 
@@ -446,7 +446,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
             case '#'  =>  // CharacterRef
               nextch
               val theChar = handle.text(tmppos, xCharRef(() => ch, () => nextch))
-              xToken(';');
+              xToken(';')
               ts &+ theChar
             case _ =>     // EntityRef
               val n = xName
@@ -597,7 +597,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   def systemLiteral(): String = {
     val endch = ch
     if (ch != '\'' && ch != '"')
-      reportSyntaxError("quote ' or \" expected");
+      reportSyntaxError("quote ' or \" expected")
     nextch
     while (ch != endch && !eof) {
       putChar(ch)
@@ -615,7 +615,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   def pubidLiteral(): String = {
     val endch = ch
     if (ch!='\'' && ch != '"')
-      reportSyntaxError("quote ' or \" expected");
+      reportSyntaxError("quote ' or \" expected")
     nextch
     while (ch != endch && !eof) {
       putChar(ch)
@@ -889,10 +889,10 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       val sysID = if (ch != '>')
         systemLiteral()
       else
-        null;
+        null
       new PublicID(pubID, sysID)
     } else {
-      reportSyntaxError("PUBLIC or SYSTEM expected");
+      reportSyntaxError("PUBLIC or SYSTEM expected")
       scala.sys.error("died parsing notationdecl")
     }
     xSpaceOpt

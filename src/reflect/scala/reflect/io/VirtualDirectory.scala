@@ -68,6 +68,6 @@ extends AbstractFile {
     }
 
   def clear() {
-    files.clear();
+    files.clear()
   }
 }

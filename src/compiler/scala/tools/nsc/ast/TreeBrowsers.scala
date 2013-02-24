@@ -32,7 +32,7 @@ abstract class TreeBrowsers {
 
   val borderSize = 10
 
-  def create(): SwingBrowser = new SwingBrowser();
+  def create(): SwingBrowser = new SwingBrowser()
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
   case class ProgramTree(units: List[UnitTree]) extends Tree {
@@ -189,7 +189,7 @@ abstract class TreeBrowsers {
       frame.addWindowListener(new WindowAdapter() {
         /** Release the lock, so compilation may resume after the window is closed. */
         override def windowClosed(e: WindowEvent): Unit = lock.release()
-      });
+      })
 
       jTree = new JTree(treeModel) {
         /** Return the string for a tree node. */
@@ -530,7 +530,7 @@ abstract class TreeBrowsers {
 
       if ((s ne null) && (s != NoSymbol)) {
         var str = s.flagString
-        if (s.isStaticMember) str = str + " isStatic ";
+        if (s.isStaticMember) str = str + " isStatic "
         (str + " annotations: " + s.annotations.mkString("", " ", "")
           + (if (s.isTypeSkolem) "\ndeSkolemized annotations: " + s.deSkolemize.annotations.mkString("", " ", "") else ""))
       }

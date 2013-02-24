@@ -233,7 +233,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     new Iterator[Match] {
       def hasNext = matchIterator.hasNext
       def next: Match = {
-        matchIterator.next;
+        matchIterator.next
         new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
       }
     }

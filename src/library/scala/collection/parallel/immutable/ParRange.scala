@@ -42,7 +42,7 @@ self =>
 
   @inline final def length = range.length
 
-  @inline final def apply(idx: Int) = range.apply(idx);
+  @inline final def apply(idx: Int) = range.apply(idx)
 
   def splitter = new ParRangeIterator
 

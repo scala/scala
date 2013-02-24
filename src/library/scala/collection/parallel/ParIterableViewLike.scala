@@ -50,7 +50,8 @@ extends GenIterableView[T, Coll]
 self =>
 
   override def foreach[U](f: T => U): Unit = super[ParIterableLike].foreach(f)
-  override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
+  override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner")
+
   protected[this] def viewIdentifier: String
   protected[this] def viewIdString: String
 

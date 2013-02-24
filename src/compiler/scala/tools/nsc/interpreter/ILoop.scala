@@ -256,7 +256,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private def findToolsJar() = {
     val jdkPath = Directory(jdkHome)
-    val jar     = jdkPath / "lib" / "tools.jar" toFile;
+    val jar     = jdkPath / "lib" / "tools.jar" toFile
 
     if (jar isFile)
       Some(jar)

@@ -126,7 +126,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (settings.debug.value) {
-          val other = bcs.head.info.nonPrivateDecl(member.name);
+          val other = bcs.head.info.nonPrivateDecl(member.name)
           debuglog("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
               " " + other.isDeferred)
         }
@@ -242,7 +242,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
         }
       }
-      debuglog("new defs of " + clazz + " = " + clazz.info.decls);
+      debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }
   }
 

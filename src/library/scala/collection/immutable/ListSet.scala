@@ -75,7 +75,7 @@ class ListSet[A] extends AbstractSet[A]
    *  @return number of set elements.
    */
   override def size: Int = 0
-  override def isEmpty: Boolean = true;
+  override def isEmpty: Boolean = true
 
   /** Checks if this set contains element `elem`.
    *
@@ -126,12 +126,12 @@ class ListSet[A] extends AbstractSet[A]
   /**
    *  @throws Predef.NoSuchElementException
    */
-  override def head: A = throw new NoSuchElementException("Set has no elements");
+  override def head: A = throw new NoSuchElementException("Set has no elements")
 
   /**
    *  @throws Predef.NoSuchElementException
    */
-  override def tail: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
+  override def tail: ListSet[A] = throw new NoSuchElementException("Next of an empty set")
 
   override def stringPrefix = "ListSet"
 

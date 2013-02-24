@@ -34,7 +34,7 @@ trait Names extends api.Names {
        cs(offset) * (41 * 41) +
        cs(offset + len - 1) * 41 +
        cs(offset + (len >> 1)))
-    else 0;
+    else 0
 
   /** Is (the ASCII representation of) name at given index equal to
    *  cs[offset..offset+len-1]?
@@ -42,7 +42,7 @@ trait Names extends api.Names {
   private def equals(index: Int, cs: Array[Char], offset: Int, len: Int): Boolean = {
     var i = 0
     while ((i < len) && (chrs(index + i) == cs(offset + i)))
-      i += 1;
+      i += 1
     i == len
   }
 
@@ -275,7 +275,7 @@ trait Names extends api.Names {
       var i = 0
       while (i < prefix.length && start + i < len &&
              chrs(index + start + i) == chrs(prefix.start + i))
-        i += 1;
+        i += 1
       i == prefix.length
     }
 
@@ -287,7 +287,7 @@ trait Names extends api.Names {
       var i = 1
       while (i <= suffix.length && i <= end &&
              chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
-        i += 1;
+        i += 1
       i > suffix.length
     }
 

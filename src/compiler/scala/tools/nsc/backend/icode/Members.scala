@@ -80,7 +80,7 @@ trait Members {
     }
 
     /** This methods returns a string representation of the ICode */
-    override def toString = "ICode '" + name + "'";
+    override def toString = "ICode '" + name + "'"
 
     /* Compute a unique new label */
     def nextLabel: Int = {
@@ -92,8 +92,8 @@ trait Members {
      */
     def newBlock(): BasicBlock = {
       touched = true
-      val block = new BasicBlock(nextLabel, method);
-      blocks += block;
+      val block = new BasicBlock(nextLabel, method)
+      blocks += block
       block
     }
   }
@@ -115,17 +115,17 @@ trait Members {
     var cunit: CompilationUnit = _
 
     def addField(f: IField): this.type = {
-      fields = f :: fields;
+      fields = f :: fields
       this
     }
 
     def addMethod(m: IMethod): this.type = {
-      methods = m :: methods;
+      methods = m :: methods
       this
     }
 
     def setCompilationUnit(unit: CompilationUnit): this.type = {
-      this.cunit = unit;
+      this.cunit = unit
       this
     }
 
@@ -180,7 +180,7 @@ trait Members {
 
     def hasCode = code ne NoCode
     def setCode(code: Code): IMethod = {
-      this.code = code;
+      this.code = code
       this
     }
 
@@ -220,10 +220,10 @@ trait Members {
       val nextBlock: mutable.Map[BasicBlock, BasicBlock] = mutable.HashMap.empty
       for (b <- code.blocks.toList
         if b.successors.length == 1;
-        succ = b.successors.head;
-        if succ ne b;
-        if succ.predecessors.length == 1;
-        if succ.predecessors.head eq b;
+        succ = b.successors.head
+        if succ ne b
+        if succ.predecessors.length == 1
+        if succ.predecessors.head eq b
         if !(exh.exists { (e: ExceptionHandler) =>
             (e.covers(succ) && !e.covers(b)) || (e.covers(b) && !e.covers(succ)) })) {
           nextBlock(b) = succ
@@ -235,7 +235,7 @@ trait Members {
           bb.open()
           var succ = bb
           do {
-            succ = nextBlock(succ);
+            succ = nextBlock(succ)
             val lastInstr = bb.lastInstruction
             /* Ticket SI-5672
              * Besides removing the control-flow instruction at the end of `bb` (usually a JUMP), we have to pop any values it pushes.

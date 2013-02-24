@@ -41,7 +41,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
 
   override def sizeOption: Option[Int] = Some(content.size)
 
-  def input : InputStream = new ByteArrayInputStream(content);
+  def input : InputStream = new ByteArrayInputStream(content)
 
   override def output: OutputStream = {
     new ByteArrayOutputStream() {

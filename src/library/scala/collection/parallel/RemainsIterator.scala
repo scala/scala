@@ -517,7 +517,8 @@ self =>
     def next = if (self.hasNext) {
       if (that.hasNext) (self.next, that.next)
       else (self.next, thatelem)
-    } else (thiselem, that.next);
+    } else (thiselem, that.next)
+
     def remaining = self.remaining max that.remaining
     def dup: IterableSplitter[(U, S)] = self.dup.zipAllParSeq(that, thiselem, thatelem)
     def split: Seq[IterableSplitter[(U, S)]] = {
@@ -606,7 +607,7 @@ self =>
         } else Seq(sz)
       }
       val (selfszfrom, thatszfrom) = splitsizes.zip(szcum.init).span(_._2 < selfrem)
-      val (selfsizes, thatsizes) = (selfszfrom map { _._1 }, thatszfrom map { _._1 });
+      val (selfsizes, thatsizes) = (selfszfrom map { _._1 }, thatszfrom map { _._1 })
 
       // split iterators
       val selfs = self.psplit(selfsizes: _*)

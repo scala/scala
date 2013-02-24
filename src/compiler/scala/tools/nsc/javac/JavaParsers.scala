@@ -845,7 +845,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     /** CompilationUnit ::= [package QualId semi] TopStatSeq
      */
     def compilationUnit(): Tree = {
-      var pos = in.currentPos;
+      var pos = in.currentPos
       val pkg: RefTree =
         if (in.token == AT || in.token == PACKAGE) {
           annotations()

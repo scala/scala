@@ -745,7 +745,7 @@ abstract class Erasure extends AddInterfaces
               tree.symbol = NoSymbol
               selectFrom(qual1)
             } else if (isMethodTypeWithEmptyParams(qual1.tpe)) {
-              assert(qual1.symbol.isStable, qual1.symbol);
+              assert(qual1.symbol.isStable, qual1.symbol)
               val applied = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
               adaptMember(selectFrom(applied))
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
@@ -806,7 +806,7 @@ abstract class Erasure extends AddInterfaces
         newCdef setType newCdef.body.tpe
       }
       def adaptBranch(branch: Tree): Tree =
-        if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe);
+        if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe)
 
       tree1 match {
         case If(cond, thenp, elsep) =>

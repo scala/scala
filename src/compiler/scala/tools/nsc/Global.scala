@@ -1256,8 +1256,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // this handler should not be nessasary, but it seems that `fsc`
         // eats exceptions if they appear here. Need to find out the cause for
         // this and fix it.
-        inform("[reset] exception happened: "+ex);
-        ex.printStackTrace();
+        inform("[reset] exception happened: "+ex)
+        ex.printStackTrace()
         throw ex
     }
 

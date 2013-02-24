@@ -280,7 +280,7 @@ trait Reshape {
         detectBeanAccessors("get")
         detectBeanAccessors("set")
         detectBeanAccessors("is")
-      });
+      })
 
       val stats1 = stats flatMap {
         case vdef @ ValDef(mods, name, tpt, rhs) if !mods.isLazy =>

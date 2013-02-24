@@ -178,7 +178,7 @@ abstract class SymbolLoaders {
         if (!settings.isScaladoc)
           globalError(
             if (msg eq null) "i/o error while loading " + root.name
-            else "error while loading " + root.name + ", " + msg);
+            else "error while loading " + root.name + ", " + msg)
       }
       try {
         val start = currentTime

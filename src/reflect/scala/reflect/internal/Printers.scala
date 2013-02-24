@@ -208,7 +208,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
         case ModuleDef(mods, name, impl) =>
           printAnnotations(tree)
-          printModifiers(tree, mods);
+          printModifiers(tree, mods)
           print("object " + symName(tree, name), " extends ", impl)
 
         case ValDef(mods, name, tp, rhs) =>
@@ -423,7 +423,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printOpt(" >: ", lo); printOpt(" <: ", hi)
 
         case ExistentialTypeTree(tpt, whereClauses) =>
-          print(tpt);
+          print(tpt)
           printColumn(whereClauses, " forSome { ", ";", "}")
 
 // SelectFromArray is no longer visible in reflect.internal.

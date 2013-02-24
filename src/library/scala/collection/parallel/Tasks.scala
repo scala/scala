@@ -191,7 +191,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
           last = t
           t.start()
         }
-      } while (head.body.shouldSplitFurther);
+      } while (head.body.shouldSplitFurther)
       head.next = last
       head
     }

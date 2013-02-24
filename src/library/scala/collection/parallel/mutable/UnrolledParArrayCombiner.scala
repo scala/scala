@@ -69,7 +69,8 @@ extends Combiner[T, ParArray[T]] {
 
   class CopyUnrolledToArray(array: Array[Any], offset: Int, howmany: Int)
   extends Task[Unit, CopyUnrolledToArray] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = if (howmany > 0) {
       var totalleft = howmany
       val (startnode, startpos) = findStart(offset)

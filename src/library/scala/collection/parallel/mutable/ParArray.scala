@@ -611,7 +611,8 @@ self =>
 
   class ScanToArray[U >: T](tree: ScanTree[U], z: U, op: (U, U) => U, targetarr: Array[Any])
   extends Task[Unit, ScanToArray[U]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = iterate(tree)
     private def iterate(tree: ScanTree[U]): Unit = tree match {
       case ScanNode(left, right) =>
@@ -647,7 +648,8 @@ self =>
   }
 
   class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends Task[Unit, Map[S]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = {
       val tarr = targetarr
       val sarr = array

@@ -39,12 +39,12 @@ class Scanner extends Tokens with parsing.TokenTests {
 
   // todo: see XML specification... probably isLetter,isDigit is fine
   final def isIdentChar = ( ('a' <= c && c <= 'z')
-                           || ('A' <= c && c <= 'Z'));
+                           || ('A' <= c && c <= 'Z'))
 
   final def next() = if (it.hasNext) c = it.next else c = ENDCH
 
   final def acc(d: Char) {
-    if (c == d) next else scala.sys.error("expected '"+d+"' found '"+c+"' !");
+    if (c == d) next else scala.sys.error("expected '"+d+"' found '"+c+"' !")
   }
 
   final def accS(ds: Seq[Char]) { ds foreach acc }
@@ -70,7 +70,7 @@ class Scanner extends Tokens with parsing.TokenTests {
 
   final def name = {
     val sb = new StringBuilder()
-    do { sb.append(c); next } while (isNameChar(c));
+    do { sb.append(c); next } while (isNameChar(c))
     value = sb.toString()
     NAME
   }

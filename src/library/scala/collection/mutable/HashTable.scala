@@ -382,7 +382,7 @@ private[collection] object HashTable {
   /** The load factor for the hash table (in 0.001 step).
    */
   private[collection] final def defaultLoadFactor: Int = 750 // corresponds to 75%
-  private[collection] final def loadFactorDenum = 1000;
+  private[collection] final def loadFactorDenum = 1000
 
   private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
 
@@ -457,13 +457,13 @@ private[collection] object HashTable {
    */
   private[collection] def powerOfTwo(target: Int): Int = {
     /* See http://bits.stephan-brumme.com/roundUpToNextPowerOfTwo.html */
-    var c = target - 1;
-    c |= c >>>  1;
-    c |= c >>>  2;
-    c |= c >>>  4;
-    c |= c >>>  8;
-    c |= c >>> 16;
-    c + 1;
+    var c = target - 1
+    c |= c >>>  1
+    c |= c >>>  2
+    c |= c >>>  4
+    c |= c >>>  8
+    c |= c >>> 16
+    c + 1
   }
 
   class Contents[A, Entry >: Null <: HashEntry[A, Entry]](

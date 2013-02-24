@@ -108,7 +108,7 @@ abstract class ClosureElimination extends SubComponent {
               val t = info.getBinding(l)
               t match {
               	case Deref(This) | Const(_) =>
-                  bb.replaceInstruction(i, valueToInstruction(t));
+                  bb.replaceInstruction(i, valueToInstruction(t))
                   debuglog(s"replaced $i with $t")
 
                 case _ =>
@@ -226,7 +226,7 @@ abstract class ClosureElimination extends SubComponent {
           h = t.head
           t = t.tail
         }
-      } while (redo);
+      } while (redo)
       b fromList newInstructions
     }
   }

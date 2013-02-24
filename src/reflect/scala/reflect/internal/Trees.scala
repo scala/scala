@@ -522,7 +522,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         case t => t
       }
 
-      orig = followOriginal(tree); setPos(tree.pos);
+      orig = followOriginal(tree); setPos(tree.pos)
       this
     }
 
@@ -1425,7 +1425,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         def subst(from: List[Symbol], to: List[Tree]): Tree =
           if (from.isEmpty) tree
           else if (tree.symbol == from.head) to.head.shallowDuplicate // TODO: does it ever make sense *not* to perform a shallowDuplicate on `to.head`?
-          else subst(from.tail, to.tail);
+          else subst(from.tail, to.tail)
         subst(from, to)
       case _ =>
         super.transform(tree)

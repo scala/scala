@@ -125,8 +125,8 @@ self =>
   }
   protected def newReversed: Transformed[T] = new Reversed { }
   protected def newPatched[U >: T](_from: Int, _patch: GenSeq[U], _replaced: Int): Transformed[U] = new {
-    val from = _from;
-    val patch = _patch;
+    val from = _from
+    val patch = _patch
     val replaced = _replaced
   } with Patched[U]
 

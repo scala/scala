@@ -311,14 +311,14 @@ object Utility extends AnyRef with parsing.TokenTests {
     while (i < value.length) {
       value.charAt(i) match {
         case '<' =>
-          return "< not allowed in attribute value";
+          return "< not allowed in attribute value"
         case '&' =>
           val n = getName(value, i+1)
           if (n eq null)
-            return "malformed entity reference in attribute value ["+value+"]";
+            return "malformed entity reference in attribute value ["+value+"]"
           i = i + n.length + 1
           if (i >= value.length || value.charAt(i) != ';')
-            return "malformed entity reference in attribute value ["+value+"]";
+            return "malformed entity reference in attribute value ["+value+"]"
         case _   =>
       }
       i = i + 1

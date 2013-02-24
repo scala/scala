@@ -43,8 +43,8 @@ object MainTokenMetric {
     } catch {
       case ex @ FatalError(msg) =>
         if (command.settings.debug.value)
-          ex.printStackTrace();
-      reporter.error(null, "fatal error: " + msg)
+          ex.printStackTrace()
+        reporter.error(null, "fatal error: " + msg)
     }
   }
 
