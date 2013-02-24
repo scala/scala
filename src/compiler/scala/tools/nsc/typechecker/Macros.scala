@@ -481,7 +481,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     // a heuristic to detect the REPL
     if (global.settings.exposeEmptyPackage.value) {
-      macroLogVerbose("macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
+      macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
       import scala.tools.nsc.interpreter._
       val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
       new AbstractFileClassLoader(virtualDirectory, loader) {}

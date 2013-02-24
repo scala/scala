@@ -1437,7 +1437,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         assert(enclClass.isClass, enclClass)
         val sym = enclClass.primaryConstructor
         if (sym == NoSymbol) {
-          log("Ran out of room looking for an enclosing method for %s: no constructor here.".format(enclClass, clazz))
+          log("Ran out of room looking for an enclosing method for %s: no constructor here.".format(enclClass))
         } else {
           debuglog("enclosing method for %s is %s (in %s)".format(clazz, sym, enclClass))
           res = EnclMethodEntry(javaName(enclClass), javaName(sym), javaType(sym))
