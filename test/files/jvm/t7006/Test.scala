@@ -7,12 +7,13 @@ object Test extends BytecodeTest {
   def show: Unit = {
     val classNode = loadClassNode("Foo_1")
     val methodNode = getMethod(classNode, "foo")
-    assert(countNops(methodNode.instructions) == 0)
+    assert(count(methodNode.instructions, asm.Opcodes.NOP) == 0)
+    assert(count(methodNode.instructions, asm.Opcodes.GOTO) == 1)
   }
 
-  def countNops(insnList: InsnList): Int = {
+  def count(insnList: InsnList, opcode: Int): Int = {
     def isNop(node: asm.tree.AbstractInsnNode): Boolean =
-      (node.getOpcode == asm.Opcodes.NOP)
+      (node.getOpcode == opcode)
     insnList.iterator.asScala.count(isNop)
   }
 }
