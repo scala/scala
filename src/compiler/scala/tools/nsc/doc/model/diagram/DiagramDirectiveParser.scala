@@ -63,7 +63,7 @@ trait DiagramDirectiveParser {
         NoDiagramAtAll
 
     if (template.comment.isDefined)
-      makeDiagramFilter(template, template.comment.get.inheritDiagram, defaultFilter, true)
+      makeDiagramFilter(template, template.comment.get.inheritDiagram, defaultFilter, isInheritanceDiagram = true)
     else
       defaultFilter
   }
@@ -72,7 +72,7 @@ trait DiagramDirectiveParser {
   def makeContentDiagramFilter(template: DocTemplateImpl): DiagramFilter = {
     val defaultFilter = if (template.isPackage || template.isObject) FullDiagram else NoDiagramAtAll
     if (template.comment.isDefined)
-      makeDiagramFilter(template, template.comment.get.contentDiagram, defaultFilter, false)
+      makeDiagramFilter(template, template.comment.get.contentDiagram, defaultFilter, isInheritanceDiagram = false)
     else
       defaultFilter
   }

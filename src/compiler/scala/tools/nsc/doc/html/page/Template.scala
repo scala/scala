@@ -110,8 +110,8 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <h1>{ displayName }</h1>
       </div>
 
-      { signature(tpl, true) }
-      { memberToCommentHtml(tpl, tpl.inTemplate, true) }
+      { signature(tpl, isSelf = true) }
+      { memberToCommentHtml(tpl, tpl.inTemplate, isSelf = true) }
 
       <div id="mbrsel">
         <div id='textfilter'><span class='pre'/><span class='input'><input id='mbrsel-input' type='text' accesskey='/'/></span><span class='post'/></div>
@@ -242,7 +242,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           NodeSeq fromSeq (for (conversion <- (tpl.conversions)) yield
             <div class="conversion" name={ conversion.conversionQualifiedName }>
               <h3>Inherited by implicit conversion { conversion.conversionShortName } from
-                { typeToHtml(tpl.resultType, true) } to { typeToHtml(conversion.targetType, true) }
+                { typeToHtml(tpl.resultType, hasLinks = true) } to { typeToHtml(conversion.targetType, hasLinks = true) }
               </h3>
             </div>
           )
@@ -284,14 +284,14 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   }
 
   def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
-    val memberComment = memberToCommentHtml(mbr, inTpl, false)
+    val memberComment = memberToCommentHtml(mbr, inTpl, isSelf = false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
       data-isabs={ mbr.isAbstract.toString }
       fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }
       group={ mbr.group }>
       <a id={ mbr.signature }/>
       <a id={ mbr.signatureCompat }/>
-      { signature(mbr, false) }
+      { signature(mbr, isSelf = false) }
       { memberComment }
     </li>
   }
@@ -398,7 +398,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       case Some(conv) =>
         <dt class="implicit">Implicit information</dt> ++
         {
-          val targetType = typeToHtml(conv.targetType, true)
+          val targetType = typeToHtml(conv.targetType, hasLinks = true)
           val conversionMethod = conv.convertorMethod match {
             case Left(member) => Text(member.name)
             case Right(name)  => Text(name)
@@ -424,7 +424,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           }
 
           <dd>
-            This member is added by an implicit conversion from { typeToHtml(inTpl.resultType, true) } to
+            This member is added by an implicit conversion from { typeToHtml(inTpl.resultType, hasLinks = true) } to
             { targetType } performed by method { conversionMethod } in { conversionOwner }.
             { constraintText }
           </dd>
@@ -486,7 +486,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         case nte: NonTemplateMemberEntity if nte.isUseCase =>
           <div class="full-signature-block toggleContainer">
             <span class="toggle">Full Signature</span>
-            <div class="hiddenContent full-signature-usecase">{ signature(nte.useCaseOf.get,true) }</div>
+            <div class="hiddenContent full-signature-usecase">{ signature(nte.useCaseOf.get,isSelf = true) }</div>
           </div>
         case _ => NodeSeq.Empty
       }
@@ -923,13 +923,13 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     if (tpl.universe.settings.useStupidTypes.value)
       superTpl match {
         case dtpl: DocTemplateEntity =>
-          val sig = signature(dtpl, false, true) \ "_"
+          val sig = signature(dtpl, isSelf = false, isReduced = true) \ "_"
           sig
         case tpl: TemplateEntity =>
           Text(tpl.name)
       }
   else
-    typeToHtml(superType, true)
+    typeToHtml(superType, hasLinks = true)
 
   private def constraintToHtml(constraint: Constraint): NodeSeq = constraint match {
     case ktcc: KnownTypeClassConstraint =>
@@ -941,21 +941,21 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         context-bounded</a> ++ scala.xml.Text(" by " + tcc.typeClassEntity.qualifiedName + " (" + tcc.typeParamName + ": ") ++
         templateToHtml(tcc.typeClassEntity) ++ scala.xml.Text(")")
     case impl: ImplicitInScopeConstraint =>
-      scala.xml.Text("an implicit value of type ") ++ typeToHtml(impl.implicitType, true) ++ scala.xml.Text(" is in scope")
+      scala.xml.Text("an implicit value of type ") ++ typeToHtml(impl.implicitType, hasLinks = true) ++ scala.xml.Text(" is in scope")
     case eq: EqualTypeParamConstraint =>
       scala.xml.Text(eq.typeParamName + " is " + eq.rhs.name + " (" + eq.typeParamName + " =:= ") ++
-        typeToHtml(eq.rhs, true) ++ scala.xml.Text(")")
+        typeToHtml(eq.rhs, hasLinks = true) ++ scala.xml.Text(")")
     case bt: BoundedTypeParamConstraint =>
       scala.xml.Text(bt.typeParamName + " is a superclass of " + bt.lowerBound.name + " and a subclass of " +
         bt.upperBound.name + " (" + bt.typeParamName + " >: ") ++
-        typeToHtml(bt.lowerBound, true) ++ scala.xml.Text(" <: ") ++
-        typeToHtml(bt.upperBound, true) ++ scala.xml.Text(")")
+        typeToHtml(bt.lowerBound, hasLinks = true) ++ scala.xml.Text(" <: ") ++
+        typeToHtml(bt.upperBound, hasLinks = true) ++ scala.xml.Text(")")
     case lb: LowerBoundedTypeParamConstraint =>
       scala.xml.Text(lb.typeParamName + " is a superclass of " + lb.lowerBound.name + " (" + lb.typeParamName + " >: ") ++
-        typeToHtml(lb.lowerBound, true) ++ scala.xml.Text(")")
+        typeToHtml(lb.lowerBound, hasLinks = true) ++ scala.xml.Text(")")
     case ub: UpperBoundedTypeParamConstraint =>
       scala.xml.Text(ub.typeParamName + " is a subclass of " + ub.upperBound.name + " (" + ub.typeParamName + " <: ") ++
-        typeToHtml(ub.upperBound, true) ++ scala.xml.Text(")")
+        typeToHtml(ub.upperBound, hasLinks = true) ++ scala.xml.Text(")")
   }
 }
 

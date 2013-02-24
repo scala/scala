@@ -199,7 +199,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
 object Tester {
   def main(args: Array[String]) {
     val settings = new Settings()
-    val (_, filenames) = settings.processArguments(args.toList.tail, true)
+    val (_, filenames) = settings.processArguments(args.toList.tail, processAll = true)
     println("filenames = "+filenames)
     val files = filenames.toArray map (str => new BatchSourceFile(AbstractFile.getFile(str)): SourceFile)
     new Tester(args(0).toInt, files, settings).run()

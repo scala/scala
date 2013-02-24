@@ -163,7 +163,7 @@ abstract class Node extends NodeSeq {
   /**
    * Same as `toString('''false''')`.
    */
-  override def toString(): String = buildString(false)
+  override def toString(): String = buildString(stripComments = false)
 
   /**
    * Appends qualified name of this node to `StringBuilder`.

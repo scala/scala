@@ -67,7 +67,7 @@ class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A],
   }
 
   override def +=(elem: A): this.type = {
-    treeRef.elem = RB.update(treeRef.elem, elem, null, false)
+    treeRef.elem = RB.update(treeRef.elem, elem, null, overwrite = false)
     this
   }
 

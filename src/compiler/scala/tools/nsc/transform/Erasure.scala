@@ -1254,7 +1254,7 @@ abstract class Erasure extends AddInterfaces
         val tree2 = mixinTransformer.transform(tree1)
         // debuglog("tree after addinterfaces: \n" + tree2)
 
-        newTyper(rootContext(unit, tree, true)).typed(tree2)
+        newTyper(rootContext(unit, tree, erasedTypes = true)).typed(tree2)
       }
     }
   }

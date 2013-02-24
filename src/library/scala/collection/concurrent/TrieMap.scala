@@ -41,7 +41,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
   @tailrec private def GCAS_Complete(m: MainNode[K, V], ct: TrieMap[K, V]): MainNode[K, V] = if (m eq null) null else {
     // complete the GCAS
     val prev = /*READ*/m.prev
-    val ctr = ct.readRoot(true)
+    val ctr = ct.readRoot(abort = true)
 
     prev match {
       case null =>
@@ -723,7 +723,7 @@ extends scala.collection.concurrent.Map[K, V]
   private def RDCSS_ROOT(ov: INode[K, V], expectedmain: MainNode[K, V], nv: INode[K, V]): Boolean = {
     val desc = RDCSS_Descriptor(ov, expectedmain, nv)
     if (CAS_ROOT(ov, desc)) {
-      RDCSS_Complete(false)
+      RDCSS_Complete(abort = false)
       /*READ*/desc.committed
     } else false
   }
@@ -1027,7 +1027,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
         val (arr1, arr2) = stack(d).drop(stackpos(d) + 1).splitAt(rem / 2)
         stack(d) = arr1
         stackpos(d) = -1
-        val it = newIterator(level + 1, ct, false)
+        val it = newIterator(level + 1, ct, _mustInit = false)
         it.stack(0) = arr2
         it.stackpos(0) = -1
         it.depth = 0

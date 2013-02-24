@@ -399,7 +399,7 @@ object Array extends FallbackArrayBuilding {
   def range(start: Int, end: Int, step: Int): Array[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
     val b = newBuilder[Int]
-    b.sizeHint(immutable.Range.count(start, end, step, false))
+    b.sizeHint(immutable.Range.count(start, end, step, isInclusive = false))
 
     var i = start
     while (if (step < 0) end < i else i < end) {

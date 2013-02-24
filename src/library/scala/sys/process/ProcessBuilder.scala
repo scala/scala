@@ -305,10 +305,10 @@ object ProcessBuilder extends ProcessBuilderImpl {
     protected def toSource: ProcessBuilder
 
     /** Writes the output stream of this process to the given file. */
-    def #> (f: File): ProcessBuilder = toFile(f, false)
+    def #> (f: File): ProcessBuilder = toFile(f, append = false)
 
     /** Appends the output stream of this process to the given file. */
-    def #>> (f: File): ProcessBuilder = toFile(f, true)
+    def #>> (f: File): ProcessBuilder = toFile(f, append = true)
 
     /** Writes the output stream of this process to the given OutputStream. The
       * argument is call-by-name, so the stream is recreated, written, and closed each

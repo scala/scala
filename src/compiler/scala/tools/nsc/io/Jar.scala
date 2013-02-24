@@ -159,7 +159,7 @@ object Jar {
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
   private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
 
-  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
+  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, examineFile = true)
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
 

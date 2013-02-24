@@ -392,7 +392,7 @@ abstract class TailCalls extends Transform {
       finally maybeTail = saved
     }
 
-    def traverseNoTail(tree: Tree) = traverse(tree, false)
+    def traverseNoTail(tree: Tree) = traverse(tree, maybeTailNew = false)
     def traverseTreesNoTail(trees: List[Tree]) = trees foreach traverseNoTail
 
     override def traverse(tree: Tree) = tree match {

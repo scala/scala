@@ -63,8 +63,8 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     def next: AbstractJavaTokenData
     def intVal(negated: Boolean): Long
     def floatVal(negated: Boolean): Double
-    def intVal: Long = intVal(false)
-    def floatVal: Double = floatVal(false)
+    def intVal: Long = intVal(negated = false)
+    def floatVal: Double = floatVal(negated = false)
     def currentPos: Position
   }
 

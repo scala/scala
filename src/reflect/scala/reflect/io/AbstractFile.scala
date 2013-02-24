@@ -227,7 +227,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
    */
   def fileNamed(name: String): AbstractFile = {
     assert(isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
-    fileOrSubdirectoryNamed(name, false)
+    fileOrSubdirectoryNamed(name, isDir = false)
   }
 
   /**
@@ -236,7 +236,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
    */
   def subdirectoryNamed(name: String): AbstractFile = {
     assert (isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
-    fileOrSubdirectoryNamed(name, true)
+    fileOrSubdirectoryNamed(name, isDir = true)
   }
 
   protected def unsupported(): Nothing = unsupported(null)

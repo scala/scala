@@ -347,7 +347,7 @@ trait Logic extends Debugging  {
       val TrueF          = formula()
       val FalseF         = formula(clause())
       def lit(s: Sym)    = formula(clause(Lit(s)))
-      def negLit(s: Sym) = formula(clause(Lit(s, false)))
+      def negLit(s: Sym) = formula(clause(Lit(s, pos = false)))
 
       def conjunctiveNormalForm(p: Prop, budget: Int = AnalysisBudget.max): Formula = {
         def distribute(a: Formula, b: Formula, budget: Int): Formula =
@@ -439,7 +439,7 @@ trait Logic extends Debugging  {
               else Nil
             }
             val forced = unassigned flatMap { s =>
-              force(Lit(s, true)) ++ force(Lit(s, false))
+              force(Lit(s, pos = true)) ++ force(Lit(s, pos = false))
             }
             debug.patmat("forced "+ forced)
             val negated = negateModel(model)

@@ -105,17 +105,17 @@ object ClassPath {
     /** Creators for sub classpaths which preserve this context.
      */
     def sourcesInPath(path: String): List[ClassPath[T]] =
-      for (file <- expandPath(path, false) ; dir <- Option(AbstractFile getDirectory file)) yield
+      for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
 
     def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
-      for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
+      for (dir <- expandPath(path, expandStar = false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
         newClassPath(entry)
 
     def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
-      classesInPathImpl(path, true).toIndexedSeq
+      classesInPathImpl(path, expand = true).toIndexedSeq
 
-    def classesInPath(path: String) = classesInPathImpl(path, false)
+    def classesInPath(path: String) = classesInPathImpl(path, expand = false)
 
     // Internal
     private def classesInPathImpl(path: String, expand: Boolean) =
@@ -210,7 +210,7 @@ abstract class ClassPath[T] {
    * Does not support nested classes on .NET
    */
   def findClass(name: String): Option[AnyClassRep] =
-    splitWhere(name, _ == '.', true) match {
+    splitWhere(name, _ == '.', doDropIndex = true) match {
       case Some((pkg, rest)) =>
         val rep = packages find (_.name == pkg) flatMap (_ findClass rest)
         rep map {

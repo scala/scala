@@ -658,7 +658,7 @@ trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
 
                 cls match {
                   case ConsClass               => ListExample(args())
-                  case _ if isTupleSymbol(cls) => TupleExample(args(true))
+                  case _ if isTupleSymbol(cls) => TupleExample(args(brevity = true))
                   case _ => ConstructorExample(cls, args())
                 }
 

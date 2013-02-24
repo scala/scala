@@ -82,13 +82,13 @@ class MutableSettings(val errorFn: String => Unit)
     }
     loop(arguments, Nil)
   }
-  def processArgumentString(params: String) = processArguments(splitParams(params), true)
+  def processArgumentString(params: String) = processArguments(splitParams(params), processAll = true)
 
   /** Create a new Settings object, copying all user-set values.
    */
   def copy(): Settings = {
     val s = new Settings()
-    s.processArguments(recreateArgs, true)
+    s.processArguments(recreateArgs, processAll = true)
     s
   }
 
@@ -126,7 +126,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     // if arg is of form -Xfoo:bar,baz,quux
     def parseColonArg(s: String): Option[List[String]] = {
-      val (p, args) = StringOps.splitWhere(s, _ == ':', true) getOrElse (return None)
+      val (p, args) = StringOps.splitWhere(s, _ == ':', doDropIndex = true) getOrElse (return None)
 
       // any non-Nil return value means failure and we return s unmodified
       tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
@@ -249,7 +249,7 @@ class MutableSettings(val errorFn: String => Unit)
       if (dir != null && dir.isDirectory)
         dir
 // was:      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
-      else if (allowJar && dir == null && Jar.isJarOrZip(name, false))
+      else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
         new PlainFile(Path(name))
       else
         throw new FatalError(name + " does not exist or is not a directory")
@@ -260,7 +260,7 @@ class MutableSettings(val errorFn: String => Unit)
      */
     def setSingleOutput(outDir: String) {
       val dst = AbstractFile.getDirectory(outDir)
-      setSingleOutput(checkDir(dst, outDir, true))
+      setSingleOutput(checkDir(dst, outDir, allowJar = true))
     }
 
     def getSingleOutput: Option[AbstractFile] = singleOutDir
@@ -323,12 +323,12 @@ class MutableSettings(val errorFn: String => Unit)
         case Some(d) =>
           d match {
               case _: VirtualDirectory | _: io.ZipArchive => Nil
-              case _                   => List(d.lookupPathUnchecked(srcPath, false))
+              case _                   => List(d.lookupPathUnchecked(srcPath, directory = false))
           }
         case None =>
           (outputs filter (isBelow _).tupled) match {
             case Nil => Nil
-            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, false))
+            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, directory = false))
           }
       }
     }

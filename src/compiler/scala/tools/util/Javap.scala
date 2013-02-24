@@ -125,10 +125,10 @@ class JavapClass(
           if (res.isDefined && loadable(res.get)) res else None
         }
         // try loading translated+suffix
-        val res = loadableOrNone(false)
+        val res = loadableOrNone(strip = false)
         // some synthetics lack a dollar, (e.g., suffix = delayedInit$body)
         // so as a hack, if prefix$$suffix fails, also try prefix$suffix
-        if (res.isDefined) res else loadableOrNone(true)
+        if (res.isDefined) res else loadableOrNone(strip = true)
       } else None
     }
     val p = path.asClassName   // scrub any suffix
@@ -649,7 +649,7 @@ object JavapClass {
       val fs = if (isReplish) {
         def outed(d: AbstractFile, p: Seq[String]): Option[AbstractFile] = {
           if (p.isEmpty) Option(d)
-          else Option(d.lookupName(p.head, true)) flatMap (f => outed(f, p.tail))
+          else Option(d.lookupName(p.head, directory = true)) flatMap (f => outed(f, p.tail))
         }
         outed(intp.get.replOutput.dir, splat.init) map { d =>
           listFunsInAbsFile(name, member, d) map packaged
