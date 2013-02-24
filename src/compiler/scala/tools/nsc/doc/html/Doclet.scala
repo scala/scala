@@ -13,7 +13,7 @@ import doclet._
 class Doclet extends Generator with Universer with Indexer {
 
   def generateImpl() {
-    new html.HtmlFactory(universe, index).generate
+    new html.HtmlFactory(universe, index).generate()
   }
 
 }

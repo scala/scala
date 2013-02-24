@@ -65,7 +65,7 @@ object REPL {
   def loop(action: (String) => Unit) {
     Console.print(prompt)
     try {
-      val line = Console.readLine
+      val line = Console.readLine()
       if (line.length() > 0) {
         action(line)
       }

@@ -106,7 +106,7 @@ abstract class DeadCodeElimination extends SubComponent {
     def collectRDef(m: IMethod): Unit = if (m.hasCode) {
       defs = immutable.HashMap.empty; worklist.clear(); useful.clear();
       rdef.init(m);
-      rdef.run;
+      rdef.run();
 
       m foreachBlock { bb =>
         useful(bb) = new mutable.BitSet(bb.size)
@@ -340,8 +340,8 @@ abstract class DeadCodeElimination extends SubComponent {
       m foreachBlock { bb =>
         debuglog(bb + ":")
         val oldInstr = bb.toList
-        bb.open
-        bb.clear
+        bb.open()
+        bb.clear()
         for (Pair(i, idx) <- oldInstr.zipWithIndex) {
           if (useful(bb)(idx)) {
             debuglog(" * " + i + " is useful")
@@ -374,7 +374,7 @@ abstract class DeadCodeElimination extends SubComponent {
           }
         }
 
-        if (bb.nonEmpty) bb.close
+        if (bb.nonEmpty) bb.close()
         else log(s"empty block encountered in $m")
       }
     }

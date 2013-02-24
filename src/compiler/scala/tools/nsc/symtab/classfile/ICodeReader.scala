@@ -136,7 +136,7 @@ abstract class ICodeReader extends ClassfileParser {
       }
     } catch {
       case e: MissingRequirementError =>
-        in.bp = beginning; skipAttributes
+        in.bp = beginning; skipAttributes()
         debuglog("Skipping non-existent method. " + e.msg);
     }
   }
@@ -217,7 +217,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       val instr = toUnsignedByte(in.nextByte)
       instr match {
-        case JVM.nop => parseInstruction
+        case JVM.nop => parseInstruction()
         case JVM.aconst_null => code emit CONSTANT(Constant(null))
         case JVM.iconst_m1   => code emit CONSTANT(Constant(-1))
         case JVM.iconst_0    => code emit CONSTANT(Constant(0))
@@ -581,7 +581,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
 
     pc = 0
-    while (pc < codeLength) parseInstruction
+    while (pc < codeLength) parseInstruction()
 
     val exceptionEntries = in.nextChar.toInt
     code.containsEHs = (exceptionEntries != 0)
@@ -671,7 +671,7 @@ abstract class ICodeReader extends ClassfileParser {
           otherBlock = blocks(pc)
           if (!bb.closed && otherBlock != bb) {
             bb.emit(JUMP(otherBlock))
-            bb.close
+            bb.close()
 //            Console.println("\t> closing bb: " + bb)
           }
           bb = otherBlock
@@ -889,7 +889,7 @@ abstract class ICodeReader extends ClassfileParser {
       import opcodes._
       val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis
       rdef.init(method)
-      rdef.run
+      rdef.run()
 
       for (bb <- method.code.blocks ; (i, idx) <- bb.toList.zipWithIndex) i match {
         case cm @ CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
@@ -941,7 +941,7 @@ abstract class ICodeReader extends ClassfileParser {
               l
           }
         case None =>
-          checkValidIndex
+          checkValidIndex()
           val l = freshLocal(idx, kind, false)
           debuglog("Added new local for idx " + idx + ": " + kind)
           locals += (idx -> List((l, kind)))

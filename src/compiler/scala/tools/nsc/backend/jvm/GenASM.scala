@@ -1618,7 +1618,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           if (isParcelableClass) { addCreatorCode(lastBlock) }
 
           lastBlock emit RETURN(UNIT)
-          lastBlock.close
+          lastBlock.close()
 
        	  method = m
        	  jmethod = clinitMethod
@@ -1798,8 +1798,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       }
 
       def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
-      def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
-      def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
+      def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF(),     label) }
+      def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP(), label) }
       def emitIF_ACMP(cond: TestOp, label: asm.Label) {
         assert((cond == EQ) || (cond == NE), cond)
         val opc = (if(cond == EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
@@ -2365,7 +2365,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                 scoping.popScope(lv, end, instr.pos)
               }
           }
-          genLocalInstr
+          genLocalInstr()
 
           case icodes.stackCat =>
           def genStackInstr() = (instr: @unchecked) match {
@@ -2389,7 +2389,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
             case LOAD_EXCEPTION(_) => ()
           }
-          genStackInstr
+          genStackInstr()
 
           case icodes.constCat => genConstant(jmethod, instr.asInstanceOf[CONSTANT].constant)
 
@@ -2423,7 +2423,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               }
 
           }
-          genCastInstr
+          genCastInstr()
 
           case icodes.objsCat =>
           def genObjsInstr() = (instr: @unchecked) match {
@@ -2442,7 +2442,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             case MONITOR_ENTER() => emit(Opcodes.MONITORENTER)
             case MONITOR_EXIT() => emit(Opcodes.MONITOREXIT)
           }
-          genObjsInstr
+          genObjsInstr()
 
           case icodes.fldsCat =>
           def genFldsInstr() = (instr: @unchecked) match {
@@ -2463,7 +2463,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               jmethod.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
 
           }
-          genFldsInstr
+          genFldsInstr()
 
           case icodes.mthdsCat =>
           def genMethodsInstr() = (instr: @unchecked) match {
@@ -2476,7 +2476,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             case call @ CALL_METHOD(method, style) => genCallMethod(call)
 
           }
-          genMethodsInstr
+          genMethodsInstr()
 
           case icodes.arraysCat =>
           def genArraysInstr() = (instr: @unchecked) match {
@@ -2485,7 +2485,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             case CREATE_ARRAY(elem, 1) => jcode newarray elem
             case CREATE_ARRAY(elem, dims) => jmethod.visitMultiANewArrayInsn(descriptor(ArrayN(elem, dims)), dims)
           }
-          genArraysInstr
+          genArraysInstr()
 
           case icodes.jumpsCat =>
           def genJumpInstr() = (instr: @unchecked) match {
@@ -2535,7 +2535,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             case CJUMP(success, failure, cond, kind) =>
               if (kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
                 if (nextBlock == success) {
-                  jcode.emitIF_ICMP(cond.negate, labels(failure))
+                  jcode.emitIF_ICMP(cond.negate(), labels(failure))
                   // .. and fall through to success label
                 } else {
                   jcode.emitIF_ICMP(cond, labels(success))
@@ -2543,7 +2543,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                 }
               } else if (kind.isRefOrArrayType) { // REFERENCE(_) | ARRAY(_)
                 if (nextBlock == success) {
-                  jcode.emitIF_ACMP(cond.negate, labels(failure))
+                  jcode.emitIF_ACMP(cond.negate(), labels(failure))
                   // .. and fall through to success label
                 } else {
                   jcode.emitIF_ACMP(cond, labels(success))
@@ -2560,7 +2560,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                     else emit(Opcodes.DCMPL)
                 }
                 if (nextBlock == success) {
-                  jcode.emitIF(cond.negate, labels(failure))
+                  jcode.emitIF(cond.negate(), labels(failure))
                   // .. and fall through to success label
                 } else {
                   jcode.emitIF(cond, labels(success))
@@ -2571,7 +2571,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             case CZJUMP(success, failure, cond, kind) =>
               if (kind.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
                 if (nextBlock == success) {
-                  jcode.emitIF(cond.negate, labels(failure))
+                  jcode.emitIF(cond.negate(), labels(failure))
                 } else {
                   jcode.emitIF(cond, labels(success))
                   if (nextBlock != failure) { jcode goTo labels(failure) }
@@ -2607,7 +2607,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                     else emit(Opcodes.DCMPL)
                 }
                 if (nextBlock == success) {
-                  jcode.emitIF(cond.negate, labels(failure))
+                  jcode.emitIF(cond.negate(), labels(failure))
                 } else {
                   jcode.emitIF(cond, labels(success))
                   if (nextBlock != failure) { jcode goTo labels(failure) }
@@ -2615,14 +2615,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               }
 
           }
-          genJumpInstr
+          genJumpInstr()
 
           case icodes.retCat =>
           def genRetInstr() = (instr: @unchecked) match {
             case RETURN(kind) => jcode emitRETURN kind
             case THROW(_) => emit(Opcodes.ATHROW)
           }
-          genRetInstr
+          genRetInstr()
         }
       }
 
@@ -2732,7 +2732,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                 abort("Unknown arithmetic primitive " + primitive)
             }
             }
-            genArith
+            genArith()
 
           // TODO Logical's 2nd elem should be declared ValueTypeKind, to better approximate its allowed values (isIntSized, its comments appears to convey)
           // TODO GenICode uses `toTypeKind` to define that elem, `toValueTypeKind` would be needed instead.
@@ -2764,7 +2764,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                     if (kind != BOOL) { emitT2T(INT, kind) }
                 }
             }
-            genLogical
+            genLogical()
 
           case Shift(op, kind) =>
             def genShift() = op match {
@@ -2793,7 +2793,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                     emitT2T(INT, kind)
                 }
             }
-            genShift
+            genShift()
 
           case Comparison(op, kind) =>
             def genCompare() = op match {
@@ -2813,7 +2813,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
                 }
             }
-            genCompare
+            genCompare()
 
           case Conversion(src, dst) =>
             debuglog("Converting from: " + src + " to: " + dst)

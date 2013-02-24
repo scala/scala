@@ -28,7 +28,7 @@ trait Printers { self: ICodes =>
 
     def println(s: String) {
       print(s);
-      println
+      println()
     }
 
     def println() {
@@ -55,12 +55,12 @@ trait Printers { self: ICodes =>
     def printClass(cls: IClass) {
       print(cls.symbol.toString()); print(" extends ");
       printList(cls.symbol.info.parents, ", ");
-      indent; println(" {");
+      indent(); println(" {");
       println("// fields:");
-      cls.fields.foreach(printField); println;
+      cls.fields.foreach(printField); println();
       println("// methods");
       cls.methods.foreach(printMethod);
-      undent; println;
+      undent(); println();
       println("}")
     }
 
@@ -80,16 +80,16 @@ trait Printers { self: ICodes =>
         println("locals: " + m.locals.mkString("", ", ", ""))
         println("startBlock: " + m.startBlock)
         println("blocks: " + m.code.blocks.mkString("[", ",", "]"))
-        println
+        println()
         lin.linearize(m) foreach printBlock
         println("}")
 
-        indent; println("Exception handlers: ")
+        indent(); println("Exception handlers: ")
         m.exh foreach printExceptionHandler
 
-        undent; println
+        undent(); println()
       } else
-        println
+        println()
     }
 
     def printParam(p: Local) {
@@ -98,10 +98,10 @@ trait Printers { self: ICodes =>
     }
 
     def printExceptionHandler(e: ExceptionHandler) {
-      indent;
+      indent();
       println("catch (" + e.cls.simpleName + ") in " + e.covered.toSeq.sortBy(_.label) + " starting at: " + e.startBlock);
       println("consisting of blocks: " + e.blocks);
-      undent;
+      undent();
       println("with finalizer: " + e.finalizer);
 //      linearizer.linearize(e.startBlock) foreach printBlock;
     }
@@ -111,9 +111,9 @@ trait Printers { self: ICodes =>
       if (bb.loopHeader) print("[loop header]")
       print(": ");
       if (settings.debug.value) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
-      indent; println
+      indent(); println()
       bb.toList foreach printInstruction
-      undent; println
+      undent(); println()
     }
 
     def printInstruction(i: Instruction) {

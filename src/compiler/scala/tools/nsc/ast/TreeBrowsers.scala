@@ -59,7 +59,7 @@ abstract class TreeBrowsers {
       frame.createFrame(lock)
 
       // wait for the frame to be closed
-      lock.acquire
+      lock.acquire()
       t
     }
 
@@ -81,7 +81,7 @@ abstract class TreeBrowsers {
       frame.createFrame(lock)
 
       // wait for the frame to be closed
-      lock.acquire
+      lock.acquire()
     }
   }
 
@@ -182,13 +182,13 @@ abstract class TreeBrowsers {
      * especially symbols/types would change while the window is visible.
      */
     def createFrame(lock: Lock): Unit = {
-      lock.acquire // keep the lock until the user closes the window
+      lock.acquire() // keep the lock until the user closes the window
 
       frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
       frame.addWindowListener(new WindowAdapter() {
         /** Release the lock, so compilation may resume after the window is closed. */
-        override def windowClosed(e: WindowEvent): Unit = lock.release
+        override def windowClosed(e: WindowEvent): Unit = lock.release()
       });
 
       jTree = new JTree(treeModel) {
@@ -251,7 +251,7 @@ abstract class TreeBrowsers {
           putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_Q, menuKey + shiftKey, false))
           override def actionPerformed(e: ActionEvent) {
             closeWindow()
-            global.currentRun.cancel
+            global.currentRun.cancel()
           }
         }
       )

@@ -157,7 +157,7 @@ class StandardCompileServer extends SocketServer {
       }
     }
     reporter.printSummary()
-    if (isMemoryFullEnough) {
+    if (isMemoryFullEnough()) {
       info("Nulling out compiler due to memory utilization.")
       clearCompiler()
     }

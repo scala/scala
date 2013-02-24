@@ -96,7 +96,7 @@ abstract class ClosureElimination extends SubComponent {
     /* Some embryonic copy propagation. */
     def analyzeMethod(m: IMethod): Unit = try {if (m.hasCode) {
       cpp.init(m)
-      cpp.run
+      cpp.run()
 
       m.linearizedBlocks() foreach { bb =>
         var info = cpp.in(bb)
@@ -200,7 +200,7 @@ abstract class ClosureElimination extends SubComponent {
     def apply(m: IMethod): Unit = if (m.hasCode) {
       liveness = new global.icodes.liveness.LivenessAnalysis
       liveness.init(m)
-      liveness.run
+      liveness.run()
       m foreachBlock transformBlock
     }
 

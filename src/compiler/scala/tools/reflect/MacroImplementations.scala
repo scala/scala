@@ -88,7 +88,7 @@ abstract class MacroImplementations {
       var idx = 0
 
       if (!first) {
-        val arg = argsStack.pop
+        val arg = argsStack.pop()
         if (strIsEmpty || (str charAt 0) != '%') {
           bldr append "%s"
           defval(arg, AnyTpe)

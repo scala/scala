@@ -118,7 +118,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
           }
         case _ => ()
       }
-      docletInstance.generate
+      docletInstance.generate()
     }
 
     try generate()

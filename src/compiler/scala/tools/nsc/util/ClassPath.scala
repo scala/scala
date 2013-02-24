@@ -254,7 +254,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
       else if (f.isDirectory && validPackage(f.name))
         packageBuf += new SourcePath[T](f, context)
     }
-    (packageBuf.result, classBuf.result)
+    (packageBuf.result(), classBuf.result())
   }
 
   lazy val (packages, classes) = traverse()
@@ -281,7 +281,7 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
       else if (f.isDirectory && validPackage(f.name))
         packageBuf += new DirectoryClassPath(f, context)
     }
-    (packageBuf.result, classBuf.result)
+    (packageBuf.result(), classBuf.result())
   }
 
   lazy val (packages, classes) = traverse()

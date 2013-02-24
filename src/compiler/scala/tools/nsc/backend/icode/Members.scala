@@ -58,7 +58,7 @@ trait Members {
     }
 
     // Constructor code
-    startBlock = newBlock
+    startBlock = newBlock()
 
     def removeBlock(b: BasicBlock) {
       if (settings.debug.value) {
@@ -155,7 +155,7 @@ trait Members {
   class IMethod(val symbol: Symbol) extends IMember {
     var code: Code = NoCode
 
-    def newBlock() = code.newBlock
+    def newBlock() = code.newBlock()
     def startBlock = code.startBlock
     def lastBlock  = { assert(blocks.nonEmpty, symbol); blocks.last }
     def blocks = code.blocksList
@@ -232,7 +232,7 @@ trait Members {
       var bb = code.startBlock
       while (!nextBlock.isEmpty) {
         if (nextBlock.isDefinedAt(bb)) {
-          bb.open
+          bb.open()
           var succ = bb
           do {
             succ = nextBlock(succ);
@@ -246,7 +246,7 @@ trait Members {
             val oldTKs = lastInstr.consumedTypes
             assert(lastInstr.consumed == oldTKs.size, "Someone forgot to override consumedTypes() in " +  lastInstr)
 
-              bb.removeLastInstruction
+              bb.removeLastInstruction()
               for(tk <- oldTKs.reverse) { bb.emit(DROP(tk), lastInstr.pos) }
               succ.toList foreach { i => bb.emit(i, i.pos) }
               code.removeBlock(succ)
@@ -254,9 +254,9 @@ trait Members {
 
             nextBlock -= bb
           } while (nextBlock.isDefinedAt(succ))
-          bb.close
+          bb.close()
         } else
-          bb = nextBlock.keysIterator.next
+          bb = nextBlock.keysIterator.next()
       }
       checkValid(this)
     }

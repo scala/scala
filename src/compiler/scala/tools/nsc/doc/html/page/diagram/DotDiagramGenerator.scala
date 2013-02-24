@@ -315,7 +315,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
    * Calls dot with a given dot string and returns the SVG output.
    */
   private def generateSVG(dotInput: String, template: DocTemplateEntity) = {
-    val dotOutput = DiagramGenerator.getDotRunner.feedToDot(dotInput, template)
+    val dotOutput = DiagramGenerator.getDotRunner().feedToDot(dotInput, template)
     var tSVG = -System.currentTimeMillis
 
     val result = if (dotOutput != null) {

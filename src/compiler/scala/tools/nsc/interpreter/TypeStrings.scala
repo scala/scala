@@ -140,7 +140,7 @@ trait StructuredTypeStrings extends DestructureTypes {
     def wrapAtom[U](value: U)                 = new TypeAtom(value)
   }
 
-  def show(tp: Type): String = intoNodes(tp).show
+  def show(tp: Type): String = intoNodes(tp).show()
 }
 
 

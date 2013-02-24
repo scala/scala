@@ -607,7 +607,7 @@ trait Infer extends Checkable {
           )
         ))
       }
-      buf.result
+      buf.result()
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,

@@ -21,11 +21,11 @@ object MainTokenMetric {
     var totale = 0
     for (source <- fnames) {
       val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
-      s.nextToken
+      s.nextToken()
       var i = 0
       while (s.token != EOF) {
         i += 1
-        s.nextToken
+        s.nextToken()
       }
       Console.println(i.toString + " " + source.toString())
       totale += i

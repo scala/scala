@@ -78,7 +78,7 @@ trait Linearizers {
         }
       }
 
-    def dequeue: Elem = worklist.pop;
+    def dequeue: Elem = worklist.pop();
 
     /**
      * Prepend b to the list, if not already scheduled.
@@ -146,7 +146,7 @@ trait Linearizers {
     def linearize(m: IMethod): List[BasicBlock] = {
       blocks = Nil;
       visited.clear()
-      added.clear;
+      added.clear();
 
       m.exh foreach (b => rpo(b.startBlock));
       rpo(m.startBlock);

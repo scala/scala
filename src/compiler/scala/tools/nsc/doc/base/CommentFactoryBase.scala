@@ -516,7 +516,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else {
           val s = summary()
           val r =
-            if (checkParaEnded) List(s) else List(s, inline(false))
+            if (checkParaEnded()) List(s) else List(s, inline(false))
           summaryParsed = true
           Paragraph(Chain(r))
         }

@@ -110,7 +110,7 @@ class Same extends ScalaMatchingTask {
 \*============================================================================*/
 
   override def execute() = {
-    validateAttributes
+    validateAttributes()
     val mapper = getMapper
     allEqualNow = true
     val originNames: Array[String] = getDirectoryScanner(origin.get).getIncludedFiles

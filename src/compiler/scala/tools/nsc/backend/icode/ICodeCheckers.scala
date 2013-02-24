@@ -208,7 +208,7 @@ abstract class ICodeCheckers {
               if (s1.length != s2.length) {
                 if (allUnits(s1) && allUnits(s2))
                   workaround("Ignoring mismatched boxed units")
-                else if (isHandlerBlock)
+                else if (isHandlerBlock())
                   workaround("Ignoring mismatched stacks entering exception handler")
                 else
                   throw new CheckerException(incompatibleString)

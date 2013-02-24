@@ -21,7 +21,7 @@ abstract class Generator {
   /** Outputs documentation (as a side effect). */
   def generate(): Unit = {
     assert(checks forall { check => check() })
-    generateImpl
+    generateImpl()
   }
 
   /** Outputs documentation (as a side effect). This method is called only if all `checks` are true. */

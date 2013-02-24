@@ -71,7 +71,7 @@ trait MatchTranslation { self: PatternMatching  =>
       }
 
       while (it.hasNext) {
-        val cdef = it.next
+        val cdef = it.next()
         // If a default case has been seen, then every succeeding case is unreachable.
         if (vpat != null)
           context.unit./*error*/warning(cdef.body.pos, "unreachable code due to " + vpat + addendum(cdef.pat))

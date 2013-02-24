@@ -525,7 +525,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         //Console.println(opc.overriding/* + ":" + opc.overriding.tpe*/ + " in "+opc.overriding.fullName + " overrides " + opc.overridden/* + ":" + opc.overridden.tpe*/ + " in "+opc.overridden.fullName + "/"+ opc.overridden.hasFlag(DEFERRED));//debug
         if (!opc.overridden.isClass) checkOverride(opc.overriding, opc.overridden);
 
-        opc.next
+        opc.next()
       }
       printMixinOverrideErrors()
 

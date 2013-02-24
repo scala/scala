@@ -215,12 +215,12 @@ abstract class OverridingPairs {
               curEntry = curEntry.next
             } while ((curEntry ne null) && (visited contains curEntry));
             nextEntry = curEntry
-            next
+            next()
           }
         }
       }
     }
 
-    next
+    next()
   }
 }

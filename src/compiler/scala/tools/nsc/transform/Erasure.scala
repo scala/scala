@@ -389,7 +389,7 @@ abstract class Erasure extends AddInterfaces
         if (enteringExplicitOuter(!member.isDeferred))
           checkPair(member, other)
 
-        opc.next
+        opc.next()
       }
       (bridges, toBeRemoved)
     }
@@ -900,7 +900,7 @@ abstract class Erasure extends AddInterfaces
                      opc.overridden.infosString)
           doubleDefError(opc.overriding, opc.overridden)
         }
-        opc.next
+        opc.next()
       }
     }
 
