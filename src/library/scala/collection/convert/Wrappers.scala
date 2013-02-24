@@ -27,9 +27,9 @@ private[collection] trait Wrappers {
 
   case class IteratorWrapper[A](underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] {
     def hasNext = underlying.hasNext
-    def next() = underlying.next
+    def next() = underlying.next()
     def hasMoreElements = underlying.hasNext
-    def nextElement() = underlying.next
+    def nextElement() = underlying.next()
     def remove() = throw new UnsupportedOperationException
   }
 
@@ -108,7 +108,7 @@ private[collection] trait Wrappers {
       val ui = underlying.iterator
       var prev: Option[A] = None
       def hasNext = ui.hasNext
-      def next = { val e = ui.next; prev = Some(e); e }
+      def next = { val e = ui.next(); prev = Some(e); e }
       def remove = prev match {
         case Some(e) =>
           underlying match {
@@ -180,7 +180,7 @@ private[collection] trait Wrappers {
         def hasNext = ui.hasNext
 
         def next() = {
-          val (k, v) = ui.next
+          val (k, v) = ui.next()
           prev = Some(k)
           new ju.Map.Entry[A, B] {
             import scala.util.hashing.byteswap32

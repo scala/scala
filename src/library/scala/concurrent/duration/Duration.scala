@@ -103,7 +103,7 @@ object Duration {
    * Extract length and time unit out of a duration, if it is finite.
    */
   def unapply(d: Duration): Option[(Long, TimeUnit)] =
-    if (d.isFinite) Some((d.length, d.unit)) else None
+    if (d.isFinite()) Some((d.length, d.unit)) else None
 
   /**
    * Construct a possibly infinite or undefined Duration from the given number of nanoseconds.
@@ -623,7 +623,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   // if this is made a constant, then scalac will elide the conditional and always return +0.0, SI-6331
   private[this] def minusZero = -0d
   def /(divisor: Duration): Double =
-    if (divisor.isFinite) toNanos.toDouble / divisor.toNanos
+    if (divisor.isFinite()) toNanos.toDouble / divisor.toNanos
     else if (divisor eq Undefined) Double.NaN
     else if ((length < 0) ^ (divisor > Zero)) 0d
     else minusZero

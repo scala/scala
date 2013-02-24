@@ -104,7 +104,7 @@ override def companion: GenericCompanion[Vector] = Vector
       if (0 < i) {
         i -= 1
         self(i)
-      } else Iterator.empty.next
+      } else Iterator.empty.next()
   }
 
   // TODO: reverse
@@ -261,7 +261,7 @@ override def companion: GenericCompanion[Vector] = Vector
         //println("----- appendFront " + value + " at " + (startIndex - 1) + " reached block start")
         if (shift != 0) {
           // case A: we can shift right on the top level
-          debug
+          debug()
           //println("shifting right by " + shiftBlocks + " at level " + (depth-1) + " (had "+freeSpace+" free space)")
 
           if (depth > 1) {
@@ -271,7 +271,7 @@ override def companion: GenericCompanion[Vector] = Vector
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
-            s.debug
+            s.debug()
             s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
             s.display0(lo) = value.asInstanceOf[AnyRef]
             //assert(depth == s.depth)
@@ -289,7 +289,7 @@ override def companion: GenericCompanion[Vector] = Vector
             s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
             s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
             s.display0(shift-1) = value.asInstanceOf[AnyRef]
-            s.debug
+            s.debug()
             s
           }
         } else if (blockIndex < 0) {
@@ -304,10 +304,10 @@ override def companion: GenericCompanion[Vector] = Vector
           val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
           s.initFrom(this)
           s.dirty = dirty
-          s.debug
+          s.debug()
           s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
           s.display0(lo) = value.asInstanceOf[AnyRef]
-          s.debug
+          s.debug()
           //assert(s.depth == depth+1)
           s
         } else {
@@ -357,7 +357,7 @@ override def companion: GenericCompanion[Vector] = Vector
         //println("----- appendBack " + value + " at " + endIndex + " reached block end")
 
         if (shift != 0) {
-          debug
+          debug()
           //println("shifting left by " + shiftBlocks + " at level " + (depth-1) + " (had "+startIndex+" free space)")
           if (depth > 1) {
             val newBlockIndex = blockIndex - shift
@@ -366,10 +366,10 @@ override def companion: GenericCompanion[Vector] = Vector
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
-            s.debug
+            s.debug()
             s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(lo) = value.asInstanceOf[AnyRef]
-            s.debug
+            s.debug()
             //assert(depth == s.depth)
             s
           } else {
@@ -385,7 +385,7 @@ override def companion: GenericCompanion[Vector] = Vector
             s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
             s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(32 - shift) = value.asInstanceOf[AnyRef]
-            s.debug
+            s.debug()
             s
           }
         } else {
@@ -400,7 +400,7 @@ override def companion: GenericCompanion[Vector] = Vector
           //assert(s.depth == depth+1) might or might not create new level!
           if (s.depth == depth+1) {
             //println("creating new level " + s.depth + " (had "+0+" free space)")
-            s.debug
+            s.debug()
           }
           s
         }

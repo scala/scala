@@ -94,7 +94,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   def hasNext = (subIter ne null) || depth >= 0
   def next(): T = {
     if (subIter ne null) {
-      val el = subIter.next
+      val el = subIter.next()
       if (!subIter.hasNext)
         subIter = null
       el
@@ -135,7 +135,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     }
     else {
       subIter = m.iterator
-      next
+      next()
     }
     // The much slower version:
     //

@@ -229,11 +229,11 @@ private class AVLIterator[A](root: Node[A]) extends Iterator[A] {
   private def engageRight(): Unit = {
     if (Leaf != stack.head.right) {
       val right: Node[A] = stack.head.right.asInstanceOf[Node[A]]
-      stack.pop
+      stack.pop()
       stack.push(right)
       diveLeft()
     } else
-      stack.pop
+      stack.pop()
   }
 
   override def hasNext: Boolean = !stack.isEmpty

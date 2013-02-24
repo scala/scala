@@ -2355,7 +2355,7 @@ trait Types extends api.Types { self: SymbolTable =>
       h = mix(h, pre.hashCode)
       h = mix(h, sym.hashCode)
       if (hasArgs)
-        finalizeHash(mix(h, args.hashCode), 3)
+        finalizeHash(mix(h, args.hashCode()), 3)
       else
         finalizeHash(h, 2)
     }

@@ -510,7 +510,7 @@ object RedBlackTree {
      */
     private[this] def startFrom(key: A) : Tree[A,B] = if (root eq null) null else {
       @tailrec def find(tree: Tree[A, B]): Tree[A, B] = 
-        if (tree eq null) popNext
+        if (tree eq null) popNext()
         else find(
           if (ordering.lteq(key, tree.key)) goLeft(tree)
           else goRight(tree)

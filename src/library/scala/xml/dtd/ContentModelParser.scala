@@ -26,14 +26,14 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
         scala.sys.error("expected "+token2string(tok)+
               ", got unexpected token:"+token2string(token))
     }
-    nextToken
+    nextToken()
   }
 
   // s [ '+' | '*' | '?' ]
   def maybeSuffix(s: RegExp) = token match {
-    case STAR => nextToken; Star(s)
-    case PLUS => nextToken; Sequ(s, Star(s))
-    case OPT  => nextToken; Alt(Eps, s)
+    case STAR => nextToken(); Star(s)
+    case PLUS => nextToken(); Sequ(s, Star(s))
+    case OPT  => nextToken(); Alt(Eps, s)
     case _    => s
   }
 
@@ -48,18 +48,18 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
     }
     case LPAREN =>
 
-      nextToken
-      sOpt
+      nextToken()
+      sOpt()
       if (token != TOKEN_PCDATA)
         ELEMENTS(regexp)
       else {
-        nextToken
+        nextToken()
         token match {
         case RPAREN =>
           PCDATA
         case CHOICE =>
           val res = MIXED(choiceRest(Eps))
-          sOpt
+          sOpt()
           accept( RPAREN )
           accept( STAR )
           res
@@ -72,7 +72,7 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
       scala.sys.error("unexpected token:" + token2string(token) )
   }
   //                                  sopt ::= S?
-  def sOpt() = if( token == S ) nextToken
+  def sOpt() = if( token == S ) nextToken()
 
   //                      (' S? mixed ::= '#PCDATA' S? ')'
   //                                    | '#PCDATA' (S? '|' S? atom)* S? ')*'
@@ -80,9 +80,9 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   //       '(' S? regexp ::= cp S? [seqRest|choiceRest] ')' [ '+' | '*' | '?' ]
   def regexp: RegExp = {
     val p = particle
-    sOpt
+    sOpt()
     maybeSuffix(token match {
-      case RPAREN  => nextToken; p
+      case RPAREN  => nextToken(); p
       case CHOICE  => val q = choiceRest( p );accept( RPAREN ); q
       case COMMA   => val q = seqRest( p );   accept( RPAREN ); q
     })
@@ -92,10 +92,10 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   def seqRest(p: RegExp) = {
     var k = List(p)
     while( token == COMMA ) {
-      nextToken
-      sOpt
+      nextToken()
+      sOpt()
       k = particle::k
-      sOpt
+      sOpt()
     }
     Sequ( k.reverse:_* )
   }
@@ -104,10 +104,10 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   def choiceRest( p:RegExp ) = {
     var k = List( p )
     while( token == CHOICE ) {
-      nextToken
-      sOpt
+      nextToken()
+      sOpt()
       k = particle::k
-      sOpt
+      sOpt()
     }
     Alt( k.reverse:_* )
   }
@@ -115,14 +115,14 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   //                                  particle ::=  '(' S? regexp
   //                                             |  name [ '+' | '*' | '?' ]
   def particle = token match {
-    case LPAREN => nextToken; sOpt; regexp
-    case NAME   => val a = Letter(ElemName(value)); nextToken; maybeSuffix(a)
+    case LPAREN => nextToken(); sOpt(); regexp
+    case NAME   => val a = Letter(ElemName(value)); nextToken(); maybeSuffix(a)
     case _      => scala.sys.error("expected '(' or Name, got:"+token2string(token))
   }
 
   //                                     atom ::= name
   def atom = token match {
-    case NAME   => val a = Letter(ElemName(value)); nextToken; a
+    case NAME   => val a = Letter(ElemName(value)); nextToken(); a
     case _      => scala.sys.error("expected Name, got:"+token2string(token))
   }
 }

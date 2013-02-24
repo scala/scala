@@ -100,7 +100,7 @@ class ListSet[A] extends AbstractSet[A]
    */
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
-    else (new ListSet.ListSetBuilder(this) ++= xs.seq).result
+    else (new ListSet.ListSetBuilder(this) ++= xs.seq).result()
 
   private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
   private[ListSet] def unchecked_outer: ListSet[A] =
@@ -120,7 +120,7 @@ class ListSet[A] extends AbstractSet[A]
         that = that.tail
         res
       }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   /**

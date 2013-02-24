@@ -27,7 +27,7 @@ abstract class ScalaBeanInfo(clazz: java.lang.Class[_],
     for (m <- clazz.getMethods if methods.exists(_ == m.getName))
       yield new MethodDescriptor(m)
 
-  init
+  init()
 
   override def getPropertyDescriptors() = pd
   override def getMethodDescriptors() = md

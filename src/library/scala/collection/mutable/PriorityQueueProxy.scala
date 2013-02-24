@@ -66,7 +66,7 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    *
    *  @return   the element with the highest priority.
    */
-  override def dequeue(): A = self.dequeue
+  override def dequeue(): A = self.dequeue()
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.
@@ -78,7 +78,7 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear(): Unit = self.clear
+  override def clear(): Unit = self.clear()
 
   /** Returns a regular queue containing the same elements.
    */

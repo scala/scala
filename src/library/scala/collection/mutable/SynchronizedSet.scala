@@ -69,7 +69,7 @@ trait SynchronizedSet[A] extends Set[A] {
   }
 
   abstract override def clear(): Unit = synchronized {
-    super.clear
+    super.clear()
   }
 
   override def subsetOf(that: scala.collection.GenSet[A]) = synchronized {

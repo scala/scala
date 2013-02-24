@@ -437,7 +437,7 @@ extends MainNode[K, V] {
     val updmap = listmap - k
     if (updmap.size > 1) new LNode(updmap)
     else {
-      val (k, v) = updmap.iterator.next
+      val (k, v) = updmap.iterator.next()
       new TNode(k, v, ct.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
     }
   }

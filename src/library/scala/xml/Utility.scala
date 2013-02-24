@@ -245,10 +245,10 @@ object Utility extends AnyRef with parsing.TokenTests {
     if (children.isEmpty) return
     else if (children forall isAtomAndNotText) { // add space
       val it = children.iterator
-      val f = it.next
+      val f = it.next()
       serialize(f, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
       while (it.hasNext) {
-        val x = it.next
+        val x = it.next()
         sb.append(' ')
         serialize(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
       }
@@ -333,22 +333,22 @@ object Utility extends AnyRef with parsing.TokenTests {
 
     val it = value.iterator
     while (it.hasNext) {
-      var c = it.next
+      var c = it.next()
       // entity! flush buffer into text node
       if (c == '&') {
-        c = it.next
+        c = it.next()
         if (c == '#') {
-          c = it.next
-          val theChar = parseCharRef ({ ()=> c },{ () => c = it.next },{s => throw new RuntimeException(s)}, {s => throw new RuntimeException(s)})
+          c = it.next()
+          val theChar = parseCharRef ({ ()=> c },{ () => c = it.next() },{s => throw new RuntimeException(s)}, {s => throw new RuntimeException(s)})
           sb.append(theChar)
         }
         else {
           if (rfb eq null) rfb = new StringBuilder()
           rfb append c
-          c = it.next
+          c = it.next()
           while (c != ';') {
             rfb.append(c)
-            c = it.next
+            c = it.next()
           }
           val ref = rfb.toString()
           rfb.clear()

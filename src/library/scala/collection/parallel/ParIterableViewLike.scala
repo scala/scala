@@ -140,7 +140,7 @@ self =>
   } otherwise {
     val b = bf(underlying)
     b ++= this.iterator
-    b.result
+    b.result()
   }
 
   /* wrapper virtual ctors */

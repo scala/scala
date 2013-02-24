@@ -365,7 +365,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
       seedvalue = c.seedvalue
       sizemap = c.sizemap
     }
-    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild
+    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild()
   }
 
   private[collection] def hashTableContents = new HashTable.Contents(

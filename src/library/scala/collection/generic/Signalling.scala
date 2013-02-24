@@ -163,7 +163,7 @@ trait DelegatedSignalling extends Signalling {
   var signalDelegate: Signalling
 
   def isAborted = signalDelegate.isAborted
-  def abort() = signalDelegate.abort
+  def abort() = signalDelegate.abort()
 
   def indexFlag = signalDelegate.indexFlag
   def setIndexFlag(f: Int) = signalDelegate.setIndexFlag(f)

@@ -68,7 +68,7 @@ self =>
       val x = self(i)
       i += 1
       x
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
 
     def head = self(i)
 
@@ -228,7 +228,7 @@ self =>
     b ++= pits(0)
     b ++= patch
     b ++= pits(2)
-    setTaskSupport(b.result, tasksupport)
+    setTaskSupport(b.result(), tasksupport)
   }
 
   def updated[U >: T, That](index: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = if (bf(repr).isCombiner) {
@@ -423,7 +423,7 @@ self =>
     @volatile var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.sameElements(otherpit)
-      if (!result) pit.abort
+      if (!result) pit.abort()
     }
     protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
@@ -471,7 +471,7 @@ self =>
     @volatile var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.corresponds(corr)(otherpit)
-      if (!result) pit.abort
+      if (!result) pit.abort()
     }
     protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {

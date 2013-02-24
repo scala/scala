@@ -111,21 +111,21 @@ extends AbstractMap[A, B]
   override def keysIterator: Iterator[A] = new AbstractIterator[A] {
     val iter    = entriesIterator
     def hasNext = iter.hasNext
-    def next()  = iter.next.key
+    def next()  = iter.next().key
   }
 
   /* Override to avoid tuple allocation */
   override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
     val iter    = entriesIterator
     def hasNext = iter.hasNext
-    def next()  = iter.next.value
+    def next()  = iter.next().value
   }
 
   /** Toggles whether a size map is used to track hash map statistics.
    */
   def useSizeMap(t: Boolean) = if (t) {
-    if (!isSizeMapDefined) sizeMapInitAndRebuild
-  } else sizeMapDisable
+    if (!isSizeMapDefined) sizeMapInitAndRebuild()
+  } else sizeMapDisable()
 
   protected def createNewEntry[B1](key: A, value: B1): Entry = {
     new Entry(key, value.asInstanceOf[B])

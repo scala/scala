@@ -171,7 +171,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  with unequal hashCodes.
    */
   override def hashCode(): Int =
-    if (isWhole) unifiedPrimitiveHashcode
+    if (isWhole()) unifiedPrimitiveHashcode()
     else doubleValue.##
 
   /** Compares this BigDecimal with the specified value for equality.

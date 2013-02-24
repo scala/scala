@@ -151,7 +151,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
       b += these.head
       these = these.tail
     }
-    b.result
+    b.result()
   }
 
   override /*TraversableLike*/
@@ -186,7 +186,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
       these = these.tail
       lead = lead.tail
     }
-    b.result
+    b.result()
   }
 
   override /*IterableLike*/
@@ -194,7 +194,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     var these: Repr = repr
     var count = from max 0
     if (until <= count)
-      return newBuilder.result
+      return newBuilder.result()
 
     val b = newBuilder
     var sliceElems = until - count
@@ -207,7 +207,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
       b += these.head
       these = these.tail
     }
-    b.result
+    b.result()
   }
 
   override /*IterableLike*/
@@ -218,7 +218,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
       b += these.head
       these = these.tail
     }
-    b.result
+    b.result()
   }
 
   override /*TraversableLike*/
@@ -229,7 +229,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
       b += these.head
       these = these.tail
     }
-    (b.result, these)
+    (b.result(), these)
   }
 
   override /*IterableLike*/

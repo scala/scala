@@ -90,7 +90,7 @@ extends AbstractSeq[A]
   }
 
   override def clone(): ArraySeq[A] = {
-    val cloned = array.clone.asInstanceOf[Array[AnyRef]]
+    val cloned = array.clone().asInstanceOf[Array[AnyRef]]
     new ArraySeq[A](length) {
       override val array = cloned
     }

@@ -764,7 +764,7 @@ abstract class ICodeReader extends ClassfileParser {
 
 //      method.dump
       tfa.init(method)
-      tfa.run
+      tfa.run()
       for (bb <- linearizer.linearize(method)) {
         var info = tfa.in(bb)
         for (i <- bb.toList) {

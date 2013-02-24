@@ -47,7 +47,7 @@ extends Combiner[T, ParArray[T]] {
   }
 
   def clear() {
-    buff.clear
+    buff.clear()
   }
 
   override def sizeHint(sz: Int) = {

@@ -232,7 +232,7 @@ abstract class Inliners extends SubComponent {
 
       val hasRETURN = containsRETURN(incm.code.blocksList) || (incm.exh exists { eh => containsRETURN(eh.blocks) })
       var a: analysis.MethodTFA = null
-      if(hasRETURN) { a = new analysis.MethodTFA(incm); a.run }
+      if(hasRETURN) { a = new analysis.MethodTFA(incm); a.run() }
 
       if(forceable) { recentTFAs.put(incm.symbol, (hasRETURN, a)) }
 

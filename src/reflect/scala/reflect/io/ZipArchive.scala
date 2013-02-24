@@ -61,13 +61,13 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
 
   override def underlyingSource = Some(this)
   def isDirectory = true
-  def lookupName(name: String, directory: Boolean) = unsupported
-  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
-  def create()  = unsupported
-  def delete()  = unsupported
-  def output    = unsupported
-  def container = unsupported
-  def absolute  = unsupported
+  def lookupName(name: String, directory: Boolean) = unsupported()
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
+  def create()  = unsupported()
+  def delete()  = unsupported()
+  def output    = unsupported()
+  def container = unsupported()
+  def absolute  = unsupported()
 
   private def walkIterator(its: Iterator[AbstractFile]): Iterator[AbstractFile] = {
     its flatMap { f =>

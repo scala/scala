@@ -124,7 +124,7 @@ extends AbstractMap[Key, Value]
     put(key, hashOf(key), value)
 
   private def put(key: Key, hash: Int, value: Value): Option[Value] = {
-    if (2 * (size + deleted) > mask) growTable
+    if (2 * (size + deleted) > mask) growTable()
     val index = findIndex(key, hash)
     val entry = table(index)
     if (entry == null) {

@@ -226,7 +226,7 @@ self =>
         if (all) i = nextuntil
         else {
           i = until
-          abort
+          abort()
         }
 
         if (isAborted) return false
@@ -254,7 +254,7 @@ self =>
         some = exists_quick(p, array, nextuntil, i)
         if (some) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return true
@@ -283,7 +283,7 @@ self =>
 
         if (r != None) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return r

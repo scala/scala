@@ -60,7 +60,7 @@ self =>
       val r = range.apply(ind)
       ind += 1
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
 
     private def rangeleft = range.drop(ind)
 
