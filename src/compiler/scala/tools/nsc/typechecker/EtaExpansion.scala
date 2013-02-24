@@ -98,7 +98,7 @@ trait EtaExpansion { self: Analyzer =>
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args).clearType()
         case Select(qual, name) =>
-          treeCopy.Select(tree, liftout(qual, false), name).clearType() setSymbol NoSymbol
+          treeCopy.Select(tree, liftout(qual, byName = false), name).clearType() setSymbol NoSymbol
         case Ident(name) =>
           tree
       }

@@ -85,8 +85,8 @@ trait Contexts { self: Analyzer =>
     else RootImports.completeList
   }
 
-  def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, false)
-  def rootContext(unit: CompilationUnit, tree: Tree): Context = rootContext(unit, tree, false)
+  def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, erasedTypes = false)
+  def rootContext(unit: CompilationUnit, tree: Tree): Context = rootContext(unit, tree, erasedTypes = false)
   def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: Boolean): Context = {
     var sc = startContext
     for (sym <- rootImports(unit)) {
@@ -443,7 +443,7 @@ trait Contexts { self: Analyzer =>
       else throw new TypeError(pos, msg1)
     }
 
-    def warning(pos: Position, msg: String): Unit = warning(pos, msg, false)
+    def warning(pos: Position, msg: String): Unit = warning(pos, msg, force = false)
     def warning(pos: Position, msg: String, force: Boolean) {
       if (reportErrors || force) unit.warning(pos, msg)
       else if (bufferErrors) warningsBuffer += ((pos, msg))

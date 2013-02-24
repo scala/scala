@@ -321,7 +321,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     val result = if (dotOutput != null) {
       val src = scala.io.Source.fromString(dotOutput)
       try {
-        val cpa = scala.xml.parsing.ConstructingParser.fromSource(src, false)
+        val cpa = scala.xml.parsing.ConstructingParser.fromSource(src, preserveWS = false)
         val doc = cpa.document()
         if (doc != null)
           transform(doc.docElem)

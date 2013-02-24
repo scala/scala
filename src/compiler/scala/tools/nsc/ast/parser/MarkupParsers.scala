@@ -256,7 +256,7 @@ trait MarkupParsers {
       val (qname, attrMap) = xTag(())
       if (ch == '/') { // empty element
         xToken("/>")
-        handle.element(r2p(start, start, curOffset), qname, attrMap, true, new ListBuffer[Tree])
+        handle.element(r2p(start, start, curOffset), qname, attrMap, empty = true, new ListBuffer[Tree])
       }
       else { // handle content
         xToken('>')
@@ -270,7 +270,7 @@ trait MarkupParsers {
         val pos = r2p(start, start, curOffset)
         qname match {
           case "xml:group" => handle.group(pos, ts)
-          case _ => handle.element(pos, qname, attrMap, false, ts)
+          case _ => handle.element(pos, qname, attrMap, empty = false, ts)
         }
       }
     }

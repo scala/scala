@@ -1421,10 +1421,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         }
       }
       if (settings.Xshowcls.isSetByUser)
-        showDef(splitClassAndPhase(settings.Xshowcls.value, false), false, globalPhase)
+        showDef(splitClassAndPhase(settings.Xshowcls.value, term = false), declsOnly = false, globalPhase)
 
       if (settings.Xshowobj.isSetByUser)
-        showDef(splitClassAndPhase(settings.Xshowobj.value, true), false, globalPhase)
+        showDef(splitClassAndPhase(settings.Xshowobj.value, term = true), declsOnly = false, globalPhase)
     }
 
     // Similarly, this will only be created under -Yshow-syms.

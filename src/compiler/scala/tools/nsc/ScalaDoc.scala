@@ -60,7 +60,7 @@ object ScalaDoc extends ScalaDoc {
   class Command(arguments: List[String], settings: doc.Settings) extends CompilerCommand(arguments, settings) {
     override def cmdName = "scaladoc"
     override def usageMsg = (
-      createUsageMsg("where possible scaladoc", false, x => x.isStandard && settings.isScaladocSpecific(x.name)) +
+      createUsageMsg("where possible scaladoc", shouldExplain = false, x => x.isStandard && settings.isScaladocSpecific(x.name)) +
       "\n\nStandard scalac options also available:" +
       createUsageMsg(x => x.isStandard && !settings.isScaladocSpecific(x.name))
     )

@@ -436,7 +436,7 @@ abstract class UnCurry extends InfoTransform
 
             if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)
 
-            withNeedLift(false) {
+            withNeedLift(needLift = false) {
               if (dd.symbol.isClassConstructor) {
                 atOwner(sym) {
                   val rhs1 = (rhs: @unchecked) match {
@@ -460,11 +460,11 @@ abstract class UnCurry extends InfoTransform
           case ValDef(_, _, _, rhs) =>
             if (sym eq NoSymbol) throw new IllegalStateException("Encountered Valdef without symbol: "+ tree + " in "+ unit)
             if (!sym.owner.isSourceMethod)
-              withNeedLift(true) { super.transform(tree) }
+              withNeedLift(needLift = true) { super.transform(tree) }
             else
               super.transform(tree)
           case UnApply(fn, args) =>
-            val fn1 = withInPattern(false)(transform(fn))
+            val fn1 = withInPattern(value = false)(transform(fn))
             val args1 = transformTrees(fn.symbol.name match {
               case nme.unapply    => args
               case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.pos, fn.symbol, fn.tpe, args.length))
@@ -480,13 +480,13 @@ abstract class UnCurry extends InfoTransform
             }
 
           case Assign(_: RefTree, _) =>
-            withNeedLift(true) { super.transform(tree) }
+            withNeedLift(needLift = true) { super.transform(tree) }
 
           case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
-            withNeedLift(true) { super.transform(tree) }
+            withNeedLift(needLift = true) { super.transform(tree) }
 
           case ret @ Return(_) if (isNonLocalReturn(ret)) =>
-            withNeedLift(true) { super.transform(ret) }
+            withNeedLift(needLift = true) { super.transform(ret) }
 
           case Try(_, Nil, _) =>
             // try-finally does not need lifting: lifting is needed only for try-catch
@@ -500,7 +500,7 @@ abstract class UnCurry extends InfoTransform
             else super.transform(tree)
 
           case CaseDef(pat, guard, body) =>
-            val pat1 = withInPattern(true)(transform(pat))
+            val pat1 = withInPattern(value = true)(transform(pat))
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
 
           case fun @ Function(_, _) =>

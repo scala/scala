@@ -224,7 +224,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           transformTemplate
 
         case TypeApply(sel @ Select(This(_), name), args) =>
-          mayNeedProtectedAccessor(sel, args, false)
+          mayNeedProtectedAccessor(sel, args, goToSuper = false)
 
         // set a flag for all type parameters with `@specialized` annotation so it can be pickled
         case typeDef: TypeDef if typeDef.symbol.deSkolemize.hasAnnotation(definitions.SpecializedClass) =>
@@ -274,7 +274,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
                 }).asInstanceOf[Select]
                 debuglog("alias replacement: " + tree + " ==> " + result); //debug
-                localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, true))
+                localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, beforeRefChecks = true))
               } else {
                 /**
                  * A trait which extends a class and accesses a protected member
@@ -302,7 +302,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   ensureAccessor(sel)
                 }
                 else
-                  mayNeedProtectedAccessor(sel, EmptyTree.asList, false)
+                  mayNeedProtectedAccessor(sel, EmptyTree.asList, goToSuper = false)
               }
 
             case Super(_, mix) =>
@@ -315,7 +315,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               transformSuperSelect(sel)
 
             case _ =>
-              mayNeedProtectedAccessor(sel, EmptyTree.asList, true)
+              mayNeedProtectedAccessor(sel, EmptyTree.asList, goToSuper = true)
           }
           }
           transformSelect
@@ -324,7 +324,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, withInvalidOwner(transform(rhs)))
 
         case TypeApply(sel @ Select(qual, name), args) =>
-          mayNeedProtectedAccessor(sel, args, true)
+          mayNeedProtectedAccessor(sel, args, goToSuper = true)
 
         case Assign(lhs @ Select(qual, name), rhs) =>
           def transformAssign = {

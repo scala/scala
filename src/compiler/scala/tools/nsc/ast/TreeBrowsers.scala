@@ -169,8 +169,8 @@ abstract class TreeBrowsers {
       _setExpansionState(root, new TreePath(root.getModel.getRoot))
     }
 
-    def expandAll(subtree: JTree) = setExpansionState(subtree, true)
-    def collapseAll(subtree: JTree) = setExpansionState(subtree, false)
+    def expandAll(subtree: JTree) = setExpansionState(subtree, expand = true)
+    def collapseAll(subtree: JTree) = setExpansionState(subtree, expand = false)
 
 
     /** Create a frame that displays the AST.

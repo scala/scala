@@ -30,10 +30,10 @@ trait StructuredTypeStrings extends DestructureTypes {
       else elems.mkString(ldelim, mdelim, rdelim)
     )
   }
-  val NoGrouping      = Grouping("", "", "", false)
-  val ListGrouping    = Grouping("(", ", ", ")", false)
-  val ProductGrouping = Grouping("(", ", ", ")", true)
-  val BlockGrouping   = Grouping(" { ", "; ", "}", false)
+  val NoGrouping      = Grouping("", "", "", labels = false)
+  val ListGrouping    = Grouping("(", ", ", ")", labels = false)
+  val ProductGrouping = Grouping("(", ", ", ")", labels = true)
+  val BlockGrouping   = Grouping(" { ", "; ", "}", labels = false)
 
   private def str(level: Int)(body: => String): String = "  " * level + body
   private def block(level: Int, grouping: Grouping)(name: String, nodes: List[TypeNode]): String = {
@@ -66,7 +66,7 @@ trait StructuredTypeStrings extends DestructureTypes {
     def nodes: List[TypeNode]
 
     def show(indent: Int, showLabel: Boolean): String = maybeBlock(indent, grouping)(mkPrefix(showLabel), nodes)
-    def show(indent: Int): String = show(indent, true)
+    def show(indent: Int): String = show(indent, showLabel = true)
     def show(): String = show(0)
 
     def withLabel(l: String): this.type = modifyNameInfo(_.copy(label = l))

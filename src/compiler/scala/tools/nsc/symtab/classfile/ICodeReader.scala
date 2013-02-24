@@ -71,7 +71,7 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def parseField() {
-    val (jflags, sym) = parseMember(true)
+    val (jflags, sym) = parseMember(field = true)
     getCode(jflags) addField new IField(sym)
     skipAttributes()
   }
@@ -90,9 +90,9 @@ abstract class ICodeReader extends ClassfileParser {
         (jflags, NoSymbol)
       else {
         val owner = getOwner(jflags)
-        var sym = owner.info.findMember(name, 0, 0, false).suchThat(old => sameType(old.tpe, tpe))
+        var sym = owner.info.findMember(name, 0, 0, stableOnly = false).suchThat(old => sameType(old.tpe, tpe))
         if (sym == NoSymbol)
-          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
+          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
         if (sym == NoSymbol) {
           sym = if (field) owner.newValue(name.toTermName, owner.pos, toScalaFieldFlags(jflags)) else dummySym
           sym setInfoAndEnter tpe
@@ -119,7 +119,7 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def parseMethod() {
-    val (jflags, sym) = parseMember(false)
+    val (jflags, sym) = parseMember(field = false)
     val beginning = in.bp
     try {
       if (sym != NoSymbol) {
@@ -165,10 +165,10 @@ abstract class ICodeReader extends ClassfileParser {
     }
     else if (nme.isModuleName(name)) {
       val strippedName = nme.stripModuleSuffix(name)
-      forceMangledName(newTermName(strippedName.decode), true) orElse rootMirror.getModuleByName(strippedName)
+      forceMangledName(newTermName(strippedName.decode), module = true) orElse rootMirror.getModuleByName(strippedName)
     }
     else {
-      forceMangledName(name, false)
+      forceMangledName(name, module = false)
       exitingFlatten(rootMirror.getClassByName(name.toTypeName))
     }
     if (sym.isModule)
@@ -466,41 +466,41 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.return_     => code.emit(RETURN(UNIT))
 
         case JVM.getstatic    =>
-          val field = pool.getMemberSymbol(in.nextChar, true); size += 2
+          val field = pool.getMemberSymbol(in.nextChar, static = true); size += 2
           if (field.hasModuleFlag)
             code emit LOAD_MODULE(field)
           else
-            code emit LOAD_FIELD(field, true)
+            code emit LOAD_FIELD(field, isStatic = true)
         case JVM.putstatic   =>
-          val field = pool.getMemberSymbol(in.nextChar, true); size += 2
-          code.emit(STORE_FIELD(field, true))
+          val field = pool.getMemberSymbol(in.nextChar, static = true); size += 2
+          code.emit(STORE_FIELD(field, isStatic = true))
         case JVM.getfield    =>
-          val field = pool.getMemberSymbol(in.nextChar, false); size += 2
-          code.emit(LOAD_FIELD(field, false))
+          val field = pool.getMemberSymbol(in.nextChar, static = false); size += 2
+          code.emit(LOAD_FIELD(field, isStatic = false))
         case JVM.putfield    =>
-          val field = pool.getMemberSymbol(in.nextChar, false); size += 2
-          code.emit(STORE_FIELD(field, false))
+          val field = pool.getMemberSymbol(in.nextChar, static = false); size += 2
+          code.emit(STORE_FIELD(field, isStatic = false))
 
         case JVM.invokevirtual =>
-          val m = pool.getMemberSymbol(in.nextChar, false); size += 2
+          val m = pool.getMemberSymbol(in.nextChar, static = false); size += 2
           code.emit(CALL_METHOD(m, Dynamic))
         case JVM.invokeinterface  =>
-          val m = pool.getMemberSymbol(in.nextChar, false); size += 4
+          val m = pool.getMemberSymbol(in.nextChar, static = false); size += 4
           in.skip(2)
           code.emit(CALL_METHOD(m, Dynamic))
         case JVM.invokespecial   =>
-          val m = pool.getMemberSymbol(in.nextChar, false); size += 2
-          val style = if (m.name == nme.CONSTRUCTOR || m.isPrivate) Static(true)
+          val m = pool.getMemberSymbol(in.nextChar, static = false); size += 2
+          val style = if (m.name == nme.CONSTRUCTOR || m.isPrivate) Static(onInstance = true)
                       else SuperCall(m.owner.name)
           code.emit(CALL_METHOD(m, style))
         case JVM.invokestatic    =>
-          val m = pool.getMemberSymbol(in.nextChar, true); size += 2
+          val m = pool.getMemberSymbol(in.nextChar, static = true); size += 2
           if (isBox(m))
             code.emit(BOX(toTypeKind(m.info.paramTypes.head)))
           else if (isUnbox(m))
             code.emit(UNBOX(toTypeKind(m.info.resultType)))
           else
-            code.emit(CALL_METHOD(m, Static(false)))
+            code.emit(CALL_METHOD(m, Static(onInstance = false)))
 
         case JVM.new_          =>
           code.emit(NEW(REFERENCE(pool.getClassSymbol(in.nextChar))))
@@ -942,7 +942,7 @@ abstract class ICodeReader extends ClassfileParser {
           }
         case None =>
           checkValidIndex()
-          val l = freshLocal(idx, kind, false)
+          val l = freshLocal(idx, kind, isArg = false)
           debuglog("Added new local for idx " + idx + ": " + kind)
           locals += (idx -> List((l, kind)))
           l
@@ -966,7 +966,7 @@ abstract class ICodeReader extends ClassfileParser {
      *  the original method. */
     def freshLocal(kind: TypeKind): Local = {
       count += 1
-      freshLocal(maxLocals + count, kind, false)
+      freshLocal(maxLocals + count, kind, isArg = false)
     }
 
     /** add a method param with the given index. */

@@ -236,8 +236,8 @@ trait TypeDiagnostics {
               val invariant = param.variance.isInvariant
 
               if (conforms)                             Some("")
-              else if ((arg <:< reqArg) && invariant)   mkMsg(true)   // covariant relationship
-              else if ((reqArg <:< arg) && invariant)   mkMsg(false)  // contravariant relationship
+              else if ((arg <:< reqArg) && invariant)   mkMsg(isSubtype = true)   // covariant relationship
+              else if ((reqArg <:< arg) && invariant)   mkMsg(isSubtype = false)  // contravariant relationship
               else None // we assume in other cases our ham-fisted advice will merely serve to confuse
           }
           val messages = relationships.flatten
@@ -546,7 +546,7 @@ trait TypeDiagnostics {
         // It is presumed if you are using a -Y option you would really like to hear
         // the warnings you've requested.
         if (settings.warnDeadCode.value && context.unit.exists && treeOK(tree) && exprOK)
-          context.warning(tree.pos, "dead code following this construct", true)
+          context.warning(tree.pos, "dead code following this construct", force = true)
         tree
       }
 

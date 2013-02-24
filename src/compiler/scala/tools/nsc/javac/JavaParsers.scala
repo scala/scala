@@ -178,7 +178,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           JavaScannerConfiguration.token2string(token) + " expected but " +
             JavaScannerConfiguration.token2string(in.token) + " found."
 
-        syntaxError(posToReport, msg, true)
+        syntaxError(posToReport, msg, skipIt = true)
       }
       if (in.token == token) in.nextToken()
       pos
@@ -224,7 +224,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         case AppliedTypeTree(_, _) | ExistentialTypeTree(_, _) | SelectFromTypeTree(_, _) =>
           tree
         case _ =>
-          syntaxError(tree.pos, "identifier expected", false)
+          syntaxError(tree.pos, "identifier expected", skipIt = false)
           errorTypeTree
       }
     }
@@ -259,7 +259,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           case FLOAT => in.nextToken(); TypeTree(FloatClass.tpe)
           case DOUBLE => in.nextToken(); TypeTree(DoubleClass.tpe)
           case BOOLEAN => in.nextToken(); TypeTree(BooleanClass.tpe)
-          case _ => syntaxError("illegal start of type", true); errorTypeTree
+          case _ => syntaxError("illegal start of type", skipIt = true); errorTypeTree
         }
       }
 
@@ -644,7 +644,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(SEMI)
       val names = buf.toList
       if (names.length < 2) {
-        syntaxError(pos, "illegal import", false)
+        syntaxError(pos, "illegal import", skipIt = false)
         List()
       } else {
         val qual = ((Ident(names.head): Tree) /: names.tail.init) (Select(_, _))
@@ -839,7 +839,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       case INTERFACE => interfaceDecl(mods)
       case AT        => annotationDecl(mods)
       case CLASS     => classDecl(mods)
-      case _         => in.nextToken(); syntaxError("illegal start of type declaration", true); List(errorTypeTree)
+      case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
     }
 
     /** CompilationUnit ::= [package QualId semi] TopStatSeq
@@ -867,7 +867,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       while (in.token != EOF && in.token != RBRACE) {
         while (in.token == SEMI) in.nextToken()
         if (in.token != EOF)
-          buf ++= typeDecl(modifiers(false))
+          buf ++= typeDecl(modifiers(inInterface = false))
       }
       accept(EOF)
       atPos(pos) {
