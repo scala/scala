@@ -2192,7 +2192,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
-    final def setter(base: Symbol): Symbol = setter(base, false)
+    final def setter(base: Symbol): Symbol = setter(base, hasExpandedName = false)
 
     final def setter(base: Symbol, hasExpandedName: Boolean): Symbol = {
       var sname = nme.getterToSetter(nme.getterName(name.toTermName))

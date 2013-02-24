@@ -86,7 +86,7 @@ trait Kinds {
   // plan: split into kind inference and subkinding
   // every Type has a (cached) Kind
   def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean =
-    checkKindBounds0(tparams, targs, pre, owner, false).isEmpty
+    checkKindBounds0(tparams, targs, pre, owner, explainErrors = false).isEmpty
 
   /** Check whether `sym1`'s variance conforms to `sym2`'s variance.
    *
