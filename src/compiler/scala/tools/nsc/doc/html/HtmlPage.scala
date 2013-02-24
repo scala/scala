@@ -123,7 +123,7 @@ abstract class HtmlPage extends Page { thisPage =>
     case Text(text) => scala.xml.Text(text)
     case Summary(in) => inlineToHtml(in)
     case HtmlTag(tag) => scala.xml.Unparsed(tag)
-    case EntityLink(target, link) => linkToHtml(target, link, true)
+    case EntityLink(target, link) => linkToHtml(target, link, hasLinks = true)
   }
 
   def linkToHtml(text: Inline, link: LinkTo, hasLinks: Boolean) = link match {

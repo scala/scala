@@ -52,7 +52,7 @@ package object reflect {
     override def hasWarnings = reporter.hasWarnings
 
     def display(info: Info): Unit = info.severity match {
-      case API_INFO => reporter.info(info.pos, info.msg, false)
+      case API_INFO => reporter.info(info.pos, info.msg, force = false)
       case API_WARNING => reporter.warning(info.pos, info.msg)
       case API_ERROR => reporter.error(info.pos, info.msg)
     }

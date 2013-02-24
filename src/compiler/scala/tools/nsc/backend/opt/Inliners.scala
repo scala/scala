@@ -480,8 +480,8 @@ abstract class Inliners extends SubComponent {
        * so that the first TFA that is run afterwards is able to gain more information as compared to a cold-start.
        */
       /*val totalPreInlines = */ { // Val name commented out to emphasize it is never used
-        val firstRound = preInline(true)
-        if(firstRound == 0) 0 else (firstRound + preInline(false))
+        val firstRound = preInline(isFirstRound = true)
+        if(firstRound == 0) 0 else (firstRound + preInline(isFirstRound = false))
       }
       staleOut.clear()
       splicedBlocks.clear()
@@ -869,7 +869,7 @@ abstract class Inliners extends SubComponent {
               r
 
             case CALL_METHOD(meth, Static(true)) if meth.isClassConstructor =>
-              CALL_METHOD(meth, Static(true))
+              CALL_METHOD(meth, Static(onInstance = true))
 
             case _ => i.clone()
           }

@@ -132,7 +132,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       case (Some(pre), rest)  => (const(pre), const(rest))
       case _                  => (wild, const(n))
     }
-    mkXML(pos, true, prepat, labpat, null, null, false, args)
+    mkXML(pos, isPattern = true, prepat, labpat, null, null, empty = false, args)
   }
 
   protected def convertToTextPat(t: Tree): Tree = t match {
@@ -168,7 +168,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   }
 
   /** Returns (Some(prefix) | None, rest) based on position of ':' */
-  def splitPrefix(name: String): (Option[String], String) = splitWhere(name, _ == ':', true) match {
+  def splitPrefix(name: String): (Option[String], String) = splitWhere(name, _ == ':', doDropIndex = true) match {
     case Some((pre, rest))  => (Some(pre), rest)
     case _                  => (None, name)
   }
@@ -246,7 +246,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
 
     val body = mkXML(
       pos.makeTransparent,
-      false,
+      isPattern = false,
       const(pre),
       const(newlabel),
       makeSymbolicAttrs,

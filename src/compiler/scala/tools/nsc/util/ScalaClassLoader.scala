@@ -34,9 +34,9 @@ trait ScalaClassLoader extends JClassLoader {
   def setAsContext() { setContext(this) }
 
   /** Load and link a class with this classloader */
-  def tryToLoadClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, false)
+  def tryToLoadClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = false)
   /** Load, link and initialize a class with this classloader */
-  def tryToInitializeClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, true)
+  def tryToInitializeClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = true)
 
   private def tryClass[T <: AnyRef](path: String, initialize: Boolean): Option[Class[T]] =
     catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt

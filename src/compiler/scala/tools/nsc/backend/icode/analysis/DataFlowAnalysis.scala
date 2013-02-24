@@ -79,7 +79,7 @@ trait DataFlowAnalysis[L <: SemiLattice] {
       val point = worklist.head
       worklist -= point
 
-      out(point) = lattice.lub(point.successors map in.apply, false) // TODO check for exception handlers
+      out(point) = lattice.lub(point.successors map in.apply, exceptional = false) // TODO check for exception handlers
       val input = f(point, out(point))
 
       if ((lattice.bottom == in(point)) || input != in(point)) {

@@ -230,11 +230,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       case CodeBlockStartRegex(before, marker, after) :: ls if (!inCodeBlock) =>
         if (!before.trim.isEmpty && !after.trim.isEmpty)
-          parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, false)
+          parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = false)
         else if (!before.trim.isEmpty)
-          parse0(docBody, tags, lastTagKey, before :: marker :: ls, false)
+          parse0(docBody, tags, lastTagKey, before :: marker :: ls, inCodeBlock = false)
         else if (!after.trim.isEmpty)
-          parse0(docBody, tags, lastTagKey, marker :: after :: ls, true)
+          parse0(docBody, tags, lastTagKey, marker :: after :: ls, inCodeBlock = true)
         else lastTagKey match {
           case Some(key) =>
             val value =
@@ -242,18 +242,18 @@ trait CommentFactoryBase { this: MemberLookupBase =>
                 case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
-            parse0(docBody, tags + (key -> value), lastTagKey, ls, true)
+            parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock = true)
           case None =>
-            parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, true)
+            parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = true)
         }
 
       case CodeBlockEndRegex(before, marker, after) :: ls =>
         if (!before.trim.isEmpty && !after.trim.isEmpty)
-          parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, true)
+          parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = true)
         if (!before.trim.isEmpty)
-          parse0(docBody, tags, lastTagKey, before :: marker :: ls, true)
+          parse0(docBody, tags, lastTagKey, before :: marker :: ls, inCodeBlock = true)
         else if (!after.trim.isEmpty)
-          parse0(docBody, tags, lastTagKey, marker :: after :: ls, false)
+          parse0(docBody, tags, lastTagKey, marker :: after :: ls, inCodeBlock = false)
         else lastTagKey match {
           case Some(key) =>
             val value =
@@ -261,9 +261,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
                 case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
-            parse0(docBody, tags + (key -> value), lastTagKey, ls, false)
+            parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock = false)
           case None =>
-            parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, false)
+            parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = false)
         }
 
       case SymbolTagRegex(name, sym, body) :: ls if (!inCodeBlock) =>
@@ -377,7 +377,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     }
 
-    parse0(new StringBuilder(comment.size), Map.empty, None, clean(comment), false)
+    parse0(new StringBuilder(comment.size), Map.empty, None, clean(comment), inCodeBlock = false)
 
   }
 
@@ -453,7 +453,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else {
           jumpWhitespace()
           jump(style)
-          val p = Paragraph(inline(false))
+          val p = Paragraph(inline(isInlineEnd = false))
           blockEnded("end of list line ")
           Some(p)
         }
@@ -512,11 +512,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     def para(): Block = {
       val p =
         if (summaryParsed)
-          Paragraph(inline(false))
+          Paragraph(inline(isInlineEnd = false))
         else {
           val s = summary()
           val r =
-            if (checkParaEnded) List(s) else List(s, inline(false))
+            if (checkParaEnded) List(s) else List(s, inline(isInlineEnd = false))
           summaryParsed = true
           Paragraph(Chain(r))
         }

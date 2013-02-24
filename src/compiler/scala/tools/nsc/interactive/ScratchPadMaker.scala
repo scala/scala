@@ -191,7 +191,7 @@ trait ScratchPadMaker { self: Global =>
    *                    prints its output and all defined values in a comment column.
    */
   protected def instrument(source: SourceFile, line: Int): (String, Array[Char]) = {
-    val tree = typedTree(source, true)
+    val tree = typedTree(source, forceReload = true)
     val endOffset = if (line < 0) source.length else source.lineToOffset(line + 1)
     val patcher = new Patcher(source.content, new LexicalStructure(source), endOffset)
     patcher.traverse(tree)

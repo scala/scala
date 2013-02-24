@@ -15,11 +15,11 @@ trait Tags {
       wrapper(inferImplicit(
         EmptyTree,
         taggedTp,
-        /*reportAmbiguous =*/ true,
-        /*isView =*/ false,
-        /*context =*/ context,
-        /*saveAmbiguousDivergent =*/ true,
-        /*pos =*/ pos
+        reportAmbiguous = true,
+        isView = false,
+        context,
+        saveAmbiguousDivergent = true,
+        pos
       ).tree)
     }
 
