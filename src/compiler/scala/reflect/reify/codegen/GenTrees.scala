@@ -15,7 +15,7 @@ trait GenTrees {
 
   /**
    *  Reify a tree.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reifyTree(tree: Tree): Tree = {
     assert(tree != null, "tree is null")
@@ -29,12 +29,12 @@ trait GenTrees {
 
     // the idea behind the new reincarnation of reifier is a simple maxim:
     //
-    //   never call ``reifyType'' to reify a tree
+    //   never call `reifyType` to reify a tree
     //
     // this works because the stuff we are reifying was once represented with trees only
     // and lexical scope information can be fully captured by reifying symbols
     //
-    // to enable this idyll, we work hard in the ``Reshape'' phase
+    // to enable this idyll, we work hard in the `Reshape` phase
     // which replaces all types with equivalent trees and works around non-idempotencies of the typechecker
     //
     // why bother? because this brings method to the madness
@@ -65,7 +65,7 @@ trait GenTrees {
     }
 
     // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
-    // however, reification of AnnotatedTypes is special. see ``reifyType'' to find out why.
+    // however, reification of AnnotatedTypes is special. see `reifyType` to find out why.
     if (reifyTreeSymbols && tree.hasSymbolField) {
       if (reifyDebug) println("reifying symbol %s for tree %s".format(tree.symbol, tree))
       rtree = mirrorBuildCall(nme.setSymbol, rtree, reify(tree.symbol))
@@ -86,13 +86,13 @@ trait GenTrees {
       case TreeSplice(splicee) =>
         if (reifyDebug) println("splicing " + tree)
 
-        // see ``Metalevels'' for more info about metalevel breaches
+        // see `Metalevels` for more info about metalevel breaches
         // and about how we deal with splices that contain them
         val isMetalevelBreach = splicee exists (sub => sub.hasSymbolField && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
         val isRuntimeEval = splicee exists (sub => sub.hasSymbolField && sub.symbol == ExprSplice)
         if (isMetalevelBreach || isRuntimeEval) {
           // we used to convert dynamic splices into runtime evals transparently, but we no longer do that
-          // why? see comments in ``Metalevels''
+          // why? see comments in `Metalevels`
           // if (reifyDebug) println("splicing has failed: cannot splice when facing a metalevel breach")
           // EmptyTree
           CannotReifyRuntimeSplice(tree)
@@ -102,7 +102,7 @@ trait GenTrees {
             // we intentionally don't care about the prefix (the first underscore in the `RefiedTree` pattern match)
             case ReifiedTree(_, _, inlinedSymtab, rtree, _, _, _) =>
               if (reifyDebug) println("inlining the splicee")
-              // all free vars local to the enclosing reifee should've already been inlined by ``Metalevels''
+              // all free vars local to the enclosing reifee should've already been inlined by `Metalevels`
               for (sym <- inlinedSymtab.syms if sym.isLocalToReifee)
                 abort("local free var, should have already been inlined by Metalevels: " + inlinedSymtab.symDef(sym))
               state.symtab ++= inlinedSymtab

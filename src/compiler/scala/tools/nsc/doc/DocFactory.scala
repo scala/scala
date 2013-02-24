@@ -14,7 +14,7 @@ import scala.reflect.internal.util.BatchSourceFile
   * documentation, which is as follows.
   *
   * * A simplified compiler instance (with only the front-end phases enabled)
-  * * is created, and additional ''sourceless'' comments are registered.
+  * * is created, and additional `sourceless` comments are registered.
   * * Documentable files are compiled, thereby filling the compiler's symbol table.
   * * A documentation model is extracted from the post-compilation symbol table.
   * * A generator is used to transform the model into the correct final format (HTML).

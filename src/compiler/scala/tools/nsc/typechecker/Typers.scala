@@ -181,7 +181,7 @@ trait Typers extends Adaptations with Tags {
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
       inferView(tree, from, to, reportAmbiguous, true)
 
-    /** Infer an implicit conversion (``view'') between two types.
+    /** Infer an implicit conversion (`view`) between two types.
      *  @param tree             The tree which needs to be converted.
      *  @param from             The source type of the conversion
      *  @param to               The target type of the conversion
@@ -1964,14 +1964,14 @@ trait Typers extends Adaptations with Tags {
     }
 
     /** Remove definition annotations from modifiers (they have been saved
-     *  into the symbol's ``annotations'' in the type completer / namer)
+     *  into the symbol's `annotations` in the type completer / namer)
      *
      *  However reification does need annotation definitions to proceed.
      *  Unfortunately, AnnotationInfo doesn't provide enough info to reify it in general case.
      *  The biggest problem is with the "atp: Type" field, which cannot be reified in some situations
      *  that involve locally defined annotations. See more about that in Reifiers.scala.
      *
-     *  That's why the original tree gets saved into ``original'' field of AnnotationInfo (happens elsewhere).
+     *  That's why the original tree gets saved into `original` field of AnnotationInfo (happens elsewhere).
      *  The field doesn't get pickled/unpickled and exists only during a single compilation run.
      *  This simultaneously allows us to reify annotations and to preserve backward compatibility.
      */

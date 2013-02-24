@@ -1113,7 +1113,7 @@ trait Implicits {
           case ThisType(thisSym) =>
             gen.mkAttributedThis(thisSym)
           case _ =>
-            // if ``pre'' is not a PDT, e.g. if someone wrote
+            // if `pre` is not a PDT, e.g. if someone wrote
             //   implicitly[scala.reflect.macros.Context#TypeTag[Int]]
             // then we need to fail, because we don't know the prefix to use during type reification
             // upd. we also need to fail silently, because this is a very common situation

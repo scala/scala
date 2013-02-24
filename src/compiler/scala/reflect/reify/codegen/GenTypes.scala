@@ -9,7 +9,7 @@ trait GenTypes {
 
   /**
    *  Reify a type.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reifyType(tpe: Type): Tree = {
     assert(tpe != null, "tpe is null")
