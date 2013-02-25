@@ -30,7 +30,7 @@ trait DataFlowAnalysis[L <: SemiLattice] {
   /* Implement this function to initialize the worklist.  */
   def init(f: => Unit): Unit = {
     iterations = 0
-    in.clear; out.clear; worklist.clear; visited.clear;
+    in.clear(); out.clear(); worklist.clear(); visited.clear()
     f
   }
 
@@ -46,7 +46,7 @@ trait DataFlowAnalysis[L <: SemiLattice] {
     while (!worklist.isEmpty) {
       if (stat) iterations += 1
       //Console.println("worklist in: " + worklist);
-      val point = worklist.iterator.next; worklist -= point; visited += point;
+      val point = worklist.iterator.next(); worklist -= point; visited += point
       //Console.println("taking out point: " + point + " worklist out: " + worklist);
       val output = f(point, in(point))
 

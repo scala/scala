@@ -51,7 +51,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     }
     _modelFinished = true
     // complete the links between model entities, everthing that couldn't have been done before
-    universe.rootPackage.completeModel
+    universe.rootPackage.completeModel()
 
     Some(universe) filter (_.rootPackage != null)
   }
@@ -382,7 +382,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       if (!sym.isAliasType && !sym.isAbstractType)
         for (member <- members)
           member match {
-            case d: DocTemplateImpl => d.completeModel
+            case d: DocTemplateImpl => d.completeModel()
             case _ =>
           }
 
@@ -631,7 +631,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           import Streamable._
           Path(settings.docRootContent.value) match {
             case f : File => {
-              val rootComment = closing(f.inputStream)(is => parse(slurp(is), "", NoPosition, Option(inTpl)))
+              val rootComment = closing(f.inputStream())(is => parse(slurp(is), "", NoPosition, Option(inTpl)))
               Some(rootComment)
             }
             case _ => None

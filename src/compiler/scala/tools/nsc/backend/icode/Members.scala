@@ -58,7 +58,7 @@ trait Members {
     }
 
     // Constructor code
-    startBlock = newBlock
+    startBlock = newBlock()
 
     def removeBlock(b: BasicBlock) {
       if (settings.debug.value) {
@@ -80,7 +80,7 @@ trait Members {
     }
 
     /** This methods returns a string representation of the ICode */
-    override def toString = "ICode '" + name + "'";
+    override def toString = "ICode '" + name + "'"
 
     /* Compute a unique new label */
     def nextLabel: Int = {
@@ -92,8 +92,8 @@ trait Members {
      */
     def newBlock(): BasicBlock = {
       touched = true
-      val block = new BasicBlock(nextLabel, method);
-      blocks += block;
+      val block = new BasicBlock(nextLabel, method)
+      blocks += block
       block
     }
   }
@@ -115,17 +115,17 @@ trait Members {
     var cunit: CompilationUnit = _
 
     def addField(f: IField): this.type = {
-      fields = f :: fields;
+      fields = f :: fields
       this
     }
 
     def addMethod(m: IMethod): this.type = {
-      methods = m :: methods;
+      methods = m :: methods
       this
     }
 
     def setCompilationUnit(unit: CompilationUnit): this.type = {
-      this.cunit = unit;
+      this.cunit = unit
       this
     }
 
@@ -155,7 +155,7 @@ trait Members {
   class IMethod(val symbol: Symbol) extends IMember {
     var code: Code = NoCode
 
-    def newBlock() = code.newBlock
+    def newBlock() = code.newBlock()
     def startBlock = code.startBlock
     def lastBlock  = { assert(blocks.nonEmpty, symbol); blocks.last }
     def blocks = code.blocksList
@@ -180,7 +180,7 @@ trait Members {
 
     def hasCode = code ne NoCode
     def setCode(code: Code): IMethod = {
-      this.code = code;
+      this.code = code
       this
     }
 
@@ -220,10 +220,10 @@ trait Members {
       val nextBlock: mutable.Map[BasicBlock, BasicBlock] = mutable.HashMap.empty
       for (b <- code.blocks.toList
         if b.successors.length == 1;
-        succ = b.successors.head;
-        if succ ne b;
-        if succ.predecessors.length == 1;
-        if succ.predecessors.head eq b;
+        succ = b.successors.head
+        if succ ne b
+        if succ.predecessors.length == 1
+        if succ.predecessors.head eq b
         if !(exh.exists { (e: ExceptionHandler) =>
             (e.covers(succ) && !e.covers(b)) || (e.covers(b) && !e.covers(succ)) })) {
           nextBlock(b) = succ
@@ -232,10 +232,10 @@ trait Members {
       var bb = code.startBlock
       while (!nextBlock.isEmpty) {
         if (nextBlock.isDefinedAt(bb)) {
-          bb.open
+          bb.open()
           var succ = bb
           do {
-            succ = nextBlock(succ);
+            succ = nextBlock(succ)
             val lastInstr = bb.lastInstruction
             /* Ticket SI-5672
              * Besides removing the control-flow instruction at the end of `bb` (usually a JUMP), we have to pop any values it pushes.
@@ -246,7 +246,7 @@ trait Members {
             val oldTKs = lastInstr.consumedTypes
             assert(lastInstr.consumed == oldTKs.size, "Someone forgot to override consumedTypes() in " +  lastInstr)
 
-              bb.removeLastInstruction
+              bb.removeLastInstruction()
               for(tk <- oldTKs.reverse) { bb.emit(DROP(tk), lastInstr.pos) }
               succ.toList foreach { i => bb.emit(i, i.pos) }
               code.removeBlock(succ)
@@ -254,9 +254,9 @@ trait Members {
 
             nextBlock -= bb
           } while (nextBlock.isDefinedAt(succ))
-          bb.close
+          bb.close()
         } else
-          bb = nextBlock.keysIterator.next
+          bb = nextBlock.keysIterator.next()
       }
       checkValid(this)
     }

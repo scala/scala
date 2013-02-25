@@ -21,11 +21,11 @@ object MainTokenMetric {
     var totale = 0
     for (source <- fnames) {
       val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
-      s.nextToken
+      s.nextToken()
       var i = 0
       while (s.token != EOF) {
         i += 1
-        s.nextToken
+        s.nextToken()
       }
       Console.println(i.toString + " " + source.toString())
       totale += i
@@ -43,8 +43,8 @@ object MainTokenMetric {
     } catch {
       case ex @ FatalError(msg) =>
         if (command.settings.debug.value)
-          ex.printStackTrace();
-      reporter.error(null, "fatal error: " + msg)
+          ex.printStackTrace()
+        reporter.error(null, "fatal error: " + msg)
     }
   }
 

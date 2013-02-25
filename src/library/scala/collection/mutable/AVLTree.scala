@@ -77,7 +77,7 @@ private case object Leaf extends AVLTree[Nothing] {
 /**
  * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
  */
-private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree[A]) extends AVLTree[A] {
+private case class Node[A](data: A, left: AVLTree[A], right: AVLTree[A]) extends AVLTree[A] {
   override val balance: Int = right.depth - left.depth
 
   override val depth: Int = math.max(left.depth, right.depth) + 1
@@ -229,11 +229,11 @@ private class AVLIterator[A](root: Node[A]) extends Iterator[A] {
   private def engageRight(): Unit = {
     if (Leaf != stack.head.right) {
       val right: Node[A] = stack.head.right.asInstanceOf[Node[A]]
-      stack.pop
+      stack.pop()
       stack.push(right)
       diveLeft()
     } else
-      stack.pop
+      stack.pop()
   }
 
   override def hasNext: Boolean = !stack.isEmpty

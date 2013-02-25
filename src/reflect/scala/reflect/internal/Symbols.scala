@@ -904,7 +904,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (isAliasType) return true
       if (isType && isNonClassType) return false
       if (isRefinementClass) return false
-      return true
+      true
     }
 
     /** The variance of this symbol. */

@@ -119,7 +119,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
       return
 
     if (includedFiles.nonEmpty)
-      log("Compiling %d file%s to %s".format(includedFiles.size, plural(includedFiles.size), destinationDir))
+      log("Compiling %d file%s to %s".format(includedFiles.length, plural(includedFiles.length), destinationDir))
 
     argfile foreach (x => log("Using argfile file: @" + x))
 

@@ -908,7 +908,7 @@ trait Types extends api.Types { self: SymbolTable =>
       (this eq that) ||
       (if (explainSwitch) explain("=", isSameType, this, that)
        else isSameType(this, that))
-    );
+    )
 
     /** Is this type close enough to that type so that members
      *  with the two type would override each other?
@@ -1488,7 +1488,7 @@ trait Types extends api.Types { self: SymbolTable =>
       tpe.underlyingPeriod = currentPeriod
       if (!isValid(period)) {
         // [Eugene to Paul] needs review
-        tpe.underlyingCache = if (tpe.sym == NoSymbol) ThisType(rootMirror.RootClass) else tpe.pre.memberType(tpe.sym).resultType;
+        tpe.underlyingCache = if (tpe.sym == NoSymbol) ThisType(rootMirror.RootClass) else tpe.pre.memberType(tpe.sym).resultType
         assert(tpe.underlyingCache ne tpe, tpe)
       }
     }
@@ -1500,7 +1500,8 @@ trait Types extends api.Types { self: SymbolTable =>
       if (trivial == UNKNOWN) trivial = fromBoolean(thistpe.isTrivial && supertpe.isTrivial)
       toBoolean(trivial)
     }
-    override def isNotNull = true;
+    override def isNotNull = true
+
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
@@ -1637,8 +1638,8 @@ trait Types extends api.Types { self: SymbolTable =>
         var bcs        = sbcs
         def isNew(clazz: Symbol): Boolean = (
           superclazz.baseTypeIndex(clazz) < 0 &&
-          { var p = bcs;
-            while ((p ne sbcs) && (p.head != clazz)) p = p.tail;
+          { var p = bcs
+            while ((p ne sbcs) && (p.head != clazz)) p = p.tail
             p eq sbcs
           }
         )
@@ -2354,7 +2355,7 @@ trait Types extends api.Types { self: SymbolTable =>
       h = mix(h, pre.hashCode)
       h = mix(h, sym.hashCode)
       if (hasArgs)
-        finalizeHash(mix(h, args.hashCode), 3)
+        finalizeHash(mix(h, args.hashCode()), 3)
       else
         finalizeHash(h, 2)
     }
@@ -2874,7 +2875,8 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
     override def safeToString =
-      pre.toString + targs.mkString("(with type arguments ", ", ", ")");
+      pre.toString + targs.mkString("(with type arguments ", ", ", ")")
+
     override def memberType(sym: Symbol) = appliedType(pre.memberType(sym), targs)
     override def kind = "AntiPolyType"
   }
@@ -3022,7 +3024,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  Precondition for this class, enforced structurally: args.isEmpty && params.isEmpty.
    */
   abstract case class TypeVar(
-    val origin: Type,
+                               origin: Type,
     var constr: TypeConstraint
   ) extends Type {
     def untouchable = false   // by other typevars
@@ -4976,7 +4978,7 @@ trait Types extends api.Types { self: SymbolTable =>
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
           debuglog("ADAPT1 pre = "+pre+", sym = "+sym.fullLocationString+", rebind = "+rebind0.fullLocationString)
-          val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
+          val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner))
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
           else
@@ -6569,7 +6571,7 @@ trait Types extends api.Types { self: SymbolTable =>
             }
           }
           def refines(tp: Type, sym: Symbol): Boolean = {
-            val syms = tp.nonPrivateMember(sym.name).alternatives;
+            val syms = tp.nonPrivateMember(sym.name).alternatives
             !syms.isEmpty && (syms forall (alt =>
               // todo alt != sym is strictly speaking not correct, but without it we lose
               // efficiency.
@@ -6708,8 +6710,8 @@ trait Types extends api.Types { self: SymbolTable =>
             def glbsym(proto: Symbol): Symbol = {
               val prototp = glbThisType.memberInfo(proto)
               val syms = for (t <- ts;
-                    alt <- (t.nonPrivateMember(proto.name).alternatives);
-                if glbThisType.memberInfo(alt) matches prototp
+                    alt <- (t.nonPrivateMember(proto.name).alternatives)
+                    if glbThisType.memberInfo(alt) matches prototp
               ) yield alt
               val symtypes = syms map glbThisType.memberInfo
               assert(!symtypes.isEmpty)
@@ -6891,7 +6893,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)
           if (specializesSym(thistp, sym, thistp, alt, depth))
-            tp.decls unlink alt;
+            tp.decls unlink alt
       tp.decls enter sym
     }
   }

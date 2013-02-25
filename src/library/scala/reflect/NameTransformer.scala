@@ -94,7 +94,7 @@ object NameTransformer {
   def decode(name0: String): String = {
     //System.out.println("decode: " + name);//DEBUG
     val name = if (name0.endsWith("<init>")) name0.stripSuffix("<init>") + "this"
-               else name0;
+               else name0
     var buf: StringBuilder = null
     val len = name.length()
     var i = 0

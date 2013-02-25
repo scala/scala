@@ -181,7 +181,7 @@ trait Typers extends Adaptations with Tags {
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
       inferView(tree, from, to, reportAmbiguous, true)
 
-    /** Infer an implicit conversion (``view'') between two types.
+    /** Infer an implicit conversion (`view`) between two types.
      *  @param tree             The tree which needs to be converted.
      *  @param from             The source type of the conversion
      *  @param to               The target type of the conversion
@@ -1893,7 +1893,7 @@ trait Typers extends Adaptations with Tags {
      */
     def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
       val clazz = context.owner
-      clazz.annotations.map(_.completeInfo)
+      clazz.annotations.map(_.completeInfo())
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
       val self1 = templ.self match {
@@ -1964,14 +1964,14 @@ trait Typers extends Adaptations with Tags {
     }
 
     /** Remove definition annotations from modifiers (they have been saved
-     *  into the symbol's ``annotations'' in the type completer / namer)
+     *  into the symbol's `annotations` in the type completer / namer)
      *
      *  However reification does need annotation definitions to proceed.
      *  Unfortunately, AnnotationInfo doesn't provide enough info to reify it in general case.
      *  The biggest problem is with the "atp: Type" field, which cannot be reified in some situations
      *  that involve locally defined annotations. See more about that in Reifiers.scala.
      *
-     *  That's why the original tree gets saved into ``original'' field of AnnotationInfo (happens elsewhere).
+     *  That's why the original tree gets saved into `original` field of AnnotationInfo (happens elsewhere).
      *  The field doesn't get pickled/unpickled and exists only during a single compilation run.
      *  This simultaneously allows us to reify annotations and to preserve backward compatibility.
      */
@@ -1994,7 +1994,7 @@ trait Typers extends Adaptations with Tags {
       val sym = vdef.symbol.initialize
       val typedMods = typedModifiers(vdef.mods)
 
-      sym.annotations.map(_.completeInfo)
+      sym.annotations.map(_.completeInfo())
       val tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
@@ -2209,7 +2209,7 @@ trait Typers extends Adaptations with Tags {
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
-      meth.annotations.map(_.completeInfo)
+      meth.annotations.map(_.completeInfo())
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe))
@@ -2283,7 +2283,7 @@ trait Typers extends Adaptations with Tags {
       reenterTypeParams(tdef.tparams)
       val tparams1 = tdef.tparams mapConserve typedTypeDef
       val typedMods = typedModifiers(tdef.mods)
-      tdef.symbol.annotations.map(_.completeInfo)
+      tdef.symbol.annotations.map(_.completeInfo())
 
       // @specialized should not be pickled when compiling with -no-specialize
       if (settings.nospecialization.value && currentRun.compiles(tdef.symbol)) {
@@ -2720,13 +2720,6 @@ trait Typers extends Adaptations with Tags {
         }
     }
 
-
-    /**
-     *  @param fun  ...
-     *  @param mode ...
-     *  @param pt   ...
-     *  @return     ...
-     */
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val numVparams = fun.vparams.length
       if (numVparams > definitions.MaxFunctionArity)

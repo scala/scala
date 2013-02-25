@@ -78,7 +78,7 @@ class Scaladoc extends ScalaMatchingTask {
     val values = List("yes", "no", "on", "off")
     def getBooleanValue(value: String, flagName: String): Boolean =
       if (Flag.isPermissible(value))
-        return ("yes".equals(value) || "on".equals(value))
+        ("yes".equals(value) || "on".equals(value))
       else
         buildError("Unknown " + flagName + " flag '" + value + "'")
   }
@@ -563,7 +563,7 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** Transforms a file into a Scalac-readable string.
    *
-   *  @param path A file to convert.
+   *  @param file A file to convert.
    *  @return     A string-representation of the file like `/x/k/a.scala`.
    */
   private def asString(file: File): String =

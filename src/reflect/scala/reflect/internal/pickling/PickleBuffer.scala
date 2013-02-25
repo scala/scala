@@ -106,7 +106,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     do {
       b = readByte()
       x = (x << 7) + (b & 0x7f)
-    } while ((b & 0x80) != 0L);
+    } while ((b & 0x80) != 0L)
     x
   }
 
@@ -150,7 +150,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
    *  Concatenate results into a list.
    */
   def until[T](end: Int, op: () => T): List[T] =
-    if (readIndex == end) List() else op() :: until(end, op);
+    if (readIndex == end) List() else op() :: until(end, op)
 
   /** Perform operation `op` the number of
    *  times specified.  Concatenate the results into a list.

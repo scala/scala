@@ -55,14 +55,14 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     def next(): A =
       if (hasNext) {
         val result = these.head; these = these.tail; result
-      } else Iterator.empty.next
+      } else Iterator.empty.next()
 
     /** Have to clear `these` so the iterator is exhausted like
      *  it would be without the optimization.
      */
     override def toList: List[A] = {
       val xs = these.toList
-      these = newBuilder.result
+      these = newBuilder.result()
       xs
     }
   }

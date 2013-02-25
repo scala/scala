@@ -27,9 +27,9 @@ private[collection] trait Wrappers {
 
   case class IteratorWrapper[A](underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] {
     def hasNext = underlying.hasNext
-    def next() = underlying.next
+    def next() = underlying.next()
     def hasMoreElements = underlying.hasNext
-    def nextElement() = underlying.next
+    def nextElement() = underlying.next()
     def remove() = throw new UnsupportedOperationException
   }
 
@@ -81,7 +81,7 @@ private[collection] trait Wrappers {
     override def remove(i: Int) = underlying remove i
   }
 
-  case class JListWrapper[A](val underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with mutable.Buffer[A] {
+  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with mutable.Buffer[A] {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
     override def iterator: Iterator[A] = underlying.iterator
@@ -108,7 +108,7 @@ private[collection] trait Wrappers {
       val ui = underlying.iterator
       var prev: Option[A] = None
       def hasNext = ui.hasNext
-      def next = { val e = ui.next; prev = Some(e); e }
+      def next = { val e = ui.next(); prev = Some(e); e }
       def remove = prev match {
         case Some(e) =>
           underlying match {
@@ -180,7 +180,7 @@ private[collection] trait Wrappers {
         def hasNext = ui.hasNext
 
         def next() = {
-          val (k, v) = ui.next
+          val (k, v) = ui.next()
           prev = Some(k)
           new ju.Map.Entry[A, B] {
             import scala.util.hashing.byteswap32
@@ -272,7 +272,7 @@ private[collection] trait Wrappers {
     override def empty: Repr = null.asInstanceOf[Repr]
   }
 
-  case class JMapWrapper[A, B](val underlying : ju.Map[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
+  case class JMapWrapper[A, B](underlying : ju.Map[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
@@ -298,7 +298,7 @@ private[collection] trait Wrappers {
     def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
   }
 
-  case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
+  case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
     override def get(k: A) = {
       val v = underlying get k
       if (v != null) Some(v)

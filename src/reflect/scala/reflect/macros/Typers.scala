@@ -88,4 +88,4 @@ trait Typers {
 
 /** Indicates an error during one of the methods in [[scala.reflect.macros.Typers]].
  */
-case class TypecheckException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)
+case class TypecheckException(pos: scala.reflect.api.Position, msg: String) extends Exception(msg)

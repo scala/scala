@@ -29,7 +29,7 @@ trait Calculate {
    *  Merely traverses the reifiee and records local symbols along with their metalevels.
    */
   val calculate = new Traverser {
-    // see the explanation of metalevels in ``Metalevels''
+    // see the explanation of metalevels in `Metalevels`
     var currMetalevel = 1
 
     override def traverse(tree: Tree): Unit = tree match {

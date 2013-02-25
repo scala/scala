@@ -148,7 +148,7 @@ abstract class TreeCheckers extends Analyzer {
     val unit0 = currentUnit
     currentRun.currentUnit = unit
     body
-    currentRun.advanceUnit
+    currentRun.advanceUnit()
     assertFn(currentUnit == unit, "currentUnit is " + currentUnit + ", but unit is " + unit)
     currentRun.currentUnit = unit0
   }
@@ -156,7 +156,7 @@ abstract class TreeCheckers extends Analyzer {
     informProgress("checking "+unit)
     val context = rootContext(unit)
     context.checking = true
-    tpeOfTree.clear
+    tpeOfTree.clear()
     SymbolTracker.check(phase, unit)
     val checker = new TreeChecker(context)
     runWithUnit(unit) {

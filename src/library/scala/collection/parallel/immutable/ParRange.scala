@@ -42,7 +42,7 @@ self =>
 
   @inline final def length = range.length
 
-  @inline final def apply(idx: Int) = range.apply(idx);
+  @inline final def apply(idx: Int) = range.apply(idx)
 
   def splitter = new ParRangeIterator
 
@@ -60,7 +60,7 @@ self =>
       val r = range.apply(ind)
       ind += 1
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
 
     private def rangeleft = range.drop(ind)
 

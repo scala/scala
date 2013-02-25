@@ -273,13 +273,13 @@ object RedBlackTree {
   }
   private[this] def doRange[A, B](tree: Tree[A, B], from: A, until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
     if (tree eq null) return null
-    if (ordering.lt(tree.key, from)) return doRange(tree.right, from, until);
-    if (ordering.lteq(until, tree.key)) return doRange(tree.left, from, until);
+    if (ordering.lt(tree.key, from)) return doRange(tree.right, from, until)
+    if (ordering.lteq(until, tree.key)) return doRange(tree.left, from, until)
     val newLeft = doFrom(tree.left, from)
     val newRight = doUntil(tree.right, until)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
-    else if (newLeft eq null) upd(newRight, tree.key, tree.value, false);
-    else if (newRight eq null) upd(newLeft, tree.key, tree.value, false);
+    else if (newLeft eq null) upd(newRight, tree.key, tree.value, false)
+    else if (newRight eq null) upd(newLeft, tree.key, tree.value, false)
     else rebalance(tree, newLeft, newRight)
   }
 
@@ -510,7 +510,7 @@ object RedBlackTree {
      */
     private[this] def startFrom(key: A) : Tree[A,B] = if (root eq null) null else {
       @tailrec def find(tree: Tree[A, B]): Tree[A, B] = 
-        if (tree eq null) popNext
+        if (tree eq null) popNext()
         else find(
           if (ordering.lteq(key, tree.key)) goLeft(tree)
           else goRight(tree)

@@ -32,7 +32,7 @@ package object reflect {
 
   /** Creates a reporter that prints messages to the console according to the settings.
    *
-   *  ``minSeverity'' determines minimum severity of the messages to be printed.
+   *  `minSeverity` determines minimum severity of the messages to be printed.
    *  0 stands for INFO, 1 stands for WARNING and 2 stands for ERROR.
    */
   // todo. untangle warningsAsErrors from Reporters. I don't feel like moving this flag here!

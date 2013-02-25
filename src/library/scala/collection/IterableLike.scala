@@ -88,13 +88,13 @@ self =>
   override /*TraversableLike*/ def toIterator: Iterator[A] =
     iterator
   override /*TraversableLike*/ def head: A =
-    iterator.next
+    iterator.next()
 
   override /*TraversableLike*/ def slice(from: Int, until: Int): Repr = {
     val lo = math.max(from, 0)
     val elems = until - lo
     val b = newBuilder
-    if (elems <= 0) b.result
+    if (elems <= 0) b.result()
     else {
       b.sizeHintBounded(elems, this)
       var i = 0
@@ -103,14 +103,14 @@ self =>
         b += it.next
         i += 1
       }
-      b.result
+      b.result()
     }
   }
 
   override /*TraversableLike*/ def take(n: Int): Repr = {
     val b = newBuilder
 
-    if (n <= 0) b.result
+    if (n <= 0) b.result()
     else {
       b.sizeHintBounded(n, this)
       var i = 0
@@ -119,7 +119,7 @@ self =>
         b += it.next
         i += 1
       }
-      b.result
+      b.result()
     }
   }
 
@@ -130,21 +130,21 @@ self =>
     var i = 0
     val it = iterator
     while (i < n && it.hasNext) {
-      it.next
+      it.next()
       i += 1
     }
-    (b ++= it).result
+    (b ++= it).result()
   }
 
   override /*TraversableLike*/ def takeWhile(p: A => Boolean): Repr = {
     val b = newBuilder
     val it = iterator
     while (it.hasNext) {
-      val x = it.next
-      if (!p(x)) return b.result
+      val x = it.next()
+      if (!p(x)) return b.result()
       b += x
     }
-    b.result
+    b.result()
   }
 
   /** Partitions elements in fixed size ${coll}s.
@@ -158,7 +158,7 @@ self =>
     for (xs <- iterator grouped size) yield {
       val b = newBuilder
       b ++= xs
-      b.result
+      b.result()
     }
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
@@ -187,7 +187,7 @@ self =>
     for (xs <- iterator.sliding(size, step)) yield {
       val b = newBuilder
       b ++= xs
-      b.result
+      b.result()
     }
 
   /** Selects last ''n'' elements.
@@ -203,11 +203,11 @@ self =>
     val lead = this.iterator drop n
     var go = false
     for (x <- this.seq) {
-      if (lead.hasNext) lead.next
+      if (lead.hasNext) lead.next()
       else go = true
       if (go) b += x
     }
-    b.result
+    b.result()
   }
 
   /** Selects all elements except last ''n'' ones.
@@ -224,9 +224,9 @@ self =>
     val it = iterator
     while (lead.hasNext) {
       b += it.next
-      lead.next
+      lead.next()
     }
-    b.result
+    b.result()
   }
 
   override /*TraversableLike*/ def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
@@ -234,7 +234,7 @@ self =>
     val end = (start + len) min xs.length
     val it = iterator
     while (i < end && it.hasNext) {
-      xs(i) = it.next
+      xs(i) = it.next()
       i += 1
     }
   }
@@ -244,8 +244,8 @@ self =>
     val these = this.iterator
     val those = that.iterator
     while (these.hasNext && those.hasNext)
-      b += ((these.next, those.next))
-    b.result
+      b += ((these.next(), those.next()))
+    b.result()
   }
 
   def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
@@ -253,12 +253,12 @@ self =>
     val these = this.iterator
     val those = that.iterator
     while (these.hasNext && those.hasNext)
-      b += ((these.next, those.next))
+      b += ((these.next(), those.next()))
     while (these.hasNext)
-      b += ((these.next, thatElem))
+      b += ((these.next(), thatElem))
     while (those.hasNext)
-      b += ((thisElem, those.next))
-    b.result
+      b += ((thisElem, those.next()))
+    b.result()
   }
 
   def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
@@ -268,7 +268,7 @@ self =>
       b += ((x, i))
       i +=1
     }
-    b.result
+    b.result()
   }
 
   def sameElements[B >: A](that: GenIterable[B]): Boolean = {

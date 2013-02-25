@@ -50,8 +50,10 @@ object IntMap {
     def apply(): Builder[(Int, B), IntMap[B]] = new MapBuilder[Int, B, IntMap[B]](empty[B])
   }
 
-  def empty[T] : IntMap[T]  = IntMap.Nil;
-  def singleton[T](key: Int, value: T): IntMap[T] = IntMap.Tip(key, value);
+  def empty[T] : IntMap[T]  = IntMap.Nil
+
+  def singleton[T](key: Int, value: T): IntMap[T] = IntMap.Tip(key, value)
+
   def apply[T](elems: (Int, T)*): IntMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 

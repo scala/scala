@@ -188,7 +188,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         if (e1 == e) {
           hashtable(index) = e.tail
         } else {
-          while (e1.tail != e) e1 = e1.tail;
+          while (e1.tail != e) e1 = e1.tail
           e1.tail = e.tail
         }
       }
@@ -199,7 +199,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def unlink(sym: Symbol) {
       var e = lookupEntry(sym.name)
       while (e ne null) {
-        if (e.sym == sym) unlink(e);
+        if (e.sym == sym) unlink(e)
         e = lookupNextEntry(e)
       }
     }
@@ -300,7 +300,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       if (hashtable ne null)
         do { e = e.tail } while ((e ne null) && e.sym.name != entry.sym.name)
       else
-        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name);
+        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name)
       e
     }
 

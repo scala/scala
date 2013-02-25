@@ -27,7 +27,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   private val treatedClassInfos = perRunCaches.newMap[Symbol, Type]() withDefaultValue NoType
 
   /** Map a lazy, mixedin field accessor to it's trait member accessor */
-  private val initializer = perRunCaches.newMap[Symbol, Symbol]
+  private val initializer = perRunCaches.newMap[Symbol, Symbol]()
 
 // --------- helper functions -----------------------------------------------
 
@@ -126,7 +126,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (settings.debug.value) {
-          val other = bcs.head.info.nonPrivateDecl(member.name);
+          val other = bcs.head.info.nonPrivateDecl(member.name)
           debuglog("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
               " " + other.isDeferred)
         }
@@ -242,7 +242,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
         }
       }
-      debuglog("new defs of " + clazz + " = " + clazz.info.decls);
+      debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }
   }
 
@@ -821,8 +821,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  Private fields used only in this initializer are subsequently set to null.
        *
        *  @param clazz The class symbol
+       *  @param lzyVal The symbol of this lazy field
        *  @param init The tree which initializes the field ( f = <rhs> )
-       *  @param fieldSym The symbol of this lazy field
        *  @param offset The offset of this field in the flags bitmap
        *
        *  The result will be a tree of the form

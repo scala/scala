@@ -41,7 +41,7 @@ trait Plugins {
     classes map (Plugin.instantiate(_, this))
   }
 
-  protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList
+  protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList()
 
   /** Load all available plugins.  Skips plugins that
    *  either have the same name as another one, or which
@@ -102,7 +102,7 @@ trait Plugins {
     plugs
   }
 
-  lazy val plugins: List[Plugin] = loadPlugins
+  lazy val plugins: List[Plugin] = loadPlugins()
 
   /** A description of all the plugins that are loaded */
   def pluginDescriptions: String =

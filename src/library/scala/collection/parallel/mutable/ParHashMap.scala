@@ -97,7 +97,8 @@ self =>
 
   class ParHashMapIterator(start: Int, untilIdx: Int, totalSize: Int, e: DefaultEntry[K, V])
   extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) {
-    def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value);
+    def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value)
+
     def newIterator(idxFrom: Int, idxUntil: Int, totalSz: Int, es: DefaultEntry[K, V]) =
       new ParHashMapIterator(idxFrom, idxUntil, totalSz, es)
   }
@@ -303,7 +304,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
 private[parallel] object ParHashMapCombiner {
   private[mutable] val discriminantbits = 5
   private[mutable] val numblocks = 1 << discriminantbits
-  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);
+  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1)
   private[mutable] val nonmasklength = 32 - discriminantbits
 
   def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]

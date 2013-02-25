@@ -147,7 +147,7 @@ abstract class ReachingDefinitions {
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? " + in(b)
                  + ": bot: " + lattice.bottom
                  + "\nin(b) == bottom: " + (in(b) == lattice.bottom)
-                 + "\nbottom == in(b): " + (lattice.bottom == in(b))));
+                 + "\nbottom == in(b): " + (lattice.bottom == in(b))))
       }
     }
 

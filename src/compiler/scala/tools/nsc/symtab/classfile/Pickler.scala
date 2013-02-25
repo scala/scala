@@ -179,7 +179,7 @@ abstract class Pickler extends SubComponent {
           putSymbol(sym.privateWithin)
           putType(sym.info)
           if (sym.thisSym.tpeHK != sym.tpeHK)
-            putType(sym.typeOfThis);
+            putType(sym.typeOfThis)
           putSymbol(sym.alias)
           if (!sym.children.isEmpty) {
             val (locals, globals) = sym.children partition (_.isLocalClass)
@@ -246,8 +246,8 @@ abstract class Pickler extends SubComponent {
 //          val savedBoundSyms = boundSyms // boundSyms are known to be local based on the EXISTENTIAL flag  (see isLocal)
 //          boundSyms = tparams ::: boundSyms
 //          try {
-            putType(restpe);
-//          } finally {
+            putType(restpe)
+            //          } finally {
 //            boundSyms = savedBoundSyms
 //          }
           putSymbols(tparams)

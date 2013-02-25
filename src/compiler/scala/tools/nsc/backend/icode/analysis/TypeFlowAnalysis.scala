@@ -131,15 +131,15 @@ abstract class TypeFlowAnalysis {
       init(m)
     }
 
-    def run = {
-      timer.start
+    def run() = {
+      timer.start()
       // icodes.lubs0 = 0
       forwardAnalysis(blockTransfer)
       timer.stop
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(visited.contains(b),
-            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
+            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited))
       }
       // log("" + method.symbol.fullName + " ["  + method.code.blocks.size + " blocks] "
       //     + "\n\t" + iterations + " iterations: " + t + " ms."
@@ -207,7 +207,7 @@ abstract class TypeFlowAnalysis {
             case Test(_, kind, zero) =>
               stack.pop
               if (!zero) { stack.pop }
-              stack push BOOL;
+              stack push BOOL
 
             case Comparison(_, _) => stack.pop2; stack push INT
 
@@ -355,7 +355,7 @@ abstract class TypeFlowAnalysis {
 
     override def run {
 
-      timer.start
+      timer.start()
       forwardAnalysis(blockTransfer)
       timer.stop
 
@@ -396,7 +396,7 @@ abstract class TypeFlowAnalysis {
     override def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
       var result = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
 
-      val stopAt = if(isOnPerimeter(b)) lastInstruction(b) else null;
+      val stopAt = if(isOnPerimeter(b)) lastInstruction(b) else null
       var isPastLast = false
 
       var instrs = b.toList
@@ -598,10 +598,10 @@ abstract class TypeFlowAnalysis {
         return
       } else if(staleOut.isEmpty && inlined.isEmpty && staleIn.isEmpty) {
         // this promotes invoking reinit if in doubt, no performance degradation will ensue!
-        return;
+        return
       }
 
-      worklist.clear // calling reinit(f: => Unit) would also clear visited, thus forgetting about blocks visited before reinit.
+      worklist.clear() // calling reinit(f: => Unit) would also clear visited, thus forgetting about blocks visited before reinit.
 
       // asserts conveying an idea what CFG shapes arrive here:
       //   staleIn foreach (p => assert( !in.isDefinedAt(p), p))
@@ -665,14 +665,14 @@ abstract class TypeFlowAnalysis {
     override def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit = {
       while (!worklist.isEmpty && relevantBBs.nonEmpty) {
         if (stat) iterations += 1
-        val point = worklist.iterator.next; worklist -= point;
+        val point = worklist.iterator.next(); worklist -= point
         if(relevantBBs(point)) {
           shrinkedWatchlist = false
           val output = f(point, in(point))
-          visited += point;
+          visited += point
           if(isOnPerimeter(point)) {
             if(shrinkedWatchlist && !isWatching(point)) {
-              relevantBBs -= point;
+              relevantBBs -= point
               populatePerimeter()
             }
           } else {

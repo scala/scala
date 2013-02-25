@@ -222,7 +222,7 @@ abstract class SymbolTable extends macros.Universe
     def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
       it.pid >= limit ||
       !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
-    );
+    )
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
       if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)

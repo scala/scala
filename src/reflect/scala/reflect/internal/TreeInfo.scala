@@ -140,7 +140,7 @@ abstract class TreeInfo {
   def mapMethodParamsAndArgs[R](params: List[Symbol], args: List[Tree])(f: (Symbol, Tree) => R): List[R] = {
     val b = List.newBuilder[R]
     foreachMethodParamAndArg(params, args)((param, arg) => b += f(param, arg))
-    b.result
+    b.result()
   }
   def foreachMethodParamAndArg(params: List[Symbol], args: List[Tree])(f: (Symbol, Tree) => Unit): Boolean = {
     val plen   = params.length
@@ -154,21 +154,21 @@ abstract class TreeInfo {
     }
 
     if (plen == alen) foreach2(params, args)(f)
-    else if (params.isEmpty) return fail
+    else if (params.isEmpty) return fail()
     else if (isVarArgsList(params)) {
       val plenInit = plen - 1
       if (alen == plenInit) {
         if (alen == 0) Nil        // avoid calling mismatched zip
         else foreach2(params.init, args)(f)
       }
-      else if (alen < plenInit) return fail
+      else if (alen < plenInit) return fail()
       else {
         foreach2(params.init, args take plenInit)(f)
         val remainingArgs = args drop plenInit
         foreach2(List.fill(remainingArgs.size)(params.last), remainingArgs)(f)
       }
     }
-    else return fail
+    else return fail()
 
     true
   }

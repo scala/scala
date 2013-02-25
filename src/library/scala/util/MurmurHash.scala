@@ -164,7 +164,7 @@ object MurmurHash {
     var k = hiddenMagicB
     var j = 0
     while (j+1 < s.length) {
-      val i = (s.charAt(j)<<16) + s.charAt(j+1);
+      val i = (s.charAt(j)<<16) + s.charAt(j+1)
       h = extendHash(h,i,c,k)
       c = nextMagicA(c)
       k = nextMagicB(k)

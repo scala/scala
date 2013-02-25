@@ -99,7 +99,7 @@ abstract class ClassfileParser {
       this.staticModule = if (root.isModule) root else root.companionModule
       this.isScala      = false
 
-      parseHeader
+      parseHeader()
       this.pool = new ConstantPool
       parseClass()
     }
@@ -540,7 +540,7 @@ abstract class ClassfileParser {
     val staticInfo = ClassInfoType(List(), staticScope, moduleClass)
 
     if (!isScala && !isScalaRaw)
-      enterOwnInnerClasses
+      enterOwnInnerClasses()
 
     val curbp = in.bp
     skipMembers() // fields
@@ -1128,7 +1128,7 @@ abstract class ClassfileParser {
         case tpnme.ScalaSignatureATTR =>
           isScala = true
           val pbuf = new PickleBuffer(in.buf, in.bp, in.bp + attrLen)
-          pbuf.readNat; pbuf.readNat;
+          pbuf.readNat(); pbuf.readNat()
           if (pbuf.readNat == 0) // a scala signature attribute with no entries means that the actual scala signature
             isScalaAnnot = true    // is in a ScalaSignature annotation.
           in.skip(attrLen)

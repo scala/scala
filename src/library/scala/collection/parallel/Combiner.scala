@@ -86,7 +86,7 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
    *  if this is applicable.
    */
   def resultWithTaskSupport: To = {
-    val res = result
+    val res = result()
     setTaskSupport(res, combinerTaskSupport)
   }
   

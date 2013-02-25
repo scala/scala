@@ -157,7 +157,7 @@ trait Printers { self: Universe =>
   }
 
   /** @group Printers */
-  case class BooleanFlag(val value: Option[Boolean])
+  case class BooleanFlag(value: Option[Boolean])
   /** @group Printers */
   object BooleanFlag {
     import scala.language.implicitConversions

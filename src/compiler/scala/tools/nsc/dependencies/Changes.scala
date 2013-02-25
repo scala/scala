@@ -168,7 +168,7 @@ abstract class Changes {
     implicit val defaultStrictTypeRefTest = true
 
     val to = toSym.info
-    changedTypeParams.clear
+    changedTypeParams.clear()
     def omitSymbols(s: Symbol): Boolean = !s.hasFlag(LOCAL | LIFTED | PRIVATE | SYNTHETIC)
     val cs = new mutable.ListBuffer[Change]
 

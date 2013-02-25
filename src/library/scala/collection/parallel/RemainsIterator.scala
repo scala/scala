@@ -47,47 +47,47 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   override def count(p: T => Boolean): Int = {
     var i = 0
-    while (hasNext) if (p(next)) i += 1
+    while (hasNext) if (p(next())) i += 1
     i
   }
 
   override def reduce[U >: T](op: (U, U) => U): U = {
-    var r: U = next
-    while (hasNext) r = op(r, next)
+    var r: U = next()
+    while (hasNext) r = op(r, next())
     r
   }
 
   override def fold[U >: T](z: U)(op: (U, U) => U): U = {
     var r = z
-    while (hasNext) r = op(r, next)
+    while (hasNext) r = op(r, next())
     r
   }
 
   override def sum[U >: T](implicit num: Numeric[U]): U = {
     var r: U = num.zero
-    while (hasNext) r = num.plus(r, next)
+    while (hasNext) r = num.plus(r, next())
     r
   }
 
   override def product[U >: T](implicit num: Numeric[U]): U = {
     var r: U = num.one
-    while (hasNext) r = num.times(r, next)
+    while (hasNext) r = num.times(r, next())
     r
   }
 
   override def min[U >: T](implicit ord: Ordering[U]): T = {
-    var r = next
+    var r = next()
     while (hasNext) {
-      val curr = next
+      val curr = next()
       if (ord.lteq(curr, r)) r = curr
     }
     r
   }
 
   override def max[U >: T](implicit ord: Ordering[U]): T = {
-    var r = next
+    var r = next()
     while (hasNext) {
-      val curr = next
+      val curr = next()
       if (ord.gteq(curr, r)) r = curr
     }
     r
@@ -97,16 +97,16 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
     var i = from
     val until = from + len
     while (i < until && hasNext) {
-      array(i) = next
+      array(i) = next()
       i += 1
     }
   }
 
   def reduceLeft[U >: T](howmany: Int, op: (U, U) => U): U = {
     var i = howmany - 1
-    var u: U = next
+    var u: U = next()
     while (i > 0 && hasNext) {
-      u = op(u, next)
+      u = op(u, next())
       i -= 1
     }
     u
@@ -117,7 +117,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   def map2combiner[S, That](f: T => S, cb: Combiner[S, That]): Combiner[S, That] = {
     //val cb = pbf(repr)
     if (isRemainingCheap) cb.sizeHint(remaining)
-    while (hasNext) cb += f(next)
+    while (hasNext) cb += f(next())
     cb
   }
 
@@ -125,7 +125,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
     //val cb = pbf(repr)
     val runWith = pf.runWith(cb += _)
     while (hasNext) {
-      val curr = next
+      val curr = next()
       runWith(curr)
     }
     cb
@@ -134,7 +134,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   def flatmap2combiner[S, That](f: T => GenTraversableOnce[S], cb: Combiner[S, That]): Combiner[S, That] = {
     //val cb = pbf(repr)
     while (hasNext) {
-      val traversable = f(next).seq
+      val traversable = f(next()).seq
       if (traversable.isInstanceOf[Iterable[_]]) cb ++= traversable.asInstanceOf[Iterable[S]].iterator
       else cb ++= traversable
     }
@@ -149,7 +149,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def filter2combiner[U >: T, This](pred: T => Boolean, cb: Combiner[U, This]): Combiner[U, This] = {
     while (hasNext) {
-      val curr = next
+      val curr = next()
       if (pred(curr)) cb += curr
     }
     cb
@@ -157,7 +157,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def filterNot2combiner[U >: T, This](pred: T => Boolean, cb: Combiner[U, This]): Combiner[U, This] = {
     while (hasNext) {
-      val curr = next
+      val curr = next()
       if (!pred(curr)) cb += curr
     }
     cb
@@ -165,7 +165,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def partition2combiners[U >: T, This](pred: T => Boolean, btrue: Combiner[U, This], bfalse: Combiner[U, This]) = {
     while (hasNext) {
-      val curr = next
+      val curr = next()
       if (pred(curr)) btrue += curr
       else bfalse += curr
     }
@@ -215,7 +215,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   def takeWhile2combiner[U >: T, This](p: T => Boolean, cb: Combiner[U, This]) = {
     var loop = true
     while (hasNext && loop) {
-      val curr = next
+      val curr = next()
       if (p(curr)) cb += curr
       else loop = false
     }
@@ -225,7 +225,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   def span2combiners[U >: T, This](p: T => Boolean, before: Combiner[U, This], after: Combiner[U, This]) = {
     var isBefore = true
     while (hasNext && isBefore) {
-      val curr = next
+      val curr = next()
       if (p(curr)) before += curr
       else {
         if (isRemainingCheap) after.sizeHint(remaining + 1)
@@ -241,7 +241,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
     var last = z
     var i = from
     while (hasNext) {
-      last = op(last, next)
+      last = op(last, next())
       array(i) = last
       i += 1
     }
@@ -250,7 +250,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   def scanToCombiner[U >: T, That](startValue: U, op: (U, U) => U, cb: Combiner[U, That]) = {
     var curr = startValue
     while (hasNext) {
-      curr = op(curr, next)
+      curr = op(curr, next())
       cb += curr
     }
     cb
@@ -260,7 +260,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
     var curr = startValue
     var left = howmany
     while (left > 0) {
-      curr = op(curr, next)
+      curr = op(curr, next())
       cb += curr
       left -= 1
     }
@@ -270,16 +270,16 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   def zip2combiner[U >: T, S, That](otherpit: RemainsIterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
     if (isRemainingCheap && otherpit.isRemainingCheap) cb.sizeHint(remaining min otherpit.remaining)
     while (hasNext && otherpit.hasNext) {
-      cb += ((next, otherpit.next))
+      cb += ((next(), otherpit.next()))
     }
     cb
   }
 
   def zipAll2combiner[U >: T, S, That](that: RemainsIterator[S], thiselem: U, thatelem: S, cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
     if (isRemainingCheap && that.isRemainingCheap) cb.sizeHint(remaining max that.remaining)
-    while (this.hasNext && that.hasNext) cb += ((this.next, that.next))
-    while (this.hasNext) cb += ((this.next, thatelem))
-    while (that.hasNext) cb += ((thiselem, that.next))
+    while (this.hasNext && that.hasNext) cb += ((this.next(), that.next()))
+    while (this.hasNext) cb += ((this.next(), thatelem))
+    while (that.hasNext) cb += ((thiselem, that.next()))
     cb
   }
 
@@ -299,7 +299,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
     var total = 0
     var loop = true
     while (hasNext && loop) {
-      if (pred(next)) total += 1
+      if (pred(next())) total += 1
       else loop = false
     }
     total
@@ -309,7 +309,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
     var i = 0
     var loop = true
     while (hasNext && loop) {
-      if (pred(next)) loop = false
+      if (pred(next())) loop = false
       else i += 1
     }
     if (loop) -1 else i
@@ -319,7 +319,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
     var pos = -1
     var i = 0
     while (hasNext) {
-      if (pred(next)) pos = i
+      if (pred(next())) pos = i
       i += 1
     }
     pos
@@ -327,7 +327,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
 
   def corresponds[S](corr: (T, S) => Boolean)(that: Iterator[S]): Boolean = {
     while (hasNext && that.hasNext) {
-      if (!corr(next, that.next)) return false
+      if (!corr(next(), that.next())) return false
     }
     hasNext == that.hasNext
   }
@@ -349,7 +349,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
     //val cb = cbf(repr)
     if (isRemainingCheap) cb.sizeHint(remaining)
     var lst = List[S]()
-    while (hasNext) lst ::= f(next)
+    while (hasNext) lst ::= f(next())
     while (lst != Nil) {
       cb += lst.head
       lst = lst.tail
@@ -364,7 +364,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
     while (hasNext) {
       if (j == index) {
         cb += elem
-        next
+        next()
       } else cb += next
       j += 1
     }
@@ -439,7 +439,7 @@ self =>
   class Taken(taken: Int) extends IterableSplitter[T] {
     var remaining = taken min self.remaining
     def hasNext = remaining > 0
-    def next = { remaining -= 1; self.next }
+    def next = { remaining -= 1; self.next() }
     def dup: IterableSplitter[T] = self.dup.take(taken)
     def split: Seq[IterableSplitter[T]] = takeSeq(self.split) { (p, n) => p.take(n) }
     protected[this] def takeSeq[PI <: IterableSplitter[T]](sq: Seq[PI])(taker: (PI, Int) => PI) = {
@@ -467,7 +467,7 @@ self =>
   class Mapped[S](f: T => S) extends IterableSplitter[S] {
     signalDelegate = self.signalDelegate
     def hasNext = self.hasNext
-    def next = f(self.next)
+    def next = f(self.next())
     def remaining = self.remaining
     def dup: IterableSplitter[S] = self.dup map f
     def split: Seq[IterableSplitter[S]] = self.split.map { _ map f }
@@ -484,8 +484,8 @@ self =>
     } else false
     def next = if (curr eq self) {
       hasNext
-      curr.next
-    } else curr.next
+      curr.next()
+    } else curr.next()
     def remaining = if (curr eq self) curr.remaining + that.remaining else curr.remaining
     protected def firstNonEmpty = (curr eq self) && curr.hasNext
     def dup: IterableSplitter[U] = self.dup.appendParIterable[U, PI](that)
@@ -497,7 +497,7 @@ self =>
   class Zipped[S](protected val that: SeqSplitter[S]) extends IterableSplitter[(T, S)] {
     signalDelegate = self.signalDelegate
     def hasNext = self.hasNext && that.hasNext
-    def next = (self.next, that.next)
+    def next = (self.next(), that.next())
     def remaining = self.remaining min that.remaining
     def dup: IterableSplitter[(T, S)] = self.dup.zipParSeq(that)
     def split: Seq[IterableSplitter[(T, S)]] = {
@@ -515,9 +515,10 @@ self =>
     signalDelegate = self.signalDelegate
     def hasNext = self.hasNext || that.hasNext
     def next = if (self.hasNext) {
-      if (that.hasNext) (self.next, that.next)
-      else (self.next, thatelem)
-    } else (thiselem, that.next);
+      if (that.hasNext) (self.next(), that.next())
+      else (self.next(), thatelem)
+    } else (thiselem, that.next())
+
     def remaining = self.remaining max that.remaining
     def dup: IterableSplitter[(U, S)] = self.dup.zipAllParSeq(that, thiselem, thatelem)
     def split: Seq[IterableSplitter[(U, S)]] = {
@@ -606,7 +607,7 @@ self =>
         } else Seq(sz)
       }
       val (selfszfrom, thatszfrom) = splitsizes.zip(szcum.init).span(_._2 < selfrem)
-      val (selfsizes, thatsizes) = (selfszfrom map { _._1 }, thatszfrom map { _._1 });
+      val (selfsizes, thatsizes) = (selfszfrom map { _._1 }, thatszfrom map { _._1 })
 
       // split iterators
       val selfs = self.psplit(selfsizes: _*)

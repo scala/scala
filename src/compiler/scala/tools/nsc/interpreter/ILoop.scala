@@ -256,7 +256,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private def findToolsJar() = {
     val jdkPath = Directory(jdkHome)
-    val jar     = jdkPath / "lib" / "tools.jar" toFile;
+    val jar     = jdkPath / "lib" / "tools.jar" toFile
 
     if (jar isFile)
       Some(jar)
@@ -265,7 +265,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else None
   }
   private def addToolsJarToLoader() = {
-    val cl = findToolsJar match {
+    val cl = findToolsJar() match {
       case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
       case _           => intp.classLoader
     }
@@ -656,7 +656,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         foreach (intp quietRun _)
     )
     // classloader and power mode setup
-    intp.setContextClassLoader
+    intp.setContextClassLoader()
     if (isReplPower) {
       replProps.power setValue true
       unleashAndSetPhase()

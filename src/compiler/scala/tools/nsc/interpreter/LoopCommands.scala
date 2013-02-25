@@ -68,7 +68,7 @@ trait LoopCommands {
   }
 
   // the result of a single command
-  case class Result(val keepRunning: Boolean, val lineToRecord: Option[String])
+  case class Result(keepRunning: Boolean, lineToRecord: Option[String])
 
   object Result {
     // the default result means "keep running, and don't record that line"

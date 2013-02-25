@@ -45,7 +45,7 @@ abstract class Page {
 
   /** Writes this page as a file. The file's location is relative to the
     * generator's site root, and the encoding is also defined by the generator.
-    * @param generator The generator that is writing this page. */
+    * @param site The generator that is writing this page. */
   def writeFor(site: HtmlFactory): Unit
 
   def kindToString(mbr: MemberEntity) =
@@ -84,7 +84,7 @@ abstract class Page {
   }
 
   /** A relative link from this page to some destination class entity.
-    * @param destEntity The class or object entity that the link will point to. */
+    * @param destClass The class or object entity that the link will point to. */
   def relativeLinkTo(destClass: TemplateEntity): String =
     relativeLinkTo(templateToPath(destClass))
 

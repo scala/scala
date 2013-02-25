@@ -368,7 +368,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
     private var cur: Iterator[B] = empty
     def hasNext: Boolean =
-      cur.hasNext || self.hasNext && { cur = f(self.next).toIterator; hasNext }
+      cur.hasNext || self.hasNext && { cur = f(self.next()).toIterator; hasNext }
     def next(): B = (if (hasNext) cur else empty).next()
   }
 
@@ -408,7 +408,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def corresponds[B](that: GenTraversableOnce[B])(p: (A, B) => Boolean): Boolean = {
     val that0 = that.toIterator
     while (hasNext && that0.hasNext)
-      if (!p(next, that0.next)) return false
+      if (!p(next(), that0.next())) return false
 
     hasNext == that0.hasNext
   }
@@ -630,7 +630,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def zip[B](that: Iterator[B]): Iterator[(A, B)] = new AbstractIterator[(A, B)] {
     def hasNext = self.hasNext && that.hasNext
-    def next = (self.next, that.next)
+    def next = (self.next(), that.next())
   }
 
   /** Appends an element value to this iterator until a given target length is reached.
@@ -650,9 +650,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
     def hasNext = self.hasNext || count < len
     def next = {
       count += 1
-      if (self.hasNext) self.next
+      if (self.hasNext) self.next()
       else if (count <= len) elem
-      else empty.next
+      else empty.next()
     }
   }
 
@@ -667,7 +667,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     var idx = 0
     def hasNext = self.hasNext
     def next = {
-      val ret = (self.next, idx)
+      val ret = (self.next(), idx)
       idx += 1
       ret
     }
@@ -1052,12 +1052,12 @@ trait Iterator[+A] extends TraversableOnce[A] {
           val e = self.next()
           gap enqueue e
           e
-        } else gap.dequeue
+        } else gap.dequeue()
       }
       // to verify partnerhood we use reference equality on gap because
       // type testing does not discriminate based on origin.
       private def compareGap(queue: scala.collection.mutable.Queue[A]) = gap eq queue
-      override def hashCode = gap.hashCode
+      override def hashCode = gap.hashCode()
       override def equals(other: Any) = other match {
         case x: Partner   => x.compareGap(gap) && gap.isEmpty
         case _            => super.equals(other)
@@ -1139,7 +1139,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def toTraversable: Traversable[A] = toStream
   def toIterator: Iterator[A] = self
   def toStream: Stream[A] =
-    if (self.hasNext) Stream.cons(self.next, self.toStream)
+    if (self.hasNext) Stream.cons(self.next(), self.toStream)
     else Stream.empty[A]
 
 
