@@ -54,7 +54,7 @@ abstract class DeadCodeElimination extends SubComponent {
       }
     }
 
-    val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis;
+    val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis
 
     /** Use-def chain: give the reaching definitions at the beginning of given instruction. */
     var defs: immutable.Map[InstrLoc, immutable.Set[rdef.lattice.Definition]] = immutable.HashMap.empty
@@ -82,7 +82,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
     def dieCodeDie(m: IMethod) {
       if (m.hasCode) {
-        debuglog("dead code elimination on " + m);
+        debuglog("dead code elimination on " + m)
         dropOf.clear()
         localStores.clear()
         clobbers.clear()
@@ -104,13 +104,13 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** collect reaching definitions and initial useful instructions for this method. */
     def collectRDef(m: IMethod): Unit = if (m.hasCode) {
-      defs = immutable.HashMap.empty; worklist.clear(); useful.clear();
-      rdef.init(m);
-      rdef.run;
+      defs = immutable.HashMap.empty; worklist.clear(); useful.clear()
+      rdef.init(m)
+      rdef.run()
 
       m foreachBlock { bb =>
         useful(bb) = new mutable.BitSet(bb.size)
-        var rd = rdef.in(bb);
+        var rd = rdef.in(bb)
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
 
           // utility for adding to worklist
@@ -340,8 +340,8 @@ abstract class DeadCodeElimination extends SubComponent {
       m foreachBlock { bb =>
         debuglog(bb + ":")
         val oldInstr = bb.toList
-        bb.open
-        bb.clear
+        bb.open()
+        bb.clear()
         for (Pair(i, idx) <- oldInstr.zipWithIndex) {
           if (useful(bb)(idx)) {
             debuglog(" * " + i + " is useful")
@@ -374,7 +374,7 @@ abstract class DeadCodeElimination extends SubComponent {
           }
         }
 
-        if (bb.nonEmpty) bb.close
+        if (bb.nonEmpty) bb.close()
         else log(s"empty block encountered in $m")
       }
     }

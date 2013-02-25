@@ -6,9 +6,9 @@
 
 package scala.tools.nsc
 package backend
-package icode;
+package icode
 
-import java.io.PrintWriter;
+import java.io.PrintWriter
 
 trait Primitives { self: ICodes =>
 
@@ -51,12 +51,12 @@ trait Primitives { self: ICodes =>
   // type : (src) => dst
   // range: src,dst <- { Ix, Ux, Rx }
   // jvm  : i2{l, f, d}, l2{i, f, d}, f2{i, l, d}, d2{i, l, f}, i2{b, c, s}
-  case class Conversion(src: TypeKind, dst: TypeKind) extends Primitive;
+  case class Conversion(src: TypeKind, dst: TypeKind) extends Primitive
 
   // type : (Array[REF]) => I4
   // range: type <- { BOOL, Ix, Ux, Rx, REF }
   // jvm  : arraylength
-  case class ArrayLength(kind: TypeKind) extends Primitive;
+  case class ArrayLength(kind: TypeKind) extends Primitive
 
   // type : (buf,el) => buf
   // range: lf,rg <- { BOOL, Ix, Ux, Rx, REF, STR }
@@ -230,9 +230,9 @@ trait Primitives { self: ICodes =>
 
     /** Returns a string representation of this operation. */
     override def toString(): String = this match {
-      case AND => return "AND"
-      case OR  => return "OR"
-      case XOR => return "XOR"
+      case AND => "AND"
+      case OR  => "OR"
+      case XOR => "XOR"
       case _  => throw new RuntimeException("LogicalOp unknown case")
     }
   }

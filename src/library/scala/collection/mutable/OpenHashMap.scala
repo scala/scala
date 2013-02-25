@@ -27,7 +27,7 @@ object OpenHashMap {
                                             var value: Option[Value])
                 extends HashEntry[Key, OpenEntry[Key, Value]]
 
-  private[mutable] def nextPowerOfTwo(i : Int) = highestOneBit(i) << 1;
+  private[mutable] def nextPowerOfTwo(i : Int) = highestOneBit(i) << 1
 }
 
 /** A mutable hash map based on an open hashing scheme. The precise scheme is
@@ -78,8 +78,8 @@ extends AbstractMap[Key, Value]
   /** Returns a mangled hash code of the provided key. */
   protected def hashOf(key: Key) = {
     var h = key.##
-    h ^= ((h >>> 20) ^ (h >>> 12));
-    h ^ (h >>> 7) ^ (h >>> 4);
+    h ^= ((h >>> 20) ^ (h >>> 12))
+    h ^ (h >>> 7) ^ (h >>> 4)
   }
 
   private[this] def growTable() = {
@@ -89,7 +89,7 @@ extends AbstractMap[Key, Value]
     table = new Array[Entry](newSize)
     mask = newSize - 1
     oldTable.foreach( entry =>
-      if (entry != null && entry.value != None) addEntry(entry));
+      if (entry != null && entry.value != None) addEntry(entry))
     deleted = 0
   }
 
@@ -124,18 +124,18 @@ extends AbstractMap[Key, Value]
     put(key, hashOf(key), value)
 
   private def put(key: Key, hash: Int, value: Value): Option[Value] = {
-    if (2 * (size + deleted) > mask) growTable
+    if (2 * (size + deleted) > mask) growTable()
     val index = findIndex(key, hash)
     val entry = table(index)
     if (entry == null) {
-      table(index) = new OpenEntry(key, hash, Some(value));
+      table(index) = new OpenEntry(key, hash, Some(value))
       modCount += 1
       size += 1
       None
     } else {
       val res = entry.value
       if (entry.value == None) { size += 1; modCount += 1 }
-      entry.value = Some(value);
+      entry.value = Some(value)
       res
     }
   }
@@ -161,13 +161,13 @@ extends AbstractMap[Key, Value]
     while(entry != null){
       if (entry.hash == hash &&
           entry.key == key){
-        return entry.value;
+        return entry.value
       }
 
-      j = 5 * j + 1 + perturb;
-      perturb >>= 5;
-      index = j & mask;
-      entry = table(index);
+      j = 5 * j + 1 + perturb
+      perturb >>= 5
+      index = j & mask
+      entry = table(index)
     }
     None
   }
@@ -182,8 +182,8 @@ extends AbstractMap[Key, Value]
     val initialModCount = modCount
 
     private[this] def advance() {
-      if (initialModCount != modCount) sys.error("Concurrent modification");
-      while((index <= mask) && (table(index) == null || table(index).value == None)) index+=1;
+      if (initialModCount != modCount) sys.error("Concurrent modification")
+      while((index <= mask) && (table(index) == null || table(index).value == None)) index+=1
     }
 
     def hasNext = {advance(); index <= mask }
@@ -198,7 +198,7 @@ extends AbstractMap[Key, Value]
 
   override def clone() = {
     val it = new OpenHashMap[Key, Value]
-    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get));
+    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get))
     it
   }
 
@@ -213,24 +213,24 @@ extends AbstractMap[Key, Value]
    *  @param f   The function to apply to each key, value mapping.
    */
   override def foreach[U](f : ((Key, Value)) => U) {
-    val startModCount = modCount;
+    val startModCount = modCount
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) sys.error("Concurrent Modification")
       f((entry.key, entry.value.get))}
-    );
+    )
   }
 
   private[this] def foreachUndeletedEntry(f : Entry => Unit){
-    table.foreach(entry => if (entry != null && entry.value != None) f(entry));
+    table.foreach(entry => if (entry != null && entry.value != None) f(entry))
   }
 
   override def transform(f : (Key, Value) => Value) = {
-    foreachUndeletedEntry(entry => entry.value = Some(f(entry.key, entry.value.get)));
+    foreachUndeletedEntry(entry => entry.value = Some(f(entry.key, entry.value.get)))
     this
   }
 
   override def retain(f : (Key, Value) => Boolean) = {
-    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) {entry.value = None; size -= 1; deleted += 1} );
+    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) {entry.value = None; size -= 1; deleted += 1} )
     this
   }
 

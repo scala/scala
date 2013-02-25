@@ -227,7 +227,7 @@ object ScalaRunTime {
     if (iv == fv) return iv
 
     val lv = fv.toLong
-    if (lv == fv) return hash(lv)
+    if (lv == fv) hash(lv)
     else fv.hashCode
   }
   def hash(lv: Long): Int = {

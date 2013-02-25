@@ -31,7 +31,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
   private var counter = 0
 
   def generate(diagram: Diagram, template: DocTemplateEntity, page: HtmlPage):NodeSeq = {
-    counter = counter + 1;
+    counter = counter + 1
     this.page = page
     pathToLib = "../" * (page.templateToPath(template).size - 1) + "lib/"
     val dot = generateDot(diagram)
@@ -207,7 +207,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
   private def node2Dot(node: Node) = {
 
     // escape HTML characters in node names
-    def escape(name: String) = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    def escape(name: String) = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     // assemble node attribues in a map
     val attr = scala.collection.mutable.Map[String, String]()
@@ -315,11 +315,11 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
    * Calls dot with a given dot string and returns the SVG output.
    */
   private def generateSVG(dotInput: String, template: DocTemplateEntity) = {
-    val dotOutput = DiagramGenerator.getDotRunner.feedToDot(dotInput, template)
+    val dotOutput = DiagramGenerator.getDotRunner().feedToDot(dotInput, template)
     var tSVG = -System.currentTimeMillis
 
     val result = if (dotOutput != null) {
-      val src = scala.io.Source.fromString(dotOutput);
+      val src = scala.io.Source.fromString(dotOutput)
       try {
         val cpa = scala.xml.parsing.ConstructingParser.fromSource(src, false)
         val doc = cpa.document()

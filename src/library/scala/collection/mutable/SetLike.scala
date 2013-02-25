@@ -210,7 +210,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    def <<(cmd: Message[A]): Unit = cmd match {
      case Include(_, x)     => this += x
      case Remove(_, x)      => this -= x
-     case Reset()           => clear
+     case Reset()           => clear()
      case s: Script[_]      => s.iterator foreach <<
      case _                 => throw new UnsupportedOperationException("message " + cmd + " not understood")
    }

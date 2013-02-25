@@ -80,7 +80,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     b.sizeHint(map{case is: scala.collection.IndexedSeq[_] => is.size case _ => 0}.sum)
     for (xs <- this)
       b ++= asTrav(xs)
-    b.result
+    b.result()
   }
 
   /** Transposes a two dimensional array.
@@ -101,7 +101,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     }
     val bb: Builder[Array[U], Array[Array[U]]] = Array.newBuilder(ClassTag[Array[U]](elementClass))
     for (b <- bs) bb += b.result
-    bb.result
+    bb.result()
   }
 
   def seq = thisCollection

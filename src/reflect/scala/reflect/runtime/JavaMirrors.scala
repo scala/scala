@@ -1198,7 +1198,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       else sym.name.toString
 
     /** The Java field corresponding to a given Scala field.
-     *  @param   meth The Scala field.
+     *  @param   fld The Scala field.
      */
     def fieldToJava(fld: TermSymbol): jField = fieldCache.toJava(fld) {
       val jclazz = classToJava(fld.owner.asClass)

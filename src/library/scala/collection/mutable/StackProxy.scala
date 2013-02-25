@@ -69,13 +69,13 @@ trait StackProxy[A] extends Stack[A] with Proxy {
 
   /** Removes the top element from the stack.
    */
-  override def pop(): A = self.pop
+  override def pop(): A = self.pop()
 
   /**
    * Removes all elements from the stack. After this operation completed,
    * the stack will be empty.
    */
-  override def clear(): Unit = self.clear
+  override def clear(): Unit = self.clear()
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.

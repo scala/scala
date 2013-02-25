@@ -233,9 +233,6 @@ trait CompilerControl { self: Global =>
    *                    prints its output and all defined values in a comment column.
    *
    *  @param source       The source file to be analyzed
-   *  @param keepLoaded   If set to `true`, source file will be kept as a loaded unit afterwards.
-   *                      If keepLoaded is `false` the operation is run at low priority, only after
-   *                      everything is brought up to date in a regular type checker run.
    *  @param response     The response.
    */
   @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
@@ -337,7 +334,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
+  case class AskTypeAtItem(pos: Position, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTreeAt(pos, response)
     override def toString = "typeat "+pos.source+" "+pos.show
 
@@ -345,7 +342,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskTypeItem(val source: SourceFile, val forceReload: Boolean, response: Response[Tree]) extends WorkItem {
+  case class AskTypeItem(source: SourceFile, forceReload: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTree(source, forceReload, response)
     override def toString = "typecheck"
 
@@ -353,7 +350,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskTypeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
+  case class AskTypeCompletionItem(pos: Position, response: Response[List[Member]]) extends WorkItem {
     def apply() = self.getTypeCompletion(pos, response)
     override def toString = "type completion "+pos.source+" "+pos.show
 
@@ -361,7 +358,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskScopeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
+  case class AskScopeCompletionItem(pos: Position, response: Response[List[Member]]) extends WorkItem {
     def apply() = self.getScopeCompletion(pos, response)
     override def toString = "scope completion "+pos.source+" "+pos.show
 
@@ -379,7 +376,7 @@ trait CompilerControl { self: Global =>
     def raiseMissing() = ()
   }
 
-  case class AskLinkPosItem(val sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
+  case class AskLinkPosItem(sym: Symbol, source: SourceFile, response: Response[Position]) extends WorkItem {
     def apply() = self.getLinkPos(sym, source, response)
     override def toString = "linkpos "+sym+" in "+source
 
@@ -387,7 +384,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskDocCommentItem(val sym: Symbol, val site: Symbol, val source: SourceFile, response: Response[(String, String, Position)]) extends WorkItem {
+  case class AskDocCommentItem(sym: Symbol, site: Symbol, source: SourceFile, response: Response[(String, String, Position)]) extends WorkItem {
     def apply() = self.getDocComment(sym, site, source, response)
     override def toString = "doc comment "+sym+" in "+source
 
@@ -395,7 +392,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
+  case class AskLoadedTypedItem(source: SourceFile, response: Response[Tree]) extends WorkItem {
     def apply() = self.waitLoadedTyped(source, response, this.onCompilerThread)
     override def toString = "wait loaded & typed "+source
 
@@ -403,7 +400,7 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
+  case class AskParsedEnteredItem(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
 
@@ -412,7 +409,7 @@ trait CompilerControl { self: Global =>
   }
 
   @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
-  case class AskInstrumentedItem(val source: SourceFile, line: Int, response: Response[(String, Array[Char])]) extends WorkItem {
+  case class AskInstrumentedItem(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) extends WorkItem {
     def apply() = self.getInstrumented(source, line, response)
     override def toString = "getInstrumented "+source
 

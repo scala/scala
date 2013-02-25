@@ -481,14 +481,14 @@ abstract class ExplicitOuter extends InfoTransform
               // at least don't crash... this duplicates maybeOmittable from constructors
               (acc.owner.isEffectivelyFinal && !acc.isOverridingSymbol)) {
             unit.uncheckedWarning(tree.pos, "The outer reference in this type test cannot be checked at run time.")
-            return transform(TRUE) // urgh... drop condition if there's no accessor (or if it may disappear after constructors)
+            transform(TRUE) // urgh... drop condition if there's no accessor (or if it may disappear after constructors)
           } else {
             // println("(base, acc)= "+(base, acc))
             val outerSelect = localTyper typed Apply(Select(base, acc), Nil)
             // achieves the same as: localTyper typed atPos(tree.pos)(outerPath(base, base.tpe.typeSymbol, outerFor.outerClass))
             // println("(b, tpsym, outerForI, outerFor, outerClass)= "+ (base, base.tpe.typeSymbol, outerFor, sel.symbol.owner, outerFor.outerClass))
             // println("outerSelect = "+ outerSelect)
-            return transform(treeCopy.Apply(tree, treeCopy.Select(eqsel, outerSelect, eq), args))
+            transform(treeCopy.Apply(tree, treeCopy.Select(eqsel, outerSelect, eq), args))
           }
 
         case _ =>

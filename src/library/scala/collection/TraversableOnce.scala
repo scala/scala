@@ -269,7 +269,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
     val b = cbf()
     b ++= seq
-    b.result
+    b.result()
   }
 
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
@@ -277,7 +277,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     for (x <- self)
       b += x
 
-    b.result
+    b.result()
   }
 
   def mkString(start: String, sep: String, end: String): String =
@@ -422,7 +422,7 @@ object TraversableOnce {
     def flatten: Iterator[A] = new AbstractIterator[A] {
       val its = travs.toIterator
       private var it: Iterator[A] = Iterator.empty
-      def hasNext: Boolean = it.hasNext || its.hasNext && { it = its.next.toIterator; hasNext }
+      def hasNext: Boolean = it.hasNext || its.hasNext && { it = its.next().toIterator; hasNext }
       def next(): A = if (hasNext) it.next() else Iterator.empty.next()
     }
   }

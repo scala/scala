@@ -170,8 +170,8 @@ self =>
       val global: self.global.type = self.global
     }
 
-    def xmlLiteral : Tree = xmlp.xLiteral
-    def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
+    def xmlLiteral() : Tree = xmlp.xLiteral
+    def xmlLiteralPattern() : Tree = xmlp.xLiteralPattern
   }
 
   class OutlineParser(source: SourceFile) extends SourceFileParser(source) {
@@ -1519,7 +1519,7 @@ self =>
             placeholderParams = param :: placeholderParams
             id
           case LPAREN =>
-            atPos(in.offset)(makeParens(commaSeparated(expr)))
+            atPos(in.offset)(makeParens(commaSeparated(expr())))
           case LBRACE =>
             canApply = false
             blockExpr()
@@ -2482,7 +2482,7 @@ self =>
      *  }}}
      */
     def funDefOrDcl(start : Int, mods: Modifiers): Tree = {
-      in.nextToken
+      in.nextToken()
       if (in.token == THIS) {
         atPos(start, in.skipToken()) {
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
@@ -2644,7 +2644,7 @@ self =>
      *  }}}
      */
     def classDef(start: Int, mods: Modifiers): ClassDef = {
-      in.nextToken
+      in.nextToken()
       val nameOffset = in.offset
       val name = identForType()
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
@@ -2684,7 +2684,7 @@ self =>
      *  }}}
      */
     def objectDef(start: Int, mods: Modifiers): ModuleDef = {
-      in.nextToken
+      in.nextToken()
       val nameOffset = in.offset
       val name = ident()
       val tstart = in.offset
@@ -2790,7 +2790,7 @@ self =>
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents0, self, anyvalConstructor :: body)
         else
-          Template(anyrefParents, self, constrMods, vparamss, body, o2p(tstart))
+          Template(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 

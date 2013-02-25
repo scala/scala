@@ -91,8 +91,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     def printColumn(ts: List[Tree], start: String, sep: String, end: String) {
-      print(start); indent; println()
-      printSeq(ts){print(_)}{print(sep); println()}; undent; println(); print(end)
+      print(start); indent(); println()
+      printSeq(ts){print(_)}{print(sep); println()}; undent(); println(); print(end)
     }
 
     def printRow(ts: List[Tree], start: String, sep: String, end: String) {
@@ -208,7 +208,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
         case ModuleDef(mods, name, impl) =>
           printAnnotations(tree)
-          printModifiers(tree, mods);
+          printModifiers(tree, mods)
           print("object " + symName(tree, name), " extends ", impl)
 
         case ValDef(mods, name, tp, rhs) =>
@@ -327,10 +327,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(lhs, " = ", rhs)
 
         case If(cond, thenp, elsep) =>
-          print("if (", cond, ")"); indent; println()
-          print(thenp); undent
+          print("if (", cond, ")"); indent(); println()
+          print(thenp); undent()
           if (!elsep.isEmpty) {
-            println(); print("else"); indent; println(); print(elsep); undent
+            println(); print("else"); indent(); println(); print(elsep); undent()
           }
 
         case Return(expr) =>
@@ -423,7 +423,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printOpt(" >: ", lo); printOpt(" <: ", hi)
 
         case ExistentialTypeTree(tpt, whereClauses) =>
-          print(tpt);
+          print(tpt)
           printColumn(whereClauses, " forSome { ", ";", "}")
 
 // SelectFromArray is no longer visible in reflect.internal.
@@ -652,7 +652,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       print("(")
       val it = iterable.iterator
       while (it.hasNext) {
-        body(it.next)
+        body(it.next())
         print(if (it.hasNext) ", " else "")
       }
       print(")")

@@ -576,7 +576,7 @@ object Future {
   def sequence[A, M[_] <: TraversableOnce[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
     in.foldLeft(Promise.successful(cbf(in)).future) {
       (fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)
-    } map (_.result)
+    } map (_.result())
   }
 
   /** Returns a `Future` to the result of the first future in the list that is completed.
@@ -638,7 +638,7 @@ object Future {
    *  }}}
    */
   def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
-    if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection")).future
+    if (futures.isEmpty) Promise[R]().failure(new NoSuchElementException("reduce attempted on empty collection")).future
     else sequence(futures).map(_ reduceLeft op)
   }
 
@@ -654,7 +654,7 @@ object Future {
     in.foldLeft(Promise.successful(cbf(in)).future) { (fr, a) =>
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <- fb) yield (r += b)
-    }.map(_.result)
+    }.map(_.result())
 
   // This is used to run callbacks which are internal
   // to scala.concurrent; our own callbacks are only

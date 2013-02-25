@@ -218,7 +218,7 @@ private[scala] trait ReadStdin {
         case x: java.lang.Float     => x.floatValue()
         case x: java.lang.Double    => x.doubleValue()
         case x => x
-      }) :: res;
+      }) :: res
       i -= 1
     }
     res

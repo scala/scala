@@ -366,7 +366,7 @@ trait Scanners extends ScannersCommon {
                 getOperatorRest()
             }
           }
-          fetchLT
+          fetchLT()
         case '~' | '!' | '@' | '#' | '%' |
              '^' | '*' | '+' | '-' | /*'<' | */
              '>' | '?' | ':' | '=' | '&' |
@@ -403,7 +403,7 @@ trait Scanners extends ScannersCommon {
             }
             getNumber()
           }
-          fetchZero
+          fetchZero()
         case '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           base = 10
           getNumber()
@@ -444,7 +444,7 @@ trait Scanners extends ScannersCommon {
               }
             }
           }
-          fetchDoubleQuote
+          fetchDoubleQuote()
         case '\'' =>
           def fetchSingleQuote() = {
             nextChar()
@@ -463,7 +463,7 @@ trait Scanners extends ScannersCommon {
               }
             }
           }
-          fetchSingleQuote
+          fetchSingleQuote()
         case '.' =>
           nextChar()
           if ('0' <= ch && ch <= '9') {
@@ -512,7 +512,7 @@ trait Scanners extends ScannersCommon {
               nextChar()
             }
           }
-          fetchOther
+          fetchOther()
       }
     }
 

@@ -31,7 +31,7 @@ abstract class TailCalls extends Transform {
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit) {
       if (!(settings.debuginfo.value == "notailcalls")) {
-        newTransformer(unit).transformUnit(unit);
+        newTransformer(unit).transformUnit(unit)
       }
     }
   }

@@ -112,13 +112,13 @@ object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
       val b = SortedMap.newBuilder[A, B1]
       b ++= this
       b += ((kv._1, kv._2))
-      b.result
+      b.result()
     }
 
     override def - (key: A): SortedMap[A, B] = {
       val b = newBuilder
       for (kv <- this; if kv._1 != key) b += kv
-      b.result
+      b.result()
     }
   }
 }

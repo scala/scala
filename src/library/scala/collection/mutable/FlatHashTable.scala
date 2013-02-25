@@ -77,7 +77,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     assert(size >= 0)
 
     table = new Array(capacity(sizeForThreshold(size, _loadFactor)))
-    threshold = newThreshold(_loadFactor, table.size)
+    threshold = newThreshold(_loadFactor, table.length)
 
     seedvalue = in.readInt()
 
@@ -208,7 +208,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     }
     def next(): A =
       if (hasNext) { i += 1; entryToElem(table(i - 1)) }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   private def growTable() {
@@ -358,7 +358,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
       seedvalue = c.seedvalue
       sizemap = c.sizemap
     }
-    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild
+    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild()
   }
 
 }

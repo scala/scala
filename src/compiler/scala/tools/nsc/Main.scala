@@ -38,7 +38,7 @@ object Main extends Driver with EvalLoop {
         case Some(ex) => reporter.cancelled = true // Causes exit code to be non-0
         case None => reporter.reset() // Causes other compiler errors to be ignored
       }
-      askShutdown
+      askShutdown()
       false
     }
     else true

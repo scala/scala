@@ -51,8 +51,8 @@ object REPL {
       } catch {
         case ex @ FatalError(msg) =>
           if (true || command.settings.debug.value) // !!!
-            ex.printStackTrace();
-        reporter.error(null, "fatal error: " + msg)
+            ex.printStackTrace()
+          reporter.error(null, "fatal error: " + msg)
       }
     }
   }
@@ -65,7 +65,7 @@ object REPL {
   def loop(action: (String) => Unit) {
     Console.print(prompt)
     try {
-      val line = Console.readLine
+      val line = Console.readLine()
       if (line.length() > 0) {
         action(line)
       }

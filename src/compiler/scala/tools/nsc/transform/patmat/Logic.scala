@@ -113,7 +113,7 @@ trait Logic extends Debugging  {
     case object False extends Prop
 
     // symbols are propositions
-    abstract case class Sym(val variable: Var, val const: Const) extends Prop {
+    abstract case class Sym(variable: Var, const: Const) extends Prop {
       private[this] val id = Sym.nextSymId
 
       override def toString = variable +"="+ const +"#"+ id
@@ -212,7 +212,7 @@ trait Logic extends Debugging  {
       }
 
       props foreach gatherEqualities.apply
-      if (modelNull) vars foreach (_.registerNull)
+      if (modelNull) vars foreach (_.registerNull())
 
       val pure = props map (p => eqFreePropToSolvable(rewriteEqualsToProp(p)))
 
@@ -548,7 +548,7 @@ trait ScalaLogic extends Logic { self: PatternMatching =>
       val staticTpCheckable: Type = checkableType(staticTp)
 
       private[this] var _mayBeNull = false
-      def registerNull(): Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
+      def registerNull(): Unit = { ensureCanModify(); if (NullTp <:< staticTpCheckable) _mayBeNull = true }
       def mayBeNull: Boolean = _mayBeNull
 
       // case None => domain is unknown,
@@ -572,16 +572,16 @@ trait ScalaLogic extends Logic { self: PatternMatching =>
           } else
             subConsts
 
-        observed; allConsts
+        observed(); allConsts
       }
 
       // populate equalitySyms
       // don't care about the result, but want only one fresh symbol per distinct constant c
-      def registerEquality(c: Const): Unit = {ensureCanModify; symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
+      def registerEquality(c: Const): Unit = {ensureCanModify(); symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
 
       // return the symbol that represents this variable being equal to the constant `c`, if it exists, otherwise False (for robustness)
       // (registerEquality(c) must have been called prior, either when constructing the domain or from outside)
-      def propForEqualsTo(c: Const): Prop = {observed; symForEqualsTo.getOrElse(c, False)}
+      def propForEqualsTo(c: Const): Prop = {observed(); symForEqualsTo.getOrElse(c, False)}
 
       // [implementation NOTE: don't access until all potential equalities have been registered using registerEquality]p
       /** the information needed to construct the boolean proposition that encods the equality proposition (V = C)
@@ -689,7 +689,7 @@ trait ScalaLogic extends Logic { self: PatternMatching =>
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
       // don't access until all potential equalities have been registered using registerEquality
-      private lazy val equalitySyms = {observed; symForEqualsTo.values.toList}
+      private lazy val equalitySyms = {observed(); symForEqualsTo.values.toList}
 
       // don't call until all equalities have been registered and registerNull has been called (if needed)
       def describe = {

@@ -71,7 +71,7 @@ trait MatchTranslation { self: PatternMatching  =>
       }
 
       while (it.hasNext) {
-        val cdef = it.next
+        val cdef = it.next()
         // If a default case has been seen, then every succeeding case is unreachable.
         if (vpat != null)
           context.unit./*error*/warning(cdef.body.pos, "unreachable code due to " + vpat + addendum(cdef.pat))
@@ -173,7 +173,7 @@ trait MatchTranslation { self: PatternMatching  =>
             (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
-          for(cases <- emitTypeSwitch(bindersAndCases, pt).toList;
+          for(cases <- emitTypeSwitch(bindersAndCases, pt).toList
               if cases forall treeInfo.isCatchCase; // must check again, since it's not guaranteed -- TODO: can we eliminate this? e.g., a type test could test for a trait or a non-trivial prefix, which are not handled by the back-end
               cse <- cases) yield fixerUpper(matchOwner, pos)(cse).asInstanceOf[CaseDef]
         }

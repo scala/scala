@@ -70,19 +70,19 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private case class MacroImplBinding(
     // Java class name of the class that contains the macro implementation
     // is used to load the corresponding object with Java reflection
-    val className: String,
+    className: String,
     // method name of the macro implementation
     // `className` and `methName` are all we need to reflectively invoke a macro implementation
     // because macro implementations cannot be overloaded
-    val methName: String,
+    methName: String,
     // flattens the macro impl's parameter lists having symbols replaced with metadata
     // currently metadata is an index of the type parameter corresponding to that type tag (if applicable)
     // f.ex. for: def impl[T: WeakTypeTag, U: WeakTypeTag, V](c: Context)(x: c.Expr[T]): (U, V) = ???
     // `signature` will be equal to List(-1, -1, 0, 1)
-    val signature: List[Int],
+    signature: List[Int],
     // type arguments part of a macro impl ref (the right-hand side of a macro definition)
     // these trees don't refer to a macro impl, so we can pickle them as is
-    val targs: List[Tree])
+    targs: List[Tree])
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
@@ -481,7 +481,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
     // a heuristic to detect the REPL
     if (global.settings.exposeEmptyPackage.value) {
-      macroLogVerbose("macro classloader: initializing from a REPL classloader".format(global.classPath.asURLs))
+      macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
       import scala.tools.nsc.interpreter._
       val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
       new AbstractFileClassLoader(virtualDirectory, loader) {}
@@ -500,7 +500,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *          `null` otherwise.
    */
   type MacroRuntime = MacroArgs => Any
-  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]
+  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]()
   private def macroRuntime(macroDef: Symbol): MacroRuntime = {
     macroTraceVerbose("looking for macro implementation: ")(macroDef)
     if (fastTrack contains macroDef) {
@@ -909,7 +909,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *    2) undetparams (sym.isTypeParameter && !sym.isSkolem)
    */
   var hasPendingMacroExpansions = false
-  private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]
+  private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]()
   private def isDelayed(expandee: Tree) = delayed contains expandee
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
     delayed.get(expandee).getOrElse {
@@ -922,7 +922,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       macroLogVerbose("calculateUndetparams: %s".format(calculated))
       calculated map (_.id)
     }
-  private val undetparams = perRunCaches.newSet[Int]
+  private val undetparams = perRunCaches.newSet[Int]()
   def notifyUndetparamsAdded(newUndets: List[Symbol]): Unit = {
     undetparams ++= newUndets map (_.id)
     if (macroDebugVerbose) newUndets foreach (sym => println("undetParam added: %s".format(sym)))

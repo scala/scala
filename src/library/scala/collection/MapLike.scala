@@ -181,7 +181,7 @@ self =>
   def keysIterator: Iterator[A] = new AbstractIterator[A] {
     val iter = self.iterator
     def hasNext = iter.hasNext
-    def next() = iter.next._1
+    def next() = iter.next()._1
   }
 
   /** Collects all keys of this map in an iterable collection.
@@ -213,7 +213,7 @@ self =>
   def valuesIterator: Iterator[B] = new AbstractIterator[B] {
     val iter = self.iterator
     def hasNext = iter.hasNext
-    def next() = iter.next._2
+    def next() = iter.next()._2
   }
 
   /** Defines the default value computation for the map,

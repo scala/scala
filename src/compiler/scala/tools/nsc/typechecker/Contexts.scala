@@ -590,7 +590,7 @@ trait Contexts { self: Analyzer =>
     def restoreTypeBounds(tp: Type): Type = {
       var current = tp
       for ((sym, info) <- savedTypeBounds) {
-        debuglog("resetting " + sym + " to " + info);
+        debuglog("resetting " + sym + " to " + info)
         sym.info match {
           case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
             current = current.instantiateTypeParams(List(sym), List(lo))

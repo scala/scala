@@ -97,7 +97,7 @@ private[immutable] abstract class LongMapIterator[V, T](it: LongMap[V]) extends 
     buffer(index) = x.asInstanceOf[AnyRef]
     index += 1
   }
-  push(it);
+  push(it)
 
   /**
    * What value do we assign to a tip?
@@ -178,7 +178,7 @@ extends AbstractMap[Long, T]
    */
   override final def foreach[U](f: ((Long, T)) =>  U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreach(f); right.foreach(f) }
-    case LongMap.Tip(key, value) => f((key, value));
+    case LongMap.Tip(key, value) => f((key, value))
     case LongMap.Nil =>
   }
 

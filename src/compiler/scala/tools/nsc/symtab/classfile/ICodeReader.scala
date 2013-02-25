@@ -65,7 +65,7 @@ abstract class ICodeReader extends ClassfileParser {
     val fieldCount = in.nextChar
     for (i <- 0 until fieldCount) parseField()
     val methodCount = in.nextChar
-    for (i <- 0 until methodCount) parseMethod();
+    for (i <- 0 until methodCount) parseMethod()
     instanceCode.methods = instanceCode.methods.reverse
     staticCode.methods = staticCode.methods.reverse
   }
@@ -131,13 +131,13 @@ abstract class ICodeReader extends ClassfileParser {
         val attributeCount = in.nextChar
         for (i <- 0 until attributeCount) parseAttribute()
       } else {
-        debuglog("Skipping non-existent method.");
-        skipAttributes();
+        debuglog("Skipping non-existent method.")
+        skipAttributes()
       }
     } catch {
       case e: MissingRequirementError =>
-        in.bp = beginning; skipAttributes
-        debuglog("Skipping non-existent method. " + e.msg);
+        in.bp = beginning; skipAttributes()
+        debuglog("Skipping non-existent method. " + e.msg)
     }
   }
 
@@ -217,7 +217,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       val instr = toUnsignedByte(in.nextByte)
       instr match {
-        case JVM.nop => parseInstruction
+        case JVM.nop => parseInstruction()
         case JVM.aconst_null => code emit CONSTANT(Constant(null))
         case JVM.iconst_m1   => code emit CONSTANT(Constant(-1))
         case JVM.iconst_0    => code emit CONSTANT(Constant(0))
@@ -247,9 +247,9 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.aload       =>
           val local = in.nextByte.toInt; size += 1
           if (local == 0 && !method.isStatic)
-            code.emit(THIS(method.symbol.owner));
+            code.emit(THIS(method.symbol.owner))
           else
-            code.emit(LOAD_LOCAL(code.getLocal(local, ObjectReference)));
+            code.emit(LOAD_LOCAL(code.getLocal(local, ObjectReference)))
 
         case JVM.iload_0     => code.emit(LOAD_LOCAL(code.getLocal(0, INT)))
         case JVM.iload_1     => code.emit(LOAD_LOCAL(code.getLocal(1, INT)))
@@ -269,9 +269,9 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.dload_3     => code.emit(LOAD_LOCAL(code.getLocal(3, DOUBLE)))
         case JVM.aload_0     =>
           if (!method.isStatic)
-            code.emit(THIS(method.symbol.owner));
+            code.emit(THIS(method.symbol.owner))
           else
-            code.emit(LOAD_LOCAL(code.getLocal(0, ObjectReference)));
+            code.emit(LOAD_LOCAL(code.getLocal(0, ObjectReference)))
         case JVM.aload_1     => code.emit(LOAD_LOCAL(code.getLocal(1, ObjectReference)))
         case JVM.aload_2     => code.emit(LOAD_LOCAL(code.getLocal(2, ObjectReference)))
         case JVM.aload_3     => code.emit(LOAD_LOCAL(code.getLocal(3, ObjectReference)))
@@ -491,7 +491,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.invokespecial   =>
           val m = pool.getMemberSymbol(in.nextChar, false); size += 2
           val style = if (m.name == nme.CONSTRUCTOR || m.isPrivate) Static(true)
-                      else SuperCall(m.owner.name);
+                      else SuperCall(m.owner.name)
           code.emit(CALL_METHOD(m, style))
         case JVM.invokestatic    =>
           val m = pool.getMemberSymbol(in.nextChar, true); size += 2
@@ -581,7 +581,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
 
     pc = 0
-    while (pc < codeLength) parseInstruction
+    while (pc < codeLength) parseInstruction()
 
     val exceptionEntries = in.nextChar.toInt
     code.containsEHs = (exceptionEntries != 0)
@@ -671,7 +671,7 @@ abstract class ICodeReader extends ClassfileParser {
           otherBlock = blocks(pc)
           if (!bb.closed && otherBlock != bb) {
             bb.emit(JUMP(otherBlock))
-            bb.close
+            bb.close()
 //            Console.println("\t> closing bb: " + bb)
           }
           bb = otherBlock
@@ -722,36 +722,36 @@ abstract class ICodeReader extends ClassfileParser {
           i match {
             case DUP_X1 =>
               val (one, two) = stack.pop2
-              push(one); push(two); push(one);
+              push(one); push(two); push(one)
 
             case DUP_X2 =>
               val (one, two, three) = stack.pop3
-              push(one); push(three); push(two); push(one);
+              push(one); push(three); push(two); push(one)
 
             case DUP2_X1 =>
               val (one, two) = stack.pop2
               if (one.isWideType) {
-                push(one); push(two); push(one);
+                push(one); push(two); push(one)
               } else {
                 val three = stack.pop
-                push(two); push(one); push(three); push(two); push(one);
+                push(two); push(one); push(three); push(two); push(one)
               }
 
             case DUP2_X2 =>
               val (one, two) = stack.pop2
               if (one.isWideType && two.isWideType) {
-                push(one); push(two); push(one);
+                push(one); push(two); push(one)
               } else if (one.isWideType) {
                 val three = stack.pop
                 assert(!three.isWideType, "Impossible")
-                push(one); push(three); push(two); push(one);
+                push(one); push(three); push(two); push(one)
               } else {
                 val three = stack.pop
                 if (three.isWideType) {
-                  push(two); push(one); push(one); push(three); push(two); push(one);
+                  push(two); push(one); push(one); push(three); push(two); push(one)
                 } else {
                   val four = stack.pop
-                  push(two); push(one); push(four); push(one); push(three); push(two); push(one);
+                  push(two); push(one); push(four); push(one); push(three); push(two); push(one)
                 }
               }
 
@@ -764,7 +764,7 @@ abstract class ICodeReader extends ClassfileParser {
 
 //      method.dump
       tfa.init(method)
-      tfa.run
+      tfa.run()
       for (bb <- linearizer.linearize(method)) {
         var info = tfa.in(bb)
         for (i <- bb.toList) {
@@ -779,7 +779,7 @@ abstract class ICodeReader extends ClassfileParser {
                   STORE_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
 
             case DUP_X2 =>
               val one = info.stack.types(0)
@@ -792,30 +792,30 @@ abstract class ICodeReader extends ClassfileParser {
                   STORE_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
               else {
-                val tmp3 = freshLocal(info.stack.types(2));
+                val tmp3 = freshLocal(info.stack.types(2))
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                   STORE_LOCAL(tmp2),
                   STORE_LOCAL(tmp3),
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp3),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
               }
 
             case DUP2_X1 =>
               val one = info.stack.types(0)
               val two = info.stack.types(1)
-              val tmp1 = freshLocal(one);
-              val tmp2 = freshLocal(two);
+              val tmp1 = freshLocal(one)
+              val tmp2 = freshLocal(two)
               if (one.isWideType) {
                 assert(!two.isWideType, "Impossible")
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                   STORE_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
               } else {
                 val tmp3 = freshLocal(info.stack.types(2))
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
@@ -824,7 +824,7 @@ abstract class ICodeReader extends ClassfileParser {
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp3),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
               }
 
             case DUP2_X2 =>
@@ -837,21 +837,21 @@ abstract class ICodeReader extends ClassfileParser {
                   STORE_LOCAL(tmp2),
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
               } else if (one.isWideType) {
                 val three = info.stack.types(2)
                 assert(!two.isWideType && !three.isWideType, "Impossible")
-                val tmp3 = freshLocal(three);
+                val tmp3 = freshLocal(three)
                 bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                   STORE_LOCAL(tmp2),
                   STORE_LOCAL(tmp3),
                   LOAD_LOCAL(tmp1),
                   LOAD_LOCAL(tmp3),
                   LOAD_LOCAL(tmp2),
-                  LOAD_LOCAL(tmp1)));
+                  LOAD_LOCAL(tmp1)))
               } else {
                 val three = info.stack.types(2)
-                val tmp3 = freshLocal(three);
+                val tmp3 = freshLocal(three)
                 if (three.isWideType) {
                   bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                       STORE_LOCAL(tmp2),
@@ -860,10 +860,10 @@ abstract class ICodeReader extends ClassfileParser {
                       LOAD_LOCAL(tmp1),
                       LOAD_LOCAL(tmp3),
                       LOAD_LOCAL(tmp2),
-                      LOAD_LOCAL(tmp1)));
+                      LOAD_LOCAL(tmp1)))
                 } else {
                   val four = info.stack.types(3)
-                  val tmp4 = freshLocal(three);
+                  val tmp4 = freshLocal(three)
                   assert(!four.isWideType, "Impossible")
                   bb.replaceInstruction(i, List(STORE_LOCAL(tmp1),
                       STORE_LOCAL(tmp2),
@@ -874,7 +874,7 @@ abstract class ICodeReader extends ClassfileParser {
                       LOAD_LOCAL(tmp4),
                       LOAD_LOCAL(tmp3),
                       LOAD_LOCAL(tmp2),
-                      LOAD_LOCAL(tmp1)));
+                      LOAD_LOCAL(tmp1)))
                 }
               }
             case _ =>
@@ -889,7 +889,7 @@ abstract class ICodeReader extends ClassfileParser {
       import opcodes._
       val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis
       rdef.init(method)
-      rdef.run
+      rdef.run()
 
       for (bb <- method.code.blocks ; (i, idx) <- bb.toList.zipWithIndex) i match {
         case cm @ CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
@@ -941,7 +941,7 @@ abstract class ICodeReader extends ClassfileParser {
               l
           }
         case None =>
-          checkValidIndex
+          checkValidIndex()
           val l = freshLocal(idx, kind, false)
           debuglog("Added new local for idx " + idx + ": " + kind)
           locals += (idx -> List((l, kind)))
@@ -954,7 +954,7 @@ abstract class ICodeReader extends ClassfileParser {
     /** Return a fresh Local variable for the given index.
      */
     private def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
-      val sym = method.symbol.newVariable(newTermName("loc" + idx)).setInfo(kind.toType);
+      val sym = method.symbol.newVariable(newTermName("loc" + idx)).setInfo(kind.toType)
       val l = new Local(sym, kind, isArg)
       method.addLocal(l)
       l
@@ -984,7 +984,8 @@ abstract class ICodeReader extends ClassfileParser {
       jmpTargets += pc
     }
 
-    case class LJUMP(pc: Int) extends LazyJump(pc);
+    case class LJUMP(pc: Int) extends LazyJump(pc)
+
     case class LCJUMP(success: Int, failure: Int, cond: TestOp, kind: TypeKind)
       extends LazyJump(success) {
       override def toString(): String = "LCJUMP (" + kind + ") " + success + " : " + failure

@@ -28,7 +28,7 @@ abstract class Duplicators extends Analyzer {
     if (oldThis ne newThis) {
       oldClassOwner = oldThis
       newClassOwner = newThis
-    } else resetClassOwners
+    } else resetClassOwners()
 
     envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
     debuglog("retyped with env: " + env)

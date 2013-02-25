@@ -52,7 +52,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
         return null
     }
 
-    return file
+    file
   }
 
   // parent delegation in JCL uses getResource; so either add parent.getResAsStream

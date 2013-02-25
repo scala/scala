@@ -163,7 +163,7 @@ trait ScratchPadMaker { self: Global =>
     while (scanner.token != EOF) {
       startOffset += scanner.offset
       token += scanner.token
-      scanner.nextToken
+      scanner.nextToken()
       endOffset += scanner.lastOffset
     }
 

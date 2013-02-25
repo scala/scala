@@ -35,7 +35,7 @@ trait Reify extends GenSymbols
 
   /**
    *  Reifies any supported value.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reify(reifee: Any): Tree = reifyStack.push(reifee)(reifee match {
     // before adding some case here, in global scope, please, consider

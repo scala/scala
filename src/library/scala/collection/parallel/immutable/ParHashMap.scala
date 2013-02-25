@@ -109,7 +109,7 @@ self =>
     }
     def next(): (K, V) = {
       i += 1
-      val r = triter.next
+      val r = triter.next()
       r
     }
     def hasNext: Boolean = {

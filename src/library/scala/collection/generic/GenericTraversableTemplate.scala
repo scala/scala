@@ -88,7 +88,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
       b1 += x
       b2 += y
     }
-    (b1.result, b2.result)
+    (b1.result(), b2.result())
   }
 
   /** Converts this $coll of triples into three collections of the first, second,
@@ -113,7 +113,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
       b2 += y
       b3 += z
     }
-    (b1.result, b2.result, b3.result)
+    (b1.result(), b2.result(), b3.result())
   }
 
   /** Converts this $coll of traversable collections into
@@ -144,7 +144,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
     val b = genericBuilder[B]
     for (xs <- sequential)
       b ++= asTraversable(xs).seq
-    b.result
+    b.result()
   }
 
   /** Transposes this $coll of traversable collections into
@@ -161,7 +161,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
   @migration("`transpose` throws an `IllegalArgumentException` if collections are not uniformly sized.", "2.9.0")
   def transpose[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): CC[CC[B] @uncheckedVariance] = {
     if (isEmpty)
-      return genericBuilder[CC[B]].result
+      return genericBuilder[CC[B]].result()
 
     def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
 
@@ -179,7 +179,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
     }
     val bb = genericBuilder[CC[B]]
     for (b <- bs) bb += b.result
-    bb.result
+    bb.result()
   }
 }
 

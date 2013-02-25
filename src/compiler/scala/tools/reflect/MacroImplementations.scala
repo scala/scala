@@ -26,7 +26,7 @@ abstract class MacroImplementations {
             "too many arguments for interpolated string")
     }
     val stringParts = parts map {
-      case Literal(Constant(s: String)) => s;
+      case Literal(Constant(s: String)) => s
       case _ => throw new IllegalArgumentException("argument parts must be a list of string literals")
     }
 
@@ -88,7 +88,7 @@ abstract class MacroImplementations {
       var idx = 0
 
       if (!first) {
-        val arg = argsStack.pop
+        val arg = argsStack.pop()
         if (strIsEmpty || (str charAt 0) != '%') {
           bldr append "%s"
           defval(arg, AnyTpe)
@@ -141,7 +141,7 @@ abstract class MacroImplementations {
           Literal(Constant(fstring)),
           newTermName("format")),
         List(ids: _* )
-      );
+      )
 
     Block(evals.toList, atPos(origApplyPos.focus)(expr)) setPos origApplyPos.makeTransparent
   }

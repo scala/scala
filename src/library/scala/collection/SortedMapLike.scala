@@ -69,7 +69,7 @@ self =>
    *  @param elems the remaining elements to add.
    */
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): SortedMap[A, B1] = {
-    var m = this + elem1 + elem2;
+    var m = this + elem1 + elem2
     for (e <- elems) m = m + e
     m
   }

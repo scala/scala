@@ -175,8 +175,8 @@ class Flags extends ModifierFlags {
   final val VBRIDGE       = 1L << 42      // symbol is a varargs bridge
 
   final val VARARGS       = 1L << 43      // symbol is a Java-style varargs method
-  final val TRIEDCOOKING  = 1L << 44      // ``Cooking'' has been tried on this symbol
-                                          // A Java method's type is ``cooked'' by transforming raw types to existentials
+  final val TRIEDCOOKING  = 1L << 44      // `Cooking` has been tried on this symbol
+                                          // A Java method's type is `cooked` by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
 

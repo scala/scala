@@ -71,10 +71,10 @@ trait Sorted[K, +This <: Sorted[K, This]] {
   def to(to: K): This = {
     val i = keySet.from(to).iterator
     if (i.isEmpty) return repr
-    val next = i.next
+    val next = i.next()
     if (compare(next, to) == 0)
       if (i.isEmpty) repr
-      else until(i.next)
+      else until(i.next())
     else
       until(next)
   }
@@ -95,16 +95,16 @@ trait Sorted[K, +This <: Sorted[K, This]] {
     val i = keySet.iterator
     if (i.isEmpty) return j.isEmpty
 
-    var in = i.next;
+    var in = i.next()
     while (j.hasNext) {
-      val jn = j.next;
+      val jn = j.next()
       while ({
-        val n = compare(jn, in);
-        if (n == 0) false;
-        else if (n < 0) return false;
-        else if (!i.hasNext) return false;
-        else true;
-      }) in = i.next;
+        val n = compare(jn, in)
+        if (n == 0) false
+        else if (n < 0) return false
+        else if (!i.hasNext) return false
+        else true
+      }) in = i.next()
     }
     true
   }

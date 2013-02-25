@@ -98,7 +98,7 @@ class JavapClass(
    *  it represents.
    */
   def tryFile(path: String): Option[Array[Byte]] =
-    (Try (File(path.asClassResource)) filter (_.exists) map (_.toByteArray)).toOption
+    (Try (File(path.asClassResource)) filter (_.exists) map (_.toByteArray())).toOption
 
   /** Assume the string is a fully qualified class name and try to
    *  find the class object it represents.
@@ -209,7 +209,7 @@ class JavapClass(
           }
           filtering
         }
-        for (line <- Source.fromString(preamble + written).getLines; if checkFilter(line))
+        for (line <- Source.fromString(preamble + written).getLines(); if checkFilter(line))
           printWriter write line+lineSeparator
         printWriter.flush()
       }
@@ -371,7 +371,7 @@ class JavapClass(
           case x => Failure(x)
         }
       } lastly {
-        reporter.clear
+        reporter.clear()
       }
     override def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult] = (inputs map {
       case (claas, Success(_))  => applyOne(raw, options, claas, inputs).get

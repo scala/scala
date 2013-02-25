@@ -126,7 +126,7 @@ trait Collections {
       ys1 = ys1.tail
       ys2 = ys2.tail
     }
-    buf.result
+    buf.result()
   }
   final def foreach2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Unit): Unit = {
     var ys1 = xs1

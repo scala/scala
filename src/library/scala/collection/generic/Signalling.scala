@@ -140,7 +140,7 @@ trait AtomicIndexFlag extends Signalling {
       val old = intflag.get
       if (f <= old) loop = false
       else if (intflag.compareAndSet(old, f)) loop = false
-    } while (loop);
+    } while (loop)
   }
   abstract override def setIndexFlagIfLesser(f: Int) = {
     var loop = true
@@ -148,7 +148,7 @@ trait AtomicIndexFlag extends Signalling {
       val old = intflag.get
       if (f >= old) loop = false
       else if (intflag.compareAndSet(old, f)) loop = false
-    } while (loop);
+    } while (loop)
   }
 }
 
@@ -163,7 +163,7 @@ trait DelegatedSignalling extends Signalling {
   var signalDelegate: Signalling
 
   def isAborted = signalDelegate.isAborted
-  def abort() = signalDelegate.abort
+  def abort() = signalDelegate.abort()
 
   def indexFlag = signalDelegate.indexFlag
   def setIndexFlag(f: Int) = signalDelegate.setIndexFlag(f)

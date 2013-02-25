@@ -143,7 +143,7 @@ abstract class LambdaLift extends InfoTransform {
             ss addEntry sym
             renamable addEntry sym
             changedFreeVars = true
-            debuglog("" + sym + " is free in " + enclosure);
+            debuglog("" + sym + " is free in " + enclosure)
             if (sym.isVariable) sym setFlag CAPTURED
           }
           !enclosure.isClass
@@ -161,7 +161,7 @@ abstract class LambdaLift extends InfoTransform {
     private val freeVarTraverser = new Traverser {
       override def traverse(tree: Tree) {
        try { //debug
-        val sym = tree.symbol;
+        val sym = tree.symbol
         tree match {
           case ClassDef(_, _, _, _) =>
             liftedDefs(tree.symbol) = Nil

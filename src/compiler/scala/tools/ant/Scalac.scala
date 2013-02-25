@@ -496,7 +496,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     path.map(asString) mkString File.pathSeparator
 
   /** Transforms a file into a Scalac-readable string.
-   *  @param path A file to convert.
+   *  @param file A file to convert.
    *  @return     A string-representation of the file like `/x/k/a.scala`. */
   protected def asString(file: File): String =
     file.getAbsolutePath()
@@ -676,7 +676,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
         file
       }
-      val res = execWithArgFiles(java, List(writeSettings.getAbsolutePath))
+      val res = execWithArgFiles(java, List(writeSettings().getAbsolutePath))
       if (failonerror && res != 0)
         buildError("Compilation failed because of an internal compiler error;"+
               " see the error output for details.")

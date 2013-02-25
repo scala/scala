@@ -17,8 +17,6 @@ import scala.language.postfixOps
   * Call `parse` to run the parser. Note that the parser is stateless and
   * should only be built once for a given Scaladoc run.
   *
-  * @param reporter The reporter on which user messages (error, warnings) should be printed.
-  *
   * @author Manohar Jonnalagedda
   * @author Gilles Dubochet */
 trait CommentFactoryBase { this: MemberLookupBase =>
@@ -516,7 +514,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else {
           val s = summary()
           val r =
-            if (checkParaEnded) List(s) else List(s, inline(false))
+            if (checkParaEnded()) List(s) else List(s, inline(false))
           summaryParsed = true
           Paragraph(Chain(r))
         }

@@ -263,10 +263,6 @@ trait BasicBlocks {
     /** Replaces `oldInstr` with `is`. It does not update
      *  the position field in the newly inserted instructions, so it behaves
      *  differently than the one-instruction versions of this function.
-     *
-     *  @param iold ..
-     *  @param is   ..
-     *  @return     ..
      */
     def replaceInstruction(oldInstr: Instruction, is: List[Instruction]): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
@@ -500,18 +496,6 @@ trait BasicBlocks {
 }
 
 object BBFlags {
-  val flagMap = Map[Int, String](
-    LOOP_HEADER -> "loopheader",
-    IGNORING    -> "ignore",
-    EX_HEADER   -> "exheader",
-    CLOSED      -> "closed",
-    DIRTYSUCCS  -> "dirtysuccs",
-    DIRTYPREDS  -> "dirtypreds"
-  )
-  def flagsToString(flags: Int) = {
-    flagMap collect { case (bit, name) if (bit & flags) != 0 => "<" + name + ">" } mkString " "
-  }
-
   /** This block is a loop header (was translated from a while). */
   final val LOOP_HEADER = (1 << 0)
 
@@ -529,4 +513,16 @@ object BBFlags {
 
   /** Code has been changed, recompute predecessors. */
   final val DIRTYPREDS  = (1 << 5)
+
+  val flagMap = Map[Int, String](
+    LOOP_HEADER -> "loopheader",
+    IGNORING    -> "ignore",
+    EX_HEADER   -> "exheader",
+    CLOSED      -> "closed",
+    DIRTYSUCCS  -> "dirtysuccs",
+    DIRTYPREDS  -> "dirtypreds"
+  )
+  def flagsToString(flags: Int) = {
+    flagMap collect { case (bit, name) if (bit & flags) != 0 => "<" + name + ">" } mkString " "
+  }
 }

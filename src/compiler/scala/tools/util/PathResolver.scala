@@ -139,7 +139,7 @@ object PathResolver {
       val pr = new PathResolver(settings)
       println(" COMMAND: 'scala %s'".format(args.mkString(" ")))
       println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
-      pr.result.show
+      pr.result.show()
     }
   }
 }

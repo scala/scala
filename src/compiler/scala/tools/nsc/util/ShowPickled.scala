@@ -250,7 +250,7 @@ object ShowPickled extends Names {
         case SYMANNOT       =>
           printSymbolRef(); printTypeRef(); buf.until(end, printAnnotArgRef)
         case ANNOTATEDtpe   =>
-          printTypeRef(); buf.until(end, printAnnotInfoRef);
+          printTypeRef(); buf.until(end, printAnnotInfoRef)
         case ANNOTINFO      =>
           printTypeRef(); buf.until(end, printAnnotArgRef)
         case ANNOTARGARRAY  =>
@@ -271,7 +271,7 @@ object ShowPickled extends Names {
     for (i <- 0 until index.length) printEntry(i)
   }
 
-  def fromFile(path: String) = fromBytes(io.File(path).toByteArray)
+  def fromFile(path: String) = fromBytes(io.File(path).toByteArray())
   def fromName(name: String) = fromBytes(scalaSigBytesForPath(name) getOrElse Array())
   def fromBytes(data: => Array[Byte]): Option[PickleBuffer] =
     try Some(new PickleBuffer(data, 0, data.length))

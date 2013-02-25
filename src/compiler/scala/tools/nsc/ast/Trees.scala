@@ -122,7 +122,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
-          vparamss1 = List() :: vparamss1;
+          vparamss1 = List() :: vparamss1
         val superRef: Tree = atPos(superPos)(gen.mkSuperInitCall)
         val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
                                          // this requires knowing which of the parents is a type macro and which is not

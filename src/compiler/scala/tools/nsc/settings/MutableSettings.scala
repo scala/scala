@@ -382,7 +382,7 @@ class MutableSettings(val errorFn: String => Unit)
     def max = range map (_._2) getOrElse IntMax
 
     override def value_=(s: Int) =
-      if (isInputValid(s)) super.value_=(s) else errorMsg
+      if (isInputValid(s)) super.value_=(s) else errorMsg()
 
     // Validate that min and max are consistent
     assert(min <= max)
@@ -414,7 +414,7 @@ class MutableSettings(val errorFn: String => Unit)
       if (args.isEmpty) errorAndValue("missing argument", None)
       else parseArgument(args.head) match {
         case Some(i)  => value = i ; Some(args.tail)
-        case None     => errorMsg ; None
+        case None     => errorMsg() ; None
       }
 
     def unparse: List[String] =

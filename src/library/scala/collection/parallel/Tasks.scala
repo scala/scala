@@ -54,13 +54,13 @@ trait Task[R, +Tp] {
         leaf(lastres)
         result = result // ensure that effects of `leaf` are visible to readers of `result`
       } catchBreak {
-        signalAbort
+        signalAbort()
       }
     } catch {
       case thr: Exception =>
         result = result // ensure that effects of `leaf` are visible
       throwable = thr
-      signalAbort
+      signalAbort()
     }
   }
 
@@ -191,7 +191,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
           last = t
           t.start()
         }
-      } while (head.body.shouldSplitFurther);
+      } while (head.body.shouldSplitFurther)
       head.next = last
       head
     }
@@ -302,7 +302,7 @@ trait ThreadPoolTasks extends Tasks {
 
     () => {
       t.sync()
-      t.body.forwardThrowable
+      t.body.forwardThrowable()
       t.body.result
     }
   }
@@ -314,7 +314,7 @@ trait ThreadPoolTasks extends Tasks {
     t.start()
 
     t.sync()
-    t.body.forwardThrowable
+    t.body.forwardThrowable()
     t.body.result
   }
 
@@ -402,8 +402,8 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
     }
 
     () => {
-      fjtask.sync
-      fjtask.body.forwardThrowable
+      fjtask.sync()
+      fjtask.body.forwardThrowable()
       fjtask.body.result
     }
   }
@@ -424,9 +424,9 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
       forkJoinPool.execute(fjtask)
     }
 
-    fjtask.sync
+    fjtask.sync()
     // if (fjtask.body.throwable != null) println("throwing: " + fjtask.body.throwable + " at " + fjtask.body)
-    fjtask.body.forwardThrowable
+    fjtask.body.forwardThrowable()
     fjtask.body.result
   }
 

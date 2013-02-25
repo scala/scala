@@ -139,7 +139,7 @@ package parallel {
 
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
   final case class CompositeThrowable(
-    val throwables: Set[Throwable]
+                                       throwables: Set[Throwable]
   ) extends Exception(
     "Multiple exceptions thrown during a parallel computation: " +
       throwables.map(t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")

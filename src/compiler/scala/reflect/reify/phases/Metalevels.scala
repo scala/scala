@@ -40,15 +40,15 @@ trait Metalevels {
    *  However, how exactly do we do that in the case of y.splice? In this very scenario we can use dataflow analysis and inline it,
    *  but what if y were a var, and what if it were calculated randomly at runtime?
    *
-   *  This question has a genuinely simple answer. Sure, we cannot resolve such splices statically (i.e. during macro expansion of ``reify''),
+   *  This question has a genuinely simple answer. Sure, we cannot resolve such splices statically (i.e. during macro expansion of `reify`),
    *  but now we have runtime toolboxes, so noone stops us from picking up that reified tree and evaluating it at runtime
-   *  (in fact, this is something that ``Expr.splice'' does transparently).
+   *  (in fact, this is something that `Expr.splice` does transparently).
    *
    *  This is akin to early vs late binding dilemma.
    *  The prior is faster, plus, the latter (implemented with reflection) might not work because of visibility issues or might be not available on all platforms.
    *  But the latter still has its uses, so I'm allowing metalevel breaches, but introducing the -Xlog-runtime-evals to log them.
    *
-   *  upd. We no longer do that. In case of a runaway ``splice'' inside a `reify`, one will get a static error.
+   *  upd. We no longer do that. In case of a runaway `splice` inside a `reify`, one will get a static error.
    *  Why? Unfortunately, the cute idea of transparently converting between static and dynamic splices has failed.
    *  1) Runtime eval that services dynamic splices requires scala-compiler.jar, which might not be on library classpath
    *  2) Runtime eval incurs a severe performance penalty, so it'd better to be explicit about it
@@ -136,7 +136,7 @@ trait Metalevels {
         } else {
           withinSplice { super.transform(tree) }
         }
-      // todo. also inline usages of ``inlineableBindings'' in the symtab itself
+      // todo. also inline usages of `inlineableBindings` in the symtab itself
       // e.g. a free$Foo can well use free$x, if Foo is path-dependent w.r.t x
       // FreeRef(_, _) check won't work, because metalevels of symbol table and body are different, hence, freerefs in symbol table look different from freerefs in body
       case FreeRef(_, name) if inlineableBindings contains name =>
