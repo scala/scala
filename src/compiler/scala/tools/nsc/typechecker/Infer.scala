@@ -618,7 +618,7 @@ trait Infer extends Checkable {
     *
     *  @param   tparams         the type parameters of the method
     *  @param   formals         the value parameter types of the method
-    *  @param   restp           the result type of the method
+    *  @param   restpe          the result type of the method
     *  @param   argtpes         the argument types of the application
     *  @param   pt              the expected return type of the application
     *  @return  @see adjustTypeArgs
@@ -830,14 +830,11 @@ trait Infer extends Checkable {
      *  such that function type `ftpe` is applicable to
      *  `argtpes` and its result conform to `pt`?
      *
-     *  @param undetparams ...
      *  @param ftpe        the type of the function (often a MethodType)
-     *  @param argtpes     the argument types; a NamedType(name, tp) for named
+     *  @param argtpes0    the argument types; a NamedType(name, tp) for named
      *    arguments. For each NamedType, if `name` does not exist in `ftpe`, that
      *    type is set to `Unit`, i.e. the corresponding argument is treated as
      *    an assignment expression (@see checkNames).
-     *  @param pt          ...
-     *  @return            ...
      */
     private def isApplicable(undetparams: List[Symbol], ftpe: Type,
                              argtpes0: List[Type], pt: Type): Boolean =
@@ -1192,7 +1189,7 @@ trait Infer extends Checkable {
      *  @param fn          fn: the function that needs to be instantiated.
      *  @param undetparams the parameters that need to be determined
      *  @param args        the actual arguments supplied in the call.
-     *  @param pt          the expected type of the function application
+     *  @param pt0         the expected type of the function application
      *  @return            The type parameters that remain uninstantiated,
      *                     and that thus have not been substituted.
      */
@@ -1243,7 +1240,7 @@ trait Infer extends Checkable {
      *
      *  @param tree        the constuctor that needs to be instantiated
      *  @param undetparams the undetermined type parameters
-     *  @param pt          the expected result type of the instance
+     *  @param pt0         the expected result type of the instance
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
       val pt       = abstractTypesToBounds(pt0)
@@ -1600,7 +1597,7 @@ trait Infer extends Checkable {
      *  with pt = WildcardType.
      *  Otherwise, if there is no best alternative, error.
      *
-     *  @param argtpes contains the argument types. If an argument is named, as
+     *  @param argtpes0 contains the argument types. If an argument is named, as
      *    "a = 3", the corresponding type is `NamedType("a", Int)'. If the name
      *    of some NamedType does not exist in an alternative's parameter names,
      *    the type is replaces by `Unit`, i.e. the argument is treated as an

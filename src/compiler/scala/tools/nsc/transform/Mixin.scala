@@ -821,8 +821,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  Private fields used only in this initializer are subsequently set to null.
        *
        *  @param clazz The class symbol
+       *  @param lzyVal The symbol of this lazy field
        *  @param init The tree which initializes the field ( f = <rhs> )
-       *  @param fieldSym The symbol of this lazy field
        *  @param offset The offset of this field in the flags bitmap
        *
        *  The result will be a tree of the form

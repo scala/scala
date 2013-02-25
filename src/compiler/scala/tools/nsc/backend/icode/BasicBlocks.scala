@@ -263,10 +263,6 @@ trait BasicBlocks {
     /** Replaces `oldInstr` with `is`. It does not update
      *  the position field in the newly inserted instructions, so it behaves
      *  differently than the one-instruction versions of this function.
-     *
-     *  @param iold ..
-     *  @param is   ..
-     *  @return     ..
      */
     def replaceInstruction(oldInstr: Instruction, is: List[Instruction]): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")

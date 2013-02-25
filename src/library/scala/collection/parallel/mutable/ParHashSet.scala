@@ -194,7 +194,7 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
      *
      *  @param insertAt      where to add the element (set to -1 to use its hashcode)
      *  @param comesBefore   the position before which the element should be added to
-     *  @param elem          the element to be added
+     *  @param newEntry      the element to be added
      *
      *  If the element is to be inserted at the position corresponding to its hash code,
      *  the table will try to add the element in such a position if possible. Collisions are resolved

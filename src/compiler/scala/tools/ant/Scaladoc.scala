@@ -563,7 +563,7 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** Transforms a file into a Scalac-readable string.
    *
-   *  @param path A file to convert.
+   *  @param file A file to convert.
    *  @return     A string-representation of the file like `/x/k/a.scala`.
    */
   private def asString(file: File): String =

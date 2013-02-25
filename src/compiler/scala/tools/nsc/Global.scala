@@ -805,8 +805,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Invalidates packages that contain classes defined in a classpath entry, and
    *  rescans that entry.
-   *  @param path  A fully qualified name that refers to a directory or jar file that's
-   *               an entry on the classpath.
+   *  @param paths  Fully qualified names that refer to directories or jar files that are
+   *                a entries on the classpath.
    *  First, causes the classpath entry referred to by `path` to be rescanned, so that
    *  any new files or deleted files or changes in subpackages are picked up.
    *  Second, invalidates any packages for which one of the following considitions is met:

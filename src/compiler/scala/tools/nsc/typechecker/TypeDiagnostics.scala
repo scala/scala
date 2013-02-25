@@ -574,7 +574,7 @@ trait TypeDiagnostics {
 
     /** Report a type error.
      *
-     *  @param pos0   The position where to report the error
+     *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error
      */
     def reportTypeError(context0: Context, pos: Position, ex: TypeError) {

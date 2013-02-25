@@ -2720,13 +2720,6 @@ trait Typers extends Adaptations with Tags {
         }
     }
 
-
-    /**
-     *  @param fun  ...
-     *  @param mode ...
-     *  @param pt   ...
-     *  @return     ...
-     */
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val numVparams = fun.vparams.length
       if (numVparams > definitions.MaxFunctionArity)

@@ -217,7 +217,7 @@ trait Names extends api.Names {
      *  this name from start, length if not found.
      *
      *  @param c     the character
-     *  @param start ...
+     *  @param start the index from which to search
      *  @return      the index of the first occurrence of c
      */
     final def pos(c: Char, start: Int): Int = {
@@ -230,7 +230,7 @@ trait Names extends api.Names {
      *  in this name from start, length if not found.
      *
      *  @param s     the string
-     *  @param start ...
+     *  @param start the index from which to search
      *  @return      the index of the first occurrence of s
      */
     final def pos(s: String, start: Int): Int = {
@@ -258,7 +258,7 @@ trait Names extends api.Names {
      *  name from start, -1 if not found.
      *
      *  @param c     the character
-     *  @param start ...
+     *  @param start the index from which to search
      *  @return      the index of the last occurrence of c
      */
     final def lastPos(c: Char, start: Int): Int = {

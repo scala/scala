@@ -233,9 +233,6 @@ trait CompilerControl { self: Global =>
    *                    prints its output and all defined values in a comment column.
    *
    *  @param source       The source file to be analyzed
-   *  @param keepLoaded   If set to `true`, source file will be kept as a loaded unit afterwards.
-   *                      If keepLoaded is `false` the operation is run at low priority, only after
-   *                      everything is brought up to date in a regular type checker run.
    *  @param response     The response.
    */
   @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")

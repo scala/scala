@@ -303,7 +303,6 @@ trait DocComments { self: Global =>
   /** Lookup definition of variable.
    *
    *  @param vble  The variable for which a definition is searched
-   *  @param owner The current owner in which variable definitions are searched.
    *  @param site  The class for which doc comments are generated
    */
   def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
@@ -322,10 +321,10 @@ trait DocComments { self: Global =>
   /** Expand variable occurrences in string `str`, until a fix point is reached or
    *  an expandLimit is exceeded.
    *
-   *  @param str   The string to be expanded
-   *  @param sym   The symbol for which doc comments are generated
-   *  @param site  The class for which doc comments are generated
-   *  @return      Expanded string
+   *  @param initialStr   The string to be expanded
+   *  @param sym          The symbol for which doc comments are generated
+   *  @param site         The class for which doc comments are generated
+   *  @return             Expanded string
    */
   protected def expandVariables(initialStr: String, sym: Symbol, site: Symbol): String = {
     val expandLimit = 10
