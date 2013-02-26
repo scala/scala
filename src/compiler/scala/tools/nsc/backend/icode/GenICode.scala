@@ -1057,6 +1057,9 @@ abstract class GenICode extends SubComponent  {
         // TODO why do we have this case? It's saying if we have a throwable and a non-throwable is expected then we should emit a cast? Why would we get here?
         case ThrowableReference if !(ThrowableClass.tpe <:< to.toType) => ctx.bb.emit(CHECK_CAST(to)) // downcast throwables
         case _                                                         =>
+          // TODO why do we need this special case? It's saying that from conformed with to, but that to is a LONG and from was int sized
+          // but that shouldn't happen, because conforms is defined as the subtype relation <:< and INT isn't a subtype of LONG
+          // however, removing it breaks test/files/run/t107.scala
           // widen subrange types
           if (from.isIntSizedType && to == LONG)
             coerce(INT, LONG)
