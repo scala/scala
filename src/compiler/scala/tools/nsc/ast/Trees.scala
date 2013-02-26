@@ -327,22 +327,61 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
               case tpt: TypeTree =>
                 if (tpt.original != null)
                   transform(tpt.original)
-                else if (tpt.tpe != null && (tpt.wasEmpty || (tpt.tpe exists (tp => locals contains tp.typeSymbol)))) {
-                  val dupl = tpt.duplicate
-                  dupl.tpe = null
-                  dupl
+                else {
+                  val refersToLocalSymbols = tpt.tpe != null && (tpt.tpe exists (tp => locals contains tp.typeSymbol))
+                  val isInferred = tpt.wasEmpty
+                  if (refersToLocalSymbols || isInferred) {
+                    val dupl = tpt.duplicate
+                    dupl.tpe = null
+                    dupl
+                  } else {
+                    tpt
+                  }
                 }
-                else tree
+              // If one of the type arguments of a TypeApply gets reset to an empty TypeTree, then this means that:
+              // 1) It isn't empty now (tpt.tpe != null), but it was empty before (tpt.wasEmpty).
+              // 2) Thus, its argument got inferred during a preceding typecheck.
+              // 3) Thus, all its arguments were inferred (because scalac can only infer all or nothing).
+              // Therefore, we can safely erase the TypeApply altogether and have it inferred once again in a subsequent typecheck.
+              // UPD: Actually there's another reason for erasing a type behind the TypeTree
+              // is when this type refers to symbols defined in the tree being processed.
+              // These symbols will be erased, because we can't leave alive a type referring to them.
+              // Here we can only hope that everything will work fine afterwards.
               case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
                 transform(fn)
-              case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
-                tree
               case EmptyTree =>
                 tree
               case _ =>
                 val dupl = tree.duplicate
-                if (tree.hasSymbol && (!localOnly || (locals contains tree.symbol)) && !(keepLabels && tree.symbol.isLabel))
-                  dupl.symbol = NoSymbol
+                // Typically the resetAttrs transformer cleans both symbols and types.
+                // However there are exceptions when we cannot erase symbols due to idiosyncrasies of the typer.
+                // vetoXXX local variables declared below describe the conditions under which we cannot erase symbols.
+                //
+                // The first reason to not erase symbols is the threat of non-idempotency (SI-5464).
+                // Here we take care of labels (SI-5562) and references to package classes (SI-5705).
+                // There are other non-idempotencies, but they are not worked around yet.
+                //
+                // The second reason has to do with the fact that resetAttrs itself has limited usefulness.
+                //
+                // First of all, why do we need resetAttrs? Gor one, it's absolutely required to move trees around.
+                // One cannot just take a typed tree from one lexical context and transplant it somewhere else.
+                // Most likely symbols defined by those trees will become borked and the compiler will blow up (SI-5797).
+                // To work around we just erase all symbols and types and then hope that we'll be able to correctly retypecheck.
+                // For ones who're not affected by scalac Stockholm syndrome, this might seem to be an extremely naive fix, but well...
+                //
+                // Of course, sometimes erasing everything won't work, because if a given identifier got resolved to something
+                // in one lexical scope, it can get resolved to something else.
+                //
+                // What do we do in these cases? Enter the workaround for the workaround: resetLocalAttrs, which only destroys
+                // locally defined symbols, but doesn't touch references to stuff declared outside of a given tree.
+                // That's what localOnly and vetoScope are for.
+                if (dupl.hasSymbol) {
+                  val sym = dupl.symbol
+                  val vetoScope = localOnly && !(locals contains sym)
+                  val vetoLabel = keepLabels && sym.isLabel
+                  val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
+                  if (!(vetoScope || vetoLabel || vetoThis)) dupl.symbol = NoSymbol
+                }
                 dupl.tpe = null
                 dupl
             }
