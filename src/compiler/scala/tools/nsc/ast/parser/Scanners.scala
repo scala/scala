@@ -499,8 +499,7 @@ trait Scanners extends ScannersCommon {
           if (isInSubScript_expression) { // (+)  (-)  (+-)  (;)
             var isSpecialOperand = false            
             val lookahead = lookaheadReader
-            lookahead.nextChar()
-            if   (lookahead.ch == '+') {lookahead.nextChar();
+            if   (lookahead.ch == '+') {lookahead.nextChar() // no } 
               if (lookahead.ch == '-') {lookahead.nextChar()}
               isSpecialOperand = lookahead.ch == ')'
             }
@@ -509,11 +508,11 @@ trait Scanners extends ScannersCommon {
                 isSpecialOperand = lookahead.ch == ')'
             }
             if (isSpecialOperand) {
-              if   (ch == '+') {nextChar(); token = LPAREN_PLUS_RPAREN
-                if (ch == '-') {nextChar(); token = LPAREN_PLUS_MINUS_RPAREN
-              }}
-              else if (lookahead.ch == '-')  {nextChar(); token = LPAREN_MINUS_RPAREN}
-              else if (lookahead.ch == ';')  {nextChar(); token = LPAREN_SEMI_RPAREN}
+              if      (ch == '+') {nextChar(); token = LPAREN_PLUS_RPAREN // no }
+                if    (ch == '-') {nextChar(); token = LPAREN_PLUS_MINUS_RPAREN}
+              }
+              else if (ch == '-') {nextChar(); token = LPAREN_MINUS_RPAREN}
+              else if (ch == ';') {nextChar(); token = LPAREN_SEMI_RPAREN}
               nextChar();
             }
           }          
