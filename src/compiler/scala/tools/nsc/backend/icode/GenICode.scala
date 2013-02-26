@@ -1921,15 +1921,46 @@ abstract class GenICode extends SubComponent  {
        *   }), (AnotherExceptionClass,
        *   ctx => {...
        *   } ))`
+       *   
+       *   The resulting structure will look something like
+       *   
+       *   outer:
+       *     // this 'useless' jump will be removed later,
+       *     // for now it separates the try body's blocks from previous
+       *     // code since the try body needs its own exception handlers
+       *     JUMP body
+       *     
+       *   body:
+       *     [ try body ]
+       *     JUMP normalExit
+       *     
+       *   catch[i]:
+       *     [ handler[i] body ]
+       *     JUMP normalExit
+       *     
+       *   catchAll:
+       *     STORE exception
+       *     [ finally body ]
+       *     THROW exception
+       *     
+       *   normalExit:
+       *     [ finally body ]
+       *     
+       *  each catch[i] will cover body.  catchAll will cover both body and each catch[i]
+       *  Additional finally copies are created on the emission of every RETURN in the try body and exception handlers.
+       *  
+       *  This could result in unreachable code which has to be cleaned up later, e.g. if the try and all the exception
+       *  handlers always end in RETURN then there will be no "normal" flow out of the try/catch/finally.
+       *  Later reachability analysis will remove unreacahble code.
        */
       def Try(body: Context => Context,
               handlers: List[(Symbol, TypeKind, Context => Context)],
               finalizer: Tree,
               tree: Tree) = {
 
-        val outerCtx = this.dup       // context for generating exception handlers, covered by finalizer
+        val outerCtx = this.dup       // context for generating exception handlers, covered by the catch-all finalizer
         val finalizerCtx = this.dup   // context for generating finalizer handler
-        val afterCtx = outerCtx.newBlock()
+        val normalExitCtx = outerCtx.newBlock() // context where flow will go on a "normal" (non-return, non-throw) exit from a try or catch handler
         var tmp: Local = null
         val kind = toTypeKind(tree.tpe)
         val guardResult = kind != UNIT && mayCleanStack(finalizer)
@@ -1956,30 +1987,31 @@ abstract class GenICode extends SubComponent  {
         } else ctx
 
 
+        // Generate the catch-all exception handler that deals with uncaught exceptions coming
+        // from the try or exception handlers. It catches the exception, runs the finally code, then rethrows
+        // the exception
         if (finalizer != EmptyTree) {
           val exh = outerCtx.newExceptionHandler(NoSymbol, finalizer.pos) // finalizer covers exception handlers
           this.addActiveHandler(exh)  // .. and body aswell
-          val ctx = finalizerCtx.enterExceptionHandler(exh)
-          val exception = ctx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
-          loadException(ctx, exh, finalizer.pos)
-          ctx.bb.emit(STORE_LOCAL(exception))
-          val ctx1 = genLoad(finalizer, ctx, UNIT)
-          ctx1.bb.emit(LOAD_LOCAL(exception))
-          ctx1.bb.emit(THROW(ThrowableClass))
-          ctx1.bb.enterIgnoreMode()
-          ctx1.bb.close()
+          val exhStartCtx = finalizerCtx.enterExceptionHandler(exh)
+          val exception = exhStartCtx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
+          loadException(exhStartCtx, exh, finalizer.pos)
+          exhStartCtx.bb.emit(STORE_LOCAL(exception))
+          val exhEndCtx = genLoad(finalizer, exhStartCtx, UNIT)
+          exhEndCtx.bb.emit(LOAD_LOCAL(exception))
+          exhEndCtx.bb.closeWith(THROW(ThrowableClass))
+          exhEndCtx.bb.enterIgnoreMode()
           finalizerCtx.endHandler()
         }
 
+        // Generate each exception handler
         for ((sym, kind, handler) <- handlers) {
           val exh = this.newExceptionHandler(sym, tree.pos)
-          var ctx1 = outerCtx.enterExceptionHandler(exh)
-          ctx1.addFinalizer(finalizer, finalizerCtx)
-          loadException(ctx1, exh, tree.pos)
-          ctx1 = handler(ctx1)
-          // emit finalizer
-          val ctx2 = emitFinalizer(ctx1)
-          ctx2.bb.closeWith(JUMP(afterCtx.bb))
+          val exhStartCtx = outerCtx.enterExceptionHandler(exh)
+          exhStartCtx.addFinalizer(finalizer, finalizerCtx)
+          loadException(exhStartCtx, exh, tree.pos)
+          val exhEndCtx = handler(exhStartCtx)
+          exhEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
           outerCtx.endHandler()
         }
 
@@ -1987,14 +2019,13 @@ abstract class GenICode extends SubComponent  {
         if (finalizer != EmptyTree)
           bodyCtx.addFinalizer(finalizer, finalizerCtx)
 
-        var finalCtx = body(bodyCtx)
-        finalCtx = emitFinalizer(finalCtx)
+        val bodyEndCtx = body(bodyCtx)
 
         outerCtx.bb.closeWith(JUMP(bodyCtx.bb))
 
-        finalCtx.bb.closeWith(JUMP(afterCtx.bb))
+        bodyEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
 
-        afterCtx
+        emitFinalizer(normalExitCtx)
       }
     }
   }
