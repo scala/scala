@@ -25,11 +25,19 @@ import subscript.vm._
  *    _execute(scriptDef, debugger, executor)
  */
 
-object GraphicalDebugger extends GraphicalDebuggerApp {
+object GraphicalDebugger  extends GraphicalDebuggerApp
+object GraphicalDebugger2 extends GraphicalDebuggerApp {
+  // extra singleton to allow for GraphicalDebugging a GraphicalDebugger
+  override def live = _execute(_live, false) 
+}
+//    
+
+class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugger {
+
   override def main(args: Array[String]): Unit = {
     var lArgs = args
     if (lArgs.isEmpty) return
-    ScriptExecutorFactory.scriptDebugger = this
+    ScriptExecutorFactory.addScriptDebugger(this)
     top.visible = true
     
     lArgs.head match {
@@ -38,7 +46,7 @@ object GraphicalDebugger extends GraphicalDebuggerApp {
       case _ =>
     }
     new Thread{override def run={
-      live;
+      live
       quit
     }}.start()
     
@@ -46,6 +54,7 @@ object GraphicalDebugger extends GraphicalDebuggerApp {
     try {
       val c = Class.forName(className) // TBD: should be a swing application
       val m = c.getMethod("main", classOf[Array[String]])
+      println("debugger: "+this.getClass.getCanonicalName+" on: "+className)
       m.invoke(null, lArgs.tail)
     }
     catch {
@@ -53,18 +62,6 @@ object GraphicalDebugger extends GraphicalDebuggerApp {
       case other: Throwable => println(other)
     }
   }
-}
-//    
-
-class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugger {
-
-  
-  // TBD:
-  // create live method
-  // create GUI
-  // test
-  // draw call graph
-  // draw message lists
 
   var messageBeingHandled = false
   var currentMessage: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait[_ <: subscript.vm.TemplateNode]] = null
@@ -534,20 +531,22 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     callGraphPanel    .repaint()
     templateTreesPanel.repaint()
   }
-  // script..
-  //   live       = {*awaitMessageBeingHandled*}
-  //                if (shouldStep) ( @gui: {!updateDisplay!} stepCommand 
-  //                               || if(autoCheckBox.isChecked) waitForStep )
-  //                {messageBeingHandled=false}
-  //                ...
-  //             || exitDebugger
-  //
-  // stepCommand  = stepButton
-  // exitCommand  = exitButton
-  // exitDebugger = exitCommand @gui:{exitConfirmed=confirmExit} while(!exitConfirmed)
+  override def live = _execute(_live, true) 
   
-  var exitConfirmed = false
+  def script..
+     live       = {*awaitMessageBeingHandled(true)*}
+                  if (shouldStep) ( @{gui(there)}: {!updateDisplay!} stepCommand 
+                                 || if(autoCheckBox.selected) {*waitForStepTimeout*} else (-) )
+                  {messageBeingHandled=false}
+                  ... // TBD: parsing goes wrong without this comment; lineStartOffset was incremented unexpectedly
+               || exitDebugger
   
+   stepCommand  = stepButton
+   exitCommand  = exitButton
+   exitDebugger = exitCommand var exitConfirmed:Boolean=false @{gui(there)}:{exitConfirmed=confirmExit} while(!exitConfirmed)
+  
+  
+/*  
   override def _live  = _script(this, 'live) {_par_or2(_seq(_threaded0{awaitMessageBeingHandled(true)}, 
                                                       _if0{shouldStep} (_par_or(_seq(_at{gui} (_tiny0{updateDisplay}), _stepCommand), 
                                                                                _if_else0{autoCheckBox.selected}(_threaded0{waitForStepTimeout}, _deadlock))), 
@@ -561,8 +560,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   def   _exitDebugger = _script(this, 'exitDebugger) {_seq(  _exitCommand, _at{gui}(_while0{!confirmExit}))}
 //def   _exitDebugger = _script('exitDebugger) {_seq(  _exitCommand, _at{gui}(_normal{exitConfirmed=confirmExit}), _while{!exitConfirmed})}
   
-  override def live = _execute(_live, false) //), new SimpleScriptDebugger)
-  
+  */
   def callGraphMessages = scriptExecutor.callGraphMessages
   def rootNode          = scriptExecutor.rootNode
   

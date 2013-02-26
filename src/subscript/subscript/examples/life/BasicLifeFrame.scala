@@ -22,7 +22,7 @@ class BasicLifeFrameApplication extends SimpleSubscriptApplication {
   val speedLabel      = new Label("speed"  ) {preferredSize = new Dimension(65,26)}
   val speedSlider     = new Slider           {min = 1; max = 10}
 
-  val NO_PATTERN = "None"
+  val NO_PATTERN = "Toggle Cell"
   val patternList     = new ListView[String] {listData = NO_PATTERN::ConwayPatterns.allPatterns.map(_._1); selectIndices(0)}
   
   def selectedPatternName = patternList.selection.items.head

@@ -1,3 +1,5 @@
+package subscript.examples
+
 import scala.swing._
 import scala.swing.event._
 import subscript.Predef._

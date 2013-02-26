@@ -47,14 +47,17 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
     //////////////////////////////////////////////
     // handle MouseDown events
     //////////////////////////////////////////////
-     def doMouseSingleClick(p: java.awt.Point): Unit = {
+     def resetLastMousePos: Unit = board.resetLastMousePos // so that mouseDragSet will initially not draw a line
+     
+     def handleMouseSingleClick(p: java.awt.Point): Unit = {
        selectedPattern match {
           case None => board.mouseDownToggle(p)
           case Some(s) => val ec = Coord(p.x/board.cellSizeX, p.y/board.cellSizeY)
                           for (pc <- ConwayPatterns.moveTo(s,ec)) {board.setCellValue(pc.x,pc.y,true)}
        }
      }
-     def doMouseDraw(p: java.awt.Point): Unit = board.mouseDragSet(p)
+     def handleMouseMove(p: java.awt.Point): Unit = board.mouseDragSet(p)
+     def handleMouseDrag(p: java.awt.Point): Unit = board.mouseDragSet(p)
     
      def chr(c:Any) = c.asInstanceOf[Int].toChar
      
@@ -81,7 +84,8 @@ def script..
       randomize        =   randomizeCommand @{gui(there)}: {!board.doRandomize()!}
       clear            =       clearCommand @{gui(there)}: {!board.doClear!}
       singleStep       =        stepCommand do1Step
-       multiStep       = multiStepStartCmd; ... do1Step {*sleep*} / multiStepStopCmd
+       multiStep       = multiStepStartCmd; ... do1Step {*sleep*} 
+                       / multiStepStopCmd
 
       speedControl     = ...; speedKeyInput + speedButtonInput + speedSliderInput
                     
@@ -99,31 +103,29 @@ def script..
    speedSliderInput = speedSlider setSpeed,speedSlider.value
 
       mouseInput    = (mouseClickInput & mouseDragInput)
-                    /  doubleClick() (mouseMoveInput / doubleClick)  // TBD: remove need for () - script parameter lists should have "(" without preceding space!
-                    ; ...
+                    /  doubleClick (mouseMoveInput / doubleClick {!resetLastMousePos!})       ; ...
 
  //mouseClickInput  = mouseSingleClick (board, p?:java.awt.Point) {! doMouseSingleClick(p) !} ... 
 //                     !@#%^&$ mouseSingleClick also reacts on double clicks!!! 
 //                     So wait 220 ms; if by then no mouseDoubleClick as arrived, do the singleClick action:
    mouseClickInput  = var p:java.awt.Point=null
                     ; var doubleClickTimeout:Boolean=false 
-                      mouseSingleClick (board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) 
+                      mouseSingleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) 
+                      {! resetLastMousePos !}
                       ( {*sleep_ms(220); println("timeout"); doubleClickTimeout=true*}
-                      / mouseDoubleClick (board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)))
+                      / mouseDoubleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)))
                       while (!doubleClickTimeout)
-                    ; {! doMouseSingleClick(p) !}
+                    ; {! handleMouseSingleClick(p) !}
                     ; ...
                     
-   doubleClick      = var p:java.awt.Point=null mouseDoubleClick (board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
-    mouseDragInput  = mouseDraggings(board, (e: MouseEvent) => doMouseDraw(e.point))
-    mouseMoveInput  = mouseMoves    (board, (e: MouseEvent) => doMouseDraw(e.point))  
+   doubleClick      = var p:java.awt.Point=null mouseDoubleClick(board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
+   mouse_Released   = var p:java.awt.Point=null mouseReleased(   board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"; mouseReleased instead of mouse_Released yields "too many arguments for method" error
+    mouseDragInput  = mouseDraggings(board, (e: MouseEvent) => handleMouseDrag(e.point)) / (mouse_Released  {!resetLastMousePos!}); ...
+    mouseMoveInput  = mouseMoves(    board, (e: MouseEvent) => handleMouseMove(e.point)) 
   //mouseMoveToggle = var p:java.awt.Point=null mouseMove(board, p?) // doMouseDraw(p))  
 
 override def script..
-    live            = boardControl 
-                   || mouseInput 
-                   || speedControl  
-                   || doExit
+    live            = ||  boardControl mouseInput speedControl doExit
                    
 }
 

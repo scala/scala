@@ -169,6 +169,12 @@ object Scripts {
       currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
+  case class MouseReleasedReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ComponentReactor[N](comp) {
+    val listenedEvent: MouseReleased = null
+    private var myReaction: PartialFunction[Event,Unit] = {case e: MouseReleased =>
+      currentEvent=e; execute; currentEvent=null}
+    override def reaction: PartialFunction[Event,Unit] = myReaction
+  }
   case class MouseMovedReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ComponentReactor[N](comp) {
     val listenedEvent: MouseMoved = null
     private var myReaction: PartialFunction[Event,Unit] = {case e: MouseMoved =>
@@ -272,6 +278,12 @@ object Scripts {
    mouseMove        (comp: Component, p? : java.awt.Point) = var mme: MouseMoved=null 
                                                              event(   MouseMovedReactor[N_code_eh](comp), ActualOutputParameter(mme, (v:MouseMoved)=>mme=v) ) // TBD: "mme?" instead of "ActualOutputParameter(...)"
                                                              {! p=mme.point !}
+   mousePressed     (comp: Component, p? : java.awt.Point) = var mpe: MousePressed=null 
+                                                             event(   MousePressedReactor[N_code_eh](comp), ActualOutputParameter(mpe, (v:MousePressed)=>mpe=v) ) // TBD: ...
+                                                             {! p=mpe.point !}
+   mouseReleased    (comp: Component, p? : java.awt.Point) = var mre: MouseReleased=null 
+                                                             event(   MouseReleasedReactor[N_code_eh](comp), ActualOutputParameter(mre, (v:MouseReleased)=>mre=v) ) // TBD: ...
+                                                             {! p=mre.point !}
 
      guard(comp: Component, test: () => Boolean)           = if (test()) .. else ... anyEvent(comp)
 

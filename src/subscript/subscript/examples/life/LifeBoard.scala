@@ -26,18 +26,53 @@ class LifeBoard(var cellColumns: Int = 200, var cellRows: Int = 150) extends Pan
     // functions for mouse input
     //////////////////////////////////////////////
 
-    def mouseDownToggle(p: Point) {currentX = -1; toggleAtMousePoint(p.x,p.y)}
-    def mouseDragSet   (p: Point) {                  setAtMousePoint(p.x,p.y)}
+    def resetLastMousePos         = currentX = -1
+    def mouseDownToggle(p: Point) = toggleAtMousePoint(p.x,p.y)
+    def mouseDragSet   (p: Point) = lineToMousePoint(p.x,p.y)
+                                  
 
     def toggleAtMousePoint (x: Int, y: Int) {
         if (bufferedImage==null) createCells
         if (bufferedImage==null) return
-        invertAt(x,y)
+        invertCell (x/cellSizeX, y/cellSizeY)
     }
     def setAtMousePoint (x: Int, y: Int) {
         if (bufferedImage==null) createCells
         if (bufferedImage==null) return
-        setAt(x,y)
+        setCell (x/cellSizeX, y/cellSizeY)
+    }
+    
+    def lineToMousePoint (mx: Int, my: Int) {
+      val cx = mx/cellSizeX
+      val cy = my/cellSizeY
+      if (currentX == -1) setAtMousePoint(mx, my)
+      else {
+        val deltaX = cx - currentX
+        val deltaY = cy - currentY
+        linedda(currentX, currentY, cx, cy)
+      }
+      currentX = cx
+      currentY = cy
+    }
+    
+    def linedda(xa: Int, ya: Int, xb: Int, yb: Int) { // http://wiki.answers.com/Q/DDA_line_algorithm
+      val  dx = xb - xa
+      val  dy = yb - ya
+      val adx = Math.abs(dx)
+      val ady = Math.abs(dy)
+      val steps = if(adx>ady) adx else ady
+      
+      val dsteps: Float = steps
+      var      x: Float = xa
+      var      y: Float = ya
+      val xincrement     = dx / dsteps
+      val yincrement     = dy / dsteps
+      setCell (Math.round(x),Math.round(y)) 
+      for(k <- 0 to steps) {
+        x += xincrement 
+        y += yincrement 
+        setCell (Math.round(x),Math.round(y)) 
+      } 
     }
 
     //////////////////////////////////////////////
@@ -126,19 +161,10 @@ class LifeBoard(var cellColumns: Int = 200, var cellRows: Int = 150) extends Pan
                                bufferedImage.getHeight(null)-1)
     }
 
-    def invertAt (x: Int, y: Int)  = invertCell (x/cellSizeX, y/cellSizeY)
-    def    setAt (x: Int, y: Int)  =    setCell (x/cellSizeX, y/cellSizeY)
-
     def invertCell (cellX: Int, cellY: Int) {
         if (     cellX < 0 || cellX >= cellColumns 
               || cellY < 0 || cellY >= cellRows)
             return;
-
-        if (cellX == currentX
-        &&  cellY == currentY) return
-
-        currentX = cellX
-        currentY = cellY
 
         setCellValue(cellX, cellY, !cells(cellX)(cellY))
     }
@@ -147,12 +173,6 @@ class LifeBoard(var cellColumns: Int = 200, var cellRows: Int = 150) extends Pan
               || cellY < 0 || cellY >= cellRows)
             return;
 
-        if (cellX == currentX 
-        &&  cellY == currentY) return
-
-        currentX = cellX
-        currentY = cellY
-        
         if (cells(cellX)(cellY)) return
 
         setCellValue(cellX, cellY, true)

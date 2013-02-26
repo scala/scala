@@ -18,7 +18,7 @@ package subscript.vm
 object SimpleScriptDebuggerObject extends SimpleScriptDebugger {
   def main(args: Array[String]): Unit = {
     if (args.isEmpty) return
-    ScriptExecutorFactory.scriptDebugger = this
+    ScriptExecutorFactory.addScriptDebugger(this)
     val className = args.head
     try {
       val c = Class.forName(className)
