@@ -62,17 +62,18 @@ trait Members {
 
     def removeBlock(b: BasicBlock) {
       if (settings.debug.value) {
-        assert(blocks forall (p => !(p.successors contains b)),
-          "Removing block that is still referenced in method code " + b + "preds: " + b.predecessors
-        )
-        assert(b != startBlock || b.successors.length == 1,
-          "Removing start block with more than one successor."
-        )
+        // only do this sanity check when debug is turned on because it's moderately expensive
+        val referers = blocks filter (_.successors contains b)
+        assert(referers.isEmpty, s"Trying to removing block $b (with preds ${b.predecessors.mkString}) but it is still refered to from block(s) ${referers.mkString}")
       }
 
-      if (b == startBlock)
+      if (b == startBlock) {
+        assert(b.successors.length == 1,
+          s"Removing start block ${b} with ${b.successors.length} successors (${b.successors.mkString})."
+        )
         startBlock = b.successors.head
-
+      }
+      
       blocks -= b
       assert(!blocks.contains(b))
       method.exh filter (_ covers b) foreach (_.covered -= b)

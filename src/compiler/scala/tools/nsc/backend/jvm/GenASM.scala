@@ -11,6 +11,7 @@ import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.nsc.symtab._
 import scala.tools.asm
 import asm.Label
+import scala.annotation.tailrec
 
 /**
  *  @author  Iulian Dragos (version 1.0, FJBG-based implementation)
@@ -2515,21 +2516,13 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               jcode.emitSWITCH(flatKeys, flatBranches, defaultLabel, MIN_SWITCH_DENSITY)
 
             case JUMP(whereto) =>
-              if (nextBlock != whereto) {
+              if (nextBlock != whereto)
                 jcode goTo labels(whereto)
-              } else if (m.exh.exists(eh => eh.covers(b))) {
                 // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
-                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
-                val isSthgLeft = b.toList.exists {
-                  case _: LOAD_EXCEPTION => false
-                  case _: SCOPE_ENTER => false
-                  case _: SCOPE_EXIT => false
-                  case _: JUMP => false
-                  case _ => true
-                }
-                if (!isSthgLeft) {
-                  emit(asm.Opcodes.NOP)
-                }
+                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"              
+              else if (newNormal.isJumpOnly(b) && m.exh.exists(eh => eh.covers(b))) {
+                debugwarn("Had a jump only block that wasn't collapsed")
+                emit(asm.Opcodes.NOP)
               }
 
             case CJUMP(success, failure, cond, kind) =>
@@ -3084,109 +3077,48 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
    * TODO Eventually, these utilities should be moved to IMethod and reused from normalize() (there's nothing JVM-specific about them).
    */
   object newNormal {
-
-    def startsWithJump(b: BasicBlock): Boolean = { assert(b.nonEmpty, "empty block"); b.firstInstruction.isInstanceOf[JUMP] }
-
-    /** Prune from an exception handler those covered blocks which are jump-only. */
-    private def coverWhatCountsOnly(m: IMethod): Boolean = {
-      assert(m.hasCode, "code-less method")
-
-      var wasReduced = false
-      for(h <- m.exh) {
-        val shouldntCover = (h.covered filter startsWithJump)
-        if(shouldntCover.nonEmpty) {
-          wasReduced = true
-          h.covered --= shouldntCover // not removing any block on purpose.
-        }
-      }
-
-      wasReduced
-    }
-
-    /** An exception handler is pruned provided any of the following holds:
-     *   (1) it covers nothing (for example, this may result after removing unreachable blocks)
-     *   (2) each block it covers is of the form: JUMP(_)
-     * Return true iff one or more ExceptionHandlers were removed.
-     *
-     * A caveat: removing an exception handler, for whatever reason, means that its handler code (even if unreachable)
-     * won't be able to cause a class-loading-exception. As a result, behavior can be different.
+    /**
+     * True if a block is "jump only" which is defined
+     * as being a block that consists only of 0 or more instructions that
+     * won't make it to the JVM followed by a JUMP.
      */
-    private def elimNonCoveringExh(m: IMethod): Boolean = {
-      assert(m.hasCode, "code-less method")
-
-        def isRedundant(eh: ExceptionHandler): Boolean = {
-          (eh.cls != NoSymbol) && ( // TODO `eh.isFinallyBlock` more readable than `eh.cls != NoSymbol`
-                eh.covered.isEmpty
-            || (eh.covered forall startsWithJump)
-          )
-        }
-
-      var wasReduced = false
-      val toPrune = (m.exh.toSet filter isRedundant)
-      if(toPrune.nonEmpty) {
-        wasReduced = true
-        for(h <- toPrune; r <- h.blocks) { m.code.removeBlock(r) } // TODO m.code.removeExh(h)
-        m.exh = (m.exh filterNot toPrune)
-      }
-
-      wasReduced
+    def isJumpOnly(b: BasicBlock): Boolean = {
+      val nonICode = firstNonIcodeOnlyInstructions(b)
+      // by definition a block has to have a jump, conditional jump, return, or throw
+      assert(nonICode.hasNext, "empty block")
+      nonICode.next.isInstanceOf[JUMP]
+    }
+    
+    /**
+     * Returns the list of instructions in a block that follow all ICode only instructions,
+     * where an ICode only instruction is one that won't make it to the JVM
+     */
+    private def firstNonIcodeOnlyInstructions(b: BasicBlock): Iterator[Instruction] = {
+	  def isICodeOnlyInstruction(i: Instruction) = i match {
+	    case LOAD_EXCEPTION(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) => true
+	    case _ => false
+	  }
+	  b.iterator dropWhile isICodeOnlyInstruction
     }
 
-    private def isJumpOnly(b: BasicBlock): Option[BasicBlock] = {
-      b.toList match {
-        case JUMP(whereto) :: rest =>
-          assert(rest.isEmpty, "A block contains instructions after JUMP (looks like enterIgnoreMode() was itself ignored.)")
+    /**
+     * Returns the target of a block that is "jump only" which is defined
+     * as being a block that consists only of 0 or more instructions that
+     * won't make it to the JVM followed by a JUMP.
+     * 
+     * @param b The basic block to examine
+     * @return Some(target) if b is a "jump only" block or None if it's not
+     */
+    private def getJumpOnlyTarget(b: BasicBlock): Option[BasicBlock] = {
+      val nonICode = firstNonIcodeOnlyInstructions(b)
+              // by definition a block has to have a jump, conditional jump, return, or throw
+      assert(nonICode.nonEmpty, "empty block")
+      nonICode.next match {
+        case JUMP(whereto) =>
+          assert(!nonICode.hasNext, "A block contains instructions after JUMP (looks like enterIgnoreMode() was itself ignored.)")
           Some(whereto)
         case _ => None
       }
-    }
-
-    private def directSuccStar(b: BasicBlock): List[BasicBlock] = { directSuccStar(List(b)) }
-
-    /** Transitive closure of successors potentially reachable due to normal (non-exceptional) control flow.
-       Those BBs in the argument are also included in the result */
-    private def directSuccStar(starters: Traversable[BasicBlock]): List[BasicBlock] = {
-      val result = new mutable.ListBuffer[BasicBlock]
-      var toVisit: List[BasicBlock] = starters.toList.distinct
-      while(toVisit.nonEmpty) {
-        val h   = toVisit.head
-        toVisit = toVisit.tail
-        result += h
-        for(p <- h.directSuccessors; if !result.contains(p) && !toVisit.contains(p)) { toVisit = p :: toVisit }
-      }
-      result.toList
-    }
-
-    /** Returns:
-     *  for single-block self-loops, the pair (start, Nil)
-     *  for other cycles,            the pair (backedge-target, basic-blocks-in-the-cycle-except-backedge-target)
-     *  otherwise a pair consisting of:
-     *    (a) the endpoint of a (single or multi-hop) chain of JUMPs
-     *        (such endpoint does not start with a JUMP and therefore is not part of the chain); and
-     *    (b) the chain (ie blocks to be removed when collapsing the chain of jumps).
-     *  Precondition: the BasicBlock given as argument starts with an unconditional JUMP.
-     */
-    private def finalDestination(start: BasicBlock): (BasicBlock, List[BasicBlock]) = {
-      assert(startsWithJump(start), "not the start of a (single or multi-hop) chain of JUMPs.")
-      var hops: List[BasicBlock] = Nil
-      var prev = start
-      var done = false
-      do {
-        done = isJumpOnly(prev) match {
-          case Some(dest) =>
-            if (dest == start) { return (start, hops) } // leave infinite-loops in place
-            hops ::= prev
-            if (hops.contains(dest)) {
-              // leave infinite-loops in place
-              return (dest, hops filterNot (dest eq _))
-            }
-            prev = dest
-            false
-          case None => true
-        }
-      } while(!done)
-
-      (prev, hops)
     }
 
     /**
@@ -3204,7 +3136,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      *  In more detail:
      *    Starting at each of the entry points (m.startBlock, the start block of each exception handler)
      *    rephrase those control-flow instructions targeting a jump-only block (which jumps to a final destination D) to target D.
-     *    The blocks thus skipped are also removed from IMethod.blocks.
+     *    The blocks thus skipped become eligible to removed by the reachability analyzer
      *
      *  Rationale for this normalization:
      *    test/files/run/private-inline.scala after -optimize is chock full of
@@ -3215,106 +3147,163 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      *    and thus ranges with identical (start, end) (i.e, identical after GenJVM omitted the JUMPs in question)
      *    could be weeded out to avoid "java.lang.ClassFormatError: Illegal exception table range"
      *    Now that visitTryCatchBlock() must be called before Labels are resolved,
-     *    this method gets rid of the BasicBlocks described above (to recap, consisting of just a JUMP).
+     *    renders the BasicBlocks described above (to recap, consisting of just a JUMP) unreachable.
      */
-    private def collapseJumpOnlyBlocks(m: IMethod): Boolean = {
+    private def collapseJumpOnlyBlocks(m: IMethod) {
       assert(m.hasCode, "code-less method")
 
-          /* "start" is relative in a cycle, but we call this helper with the "first" entry-point we found. */
-          def realTarget(jumpStart: BasicBlock): Map[BasicBlock, BasicBlock] = {
-            assert(startsWithJump(jumpStart), "not part of a jump-chain")
-            val Pair(dest, redundants) = finalDestination(jumpStart)
-            (for(skipOver <- redundants) yield Pair(skipOver, dest)).toMap
-          }
-
-          def rephraseGotos(detour: Map[BasicBlock, BasicBlock]) {
-            for(Pair(oldTarget, newTarget) <- detour.iterator) {
-              if(m.startBlock == oldTarget) {
-                m.code.startBlock = newTarget
-              }
-              for(eh <- m.exh; if eh.startBlock == oldTarget) {
-                eh.setStartBlock(newTarget)
-              }
-              for(b <- m.blocks; if !detour.isDefinedAt(b)) {
-                val idxLast = (b.size - 1)
-                b.lastInstruction match {
-                  case JUMP(whereto) =>
-                    if (whereto == oldTarget) {
-                      b.replaceInstruction(idxLast, JUMP(newTarget))
-                    }
-                  case CJUMP(succ, fail, cond, kind) =>
-                    if ((succ == oldTarget) || (fail == oldTarget)) {
-                      b.replaceInstruction(idxLast, CJUMP(detour.getOrElse(succ, succ),
-                                                          detour.getOrElse(fail, fail),
-                                                          cond, kind))
-                    }
-                  case CZJUMP(succ, fail, cond, kind) =>
-                    if ((succ == oldTarget) || (fail == oldTarget)) {
-                      b.replaceInstruction(idxLast, CZJUMP(detour.getOrElse(succ, succ),
-                                                           detour.getOrElse(fail, fail),
-                                                           cond, kind))
-                    }
-                  case SWITCH(tags, labels) =>
-                    if(labels exists (detour.isDefinedAt(_))) {
-                      val newLabels = (labels map { lab => detour.getOrElse(lab, lab) })
-                      b.replaceInstruction(idxLast, SWITCH(tags, newLabels))
-                    }
-                  case _ => ()
-                }
-              }
+      def rephraseGotos(detour: mutable.Map[BasicBlock, BasicBlock]) {
+        def lookup(b: BasicBlock) = detour.getOrElse(b, b)
+            
+        m.code.startBlock = lookup(m.code.startBlock)
+          
+        for(eh <- m.exh)
+          eh.setStartBlock(lookup(eh.startBlock))
+            
+        for (b <- m.blocks) {
+          def replaceLastInstruction(i: Instruction) = {
+            if (b.lastInstruction != i) {
+              val idxLast = b.size - 1
+	          debuglog(s"In block $b, replacing last instruction ${b.lastInstruction} with ${i}")
+	          b.replaceInstruction(idxLast, i)
             }
           }
-
-          /* remove from all containers that may contain a reference to */
-          def elide(redu: BasicBlock) {
-            assert(m.startBlock != redu, "startBlock should have been re-wired by now")
-            m.code.removeBlock(redu)
-          }
-
-      var wasReduced = false
-      val entryPoints: List[BasicBlock] = m.startBlock :: (m.exh map (_.startBlock))
-
-      val elided     = mutable.Set.empty[BasicBlock] // debug
-      val newTargets = mutable.Set.empty[BasicBlock] // debug
-
-      for (ep <- entryPoints) {
-        var reachable = directSuccStar(ep) // this list may contain blocks belonging to jump-chains that we'll skip over
-        while(reachable.nonEmpty) {
-          val h = reachable.head
-          reachable = reachable.tail
-          if(startsWithJump(h)) {
-            val detour = realTarget(h)
-            if(detour.nonEmpty) {
-              wasReduced = true
-              reachable = (reachable filterNot (detour.keySet.contains(_)))
-              rephraseGotos(detour)
-              detour.keySet foreach elide
-              elided     ++= detour.keySet
-              newTargets ++= detour.values
-            }
+ 
+          b.lastInstruction match {
+            case JUMP(whereto) =>
+              replaceLastInstruction(JUMP(lookup(whereto)))
+            case CJUMP(succ, fail, cond, kind) =>
+              replaceLastInstruction(CJUMP(lookup(succ), lookup(fail), cond, kind))
+            case CZJUMP(succ, fail, cond, kind)  =>             
+              replaceLastInstruction(CZJUMP(lookup(succ), lookup(fail), cond, kind))
+            case SWITCH(tags, labels) =>
+              val newLabels = (labels map lookup)
+              replaceLastInstruction(SWITCH(tags, newLabels))
+            case _ => ()                
           }
         }
       }
-      assert(newTargets.intersect(elided).isEmpty, "contradiction: we just elided the final destionation of a jump-chain")
 
-      wasReduced
+      /**
+       * Computes a mapping from jump only block to its
+       * final destination which is either a non-jump-only
+       * block or, if it's in a jump-only block cycle, is
+       * itself
+       */
+      def computeDetour: mutable.Map[BasicBlock, BasicBlock] = {
+        // fetch the jump only blocks and their immediate destinations
+        val pairs = for {
+          block <- m.blocks.toIterator
+          target <- getJumpOnlyTarget(block)
+        } yield(block, target)
+
+        // mapping from a jump-only block to our current knowledge of its
+        // final destination. Initially it's just jump block to immediate jump
+        // target
+        val detour = mutable.Map[BasicBlock, BasicBlock](pairs.toSeq:_*)
+
+        // for each jump-only block find its final destination
+        // taking advantage of the destinations we found for previous
+        // blocks
+        for (key <- detour.keySet) {
+          // we use the Robert Floyd's classic Tortoise and Hare algorithm
+          @tailrec 
+          def findDestination(tortoise: BasicBlock, hare: BasicBlock): BasicBlock = {
+            if (tortoise == hare)
+              // cycle detected, map key to key
+              key
+            else if (detour contains hare) {
+              // advance hare once
+              val hare1 = detour(hare)
+              // make sure we can advance hare a second time
+              if (detour contains hare1)
+                // advance tortoise once and hare a second time
+                findDestination(detour(tortoise), detour(hare1))
+              else
+                // hare1 is not in the map so it's not a jump-only block, it's the destination
+                hare1
+            } else
+              // hare is not in the map so it's not a jump-only block, it's the destination
+              hare
+          }
+          // update the mapping for key based on its final destination
+          detour(key) = findDestination(key, detour(key))
+        }
+        detour
+      }
+      
+      val detour = computeDetour
+      rephraseGotos(detour)
+
+      if (settings.debug.value) {
+        val (remappings, cycles) = detour partition {case (source, target) => source != target}
+        for ((source, target) <- remappings) {
+		   debuglog(s"Will elide jump only block $source because it can be jumped around to get to $target.")
+		   if (m.startBlock == source) debugwarn("startBlock should have been re-wired by now")        
+        }
+        val sources = remappings.keySet
+        val targets = remappings.values.toSet
+        val intersection = sources intersect targets
+        
+        if (intersection.nonEmpty) debugwarn(s"contradiction: we seem to have some source and target overlap in blocks ${intersection.mkString}. Map was ${detour.mkString}")
+        
+        for ((source, _) <- cycles) {
+          debuglog(s"Block $source is in a do-nothing infinite loop. Did the user write 'while(true){}'?")
+        }
+      }
+    }
+    
+    /**
+     * Removes all blocks that are unreachable in a method using a standard reachability analysis.
+     */
+    def elimUnreachableBlocks(m: IMethod) {
+      assert(m.hasCode, "code-less method")      
+      
+      // assume nothing is reachable until we prove it can be reached
+      val reachable = mutable.Set[BasicBlock]()
+      
+      // the set of blocks that we know are reachable but have
+      // yet to be  marked reachable, initially only the start block
+      val worklist = mutable.Set(m.startBlock)
+      
+      while (worklist.nonEmpty) {
+        val block = worklist.head
+        worklist remove block
+        // we know that one is reachable
+        reachable add block
+        // so are its successors, so go back around and add the ones we still
+        // think are unreachable
+        worklist ++= (block.successors filterNot reachable)
+      }
+      
+      // exception handlers need to be told not to cover unreachable blocks
+      // and exception handlers that no longer cover any blocks need to be
+      // removed entirely
+      val unusedExceptionHandlers = mutable.Set[ExceptionHandler]()
+      for (exh <- m.exh) {
+        exh.covered = exh.covered filter reachable
+        if (exh.covered.isEmpty) {
+          unusedExceptionHandlers += exh
+        }
+      }
+      
+      // remove the unusued exception handler references
+      if (settings.debug.value) 
+        for (exh <- unusedExceptionHandlers) debuglog(s"eliding exception handler $exh because it does not cover any reachable blocks")
+      m.exh = m.exh filterNot unusedExceptionHandlers
+
+      // everything not in the reachable set is unreachable, unused, and unloved. buh bye
+      for (b <- m.blocks filterNot reachable) {
+    	  debuglog(s"eliding block $b because it is unreachable")
+    	  m.code removeBlock b
+      }
     }
 
     def normalize(m: IMethod) {
       if(!m.hasCode) { return }
       collapseJumpOnlyBlocks(m)
-      var wasReduced = false
-      do {
-        wasReduced = false
-        // Prune from an exception handler those covered blocks which are jump-only.
-        wasReduced |= coverWhatCountsOnly(m); icodes.checkValid(m) // TODO should be unnecessary now that collapseJumpOnlyBlocks(m) is in place
-        // Prune exception handlers covering nothing.
-        wasReduced |= elimNonCoveringExh(m);  icodes.checkValid(m)
-
-        // TODO see note in genExceptionHandlers about an ExceptionHandler.covered containing dead blocks (newNormal should remove them, but, where do those blocks come from?)
-      } while (wasReduced)
-
-      // TODO this would be a good time to remove synthetic local vars seeing no use, don't forget to call computeLocalVarsIndex() afterwards.
+      elimUnreachableBlocks(m)
+      icodes checkValid m
     }
 
   }
