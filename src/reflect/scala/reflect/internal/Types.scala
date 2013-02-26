@@ -2105,7 +2105,7 @@ trait Types extends api.Types { self: SymbolTable =>
   class ModuleTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
     require(sym.isModuleClass, sym)
     private[this] var narrowedCache: Type = _
-    override def isStable = true
+    override def isStable = pre.isStable
     override def narrow = {
       if (narrowedCache eq null)
         narrowedCache = singleType(pre, sym.sourceModule)
@@ -2121,6 +2121,7 @@ trait Types extends api.Types { self: SymbolTable =>
   }
   class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
     require(sym.isPackageClass, sym)
+    override def isStable = true
     override protected def finishPrefix(rest: String) = packagePrefix + rest
   }
   class RefinementTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
