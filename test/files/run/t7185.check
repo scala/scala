@@ -1,0 +1,34 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.tools.reflect.ToolBox
+import scala.tools.reflect.ToolBox
+
+scala> import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe._
+
+scala> object O { def apply() = 0 }
+defined module O
+
+scala> val ORef = reify { O }.tree
+ORef: reflect.runtime.universe.Tree = $read.O
+
+scala> val tree = Apply(Block(Nil, Block(Nil, ORef)), Nil)
+tree: reflect.runtime.universe.Apply = 
+{
+  {
+    $read.O
+  }
+}()
+
+scala> {val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typeCheck(tree): Any}
+res0: Any = 
+{
+  {
+    $read.O.apply()
+  }
+}
+
+scala> 
