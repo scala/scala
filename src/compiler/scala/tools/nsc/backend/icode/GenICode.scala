@@ -1932,12 +1932,10 @@ abstract class GenICode extends SubComponent  {
        *     
        *   body:
        *     [ try body ]
-       *     [ finally body ]
        *     JUMP normalExit
        *     
        *   catch[i]:
        *     [ handler[i] body ]
-       *     [ finally body ]
        *     JUMP normalExit
        *     
        *   catchAll:
@@ -1946,6 +1944,7 @@ abstract class GenICode extends SubComponent  {
        *     THROW exception
        *     
        *   normalExit:
+       *     [ finally body ]
        *     
        *  each catch[i] will cover body.  catchAll will cover both body and each catch[i]
        *  Additional finally copies are created on the emission of every RETURN in the try body and exception handlers.
@@ -2012,9 +2011,7 @@ abstract class GenICode extends SubComponent  {
           exhStartCtx.addFinalizer(finalizer, finalizerCtx)
           loadException(exhStartCtx, exh, tree.pos)
           val exhEndCtx = handler(exhStartCtx)
-          // emit finalizer
-          val exhEndCtx2 = emitFinalizer(exhEndCtx)
-          exhEndCtx2.bb.closeWith(JUMP(normalExitCtx.bb))
+          exhEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
           outerCtx.endHandler()
         }
 
@@ -2022,14 +2019,13 @@ abstract class GenICode extends SubComponent  {
         if (finalizer != EmptyTree)
           bodyCtx.addFinalizer(finalizer, finalizerCtx)
 
-        var bodyEndCtx = body(bodyCtx)
-        bodyEndCtx = emitFinalizer(bodyEndCtx)
+        val bodyEndCtx = body(bodyCtx)
 
         outerCtx.bb.closeWith(JUMP(bodyCtx.bb))
 
         bodyEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
 
-        normalExitCtx
+        emitFinalizer(normalExitCtx)
       }
     }
   }
