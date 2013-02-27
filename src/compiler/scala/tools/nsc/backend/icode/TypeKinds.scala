@@ -88,10 +88,19 @@ trait TypeKinds { self: ICodes =>
     final def isNumericType: Boolean = isIntegralType | isRealType
 
     /** Simple subtyping check */
-    def <:<(other: TypeKind): Boolean = (this eq other) || (this match {
-      case BOOL | BYTE | SHORT | CHAR => other == INT || other == LONG
-      case _                          => this eq other
-    })
+    def <:<(other: TypeKind): Boolean = other match {
+      // On the JVM, BOOL, BYTE, CHAR, SHORT need no coercion to INT
+      // TODO it's pretty suspect to call this a subtyping relationship
+      // for instance JVM Arrays are covariant, but Array[Char] is not 
+      // a subtype of Array[Int] on the JVM. However, when I attempted
+      // to remove it I got verify errors when compiling the library
+      // under -optimize
+      case INT  => this.isIntSizedType
+      // this case is even more suspect than the previous because
+      // BOOL, BYTE, CHAR, SHORT, and INT need conversion to get to LONG
+      case LONG => this.isIntSizedType || this == LONG
+      case _    => this eq other
+    }
 
     /** Is this type a category 2 type in JVM terms? (ie, is it LONG or DOUBLE?) */
     def isWideType: Boolean = false

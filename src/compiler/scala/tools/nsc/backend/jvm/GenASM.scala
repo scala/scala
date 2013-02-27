@@ -2626,8 +2626,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
        * @param to   The type the value will be converted into.
        */
       def emitT2T(from: TypeKind, to: TypeKind) {
-        assert(isNonUnitValueTK(from), from)
-        assert(isNonUnitValueTK(to),   to)
+        assert(isNonUnitValueTK(from) && isNonUnitValueTK(to), s"Cannot emit primitive conversion from $from to $to")
 
             def pickOne(opcs: Array[Int]) {
               val chosen = (to: @unchecked) match {
@@ -2643,10 +2642,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             }
 
         if(from == to) { return }
-        if((from == BOOL) || (to == BOOL)) {
-          // the only conversion involving BOOL that is allowed is (BOOL -> BOOL)
-          throw new Error("inconvertible types : " + from.toString() + " -> " + to.toString())
-        }
+        // the only conversion involving BOOL that is allowed is (BOOL -> BOOL)
+        assert(from != BOOL && to != BOOL, "inconvertible types : $from -> $to")
 
         if(from.isIntSizedType) { // BYTE, CHAR, SHORT, and INT. (we're done with BOOL already)
 
@@ -2810,8 +2807,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
           case Conversion(src, dst) =>
             debuglog("Converting from: " + src + " to: " + dst)
-            if (dst == BOOL) { println("Illegal conversion at: " + clasz + " at: " + pos.source + ":" + pos.line) }
-            else { emitT2T(src, dst) }
+            emitT2T(src, dst)
 
           case ArrayLength(_) => emit(Opcodes.ARRAYLENGTH)
 
