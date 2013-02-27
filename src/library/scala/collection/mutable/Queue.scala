@@ -167,6 +167,13 @@ extends MutableList[A]
    */
   def front: A = head
 
+  // this method (duplicated from MutableList) must be private for binary compatibility
+  private final def tailImpl(tl: Queue[A]) {
+    require(nonEmpty, "tail of empty list")
+    tl.first0 = first0.tail
+    tl.len = len - 1
+    tl.last0 = if (tl.len == 0) tl.first0 else last0
+  }
 
   // TODO - Don't override this just for new to create appropriate type....
   override def tail: Queue[A] = {

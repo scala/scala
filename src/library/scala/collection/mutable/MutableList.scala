@@ -61,7 +61,8 @@ extends AbstractSeq[A]
     tl
   }
 
-  protected final def tailImpl(tl: MutableList[A]) {
+  // this method must be private for binary compatibility
+  private final def tailImpl(tl: MutableList[A]) {
     require(nonEmpty, "tail of empty list")
     tl.first0 = first0.tail
     tl.len = len - 1
