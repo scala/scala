@@ -1,5 +1,7 @@
 package scala.reflect.macros
-package runtime
+package contexts
+
+import scala.reflect.macros.runtime.AbortMacroException
 
 trait FrontEnds {
   self: Context =>

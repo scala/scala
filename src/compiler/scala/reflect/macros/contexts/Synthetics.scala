@@ -3,7 +3,7 @@
  */
 
 package scala.reflect.macros
-package runtime
+package contexts
 
 import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.BatchSourceFile

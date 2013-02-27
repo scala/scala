@@ -4,7 +4,7 @@
  */
 
 package scala.reflect.macros
-package runtime
+package contexts
 
 trait Reifiers {
   self: Context =>

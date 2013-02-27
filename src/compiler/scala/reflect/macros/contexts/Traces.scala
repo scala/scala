@@ -1,5 +1,5 @@
 package scala.reflect.macros
-package runtime
+package contexts
 
 trait Traces extends util.Traces {
   self: Context =>

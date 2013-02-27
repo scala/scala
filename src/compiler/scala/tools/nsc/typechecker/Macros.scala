@@ -10,9 +10,10 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
-import scala.reflect.macros.runtime.AbortMacroException
+import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
+import scala.tools.reflect.FastTrack
 
 /**
  *  Code to deal with macros, namely with:
@@ -39,7 +40,7 @@ import scala.reflect.macros.compiler.DefaultMacroCompiler
  *    (Expr(elems))
  *    (TypeTag(Int))
  */
-trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
+trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   self: Analyzer =>
 
   import global._
@@ -77,7 +78,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
    *  Includes a path to load the implementation via Java reflection,
    *  and various accounting information necessary when composing an argument list for the reflective invocation.
    */
-  private case class MacroImplBinding(
+  case class MacroImplBinding(
     // Is this macro impl a bundle (a trait extending Macro) or a vanilla def?
     val isBundle: Boolean,
     // Java class name of the class that contains the macro implementation
@@ -99,9 +100,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
     // these trees don't refer to a macro impl, so we can pickle them as is
     targs: List[Tree])
 
-  private final val IMPLPARAM_TAG = 0 // actually it's zero and above, this is just a lower bound for >= checks
-  private final val IMPLPARAM_OTHER = -1
-  private final val IMPLPARAM_EXPR = -2
+  final val IMPLPARAM_TAG = 0 // actually it's zero and above, this is just a lower bound for >= checks
+  final val IMPLPARAM_OTHER = -1
+  final val IMPLPARAM_EXPR = -2
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
@@ -120,7 +121,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
    *        "versionFormat" = <current version format>,
    *        "className" = "Macros$"))
    */
-  private object MacroImplBinding {
+  object MacroImplBinding {
     val versionFormat = 3
 
     def pickleAtom(obj: Any): Tree =
@@ -220,12 +221,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
     }
   }
 
-  private def bindMacroImpl(macroDef: Symbol, macroImplRef: Tree): Unit = {
+  def bindMacroImpl(macroDef: Symbol, macroImplRef: Tree): Unit = {
     val pickle = MacroImplBinding.pickle(macroImplRef)
     macroDef withAnnotation AnnotationInfo(MacroImplAnnotation.tpe, List(pickle), Nil)
   }
 
-  private def loadMacroImplBinding(macroDef: Symbol): MacroImplBinding = {
+  def loadMacroImplBinding(macroDef: Symbol): MacroImplBinding = {
     val Some(AnnotationInfo(_, List(pickle), _)) = macroDef.getAnnotation(MacroImplAnnotation)
     MacroImplBinding.unpickle(pickle)
   }
@@ -309,73 +310,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces with Helpers {
     }
   }
 
-  /** Macro classloader that is used to resolve and run macro implementations.
-   *  Loads classes from from -cp (aka the library classpath).
-   *  Is also capable of detecting REPL and reusing its classloader.
-   */
-  lazy val macroClassloader: ClassLoader = findMacroClassLoader()
-
-  /** Reflective mirror built from `macroClassloader`.
-   */
-  private lazy val macroMirror: ru.JavaMirror = ru.runtimeMirror(macroClassloader)
-
-  /** Produces a function that can be used to invoke macro implementation for a given macro definition:
-   *    1) Looks up macro implementation symbol in this universe.
-   *    2) Loads its enclosing class from the macro classloader.
-   *    3) Loads the companion of that enclosing class from the macro classloader.
-   *    4) Resolves macro implementation within the loaded companion.
-   *
-   *  @return Requested runtime if macro implementation can be loaded successfully from either of the mirrors,
-   *          `null` otherwise.
-   */
-  type MacroRuntime = MacroArgs => Any
-  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]()
-  private def macroRuntime(macroDef: Symbol): MacroRuntime = {
-    macroLogVerbose(s"looking for macro implementation: $macroDef")
-    if (fastTrack contains macroDef) {
-      macroLogVerbose("macro expansion is serviced by a fast track")
-      fastTrack(macroDef)
-    } else {
-      macroRuntimesCache.getOrElseUpdate(macroDef, {
-        val binding = loadMacroImplBinding(macroDef)
-        val isBundle = binding.isBundle
-        val className = binding.className
-        val methName = binding.methName
-        macroLogVerbose(s"resolved implementation as $className.$methName")
-
-        if (binding.className == Predef_???.owner.javaClassName && binding.methName == Predef_???.name.encoded) {
-          args => throw new AbortMacroException(args.c.enclosingPosition, "macro implementation is missing")
-        } else {
-          try {
-            macroLogVerbose(s"loading implementation class: $className")
-            macroLogVerbose(s"classloader is: ${ReflectionUtils.show(macroClassloader)}")
-            val implContainerSym = macroMirror.classSymbol(Class.forName(className, true, macroClassloader))
-            val implMethSym = implContainerSym.typeSignature.member(ru.TermName(methName)).asMethod
-            macroLogVerbose(s"successfully loaded macro impl as ($implContainerSym, $implMethSym)")
-            args => {
-              val implContainer =
-                if (isBundle) {
-                  val implCtorSym = implContainerSym.typeSignature.member(ru.nme.CONSTRUCTOR).asMethod
-                  macroMirror.reflectClass(implContainerSym).reflectConstructor(implCtorSym)(args.c)
-                } else {
-                  macroMirror.reflectModule(implContainerSym.module.asModule).instance
-                }
-              val implMeth = macroMirror.reflect(implContainer).reflectMethod(implMethSym)
-              val implArgs = if (isBundle) args.others else args.c +: args.others
-              implMeth(implArgs: _*)
-            }
-          } catch {
-            case ex: Exception =>
-              macroLogVerbose(s"macro runtime failed to load: ${ex.toString}")
-              macroDef setFlag IS_ERROR
-              null
-          }
-        }
-      })
-    }
-  }
-
-  private def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext = {
+  def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext = {
     new {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
