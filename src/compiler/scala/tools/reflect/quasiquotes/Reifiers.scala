@@ -150,6 +150,10 @@ trait Reifiers { self: Quasiquotes =>
   class UnapplyReifier(universe: Tree, placeholders: Placeholders) extends Reifier(universe, placeholders) {
 
     override def reifyBasicTree(tree: Tree): Tree = tree match {
+      case global.emptyValDef =>
+        mirrorBuildCall("EmptyValDefLike")
+      case global.pendingSuperCall =>
+        mirrorBuildCall("PendingSuperCallLike")
       case Placeholder(name) =>
         Bind(TermName(name), Ident(nme.WILDCARD))
       case Applied(fun, targs, argss) if fun != tree =>
