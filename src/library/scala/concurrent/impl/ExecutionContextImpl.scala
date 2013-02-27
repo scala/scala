@@ -19,14 +19,14 @@ import scala.util.control.NonFatal
 
 
 private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter: Throwable => Unit) extends ExecutionContextExecutor {
+  // Placed here since the creation of the executor needs to read this val
+  private[this] val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
+    def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
+  }
 
   val executor: Executor = es match {
     case null => createExecutorService
     case some => some
-  }
-
-  private val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
-    def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
   }
 
   // Implement BlockContext on FJP threads
@@ -116,18 +116,18 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
 private[concurrent] object ExecutionContextImpl {
 
   final class AdaptedForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
-    final override def setRawResult(u: Unit): Unit = ()
-    final override def getRawResult(): Unit = ()
-    final override def exec(): Boolean = try { runnable.run(); true } catch {
-      case anything: Throwable ⇒
-        val t = Thread.currentThread
-        t.getUncaughtExceptionHandler match {
-          case null ⇒ 
-          case some ⇒ some.uncaughtException(t, anything)
+          final override def setRawResult(u: Unit): Unit = ()
+          final override def getRawResult(): Unit = ()
+          final override def exec(): Boolean = try { runnable.run(); true } catch {
+            case anything: Throwable ⇒
+              val t = Thread.currentThread
+              t.getUncaughtExceptionHandler match {
+                case null ⇒
+                case some ⇒ some.uncaughtException(t, anything)
+              }
+              throw anything
+          }
         }
-        throw anything
-    }
-  }
 
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl = new ExecutionContextImpl(e, reporter)
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutionContextExecutorService =

@@ -1039,6 +1039,9 @@ abstract class ClassfileParser {
       for (n <- 0 until nClasses) {
         // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (SI-7065)
         val cls = pool.getClassSymbol(in.nextChar.toInt)
+        // we call initialize due to the fact that we call Symbol.isMonomorphicType in addThrowsAnnotation
+        // and that method requires Symbol to be forced to give the right answers, see SI-7107 for details
+        cls.initialize
         sym.addThrowsAnnotation(cls)
       }
     }
