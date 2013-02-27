@@ -1051,7 +1051,7 @@ abstract class GenICode extends SubComponent  {
         case (NothingReference, _) =>
           ctx.bb.emit(THROW(ThrowableClass))
           ctx.bb.enterIgnoreMode()
-        case _ if (from <:< to) =>
+        case _ if from isAssignabledTo to =>
           ()
         case (_, UNIT) => 
           ctx.bb.emit(DROP(from), pos)
