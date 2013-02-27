@@ -405,6 +405,8 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
       if (scriptExecutor!=null) drawTree(rootNode, 0, 0)
   }
   
+  val maxLogListMsgs    = 5000
+  val logListMsgsCleanups = 1000
   val msgLogListModel   = new javax.swing.DefaultListModel
   val msgQueueListModel = new javax.swing.DefaultListModel
   val currentMessageTF  = new TextField {
@@ -518,6 +520,8 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
       javax.swing.SwingUtilities.invokeLater(runnable)
   }
   def logMessage(m: String, msg: CallGraphMessage[_]) {
+    if (msgLogListModel.size > maxLogListMsgs)
+      msgLogListModel.removeRange(0, logListMsgsCleanups)
     msgLogListModel.addElement(m + " " + msg)
     msgLogListViewScrollPane.verticalScrollBar.value = msgLogListViewScrollPane.verticalScrollBar.maximum
     msgQueueListModel.clear
