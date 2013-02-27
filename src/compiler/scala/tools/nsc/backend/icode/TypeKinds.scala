@@ -96,9 +96,6 @@ trait TypeKinds { self: ICodes =>
       // to remove it I got verify errors when compiling the library
       // under -optimize
       case INT  => this.isIntSizedType
-      // this case is even more suspect than the previous because
-      // BOOL, BYTE, CHAR, SHORT, and INT need conversion to get to LONG
-      case LONG => this.isIntSizedType || this == LONG
       case _    => this eq other
     }
 

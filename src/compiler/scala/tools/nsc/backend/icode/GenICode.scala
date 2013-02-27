@@ -1051,11 +1051,6 @@ abstract class GenICode extends SubComponent  {
         case (NothingReference, _) =>
           ctx.bb.emit(THROW(ThrowableClass))
           ctx.bb.enterIgnoreMode()
-        // this special case is needed because of a special case in TypeKinds that
-        // says that the int sized primitives are subtypes of LONG
-        // even though they aren't according to the JVM
-        case (_, LONG) if from.isIntSizedType =>
-          coerce(INT, LONG)
         case _ if (from <:< to) =>
           ()
         case (_, UNIT) => 
