@@ -376,12 +376,14 @@ abstract class GenICode extends SubComponent  {
         "I produce UNIT in a context where " + expectedType + " is expected!")
 
       // alternatives may be already closed by a tail-recursive jump
+      val contReachable = !(thenCtx.bb.ignore && elseCtx.bb.ignore)
       thenCtx.bb.closeWith(JUMP(contCtx.bb))
       elseCtx.bb.closeWith(
           if (elsep == EmptyTree) JUMP(contCtx.bb)
           else JUMP(contCtx.bb) setPos tree.pos
         )
 
+      contCtx.bb killUnless contReachable
       (contCtx, resKind)
     }
     private def genLoadTry(tree: Try, ctx: Context, setGeneratedType: TypeKind => Unit): Context = {
@@ -477,7 +479,11 @@ abstract class GenICode extends SubComponent  {
       val resCtx: Context = tree match {
         case LabelDef(name, params, rhs) =>
           def genLoadLabelDef = {
-            val ctx1 = ctx.newBlock()
+            val ctx1 = ctx.newBlock() // note: we cannot kill ctx1 if ctx is in ignore mode because 
+                                      // label defs can be the target of jumps from other locations.
+                                      // that means label defs can lead to unreachable code without
+                                      // proper reachability analysis
+            
             if (nme.isLoopHeaderLabel(name))
               ctx1.bb.loopHeader = true
 
@@ -560,6 +566,7 @@ abstract class GenICode extends SubComponent  {
                   // the list, otherwise infinite recursion happens for
                   // finalizers that contain 'return'
                   val fctx = finalizerCtx.newBlock()
+                  fctx.bb killIf ctx1.bb.ignore
                   ctx1.bb.closeWith(JUMP(fctx.bb))
                   ctx1 = genLoad(f1, fctx, UNIT)
               }
@@ -949,6 +956,8 @@ abstract class GenICode extends SubComponent  {
             debuglog("Generating SWITCH statement.")
             val ctx1 = genLoad(selector, ctx, INT) // TODO: Java 7 allows strings in switches (so, don't assume INT and don't convert the literals using intValue)
             val afterCtx = ctx1.newBlock()
+            afterCtx.bb killIf ctx1.bb.ignore
+            var afterCtxReachable = false
             var caseCtx: Context  = null
             generatedType = toTypeKind(tree.tpe)
 
@@ -959,6 +968,7 @@ abstract class GenICode extends SubComponent  {
             for (caze @ CaseDef(pat, guard, body) <- cases) {
               assert(guard == EmptyTree, guard)
               val tmpCtx = ctx1.newBlock()
+              tmpCtx.bb killIf ctx1.bb.ignore
               pat match {
                 case Literal(value) =>
                   tags = value.intValue :: tags
@@ -980,12 +990,15 @@ abstract class GenICode extends SubComponent  {
               }
 
               caseCtx = genLoad(body, tmpCtx, generatedType)
+              afterCtxReachable |= !caseCtx.bb.ignore
               // close the block unless it's already been closed by the body, which closes the block if it ends in a jump (which is emitted to have alternatives share their body)
               caseCtx.bb.closeWith(JUMP(afterCtx.bb) setPos caze.pos)
             }
+            afterCtxReachable |= (default == afterCtx)
             ctx1.bb.emitOnly(
               SWITCH(tags.reverse map (x => List(x)), (default :: targets).reverse) setPos tree.pos
             )
+            afterCtx.bb killUnless afterCtxReachable
             afterCtx
           }
           genLoadMatch
@@ -1342,9 +1355,9 @@ abstract class GenICode extends SubComponent  {
     private def genCond(tree: Tree,
                         ctx: Context,
                         thenCtx: Context,
-                        elseCtx: Context): Unit =
-    {
-      def genComparisonOp(l: Tree, r: Tree, code: Int) {
+                        elseCtx: Context): Boolean =
+    {      
+      def genComparisonOp(l: Tree, r: Tree, code: Int): Boolean = {
         val op: TestOp = code match {
           case scalaPrimitives.LT => LT
           case scalaPrimitives.LE => LE
@@ -1360,27 +1373,33 @@ abstract class GenICode extends SubComponent  {
         lazy val nonNullSide = ifOneIsNull(l, r)
         if (isReferenceEqualityOp(code) && nonNullSide != null) {
           val ctx1 = genLoad(nonNullSide, ctx, ObjectReference)
+          val branchesReachable = !ctx1.bb.ignore
           ctx1.bb.emitOnly(
             CZJUMP(thenCtx.bb, elseCtx.bb, op, ObjectReference)
           )
+          branchesReachable
         }
         else {
           val kind = getMaxType(l.tpe :: r.tpe :: Nil)
           var ctx1 = genLoad(l, ctx, kind)
           ctx1 = genLoad(r, ctx1, kind)
+          val branchesReachable = !ctx1.bb.ignore
 
           ctx1.bb.emitOnly(
             CJUMP(thenCtx.bb, elseCtx.bb, op, kind) setPos r.pos
           )
+          branchesReachable
         }
       }
 
       debuglog("Entering genCond with tree: " + tree)
 
       // the default emission
-      def default() = {
+      def default(): Boolean = {
         val ctx1 = genLoad(tree, ctx, BOOL)
+        val branchesReachable = !ctx1.bb.ignore
         ctx1.bb.closeWith(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL) setPos tree.pos)
+        branchesReachable
       }
 
       tree match {
@@ -1392,11 +1411,12 @@ abstract class GenICode extends SubComponent  {
           lazy val Select(lhs, _) = fun
           lazy val rhs = args.head
 
-          def genZandOrZor(and: Boolean) = {
+          def genZandOrZor(and: Boolean): Boolean = {
             val ctxInterm = ctx.newBlock()
 
-            if (and) genCond(lhs, ctx, ctxInterm, elseCtx)
+            val branchesReachable = if (and) genCond(lhs, ctx, ctxInterm, elseCtx)
             else genCond(lhs, ctx, thenCtx, ctxInterm)
+            ctxInterm.bb killUnless branchesReachable
 
             genCond(rhs, ctxInterm, thenCtx, elseCtx)
           }
@@ -1436,7 +1456,7 @@ abstract class GenICode extends SubComponent  {
      * @param thenCtx target context if the comparison yields true
      * @param elseCtx target context if the comparison yields false
      */
-    def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Unit = {
+    def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Boolean = {
       def getTempLocal = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) getOrElse {
         ctx.makeLocal(l.pos, AnyRefClass.tpe, nme.EQEQ_LOCAL_VAR.toString)
       }
@@ -1476,26 +1496,40 @@ abstract class GenICode extends SubComponent  {
 
         val ctx1 = genLoad(l, ctx, ObjectReference)
         val ctx2 = genLoad(r, ctx1, ObjectReference)
+        val branchesReachable = !ctx2.bb.ignore
         ctx2.bb.emitOnly(
           CALL_METHOD(equalsMethod, if (settings.optimise.value) Dynamic else Static(onInstance = false)),
           CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
         )
+        branchesReachable
       }
       else {
-        if (isNull(l))
+        if (isNull(l)) {
           // null == expr -> expr eq null
-          genLoad(r, ctx, ObjectReference).bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ObjectReference)
-        else if (isNull(r)) {
+          val ctx1 = genLoad(r, ctx, ObjectReference)
+          val branchesReachable = !ctx1.bb.ignore
+          ctx1.bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ObjectReference)
+          branchesReachable
+        } else if (isNull(r)) {
           // expr == null -> expr eq null
-          genLoad(l, ctx, ObjectReference).bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ObjectReference)
+          val ctx1 = genLoad(l, ctx, ObjectReference)
+          val branchesReachable = !ctx1.bb.ignore
+          ctx1.bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ObjectReference)
+          branchesReachable
         } else {
           val eqEqTempLocal = getTempLocal
           var ctx1 = genLoad(l, ctx, ObjectReference)
-          lazy val nonNullCtx = ctx1.newBlock()
+          val branchesReachable = !ctx1.bb.ignore
+          lazy val nonNullCtx = {
+            val block = ctx1.newBlock()
+            block.bb killUnless branchesReachable
+            block
+          }
 
           // l == r -> if (l eq null) r eq null else l.equals(r)
           ctx1 = genLoad(r, ctx1, ObjectReference)
           val nullCtx = ctx1.newBlock()
+          nullCtx.bb killUnless branchesReachable
 
           ctx1.bb.emitOnly(
             STORE_LOCAL(eqEqTempLocal) setPos l.pos,
@@ -1512,6 +1546,7 @@ abstract class GenICode extends SubComponent  {
             CALL_METHOD(Object_equals, Dynamic),
             CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
           )
+          branchesReachable
         }
       }
     }
@@ -1957,6 +1992,7 @@ abstract class GenICode extends SubComponent  {
         val outerCtx = this.dup       // context for generating exception handlers, covered by the catch-all finalizer
         val finalizerCtx = this.dup   // context for generating finalizer handler
         val normalExitCtx = outerCtx.newBlock() // context where flow will go on a "normal" (non-return, non-throw) exit from a try or catch handler
+        var normalExitReachable = false
         var tmp: Local = null
         val kind = toTypeKind(tree.tpe)
         val guardResult = kind != UNIT && mayCleanStack(finalizer)
@@ -1971,6 +2007,7 @@ abstract class GenICode extends SubComponent  {
 
         def emitFinalizer(ctx: Context): Context = if (!finalizer.isEmpty) {
           val ctx1 = finalizerCtx.dup.newBlock()
+          ctx1.bb killIf ctx.bb.ignore
           ctx.bb.closeWith(JUMP(ctx1.bb))
 
           if (guardResult) {
@@ -1986,32 +2023,38 @@ abstract class GenICode extends SubComponent  {
         // Generate the catch-all exception handler that deals with uncaught exceptions coming
         // from the try or exception handlers. It catches the exception, runs the finally code, then rethrows
         // the exception
-        if (finalizer != EmptyTree) {
-          val exh = outerCtx.newExceptionHandler(NoSymbol, finalizer.pos) // finalizer covers exception handlers
-          this.addActiveHandler(exh)  // .. and body aswell
-          val exhStartCtx = finalizerCtx.enterExceptionHandler(exh)
-          val exception = exhStartCtx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
-          loadException(exhStartCtx, exh, finalizer.pos)
-          exhStartCtx.bb.emit(STORE_LOCAL(exception))
-          val exhEndCtx = genLoad(finalizer, exhStartCtx, UNIT)
-          exhEndCtx.bb.emit(LOAD_LOCAL(exception))
-          exhEndCtx.bb.closeWith(THROW(ThrowableClass))
-          exhEndCtx.bb.enterIgnoreMode()
-          finalizerCtx.endHandler()
-        }
-
-        // Generate each exception handler
-        for ((sym, kind, handler) <- handlers) {
-          val exh = this.newExceptionHandler(sym, tree.pos)
-          val exhStartCtx = outerCtx.enterExceptionHandler(exh)
-          exhStartCtx.addFinalizer(finalizer, finalizerCtx)
-          loadException(exhStartCtx, exh, tree.pos)
-          val exhEndCtx = handler(exhStartCtx)
-          exhEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
-          outerCtx.endHandler()
+        if (settings.YdisableUnreachablePrevention.value || !outerCtx.bb.ignore) {
+          if (finalizer != EmptyTree) {
+            val exh = outerCtx.newExceptionHandler(NoSymbol, finalizer.pos) // finalizer covers exception handlers
+            this.addActiveHandler(exh)  // .. and body aswell
+            val exhStartCtx = finalizerCtx.enterExceptionHandler(exh)
+            exhStartCtx.bb killIf outerCtx.bb.ignore
+            val exception = exhStartCtx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
+            loadException(exhStartCtx, exh, finalizer.pos)
+            exhStartCtx.bb.emit(STORE_LOCAL(exception))
+            val exhEndCtx = genLoad(finalizer, exhStartCtx, UNIT)
+            exhEndCtx.bb.emit(LOAD_LOCAL(exception))
+            exhEndCtx.bb.closeWith(THROW(ThrowableClass))
+            exhEndCtx.bb.enterIgnoreMode()
+            finalizerCtx.endHandler()
+          }
+  
+          // Generate each exception handler
+          for ((sym, kind, handler) <- handlers) {
+            val exh = this.newExceptionHandler(sym, tree.pos)
+            val exhStartCtx = outerCtx.enterExceptionHandler(exh)
+            exhStartCtx.bb killIf outerCtx.bb.ignore
+            exhStartCtx.addFinalizer(finalizer, finalizerCtx)
+            loadException(exhStartCtx, exh, tree.pos)
+            val exhEndCtx = handler(exhStartCtx)
+            normalExitReachable |= !exhEndCtx.bb.ignore
+            exhEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
+            outerCtx.endHandler()
+          }
         }
 
         val bodyCtx = this.newBlock()
+        bodyCtx.bb killIf outerCtx.bb.ignore
         if (finalizer != EmptyTree)
           bodyCtx.addFinalizer(finalizer, finalizerCtx)
 
@@ -2019,6 +2062,8 @@ abstract class GenICode extends SubComponent  {
 
         outerCtx.bb.closeWith(JUMP(bodyCtx.bb))
 
+        normalExitReachable |= !bodyEndCtx.bb.ignore
+        normalExitCtx.bb killUnless normalExitReachable
         bodyEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
 
         emitFinalizer(normalExitCtx)
