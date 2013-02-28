@@ -28,7 +28,7 @@ import subscript.vm._
 object GraphicalDebugger  extends GraphicalDebuggerApp
 object GraphicalDebugger2 extends GraphicalDebuggerApp {
   // extra singleton to allow for GraphicalDebugging a GraphicalDebugger
-  override def live = _execute(_live, false) 
+  override def doesThisAllowToBeDebugged = false
 }
 //    
 
@@ -80,6 +80,60 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   
   val exitButton = new Button("Exit"  ) {enabled = false; defaultCapable = false; focusable=false }
   val stepButton = new Button("Step"  ) {enabled = false}
+  
+  //"Activation  "
+  //"Deactivation"
+  //"Continuation"
+  //"AAStarted   "
+  //"AAEnded     "
+  //"Success     "
+  //"Break       "
+  //"Exclude     "
+  
+  
+  val checkBox_step_Activation   = new CheckBox {text = "Act" ; selected = true}
+  val checkBox_step_Deactivation = new CheckBox {text = "Dea" ; selected = true}
+  val checkBox_step_Continuation = new CheckBox {text = "Cnt" ; selected = true}
+  val checkBox_step_AAStarted    = new CheckBox {text = "AAS" ; selected = true}
+  val checkBox_step_AAEnded      = new CheckBox {text = "AAE" ; selected = true}
+  val checkBox_step_Success      = new CheckBox {text = "Scs" ; selected = true}
+  val checkBox_step_Break        = new CheckBox {text = "Brk" ; selected = true}
+  val checkBox_step_Exclude      = new CheckBox {text = "Exc" ; selected = true}
+  val checkBox_step_Wait         = new CheckBox {text = "Idle"; selected = true}
+
+  val checkBox_log_Activation   = new CheckBox {text = "Act" ; selected = true}
+  val checkBox_log_Deactivation = new CheckBox {text = "Dea" ; selected = true}
+  val checkBox_log_Continuation = new CheckBox {text = "Cnt" ; selected = true}
+  val checkBox_log_AAStarted    = new CheckBox {text = "AAS" ; selected = true}
+  val checkBox_log_AAEnded      = new CheckBox {text = "AAE" ; selected = true}
+  val checkBox_log_Success      = new CheckBox {text = "Scs" ; selected = true}
+  val checkBox_log_Break        = new CheckBox {text = "Brk" ; selected = true}
+  val checkBox_log_Exclude      = new CheckBox {text = "Exc" ; selected = true}
+  val checkBox_log_Wait         = new CheckBox {text = "Idle"; selected = true}
+
+  val buttonsPanel = new BoxPanel(Orientation.Vertical) {
+    contents += new Label("Step:")
+    contents += checkBox_step_Activation  
+    contents += checkBox_step_Deactivation
+    contents += checkBox_step_Continuation
+    contents += checkBox_step_AAStarted   
+    contents += checkBox_step_AAEnded     
+    contents += checkBox_step_Success     
+    contents += checkBox_step_Break       
+    contents += checkBox_step_Exclude     
+    contents += checkBox_step_Wait
+    contents += new Label("  ---  ")
+    contents += new Label("Log:")
+    contents += checkBox_log_Activation  
+    contents += checkBox_log_Deactivation
+    contents += checkBox_log_Continuation
+    contents += checkBox_log_AAStarted   
+    contents += checkBox_log_AAEnded     
+    contents += checkBox_log_Success     
+    contents += checkBox_log_Break       
+    contents += checkBox_log_Exclude     
+    contents += checkBox_log_Wait
+  }
   val callGraphPanel = new Panel {
     background = AWTColor.white
     preferredSize  = new Dimension(2000,2000)
@@ -446,9 +500,10 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   val doTemplateTreeTopLeft = true
   
   if (doTemplateTreeTopLeft) {  
-    val splitPaneMsgs   = new SplitPane(scala.swing.Orientation.Horizontal, borderPanelMsgs,       msgQueueListViewScrollPane) {dividerLocation  = 250}
-    val splitPaneLeft   = new SplitPane(scala.swing.Orientation.Horizontal, new ScrollPane(templateTreesPanel), splitPaneMsgs) {dividerLocation  = 250}
-    splitPaneMain       = new SplitPane(scala.swing.Orientation.Vertical,   splitPaneLeft,     new ScrollPane(callGraphPanel)) {dividerLocation  = 400}
+    val splitPaneMsgs      = new SplitPane(scala.swing.Orientation.Horizontal, borderPanelMsgs,       msgQueueListViewScrollPane) {dividerLocation  = 250}
+    val splitPaneTreesMsgs = new SplitPane(scala.swing.Orientation.Horizontal, new ScrollPane(templateTreesPanel), splitPaneMsgs) {dividerLocation  = 250}
+    val splitPaneLeft      = new SplitPane(scala.swing.Orientation.Vertical  , buttonsPanel                 , splitPaneTreesMsgs) {dividerLocation  =  60}
+    splitPaneMain          = new SplitPane(scala.swing.Orientation.Vertical  ,   splitPaneLeft,   new ScrollPane(callGraphPanel)) {dividerLocation  = 400}
   }
   else {  
     val splitPaneGraphs = new SplitPane(scala.swing.Orientation.Horizontal, new ScrollPane(templateTreesPanel), 
@@ -491,11 +546,18 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
       if (sleeptime<100) sleeptime *=2
     }
   }
+  
   def shouldStep: Boolean =
     currentMessage match {
-      case Activation(_) | Deactivation(_,_,_) | AAStarted(_,_) | AAEnded(_,_) | Success(_,_)  | Break(_,_,_)  | Exclude(_,_) => true
-      case c:Continuation if (!interestingContinuationInternals(c).isEmpty) => true
-      case _ => false
+      case Activation(_)       => checkBox_step_Activation  .selected
+      case Deactivation(_,_,_) => checkBox_step_Deactivation.selected
+      case AAStarted(_,_)      => checkBox_step_AAStarted   .selected
+      case AAEnded(_,_)        => checkBox_step_AAEnded     .selected
+      case Success(_,_)        => checkBox_step_Success     .selected
+      case Break(_,_,_)        => checkBox_step_Break       .selected
+      case Exclude(_,_)        => checkBox_step_Exclude     .selected
+      case c:Continuation      => checkBox_step_Continuation.selected && !interestingContinuationInternals(c).isEmpty
+      case _                   => false    
     }
   
   def MAX_STEP_DELAY_SEC = 5
@@ -513,11 +575,24 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     }
     catch {case e: InterruptedException => }
   }
-  def logMessage_GUIThread(m: String, msg: CallGraphMessage[_]) {
-      var runnable = new Runnable {
-        def run(): Unit = {logMessage(m, msg)}
+  def logMessage_GUIThread(m: String, msg: CallGraphMessage[_ <: CallGraphNodeTrait[_ <: TemplateNode]]) {
+    
+      if (msg match {
+        case Activation(_)       => checkBox_log_Activation  .selected
+        case Deactivation(_,_,_) => checkBox_log_Deactivation.selected
+        case AAStarted(_,_)      => checkBox_log_AAStarted   .selected
+        case AAEnded(_,_)        => checkBox_log_AAEnded     .selected
+        case Success(_,_)        => checkBox_log_Success     .selected
+        case Break(_,_,_)        => checkBox_log_Break       .selected
+        case Exclude(_,_)        => checkBox_log_Exclude     .selected
+        case c:Continuation      => checkBox_log_Continuation.selected
+        case _                   => false
+      }) {    
+        var runnable = new Runnable {
+          def run(): Unit = {logMessage(m, msg)}
+        }
+        javax.swing.SwingUtilities.invokeLater(runnable)
       }
-      javax.swing.SwingUtilities.invokeLater(runnable)
   }
   def logMessage(m: String, msg: CallGraphMessage[_]) {
     if (msgLogListModel.size > maxLogListMsgs)
@@ -535,7 +610,8 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     callGraphPanel    .repaint()
     templateTreesPanel.repaint()
   }
-  override def live = _execute(_live, true) 
+  def doesThisAllowToBeDebugged = true
+  override def live = _execute(_live, doesThisAllowToBeDebugged) 
   
   def script..
      live       = {*awaitMessageBeingHandled(true)*}
@@ -578,7 +654,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   def messageDequeued    (m: CallGraphMessage[_ <: CallGraphNodeTrait[_ <: TemplateNode]]                 ) = logMessage_GUIThread("--", m)
   def messageContinuation(m: CallGraphMessage[_ <: CallGraphNodeTrait[_ <: TemplateNode]], c: Continuation) = logMessage_GUIThread("**", c)
   def messageAwaiting: Unit = {
-    currentMessageTF.text = "Waiting..."
-    callGraphPanel.repaint()
+    if (checkBox_log_Wait .selected) currentMessageTF.text = "Waiting..."
+    if (checkBox_step_Wait.selected) callGraphPanel.repaint()
 }
 }
