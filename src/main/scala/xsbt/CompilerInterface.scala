@@ -82,6 +82,9 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 
 	def noErrors(dreporter: DelegatingReporter) = !dreporter.hasErrors && command.ok
 
+	def commandArguments(sources: Array[File]): Array[String] =
+		(command.settings.recreateArgs ++ sources.map(_.getAbsolutePath)).toArray[String]
+
 	def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, progress: CompileProgress): Unit = synchronized
 	{
 		debug(log, "Running cached compiler " + hashCode.toHexString + ", interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)

@@ -11,18 +11,18 @@ import scala.tools.nsc.util.ClassPath
 
 class ConsoleInterface
 {
+	def commandArguments(args: Array[String], bootClasspathString: String, classpathString: String, log: Logger): Array[String] =
+		MakeSettings.sync(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
+
 	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, cleanupCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger)
 	{
-		val options = args.toList
-		lazy val interpreterSettings = MakeSettings.sync(options, log)
-		val compilerSettings = MakeSettings.sync(options, log)
+		lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
+		val compilerSettings = MakeSettings.sync(args, bootClasspathString, classpathString, log)
 		
 		if(!bootClasspathString.isEmpty)
 			compilerSettings.bootclasspath.value = bootClasspathString
 		compilerSettings.classpath.value = classpathString
 		log.info(Message("Starting scala interpreter..."))
-		log.debug(Message("  Boot classpath: " + compilerSettings.bootclasspath.value))
-		log.debug(Message("  Classpath: " + compilerSettings.classpath.value))
 		log.info(Message(""))
 		val loop = new InterpreterLoop {
 		
@@ -66,6 +66,15 @@ object MakeSettings
 			command.settings
 		else
 			throw new InterfaceCompileFailed(Array(), Array(), command.usageMsg)
+	}
+
+	def sync(args: Array[String], bootClasspathString: String, classpathString: String, log: Logger): Settings =
+	{
+		val compilerSettings = sync(args.toList, log)
+		if(!bootClasspathString.isEmpty)
+			compilerSettings.bootclasspath.value = bootClasspathString
+		compilerSettings.classpath.value = classpathString
+		compilerSettings
 	}
 
 	def sync(options: List[String], log: Logger) =
