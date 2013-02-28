@@ -351,7 +351,7 @@ abstract class ICodeCheckers {
       def typeError(k1: TypeKind, k2: TypeKind) {
         icodeError("\n  expected: " + k1 + "\n     found: " + k2)
       }
-      def isSubtype(k1: TypeKind, k2: TypeKind) = (k1 <:< k2) || {
+      def isSubtype(k1: TypeKind, k2: TypeKind) = (k1 isAssignabledTo k2) || {
         import platform.isMaybeBoxed
 
         (k1, k2) match {
