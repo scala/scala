@@ -930,7 +930,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       locals.get(idx) match {
         case Some(ls) =>
-          val l = ls find { loc => loc._2 <:< kind }
+          val l = ls find { loc => loc._2 isAssignabledTo kind }
           l match {
             case Some((loc, _)) => loc
             case None =>
