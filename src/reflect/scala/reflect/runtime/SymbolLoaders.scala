@@ -15,13 +15,37 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    *  is found, a package is created instead.
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
+//    def makePackage() {
+//      println("wrong guess; making package "+clazz)
+//      val ptpe = newPackageType(module.moduleClass)
+//      for (sym <- List(clazz, module, module.moduleClass)) {
+//        sym setFlag Flags.PACKAGE
+//        sym setInfo ptpe
+//      }
+//    }
+
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
-      slowButSafeAtPhaseNotLaterThan(picklerPhase) {
+//      try {
+      atPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
         loadingMirror.unpickleClass(clazz, module, javaClass)
+//      } catch {
+//        case ex: ClassNotFoundException => makePackage()
+//        case ex: NoClassDefFoundError => makePackage()
+          // Note: We catch NoClassDefFoundError because there are situations
+          // where a package and a class have the same name except for capitalization.
+          // It seems in this case the class is loaded even if capitalization differs
+          // but then a NoClassDefFound error is issued with a ("wrong name: ...")
+          // reason. (I guess this is a concession to Windows).
+          // The present behavior is a bit too forgiving, in that it masks
+          // all class load errors, not just wrong name errors. We should try
+          // to be more discriminating. To get on the right track simply delete
+          // the clause above and load a collection class such as collection.Iterable.
+          // You'll see an error that class `parallel` has the wrong name.
+//      }
       }
     }
     override def load(sym: Symbol) = complete(sym)
@@ -73,51 +97,18 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     0 < dp && dp < (name.length - 1)
   }
 
-  // Since runtime reflection doesn't have a luxury of enumerating all classes
-  // on the classpath, it has to materialize symbols for top-level definitions
-  // (packages, classes, objects) on demand.
-  //
-  // Someone asks us for a class named `foo.Bar`? Easy. Let's speculatively create
-  // a package named `foo` and then look up `newTypeName("bar")` in its decls.
-  // This lookup, implemented in `SymbolLoaders.PackageScope` tests the waters by
-  // trying to to `Class.forName("foo.Bar")` and then creates a ClassSymbol upon
-  // success (the whole story is a bit longer, but the rest is irrelevant here).
-  //
-  // That's all neat, but these non-deterministic mutations of the global symbol
-  // table give a lot of trouble in multi-threaded setting. One of the popular
-  // reflection crashes happens when multiple threads happen to trigger symbol
-  // materialization multiple times for the same symbol, making subsequent
-  // reflective operations stumble upon outrageous stuff like overloaded packages.
-  //
-  // Short of significantly changing SymbolLoaders I see no other way than just
-  // to slap a global lock on materialization in runtime reflection.
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
       with SynchronizedScope {
     assert(pkgClass.isType)
-
-    // materializing multiple copies of the same symbol in PackageScope is a very popular bug
-    // this override does its best to guard against it
-    override def enter[T <: Symbol](sym: T): T = {
-      val existing = super.lookupEntry(sym.name)
-      assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
-      super.enter(sym)
-    }
-
-    // package scopes need to synchronize on the GIL
-    // because lookupEntry might cause changes to the global symbol table
-    override def syncLockSynchronized[T](body: => T): T = gilSynchronized(body)
-    private val negatives = new mutable.HashSet[Name]
-    override def lookupEntry(name: Name): ScopeEntry = syncLockSynchronized {
-      def lookupExisting: Option[ScopeEntry] = {
-        val e = super.lookupEntry(name)
-        if (e != null)
-          Some(e)
-        else if (isInvalidClassName(name) || (negatives contains name))
-          Some(null) // TODO: omg
-        else
-          None
-      }
-      def materialize: ScopeEntry = {
+    // disable fingerprinting as we do not know entries beforehand
+    private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
+    override def lookupEntry(name: Name): ScopeEntry = {
+      val e = super.lookupEntry(name)
+      if (e != null)
+        e
+      else if (isInvalidClassName(name) || (negatives contains name))
+        null
+      else {
         val path =
           if (pkgClass.isEmptyPackageClass) name.toString
           else pkgClass.fullName + "." + name
@@ -146,7 +137,6 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
             null
         }
       }
-      lookupExisting getOrElse materialize
     }
   }
 

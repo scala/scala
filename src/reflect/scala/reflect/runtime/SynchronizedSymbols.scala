@@ -5,18 +5,14 @@ import scala.reflect.io.AbstractFile
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
-  // we can keep this lock fine-grained, because nextId is just a simple increment, which makes deadlocks impossible
-  private lazy val nextIdLock = new Object
-  override protected def nextId() = nextIdLock.synchronized { super.nextId() }
+  override protected def nextId() = synchronized { super.nextId() }
 
-  // we can keep this lock fine-grained, because freshExistentialName is just a simple increment, which makes deadlocks impossible
-  private lazy val freshExistentialNameLock = new Object
   override protected def freshExistentialName(suffix: String) =
-    freshExistentialNameLock.synchronized { super.freshExistentialName(suffix) }
+    synchronized { super.freshExistentialName(suffix) }
 
   // Set the fields which point companions at one another.  Returns the module.
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
-    gilSynchronized { super.connectModuleToClass(m, moduleClass) }
+    synchronized { super.connectModuleToClass(m, moduleClass) }
 
   override def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
     new FreeTermSymbol(name, value, origin) with SynchronizedTermSymbol initFlags flags
@@ -28,40 +24,35 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedSymbol extends Symbol {
 
-    def gilSynchronizedIfNotInited[T](body: => T): T = {
-      if (isFullyInitialized) body
-      else gilSynchronized { body }
-    }
+    override def rawflags = synchronized { super.rawflags }
+    override def rawflags_=(x: Long) = synchronized { super.rawflags_=(x) }
 
-    override def validTo = gilSynchronizedIfNotInited { super.validTo }
-    override def info = gilSynchronizedIfNotInited { super.info }
-    override def rawInfo: Type = gilSynchronizedIfNotInited { super.rawInfo }
+    override def rawowner = synchronized { super.rawowner }
+    override def owner_=(owner: Symbol) = synchronized { super.owner_=(owner) }
 
-    override def typeParams: List[Symbol] = gilSynchronizedIfNotInited {
-      if (isCompilerUniverse) super.typeParams
-      else {
-        if (isMonomorphicType) Nil
-        else {
-          // analogously to the "info" getter, here we allow for two completions:
-          //   one: sourceCompleter to LazyType, two: LazyType to completed type
-          if (validTo == NoPeriod)
-            rawInfo load this
-          if (validTo == NoPeriod)
-            rawInfo load this
+    override def validTo = synchronized { super.validTo }
+    override def validTo_=(x: Period) = synchronized { super.validTo_=(x) }
 
-          rawInfo.typeParams
-        }
-      }
-    }
-    override def unsafeTypeParams: List[Symbol] = gilSynchronizedIfNotInited {
-      if (isCompilerUniverse) super.unsafeTypeParams
-      else {
-        if (isMonomorphicType) Nil
-        else rawInfo.typeParams
-      }
-    }
+    override def pos = synchronized { super.pos }
+    override def setPos(pos: Position): this.type = { synchronized { super.setPos(pos) }; this }
 
-    override def isStable: Boolean = gilSynchronized { super.isStable }
+    override def privateWithin = synchronized { super.privateWithin }
+    override def privateWithin_=(sym: Symbol) = synchronized { super.privateWithin_=(sym) }
+
+    override def info = synchronized { super.info }
+    override def info_=(info: Type) = synchronized { super.info_=(info) }
+    override def updateInfo(info: Type): Symbol = synchronized { super.updateInfo(info) }
+    override def rawInfo: Type = synchronized { super.rawInfo }
+
+    override def typeParams: List[Symbol] = synchronized { super.typeParams }
+
+    override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
+
+    override def infosString: String = synchronized { super.infosString }
+
+    override def annotations: List[AnnotationInfo] = synchronized { super.annotations }
+    override def setAnnotations(annots: List[AnnotationInfo]): this.type = { synchronized { super.setAnnotations(annots) }; this }
+
 
 // ------ creators -------------------------------------------------------------------
 
@@ -101,38 +92,49 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
       new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
 
-    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
-      createModuleSymbol(name, pos, newFlags)
+    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol = createModuleSymbol(name, pos, newFlags)
 
-    override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long) =
-      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
-
-    override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long) =
-      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+    // TODO
+    // override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long)
+    // override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long)
   }
 
 // ------- subclasses ---------------------------------------------------------------------
 
-  trait SynchronizedTermSymbol extends SynchronizedSymbol
+  trait SynchronizedTermSymbol extends TermSymbol with SynchronizedSymbol {
+    override def name_=(x: Name) = synchronized { super.name_=(x) }
+    override def rawname = synchronized { super.rawname }
+    override def referenced: Symbol = synchronized { super.referenced }
+    override def referenced_=(x: Symbol) = synchronized { super.referenced_=(x) }
+  }
 
   trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
-    // we can keep this lock fine-grained, because it's just a cache over asSeenFrom, which makes deadlocks impossible
-    // unfortunately we cannot elide this lock, because the cache depends on `pre`
-    private lazy val typeAsMemberOfLock = new Object
-    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotInited { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
+    override def typeAsMemberOf(pre: Type): Type = synchronized { super.typeAsMemberOf(pre) }
+    override def paramss: List[List[Symbol]] = synchronized { super.paramss }
+    override def returnType: Type = synchronized { super.returnType }
   }
-
-  trait SynchronizedModuleSymbol extends ModuleSymbol with SynchronizedTermSymbol
 
   trait SynchronizedTypeSymbol extends TypeSymbol with SynchronizedSymbol {
-    // unlike with typeConstructor, a lock is necessary here, because tpe calculation relies on
-    // temporarily assigning NoType to tpeCache to detect cyclic reference errors
-    private lazy val tpeLock = new Object
-    override def tpe: Type = gilSynchronizedIfNotInited { tpeLock.synchronized { super.tpe } }
+    override def name_=(x: Name) = synchronized { super.name_=(x) }
+    override def rawname = synchronized { super.rawname }
+    override def typeConstructor: Type = synchronized { super.typeConstructor }
+    override def tpe: Type = synchronized { super.tpe }
   }
 
-  trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol
+  trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol {
+    override def associatedFile = synchronized { super.associatedFile }
+    override def associatedFile_=(f: AbstractFile) = synchronized { super.associatedFile_=(f) }
+    override def thisSym: Symbol = synchronized { super.thisSym }
+    override def thisType: Type = synchronized { super.thisType }
+    override def typeOfThis: Type = synchronized { super.typeOfThis }
+    override def typeOfThis_=(tp: Type) = synchronized { super.typeOfThis_=(tp) }
+    override def children = synchronized { super.children }
+    override def addChild(sym: Symbol) = synchronized { super.addChild(sym) }
+  }
 
-  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol
+  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
+    override def sourceModule = synchronized { super.sourceModule }
+    override def implicitMembers: Scope = synchronized { super.implicitMembers }
+  }
 }
 

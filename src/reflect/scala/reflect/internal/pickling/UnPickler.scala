@@ -853,7 +853,7 @@ abstract class UnPickler {
       private val p = phase
       override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
-        slowButSafeAtPhase(p)(sym setInfo tp)
+        atPhase(p) (sym setInfo tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
       }
@@ -871,7 +871,7 @@ abstract class UnPickler {
         super.complete(sym)
         var alias = at(j, readSymbol)
         if (alias.isOverloaded)
-          alias = slowButSafeAtPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
+          alias = atPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
 
         sym.asInstanceOf[TermSymbol].setAlias(alias)
       }

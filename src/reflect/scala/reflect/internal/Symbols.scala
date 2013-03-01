@@ -91,14 +91,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       children
     }
 
-    def selfType = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
-      typeOfThis
-    }
-
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
+    def selfType: Type                    = typeOfThis
     def typeSignature: Type               = { fullyInitializeSymbol(this); info }
     def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
 
@@ -111,8 +107,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def getter: Symbol = getter(owner)
     def setter: Symbol = setter(owner)
   }
-
-  case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
 
   /** The class for all symbols */
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
@@ -898,13 +892,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
-
-    /** Some completers call sym.setInfo when still in-flight and then proceed with initialization (e.g. see LazyPackageType)
-     *  setInfo sets _validTo to current period, which means that after a call to setInfo isInitialized will start returning true.
-     *  Unfortunately, this doesn't mean that info becomes ready to be used, because subsequent initialization might change the info.
-     *  Therefore we need this method to distinguish between initialized and really initialized symbol states.
-     */
-    final def isFullyInitialized: Boolean = _validTo != NoPeriod && (flags & LOCKED) == 0
 
     /** Can this symbol be loaded by a reflective mirror?
      *
@@ -2261,6 +2248,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
 
+    private case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
     private def symbolKind: SymbolKind = {
       var kind =
         if (isTermMacro) ("macro method", "macro method", "MAC")
@@ -3019,8 +3007,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def thisType: Type = {
       val period = thisTypePeriod
       if (period != currentPeriod) {
-        if (!isValid(period)) thisTypeCache = ThisType(this)
         thisTypePeriod = currentPeriod
+        if (!isValid(period)) thisTypeCache = ThisType(this)
       }
       thisTypeCache
     }
@@ -3096,9 +3084,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def typeOfThis = {
       val period = typeOfThisPeriod
       if (period != currentPeriod) {
+        typeOfThisPeriod = currentPeriod
         if (!isValid(period))
           typeOfThisCache = singleType(owner.thisType, sourceModule)
-        typeOfThisPeriod = currentPeriod
       }
       typeOfThisCache
     }
@@ -3109,9 +3097,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // Skip a package object class, because the members are also in
         // the package and we wish to avoid spurious ambiguities as in pos/t3999.
         if (!isPackageObjectClass) {
-          implicitMembersCacheValue = tp.implicitMembers
           implicitMembersCacheKey1 = tp
           implicitMembersCacheKey2 = tp.decls.elems
+          implicitMembersCacheValue = tp.implicitMembers
         }
       }
       implicitMembersCacheValue
@@ -3219,11 +3207,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def name = nme.NO_NAME
     override def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
-    // Syncnote: no need to synchronize this, because NoSymbol's initialization is triggered by JavaUniverse.init
-    // which is called in universe's constructor - something that's inherently single-threaded
-    setInfo(NoType)
-    privateWithin = this
-
+    synchronized {
+      setInfo(NoType)
+      privateWithin = this
+    }
     override def info_=(info: Type) = {
       infos = TypeHistory(1, NoType, null)
       unlock()
