@@ -1003,7 +1003,7 @@ trait Implicits {
                 args foreach (getParts(_))
               }
             } else if (sym.isAliasType) {
-              getParts(tp.dealias)
+              getParts(tp.normalize) // SI-7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
               getParts(tp.bounds.hi)
             }

@@ -929,6 +929,7 @@ trait Namers extends MethodSynthesis {
       // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
       val module = clazz.sourceModule
       for (cda <- module.attachments.get[ConstructorDefaultsAttachment]) {
+        debuglog(s"Storing the template namer in the ConstructorDefaultsAttachment of ${module.debugLocationString}.")
         cda.companionModuleClassNamer = templateNamer
       }
       val classTp = ClassInfoType(parents, decls, clazz)
@@ -1250,8 +1251,11 @@ trait Namers extends MethodSynthesis {
                                   // module's templateNamer to classAndNamerOfModule
                 module.attachments.get[ConstructorDefaultsAttachment] match {
                   // by martin: the null case can happen in IDE; this is really an ugly hack on top of an ugly hack but it seems to work
-                  // later by lukas: disabled when fixing SI-5975, i think it cannot happen anymore
-                  case Some(cda) /*if cma.companionModuleClassNamer == null*/ =>
+                  case Some(cda) =>
+                    if (cda.companionModuleClassNamer == null) {
+                      debugwarn(s"SI-6576 The companion module namer for $meth was unexpectedly null")
+                      return
+                    }
                     val p = (cda.classWithDefault, cda.companionModuleClassNamer)
                     moduleNamer = Some(p)
                     p
