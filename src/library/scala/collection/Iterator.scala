@@ -1111,7 +1111,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
-    require(start >= 0 && start < xs.length, s"start $start out of range ${xs.length}")
+    require(start >= 0 && (start < xs.length || xs.length == 0), s"start $start out of range ${xs.length}")
     var i = start
     val end = start + math.min(len, xs.length - start)
     while (i < end && hasNext) {
