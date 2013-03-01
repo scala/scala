@@ -12,9 +12,8 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   // No sharing of map objects:
   override protected def commonOwnerMap = new CommonOwnerMap
 
-  // we can keep this lock fine-grained, because super.unique just updates the cache
-  // and, in particular, doesn't call any reflection APIs which makes deadlocks impossible
-  private lazy val uniqueLock = new Object
+  private object uniqueLock
+
   private val uniques = WeakHashMap[Type, WeakReference[Type]]()
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized {
     // we need to have weak uniques for runtime reflection
@@ -38,35 +37,46 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   }
 
   class SynchronizedUndoLog extends UndoLog {
-    final override def lock(): Unit = gil.lock()
-    final override def unlock(): Unit = gil.unlock()
+    private val actualLock = new java.util.concurrent.locks.ReentrantLock
+
+    final override def lock(): Unit = actualLock.lock()
+    final override def unlock(): Unit = actualLock.unlock()
   }
 
   override protected def newUndoLog = new SynchronizedUndoLog
 
   override protected def baseTypeOfNonClassTypeRef(tpe: NonClassTypeRef, clazz: Symbol) =
-    gilSynchronized { super.baseTypeOfNonClassTypeRef(tpe, clazz) }
+    synchronized { super.baseTypeOfNonClassTypeRef(tpe, clazz) }
+
+  private object subsametypeLock
 
   override def isSameType(tp1: Type, tp2: Type): Boolean =
-    gilSynchronized { super.isSameType(tp1, tp2) }
+    subsametypeLock.synchronized { super.isSameType(tp1, tp2) }
 
   override def isDifferentType(tp1: Type, tp2: Type): Boolean =
-    gilSynchronized { super.isDifferentType(tp1, tp2) }
+    subsametypeLock.synchronized { super.isDifferentType(tp1, tp2) }
 
   override def isSubType(tp1: Type, tp2: Type, depth: Int): Boolean =
-    gilSynchronized { super.isSubType(tp1, tp2, depth) }
+    subsametypeLock.synchronized { super.isSubType(tp1, tp2, depth) }
+
+  private object lubglbLock
 
   override def glb(ts: List[Type]): Type =
-    gilSynchronized { super.glb(ts) }
+    lubglbLock.synchronized { super.glb(ts) }
 
   override def lub(ts: List[Type]): Type =
-    gilSynchronized { super.lub(ts) }
+    lubglbLock.synchronized { super.lub(ts) }
 
-  override protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean =
-    gilSynchronized { super.explain(op, p, tp1, arg2) }
+  private object indentLock
+
+  override protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
+    indentLock.synchronized { super.explain(op, p, tp1, arg2) }
+  }
+
+  private object toStringLock
 
   override protected def typeToString(tpe: Type): String =
-    gilSynchronized(super.typeToString(tpe))
+    toStringLock.synchronized(super.typeToString(tpe))
 
   /* The idea of caches is as follows.
    * When in reflexive mode, a cache is either null, or one sentinal
@@ -79,18 +89,18 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
    */
 
   override protected def defineUnderlyingOfSingleType(tpe: SingleType) =
-    gilSynchronized { super.defineUnderlyingOfSingleType(tpe) }
+    tpe.synchronized { super.defineUnderlyingOfSingleType(tpe) }
 
   override protected def defineBaseTypeSeqOfCompoundType(tpe: CompoundType) =
-    gilSynchronized { super.defineBaseTypeSeqOfCompoundType(tpe) }
+    tpe.synchronized { super.defineBaseTypeSeqOfCompoundType(tpe) }
 
   override protected def defineBaseClassesOfCompoundType(tpe: CompoundType) =
-    gilSynchronized { super.defineBaseClassesOfCompoundType(tpe) }
+    tpe.synchronized { super.defineBaseClassesOfCompoundType(tpe) }
 
   override protected def defineParentsOfTypeRef(tpe: TypeRef) =
-    gilSynchronized { super.defineParentsOfTypeRef(tpe) }
+    tpe.synchronized { super.defineParentsOfTypeRef(tpe) }
 
   override protected def defineBaseTypeSeqOfTypeRef(tpe: TypeRef) =
-    gilSynchronized { super.defineBaseTypeSeqOfTypeRef(tpe) }
+    tpe.synchronized { super.defineBaseTypeSeqOfTypeRef(tpe) }
 
 }
