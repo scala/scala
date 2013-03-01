@@ -2066,6 +2066,10 @@ trait Types extends api.Types { self: SymbolTable =>
     def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
+  /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected
+   * with synchronized, because they are accessed only from isVolatile, which is called only from
+   * Typer.
+   */
   private var volatileRecursions: Int = 0
   private val pendingVolatiles = new mutable.HashSet[Symbol]
 
@@ -3926,8 +3930,8 @@ trait Types extends api.Types { self: SymbolTable =>
   /** @PP: Unable to see why these apparently constant types should need vals
    *  in every TypeConstraint, I lifted them out.
    */
-  lazy val numericLoBound = IntClass.tpe
-  lazy val numericHiBound = intersectionType(List(ByteClass.tpe, CharClass.tpe), ScalaPackageClass)
+  private lazy val numericLoBound = IntClass.tpe
+  private lazy val numericHiBound = intersectionType(List(ByteClass.tpe, CharClass.tpe), ScalaPackageClass)
 
   /** A class expressing upper and lower bounds constraints of type variables,
    * as well as their instantiations.
