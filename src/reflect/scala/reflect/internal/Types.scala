@@ -4438,22 +4438,17 @@ trait Types extends api.Types { self: SymbolTable =>
     private def correspondingTypeArgument(lhs: Type, rhs: Type): Type = {
       val TypeRef(_, lhsSym, lhsArgs) = lhs
       val TypeRef(_, rhsSym, rhsArgs) = rhs
-      val clazz = lhsSym.safeOwner
-      require(clazz == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
+      require(lhsSym.safeOwner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
 
-      def fail: Type = (
-        // don't be too zealous with the exceptions, see #2641
-        if (clazz.tpe_*.parents exists typeIsErroneous) ErrorType
-        else abort(s"something is wrong: cannot make sense of type application\n  $lhs\n  $rhs")
-      )
-      def loop(params: List[Symbol], args: List[Type]): Type = (
-        // didn't find lhsSym amongst the params
-        if (params.isEmpty || args.isEmpty) fail
-        else if (params.head eq lhsSym) args.head
-        else loop(params.tail, args.tail)
-      )
-      // @M! don't just replace the whole thing, might be followed by type application
-      appliedType(loop(rhsSym.typeParams, rhsArgs), lhsArgs mapConserve this)
+      // Find the type parameter position; we'll use the corresponding argument
+      val argIndex = rhsSym.typeParams indexOf lhsSym
+
+      if (argIndex >= 0 && argIndex < rhsArgs.length)             // @M! don't just replace the whole thing, might be followed by type application
+        appliedType(rhsArgs(argIndex), lhsArgs mapConserve this)
+      else if (rhsSym.tpe_*.parents exists typeIsErroneous)        // don't be too zealous with the exceptions, see #2641
+        ErrorType
+      else
+        abort(s"something is wrong: cannot make sense of type application\n  $lhs\n  $rhs")
     }
 
     // 0) @pre: `classParam` is a class type parameter
