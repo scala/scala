@@ -16,7 +16,7 @@ MD_SOURCES := 01-title.md \
 
 BUILD_DIR := build
 
-.PHONY: dirs all html pdf epub md clean
+.PHONY: dirs all html pdf tex epub md clean
 
 
 all: html pdf epub md
@@ -30,6 +30,9 @@ html: $(BUILD_DIR)/ScalaReference.html
 
 
 pdf: $(BUILD_DIR)/ScalaReference.pdf
+
+
+tex: $(BUILD_DIR)/ScalaReference.tex
 
 
 epub: $(BUILD_DIR)/ScalaReference.epub
@@ -64,6 +67,20 @@ $(BUILD_DIR)/ScalaReference.pdf: Scala.bib $(BUILD_DIR)/ScalaReference.md
       --latex-engine=xelatex \
       --template=resources/scala-ref-template.latex \
       -o build/ScalaReference.pdf \
+      build/ScalaReference.md
+
+$(BUILD_DIR)/ScalaReference.tex: Scala.bib $(BUILD_DIR)/ScalaReference.md
+	@echo "building LaTeX source to $(BUILD_DIR)/ScalaReference.tex"
+	@pandoc -f markdown \
+      --standalone \
+      --toc \
+      --chapters \
+      --number-sections \
+      --bibliography=Scala.bib \
+      --self-contained \
+      --latex-engine=xelatex \
+      --template=resources/scala-ref-template.latex \
+      -o build/ScalaReference.tex \
       build/ScalaReference.md
 
 
