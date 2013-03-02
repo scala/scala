@@ -28,7 +28,7 @@ a img {border:none;}
 html {font-size:100.01%;}
 body {color:#222;background:#fff;font-family:Heuristica,Georgia,serif;}
 h1, h2, h3, h4, h5, h6 {font-weight:normal;color:#111;}
-h1 {font-size:3em;line-height:1;margin-bottom:0.5em;}
+h1 {font-size:3em;line-height:1;margin-top:1em;margin-bottom:0.5em;}
 h2 {font-size:2em;margin-bottom:0.75em;}
 h3 {font-size:1.5em;line-height:1;margin-bottom:1em;}
 h4 {font-size:1.2em;line-height:1.25;margin-bottom:1.25em;}
@@ -40,8 +40,8 @@ p {margin:0 0 0.5em;}
 p .left {margin:0.5em 0.5em 0.5em 0;padding:0;}
 .right {float:right !important;}
 p .right {margin:0.5em 0 0.5em 0.5em;padding:0;}
-a:focus, a:hover {color:#09f;}
-a {color:#06c;text-decoration:underline;}
+a:focus, a:hover {color:#09f;text-decoration:underline;}
+a {color:#06c;text-decoration:none;}
 blockquote {margin:1.5em;color:#666;font-style:italic;}
 strong, dfn {font-weight:bold;}
 em, dfn {font-style:italic;}
