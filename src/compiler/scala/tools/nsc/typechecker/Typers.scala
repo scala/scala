@@ -222,8 +222,13 @@ trait Typers extends Modes with Adaptations with Tags {
         new SubstWildcardMap(tparams).apply(tp)
       case TypeRef(_, sym, _) if sym.isAliasType =>
         val tp0 = tp.dealias
-        val tp1 = dropExistential(tp0)
-        if (tp1 eq tp0) tp else tp1
+        if (tp eq tp0) {
+          debugwarn(s"dropExistential did not progress dealiasing $tp, see SI-7126")
+          tp
+        } else {
+          val tp1 = dropExistential(tp0)
+          if (tp1 eq tp0) tp else tp1
+        }
       case _ => tp
     }
 
