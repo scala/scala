@@ -936,7 +936,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
 // the making of the trees
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   trait TreeMakers extends TypedSubstitution { self: CodegenCore =>
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) =
+    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, supression: Suppression): (List[List[TreeMaker]], List[Tree]) =
       (cases, Nil)
 
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
@@ -1408,18 +1408,24 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
         def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
         patmatDebug("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
-        val (unchecked, requireSwitch) =
-          if (settings.XnoPatmatAnalysis.value) (true, false)
+        val (suppression, requireSwitch): (Suppression, Boolean) =
+          if (settings.XnoPatmatAnalysis.value) (Suppression.NoSuppresion, false)
           else scrut match {
-            case Typed(_, tpt) =>
-              (tpt.tpe hasAnnotation UncheckedClass,
-               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
-               treeInfo.isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0)
+            case Typed(tree, tpt) =>
+              val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
+              val supressUnreachable = tree match {
+                case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // SI-7183 don't warn for withFilter's that turn out to be irrefutable.
+                case _ => false
+              }
+              val suppression = Suppression(suppressExhaustive, supressUnreachable)
+              // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
+              val requireSwitch = treeInfo.isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0
+              (suppression, requireSwitch)
             case _ =>
-              (false, false)
+              (Suppression.NoSuppresion, false)
           }
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked).getOrElse{
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, suppression.exhaustive).getOrElse{
           if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
           if (casesNoSubstOnly nonEmpty) {
@@ -1436,7 +1442,7 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                   }) None
               else matchFailGen
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, unchecked)
+            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, suppression)
 
             val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 
@@ -3831,11 +3837,13 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
                               with OptimizedCodegen
                               with SymbolicMatchAnalysis
                               with DPLLSolver { self: TreeMakers =>
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
-      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-        reportUnreachable(cases(caseIndex).last.pos)
+    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): (List[List[TreeMaker]], List[Tree]) = {
+      if (!suppression.unreachable) {
+        unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+          reportUnreachable(cases(caseIndex).last.pos)
+        }
       }
-      if (!unchecked) {
+      if (!suppression.exhaustive) {
         val counterExamples = exhaustive(prevBinder, cases, pt)
         if (counterExamples.nonEmpty)
           reportMissingCases(prevBinder.pos, counterExamples)
@@ -3859,4 +3867,10 @@ object PatternMatchingStats {
   val patmatAnaVarEq      = Statistics.newSubTimer  ("  of which variable equality", patmatNanos)
   val patmatAnaExhaust    = Statistics.newSubTimer  ("  of which in exhaustivity", patmatNanos)
   val patmatAnaReach      = Statistics.newSubTimer  ("  of which in unreachability", patmatNanos)
+}
+
+final case class Suppression(exhaustive: Boolean, unreachable: Boolean)
+
+object Suppression {
+  val NoSuppresion = Suppression(false, false)
 }
