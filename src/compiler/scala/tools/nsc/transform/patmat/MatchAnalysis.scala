@@ -691,11 +691,13 @@ trait MatchAnalysis extends MatchApproximation {
       VariableAssignment(scrutVar).toCounterExample()
     }
 
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): Unit = {
-      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-        reportUnreachable(cases(caseIndex).last.pos)
+    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {
+      if (!suppression.unreachable) {
+        unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+          reportUnreachable(cases(caseIndex).last.pos)
+        }
       }
-      if (!unchecked) {
+      if (!suppression.exhaustive) {
         val counterExamples = exhaustive(prevBinder, cases, pt)
         if (counterExamples.nonEmpty)
           reportMissingCases(prevBinder.pos, counterExamples)
