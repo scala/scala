@@ -28,7 +28,7 @@ import subscript.vm._
 object GraphicalDebugger  extends GraphicalDebuggerApp
 object GraphicalDebugger2 extends GraphicalDebuggerApp {
   // extra singleton to allow for GraphicalDebugging a GraphicalDebugger
-  override def doesThisAllowToBeDebugged = false
+  override def doesThisAllowToBeDebugged = true
 }
 //    
 
@@ -352,6 +352,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
           currentMessage match { // node.index is not checked by node.equals!!!!
             case AAStarted(mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "AA Started")
             case AAEnded  (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "AA Ended")
+            case Success  (mp,null)  => // println("Success  (mp,null)")  // TBD: how come?
             case Success  (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "Success")
             case Break    (mp,mc, activationMode) if (p.index==mp.index&&c.index==mc.index) 
                                                                              => drawArrow(x2, y2, x1, y1,  getBreakText(activationMode))
@@ -610,7 +611,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     callGraphPanel    .repaint()
     templateTreesPanel.repaint()
   }
-  def doesThisAllowToBeDebugged = true
+  def doesThisAllowToBeDebugged = false
   override def live = _execute(_live, doesThisAllowToBeDebugged) 
   
   def script..

@@ -124,6 +124,10 @@ object Scripts {
     }
   }
 
+  // Note: the following classes have much code in common.
+  // This is caused by a dependency on partial functions.
+  // In principle this should be cleaned up, but it is not yet clear how that can be done.
+  
   // a ComponentReactor for any events
   case class AnyEventReactor[N<:N_atomic_action_eh[N]](comp:Component) extends EnablingReactor[N](comp) {
     def publisher = comp
@@ -244,7 +248,28 @@ object Scripts {
       publisher1.reactions -= reaction
     }
   }
-  
+
+  case class KeyTypedEventReactor[N<:N_atomic_action_eh[N]](publisher:Publisher, keyTypedEvent: FormalConstrainedParameter[KeyTyped]) extends ScriptReactor[N] {
+    val listenedEvent = null
+    override def reaction = myReaction
+    private val myReaction: PartialFunction[Event,Unit] = {
+      case kt@KeyTyped(comp, char, keyModifiers, keyLocationValue) =>
+        if (keyTypedEvent.matches(kt)) {
+          keyTypedEvent.value = kt
+          executeMatching(true)
+        }
+    }
+    override def unsubscribe: Unit = {publisher1.reactions -= reaction}
+  }
+  case class KeyTypedEventsReactor[N<:N_atomic_action_eh[N]](publisher:Publisher) extends ScriptReactor[N] {
+    val listenedEvent = null
+    override def reaction = myReaction
+    private val myReaction: PartialFunction[Event,Unit] = {case e: KeyTyped =>
+      currentEvent=e; execute; currentEvent=null
+    }
+    override def unsubscribe: Unit = {publisher1.reactions -= reaction}
+  }
+
  /*
   * The following subscript code has manually been compiled into Scala; see below
     The redirections to the swing thread using "@gui:" are needed 
@@ -259,6 +284,8 @@ object Scripts {
   event (reactor:ScriptReactor[N_code_eh]) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
   event_loop(reactor:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
                                                                                             {... task.apply(reactor.currentEvent.asInstanceOf[MouseEvent]) ...}
+  event_loop_KTE(reactor:ScriptReactor[N_code_eh_loop], task: KeyTyped=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
+                                                                                            {... task.apply(reactor.currentEvent.asInstanceOf[KeyTyped]) ...}
   // TBD: MouseEvent should become type parameter, as in the following (which does not compile)
   //event_loop[E<:Event](reactor:Reactor[N_code_eh_loop], task: E=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
   //                                                                                                {... task.apply(reactor.currentEvent.asInstanceOf[E]) ...}
@@ -290,7 +317,8 @@ object Scripts {
      key2(publisher: Publisher, keyCode ?? : Char     )    = event(         KeyTypedReactor[N_code_eh](publisher, _keyCode ))
     vkey2(publisher: Publisher, keyValue?? : Key.Value)    = event(        VKeyTypedReactor[N_code_eh](publisher, _keyValue))
     
-   
+     keyEvent2 (publisher: Publisher, keyTypedEvent?? : KeyTyped)  = event(         KeyTypedEventReactor [N_code_eh](publisher, _keyTypedEvent))
+     keyEvents2(publisher: Publisher, task: KeyTyped=>Unit)        = event_loop_KTE(KeyTypedEventsReactor[N_code_eh_loop](publisher), _task)
 /*
 
  Note: the manual compilation yielded for the first annotation the type

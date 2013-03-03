@@ -33,18 +33,18 @@ import scala.collection.mutable._
 object ScriptExecutorFactory {
   var scriptDebuggerQueue = new scala.collection.mutable.Queue[ScriptDebugger]
   def addScriptDebugger(sd: ScriptDebugger) = {
-    println("addScriptDebugger: "+sd.getClass.getCanonicalName)
+    //println("addScriptDebugger: "+sd.getClass.getCanonicalName)
     scriptDebuggerQueue += sd
   }
   def createScriptExecutor(allowDebugger: Boolean) = {
     val se = new CommonScriptExecutor
     if (allowDebugger && !scriptDebuggerQueue.isEmpty) {
       val h = scriptDebuggerQueue.head
-      println("createScriptExecutor: "+se+ " Debugger: "+h.getClass.getCanonicalName)
+      //println("createScriptExecutor: "+se+ " Debugger: "+h.getClass.getCanonicalName)
       scriptDebuggerQueue = scriptDebuggerQueue.tail
       h.attach(se)
     }
-    else println("createScriptExecutor: "+se+" allowDebugger: "+allowDebugger+" scriptDebuggerQueue.isEmpty: "+scriptDebuggerQueue.isEmpty)
+    //else println("createScriptExecutor: "+se+" allowDebugger: "+allowDebugger+" scriptDebuggerQueue.isEmpty: "+scriptDebuggerQueue.isEmpty)
     se
   }
 }
