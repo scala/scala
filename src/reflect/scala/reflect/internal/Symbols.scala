@@ -940,6 +940,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       rawowner
     }
 
+    // Like owner, but NoSymbol.owner == NoSymbol instead of throwing an exception.
+    final def safeOwner: Symbol = if (this eq NoSymbol) NoSymbol else owner
+
     // TODO - don't allow the owner to be changed without checking invariants, at least
     // when under some flag. Define per-phase invariants for owner/owned relationships,
     // e.g. after flatten all classes are owned by package classes, there are lots and

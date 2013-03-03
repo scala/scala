@@ -736,7 +736,7 @@ trait Types extends api.Types { self: SymbolTable =>
         )
         if (trivial) this
         else {
-          val m     = new AsSeenFromMap(pre.normalize, clazz)
+          val m     = newAsSeenFromMap(pre.normalize, clazz)
           val tp    = m(this)
           val tp1   = existentialAbstraction(m.capturedParams, tp)
 
@@ -4348,147 +4348,213 @@ trait Types extends api.Types { self: SymbolTable =>
     (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
   )
 
-  /** A map to compute the asSeenFrom method  */
-  class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
-    var capturedSkolems: List[Symbol] = List()
-    var capturedParams: List[Symbol] = List()
+  def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
+    new AsSeenFromMap(pre, clazz)
 
-    override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
-      object annotationArgRewriter extends TypeMapTransformer {
-        private def canRewriteThis(sym: Symbol) = (
-             (sym isNonBottomSubClass clazz)
-          && (pre.widen.typeSymbol isNonBottomSubClass sym)
-          && (pre.isStable || giveup())
-        )
-        // what symbol should really be used?
-        private def newTermSym() = {
-          val p = pre.typeSymbol
-          p.owner.newValue(p.name.toTermName, p.pos) setInfo pre
-        }
-        /** Rewrite `This` trees in annotation argument trees */
-        override def transform(tree: Tree): Tree = super.transform(tree) match {
-          case This(_) if canRewriteThis(tree.symbol) => gen.mkAttributedQualifier(pre, newTermSym())
-          case tree                                   => tree
-        }
-      }
-      annotationArgRewriter.transform(tree)
+  /** A map to compute the asSeenFrom method.
+   */
+  class AsSeenFromMap(seenFromPrefix: Type, seenFromClass: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
+    // Some example source constructs relevant in asSeenFrom:
+    //
+    // object CaptureThis {
+    //   trait X[A] { def f: this.type = this }
+    //   class Y[A] { def f: this.type = this }
+    //   // Created new existential to represent This(CaptureThis.X) seen from CaptureThis.X[B]: type _1.type <: CaptureThis.X[B] with Singleton
+    //   def f1[B] = new X[B] { }
+    //   // TODO - why is the behavior different when it's a class?
+    //   def f2[B] = new Y[B] { }
+    // }
+    // class CaptureVal[T] {
+    //   val f: java.util.List[_ <: T] = null
+    //   // Captured existential skolem for type _$1 seen from CaptureVal.this.f.type: type _$1
+    //   def g = f get 0
+    // }
+    // class ClassParam[T] {
+    //   // AsSeenFromMap(Inner.this.type, class Inner)/classParameterAsSeen(T)#loop(ClassParam.this.type, class ClassParam)
+    //   class Inner(lhs: T) { def f = lhs }
+    // }
+    def capturedParams: List[Symbol]  = _capturedParams
+    def capturedSkolems: List[Symbol] = _capturedSkolems
+
+    def apply(tp: Type): Type = tp match {
+      case tp @ ThisType(_)                                            => thisTypeAsSeen(tp)
+      case tp @ SingleType(_, sym)                                     => if (sym.isPackageClass) tp else singleTypeAsSeen(tp)
+      case tp @ TypeRef(_, sym, _) if isTypeParamOfEnclosingClass(sym) => classParameterAsSeen(tp)
+      case _                                                           => mapOver(tp)
     }
 
-    def stabilize(pre: Type, clazz: Symbol): Type = {
+    private var _capturedSkolems: List[Symbol] = Nil
+    private var _capturedParams: List[Symbol]  = Nil
+    private val isStablePrefix = seenFromPrefix.isStable
+
+    // isBaseClassOfEnclosingClassOrInfoIsNotYetComplete would be a more accurate
+    // but less succinct name.
+    private def isBaseClassOfEnclosingClass(base: Symbol) = {
+      def loop(encl: Symbol): Boolean = (
+           isPossiblePrefix(encl)
+        && ((encl isSubClass base) || loop(encl.owner.enclClass))
+      )
+      // The hasCompleteInfo guard is necessary to avoid cycles during the typing
+      // of certain classes, notably ones defined inside package objects.
+      !base.hasCompleteInfo || loop(seenFromClass)
+    }
+
+    /** Is the symbol a class type parameter from one of the enclosing
+     *  classes, or a base class of one of them?
+     */
+    private def isTypeParamOfEnclosingClass(sym: Symbol): Boolean = (
+         sym.isTypeParameter
+      && sym.owner.isClass
+      && isBaseClassOfEnclosingClass(sym.owner)
+    )
+
+    /** Creates an existential representing a type parameter which appears
+     *  in the prefix of a ThisType.
+     */
+    protected def captureThis(pre: Type, clazz: Symbol): Type = {
       capturedParams find (_.owner == clazz) match {
-        case Some(qvar) => qvar.tpe
-        case _          =>
+        case Some(p) => p.tpe
+        case _       =>
           val qvar = clazz freshExistential nme.SINGLETON_SUFFIX setInfo singletonBounds(pre)
-          capturedParams ::= qvar
+          _capturedParams ::= qvar
+          debuglog(s"Captured This(${clazz.fullNameString}) seen from $seenFromPrefix: ${qvar.defString}")
           qvar.tpe
       }
     }
-
-    def apply(tp: Type): Type =
-      tp match {
-        case ThisType(sym) =>
-          def toPrefix(pre: Type, clazz: Symbol): Type =
-            if (skipPrefixOf(pre, clazz)) tp
-            else if ((sym isNonBottomSubClass clazz) &&
-                     (pre.widen.typeSymbol isNonBottomSubClass sym)) {
-              val pre1 = pre match {
-                case SuperType(thistp, _) => thistp
-                case _ => pre
-              }
-              if (!(pre1.isStable ||
-                    pre1.typeSymbol.isPackageClass ||
-                    pre1.typeSymbol.isModuleClass && pre1.typeSymbol.isStatic)) {
-                stabilize(pre1, sym)
-              } else {
-                pre1
-              }
-            } else {
-              toPrefix(pre.baseType(clazz).prefix, clazz.owner)
-            }
-          toPrefix(pre, clazz)
-        case SingleType(pre, sym) =>
-          if (sym.isPackageClass) tp // short path
-          else {
-            val pre1 = this(pre)
-            if (pre1 eq pre) tp
-            else if (pre1.isStable) singleType(pre1, sym)
-            else pre1.memberType(sym).resultType //todo: this should be rolled into existential abstraction
-          }
-        // AM: Martin, is this description accurate?
-        // walk the owner chain of `clazz` (the original argument to asSeenFrom) until we find the type param's owner (while rewriting pre as we crawl up the owner chain)
-        // once we're at the owner, extract the information that pre encodes about the type param,
-        // by minimally subsuming pre to the type instance of the class that owns the type param,
-        // the type we're looking for is the type instance's type argument at the position corresponding to the type parameter
-        // optimisation: skip this type parameter if it's not owned by a class, as those params are not influenced by the prefix through which they are seen
-        // (concretely: type params of anonymous type functions, which currently can only arise from normalising type aliases, are owned by the type alias of which they are the eta-expansion)
-        // (skolems also aren't affected: they are ruled out by the isTypeParameter check)
-        case TypeRef(prefix, sym, args) if (sym.isTypeParameter && sym.owner.isClass) =>
-          def toInstance(pre: Type, clazz: Symbol): Type =
-            if (skipPrefixOf(pre, clazz)) mapOver(tp)
-            //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
-            else {
-              def throwError = abort("" + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
-
-              val symclazz = sym.owner
-              if (symclazz == clazz && !pre.widen.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
-                // have to deconst because it may be a Class[T].
-                pre.baseType(symclazz).deconst match {
-                  case TypeRef(_, basesym, baseargs) =>
-
-                   def instParam(ps: List[Symbol], as: List[Type]): Type =
-                      if (ps.isEmpty) {
-                        if (forInteractive) {
-                          val saved = settings.uniqid.value
-                          try {
-                            settings.uniqid.value = true
-                            println("*** stale type parameter: " + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
-                            println("*** confused with params: " + sym + " in " + sym.owner + " not in " + ps + " of " + basesym)
-                            println("*** stacktrace = ")
-                            new Error().printStackTrace()
-                          } finally settings.uniqid.value = saved
-                          instParamRelaxed(basesym.typeParams, baseargs)
-                        } else throwError
-                      } else if (sym eq ps.head)
-                        // @M! don't just replace the whole thing, might be followed by type application
-                        appliedType(as.head, args mapConserve (this)) // @M: was as.head
-                      else instParam(ps.tail, as.tail)
-
-                    /** Relaxed version of instParams which matches on names not symbols.
-                     *  This is a last fallback in interactive mode because races in calls
-                     *  from the IDE to the compiler may in rare cases lead to symbols referring
-                     *  to type parameters that are no longer current.
-                     */
-                    def instParamRelaxed(ps: List[Symbol], as: List[Type]): Type =
-                      if (ps.isEmpty) throwError
-                      else if (sym.name == ps.head.name)
-                        // @M! don't just replace the whole thing, might be followed by type application
-                        appliedType(as.head, args mapConserve (this)) // @M: was as.head
-                      else instParamRelaxed(ps.tail, as.tail)
-
-                    //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
-                    if (sameLength(basesym.typeParams, baseargs))
-                      instParam(basesym.typeParams, baseargs)
-                    else
-                      if (symclazz.tpe.parents exists typeIsErroneous)
-                        ErrorType // don't be to overzealous with throwing exceptions, see #2641
-                      else
-                        throw new Error(
-                          "something is wrong (wrong class file?): "+basesym+
-                          " with type parameters "+
-                          basesym.typeParams.map(_.name).mkString("[",",","]")+
-                          " gets applied to arguments "+baseargs.mkString("[",",","]")+", phase = "+phase)
-                  case ExistentialType(tparams, qtpe) =>
-                    capturedSkolems = capturedSkolems union tparams
-                    toInstance(qtpe, clazz)
-                  case t =>
-                    throwError
-                }
-              } else toInstance(pre.baseType(clazz).prefix, clazz.owner)
-            }
-          toInstance(pre, clazz)
-        case _ =>
-          mapOver(tp)
+    protected def captureSkolems(skolems: List[Symbol]) {
+      for (p <- skolems; if !(capturedSkolems contains p)) {
+        debuglog(s"Captured $p seen from $seenFromPrefix")
+        _capturedSkolems ::= p
       }
+    }
+
+    /** Find the type argument in an applied type which corresponds to a type parameter.
+     *  The arguments are required to be related as follows, through intermediary `clazz`.
+     *  An exception will be thrown if this is violated.
+     *
+     *  @param   lhs    its symbol is a type parameter of `clazz`
+     *  @param   rhs    a type application constructed from `clazz`
+     */
+    private def correspondingTypeArgument(lhs: Type, rhs: Type): Type = {
+      val TypeRef(_, lhsSym, lhsArgs) = lhs
+      val TypeRef(_, rhsSym, rhsArgs) = rhs
+      require(lhsSym.safeOwner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
+
+      // Find the type parameter position; we'll use the corresponding argument
+      val argIndex = rhsSym.typeParams indexOf lhsSym
+
+      if (argIndex >= 0 && argIndex < rhsArgs.length)             // @M! don't just replace the whole thing, might be followed by type application
+        appliedType(rhsArgs(argIndex), lhsArgs mapConserve this)
+      else if (rhsSym.tpe_*.parents exists typeIsErroneous)        // don't be too zealous with the exceptions, see #2641
+        ErrorType
+      else
+        abort(s"something is wrong: cannot make sense of type application\n  $lhs\n  $rhs")
+    }
+
+    // 0) @pre: `classParam` is a class type parameter
+    // 1) Walk the owner chain of `seenFromClass` until we find the class which owns `classParam`
+    // 2) Take the base type of the prefix at that point with respect to the owning class
+    // 3) Solve for the type parameters through correspondence with the type args of the base type
+    //
+    // Only class type parameters (and not skolems) are considered, because other type parameters
+    // are not influenced by the prefix through which they are seen. Note that type params of
+    // anonymous type functions, which currently can only arise from normalising type aliases, are
+    // owned by the type alias of which they are the eta-expansion.
+    private def classParameterAsSeen(classParam: Type): Type = {
+      val TypeRef(_, tparam, _) = classParam
+
+      def loop(pre: Type, clazz: Symbol): Type = {
+        // have to deconst because it may be a Class[T]
+        def nextBase = (pre baseType clazz).deconst
+        //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
+        if (skipPrefixOf(pre, clazz))
+          mapOver(classParam)
+        else if (!matchesPrefixAndClass(pre, clazz)(tparam.owner))
+          loop(nextBase.prefix, clazz.owner)
+        else nextBase match {
+          case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied)
+          case ExistentialType(eparams, qtpe) => captureSkolems(eparams) ; loop(qtpe, clazz)
+          case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from ${seenFromPrefix.widen}")
+        }
+      }
+      loop(seenFromPrefix, seenFromClass)
+    }
+
+    // Does the candidate symbol match the given prefix and class?
+    // Since pre may be something like ThisType(A) where trait A { self: B => },
+    // we have to test the typeSymbol of the widened type, not pre.typeSymbol, or
+    // B will not be considered.
+    private def matchesPrefixAndClass(pre: Type, clazz: Symbol)(candidate: Symbol) = pre.widen match {
+      case _: TypeVar => false
+      case wide       => (clazz == candidate) && (wide.typeSymbol isSubClass clazz)
+    }
+
+    // Whether the annotation tree currently being mapped over has had a This(_) node rewritten.
+    private[this] var wroteAnnotation = false
+    private object annotationArgRewriter extends TypeMapTransformer {
+      private def matchesThis(thiz: Symbol) = matchesPrefixAndClass(seenFromPrefix, seenFromClass)(thiz)
+
+      // what symbol should really be used?
+      private def newThis(): Tree = {
+        wroteAnnotation = true
+        val presym      = seenFromPrefix.widen.typeSymbol
+        val thisSym     = presym.owner.newValue(presym.name.toTermName, presym.pos) setInfo seenFromPrefix
+        gen.mkAttributedQualifier(seenFromPrefix, thisSym)
+      }
+
+      /** Rewrite `This` trees in annotation argument trees */
+      override def transform(tree: Tree): Tree = super.transform(tree) match {
+        case This(_) if matchesThis(tree.symbol) => newThis()
+        case tree                                => tree
+      }
+    }
+
+    // This becomes considerably cheaper if we optimize for the common cases:
+    // where the prefix is stable and where no This nodes are rewritten. If
+    // either is true, then we don't need to worry about calling giveup. So if
+    // the prefix is unstable, use a stack variable to indicate whether the tree
+    // was touched. This takes us to one allocation per AsSeenFromMap rather
+    // than an allocation on every call to mapOver, and no extra work when the
+    // tree only has its types remapped.
+    override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
+      if (isStablePrefix)
+        annotationArgRewriter transform tree
+      else {
+        val saved = wroteAnnotation
+        wroteAnnotation = false
+        try annotationArgRewriter transform tree
+        finally if (wroteAnnotation) giveup() else wroteAnnotation = saved
+      }
+    }
+
+    private def thisTypeAsSeen(tp: ThisType): Type = {
+      def loop(pre: Type, clazz: Symbol): Type = {
+        val pre1 = pre match {
+          case SuperType(thistpe, _) => thistpe
+          case _                     => pre
+        }
+        if (skipPrefixOf(pre, clazz))
+          mapOver(tp) // TODO - is mapOver necessary here?
+        else if (!matchesPrefixAndClass(pre, clazz)(tp.sym))
+          loop((pre baseType clazz).prefix, clazz.owner)
+        else if (pre1.isStable)
+          pre1
+        else
+          captureThis(pre1, clazz)
+      }
+      loop(seenFromPrefix, seenFromClass)
+    }
+
+    private def singleTypeAsSeen(tp: SingleType): Type = {
+      val SingleType(pre, sym) = tp
+
+      val pre1 = this(pre)
+      if (pre1 eq pre) tp
+      else if (pre1.isStable) singleType(pre1, sym)
+      else pre1.memberType(sym).resultType //todo: this should be rolled into existential abstraction
+    }
+
+    override def toString = s"AsSeenFromMap($seenFromPrefix, $seenFromClass)"
   }
 
   /** A base class to compute all substitutions */
