@@ -4351,7 +4351,6 @@ trait Types extends api.Types { self: SymbolTable =>
   def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
     new AsSeenFromMap(pre, clazz)
 
-
   /** A map to compute the asSeenFrom method.
    */
   class AsSeenFromMap(seenFromPrefix: Type, seenFromClass: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
@@ -4387,8 +4386,9 @@ trait Types extends api.Types { self: SymbolTable =>
     private var _capturedSkolems: List[Symbol] = Nil
     private var _capturedParams: List[Symbol]  = Nil
     private val isStablePrefix = seenFromPrefix.isStable
-    private def prefixSymbol = seenFromPrefix.widen.typeSymbol
 
+    // isBaseClassOfEnclosingClassOrInfoIsNotYetComplete would be a more accurate
+    // but less succinct name.
     private def isBaseClassOfEnclosingClass(base: Symbol) = {
       def loop(encl: Symbol): Boolean = (
            isPossiblePrefix(encl)
@@ -4474,16 +4474,19 @@ trait Types extends api.Types { self: SymbolTable =>
         else nextBase match {
           case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied)
           case ExistentialType(eparams, qtpe) => captureSkolems(eparams) ; loop(qtpe, clazz)
-          case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from $seenFromPrefix")
+          case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from ${seenFromPrefix.widen}")
         }
       }
       loop(seenFromPrefix, seenFromClass)
     }
 
     // Does the candidate symbol match the given prefix and class?
+    // Since pre may be something like ThisType(A) where trait A { self: B => },
+    // we have to test the typeSymbol of the widened type, not pre.typeSymbol, or
+    // B will not be considered.
     private def matchesPrefixAndClass(pre: Type, clazz: Symbol)(candidate: Symbol) = pre.widen match {
       case _: TypeVar => false
-      case pre        => (clazz == candidate) && (pre.typeSymbol isSubClass candidate)
+      case wide       => (clazz == candidate) && (wide.typeSymbol isSubClass clazz)
     }
 
     // Whether the annotation tree currently being mapped over has had a This(_) node rewritten.
@@ -4494,7 +4497,8 @@ trait Types extends api.Types { self: SymbolTable =>
       // what symbol should really be used?
       private def newThis(): Tree = {
         wroteAnnotation = true
-        val thisSym = prefixSymbol.owner.newValue(prefixSymbol.name.toTermName, prefixSymbol.pos) setInfo seenFromPrefix
+        val presym      = seenFromPrefix.widen.typeSymbol
+        val thisSym     = presym.owner.newValue(presym.name.toTermName, presym.pos) setInfo seenFromPrefix
         gen.mkAttributedQualifier(seenFromPrefix, thisSym)
       }
 
@@ -4530,7 +4534,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case _                     => pre
         }
         if (skipPrefixOf(pre, clazz))
-          mapOver(tp)
+          mapOver(tp) // TODO - is mapOver necessary here?
         else if (!matchesPrefixAndClass(pre, clazz)(tp.sym))
           loop((pre baseType clazz).prefix, clazz.owner)
         else if (pre1.isStable)
