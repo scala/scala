@@ -1417,6 +1417,13 @@ self =>
     def isQMark       = in.token == IDENTIFIER && in.name == nme.QMARKkw
     def isQMark2      = in.token == IDENTIFIER && in.name == nme.QMARK2kw
     
+    // TBD cleanup
+    // lineOffset needs to be computed here since CharArrayReader sometimes increments its lineStartOffset earlier than expected
+    def isNotLeftOfEqualsSym(tokenData: TokenData): Boolean = {
+      val lineOffset = if (tokenData.offset < in.lineStartOffset) in.lastLineStartOffset else in.lineStartOffset
+      tokenData.offset-lineOffset >= linePosOfScriptEqualsSym
+    }
+    
     def isSubScriptTermStarter(tokenData: TokenData): Boolean = in.token match {
       case VAL                      
          | VAR                      
@@ -1442,8 +1449,8 @@ self =>
          | LBRACE_QMARK             
          | LBRACE_EMARK             
          | LBRACE_ASTERISK          
-         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || !in.afterLineEnd || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
-      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || !in.afterLineEnd || tokenData.offset-in.lineStartOffset >= linePosOfScriptEqualsSym
+         | LBRACE_CARET                                   => scriptExpressionParenthesesNestingLevel>0 || !in.afterLineEnd || isNotLeftOfEqualsSym(tokenData)
+      case IDENTIFIER if (!isSubScriptInfixOp(tokenData)) => scriptExpressionParenthesesNestingLevel>0 || !in.afterLineEnd || isNotLeftOfEqualsSym(tokenData)
       case _                                              => isSubScriptUnaryPrefixOp(tokenData)  ||  // MINUS is allways OK, also for -1 etc
                                                              isLiteralToken(tokenData.token)
     }
@@ -1820,7 +1827,9 @@ self =>
         //if (!areNewLinesSpecialSeparators) eatNewlines()
         if (areSpacesCommas 
         || !isSubScriptTermStarter(in)
-        || areNewLinesSpecialSeparators && in.afterLineEnd()) moreTerms = false  // TBD: check newLinesAreSpecialSeparators
+        || areNewLinesSpecialSeparators && in.afterLineEnd()) {
+          moreTerms = false  // TBD: check newLinesAreSpecialSeparators
+        }
       }
       while (moreTerms)
         

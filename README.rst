@@ -37,11 +37,6 @@ the given example programs, but there are some limitations and bugs:
   p??          ==>   ActualAdaptingParameter   (_p)
   Note the underscore in the latter line.
 
-- The compiler may prematurely stop parsing script expressions. E.g.
-  if you have a token such as "..." on a new line, the compiler may refuse
-  to include it with the script expression on previous lines.
-  Solution: join the line containing "..." with the previous line.
-
 - The compiler may crash on values in a script expression for which 
   no implicit conversion to a script exist. 
   This may for instance happen if you specify 'x' in a script
