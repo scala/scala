@@ -62,10 +62,11 @@ class BasicLifeFrameApplication extends SimpleSubscriptApplication {
     speedLabel.text = "Speed: " + s
     speedSlider.value = s  
   }
-  def digit2Speed(c: Char) = if (c=='0') maxSpeed else minSpeed+(c-'1')
   
   setSpeedValue(7)
   
-  override def _live = _script(this, 'live) {_threaded0{Thread.sleep(34567)}}
-  override def  live = _execute(_live)
+  override def  live = _execute(_live())
+  
+  override def script..
+    live = {*Thread.sleep(34567)*}
 }

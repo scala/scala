@@ -1153,6 +1153,20 @@ QUICK BUILD (QUICK)
     </scalacfork>
   </target>
 
+  <target name="quick.subscript.exercises" depends="quick.subscript.swing">
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/subscript"
+      jvmargs="${scalacfork.jvmargs}">
+        <include name="subscript/exercises/*.scala"/>
+        <include name="subscript/exercises/*/*.scala"/>
+      <compilationpath refid="quick.compilation.path.subscript"/>
+    </scalacfork>
+  </target>
+
+
   <target name="quick.pre-plugins" depends="quick.subscript.swing, quick.comp">
     <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">
       <srcfiles dir="${src.dir}/continuations"/>

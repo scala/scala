@@ -59,6 +59,10 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
      def handleMouseMove(p: java.awt.Point): Unit = board.mouseDragSet(p)
      def handleMouseDrag(p: java.awt.Point): Unit = board.mouseDragSet(p)
     
+     def char2Value(ac: Any) = {var c=chr(ac); int2Value(c-'0')}
+     def int2Value ( i: Int) = if (i==0) maxSpeed else minSpeed+i-1
+
+     // conversion method, unfortunately needed since the SubScript compiler does not handle var types well
      def chr(c:Any) = c.asInstanceOf[Int].toChar
      
   implicit def script..
@@ -92,7 +96,7 @@ def script..
     setSpeed(s: Int)   = @{gui(there)}: {!setSpeedValue(s)!}
 
       speedKeyInput    = times(10) 
-                       + val c:Any=(pass_up1(here)+'0') key(chr(c)) setSpeed(digit2Speed(chr(c))) // TBD: make here an implicit parameter
+                       + val c:Any=(pass_up1(here)+'0') key(chr(c)) setSpeed(char2Value(c)) // TBD: make here an implicit parameter
                               
    speedButtonInput = if (speed>minSpeed) speedDecButton
                     + if (speed<maxSpeed) speedIncButton
