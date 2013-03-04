@@ -51,20 +51,17 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
 
-  def clearUnusedImports() {
-    allUsedSelectors.clear()
-    allImportInfos.clear()
-  }
   def warnUnusedImports(unit: CompilationUnit) = {
-    val imps = allImportInfos(unit).reverse.distinct
+    for (imps <- allImportInfos.remove(unit)) {
+      for (imp <- imps.reverse.distinct) {
+        val used = allUsedSelectors(imp)
+        def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
 
-    for (imp <- imps) {
-      val used = allUsedSelectors(imp)
-      def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
-
-      imp.tree.selectors filterNot (s => isMask(s) || used(s)) foreach { sel =>
-        unit.warning(imp posOf sel, "Unused import")
+        imp.tree.selectors filterNot (s => isMask(s) || used(s)) foreach { sel =>
+          unit.warning(imp posOf sel, "Unused import")
+        }
       }
+      allUsedSelectors --= imps
     }
   }
 
