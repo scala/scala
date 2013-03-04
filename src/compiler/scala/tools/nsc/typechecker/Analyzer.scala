@@ -95,12 +95,16 @@ trait Analyzer extends AnyRef
       }
       def apply(unit: CompilationUnit) {
         try {
+          if (settings.lint.value)
+            clearUnusedImports()
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)
           if (global.settings.Yrangepos.value && !global.reporter.hasErrors) global.validatePositions(unit.body)
           for (workItem <- unit.toCheck) workItem()
-          if (settings.lint.value)
+          if (settings.lint.value) {
             typer checkUnused unit
+            warnUnusedImports(unit)
+          }
         }
         finally {
           unit.toCheck.clear()
