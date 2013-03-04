@@ -2438,16 +2438,13 @@ trait Typers extends Adaptations with Tags {
                          else typed(cdef.guard, BooleanClass.tpe)
       var body1: Tree = typed(cdef.body, pt)
 
-      val contextWithTypeBounds = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
-      if (contextWithTypeBounds.savedTypeBounds.nonEmpty) {
-        body1 modifyType (contextWithTypeBounds restoreTypeBounds _)
-
+      if (context.enclosingCaseDef.savedTypeBounds.nonEmpty) {
+        body1 modifyType context.enclosingCaseDef.restoreTypeBounds
         // insert a cast if something typechecked under the GADT constraints,
         // but not in real life (i.e., now that's we've reset the method's type skolems'
         //   infos back to their pre-GADT-constraint state)
         if (isFullyDefined(pt) && !(body1.tpe <:< pt))
           body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.dealiasWiden))
-
       }
 
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)

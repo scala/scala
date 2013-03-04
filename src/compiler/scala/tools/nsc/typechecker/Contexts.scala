@@ -8,6 +8,7 @@ package typechecker
 
 import scala.collection.mutable
 import scala.annotation.tailrec
+import scala.reflect.internal.util.shortClassOfInstance
 
 /**
  *  @author  Martin Odersky
@@ -175,6 +176,7 @@ trait Contexts { self: Analyzer =>
       if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
       else outer.enclClassOrMethod
 
+    def enclosingCaseDef = nextEnclosing(_.tree.isInstanceOf[CaseDef])
     def undetparamsString =
       if (undetparams.isEmpty) ""
       else undetparams.mkString("undetparams=", ", ", "")
@@ -584,23 +586,39 @@ trait Contexts { self: Analyzer =>
     }
 
     def pushTypeBounds(sym: Symbol) {
+      sym.info match {
+        case tb: TypeBounds => if (!tb.isEmptyBounds) log(s"Saving $sym info=$tb")
+        case info           => devWarning(s"Something other than a TypeBounds seen in pushTypeBounds: $info is a ${shortClassOfInstance(info)}")
+      }
       savedTypeBounds ::= ((sym, sym.info))
     }
 
     def restoreTypeBounds(tp: Type): Type = {
-      var current = tp
-      for ((sym, info) <- savedTypeBounds) {
-        debuglog("resetting " + sym + " to " + info)
-        sym.info match {
-          case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
-            current = current.instantiateTypeParams(List(sym), List(lo))
-//@M TODO: when higher-kinded types are inferred, probably need a case PolyType(_, TypeBounds(...)) if ... =>
-          case _ =>
-        }
-        sym.setInfo(info)
+      def restore(): Type = savedTypeBounds.foldLeft(tp) { case (current, (sym, savedInfo)) =>
+        def bounds_s(tb: TypeBounds) = if (tb.isEmptyBounds) "<empty bounds>" else s"TypeBounds(lo=${tb.lo}, hi=${tb.hi})"
+        //@M TODO: when higher-kinded types are inferred, probably need a case PolyType(_, TypeBounds(...)) if ... =>
+        val tb @ TypeBounds(lo, hi) = sym.info.bounds
+        val isUnique                = lo <:< hi && hi <:< lo
+        val isPresent               = current contains sym
+        def saved_s                 = bounds_s(savedInfo.bounds)
+        def current_s               = bounds_s(sym.info.bounds)
+
+        if (isUnique && isPresent)
+          devWarningResult(s"Preserving inference: ${sym.nameString}=$hi in $current (based on $current_s) before restoring $sym to saved $saved_s")(
+            current.instantiateTypeParams(List(sym), List(hi))
+          )
+        else if (isPresent)
+          devWarningResult(s"Discarding inferred $current_s because it does not uniquely determine $sym in")(current)
+        else
+          logResult(s"Discarding inferred $current_s because $sym does not appear in")(current)
       }
-      savedTypeBounds = List()
-      current
+      try restore()
+      finally {
+        for ((sym, savedInfo) <- savedTypeBounds)
+          sym setInfo debuglogResult(s"Discarding inferred $sym=${sym.info}, restoring saved info")(savedInfo)
+
+        savedTypeBounds = Nil
+      }
     }
 
     private var implicitsCache: List[List[ImplicitInfo]] = null

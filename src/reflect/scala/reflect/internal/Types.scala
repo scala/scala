@@ -2250,7 +2250,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else ErrorType
       }
 
-    // isHKSubType0 introduces synthetic type params so that
+    // isHKSubType introduces synthetic type params so that
     // betaReduce can first apply sym.info to typeArgs before calling
     // asSeenFrom.  asSeenFrom then skips synthetic type params, which
     // are used to reduce HO subtyping to first-order subtyping, but
@@ -5746,44 +5746,41 @@ trait Types extends api.Types { self: SymbolTable =>
     case _                  => false
   }
 
+  private def isPolySubType(tp1: PolyType, tp2: PolyType): Boolean = {
+    val PolyType(tparams1, res1) = tp1
+    val PolyType(tparams2, res2) = tp2
+
+    sameLength(tparams1, tparams2) && {
+      // fast-path: polymorphic method type -- type params cannot be captured
+      val isMethod = tparams1.head.owner.isMethod
+      //@M for an example of why we need to generate fresh symbols otherwise, see neg/tcpoly_ticket2101.scala
+      val substitutes = if (isMethod) tparams1 else cloneSymbols(tparams1)
+      def sub1(tp: Type) = if (isMethod) tp else tp.substSym(tparams1, substitutes)
+      def sub2(tp: Type) = tp.substSym(tparams2, substitutes)
+      def cmp(p1: Symbol, p2: Symbol) = sub2(p2.info) <:< sub1(p1.info)
+
+      (tparams1 corresponds tparams2)(cmp) && (sub1(res1) <:< sub2(res2))
+    }
+  }
+
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
-  def isHKSubType0(tp1: Type, tp2: Type, depth: Int): Boolean = (
-    tp1.typeSymbol == NothingClass
-    ||
-    tp2.typeSymbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
-    || // @M! normalize reduces higher-kinded case to PolyType's
-    ((tp1.normalize.withoutAnnotations , tp2.normalize.withoutAnnotations) match {
-      case (PolyType(tparams1, res1), PolyType(tparams2, res2)) => // @assume tp1.isHigherKinded && tp2.isHigherKinded (as they were both normalized to PolyType)
-        sameLength(tparams1, tparams2) && {
-          if (tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
-            (tparams1 corresponds tparams2)((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
-            res1 <:< res2.substSym(tparams2, tparams1)
-          } else { // normalized higher-kinded type
-            //@M for an example of why we need to generate fresh symbols, see neg/tcpoly_ticket2101.scala
-            val tpsFresh = cloneSymbols(tparams1)
+  def isHKSubType(tp1: Type, tp2: Type, depth: Int): Boolean = {
+    def isSub(ntp1: Type, ntp2: Type) = (ntp1.withoutAnnotations, ntp2.withoutAnnotations) match {
+      case (TypeRef(_, AnyClass, _), _)                                     => false                    // avoid some warnings when Nothing/Any are on the other side
+      case (_, TypeRef(_, NothingClass, _))                                 => false
+      case (pt1: PolyType, pt2: PolyType)                                   => isPolySubType(pt1, pt2)  // @assume both .isHigherKinded (both normalized to PolyType)
+      case (_: PolyType, MethodType(ps, _)) if ps exists (_.tpe.isWildcard) => false                    // don't warn on HasMethodMatching on right hand side
+      case _                                                                =>                          // @assume !(both .isHigherKinded) thus cannot be subtypes
+        def tp_s(tp: Type): String = f"$tp%-20s ${util.shortClassOfInstance(tp)}%s"
+        devWarning(s"HK subtype check on $tp1 and $tp2, but both don't normalize to polytypes:\n  tp1=${tp_s(ntp1)}\n  tp2=${tp_s(ntp2)}")
+        false
+    }
 
-            (tparams1 corresponds tparams2)((p1, p2) =>
-              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
-            res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)
-
-            //@M the forall in the previous test could be optimised to the following,
-            // but not worth the extra complexity since it only shaves 1s from quick.comp
-            //   (List.forall2(tpsFresh/*optimisation*/, tparams2)((p1, p2) =>
-            //   p2.info.substSym(tparams2, tpsFresh) <:< p1.info /*optimisation, == (p1 from tparams1).info.substSym(tparams1, tpsFresh)*/) &&
-            // this optimisation holds because inlining cloneSymbols in `val tpsFresh = cloneSymbols(tparams1)` gives:
-            // val tpsFresh = tparams1 map (_.cloneSymbol)
-            // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
-        }
-      } && annotationsConform(tp1.normalize, tp2.normalize)
-
-      case (PolyType(_, _), MethodType(params, _)) if params exists (_.tpe.isWildcard) =>
-        false   // don't warn on HasMethodMatching on right hand side
-
-      case (ntp1, ntp2) =>
-        devWarning(s"isHKSubType0($tp1, $tp2, _) is ${tp1.getClass}, ${tp2.getClass}: ($ntp1, $ntp2)")
-        false // @assume !tp1.isHigherKinded || !tp2.isHigherKinded
-      // --> thus, cannot be subtypes (Any/Nothing has already been checked)
-    }))
+    (    tp1.typeSymbol == NothingClass       // @M Nothing is subtype of every well-kinded type
+      || tp2.typeSymbol == AnyClass           // @M Any is supertype of every well-kinded type (@PP: is it? What about continuations plugin?)
+      || isSub(tp1.normalize, tp2.normalize) && annotationsConform(tp1, tp2)  // @M! normalize reduces higher-kinded case to PolyType's
+    )
+  }
 
   def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol], depth: Int): Boolean = {
     def isSubArg(t1: Type, t2: Type, variance: Variance) = (
@@ -5801,7 +5798,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (tp1 eq NoPrefix) return (tp2 eq NoPrefix) || tp2.typeSymbol.isPackageClass // !! I do not see how the "isPackageClass" would be warranted by the spec
     if (tp2 eq NoPrefix) return tp1.typeSymbol.isPackageClass
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
-    if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType0(tp1, tp2, depth)
+    if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType(tp1, tp2, depth)
 
     /** First try, on the right:
      *   - unwrap Annotated types, BoundedWildcardTypes,
