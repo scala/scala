@@ -12,7 +12,6 @@ import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
-import scala.reflect.internal.RangePositions
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -43,6 +42,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // the mirror --------------------------------------------------
 
   override def isCompilerUniverse = true
+  override val useOffsetPositions = !currentSettings.Yrangepos.value
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
@@ -1695,10 +1695,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def createJavadoc    = false
 }
 
-class RangePositionGlobal(settings0: Settings, reporter0: Reporter) extends Global(settings0, reporter0) with RangePositions
-
 object Global {
-  def apply(settings: Settings, reporter: Reporter): Global =
-    if (settings.Yrangepos.value) new RangePositionGlobal(settings, reporter)
-    else new Global(settings, reporter)
+  def apply(settings: Settings, reporter: Reporter): Global = new Global(settings, reporter)
 }

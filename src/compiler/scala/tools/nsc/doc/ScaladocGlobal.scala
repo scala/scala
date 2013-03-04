@@ -91,7 +91,9 @@ trait ScaladocAnalyzer extends Analyzer {
   }
 }
 
-class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(settings, reporter) with interactive.RangePositions {
+class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends {
+  override val useOffsetPositions = false
+} with Global(settings, reporter) {
   override protected def computeInternalPhases() {
     phasesSet += syntaxAnalyzer
     phasesSet += analyzer.namerFactory

@@ -15,7 +15,7 @@ import DocParser.Parsed
  *  right after parsing so it can read `DocDefs` from source code which would
  *  otherwise cause the compiler to go haywire.
  */
-class DocParser(settings: nsc.Settings, reporter: Reporter) extends RangePositionGlobal(settings, reporter) {
+class DocParser(settings: nsc.Settings, reporter: Reporter) extends Global(settings, reporter) {
   def this(settings: Settings) = this(settings, new ConsoleReporter(settings))
   def this() = this(new Settings(Console println _))
 
