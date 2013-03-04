@@ -108,6 +108,9 @@ trait CompilationUnits { self: Global =>
     def echo(pos: Position, msg: String) =
       reporter.echo(pos, msg)
 
+    def info(pos: Position, msg: String) =
+      reporter.info(pos, msg, force=false)
+
     def error(pos: Position, msg: String) =
       reporter.error(pos, msg)
 
