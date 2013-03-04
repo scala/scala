@@ -58,7 +58,10 @@ trait Contexts { self: Analyzer =>
   def warnUnusedImports(unit: CompilationUnit) = {
     val imps = allImportInfos(unit).reverse.distinct
 
-    for (imp <- imps) {
+    def languageFeatureImport(imp: ImportInfo): Boolean =
+      imp.qual.symbol eq ScalaPackage.info.decl("language": TermName)
+
+    for (imp <- imps if !languageFeatureImport(imp)) {
       val used = allUsedSelectors(imp)
       def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
 

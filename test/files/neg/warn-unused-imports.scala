@@ -122,4 +122,9 @@ trait Nested {
     }
     println(new Warn { })
   }
+
+  {
+    import scala.language.postfixOps  // no warn (regardless of whether the feature is used)
+    List() distinct
+  }
 }

@@ -38,8 +38,6 @@ case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBindin
 
   override def toString(): String = sbToString(buildString(_, TopScope))
 
-  private def shadowRedefined: NamespaceBinding = shadowRedefined(TopScope)
-
   private def shadowRedefined(stop: NamespaceBinding): NamespaceBinding = {
     def prefixList(x: NamespaceBinding): List[String] =
       if ((x == null) || (x eq stop)) Nil

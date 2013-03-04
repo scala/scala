@@ -339,7 +339,7 @@ trait SyntheticMethods extends ast.TreeDSL {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
               if (settings.lint.value) {
                 (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
-                  currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+                  currentUnit.info(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
                 }
               }
               true
