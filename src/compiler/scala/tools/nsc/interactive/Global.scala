@@ -21,12 +21,12 @@ import scala.language.implicitConversions
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, _reporter: Reporter, projectName: String = "")  extends {
+class Global(settings: Settings, _reporter: Reporter, projectName: String = "") extends {
   /* Is the compiler initializing? Early def, so that the field is true during the
    *  execution of the super constructor.
    */
   private var initializing = true
-} with scala.tools.nsc.Global(settings, _reporter)
+} with RangePositionGlobal(settings, _reporter)
   with CompilerControl
   with RangePositions
   with ContextTrees

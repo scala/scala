@@ -6,11 +6,6 @@ import scala.reflect.internal.util.{ SourceFile, OffsetPosition }
 trait Positions extends scala.reflect.internal.Positions {
   self: Global =>
 
-  def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
-    new OffsetPosition(source, point)
-
-  def validatePositions(tree: Tree) {}
-
   class ValidatingPosAssigner extends PosAssigner {
     var pos: Position = _
     override def traverse(t: Tree) {

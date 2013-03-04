@@ -1297,7 +1297,16 @@ trait Scanners extends ScannersCommon {
   class ParensAnalyzer(unit: CompilationUnit, patches: List[BracePatch]) extends UnitScanner(unit, patches) {
     val balance = mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
+    /** The source code with braces and line starts annotated with [NN] showing the index */
+    private def markedSource = {
+      val code   = unit.source.content
+      val braces = code.indices filter (idx => "{}\n" contains code(idx)) toSet;
+      val mapped = code.indices map (idx => if (braces(idx)) s"${code(idx)}[$idx]" else "" + code(idx))
+      mapped.mkString("")
+    }
+
     init()
+    log(s"ParensAnalyzer for ${unit.source} of length ${unit.source.content.length}\n```\n$markedSource\n```")
 
     /** The offset of the first token on this line, or next following line if blank
      */

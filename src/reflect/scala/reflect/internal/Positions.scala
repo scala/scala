@@ -1,6 +1,8 @@
 package scala.reflect
 package internal
 
+import util._
+
 trait Positions extends api.Positions { self: SymbolTable =>
 
   type Position = scala.reflect.internal.util.Position
@@ -12,7 +14,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *  If some of the trees are ranges, returns a range position enclosing all ranges
    *  Otherwise returns default position that is either focused or not.
    */
-  def wrappingPos(default: Position, trees: List[Tree]) = wrappingPos(default, trees, true)
+  def wrappingPos(default: Position, trees: List[Tree]): Position = wrappingPos(default, trees, true)
   def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = default
 
   /** A position that wraps the non-empty set of trees.
@@ -29,6 +31,9 @@ trait Positions extends api.Positions { self: SymbolTable =>
    */
   def ensureNonOverlapping(tree: Tree, others: List[Tree]){ ensureNonOverlapping(tree, others, true) }
   def ensureNonOverlapping(tree: Tree, others: List[Tree], focus: Boolean) {}
+
+  def rangePos(source: SourceFile, start: Int, point: Int, end: Int): Position = new OffsetPosition(source, point)
+  def validatePositions(tree: Tree) {}
 
   trait PosAssigner extends Traverser {
     var pos: Position

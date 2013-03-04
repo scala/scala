@@ -14,6 +14,23 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   private[scala] var nodeCount = 0
 
+  protected def treeLine(t: Tree): String =
+    if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
+    else t.summaryString
+
+  protected def treeStatus(t: Tree, enclosingTree: Tree = null) = {
+    val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
+
+    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
+  }
+  protected def treeSymStatus(t: Tree) = {
+    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
+    "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
+      if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
+      else treeLine(t)
+    )
+  }
+
   abstract class Tree extends TreeContextApiImpl with Attachable with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1

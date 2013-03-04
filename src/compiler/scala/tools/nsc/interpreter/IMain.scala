@@ -243,7 +243,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     settings.outputDirs setSingleOutput replOutput.dir
     settings.exposeEmptyPackage.value = true
     if (settings.Yrangepos.value)
-      new Global(settings, reporter) with ReplGlobal with interactive.RangePositions { override def toString: String = "<global>" }
+      new RangePositionGlobal(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
     else
       new Global(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
   }
