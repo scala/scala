@@ -1166,6 +1166,19 @@ QUICK BUILD (QUICK)
     </scalacfork>
   </target>
 
+  <target name="sandbox" depends="quick.subscript.swing">
+    <scalacfork
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${basedir}/sandbox"
+     destdir="${basedir}/sandbox"
+      jvmargs="${scalacfork.jvmargs}">
+        <include name="*.scala"/>
+        <include name="*/*.scala"/>
+      <compilationpath refid="quick.compilation.path.subscript"/>
+    </scalacfork>
+  </target>
+
 
   <target name="quick.pre-plugins" depends="quick.subscript.swing, quick.comp">
     <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">

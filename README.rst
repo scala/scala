@@ -8,12 +8,45 @@ repository and how to build it. This particular branch supports the language
 extension named SubScript.
 
 This file has been derived from the README.rst of the main Scala branch;
-SubScript issues have been added.
+Items related to SubScript have been added.
 
 For information about Scala and SubScript as languages, you can visit the 
 web sites:
 http://www.scala-lang.org/
 http://www.subscript-lang.org/
+
+Part 0. SubScript Compiler issues
+--------------------------------------------------------------------------------       
+The current SubScript compiler (a branch of scalac) is good enough to compile 
+the given example programs, but there are some limitations and bugs:
+
+- only language features used in the examples are present and tested.
+  Other features, most notably communication, is TBD
+
+- "here" and "there" are not yet implicit values. Therefore you would need 
+  to write things like "@{gui(there)}:" instead of "@gui"
+
+- local values and variables in scripts need both be typed and initialized.
+  E.g., "val b=true" is not accepted yet; instead write "val b:Boolean = true"
+
+- the "?" syntax for actual output parameters, actual constrained parameters and
+  actual adapting parameters is not yet handled. For the time being use 
+  alternative notations. E.g.,
+  p?           ==>   ActualOutputParameter     (p, (v:Int)=>p=v)
+  p?if?(cond)  ==>   ActualConstrainedParameter(p, (v:Int)=>p=v, (v:Int)=>cond)
+  p??          ==>   ActualAdaptingParameter   (_p)
+  Note the underscore in the latter line.
+
+- The compiler may prematurely stop parsing script expressions. E.g.
+  if you have a token such as "..." on a new line, the compiler may refuse
+  to include it with the script expression on previous lines.
+  Solution: join the line containing "..." with the previous line.
+
+- The compiler may crash on values in a script expression for which 
+  no implicit conversion to a script exist. 
+  This may for instance happen if you specify 'x' in a script
+  expression to denote an event that the 'x' key is pressed, and if you forgot
+  to provide an implicit script key(c:Char)/
 
 Part I. The repository layout
 --------------------------------------------------------------------------------                            
