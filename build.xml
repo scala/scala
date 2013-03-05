@@ -1359,6 +1359,7 @@ PACKED QUICK BUILD (PACK)
   </target>
 
   <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
+    <taskdef name="pack-lib" classname="scala.tools.ant.JarLister" classpathref="quick.classpath"/>
     <mkdir dir="${build-pack.dir}/lib"/>
     <!-- First copy maven dependencies -->
     <copy todir="${build-pack.dir}/lib">
@@ -1372,6 +1373,7 @@ PACKED QUICK BUILD (PACK)
       </fileset>
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
+    <pack-lib file="${build-pack.dir}/lib/scala-library.jar"/>
     <jar destfile="${build-pack.dir}/lib/scala-actors.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <include name="scala/actors/**"/>
