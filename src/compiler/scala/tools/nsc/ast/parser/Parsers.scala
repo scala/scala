@@ -142,9 +142,9 @@ self =>
       if (source.isSelfContained) () => compilationUnit()
       else () => scriptBody()
 
-    def newScanner = new SourceFileScanner(source)
+    def newScanner(): Scanner = new SourceFileScanner(source)
 
-    val in = newScanner
+    val in = newScanner()
     in.init()
 
     private val globalFresh = new FreshNameCreator.Default
@@ -196,10 +196,9 @@ self =>
   }
 
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
+    def this(unit: global.CompilationUnit) = this(unit, Nil)
 
-    def this(unit: global.CompilationUnit) = this(unit, List())
-
-    override def newScanner = new UnitScanner(unit, patches)
+    override def newScanner() = new UnitScanner(unit, patches)
 
     override def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     override def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
@@ -219,6 +218,7 @@ self =>
       try body
       finally smartParsing = saved
     }
+    def withPatches(patches: List[BracePatch]): UnitParser = new UnitParser(unit, patches)
 
     val syntaxErrors = new ListBuffer[(Int, String)]
     def showSyntaxErrors() =
@@ -244,7 +244,7 @@ self =>
       if (syntaxErrors.isEmpty) firstTry
       else in.healBraces() match {
         case Nil      => showSyntaxErrors() ; firstTry
-        case patches  => new UnitParser(unit, patches).parse()
+        case patches  => (this withPatches patches).parse()
       }
     }
   }

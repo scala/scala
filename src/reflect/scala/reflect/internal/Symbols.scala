@@ -69,6 +69,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   val originalOwner = perRunCaches.newMap[Symbol, Symbol]()
 
+  // TODO - don't allow the owner to be changed without checking invariants, at least
+  // when under some flag. Define per-phase invariants for owner/owned relationships,
+  // e.g. after flatten all classes are owned by package classes, there are lots and
+  // lots of these to be declared (or more realistically, discovered.)
+  protected def saveOriginalOwner(sym: Symbol) {
+    // don't keep the original owner in presentation compiler runs
+    // (the map will grow indefinitely, and the only use case is the
+    // backend).
+    if (!forInteractive) {
+      if (originalOwner contains sym) ()
+      else originalOwner(sym) = sym.rawowner
+    }
+  }
+
   abstract class SymbolContextApiImpl extends SymbolContextApi {
     this: Symbol =>
 
@@ -948,13 +962,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // e.g. after flatten all classes are owned by package classes, there are lots and
     // lots of these to be declared (or more realistically, discovered.)
     def owner_=(owner: Symbol) {
-      // don't keep the original owner in presentation compiler runs
-      // (the map will grow indefinitely, and the only use case is the
-      // backend).
-      if (!forInteractive) {
-        if (originalOwner contains this) ()
-        else originalOwner(this) = rawowner
-      }
+      saveOriginalOwner(this)
       assert(isCompilerUniverse, "owner_= is not thread-safe; cannot be run in reflexive code")
       if (traceSymbolActivity)
         traceSymbols.recordNewSymbolOwner(this, owner)

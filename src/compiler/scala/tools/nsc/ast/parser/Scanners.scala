@@ -9,7 +9,7 @@ import scala.tools.nsc.util.CharArrayReader
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
-import scala.annotation.switch
+import scala.annotation.{ switch, tailrec }
 import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, ArrayBuffer }
 import scala.xml.Utility.{ isNameStart }
@@ -1233,7 +1233,7 @@ trait Scanners extends ScannersCommon {
 
   /** A scanner over a given compilation unit
    */
-  class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
+  class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
     override def deprecationWarning(off: Offset, msg: String)   = unit.deprecationWarning(unit.position(off), msg)
@@ -1382,17 +1382,24 @@ trait Scanners extends ScannersCommon {
           bpbuf += current
         }
       }
+      def bracePairString(bp: BracePair, indent: Int): String = {
+        val rangeString = {
+          import bp._
+          val lline = line(loff)
+          val rline = line(roff)
+          val tokens = List(lline, lindent, rline, rindent) map (n => if (n < 0) "??" else "" + n)
+          "%s:%s to %s:%s".format(tokens: _*)
+        }
+        val outer  = (" " * indent) + rangeString
+        val inners = bp.nested map (bracePairString(_, indent + 2))
 
-      def printBP(bp: BracePair, indent: Int) {
-        println(" "*indent+line(bp.loff)+":"+bp.lindent+" to "+line(bp.roff)+":"+bp.rindent)
-        if (bp.nested.nonEmpty)
-          for (bp1 <- bp.nested) {
-            printBP(bp1, indent + 2)
-          }
+        if (inners.isEmpty) outer
+        else inners.mkString(outer + "\n", "\n", "")
       }
-//      println("lineStart = "+lineStart)//DEBUG
-//      println("bracepairs = ")
-//      for (bp <- bpbuf.toList) printBP(bp, 0)
+      def bpString    = bpbuf.toList map ("\n" + bracePairString(_, 0)) mkString ""
+      def startString = lineStart.mkString("line starts: [", ", ", "]")
+
+      log(s"\n$startString\n$bpString")
       bpbuf.toList
     }
 
