@@ -87,6 +87,16 @@ abstract class SymbolTable extends macros.Universe
     result
   }
   @inline
+  final private[scala] def debuglogResult[T](msg: => String)(result: T): T = {
+    debuglog(msg + ": " + result)
+    result
+  }
+  @inline
+  final private[scala] def devWarningResult[T](msg: => String)(result: T): T = {
+    devWarning(msg + ": " + result)
+    result
+  }
+  @inline
   final private[scala] def logResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
     if (cond(result))
       log(msg + ": " + result)

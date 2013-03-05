@@ -1317,15 +1317,18 @@ trait Infer extends Checkable {
       }
     }
 
-    def instBounds(tvar: TypeVar): (Type, Type) = {
-      val tparam = tvar.origin.typeSymbol
-      val instType = toOrigin(tvar.constr.inst)
+    def instBounds(tvar: TypeVar): TypeBounds = {
+      val tparam               = tvar.origin.typeSymbol
+      val instType             = toOrigin(tvar.constr.inst)
+      val TypeBounds(lo, hi)   = tparam.info.bounds
       val (loBounds, hiBounds) =
-        if (instType != NoType && isFullyDefined(instType)) (List(instType), List(instType))
+        if (isFullyDefined(instType)) (List(instType), List(instType))
         else (tvar.constr.loBounds, tvar.constr.hiBounds)
-      val lo = lub(tparam.info.bounds.lo :: loBounds map toOrigin)
-      val hi = glb(tparam.info.bounds.hi :: hiBounds map toOrigin)
-      (lo, hi)
+
+      TypeBounds(
+        lub(lo :: loBounds map toOrigin),
+        glb(hi :: hiBounds map toOrigin)
+      )
     }
 
     def isInstantiatable(tvars: List[TypeVar]) = {
@@ -1335,33 +1338,25 @@ trait Infer extends Checkable {
       solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), false)
     }
 
-    // this is quite nasty: it destructively changes the info of the syms of e.g., method type params (see #3692, where the type param T's bounds were set to >: T <: T, so that parts looped)
+    // this is quite nasty: it destructively changes the info of the syms of e.g., method type params
+    // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
     // the changes are rolled back by restoreTypeBounds, but might be unintentially observed in the mean time
     def instantiateTypeVar(tvar: TypeVar) {
-      val tparam = tvar.origin.typeSymbol
-      if (false &&
-          tvar.constr.inst != NoType &&
-          isFullyDefined(tvar.constr.inst) &&
-          (tparam.info.bounds containsType tvar.constr.inst)) {
-        context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
-        tparam setInfo tvar.constr.inst
-        tparam resetFlag DEFERRED
-        debuglog("new alias of " + tparam + " = " + tparam.info)
-      } else {
-        val (lo, hi) = instBounds(tvar)
-        if (lo <:< hi) {
-          if (!((lo <:< tparam.info.bounds.lo) && (tparam.info.bounds.hi <:< hi)) // bounds were improved
-             && tparam != lo.typeSymbolDirect && tparam != hi.typeSymbolDirect) { // don't create illegal cycles
-            context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
-            tparam setInfo TypeBounds(lo, hi)
-            debuglog("new bounds of " + tparam + " = " + tparam.info)
-          } else {
-            debuglog("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)
-          }
-        } else {
-          debuglog("inconsistent: "+tparam+" "+lo+" "+hi)
+      val tparam                    = tvar.origin.typeSymbol
+      val TypeBounds(lo0, hi0)      = tparam.info.bounds
+      val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
+
+      if (lo1 <:< hi1) {
+        if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved
+          log(s"redundant bounds: discarding TypeBounds($lo1, $hi1) for $tparam, no improvement on TypeBounds($lo0, $hi0)")
+        else if (tparam == lo1.typeSymbolDirect || tparam == hi1.typeSymbolDirect)
+          log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
+        else {
+          context.enclosingCaseDef pushTypeBounds tparam
+          tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
         }
       }
+      else log(s"inconsistent bounds: discarding TypeBounds($lo1, $hi1)")
     }
 
     /** Type intersection of simple type tp1 with general type tp2.
@@ -1524,7 +1519,7 @@ trait Infer extends Checkable {
         // todo: missing test case for bests.isEmpty
         bests match {
           case best :: Nil                              => tree setSymbol best setType (pre memberType best)
-          case best :: competing :: _ if alts0.nonEmpty => 
+          case best :: competing :: _ if alts0.nonEmpty =>
             // SI-6912 Don't give up and leave an OverloadedType on the tree.
             //         Originally I wrote this as `if (secondTry) ... `, but `tryTwice` won't attempt the second try
             //         unless an error is issued. We're not issuing an error, in the assumption that it would be

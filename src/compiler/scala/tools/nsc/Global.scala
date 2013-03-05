@@ -263,6 +263,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final override def devWarning(msg: => String) {
     if (settings.developer.value || settings.debug.value)
       warning("!!! " + msg)
+    else
+      log("!!! " + msg) // such warnings always at least logged
   }
 
   private def elapsedMessage(msg: String, start: Long) =
