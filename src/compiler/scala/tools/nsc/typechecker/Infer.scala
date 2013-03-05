@@ -1694,7 +1694,7 @@ trait Infer extends Checkable {
           }
           else if (sym.isOverloaded) {
             val xs      = sym.alternatives
-            val tparams = new AsSeenFromMap(pre, xs.head.owner) mapOver xs.head.typeParams
+            val tparams = newAsSeenFromMap(pre, xs.head.owner) mapOver xs.head.typeParams
             val bounds  = tparams map (_.tpeHK) // see e.g., #1236
             val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), xs))
 
