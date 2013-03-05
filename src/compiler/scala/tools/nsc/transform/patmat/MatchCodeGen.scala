@@ -17,7 +17,7 @@ import scala.reflect.internal.util.NoPosition
  * We have two modes in which to emit trees: optimized (the default)
  * and pure (aka "virtualized": match is parametric in its monad).
  */
-trait MatchCodeGen { self: PatternMatching =>
+trait MatchCodeGen extends Interface {
   import PatternMatchingStats._
   import global.{nme, treeInfo, definitions, gen, Tree, Type, Symbol, NoSymbol,
     appliedType, NoType, MethodType, newTermName, Name,

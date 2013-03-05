@@ -222,8 +222,13 @@ trait Typers extends Modes with Adaptations with Tags {
         new SubstWildcardMap(tparams).apply(tp)
       case TypeRef(_, sym, _) if sym.isAliasType =>
         val tp0 = tp.dealias
-        val tp1 = dropExistential(tp0)
-        if (tp1 eq tp0) tp else tp1
+        if (tp eq tp0) {
+          debugwarn(s"dropExistential did not progress dealiasing $tp, see SI-7126")
+          tp
+        } else {
+          val tp1 = dropExistential(tp0)
+          if (tp1 eq tp0) tp else tp1
+        }
       case _ => tp
     }
 
@@ -1818,7 +1823,9 @@ trait Typers extends Modes with Adaptations with Tags {
 
         def pkgObjectWarning(m : Symbol, mdef : ModuleDef, restricted : String) = {
           val pkgName = mdef.symbol.ownerChain find (_.isPackage) map (_.decodedName) getOrElse mdef.symbol.toString
-          context.warning(if (m.pos.isDefined) m.pos else mdef.pos, s"${m} should be placed directly in package ${pkgName} instead of package object ${pkgName}. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.")
+          val pos = if (m.pos.isDefined) m.pos else mdef.pos
+          debugwarn(s"${m}  should be placed directly in package ${pkgName} instead of package object ${pkgName}. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.")
+          debugwarn(pos.lineContent + (if (pos.isDefined) " " * (pos.column - 1) + "^" else ""))
         }
       }
 

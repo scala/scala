@@ -22,7 +22,7 @@ END-USER TARGETS
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
-  <target name="test" depends="test.done, osgi.test, bc.run"
+  <target name="test" depends="test.done"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
 
   <target name="test-opt"
@@ -2643,7 +2643,7 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt"/>
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt, osgi.test, bc.run"/>
 
 
 <!-- ===========================================================================
@@ -2656,7 +2656,7 @@ Binary compatibility testing
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
-      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5-SNAPSHOT"/>
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
       <dependency groupId="org.scala-lang" artifactId="scala-swing" version="2.10.0"/>
@@ -2665,7 +2665,7 @@ Binary compatibility testing
     </artifact:dependencies>
   </target>
 
-  <target name="bc.run" depends="bc.init, pack.lib">
+  <target name="bc.run" depends="bc.init, pack.done">
     <java
        fork="true"
        failonerror="true"
