@@ -502,7 +502,7 @@ trait Namers extends MethodSynthesis {
             typer.permanentlyHiddenWarning(pos, to0, e.sym)
           else if (context ne context.enclClass) {
             val defSym = context.prefix.member(to) filter (
-              sym => sym.exists && context.isAccessible(sym, context.prefix, false))
+              sym => sym.exists && context.isAccessible(sym, context.prefix, superAccess = false))
 
             defSym andAlso (typer.permanentlyHiddenWarning(pos, to0, _))
           }

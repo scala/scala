@@ -131,7 +131,7 @@ self =>
 
   override def zip[U >: T, S, That](that: GenIterable[S])(implicit bf: CanBuildFrom[This, (U, S), That]): That = newZippedTryParSeq(that).asInstanceOf[That]
   override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[This, (U, Int), That]): That =
-    newZipped(ParRange(0, splitter.remaining, 1, false)).asInstanceOf[That]
+    newZipped(ParRange(0, splitter.remaining, 1, inclusive = false)).asInstanceOf[That]
   override def zipAll[S, U >: T, That](that: GenIterable[S], thisElem: U, thatElem: S)(implicit bf: CanBuildFrom[This, (U, S), That]): That =
     newZippedAllTryParSeq(that, thisElem, thatElem).asInstanceOf[That]
 

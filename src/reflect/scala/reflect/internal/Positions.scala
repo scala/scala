@@ -36,7 +36,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *  If some of the trees are ranges, returns a range position enclosing all ranges
    *  Otherwise returns default position that is either focused or not.
    */
-  def wrappingPos(default: Position, trees: List[Tree]): Position = wrappingPos(default, trees, true)
+  def wrappingPos(default: Position, trees: List[Tree]): Position = wrappingPos(default, trees, focus = true)
   def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = {
     if (useOffsetPositions) default else {
       val ranged = trees filter (_.pos.isRange)
@@ -61,7 +61,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *  shortening the range, assigning TransparentPositions
    *  to some of the nodes in `tree` or focusing on the position.
    */
-  def ensureNonOverlapping(tree: Tree, others: List[Tree]){ ensureNonOverlapping(tree, others, true) }
+  def ensureNonOverlapping(tree: Tree, others: List[Tree]){ ensureNonOverlapping(tree, others, focus = true) }
   def ensureNonOverlapping(tree: Tree, others: List[Tree], focus: Boolean) {
     if (useOffsetPositions) return
 

@@ -94,7 +94,7 @@ abstract trait Attribute extends MetaData {
 
     sb append key append '='
     val sb2 = new StringBuilder()
-    Utility.sequenceToXML(value, TopScope, sb2, true)
+    Utility.sequenceToXML(value, TopScope, sb2, stripComments = true)
     Utility.appendQuoted(sb2.toString, sb)
   }
 }

@@ -119,11 +119,11 @@ abstract class ICodeCheckers {
       clasz = cls
 
       for (f1 <- cls.fields ; f2 <- cls.fields ; if f1 < f2)
-        if (isConfict(f1, f2, false))
+        if (isConfict(f1, f2, canOverload = false))
           icodeError("Repetitive field name: " + f1.symbol.fullName)
 
       for (m1 <- cls.methods ; m2 <- cls.methods ; if m1 < m2)
-        if (isConfict(m1, m2, true))
+        if (isConfict(m1, m2, canOverload = true))
           icodeError("Repetitive method: " + m1.symbol.fullName)
 
       clasz.methods foreach check
@@ -321,14 +321,14 @@ abstract class ICodeCheckers {
       def popStackN(num: Int, instrFn: () => String = defaultInstrPrinter) = {
         List.range(0, num) map { _ =>
           val res = _popStack
-          printStackString(false, res, instrFn())
+          printStackString(isPush = false, res, instrFn())
           res
         }
       }
       def pushStackN(xs: Seq[TypeKind], instrFn: () => String) = {
         xs foreach { x =>
           stack push x
-          printStackString(true, x, instrFn())
+          printStackString(isPush = true, x, instrFn())
         }
       }
 
@@ -594,7 +594,7 @@ abstract class ICodeCheckers {
              case x if style.hasInstance  => x + 1
              case x                       => x
            }
-           if (style == Static(true))
+           if (style == Static(onInstance = true))
              checkBool(method.isPrivate || method.isConstructor, "Static call to non-private method.")
 
           checkStack(paramCount)

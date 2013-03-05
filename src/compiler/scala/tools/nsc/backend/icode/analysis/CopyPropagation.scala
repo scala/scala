@@ -308,7 +308,7 @@ abstract class CopyPropagation {
 
         case CALL_METHOD(method, style) => style match {
           case Dynamic =>
-            out = simulateCall(in, method, false)
+            out = simulateCall(in, method, static = false)
 
           case Static(onInstance) =>
             if (onInstance) {
@@ -326,12 +326,12 @@ abstract class CopyPropagation {
                 // put the Record back on the stack and remove the 'returned' value
                 out.stack = out.stack.drop(1 + method.info.paramTypes.length)
               } else
-                out = simulateCall(in, method, false)
+                out = simulateCall(in, method, static = false)
             } else
-              out = simulateCall(in, method, true)
+              out = simulateCall(in, method, static = true)
 
           case SuperCall(_) =>
-            out = simulateCall(in, method, false)
+            out = simulateCall(in, method, static = false)
         }
 
         case BOX(tpe) =>

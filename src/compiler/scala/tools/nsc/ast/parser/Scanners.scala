@@ -915,7 +915,7 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    def intVal: Long = intVal(false)
+    def intVal: Long = intVal(negated = false)
 
     /** Convert current strVal, base to double value
     */
@@ -947,7 +947,7 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    def floatVal: Double = floatVal(false)
+    def floatVal: Double = floatVal(negated = false)
 
     def checkNoLetter() {
       if (isIdentifierPart(ch) && ch >= ' ')
@@ -1440,7 +1440,7 @@ trait Scanners extends ScannersCommon {
               while (lin < lineStart.length && column(lineStart(lin)) > lindent)
                 lin += 1
               if (lin < lineStart.length) {
-                val patches1 = insertPatch(patches, BracePatch(lineStart(lin), true))
+                val patches1 = insertPatch(patches, BracePatch(lineStart(lin), inserted = true))
                 //println("patch for "+bp+"/"+imbalanceMeasure+"/"+new ParensAnalyzer(unit, patches1).imbalanceMeasure)
                 /*if (improves(patches1))*/
                 patches1
@@ -1461,7 +1461,7 @@ trait Scanners extends ScannersCommon {
           else {
             val patches1 = delete(nested)
             if (patches1 ne patches) patches1
-            else insertPatch(patches, BracePatch(roff, false))
+            else insertPatch(patches, BracePatch(roff, inserted = false))
           }
       }
       delete(bracePairs)

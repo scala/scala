@@ -25,8 +25,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
     if (nme.keywords(term) && term != nme.USCOREkw) "`%s`" format s
     else s
   }
-  def quotedName(name: Name): String = quotedName(name, false)
-  def quotedName(name: String): String = quotedName(newTermName(name), false)
+  def quotedName(name: Name): String = quotedName(name, decode = false)
+  def quotedName(name: String): String = quotedName(newTermName(name), decode = false)
 
   private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
     val sym = tree.symbol
@@ -43,8 +43,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
   }
 
-  def decodedSymName(tree: Tree, name: Name) = symNameInternal(tree, name, true)
-  def symName(tree: Tree, name: Name) = symNameInternal(tree, name, false)
+  def decodedSymName(tree: Tree, name: Name) = symNameInternal(tree, name, decoded = true)
+  def symName(tree: Tree, name: Name) = symNameInternal(tree, name, decoded = false)
 
   /** Turns a path into a String, introducing backquotes
    *  as necessary.

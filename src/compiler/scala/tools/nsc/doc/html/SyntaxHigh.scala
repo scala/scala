@@ -107,14 +107,14 @@ private[html] object SyntaxHigh {
           case '/' =>
             if (star) {
               if (level > 0) level -= 1
-              if (level == 0) i else multiline(i+1, true)
+              if (level == 0) i else multiline(i+1, star = true)
             } else
-              multiline(i+1, false)
+              multiline(i+1, star = false)
           case _ =>
-            multiline(i+1, false)
+            multiline(i+1, star = false)
         }
       }
-      if (buf(i) == '/') line(i) else multiline(i, true)
+      if (buf(i) == '/') line(i) else multiline(i, star = true)
       out.toString
     }
 
@@ -129,16 +129,16 @@ private[html] object SyntaxHigh {
           out append ch
           ch match {
             case '\\' =>
-              charlit0(i+1, true)
+              charlit0(i+1, bslash = true)
             case '\'' if !bslash =>
               i
             case _ =>
-              if (bslash && '0' <= ch && ch <= '9') charlit0(i+1, true)
-              else charlit0(i+1, false)
+              if (bslash && '0' <= ch && ch <= '9') charlit0(i+1, bslash = true)
+              else charlit0(i+1, bslash = false)
           }
         }
       }
-      charlit0(j, false)
+      charlit0(j, bslash = false)
       out.toString
     }
 
@@ -150,14 +150,14 @@ private[html] object SyntaxHigh {
         out append ch
         ch match {
           case '\\' =>
-            strlit0(i+1, true)
+            strlit0(i+1, bslash = true)
           case '"' if !bslash =>
             i
           case _ =>
-            strlit0(i+1, false)
+            strlit0(i+1, bslash = false)
         }
       }
-      strlit0(i, false)
+      strlit0(i, bslash = false)
       out.toString
     }
 
@@ -183,7 +183,7 @@ private[html] object SyntaxHigh {
         ch match {
           case 'e' | 'E' =>
             out append ch
-            expo(i+1, false)
+            expo(i+1, signed = false)
           case _ =>
             if (Character.isDigit(ch)) {
               out append ch
@@ -197,7 +197,7 @@ private[html] object SyntaxHigh {
         ch match {
           case '+' | '-' if !signed =>
             out append ch
-            expo(i+1, true)
+            expo(i+1, signed = true)
           case _ =>
             if (Character.isDigit(ch)) {
               out append ch

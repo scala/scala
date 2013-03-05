@@ -226,7 +226,7 @@ abstract class ClassfileParser {
         val (name0, tpe0) = getNameAndType(in.getChar(start + 3), ownerTpe)
         debuglog("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
 
-        forceMangledName(tpe0.typeSymbol.name, false)
+        forceMangledName(tpe0.typeSymbol.name, module = false)
         val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
 //        println("new tpe: " + tpe + " at phase: " + phase)
 
@@ -234,21 +234,21 @@ abstract class ClassfileParser {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
           //assert(name.endsWith("$"), "Not a module class: " + name)
-          f = forceMangledName(name dropRight 1, true)
+          f = forceMangledName(name dropRight 1, module = true)
           if (f == NoSymbol)
             f = rootMirror.getModuleByName(name dropRight 1)
         } else {
           val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
 //          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
-          f = owner.info.findMember(origName, 0, 0, false).suchThat(_.tpe.widen =:= tpe)
+          f = owner.info.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
-            f = owner.info.findMember(newTermName(origName + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
+            f = owner.info.findMember(newTermName(origName + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
             if (ownerTpe.typeSymbol.isImplClass) {
 //              println("impl class, member: " + owner.tpe.member(origName) + ": " + owner.tpe.member(origName).tpe)
-              f = ownerTpe.findMember(origName, 0, 0, false).suchThat(_.tpe =:= tpe)
+              f = ownerTpe.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
             } else {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
               f = tpe match {
@@ -814,14 +814,14 @@ abstract class ClassfileParser {
         val tpname = subName(':'.==).toTypeName
         val s = sym.newTypeParameter(tpname)
         tparams = tparams + (tpname -> s)
-        sig2typeBounds(tparams, true)
+        sig2typeBounds(tparams, skiptvs = true)
         newTParams += s
       }
       index = start
       while (sig.charAt(index) != '>') {
         val tpname = subName(':'.==).toTypeName
         val s = tparams(tpname)
-        s.setInfo(sig2typeBounds(tparams, false))
+        s.setInfo(sig2typeBounds(tparams, skiptvs = false))
       }
       accept('>')
     }
@@ -830,12 +830,12 @@ abstract class ClassfileParser {
       sym.setInfo(new TypeParamsType(ownTypeParams))
     val tpe =
       if ((sym eq null) || !sym.isClass)
-        sig2type(tparams, false)
+        sig2type(tparams, skiptvs = false)
       else {
         classTParams = tparams
         val parents = new ListBuffer[Type]()
         while (index < end) {
-          parents += sig2type(tparams, false)  // here the variance doesnt'matter
+          parents += sig2type(tparams, skiptvs = false)  // here the variance doesnt'matter
         }
         ClassInfoType(parents.toList, instanceScope, sym)
       }

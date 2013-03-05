@@ -112,7 +112,7 @@ trait Typers extends Adaptations with Tags {
       override def isCoercible(tp: Type, pt: Type): Boolean = undoLog undo { // #3281
         tp.isError || pt.isError ||
         context0.implicitsEnabled && // this condition prevents chains of views
-        inferView(EmptyTree, tp, pt, false) != EmptyTree
+        inferView(EmptyTree, tp, pt, reportAmbiguous = false) != EmptyTree
       }
     }
 
@@ -136,7 +136,7 @@ trait Typers extends Adaptations with Tags {
           for(ar <- argResultsBuff)
             paramTp = paramTp.subst(ar.subst.from, ar.subst.to)
 
-          val res = if (paramFailed || (paramTp.isError && {paramFailed = true; true})) SearchFailure else inferImplicit(fun, paramTp, context.reportErrors, false, context)
+          val res = if (paramFailed || (paramTp.isError && {paramFailed = true; true})) SearchFailure else inferImplicit(fun, paramTp, context.reportErrors, isView = false, context)
           argResultsBuff += res
 
           if (res.isSuccess) {
@@ -179,7 +179,7 @@ trait Typers extends Adaptations with Tags {
     }
 
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
-      inferView(tree, from, to, reportAmbiguous, true)
+      inferView(tree, from, to, reportAmbiguous, saveErrors = true)
 
     /** Infer an implicit conversion (`view`) between two types.
      *  @param tree             The tree which needs to be converted.
@@ -201,7 +201,7 @@ trait Typers extends Adaptations with Tags {
         case PolyType(_, _) => EmptyTree
         case _ =>
           def wrapImplicit(from: Type): Tree = {
-            val result = inferImplicit(tree, functionType(from.withoutAnnotations :: Nil, to), reportAmbiguous, true, context, saveErrors)
+            val result = inferImplicit(tree, functionType(from.withoutAnnotations :: Nil, to), reportAmbiguous, isView = true, context, saveAmbiguousDivergent = saveErrors)
             if (result.subst != EmptyTreeTypeSubstituter) {
               result.subst traverse tree
               notifyUndetparamsInferred(result.subst.from, result.subst.to)
@@ -723,7 +723,7 @@ trait Typers extends Adaptations with Tags {
           featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
         val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
         def action(): Boolean = {
-          def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, true, false, context).isSuccess
+          def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, reportAmbiguous = true, isView = false, context).isSuccess
           def hasOption = settings.language.value exists (s => s == featureName || s == "_")
           val OK = hasImport || hasOption
           if (!OK) {
@@ -1142,7 +1142,7 @@ trait Typers extends Adaptations with Tags {
                   if (context.implicitsEnabled && !pt.isError && !tree.isErrorTyped) {
                     // (14); the condition prevents chains of views
                     debuglog("inferring view from " + tree.tpe + " to " + pt)
-                    val coercion = inferView(tree, tree.tpe, pt, true)
+                    val coercion = inferView(tree, tree.tpe, pt, reportAmbiguous = true)
                     if (coercion != EmptyTree) {
                       def msg = "inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe
                       if (settings.logImplicitConv.value)
@@ -1320,7 +1320,7 @@ trait Typers extends Adaptations with Tags {
                 reportError
             }
 
-      silent(_.adaptToMember(qual, HasMember(name), false)) orElse (err =>
+      silent(_.adaptToMember(qual, HasMember(name), reportAmbiguous = false)) orElse (err =>
         onError {
           if (reportAmbiguous) context issue err
           setError(tree)
@@ -3880,7 +3880,7 @@ trait Typers extends Adaptations with Tags {
           val targs = args map (_.tpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
           if (fun.symbol == Predef_classOf)
-            typedClassOf(tree, args.head, true)
+            typedClassOf(tree, args.head, noGen = true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
               val scrutineeType = fun match {
@@ -4383,7 +4383,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       def tryTypedArgs(args: List[Tree], mode: Mode): Option[List[Tree]] = {
-        val c = context.makeSilent(false)
+        val c = context.makeSilent(reportAmbiguousErrors = false)
         c.retyping = true
         try {
           val res = newTyper(c).typedArgs(args, mode)
@@ -4442,7 +4442,7 @@ trait Typers extends Adaptations with Tags {
               tryTypedArgs(args, forArgMode(fun, mode)) match {
                 case Some(args1) =>
                   val qual1 =
-                    if (!pt.isError) adaptToArguments(qual, name, args1, pt, true, true)
+                    if (!pt.isError) adaptToArguments(qual, name, args1, pt, reportAmbiguous = true, saveErrors = true)
                     else qual
                   if (qual1 ne qual) {
                     val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
@@ -4672,7 +4672,7 @@ trait Typers extends Adaptations with Tags {
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
           if (name != nme.CONSTRUCTOR && mode.inExprModeOr(PATTERNmode)) {
-            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, true, true)
+            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = true, saveErrors = true)
             if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
           }
@@ -4757,7 +4757,7 @@ trait Typers extends Adaptations with Tags {
             case _ if accessibleError.isDefined =>
               // don't adapt constructor, SI-6074
               val qual1 = if (name == nme.CONSTRUCTOR) qual
-                          else adaptToMemberWithArgs(tree, qual, name, mode, false, false)
+                          else adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = false, saveErrors = false)
               if (!qual1.isErrorTyped && (qual1 ne qual))
                 typed(Select(qual1, name) setPos tree.pos, mode, pt)
               else

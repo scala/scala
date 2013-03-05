@@ -332,7 +332,7 @@ object Range {
     }
   }
   def count(start: Int, end: Int, step: Int): Int =
-    count(start, end, step, false)
+    count(start, end, step, isInclusive = false)
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)

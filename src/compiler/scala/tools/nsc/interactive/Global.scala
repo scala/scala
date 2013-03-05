@@ -746,10 +746,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         try {
           val tp1 = pre.memberType(alt) onTypeError NoType
           val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, sym.owner.typeParams)
-          matchesType(tp1, tp2, false) || {
+          matchesType(tp1, tp2, alwaysMatchSimple = false) || {
             debugLog(s"findMirrorSymbol matchesType($tp1, $tp2) failed")
             val tp3 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, alt.owner.typeParams)
-            matchesType(tp1, tp3, false) || {
+            matchesType(tp1, tp3, alwaysMatchSimple = false) || {
               debugLog(s"findMirrorSymbol fallback matchesType($tp1, $tp3) failed")
               false
             }
@@ -909,8 +909,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val locals = new Members[ScopeMember]
     val enclosing = new Members[ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
-      locals.add(sym, pre, false) { (s, st) =>
-        new ScopeMember(s, st, context.isAccessible(s, pre, false), viaImport)
+      locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
+        new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
       }
     def localsToEnclosing() = {
       enclosing.addNonShadowed(locals)
@@ -1012,7 +1012,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val vtree = viewApply(view)
         val vpre = stabilizedType(vtree)
         for (sym <- vtree.tpe.members) {
-          addTypeMember(sym, vpre, false, view.tree.symbol)
+          addTypeMember(sym, vpre, inherited = false, view.tree.symbol)
         }
       }
       //println()
