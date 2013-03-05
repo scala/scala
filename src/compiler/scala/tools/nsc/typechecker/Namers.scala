@@ -47,10 +47,22 @@ trait Namers extends MethodSynthesis {
 
   private class NormalNamer(context: Context) extends Namer(context)
   def newNamer(context: Context): Namer = new NormalNamer(context)
-  def newNamerFor(context: Context, tree: Tree): Namer =
-    newNamer(context.makeNewScope(tree, tree.symbol))
+  def newNamerFor(context: Context, tree: Tree): Namer = newNamer(context.makeNewScope(tree, tree.symbol))
 
   abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
+
+    def saveDefaultGetter(meth: Symbol, default: Symbol) {
+      if (forInteractive) {
+        // save the default getters as attachments in the method symbol. if compiling the
+        // same local block several times (which can happen in interactive mode) we might
+        // otherwise not find the default symbol, because the second time it the method
+        // symbol will be re-entered in the scope but the default parameter will not.
+        meth.attachments.get[DefaultsOfLocalMethodAttachment] match {
+          case Some(att) => att.defaultGetters += default
+          case None      => meth.updateAttachment(new DefaultsOfLocalMethodAttachment(default))
+        }
+      }
+    }
 
     import NamerErrorGen._
     val typer = newTyper(context)
@@ -1297,17 +1309,10 @@ trait Namers extends MethodSynthesis {
             if (!isConstr)
               methOwner.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
-            if (forInteractive && default.owner.isTerm) {
-              // save the default getters as attachments in the method symbol. if compiling the
-              // same local block several times (which can happen in interactive mode) we might
-              // otherwise not find the default symbol, because the second time it the method
-              // symbol will be re-entered in the scope but the default parameter will not.
-              meth.attachments.get[DefaultsOfLocalMethodAttachment] match {
-                case Some(att) => att.defaultGetters += default
-                case None      => meth.updateAttachment(new DefaultsOfLocalMethodAttachment(default))
-              }
-            }
-          } else if (baseHasDefault) {
+            if (default.owner.isTerm)
+              saveDefaultGetter(meth, default)
+          }
+          else if (baseHasDefault) {
             // the parameter does not have a default itself, but the
             // corresponding parameter in the base class does.
             sym.setFlag(DEFAULTPARAM)
