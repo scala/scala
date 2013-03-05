@@ -95,7 +95,7 @@ extends AbstractMap[A, B]
 
   def iterator = entriesIterator map {e => (e.key, e.value)}
 
-  override def foreach[C](f: ((A, B)) => C): Unit = foreachEntry(e => f(e.key, e.value))
+  override def foreach[C](f: ((A, B)) => C): Unit = foreachEntry(e => f((e.key, e.value)))
 
   /* Override to avoid tuple allocation in foreach */
   override def keySet: scala.collection.Set[A] = new DefaultKeySet {
