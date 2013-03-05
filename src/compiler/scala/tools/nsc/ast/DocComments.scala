@@ -56,6 +56,11 @@ trait DocComments { self: Global =>
     else sym.owner.ancestors map (sym overriddenSymbol _) filter (_ != NoSymbol)
   }
 
+  def fillDocComment(sym: Symbol, comment: DocComment) {
+    docComments(sym) = comment
+    comment.defineVariables(sym)
+  }
+
   /** The raw doc comment of symbol `sym`, minus usecase and define sections, augmented by
    *  missing sections of an inherited doc comment.
    *  If a symbol does not have a doc comment but some overridden version of it does,
