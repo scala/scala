@@ -10,7 +10,6 @@ package nest
 
 import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
 import scala.reflect.io.{ Directory, File => SFile, FileOperationException }
-import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.{ ClassPath, FakePos }
 import scala.tools.nsc.Properties.{ setProp, propOrEmpty }
@@ -52,10 +51,7 @@ abstract class SimpleCompiler {
 
 class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
-    if (settings.Yrangepos.value)
-      new Global(settings, reporter) with RangePositions
-    else
-      new Global(settings, reporter)
+    Global(settings, reporter)
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global =
     newGlobal(settings, new ExtConsoleReporter(settings, new PrintWriter(logWriter)))

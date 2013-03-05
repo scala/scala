@@ -11,7 +11,7 @@ import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
 import scala.tools.nsc.util.MultiHashMap
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, RangePosition, NoPosition }
+import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.DivergentImplicit
@@ -21,14 +21,14 @@ import scala.language.implicitConversions
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, _reporter: Reporter, projectName: String = "")  extends {
+class Global(settings: Settings, _reporter: Reporter, projectName: String = "") extends {
   /* Is the compiler initializing? Early def, so that the field is true during the
    *  execution of the super constructor.
    */
   private var initializing = true
+  override val useOffsetPositions = false
 } with scala.tools.nsc.Global(settings, _reporter)
   with CompilerControl
-  with RangePositions
   with ContextTrees
   with RichCompilationUnits
   with ScratchPadMaker

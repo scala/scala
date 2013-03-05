@@ -19,7 +19,6 @@ import org.apache.tools.ant.util.facade.{FacadeTaskHelper,
                                   ImplementationSpecificArgument}
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
-import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.io.{Path => SPath}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
@@ -509,10 +508,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     new Settings(error)
 
   protected def newGlobal(settings: Settings, reporter: Reporter) =
-    if (settings.Yrangepos.value)
-      new Global(settings, reporter) with RangePositions
-    else
-      new Global(settings, reporter)
+    Global(settings, reporter)
 
 /*============================================================================*\
 **                           The big execute method                           **

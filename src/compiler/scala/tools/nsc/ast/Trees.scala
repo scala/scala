@@ -16,24 +16,6 @@ import scala.reflect.internal.Flags.TRAIT
 import scala.compat.Platform.EOL
 
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
-
-  def treeLine(t: Tree): String =
-    if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
-    else t.summaryString
-
-  def treeStatus(t: Tree, enclosingTree: Tree = null) = {
-    val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
-
-    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
-  }
-  def treeSymStatus(t: Tree) = {
-    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
-    "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
-      if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
-      else treeLine(t)
-    )
-  }
-
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree
