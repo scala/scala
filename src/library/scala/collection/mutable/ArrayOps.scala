@@ -76,18 +76,21 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
    *  @return         An array obtained by replacing elements of this arrays with rows the represent.
    */
   def transpose[U](implicit asArray: T => Array[U]): Array[Array[U]] = {
-    def mkRowBuilder() = Array.newBuilder(ClassTag[U](arrayElementClass(elementClass)))
-    val bs = asArray(head) map (_ => mkRowBuilder())
-    for (xs <- this) {
-      var i = 0
-      for (x <- asArray(xs)) {
-        bs(i) += x
-        i += 1
-      }
-    }
     val bb: Builder[Array[U], Array[Array[U]]] = Array.newBuilder(ClassTag[Array[U]](elementClass))
-    for (b <- bs) bb += b.result
-    bb.result
+    if (isEmpty) bb.result()
+    else {
+      def mkRowBuilder() = Array.newBuilder(ClassTag[U](arrayElementClass(elementClass)))
+      val bs = asArray(head) map (_ => mkRowBuilder())
+      for (xs <- this) {
+        var i = 0
+        for (x <- asArray(xs)) {
+          bs(i) += x
+          i += 1
+        }
+      }
+      for (b <- bs) bb += b.result()
+      bb.result()
+    }
   }
 
   def seq = thisCollection
