@@ -40,7 +40,6 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     note0:           List[Body]       = List.empty,
     example0:        List[Body]       = List.empty,
     constructor0:    Option[Body]     = None,
-    source0:         Option[String]   = None,
     inheritDiagram0: List[String]     = List.empty,
     contentDiagram0: List[String]     = List.empty,
     group0:          Option[Body]     = None,
@@ -48,7 +47,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     groupNames0:     Map[String,Body] = Map.empty,
     groupPrio0:      Map[String,Body] = Map.empty
   ) : Comment = new Comment{
-    val body           = if(body0 isDefined) body0.get else Body(Seq.empty)
+    val body           = body0.getOrElse(Body(Seq.empty))
     val authors        = authors0
     val see            = see0
     val result         = result0
@@ -279,100 +278,81 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val value = "" :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
-      case line :: ls if (lastTagKey.isDefined) =>
-        val key = lastTagKey.get
-        val value =
-          ((tags get key): @unchecked) match {
-            case Some(b :: bs) => (b + endOfLine + line) :: bs
-            case None => oops("lastTagKey set when no tag exists for key")
-          }
-        parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
-
       case line :: ls =>
-        if (docBody.length > 0) docBody append endOfLine
-        docBody append line
-        parse0(docBody, tags, lastTagKey, ls, inCodeBlock)
+        lastTagKey.fold {
+          if (docBody.length > 0) docBody append endOfLine
+          docBody append line
+          parse0(docBody, tags, lastTagKey, ls, inCodeBlock)
+        } { key =>
+          val value =
+            ((tags get key): @unchecked) match {
+              case Some(b :: bs) => (b + endOfLine + line) :: bs
+              case None => oops("lastTagKey set when no tag exists for key")
+            }
+          parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
+        }
 
       case Nil =>
-        // Take the {inheritance, content} diagram keys aside, as it doesn't need any parsing
-        val inheritDiagramTag = SimpleTagKey("inheritanceDiagram")
-        val contentDiagramTag = SimpleTagKey("contentDiagram")
+        import TagKeys._
+        implicit def toSimpleTagKey(k: TagKeys.Value): SimpleTagKey = SimpleTagKey(k)
 
-        val inheritDiagramText: List[String] = tags.get(inheritDiagramTag) match {
-          case Some(list) => list
-          case None => List.empty
-        }
+        val stripTags: Set[TagKey] = Set(SimpleTagKey(inheritDiagramKey), SimpleTagKey(contentDiagramKey), SimpleTagKey("template"), SimpleTagKey("documentable"))
 
-        val contentDiagramText: List[String] = tags.get(contentDiagramTag) match {
-          case Some(list) => list
-          case None => List.empty
-        }
-
-        val stripTags=List(inheritDiagramTag, contentDiagramTag, SimpleTagKey("template"), SimpleTagKey("documentable"))
-        val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
-
-        val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWikiAtSymbol(_, pos, siteOpt))} toSeq: _*)
-
-        def oneTag(key: SimpleTagKey): Option[Body] =
-          ((bodyTags remove key): @unchecked) match {
-            case Some(r :: rs) =>
-              if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
-              Some(r)
-            case None => None
+        val bodyTags: Map[TagKey, List[Body]] =
+          tags flatMap {
+            // Take the {inheritance, content} diagram keys aside, as it doesn't need any parsing.
+            case (key, strings) if !stripTags(key) => Some(key -> strings.map(parseWikiAtSymbol(_, pos, siteOpt)))
+            case _ => None
           }
 
-        def allTags(key: SimpleTagKey): List[Body] =
-          (bodyTags remove key) getOrElse Nil
+        def allTags(key: SimpleTagKey): List[Body] = bodyTags getOrElse (key, Nil)
 
-        def allSymsOneTag(key: TagKey): Map[String, Body] = {
-          val keys: Seq[SymbolTagKey] =
-            bodyTags.keys.toSeq flatMap {
-              case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
-              case stk: SimpleTagKey if (stk.name == key.name) =>
-                reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")
-                None
-              case _ => None
-            }
-          val pairs: Seq[(String, Body)] =
-            for (key <- keys) yield {
-              val bs = (bodyTags remove key).get
-              if (bs.length > 1)
-                reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
-              (key.symbol, bs.head)
-            }
-          Map.empty[String, Body] ++ pairs
+        def oneTag(key: SimpleTagKey): Option[Body] = allTags(key) match {
+          case Nil => None
+          case r :: rs =>
+            if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
+            Some(r)
         }
 
-        val com = createComment (
-          body0           = Some(parseWikiAtSymbol(docBody.toString, pos, siteOpt)),
-          authors0        = allTags(SimpleTagKey("author")),
-          see0            = allTags(SimpleTagKey("see")),
-          result0         = oneTag(SimpleTagKey("return")),
-          throws0         = allSymsOneTag(SimpleTagKey("throws")),
-          valueParams0    = allSymsOneTag(SimpleTagKey("param")),
-          typeParams0     = allSymsOneTag(SimpleTagKey("tparam")),
-          version0        = oneTag(SimpleTagKey("version")),
-          since0          = oneTag(SimpleTagKey("since")),
-          todo0           = allTags(SimpleTagKey("todo")),
-          deprecated0     = oneTag(SimpleTagKey("deprecated")),
-          note0           = allTags(SimpleTagKey("note")),
-          example0        = allTags(SimpleTagKey("example")),
-          constructor0    = oneTag(SimpleTagKey("constructor")),
-          source0         = Some(clean(src).mkString("\n")),
-          inheritDiagram0 = inheritDiagramText,
-          contentDiagram0 = contentDiagramText,
-          group0          = oneTag(SimpleTagKey("group")),
-          groupDesc0      = allSymsOneTag(SimpleTagKey("groupdesc")),
-          groupNames0     = allSymsOneTag(SimpleTagKey("groupname")),
-          groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio"))
-        )
+        def allSymsOneTag(key: TagKey): Map[String, Body] = {
+          val keyName = key.name
+          bodyTags flatMap {
+            case (SymbolTagKey(`keyName`, symbol), bs) =>
+              if (bs.length > 1)
+                reporter.warning(pos, "Only one '@" + keyName + "' tag for symbol " + symbol + " is allowed")
+              Some(symbol -> bs.head)
+            case (SimpleTagKey(`keyName`), _) =>
+              reporter.warning(pos, "Tag '@" + keyName + "' must be followed by a symbol name")
+              None
+            case _ => None
+          }
+        }
 
-        for ((key, _) <- bodyTags)
+        for ((key, _) <- bodyTags if !docKeys(key.name))
           reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
 
-        com
-
+        createComment (
+          body0           = Some(parseWikiAtSymbol(docBody.toString, pos, siteOpt)),
+          authors0        = allTags(authorKey),
+          see0            = allTags(seeKey),
+          result0         = oneTag(returnKey),
+          throws0         = allSymsOneTag(throwsKey),
+          valueParams0    = allSymsOneTag(paramKey),
+          typeParams0     = allSymsOneTag(tparamKey),
+          version0        = oneTag(versionKey),
+          since0          = oneTag(sinceKey),
+          todo0           = allTags(todoKey),
+          deprecated0     = oneTag(deprecatedKey),
+          note0           = allTags(noteKey),
+          example0        = allTags(exampleKey),
+          constructor0    = oneTag(constructorKey),
+          inheritDiagram0 = tags.getOrElse(inheritDiagramKey, Nil),
+          contentDiagram0 = tags.getOrElse(contentDiagramKey, Nil),
+          group0          = oneTag(groupKey),
+          groupDesc0      = allSymsOneTag(groupdescKey),
+          groupNames0     = allSymsOneTag(groupnameKey),
+          groupPrio0      = allSymsOneTag(groupprioKey)
+        )
     }
 
     parse0(new StringBuilder(comment.size), Map.empty, None, clean(comment), false)
