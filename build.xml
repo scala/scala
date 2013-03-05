@@ -1415,9 +1415,11 @@ PACKED QUICK BUILD (PACK)
     <copy file="META-INF/MANIFEST.MF" toDir="${build-pack.dir}/META-INF"/>
     <manifest file="${build-pack.dir}/META-INF/MANIFEST.MF" mode="update">
       <attribute name="Bundle-Version" value="${version.number}"/>
+      <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
     </manifest>
     <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
+      <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <fileset dir="${build-asm.dir}/classes"/>
     </jar>
