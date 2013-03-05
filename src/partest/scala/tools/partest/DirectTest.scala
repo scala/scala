@@ -42,10 +42,7 @@ abstract class DirectTest extends App {
     newCompiler(settings)
   }
 
-  def newCompiler(settings: Settings): Global = {
-    if (settings.Yrangepos.value) new Global(settings, reporter(settings)) with interactive.RangePositions
-    else new Global(settings, reporter(settings))
-  }
+  def newCompiler(settings: Settings): Global = Global(settings, reporter(settings))
 
   def reporter(settings: Settings): Reporter = new ConsoleReporter(settings)
 

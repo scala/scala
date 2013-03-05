@@ -42,6 +42,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // the mirror --------------------------------------------------
 
   override def isCompilerUniverse = true
+  override val useOffsetPositions = !currentSettings.Yrangepos.value
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
