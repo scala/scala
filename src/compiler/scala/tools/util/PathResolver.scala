@@ -170,6 +170,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
   object Calculated {
     def scalaHome           = Defaults.scalaHome
     def useJavaClassPath    = settings.usejavacp.value || Defaults.useJavaClassPath
+    def useManifestClassPath= settings.usemanifestcp.value
     def javaBootClassPath   = cmdLineOrElse("javabootclasspath", Defaults.javaBootClassPath)
     def javaExtDirs         = cmdLineOrElse("javaextdirs", Defaults.javaExtDirs)
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
@@ -209,6 +210,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
       classesInPath(scalaBootClassPath),            // 4. The Scala boot class path.
       contentsOfDirsInPath(scalaExtDirs),           // 5. The Scala extension class path.
       classesInExpandedPath(userClassPath),         // 6. The Scala application class path.
+      classesInManifest(useManifestClassPath),      // 8. The Manifest class path.
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
 
