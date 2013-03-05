@@ -5292,8 +5292,7 @@ trait Typers extends Modes with Adaptations with Tags {
       def typedDocDef(docdef: DocDef) = {
         if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
           val comment = docdef.comment
-          docComments(sym) = comment
-          comment.defineVariables(sym)
+          fillDocComment(sym, comment)
           val typer1 = newTyper(context.makeNewScope(tree, context.owner))
           for (useCase <- comment.useCases) {
             typer1.silent(_.typedUseCase(useCase)) match {
