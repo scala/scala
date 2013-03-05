@@ -114,7 +114,7 @@ abstract class DeadCodeElimination extends SubComponent {
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
 
           // utility for adding to worklist
-          def moveToWorkList() = moveToWorkListIf(true)
+          def moveToWorkList() = moveToWorkListIf(cond = true)
 
           // utility for (conditionally) adding to worklist
           def moveToWorkListIf(cond: Boolean) =
@@ -130,7 +130,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
             case LOAD_LOCAL(_) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
-              moveToWorkListIf(false)
+              moveToWorkListIf(cond = false)
 
             case STORE_LOCAL(l) =>
               /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
@@ -184,7 +184,7 @@ abstract class DeadCodeElimination extends SubComponent {
             case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
               moveToWorkList() // SI-4859 Module initialization might side-effect.
             case _ => ()
-              moveToWorkListIf(false)
+              moveToWorkListIf(cond = false)
           }
           rd = rdef.interpret(bb, idx, rd)
         }

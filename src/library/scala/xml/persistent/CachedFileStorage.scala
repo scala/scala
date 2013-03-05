@@ -76,7 +76,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     log("[load]\nloading "+theFile)
     val src = Source.fromFile(theFile)
     log("parsing "+theFile)
-    val res = ConstructingParser.fromSource(src, false).document().docElem(0)
+    val res = ConstructingParser.fromSource(src,preserveWS = false).document.docElem(0)
     switch()
     log("[load done]")
     res.child.iterator
@@ -94,7 +94,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     // @todo: optimize
     val storageNode = <nodes>{ nodes.toList }</nodes>
     val w = Channels.newWriter(c, "utf-8")
-    XML.write(w, storageNode, "utf-8", true, null)
+    XML.write(w, storageNode, "utf-8", xmlDecl = true, doctype = null)
 
     log("writing to "+theFile)
 

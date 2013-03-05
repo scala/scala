@@ -265,7 +265,7 @@ trait DocComments { self: Global =>
               cleanupSectionText(parent.substring(sectionTextBounds._1, sectionTextBounds._2))
             case None =>
               reporter.info(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym +
-                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", true)
+                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", force = true)
               "<invalid inheritdoc annotation>"
           }
 

@@ -186,7 +186,7 @@ class CompileSocket extends CompileOutputCommon {
     catch { case _: NumberFormatException => None }
 
   def getSocket(serverAdr: String): Socket = (
-    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', true) ; port <- parseInt(portStr)) yield
+    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', doDropIndex = true) ; port <- parseInt(portStr)) yield
       getSocket(name, port)
   ) getOrElse fatal("Malformed server address: %s; exiting" format serverAdr)
 

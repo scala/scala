@@ -199,11 +199,11 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    *  // this is a bit more lenient than necessary...
    *  }}} */
   def prolog(): (Option[String], Option[String], Option[Boolean]) =
-    prologOrTextDecl(true)
+    prologOrTextDecl(isProlog = true)
 
   /** prolog, but without standalone */
   def textDecl(): (Option[String], Option[String]) =
-    prologOrTextDecl(false) match { case (x1, x2, _)  => (x1, x2) }
+    prologOrTextDecl(isProlog = false) match { case (x1, x2, _)  => (x1, x2) }
 
   /** {{{
    *  [22]     prolog      ::= XMLDecl? Misc* (doctypedecl Misc*)?
@@ -799,12 +799,12 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
 
       val defdecl: DefaultDecl = ch match {
         case '\'' | '"' =>
-          DEFAULT(false, xAttributeValue())
+          DEFAULT(fixed = false, xAttributeValue())
 
         case '#' =>
           nextch()
           xName match {
-            case "FIXED"    => xSpace() ; DEFAULT(true, xAttributeValue())
+            case "FIXED"    => xSpace() ; DEFAULT(fixed = true, xAttributeValue())
             case "IMPLIED"  => IMPLIED
             case "REQUIRED" => REQUIRED
           }

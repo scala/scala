@@ -491,7 +491,7 @@ trait Infer extends Checkable {
           }
           //println("try to solve "+tvars+" "+tparams)
           (solvedTypes(tvars, tparams, tparams map varianceInType(varianceType),
-                      false, lubDepth(List(restpe, pt))), tvars)
+                      upper = false, lubDepth(List(restpe, pt))), tvars)
         } catch {
           case ex: NoInstance => (null, null)
         }
@@ -667,7 +667,7 @@ trait Infer extends Checkable {
       }
       val targs = solvedTypes(
         tvars, tparams, tparams map varianceInTypes(formals),
-        false, lubDepth(formals) max lubDepth(argtpes)
+        upper = false, lubDepth(formals) max lubDepth(argtpes)
       )
       // Can warn about inferring Any/AnyVal as long as they don't appear
       // explicitly anywhere amongst the formal, argument, result, or expected type.
@@ -914,7 +914,7 @@ trait Infer extends Checkable {
      */
     private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type,
                                               argtpes0: List[Type], pt: Type): Boolean = {
-      val silentContext = context.makeSilent(false)
+      val silentContext = context.makeSilent(reportAmbiguousErrors = false)
       val typer0 = newTyper(silentContext)
       val res1 = typer0.infer.isApplicable(undetparams, ftpe, argtpes0, pt)
       if (pt != WildcardType && silentContext.hasErrors) {
@@ -1101,7 +1101,7 @@ trait Infer extends Checkable {
       }
 
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
-      checkKindBounds0(tparams, targs, pre, owner, true) map {
+      checkKindBounds0(tparams, targs, pre, owner, explainErrors = true) map {
         case (targ, tparam, kindErrors) =>
           kindErrors.errorMessage(targ, tparam)
       }
@@ -1263,7 +1263,7 @@ trait Infer extends Checkable {
             val variances  =
               if (ctorTp.paramTypes.isEmpty) undetparams map varianceInType(ctorTp)
               else undetparams map varianceInTypes(ctorTp.paramTypes)
-            val targs      = solvedTypes(tvars, undetparams, variances, true, lubDepth(List(resTp, pt)))
+            val targs      = solvedTypes(tvars, undetparams, variances, upper = true, lubDepth(List(resTp, pt)))
             // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
             // no checkBounds here. If we enable it, test bug602 fails.
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
@@ -1335,7 +1335,7 @@ trait Infer extends Checkable {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
       // So we should come back to this and investigate.
-      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), false)
+      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), upper = false)
     }
 
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params

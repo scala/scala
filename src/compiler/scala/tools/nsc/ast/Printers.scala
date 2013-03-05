@@ -128,7 +128,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         case Select(qualifier, name) =>
           printTree(qualifier)
           print(".")
-          print(quotedName(name, true))
+          print(quotedName(name, decode = true))
 
         // target.toString() ==> target.toString
         case Apply(fn, Nil)   => printTree(fn)

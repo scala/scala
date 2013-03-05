@@ -39,7 +39,7 @@ trait LoopCommands {
     // called if no args are given
     def showUsage(): Result = {
       "usage is " + usageMsg
-      Result(true, None)
+      Result(keepRunning = true, None)
     }
   }
   object LoopCommand {
@@ -72,7 +72,7 @@ trait LoopCommands {
 
   object Result {
     // the default result means "keep running, and don't record that line"
-    val default = Result(true, None)
+    val default = Result(keepRunning = true, None)
 
     // most commands do not want to micromanage the Result, but they might want
     // to print something to the console, so we accomodate Unit and String returns.

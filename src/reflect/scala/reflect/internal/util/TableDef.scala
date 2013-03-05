@@ -19,8 +19,8 @@ class TableDef[T](_cols: Column[T]*) {
    *      if none is specified, a space is used.
    */
   def ~(next: Column[T])            = retThis(cols :+= next)
-  def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, false)
-  def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, true)
+  def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = false)
+  def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = true)
   def >+(sep: String)               = retThis(separators += ((cols.size - 1, sep)))
 
   /** Below this point should all be considered private/internal.

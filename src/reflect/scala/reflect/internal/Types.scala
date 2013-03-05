@@ -705,7 +705,7 @@ trait Types extends api.Types { self: SymbolTable =>
       findMembers(excludedFlags, requiredFlags)
 
     def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
-      findMember(name, excludedFlags, 0, false)
+      findMember(name, excludedFlags, 0, stableOnly = false)
 
     /** The least type instance of given class which is a supertype
      *  of this type.  Example:
@@ -925,7 +925,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def matches(that: Type): Boolean = matchesType(this, that, !phase.erasedTypes)
 
     /** Same as matches, except that non-method types are always assumed to match. */
-    def looselyMatches(that: Type): Boolean = matchesType(this, that, true)
+    def looselyMatches(that: Type): Boolean = matchesType(this, that, alwaysMatchSimple = true)
 
     /** The shortest sorted upwards closed array of types that contains
      *  this type as first element.
@@ -2844,7 +2844,7 @@ trait Types extends api.Types { self: SymbolTable =>
       val tvars = quantifiedFresh map (tparam => TypeVar(tparam))
       val underlying1 = underlying.instantiateTypeParams(quantified, tvars) // fuse subst quantified -> quantifiedFresh -> tvars
       op(underlying1) && {
-        solve(tvars, quantifiedFresh, quantifiedFresh map (_ => Invariant), false, depth) &&
+        solve(tvars, quantifiedFresh, quantifiedFresh map (_ => Invariant), upper = false, depth) &&
         isWithinBounds(NoPrefix, NoSymbol, quantifiedFresh, tvars map (_.constr.inst))
       }
     }
@@ -3259,7 +3259,7 @@ trait Types extends api.Types { self: SymbolTable =>
      * (`T` corresponds to @param sym)
      */
     def registerTypeSelection(sym: Symbol, tp: Type): Boolean = {
-      registerBound(HasTypeMember(sym.name.toTypeName, tp), false)
+      registerBound(HasTypeMember(sym.name.toTypeName, tp), isLowerBound = false)
     }
 
     private def isSkolemAboveLevel(tp: Type) = tp.typeSymbol match {
@@ -5035,7 +5035,7 @@ trait Types extends api.Types { self: SymbolTable =>
         }
       }
       else {
-        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true) orElse {
+        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, stableOnly = true) orElse {
           if (sym.isAliasType) throw missingAliasException
           devWarning(s"$pre.$sym no longer exist at phase $phase")
           throw new MissingTypeControl // For build manager and presentation compiler purposes
@@ -5840,7 +5840,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case AnnotatedType(_, _, _) | BoundedWildcardType(_) =>
             secondTry
           case _ =>
-            tv2.registerBound(tp1, true)
+            tv2.registerBound(tp1, isLowerBound = true)
         }
       case _ =>
         secondTry
@@ -5858,7 +5858,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case BoundedWildcardType(bounds) =>
         isSubType(tp1.bounds.lo, tp2, depth)
       case tv @ TypeVar(_,_) =>
-        tv.registerBound(tp2, false)
+        tv.registerBound(tp2, isLowerBound = false)
       case ExistentialType(_, _) =>
         try {
           skolemizationLevel += 1
@@ -6036,7 +6036,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def lastTry =
       tp2 match {
         case ExistentialType(_, res2) if alwaysMatchSimple =>
-          matchesType(tp1, res2, true)
+          matchesType(tp1, res2, alwaysMatchSimple = true)
         case MethodType(_, _) =>
           false
         case PolyType(_, _) =>
@@ -6056,7 +6056,7 @@ trait Types extends api.Types { self: SymbolTable =>
             if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
             else matchesType(tp1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
-            alwaysMatchSimple && matchesType(tp1, res2, true)
+            alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
           case TypeRef(_, sym, Nil) =>
             params1.isEmpty && sym.isModuleClass && matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
@@ -6069,7 +6069,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case NullaryMethodType(res2) =>
             matchesType(res1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
-            alwaysMatchSimple && matchesType(tp1, res2, true)
+            alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
           case TypeRef(_, sym, Nil) if sym.isModuleClass =>
             matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
@@ -6083,7 +6083,7 @@ trait Types extends api.Types { self: SymbolTable =>
             else
               matchesQuantified(tparams1, tparams2, res1, res2)
           case ExistentialType(_, res2) =>
-            alwaysMatchSimple && matchesType(tp1, res2, true)
+            alwaysMatchSimple && matchesType(tp1, res2, alwaysMatchSimple = true)
           case _ =>
             false // remember that tparams1.nonEmpty is now an invariant of PolyType
         }
@@ -6092,7 +6092,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case ExistentialType(tparams2, res2) =>
             matchesQuantified(tparams1, tparams2, res1, res2)
           case _ =>
-            if (alwaysMatchSimple) matchesType(res1, tp2, true)
+            if (alwaysMatchSimple) matchesType(res1, tp2, alwaysMatchSimple = true)
             else lastTry
         }
       case TypeRef(_, sym, Nil) if sym.isModuleClass =>
@@ -6288,7 +6288,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     val columns: List[Column[List[Type]]] = mapWithIndex(sorted) {
       case ((k, v), idx) =>
-        Column(str(k), (xs: List[Type]) => str(xs(idx)), true)
+        Column(str(k), (xs: List[Type]) => str(xs(idx)), left = true)
     }
 
     val tableDef = TableDef(columns: _*)

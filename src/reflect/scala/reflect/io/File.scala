@@ -72,7 +72,7 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
 
   /** Wraps a BufferedWriter around the result of writer().
    */
-  def bufferedWriter(): BufferedWriter = bufferedWriter(false)
+  def bufferedWriter(): BufferedWriter = bufferedWriter(append = false)
   def bufferedWriter(append: Boolean): BufferedWriter = bufferedWriter(append, creationCodec)
   def bufferedWriter(append: Boolean, codec: Codec): BufferedWriter =
     new BufferedWriter(writer(append, codec))

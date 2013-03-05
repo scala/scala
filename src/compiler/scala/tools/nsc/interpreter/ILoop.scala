@@ -145,7 +145,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       case Nil  => echo(cmd + ": no such command.  Type :help for help.")
       case xs   => echo(cmd + " is ambiguous: did you mean " + xs.map(":" + _.name).mkString(" or ") + "?")
     }
-    Result(true, None)
+    Result(keepRunning = true, None)
   }
   private def matchingCommands(cmd: String) = commands filter (_.name startsWith cmd)
   private def uniqueCommand(cmd: String): Option[LoopCommand] = {
@@ -216,7 +216,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("load", "<path>", "load and interpret a Scala file", loadCommand),
     nullary("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
-    nullary("quit", "exit the interpreter", () => Result(false, None)),
+    nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
     nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
     shCommand,
@@ -288,8 +288,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private def typeCommand(line0: String): Result = {
     line0.trim match {
       case ""                      => ":type [-v] <expression>"
-      case s if s startsWith "-v " => intp.typeCommandInternal(s stripPrefix "-v " trim, true)
-      case s                       => intp.typeCommandInternal(s, false)
+      case s if s startsWith "-v " => intp.typeCommandInternal(s stripPrefix "-v " trim, verbose = true)
+      case s                       => intp.typeCommandInternal(s, verbose = false)
     }
   }
 
@@ -403,7 +403,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     savingReader {
       savingReplayStack {
         file applyReader { reader =>
-          in = SimpleReader(reader, out, false)
+          in = SimpleReader(reader, out, interactive = false)
           echo("Loading " + file + "...")
           loop()
         }
@@ -467,7 +467,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       interpretAllFrom(f)
       shouldReplay = Some(":load " + arg)
     })
-    Result(true, shouldReplay)
+    Result(keepRunning = true, shouldReplay)
   }
 
   def addClasspath(arg: String): Unit = {
@@ -483,7 +483,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   def powerCmd(): Result = {
     if (isReplPower) "Already in power mode."
-    else enablePowerMode(false)
+    else enablePowerMode(isDuringInit = false)
   }
   def enablePowerMode(isDuringInit: Boolean) = {
     replProps.power setValue true
@@ -520,8 +520,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         case _        => ambiguousError(cmd)
       }
     }
-    else if (intp.global == null) Result(false, None)  // Notice failure to create compiler
-    else Result(true, interpretStartingWith(line))
+    else if (intp.global == null) Result(keepRunning = false, None)  // Notice failure to create compiler
+    else Result(keepRunning = true, interpretStartingWith(line))
   }
 
   private def readWhile(cond: String => Boolean) = {
@@ -668,7 +668,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     createInterpreter()
 
     // sets in to some kind of reader depending on environmental cues
-    in = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, true))
+    in = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
     globalFuture = future {
       intp.initializeSynchronous()
       loopPostInit()

@@ -107,7 +107,7 @@ object REPL {
     }
 
     def doStructure(file: String) {
-      comp.askParsedEntered(toSourceFile(file), false, structureResult)
+      comp.askParsedEntered(toSourceFile(file), keepLoaded = false, structureResult)
       show(structureResult)
     }
 

@@ -1155,8 +1155,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       )
       val methodSymbol = definitions.getMember(clasz.symbol.companionModule, androidFieldName)
       clasz addField new IField(fieldSymbol)
-      block emit CALL_METHOD(methodSymbol, Static(false))
-      block emit STORE_FIELD(fieldSymbol, true)
+      block emit CALL_METHOD(methodSymbol, Static(onInstance = false))
+      block emit STORE_FIELD(fieldSymbol, isStatic = true)
     }
 
     def legacyAddCreatorCode(clinit: asm.MethodVisitor) {
@@ -1613,7 +1613,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           if (isStaticModule(clasz.symbol)) {
             // call object's private ctor from static ctor
             lastBlock emit NEW(REFERENCE(m.symbol.enclClass))
-            lastBlock emit CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(true))
+            lastBlock emit CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(onInstance = true))
           }
 
           if (isParcelableClass) { addCreatorCode(lastBlock) }
@@ -1621,11 +1621,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           lastBlock emit RETURN(UNIT)
           lastBlock.close()
 
-       	  method = m
+          method = m
        	  jmethod = clinitMethod
           jMethodName = CLASS_CONSTRUCTOR_NAME
           jmethod.visitCode()
-       	  genCode(m, false, true)
+          genCode(m, emitVars = false, isStatic = true)
           jmethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
           jmethod.visitEnd()
 

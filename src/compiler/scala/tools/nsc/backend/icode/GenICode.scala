@@ -688,7 +688,7 @@ abstract class GenICode extends SubComponent  {
                 ctx.bb.emit(DUP(generatedType))
                 val ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
 
-                val init = CALL_METHOD(ctor, Static(true))
+                val init = CALL_METHOD(ctor, Static(onInstance = true))
                 nw.init = init
                 ctx1.bb.emit(init, tree.pos)
                 ctx1
@@ -760,9 +760,9 @@ abstract class GenICode extends SubComponent  {
               debuglog("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + sym.isStaticMember)
               val invokeStyle =
                 if (sym.isStaticMember)
-                  Static(false)
+                  Static(onInstance = false)
                 else if (sym.isPrivate || sym.isClassConstructor)
-                  Static(true)
+                  Static(onInstance = true)
                 else
                   Dynamic
 
@@ -1261,7 +1261,7 @@ abstract class GenICode extends SubComponent  {
         case List(Literal(Constant("")), arg) =>
           debuglog("Rewriting \"\" + x as String.valueOf(x) for: " + arg)
           val ctx1 = genLoad(arg, ctx, ObjectReference)
-          ctx1.bb.emit(CALL_METHOD(String_valueOf, Static(false)), arg.pos)
+          ctx1.bb.emit(CALL_METHOD(String_valueOf, Static(onInstance = false)), arg.pos)
           ctx1
         case concatenations =>
           debuglog("Lifted string concatenations for " + tree + "\n to: " + concatenations)
@@ -1286,7 +1286,7 @@ abstract class GenICode extends SubComponent  {
       }
 
       val ctx1 = genLoad(tree, ctx, ObjectReference)
-      ctx1.bb.emit(CALL_METHOD(hashMethod, Static(false)))
+      ctx1.bb.emit(CALL_METHOD(hashMethod, Static(onInstance = false)))
       ctx1
     }
 
@@ -1477,7 +1477,7 @@ abstract class GenICode extends SubComponent  {
         val ctx1 = genLoad(l, ctx, ObjectReference)
         val ctx2 = genLoad(r, ctx1, ObjectReference)
         ctx2.bb.emitOnly(
-          CALL_METHOD(equalsMethod, if (settings.optimise.value) Dynamic else Static(false)),
+          CALL_METHOD(equalsMethod, if (settings.optimise.value) Dynamic else Static(onInstance = false)),
           CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
         )
       }
