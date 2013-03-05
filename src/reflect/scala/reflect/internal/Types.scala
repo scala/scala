@@ -5354,7 +5354,9 @@ trait Types extends api.Types { self: SymbolTable =>
       case _ =>
         NoType
     }
-    patType match {
+    // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
+    // generates an outer test based on `patType.prefix` with automatically dealises.
+    patType.dealias match {
       case TypeRef(pre, sym, args) =>
         val pre1 = maybeCreateDummyClone(pre, sym)
         (pre1 ne NoType) && isPopulated(copyTypeRef(patType, pre1, sym, args), selType)
