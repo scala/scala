@@ -544,21 +544,6 @@ trait Typers extends Adaptations with Tags {
      */
     private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): (Tree, Type) =
       if (context.isInPackageObject(sym, pre.typeSymbol)) {
-        if (pre.typeSymbol == ScalaPackageClass && sym.isTerm) {
-          // short cut some aliases. It seems pattern matching needs this
-          // to notice exhaustiveness and to generate good code when
-          // List extractors are mixed with :: patterns. See Test5 in lists.scala.
-          //
-          // TODO SI-6609 Eliminate this special case once the old pattern matcher is removed.
-          def dealias(sym: Symbol) =
-            (atPos(tree.pos.makeTransparent) {gen.mkAttributedRef(sym)} setPos tree.pos, sym.owner.thisType)
-          sym.name match {
-            case nme.List => return dealias(ListModule)
-            case nme.Seq  => return dealias(SeqModule)
-            case nme.Nil  => return dealias(NilModule)
-            case _ =>
-          }
-        }
         val qual = typedQualifier { atPos(tree.pos.makeTransparent) {
           tree match {
             case Ident(_) => Ident(nme.PACKAGEkw)
