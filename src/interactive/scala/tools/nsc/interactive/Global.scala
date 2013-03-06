@@ -14,10 +14,68 @@ import scala.tools.nsc.util.MultiHashMap
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.typechecker.DivergentImplicit
+import scala.tools.nsc.typechecker.{ Analyzer, DivergentImplicit }
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.annotation.elidable
+import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
+
+trait InteractiveAnalyzer extends Analyzer {
+  val global : Global
+  import global._
+
+  override def newTyper(context: Context): InteractiveTyper = new Typer(context) with InteractiveTyper
+  override def newNamer(context: Context): InteractiveNamer = new Namer(context) with InteractiveNamer
+  override protected def newPatternMatching = false
+
+  trait InteractiveTyper extends Typer {
+    override def canAdaptConstantTypeToLiteral = false
+    override def canTranslateEmptyListToNil    = false
+    override def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree match {
+      case Select(_, _)             => treeCopy.Select(tree, qual, name)
+      case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+    }
+  }
+
+  trait InteractiveNamer extends Namer {
+    override def saveDefaultGetter(meth: Symbol, default: Symbol) {
+      // save the default getters as attachments in the method symbol. if compiling the
+      // same local block several times (which can happen in interactive mode) we might
+      // otherwise not find the default symbol, because the second time it the method
+      // symbol will be re-entered in the scope but the default parameter will not.
+      meth.attachments.get[DefaultsOfLocalMethodAttachment] match {
+        case Some(att) => att.defaultGetters += default
+        case None      => meth.updateAttachment(new DefaultsOfLocalMethodAttachment(default))
+      }
+    }
+    // this logic is needed in case typer was interrupted half
+    // way through and then comes back to do the tree again. In
+    // that case the definitions that were already attributed as
+    // well as any default parameters of such methods need to be
+    // re-entered in the current scope.
+    override def enterExistingSym(sym: Symbol): Context = {
+      if (sym != null && sym.owner.isTerm) {
+        enterIfNotThere(sym)
+        if (sym.isLazy)
+          sym.lazyAccessor andAlso enterIfNotThere
+
+        for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
+          defAtt.defaultGetters foreach enterIfNotThere
+      }
+      super.enterExistingSym(sym)
+    }
+    override def enterIfNotThere(sym: Symbol) {
+      val scope = context.scope
+      @tailrec def search(e: ScopeEntry) {
+        if ((e eq null) || (e.owner ne scope))
+          scope enter sym
+        else if (e.sym ne sym)  // otherwise, aborts since we found sym
+          search(e.tail)
+      }
+      search(scope lookupEntry sym.name)
+    }
+  }
+}
+
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
@@ -68,7 +126,24 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   @inline final def informIDE(msg: => String) =
     if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
+  // don't keep the original owner in presentation compiler runs
+  // (the map will grow indefinitely, and the only use case is the
+  // backend).
+  override protected def saveOriginalOwner(sym: Symbol) { }
+
   override def forInteractive = true
+
+  override def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
+    new InteractiveAsSeenFromMap(pre, clazz)
+
+  class InteractiveAsSeenFromMap(pre: Type, clazz: Symbol) extends AsSeenFromMap(pre, clazz) {
+    /** The method formerly known as 'instParamsRelaxed' goes here if it's still necessary,
+     *  which it is currently supposed it is not.
+     *
+     *  If it is, change AsSeenFromMap method correspondingTypeArgument to call an overridable
+     *  method rather than aborting in the failure case.
+     */
+  }
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
@@ -126,6 +201,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         rmap -= source
     }
   }
+
+  override lazy val analyzer = new {
+    val global: Global.this.type = Global.this
+  } with InteractiveAnalyzer
 
   private def cleanAllResponses() {
     cleanResponses(waitLoadedTypeResponses)
@@ -281,7 +360,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  top-level idents. Therefore, we can detect top-level symbols that have a name
    *  different from their source file
    */
-  override lazy val loaders = new BrowsingLoaders {
+  override lazy val loaders: SymbolLoaders { val global: Global.this.type } = new BrowsingLoaders {
     val global: Global.this.type = Global.this
   }
 
