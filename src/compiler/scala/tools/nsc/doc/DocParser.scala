@@ -42,7 +42,7 @@ class DocParser(settings: nsc.Settings, reporter: Reporter) extends Global(setti
    */
   def docUnit(code: String) = {
     val unit    = new CompilationUnit(new BatchSourceFile("<console>", code))
-    val scanner = new syntaxAnalyzer.UnitParser(unit)
+    val scanner = newUnitParser(unit)
 
     scanner.compilationUnit()
   }
