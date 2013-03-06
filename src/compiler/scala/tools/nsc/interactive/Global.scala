@@ -665,8 +665,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  If we do just removeUnit, some problems with default parameters can ensue.
    *  Calls to this method could probably be replaced by removeUnit once default parameters are handled more robustly.
    */
-  private def afterRunRemoveUnitOf(source: SourceFile) {
-    toBeRemovedAfterRun += source.file
+  private def afterRunRemoveUnitsOf(sources: List[SourceFile]) {
+    toBeRemovedAfterRun ++= sources map (_.file)
   }
 
   /** A fully attributed tree located at position `pos` */
@@ -674,7 +674,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
-      finally afterRunRemoveUnitOf(pos.source)
+      finally afterRunRemoveUnitsOf(List(pos.source))
     case Some(unit) =>
       informIDE("typedTreeAt " + pos)
       parseAndEnter(unit)
@@ -724,14 +724,23 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     respond(response)(typedTree(source, forceReload))
   }
 
+  private def withTempUnits[T](sources: List[SourceFile])(f: (SourceFile => RichCompilationUnit) => T): T = {
+    val unitOfSrc: SourceFile => RichCompilationUnit = src => unitOfFile(src.file)
+    sources filterNot (getUnit(_).isDefined) match {
+      case Nil =>
+        f(unitOfSrc)
+      case unknown =>
+        reloadSources(unknown)
+        try {
+          f(unitOfSrc)
+        } finally
+          afterRunRemoveUnitsOf(unknown)
+    }
+  }
+
   private def withTempUnit[T](source: SourceFile)(f: RichCompilationUnit => T): T =
-    getUnit(source) match {
-      case None =>
-        reloadSources(List(source))
-        try f(getUnit(source).get)
-        finally afterRunRemoveUnitOf(source)
-      case Some(unit) =>
-        f(unit)
+    withTempUnits(List(source)){ srcToUnit =>
+      f(srcToUnit(source))
     }
 
   /** Find a 'mirror' of symbol `sym` in unit `unit`. Pre: `unit is loaded. */
@@ -795,46 +804,32 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  /** Implements CompilerControl.askDocComment */
-  private[interactive] def getDocComment(sym: Symbol, site: Symbol, source: SourceFile, response: Response[(String, String, Position)]) {
-    informIDE("getDocComment "+sym+" "+source)
-    respond(response) {
-      withTempUnit(source){ u =>
-        val mirror = findMirrorSymbol(sym, u)
-        if (mirror eq NoSymbol)
-          ("", "", NoPosition)
-        else {
-          forceDocComment(mirror, u)
-          (expandedDocComment(mirror), rawDocComment(mirror), docCommentPos(mirror))
-        }
-      }
+  private def forceDocComment(sym: Symbol, unit: RichCompilationUnit) {
+    unit.body foreachPartial {
+      case DocDef(comment, defn) if defn.symbol == sym =>
+        fillDocComment(defn.symbol, comment)
+        EmptyTree
+      case _: ValOrDefDef =>
+        EmptyTree
     }
   }
 
-  private def forceDocComment(sym: Symbol, unit: RichCompilationUnit) {
-    // Either typer has been run and we don't find DocDef,
-    // or we force the targeted typecheck here.
-    // In both cases doc comment maps should be filled for the subject symbol.
-    val docTree =
-      unit.body find {
-        case DocDef(_, defn) if defn.symbol eq sym => true
-        case _ => false
-      }
-
-    for (t <- docTree) {
-      debugLog("Found DocDef tree for "+sym)
-      // Cannot get a typed tree at position since DocDef range is transparent.
-      val prevPos = unit.targetPos
-      val prevInterruptsEnabled = interruptsEnabled
-      try {
-        unit.targetPos = t.pos
-        interruptsEnabled = true
-        typeCheck(unit)
-      } catch {
-        case _: TyperResult => // ignore since we are after the side effect.
-      } finally {
-        unit.targetPos = prevPos
-        interruptsEnabled = prevInterruptsEnabled
+  /** Implements CompilerControl.askDocComment */
+  private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol, fragments: List[(Symbol,SourceFile)],
+                                         response: Response[(String, String, Position)]) {
+    informIDE(s"getDocComment $sym at $source site $site")
+    respond(response) {
+      withTempUnits(fragments.toList.unzip._2){ units =>
+        for((sym, src) <- fragments) {
+          val mirror = findMirrorSymbol(sym, units(src))
+          if (mirror ne NoSymbol) forceDocComment(mirror, units(src))
+        }
+        val mirror = findMirrorSymbol(sym, units(source))
+        if (mirror eq NoSymbol)
+          ("", "", NoPosition)
+        else {
+          (expandedDocComment(mirror, site), rawDocComment(mirror), docCommentPos(mirror))
+        }
       }
     }
   }

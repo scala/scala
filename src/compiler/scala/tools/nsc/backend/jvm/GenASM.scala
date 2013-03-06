@@ -2144,8 +2144,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                 val start = st.pop()
                 seen ::= LocVarEntry(lv, start, end)
               case _ =>
-                // TODO SI-6049
-                getCurrentCUnit().warning(iPos, "Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6049")
+                // TODO SI-6049 track down the cause for these.
+                debugwarn(s"$iPos: Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6191")
             }
           }
 

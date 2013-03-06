@@ -34,13 +34,14 @@ import scala.reflect.internal.util.Position
   *  - recover GADT typing by locally inserting implicit witnesses to type equalities derived from the current case, and considering these witnesses during subtyping (?)
   *  - recover exhaustivity/unreachability of user-defined extractors by partitioning the types they match on using an HList or similar type-level structure
   */
-trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
+trait PatternMatching extends Transform with TypingTransformers
                       with Debugging
                       with Interface
                       with MatchTranslation
                       with MatchTreeMaking
                       with MatchCodeGen
                       with ScalaLogic
+                      with Solving
                       with MatchAnalysis
                       with MatchOptimization {
   import global._
@@ -76,15 +77,20 @@ trait PatternMatching extends Transform with TypingTransformers with ast.TreeDSL
     }
   }
 
-  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with TreeMakers with PureCodegen
-  class OptimizingMatchTranslator(val typer: analyzer.Typer)                    extends MatchTranslator with TreeMakers with MatchOptimizations
+  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with PureCodegen {
+    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
+    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
+  }
+
+  class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
+                                                             with MatchOptimizer
+                                                             with MatchAnalyzer
+                                                             with Solver
 }
 
-trait HasGlobal {
+trait Debugging {
   val global: Global
-}
 
-trait Debugging extends HasGlobal {
   // TODO: the inliner fails to inline the closures to debug.patmat unless the method is nested in an object
   object debug {
     val printPatmat = global.settings.Ypatmatdebug.value
@@ -92,7 +98,7 @@ trait Debugging extends HasGlobal {
   }
 }
 
-trait Interface { self: ast.TreeDSL with HasGlobal =>
+trait Interface extends ast.TreeDSL {
   import global.{newTermName, analyzer, Type, ErrorType, Symbol, Tree}
   import analyzer.Typer
 

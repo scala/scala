@@ -25,8 +25,7 @@ trait ScaladocAnalyzer extends Analyzer {
 
       if ((sym ne null) && (sym ne NoSymbol)) {
         val comment = docDef.comment
-        docComments(sym) = comment
-        comment.defineVariables(sym)
+        fillDocComment(sym, comment)
         val typer1 = newTyper(context.makeNewScope(docDef, context.owner))
         for (useCase <- comment.useCases) {
           typer1.silent(_ => typer1 defineUseCases useCase) match {

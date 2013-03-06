@@ -19,7 +19,7 @@ import scala.reflect.internal.util.NoPosition
  *
  * TODO: split out match analysis
  */
-trait MatchOptimization { self: PatternMatching =>
+trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
     ConstantType, Literal, Constant, gen, EmptyTree,
@@ -30,7 +30,7 @@ trait MatchOptimization { self: PatternMatching =>
 
 
   ////
-  trait CommonSubconditionElimination extends TreeMakerApproximation { self: OptimizedCodegen =>
+  trait CommonSubconditionElimination extends OptimizedCodegen with MatchApproximator {
     /** a flow-sensitive, generalised, common sub-expression elimination
      * reuse knowledge from performed tests
      * the only sub-expressions we consider are the conditions and results of the three tests (type, type&equality, equality)
@@ -205,19 +205,19 @@ trait MatchOptimization { self: PatternMatching =>
 
 
   //// DCE
-  trait DeadCodeElimination extends TreeMakers { self: CodegenCore =>
-    // TODO: non-trivial dead-code elimination
-    // e.g., the following match should compile to a simple instanceof:
-    //   case class Ident(name: String)
-    //   for (Ident(name) <- ts) println(name)
-    def doDCE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
-      // do minimal DCE
-      cases
-    }
-  }
+//  trait DeadCodeElimination extends TreeMakers {
+//    // TODO: non-trivial dead-code elimination
+//    // e.g., the following match should compile to a simple instanceof:
+//    //   case class Ident(name: String)
+//    //   for (Ident(name) <- ts) println(name)
+//    def doDCE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
+//      // do minimal DCE
+//      cases
+//    }
+//  }
 
   //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
-  trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface { self: CodegenCore =>
+  trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface {
     import treeInfo.isGuardedCase
 
     abstract class SwitchMaker {
@@ -589,26 +589,12 @@ trait MatchOptimization { self: PatternMatching =>
     }
   }
 
-
-
-
-  trait MatchOptimizations extends CommonSubconditionElimination
-                              with DeadCodeElimination
-                              with SwitchEmission
-                              with OptimizedCodegen
-                              with SymbolicMatchAnalysis
-                              with DPLLSolver { self: TreeMakers =>
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
-      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-        reportUnreachable(cases(caseIndex).last.pos)
-      }
-      if (!unchecked) {
-        val counterExamples = exhaustive(prevBinder, cases, pt)
-        if (counterExamples.nonEmpty)
-          reportMissingCases(prevBinder.pos, counterExamples)
-      }
-
-      val optCases = doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
+  trait MatchOptimizer extends OptimizedCodegen
+                          with SwitchEmission
+                          with CommonSubconditionElimination {
+    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
+      // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
+      val optCases = doCSE(prevBinder, cases, pt)
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
