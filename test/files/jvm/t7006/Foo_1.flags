@@ -1,1 +1,1 @@
- -Ydead-code -Ydebug -Xfatal-warnings
+-Ynooptimise -Ydead-code -Ydebug -Xfatal-warnings
