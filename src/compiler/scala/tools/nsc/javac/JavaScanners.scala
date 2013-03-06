@@ -235,16 +235,6 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       cbuf.setLength(0)
     }
 
-    /** buffer for the documentation comment
-     */
-    var docBuffer: StringBuilder = null
-
-    /** add the given character to the documentation buffer
-     */
-    protected def putDocChar(c: Char) {
-      if (docBuffer ne null) docBuffer.append(c)
-    }
-
     private class JavaTokenData0 extends JavaTokenData
 
     /** we need one token lookahead
