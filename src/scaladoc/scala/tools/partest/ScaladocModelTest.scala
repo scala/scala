@@ -5,9 +5,10 @@
 
 package scala.tools.partest
 
+import scala.tools.nsc
 import scala.tools.nsc._
 import scala.tools.nsc.util.CommandLineParser
-import scala.tools.nsc.doc.{Settings, DocFactory, Universe}
+import scala.tools.nsc.doc.{ DocFactory, Universe }
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
 import scala.tools.nsc.doc.base.comment._
@@ -78,11 +79,11 @@ abstract class ScaladocModelTest extends DirectTest {
     System.setErr(prevErr)
   }
 
-  private[this] var settings: Settings = null
+  private[this] var settings: doc.Settings = null
 
   // create a new scaladoc compiler
   private[this] def newDocFactory: DocFactory = {
-    settings = new Settings(_ => ())
+    settings = new doc.Settings(_ => ())
     settings.scaladocQuietRun = true // yaay, no more "model contains X documentable templates"!
     val args = extraSettings + " " + scaladocSettings
     new ScalaDoc.Command((CommandLineParser tokenize (args)), settings) // side-effecting, I think
@@ -95,7 +96,6 @@ abstract class ScaladocModelTest extends DirectTest {
 
   // so we don't get the newSettings warning
   override def isDebug = false
-
 
   // finally, enable easy navigation inside the entities
   object access {

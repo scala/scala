@@ -650,31 +650,10 @@ self =>
 
 /* --------- COMMENT AND ATTRIBUTE COLLECTION ----------------------------- */
 
-    /** Join the comment associated with a definition. */
-    def joinComment(trees: => List[Tree]): List[Tree] = {
-      val doc = in.flushDoc
-      if ((doc ne null) && doc.raw.length > 0) {
-        val joined = trees map {
-          t =>
-            DocDef(doc, t) setPos {
-              if (t.pos.isDefined) {
-                val pos = doc.pos.withEnd(t.pos.endOrPoint)
-                // always make the position transparent
-                pos.makeTransparent
-              } else {
-                t.pos
-              }
-            }
-        }
-        joined.find(_.pos.isOpaqueRange) foreach {
-          main =>
-            val mains = List(main)
-            joined foreach { t => if (t ne main) ensureNonOverlapping(t, mains) }
-        }
-        joined
-      }
-      else trees
-    }
+    /** A hook for joining the comment associated with a definition.
+     *  Overridden by scaladoc.
+     */
+    def joinComment(trees: => List[Tree]): List[Tree] = trees
 
 /* ---------- TREE CONSTRUCTION ------------------------------------------- */
 

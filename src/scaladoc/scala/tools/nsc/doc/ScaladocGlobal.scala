@@ -6,93 +6,36 @@
 package scala.tools.nsc
 package doc
 
-import scala.util.control.ControlThrowable
+import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
+import scala.reflect.internal.Chars._
+import symtab._
 import reporters.Reporter
 import typechecker.Analyzer
-import scala.reflect.internal.util.BatchSourceFile
+import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
 
-trait ScaladocAnalyzer extends Analyzer {
-  val global : Global // generally, a ScaladocGlobal
-  import global._
+trait ScaladocGlobalTrait extends Global {
+  outer =>
 
-  override def newTyper(context: Context): ScaladocTyper = new ScaladocTyper(context)
+  override val useOffsetPositions = false
+  override def newUnitParser(unit: CompilationUnit) = new syntaxAnalyzer.ScaladocUnitParser(unit, Nil)
 
-  class ScaladocTyper(context0: Context) extends Typer(context0) {
-    private def unit = context.unit
+  override lazy val syntaxAnalyzer = new ScaladocSyntaxAnalyzer[outer.type](outer) {
+    val runsAfter = List[String]()
+    val runsRightAfter = None
+  }
+  override lazy val loaders = new SymbolLoaders {
+    val global: outer.type = outer
 
-    override def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree = {
-      val sym = docDef.symbol
-
-      if ((sym ne null) && (sym ne NoSymbol)) {
-        val comment = docDef.comment
-        fillDocComment(sym, comment)
-        val typer1 = newTyper(context.makeNewScope(docDef, context.owner))
-        for (useCase <- comment.useCases) {
-          typer1.silent(_ => typer1 defineUseCases useCase) match {
-            case SilentTypeError(err) =>
-              unit.warning(useCase.pos, err.errMsg)
-            case _ =>
-          }
-          for (useCaseSym <- useCase.defined) {
-            if (sym.name != useCaseSym.name)
-              unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
-          }
-        }
-      }
-
-      super.typedDocDef(docDef, mode, pt)
-    }
-
-    def defineUseCases(useCase: UseCase): List[Symbol] = {
-      def stringParser(str: String): syntaxAnalyzer.Parser = {
-        val file = new BatchSourceFile(context.unit.source.file, str) {
-          override def positionInUltimateSource(pos: Position) = {
-            pos.withSource(context.unit.source, useCase.pos.start)
-          }
-        }
-        val unit = new CompilationUnit(file)
-        new syntaxAnalyzer.UnitParser(unit)
-      }
-
-      val trees = stringParser(useCase.body+";").nonLocalDefOrDcl
-      val enclClass = context.enclClass.owner
-
-      def defineAlias(name: Name) = (
-        if (context.scope.lookup(name) == NoSymbol) {
-          lookupVariable(name.toString.substring(1), enclClass) foreach { repl =>
-            silent(_.typedTypeConstructor(stringParser(repl).typ())) map { tpt =>
-              val alias = enclClass.newAliasType(name.toTypeName, useCase.pos)
-              val tparams = cloneSymbolsAtOwner(tpt.tpe.typeSymbol.typeParams, alias)
-              val newInfo = genPolyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
-              alias setInfo newInfo
-              context.scope.enter(alias)
-            }
-          }
-        }
-      )
-
-      for (tree <- trees; t <- tree)
-        t match {
-          case Ident(name) if name startsWith '$' => defineAlias(name)
-          case _ =>
-        }
-
-      useCase.aliases = context.scope.toList
-      namer.enterSyms(trees)
-      typedStats(trees, NoSymbol)
-      useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
-
-      if (settings.debug.value)
-        useCase.defined foreach (sym => println("defined use cases: %s:%s".format(sym, sym.tpe)))
-
-      useCase.defined
+    // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+    // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
+    // that are not in their correct place (see bug for details)
+    override protected def signalError(root: Symbol, ex: Throwable) {
+      log(s"Suppressing error involving $root: $ex")
     }
   }
 }
 
-class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends {
-  override val useOffsetPositions = false
-} with Global(settings, reporter) {
+class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(settings, reporter) with ScaladocGlobalTrait {
   override protected def computeInternalPhases() {
     phasesSet += syntaxAnalyzer
     phasesSet += analyzer.namerFactory
