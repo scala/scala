@@ -19,7 +19,7 @@ import scala.reflect.internal.util.NoPosition
  *
  * TODO: split out match analysis
  */
-trait MatchOptimization { self: PatternMatching =>
+trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
     ConstantType, Literal, Constant, gen, EmptyTree,
@@ -205,7 +205,7 @@ trait MatchOptimization { self: PatternMatching =>
 
 
   //// DCE
-  trait DeadCodeElimination extends TreeMakers { self: CodegenCore =>
+  trait DeadCodeElimination extends TreeMakers {
     // TODO: non-trivial dead-code elimination
     // e.g., the following match should compile to a simple instanceof:
     //   case class Ident(name: String)
@@ -217,7 +217,7 @@ trait MatchOptimization { self: PatternMatching =>
   }
 
   //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
-  trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface { self: CodegenCore =>
+  trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface {
     import treeInfo.isGuardedCase
 
     abstract class SwitchMaker {
@@ -589,25 +589,11 @@ trait MatchOptimization { self: PatternMatching =>
     }
   }
 
-
-
-
   trait MatchOptimizations extends CommonSubconditionElimination
                               with DeadCodeElimination
                               with SwitchEmission
-                              with OptimizedCodegen
-                              with SymbolicMatchAnalysis
-                              with DPLLSolver { self: TreeMakers =>
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) = {
-      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
-        reportUnreachable(cases(caseIndex).last.pos)
-      }
-      if (!unchecked) {
-        val counterExamples = exhaustive(prevBinder, cases, pt)
-        if (counterExamples.nonEmpty)
-          reportMissingCases(prevBinder.pos, counterExamples)
-      }
-
+                              with OptimizedCodegen {
+    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
       val optCases = doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
       val toHoist = (
         for (treeMakers <- optCases)

@@ -125,7 +125,7 @@ trait TreeAndTypeAnalysis extends Debugging {
   }
 }
 
-trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
+trait MatchAnalysis extends TreeAndTypeAnalysis with ScalaLogic with MatchTreeMaking {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, CaseDef, atPos,
     Select, Block, ThisType, SingleType, NoPrefix, NoType, definitions, needsOuterTest,
@@ -141,7 +141,7 @@ trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
    * Represent a match as a formula in propositional logic that encodes whether the match matches (abstractly: we only consider types)
    *
    */
-  trait TreeMakerApproximation extends TreeMakers with PropositionalLogic with TreesAndTypesDomain with CheckableTreeAndTypeAnalysis { self: CodegenCore =>
+  trait TreeMakerApproximation extends TreeMakers with TreesAndTypesDomain {
     object Test {
       var currId = 0
     }
@@ -348,7 +348,7 @@ trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
     }
   }
 
-  trait SymbolicMatchAnalysis extends TreeMakerApproximation  { self: CodegenCore =>
+  trait MatchAnalyses extends TreeMakerApproximation  {
     def uncheckedWarning(pos: Position, msg: String) = global.currentUnit.uncheckedWarning(pos, msg)
     def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
 
@@ -498,7 +498,7 @@ trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
 
     // a way to construct a value that will make the match fail: a constructor invocation, a constant, an object of some type)
     class CounterExample {
-      protected[SymbolicMatchAnalysis] def flattenConsArgs: List[CounterExample] = Nil
+      protected[MatchAnalyses] def flattenConsArgs: List[CounterExample] = Nil
       def coveredBy(other: CounterExample): Boolean = this == other || other == WildcardExample
     }
     case class ValueExample(c: ValueConst) extends CounterExample { override def toString = c.toString }
@@ -513,11 +513,11 @@ trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
       }
     }
     case class ListExample(ctorArgs: List[CounterExample]) extends CounterExample {
-      protected[SymbolicMatchAnalysis] override def flattenConsArgs: List[CounterExample] = ctorArgs match {
+      protected[MatchAnalyses] override def flattenConsArgs: List[CounterExample] = ctorArgs match {
         case hd :: tl :: Nil => hd :: tl.flattenConsArgs
         case _ => Nil
       }
-      protected[SymbolicMatchAnalysis] lazy val elems = flattenConsArgs
+      protected[MatchAnalyses] lazy val elems = flattenConsArgs
 
       override def coveredBy(other: CounterExample): Boolean =
         other match {
@@ -690,6 +690,17 @@ trait MatchAnalysis extends TreeAndTypeAnalysis { self: PatternMatching =>
 
       // this is the variable we want a counter example for
       VariableAssignment(scrutVar).toCounterExample()
+    }
+
+    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): Unit = {
+      unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+        reportUnreachable(cases(caseIndex).last.pos)
+      }
+      if (!unchecked) {
+        val counterExamples = exhaustive(prevBinder, cases, pt)
+        if (counterExamples.nonEmpty)
+          reportMissingCases(prevBinder.pos, counterExamples)
+      }
     }
   }
 }
