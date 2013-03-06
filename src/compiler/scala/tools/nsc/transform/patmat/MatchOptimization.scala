@@ -30,7 +30,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
 
   ////
-  trait CommonSubconditionElimination extends TreeMakerApproximation { self: OptimizedCodegen =>
+  trait CommonSubconditionElimination extends OptimizedCodegen with MatchApproximator {
     /** a flow-sensitive, generalised, common sub-expression elimination
      * reuse knowledge from performed tests
      * the only sub-expressions we consider are the conditions and results of the three tests (type, type&equality, equality)
@@ -205,16 +205,16 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
 
   //// DCE
-  trait DeadCodeElimination extends TreeMakers {
-    // TODO: non-trivial dead-code elimination
-    // e.g., the following match should compile to a simple instanceof:
-    //   case class Ident(name: String)
-    //   for (Ident(name) <- ts) println(name)
-    def doDCE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
-      // do minimal DCE
-      cases
-    }
-  }
+//  trait DeadCodeElimination extends TreeMakers {
+//    // TODO: non-trivial dead-code elimination
+//    // e.g., the following match should compile to a simple instanceof:
+//    //   case class Ident(name: String)
+//    //   for (Ident(name) <- ts) println(name)
+//    def doDCE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
+//      // do minimal DCE
+//      cases
+//    }
+//  }
 
   //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
   trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface {
@@ -589,12 +589,12 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     }
   }
 
-  trait MatchOptimizations extends CommonSubconditionElimination
-                              with DeadCodeElimination
-                              with SwitchEmission
-                              with OptimizedCodegen {
+  trait MatchOptimizer extends OptimizedCodegen
+                          with SwitchEmission
+                          with CommonSubconditionElimination {
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
-      val optCases = doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
+      // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
+      val optCases = doCSE(prevBinder, cases, pt)
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
