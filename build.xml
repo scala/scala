@@ -1611,6 +1611,11 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${jline.jar}"/>
       <path refid="lib.extra"/>
     </path>
+    <path id="partest.classpath">
+      <path refid="pack.classpath"/>
+      <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      <pathelement location="${pack.dir}/lib/scala-swing.jar"/> <!-- TODO - segregate swing tests (there can't be many) -->
+    </path>
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
   </target>
@@ -2320,11 +2325,8 @@ BOOTRAPING TEST AND TEST SUITE
              timeout="1200000"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+
+      <compilationpath refid="partest.classpath"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
       <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
     </partest>
@@ -2335,11 +2337,7 @@ BOOTRAPING TEST AND TEST SUITE
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <anttests dir="${partest.dir}/${partest.srcdir}/ant" includes="*build.xml"/>
     </partest>
   </target>
@@ -2350,11 +2348,7 @@ BOOTRAPING TEST AND TEST SUITE
              timeout="2400000"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
@@ -2385,10 +2379,7 @@ BOOTRAPING TEST AND TEST SUITE
              scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
       <compilerarg value="-Xpluginsdir"/>
       <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/continuations-run" includes="*.scala"/>
     </partest>
@@ -2397,8 +2388,8 @@ BOOTRAPING TEST AND TEST SUITE
   <target name="test.scaladoc" depends="pack.done">
     <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
       <compilationpath>
-        <path refid="pack.classpath"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+        <path refid="partest.classpath"/>
+        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
       </compilationpath>
       <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
       <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
