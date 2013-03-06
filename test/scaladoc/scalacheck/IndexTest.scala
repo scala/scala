@@ -56,7 +56,7 @@ object Test extends Properties("Index") {
   }
 
   property("path") = {
-    createIndex("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
+    createIndex("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
         index.path == List("index.html")
       case None => false
@@ -64,7 +64,7 @@ object Test extends Properties("Index") {
   }
 
   property("title") = {
-    createIndex("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
+    createIndex("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
         index.title == ""
 
@@ -72,7 +72,7 @@ object Test extends Properties("Index") {
     }
   }
   property("browser contants a script element") = {
-    createIndex("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
+    createIndex("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
         (index.browser \ "script").size == 1
 
