@@ -683,7 +683,7 @@ trait ContextErrors {
       // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
-      private def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
+      protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
         if (msg != null) context.error(pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
@@ -772,15 +772,15 @@ trait ContextErrors {
         ))
       }
 
-      def MacroImplementationNotFoundError(expandee: Tree) = {
-        val message =
-          "macro implementation not found: " + expandee.symbol.name + " " +
-          "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)" +
-          (if (forScaladoc) ". When generating scaladocs for multiple projects at once, consider using -Ymacro-no-expand to disable macro expansions altogether."
-           else "")
-        macroExpansionError(expandee, message)
-      }
+      def MacroImplementationNotFoundError(expandee: Tree) =
+        macroExpansionError(expandee, macroImplementationNotFoundMessage(expandee.symbol.name))
     }
+
+    /** This file will be the death of me. */
+    protected def macroImplementationNotFoundMessage(name: Name): String = (
+      s"""|macro implementation not found: $name
+          |(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)""".stripMargin
+    )
   }
 
   trait InferencerContextErrors {

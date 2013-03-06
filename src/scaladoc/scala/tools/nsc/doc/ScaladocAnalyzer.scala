@@ -24,6 +24,11 @@ trait ScaladocAnalyzer extends Analyzer {
 
     override def canAdaptConstantTypeToLiteral = false
 
+    override protected def macroImplementationNotFoundMessage(name: Name): String = (
+        super.macroImplementationNotFoundMessage(name)
+      + "\nWhen generating scaladocs for multiple projects at once, consider using -Ymacro-no-expand to disable macro expansions altogether."
+    )
+
     override def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree = {
       val sym = docDef.symbol
 

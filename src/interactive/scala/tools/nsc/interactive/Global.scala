@@ -14,10 +14,19 @@ import scala.tools.nsc.util.MultiHashMap
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
+import scala.tools.nsc.doc.ScaladocAnalyzer
 import scala.tools.nsc.typechecker.{ Analyzer, DivergentImplicit }
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
+
+trait InteractiveScaladocAnalyzer extends InteractiveAnalyzer with ScaladocAnalyzer {
+  val global : Global
+  import global._
+  override def newTyper(context: Context) = new Typer(context) with InteractiveTyper with ScaladocTyper {
+    override def canAdaptConstantTypeToLiteral = false
+  }
+}
 
 trait InteractiveAnalyzer extends Analyzer {
   val global : Global
@@ -127,9 +136,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
   // don't keep the original owner in presentation compiler runs
-  // (the map will grow indefinitely, and the only use case is the
-  // backend).
+  // (the map will grow indefinitely, and the only use case is the backend)
   override protected def saveOriginalOwner(sym: Symbol) { }
+  override protected def originalEnclosingMethod(sym: Symbol) =
+    abort("originalOwner is not kept in presentation compiler runs.")
 
   override def forInteractive = true
 

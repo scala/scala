@@ -74,12 +74,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   // e.g. after flatten all classes are owned by package classes, there are lots and
   // lots of these to be declared (or more realistically, discovered.)
   protected def saveOriginalOwner(sym: Symbol) {
-    // don't keep the original owner in presentation compiler runs
-    // (the map will grow indefinitely, and the only use case is the
-    // backend).
-    if (!forInteractive) {
-      if (originalOwner contains sym) ()
-      else originalOwner(sym) = sym.rawowner
+    if (originalOwner contains sym) ()
+    else originalOwner(sym) = sym.rawowner
+  }
+  protected def originalEnclosingMethod(sym: Symbol): Symbol = {
+    if (sym.isMethod || sym == NoSymbol) sym
+    else {
+      val owner = originalOwner.getOrElse(sym, sym.rawowner)
+      if (sym.isLocalDummy) owner.enclClass.primaryConstructor
+      else originalEnclosingMethod(owner)
     }
   }
 
@@ -1920,15 +1923,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *        originalOwner map is not populated for memory considerations (the symbol
      *        may hang on to lazy types and in turn to whole (outdated) compilation units.
      */
-    def originalEnclosingMethod: Symbol = {
-      assert(!forInteractive, "originalOwner is not kept in presentation compiler runs.")
-      if (isMethod) this
-      else {
-        val owner = originalOwner.getOrElse(this, rawowner)
-        if (isLocalDummy) owner.enclClass.primaryConstructor
-        else owner.originalEnclosingMethod
-      }
-    }
+    def originalEnclosingMethod: Symbol = Symbols.this.originalEnclosingMethod(this)
 
     /** The method or class which logically encloses the current symbol.
      *  If the symbol is defined in the initialization part of a template
