@@ -327,6 +327,12 @@ object Pickler {
     }
   }
 
+  /** A pickler for pairs, represented as `~`-pairs */
+  implicit def tuple2Pickler[T1: Pickler, T2: Pickler]: Pickler[(T1, T2)] =
+    (pkl[T1] ~ pkl[T2])
+      .wrapped { case x1 ~ x2 => (x1, x2) } { case (x1, x2) => x1 ~ x2 }
+      .labelled ("tuple2")
+
   /** A pickler for 3-tuples, represented as `~`-tuples */
   implicit def tuple3Pickler[T1, T2, T3](implicit p1: Pickler[T1], p2: Pickler[T2], p3: Pickler[T3]): Pickler[(T1, T2, T3)] =
     (p1 ~ p2 ~ p3)
