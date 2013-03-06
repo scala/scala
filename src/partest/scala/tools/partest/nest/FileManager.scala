@@ -64,6 +64,20 @@ trait FileManager extends FileUtil {
   var LATEST_PARTEST: String
   var LATEST_ACTORS: String
 
+  protected def relativeToLibrary(what: String): String = {
+    if (LATEST_LIB endsWith ".jar") {
+      (SFile(LATEST_LIB).parent / s"scala-$what.jar").toAbsolute.path
+    }
+    else {
+      (SFile(LATEST_LIB).parent.parent / "classes" / what).toAbsolute.path
+    }
+  }
+  def latestScaladoc    = relativeToLibrary("scaladoc")
+  def latestInteractive = relativeToLibrary("interactive")
+  def latestPaths       = List(LATEST_LIB, LATEST_REFLECT, LATEST_COMP, LATEST_PARTEST, LATEST_ACTORS, latestScaladoc, latestInteractive)
+  def latestFiles       = latestPaths map (p => new java.io.File(p))
+  def latestUrls        = latestFiles map (_.toURI.toURL)
+
   var showDiff = false
   var updateCheck = false
   var showLog = false
