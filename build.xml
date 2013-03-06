@@ -2319,8 +2319,11 @@ BOOTRAPING TEST AND TEST SUITE
     </antcall>
   </target>
 
-  <target name="test.run" depends="pack.done">
+  <target name="test.pre-run" depends="pack.done">
     <property name="partest.srcdir" value="files" />
+  </target>
+
+  <target name="test.run" depends="test.pre-run">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="1200000"
              srcdir="${partest.srcdir}"
@@ -2332,7 +2335,7 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.ant" depends="pack.done">
+  <target name="test.ant" depends="test.pre-run">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              srcdir="${partest.srcdir}"
@@ -2342,7 +2345,7 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.suite" depends="pack.done">
+  <target name="test.suite" depends="test.pre-run">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000"
@@ -2364,14 +2367,10 @@ BOOTRAPING TEST AND TEST SUITE
       <instrumentedtests dir="${partest.dir}/${partest.srcdir}/instrumented">
         <include name="*.scala"/>
       </instrumentedtests>
-      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
-        <include name="*/*.scala"/>
-      </presentationtests>
-      <!-- <scripttests dir="${partest.dir}/${partest.srcdir}/script" includes="*.scala"/> -->
     </partest>
   </target>
 
-  <target name="test.continuations.suite" depends="pack.done">
+  <target name="test.continuations.suite" depends="test.pre-run">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000"
@@ -2385,18 +2384,24 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.scaladoc" depends="pack.done">
+  <target name="test.scaladoc" depends="test.pre-run">
     <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath>
-        <path refid="partest.classpath"/>
-        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
       <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt"/>
+  <target name="test.interactive" depends="test.pre-run">
+    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
+      <compilationpath refid="partest.classpath"/>
+      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
+        <include name="*/*.scala"/>
+      </presentationtests>
+    </partest>
+  </target>
+
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.interactive, test.stability, test.sbt"/>
 
 
 <!-- ===========================================================================
