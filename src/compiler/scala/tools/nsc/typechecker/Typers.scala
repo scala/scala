@@ -229,8 +229,13 @@ trait Typers extends Adaptations with Tags {
         new SubstWildcardMap(tparams).apply(tp)
       case TypeRef(_, sym, _) if sym.isAliasType =>
         val tp0 = tp.dealias
-        val tp1 = dropExistential(tp0)
-        if (tp1 eq tp0) tp else tp1
+        if (tp eq tp0) {
+          debugwarn(s"dropExistential did not progress dealiasing $tp, see SI-7126")
+          tp
+        } else {
+          val tp1 = dropExistential(tp0)
+          if (tp1 eq tp0) tp else tp1
+        }
       case _ => tp
     }
 
@@ -1017,7 +1022,7 @@ trait Typers extends Adaptations with Tags {
             val pre =
               if (owner.isPackageClass) owner.thisType
               else if (owner.isClass) context.enclosingSubClassContext(owner).prefix
-            else NoPrefix
+              else NoPrefix
             stabilize0(pre)
           case Select(qualqual, _) =>
             stabilize0(qualqual.tpe)
@@ -1572,19 +1577,19 @@ trait Typers extends Adaptations with Tags {
      *  from one of the parent types. Read more about why the argss are unknown in `tools.nsc.ast.Trees.Template`.
      */
     private def typedPrimaryConstrBody(templ: Template)(actualSuperCall: => Tree): Tree =
-      treeInfo.firstConstructor(templ.body) match {
+        treeInfo.firstConstructor(templ.body) match {
         case ctor @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
-          val (preSuperStats, superCall) = {
-            val (stats, rest) = cstats span (x => !treeInfo.isSuperConstrCall(x))
-            (stats map (_.duplicate), if (rest.isEmpty) EmptyTree else rest.head.duplicate)
-          }
+            val (preSuperStats, superCall) = {
+              val (stats, rest) = cstats span (x => !treeInfo.isSuperConstrCall(x))
+              (stats map (_.duplicate), if (rest.isEmpty) EmptyTree else rest.head.duplicate)
+            }
           val superCall1 = (superCall match {
             case global.pendingSuperCall => actualSuperCall
             case EmptyTree => EmptyTree
           }) orElse cunit
           val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall1)
           val clazz = context.owner
-          assert(clazz != NoSymbol, templ)
+            assert(clazz != NoSymbol, templ)
           val cscope = context.outer.makeNewScope(ctor, context.outer.owner)
           val cbody2 = { // called both during completion AND typing.
             val typer1 = newTyper(cscope)
@@ -1592,12 +1597,12 @@ trait Typers extends Adaptations with Tags {
             clazz.unsafeTypeParams foreach (sym => typer1.context.scope.enter(sym))
             typer1.namer.enterValueParams(vparamss map (_.map(_.duplicate)))
             typer1.typed(cbody1)
-          }
+            }
 
-          val preSuperVals = treeInfo.preSuperFields(templ.body)
-          if (preSuperVals.isEmpty && preSuperStats.nonEmpty)
+            val preSuperVals = treeInfo.preSuperFields(templ.body)
+            if (preSuperVals.isEmpty && preSuperStats.nonEmpty)
             devWarning("Wanted to zip empty presuper val list with " + preSuperStats)
-          else
+            else
             map2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt setType ldef.symbol.tpe)
 
           if (superCall1 == cunit) EmptyTree
@@ -1605,13 +1610,13 @@ trait Typers extends Adaptations with Tags {
             case Block(_, expr) => expr
             case tree => tree
           }
-        case _ =>
+          case _ =>
           EmptyTree
-      }
+        }
 
     /** Makes sure that the first type tree in the list of parent types is always a class.
      *  If the first parent is a trait, prepend its supertype to the list until it's a class.
-     */
+*/
     private def normalizeFirstParent(parents: List[Tree]): List[Tree] = parents match {
       case first :: rest if treeInfo.isTraitRef(first) =>
         def explode(supertpt: Tree, acc: List[Tree]): List[Tree] = {
@@ -1638,14 +1643,14 @@ trait Typers extends Adaptations with Tags {
      *  So we strip the duplicates before typer.
      */
     private def fixDuplicateSyntheticParents(parents: List[Tree]): List[Tree] = parents match {
-      case Nil      => Nil
-      case x :: xs  =>
-        val sym = x.symbol
+          case Nil      => Nil
+          case x :: xs  =>
+            val sym = x.symbol
         x :: fixDuplicateSyntheticParents(
-          if (isPossibleSyntheticParent(sym)) xs filterNot (_.symbol == sym)
-          else xs
-        )
-    }
+              if (isPossibleSyntheticParent(sym)) xs filterNot (_.symbol == sym)
+              else xs
+            )
+        }
 
     def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefClass.tpe)))
@@ -1666,16 +1671,16 @@ trait Typers extends Adaptations with Tags {
 
           supertpts mapConserve (tpt => checkNoEscaping.privates(context.owner, tpt))
         } catch {
-          case ex: TypeError =>
-            // fallback in case of cyclic errors
-            // @H none of the tests enter here but I couldn't rule it out
+        case ex: TypeError =>
+          // fallback in case of cyclic errors
+          // @H none of the tests enter here but I couldn't rule it out
             // upd. @E when a definition inherits itself, we end up here
             // because `typedParentType` triggers `initialize` for parent types symbols
-            log("Type error calculating parents in template " + templ)
-            log("Error: " + ex)
-            ParentTypesError(templ, ex)
-            List(TypeTree(AnyRefClass.tpe))
-        }
+          log("Type error calculating parents in template " + templ)
+          log("Error: " + ex)
+          ParentTypesError(templ, ex)
+          List(TypeTree(AnyRefClass.tpe))
+      }
     }
 
     /** <p>Check that</p>
@@ -1921,7 +1926,7 @@ trait Typers extends Adaptations with Tags {
       assert(clazz.info.decls != EmptyScope, clazz)
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
-        validateParentClasses(parents1, selfType)
+      validateParentClasses(parents1, selfType)
       if (clazz.isCase)
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
@@ -1934,9 +1939,9 @@ trait Typers extends Adaptations with Tags {
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
 
       val body = {
-        val body =
-          if (isPastTyper || reporter.hasErrors) templ.body
-          else templ.body flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
+      val body =
+        if (isPastTyper || reporter.hasErrors) templ.body
+        else templ.body flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
         val primaryCtor = treeInfo.firstConstructor(body)
         val primaryCtor1 = primaryCtor match {
           case DefDef(_, _, _, _, _, Block(earlyVals :+ global.pendingSuperCall, unit)) =>
@@ -1999,7 +2004,7 @@ trait Typers extends Adaptations with Tags {
       checkNonCyclic(vdef, tpt1)
 
       if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.isMutable)
-          VolatileValueError(vdef)
+        VolatileValueError(vdef)
 
       val rhs1 =
         if (vdef.rhs.isEmpty) {
@@ -2161,7 +2166,7 @@ trait Typers extends Adaptations with Tags {
 
       foreachWithIndex(paramssTypes(meth.tpe)) { (paramList, listIdx) =>
         foreachWithIndex(paramList) { (paramType, paramIdx) =>
-        val sym = paramType.typeSymbol
+          val sym = paramType.typeSymbol
           def paramPos = nthParamPos(listIdx, paramIdx)
 
           /** Not enough to look for abstract types; have to recursively check the bounds
@@ -2176,17 +2181,17 @@ trait Typers extends Adaptations with Tags {
                 || (!sym.hasTransOwner(meth) && failStruct(paramPos, "a type member of that refinement", what))
                 || checkAbstract(sym.info.bounds.hi, "Type bound")
               )
-        }
+            }
             tp0.dealiasWidenChain forall (t => check(t.typeSymbol))
           }
           checkAbstract(paramType, "Parameter type")
 
-        if (sym.isDerivedValueClass)
-          failStruct(paramPos, "a user-defined value class")
-        if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
-          failStruct(paramPos, "the type of that refinement (self type)")
+          if (sym.isDerivedValueClass)
+            failStruct(paramPos, "a user-defined value class")
+          if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
+            failStruct(paramPos, "the type of that refinement (self type)")
+        }
       }
-    }
       if (resultType.typeSymbol.isDerivedValueClass)
         failStruct(ddef.tpt.pos, "a user-defined value class", where = "Result type")
     }
@@ -3442,7 +3447,7 @@ trait Typers extends Adaptations with Tags {
           else None
 
         case _ => None
-      }
+    }
     }
 
     /**
@@ -3630,7 +3635,7 @@ trait Typers extends Adaptations with Tags {
             val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
 
             rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
-          }
+            }
 
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -3658,7 +3663,7 @@ trait Typers extends Adaptations with Tags {
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
       })
-    }
+        }
 
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
       sym.isTypeParameter && sym.owner.isJavaDefined
@@ -5008,8 +5013,8 @@ trait Typers extends Adaptations with Tags {
           def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
           cdef.pat match {
             case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
-            case i @ Ident(name) if unbound(i)          => warn(name)
-            case _                                      =>
+            case i @ Ident(name) if unbound(i) => warn(name)
+            case _ =>
           }
         }
 

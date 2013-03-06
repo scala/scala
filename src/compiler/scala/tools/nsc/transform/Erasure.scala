@@ -447,6 +447,7 @@ abstract class Erasure extends AddInterfaces
     def checkPair(member: Symbol, other: Symbol) {
       val otpe = specialErasure(root)(other.tpe)
       val bridgeNeeded = exitingErasure (
+        !member.isMacro &&
         !(other.tpe =:= member.tpe) &&
         !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
         { var e = bridgesScope.lookupEntry(member.name)

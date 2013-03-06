@@ -3161,12 +3161,19 @@ trait Types extends api.Types { self: SymbolTable =>
        *    ?TC[?T] <: Any
        *  }}}
        */
-      def unifySimple = (
-        (params.isEmpty || tp.typeSymbol == NothingClass || tp.typeSymbol == AnyClass) && {
+      def unifySimple = {
+        val sym = tp.typeSymbol
+        if (sym == NothingClass || sym == AnyClass) { // kind-polymorphic
+          // SI-7126 if we register some type alias `T=Any`, we can later end
+          // with malformed types like `T[T]` during type inference in
+          // `handlePolymorphicCall`. No such problem if we register `Any`.
+          addBound(sym.tpe)
+          true
+        } else if (params.isEmpty) {
           addBound(tp)
           true
-        }
-      )
+        } else false
+      }
 
       /** Full case: involving a check of the form
        *  {{{
@@ -5257,7 +5264,9 @@ trait Types extends api.Types { self: SymbolTable =>
       case _ =>
         NoType
     }
-    patType match {
+    // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
+    // generates an outer test based on `patType.prefix` with automatically dealises.
+    patType.dealias match {
       case TypeRef(pre, sym, args) =>
         val pre1 = maybeCreateDummyClone(pre, sym)
         (pre1 ne NoType) && isPopulated(copyTypeRef(patType, pre1, sym, args), selType)

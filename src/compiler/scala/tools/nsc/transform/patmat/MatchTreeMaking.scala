@@ -18,21 +18,26 @@ import scala.reflect.internal.util.NoPosition
  * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions,
  * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
  */
-trait MatchTreeMaking { self: PatternMatching =>
+trait MatchTreeMaking extends MatchCodeGen with Debugging {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, CaseDef, atPos, settings,
     Select, Block, ThisType, SingleType, NoPrefix, NoType, needsOuterTest,
     ConstantType, Literal, Constant, gen, This, EmptyTree, map2, NoSymbol, Traverser,
-    Function, Typed, treeInfo, TypeRef, DefTree}
+    Function, Typed, treeInfo, TypeRef, DefTree, Ident, nme}
 
   import global.definitions.{SomeClass, AnyRefClass, UncheckedClass, BooleanClass}
+
+  final case class Suppression(exhaustive: Boolean, unreachable: Boolean)
+  object Suppression {
+    val NoSuppression = Suppression(false, false)
+  }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // the making of the trees
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  trait TreeMakers extends TypedSubstitution { self: CodegenCore =>
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, unchecked: Boolean): (List[List[TreeMaker]], List[Tree]) =
-      (cases, Nil)
+  trait TreeMakers extends TypedSubstitution with CodegenCore {
+    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree])
+    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit
 
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
       None
@@ -522,18 +527,24 @@ trait MatchTreeMaking { self: PatternMatching =>
         def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
-        val (unchecked, requireSwitch) =
-          if (settings.XnoPatmatAnalysis.value) (true, false)
+        val (suppression, requireSwitch): (Suppression, Boolean) =
+          if (settings.XnoPatmatAnalysis.value) (Suppression.NoSuppression, false)
           else scrut match {
-            case Typed(_, tpt) =>
-              (tpt.tpe hasAnnotation UncheckedClass,
-               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
-               treeInfo.isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0)
+            case Typed(tree, tpt) =>
+              val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
+              val supressUnreachable = tree match {
+                case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // SI-7183 don't warn for withFilter's that turn out to be irrefutable.
+                case _ => false
+              }
+              val suppression = Suppression(suppressExhaustive, supressUnreachable)
+              // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
+              val requireSwitch = treeInfo.isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0
+              (suppression, requireSwitch)
             case _ =>
-              (false, false)
+              (Suppression.NoSuppression, false)
           }
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked).getOrElse{
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, suppression.exhaustive).getOrElse{
           if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
           if (casesNoSubstOnly nonEmpty) {
@@ -550,7 +561,9 @@ trait MatchTreeMaking { self: PatternMatching =>
                   }) None
               else matchFailGen
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, unchecked)
+            analyzeCases(scrutSym, casesNoSubstOnly, pt, suppression)
+
+            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
 
             val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 
