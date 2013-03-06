@@ -1696,8 +1696,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     })
   }
-  def forInteractive   = false
-  def forScaladoc      = false
   def createJavadoc    = false
 }
 
