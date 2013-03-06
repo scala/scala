@@ -1316,7 +1316,38 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/scaladoc.complete" verbose="no"/>
   </target>
 
-  <target name="quick.pre-bin" depends="quick.scaladoc">
+  <target name="quick.pre-interactive" depends="quick.scaladoc">
+    <uptodate property="quick.interactive.available" targetfile="${build-quick.dir}/interactive.complete">
+      <srcfiles dir="${src.dir}/interactive" />
+    </uptodate>
+  </target>
+
+  <target name="quick.interactive" depends="quick.pre-interactive" unless="quick.interactive.available">
+    <mkdir dir="${build-quick.dir}/classes/interactive"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/interactive"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/interactive"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
+        <pathelement location="${build-quick.dir}/classes/interactive"/>
+        <pathelement location="${ant.jar}"/>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${scalacheck.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/interactive.complete" verbose="no"/>
+  </target>
+
+  <target name="quick.pre-bin" depends="quick.interactive">
     <condition property="quick.bin.available">
       <isset property="quick.comp.available"/>
     </condition>
@@ -1456,6 +1487,7 @@ PACKED QUICK BUILD (PACK)
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <fileset dir="${build-quick.dir}/classes/scaladoc"/>
+      <fileset dir="${build-quick.dir}/classes/interactive"/>
       <fileset dir="${build-asm.dir}/classes"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
