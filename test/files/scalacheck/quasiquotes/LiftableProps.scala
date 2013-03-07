@@ -53,18 +53,23 @@ object LiftableProps extends Properties("liftable")
     q"$c" ≈ Literal(Constant(c))
   }
 
-  // this are some non arbitrary generators that
-  // are needed for following tests
-
-  implicit val arbType = Arbitrary[Type] { rootMirror.staticClass("scala.Int").toType }
-  implicit val arbSymbol = Arbitrary[Symbol] { rootMirror.staticClass("scala.Int") }
-
-  property("lift symbol") = exists { (s: Symbol) =>
+  property("lift symbol") = exists { (u: Unit) =>
+    val s = rootMirror.staticClass("scala.Int")
     q"$s" ≈ Ident(s)
   }
 
-  property("lift type") = exists { (tpe: Type) =>
+  property("lift type") = exists { (u: Unit) =>
+    val tpe = rootMirror.staticClass("scala.Int").toType
     q"$tpe" ≈ TypeTree(tpe)
   }
 
+  property("lift type tag") = exists { (u: Unit) =>
+    val tag = TypeTag.Int
+    q"$tag" ≈ TypeTree(tag.tpe)
+  }
+
+  property("lift weak type tag") = exists { (u: Unit) =>
+    val tag = WeakTypeTag.Int
+    q"$tag" ≈ TypeTree(tag.tpe)
+  }
 }
