@@ -219,5 +219,9 @@ trait Reifiers { self: Quasiquotes =>
     sym.asType.toType.typeConstructor.asSeenFrom(thistype, sym.owner)
   }
 
-  def fmtCard(cardinality: Int) = "." * (cardinality + 1)
+  def fmtCard(cardinality: Int) =
+    if (cardinality == 0)
+      ""
+    else
+      "." * (cardinality + 1)
 }
