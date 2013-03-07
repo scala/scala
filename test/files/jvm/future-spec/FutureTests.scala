@@ -10,7 +10,7 @@ import scala.util.{Try,Success,Failure}
 
 
 
-object FutureTests extends MinimalScalaTest {
+class FutureTests extends MinimalScalaTest {
 
   /* some utils */
   
