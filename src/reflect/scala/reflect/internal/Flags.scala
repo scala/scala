@@ -140,8 +140,9 @@ class ModifierFlags {
 }
 object ModifierFlags extends ModifierFlags
 
-/** All flags and associated operatins */
+/** All flags and associated operations */
 class Flags extends ModifierFlags {
+  final val NO_FLAGS      = 0             // no flags set, useful occasionally when composing flags
   final val METHOD        = 1 << 6        // a method
   final val MODULE        = 1 << 8        // symbol is module or class implementing a module
   final val PACKAGE       = 1 << 14       // symbol is a java package

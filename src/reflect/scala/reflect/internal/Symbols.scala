@@ -797,6 +797,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol a static constructor? */
     final def isStaticConstructor: Boolean =
       isStaticMember && isClassConstructor
+      
+    /** Is this symbol a static method? */
+    final def isStaticMethod: Boolean =
+      isStaticMember && isMethod
 
     /** Is this symbol a static member of its class? (i.e. needs to be implemented as a Java static?) */
     final def isStaticMember: Boolean =
