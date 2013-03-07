@@ -1576,7 +1576,7 @@ trait Typers extends Modes with Adaptations with Tags {
                 if (sarg != EmptyTree && supertpe.typeSymbol != firstParent)
                   ConstrArgsInTraitParentTpeError(sarg, firstParent)
                 if (!supertparams.isEmpty)
-                  supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos.focus
+                  supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos
               case _ =>
                 if (!supertparams.isEmpty)
                   MissingTypeArgumentsParentTpeError(supertpt)
