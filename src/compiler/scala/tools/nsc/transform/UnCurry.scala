@@ -206,12 +206,24 @@ abstract class UnCurry extends InfoTransform
 
 
     /**  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
-     *
-     *    class $anon() extends AbstractFunctionN[T_1, .., T_N, R] with Serializable {
-     *      def apply(x_1: T_1, ..., x_N: T_n): R = body
-     *    }
-     *    new $anon()
-     *
+     *   {
+     *     final def anonfun(x_1: T_1, ..., x_N: T_n): R = body
+     *     
+     *     class $anon() extends AbstractFunctionN[T_1, .., T_N, R] with Serializable {
+     *       def apply(x_1: T_1, ..., x_N: T_n): R = anonfun(x_1, x_2, ..., x_N)
+     *     }
+     *     new $anon()
+     *   }
+     *  
+     *  However, due to challenges with anon classes in constructors, if the inConstructorFlag is set
+     *  then instead the body is inlined directly into the apply method of the anonymous class
+     *  
+     *   {
+     *     class $anon() extends AbstractFunctionN[T_1, .., T_N, R] with Serializable {
+     *       def apply(x_1: T_1, ..., x_N: T_n): R = body
+     *     }
+     *     new $anon()
+     *   }
      */
     def transformFunction(fun: Function): Tree = {
       fun.tpe match {
@@ -228,36 +240,88 @@ abstract class UnCurry extends InfoTransform
         // nullary or parameterless
         case fun1 if fun1 ne fun => fun1
         case _ =>
-          val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
-          val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
-          anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-
           val targs     = fun.tpe.typeArgs
           val (formals, restpe) = (targs.init, targs.last)
-
-          val applyMethodDef = {
-            val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
-            val paramSyms = map2(formals, fun.vparams) {
-              (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
+          
+          /**
+           * Abstracts away the common functionality required to create both 
+           * the lifted function and the apply method on the anonymous class
+           * It creates a method definition with value params cloned from the
+           * original lambda. Then it calls a supplied function to create 
+           * the body and types the result. Finally 
+           * everything is wrapped up in a MethodDef
+           * 
+           * @param owner The owner for the new method
+           * @param name name for the new method
+           * @param additionalFlags flags to be put on the method in addition to FINAL
+           * @bodyF function that turns the method symbol and list of value params
+           *        into a body for the method
+           */
+          def createMethod(owner: Symbol, name: TermName, additionalFlags: Long)(bodyF: (Symbol, List[ValDef]) => Tree) = {
+            val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
+            val vparams = fun.vparams map (_.duplicate)
+            
+            val paramSyms = map2(formals, vparams) {
+              (tp, vparam) => methSym.newSyntheticValueParam(tp, vparam.name)
             }
-            methSym setInfoAndEnter MethodType(paramSyms, restpe)
-
-            fun.vparams foreach  (_.symbol.owner =  methSym)
-            fun.body changeOwner (fun.symbol     -> methSym)
-
-            val body    = localTyper.typedPos(fun.pos)(fun.body)
-            val methDef = DefDef(methSym, List(fun.vparams), body)
+            vparams zip paramSyms foreach {case (valdef, sym) => valdef.symbol = sym}
+            vparams foreach (_.symbol.owner = methSym)
+            
+            val methodType = MethodType(paramSyms, restpe)
+            methSym setInfo methodType
+            
+            val body = localTyper.typedPos(fun.pos)(bodyF(methSym, vparams))
+            val methDef = DefDef(methSym, List(vparams), body)
 
             // Have to repack the type to avoid mismatches when existentials
             // appear in the result - see SI-4869.
             methDef.tpt setType localTyper.packedType(body, methSym)
             methDef
+            
+          }
+
+          val inConstructor = (inConstructorFlag & INCONSTRUCTOR) != 0
+          val liftedMethodDef = if (settings.YdisableLambdaMethods.value || (inConstructor && !settings.XenableStaticLambdaMethods.value))
+            // if lambda methods have been disabled or we're in a constructor and static lambda bodies
+            // haven't been enabled then
+            // fall back to putting the body of the lambda directly in the anonymous class
+            None
+          else {
+            val methodFlags = ARTIFACT | (if(inConstructor) STATIC else NO_FLAGS)
+          // method definition with the same arguments, return type, and body as the original lambda
+            Some(createMethod(fun.symbol.owner, tpnme.ANON_FUN_NAME.toTermName, methodFlags){
+              case(methSym, vparams) => 
+                fun.body.substituteSymbols(fun.vparams map (_.symbol), vparams map (_.symbol))
+                fun.body changeOwner (fun.symbol -> methSym)
+            })
+          }
+
+          // anonymous subclass of FunctionN with an apply method
+          val anonymousClassDef = {
+            val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
+            val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
+            anonClass setInfo ClassInfoType(parents, newScope, anonClass)
+            // apply method with same arguments and return type as orignal lambda.
+            val applyMethodDef = createMethod(anonClass, nme.apply, NO_FLAGS) {
+              case (methSym, vparams) =>
+                liftedMethodDef map {meth => 
+                  // if we have a lifted method then the anon's method will just call it
+                  val args = vparams map {vparam => Ident(vparam.symbol)}
+                  Apply(meth.symbol, args:_*)
+                } getOrElse {
+                  // if we don't have a lifted method then we need to stuff the lambda's body into the apply method
+                  fun.body.substituteSymbols(fun.vparams map (_.symbol), vparams map (_.symbol))
+                  fun.body changeOwner (fun.symbol -> methSym)                 
+                }               
+            }
+            anonClass.info.decls enter applyMethodDef.symbol
+            ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)
           }
 
           localTyper.typedPos(fun.pos) {
             Block(
-              List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
-              Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
+              List(liftedMethodDef, Some(anonymousClassDef)).flatten,
+              Typed(New(anonymousClassDef.symbol), TypeTree(fun.tpe)))
           }
 
       }

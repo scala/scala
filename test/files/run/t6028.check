@@ -1,7 +1,7 @@
 [[syntax trees at end of                lambdalift]] // newSource1
 package <empty> {
   class T extends Object {
-    <paramaccessor> val T$$classParam: Int = _;
+    <paramaccessor> private[this] val classParam: Int = _;
     def <init>(classParam: Int): T = {
       T.super.<init>();
       ()
@@ -24,13 +24,14 @@ package <empty> {
         (new anonymous class $anonfun$tryy$1(T.this, tryyParam, tryyLocal): Function0)
       }
     };
+    final <artifact> def T$$$anonfun$1(methodParam$1: Int, methodLocal$1: Int): Int = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
     @SerialVersionUID(0) final <synthetic> class $anonfun$foo$1 extends runtime.AbstractFunction0$mcI$sp with Serializable {
       def <init>($outer: T, methodParam$1: Int, methodLocal$1: Int): anonymous class $anonfun$foo$1 = {
         $anonfun$foo$1.super.<init>();
         ()
       };
       final def apply(): Int = $anonfun$foo$1.this.apply$mcI$sp();
-      <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.T$$classParam.+($anonfun$foo$1.this.$outer.field()).+($anonfun$foo$1.this.methodParam$1).+($anonfun$foo$1.this.methodLocal$1);
+      <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.T$$$anonfun$1($anonfun$foo$1.this.methodParam$1, $anonfun$foo$1.this.methodLocal$1);
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
       <synthetic> <stable> <artifact> def T$$anonfun$$$outer(): T = $anonfun$foo$1.this.$outer;
       final <bridge> <artifact> def apply(): Object = scala.Int.box($anonfun$foo$1.this.apply());
@@ -60,15 +61,16 @@ package <empty> {
       };
       scala.this.Predef.print(scala.Int.box(barParam$1))
     };
+    final <artifact> def T$$$anonfun$2(tryyParam$1: Int, tryyLocal$1: runtime.IntRef): Unit = try {
+      tryyLocal$1.elem = tryyParam$1
+    } finally ();
     @SerialVersionUID(0) final <synthetic> class $anonfun$tryy$1 extends runtime.AbstractFunction0$mcV$sp with Serializable {
       def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): anonymous class $anonfun$tryy$1 = {
         $anonfun$tryy$1.super.<init>();
         ()
       };
       final def apply(): Unit = $anonfun$tryy$1.this.apply$mcV$sp();
-      <specialized> def apply$mcV$sp(): Unit = try {
-        $anonfun$tryy$1.this.tryyLocal$1.elem = $anonfun$tryy$1.this.tryyParam$1
-      } finally ();
+      <specialized> def apply$mcV$sp(): Unit = $anonfun$tryy$1.this.$outer.T$$$anonfun$2($anonfun$tryy$1.this.tryyParam$1, $anonfun$tryy$1.this.tryyLocal$1);
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
       <synthetic> <stable> <artifact> def T$$anonfun$$$outer(): T = $anonfun$tryy$1.this.$outer;
       final <bridge> <artifact> def apply(): Object = {

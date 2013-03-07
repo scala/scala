@@ -6,13 +6,14 @@ package <empty> {
       ()
     };
     private[this] val f: Int => Int = {
+      final <artifact> def $anonfun(param: Int): Int = param;
       @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1$mcII$sp with Serializable {
         def <init>(): anonymous class $anonfun = {
           $anonfun.super.<init>();
           ()
         };
         final def apply(param: Int): Int = $anonfun.this.apply$mcII$sp(param);
-        <specialized> def apply$mcII$sp(param: Int): Int = param
+        <specialized> def apply$mcII$sp(param: Int): Int = $anonfun(param)
       };
       (new anonymous class $anonfun(): Int => Int)
     };
