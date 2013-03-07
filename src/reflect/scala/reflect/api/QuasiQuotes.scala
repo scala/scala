@@ -7,12 +7,12 @@ trait Quasiquotes { self: Universe =>
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   implicit class Quasiquote(ctx: StringContext) {
     object q {
-      def apply(args: Any*): Any = ??? // macro
-      def unapply(tree: Any): Option[Any] = ??? // macro
+      def apply(args: Any*): Any = macro ???
+      def unapply(tree: Any): Option[Any] = macro ???
     }
     object tq {
-      def apply(args: Any*): Any = ??? // macro
-      def unapply(tree: Any): Option[Any] = ??? // macro
+      def apply(args: Any*): Any = macro ???
+      def unapply(tree: Any): Option[Any] = macro ???
     }
   }
 
