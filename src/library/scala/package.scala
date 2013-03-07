@@ -85,7 +85,7 @@ package object scala {
   type BigInt = scala.math.BigInt
   val BigInt = scala.math.BigInt
 
-  type Equiv[T] = scala.math.Equiv[T]
+  type Equiv[-T] = scala.math.Equiv[T]
   val Equiv = scala.math.Equiv
 
   type Fractional[T] = scala.math.Fractional[T]
@@ -103,8 +103,8 @@ package object scala {
   type Ordering[T] = scala.math.Ordering[T]
   val Ordering = scala.math.Ordering
 
-  type PartialOrdering[T] = scala.math.PartialOrdering[T]
-  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+  type PartialOrdering[-T] = scala.math.PartialOrdering[T]
+  type PartiallyOrdered[+T] = scala.math.PartiallyOrdered[T]
 
   type Either[+A, +B] = scala.util.Either[A, B]
   val Either = scala.util.Either
