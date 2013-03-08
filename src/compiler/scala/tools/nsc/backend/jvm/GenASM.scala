@@ -3298,7 +3298,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     def normalize(m: IMethod) {
       if(!m.hasCode) { return }
       collapseJumpOnlyBlocks(m)
-      elimUnreachableBlocks(m)
+      if (settings.optimise.value)
+        elimUnreachableBlocks(m)
       icodes checkValid m
     }
 
