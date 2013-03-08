@@ -1025,7 +1025,7 @@ abstract class GenICode extends SubComponent  {
       // this value into a local of type Null and we want the JVM to see that it's
       // a null value so we don't have to also adapt local loads.
       if (from == NullReference && to != UNIT && to != ObjectReference && to != AnyRefReference) {
-        assert(to.isReferenceType, "Attempt to adapt a null to a non reference type $to.")
+        assert(to.isRefOrArrayType, s"Attempt to adapt a null to a non reference type $to.")
         // adapt by dropping what we've got and pushing a null which
         // will convince the JVM we really do have null
         ctx.bb.emit(DROP(from), pos)
