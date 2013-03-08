@@ -586,7 +586,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      */
     private def transformThis(tree: Tree) = tree match {
       case This(_) if tree.symbol.isImplClass =>
-        assert(tree.symbol == currentOwner.enclClass)
+        assert(tree.symbol == currentOwner.enclClass, s"${currentOwner.enclClass} was not the symbol of ${tree.symbol.ownerChain.mkString("->")}")
         selfRef(tree.pos)
       case _ =>
         tree
