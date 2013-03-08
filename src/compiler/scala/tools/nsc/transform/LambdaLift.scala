@@ -331,15 +331,27 @@ abstract class LambdaLift extends InfoTransform {
         if (clazz == currentClass) gen.mkAttributedThis(clazz)
         else {
           sym resetFlag (LOCAL | PRIVATE)
-          if (isUnderConstruction(clazz)) {
+          if (isUnderConstruction(clazz) && (!settings.XenableStaticLambdaMethods.value || !sym.isStaticMethod)) {
             prematureSelfReference()
             EmptyTree
           }
           else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
           else {
             outerValue match {
-              case EmptyTree => prematureSelfReference(); return EmptyTree
-              case o         => outerPath(o, currentClass.outerClass, clazz)
+              case EmptyTree =>
+                if (sym.isStaticMethod && settings.XenableStaticLambdaMethods.value) {
+                  // TODO if XenableStaticLambdaMethods is on then this code allows
+                  // class C15 in test/files/neg/t6666b.scala to compile but the resulting
+                  // code causes a verify error (without the setting the prematureSelfReference
+                  // error fires at compile time as designed)
+                  debuglog(s"$sym ${sym.ownerChain.mkString("->")} is a static method")
+                  gen.mkAttributedQualifier(clazz.thisType)            
+                } else {
+                  prematureSelfReference()
+                  return EmptyTree
+                }
+              case o         => 
+                outerPath(o, currentClass.outerClass, clazz)
             }
           }
         }
