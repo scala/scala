@@ -17,7 +17,7 @@ trait BasicBlocks {
   self: ICodes =>
 
   import opcodes._
-  import global.{ settings, log, nme }
+  import global.{ settings, debuglog, log, nme }
   import nme.isExceptionResultName
 
   /** Override Array creation for efficiency (to not go through reflection). */
@@ -383,7 +383,6 @@ trait BasicBlocks {
     /** Close the block */
     def close() {
       assert(!closed || ignore, this)
-      assert(instructionList.nonEmpty, "Empty block: " + this)
       if (ignore && closed) { // redundant `ignore &&` for clarity -- we should never be in state `!ignore && closed`
         // not doing anything to this block is important...
         // because the else branch reverses innocent blocks, which is wrong when they're in ignore mode (and closed)
@@ -393,7 +392,36 @@ trait BasicBlocks {
         setFlag(DIRTYSUCCS)
         instructionList = instructionList.reverse
         instrs = instructionList.toArray
+        if (instructionList.isEmpty) {
+          debuglog(s"Removing empty block $this")
+          code removeBlock this
+        }
       }
+    }
+
+    /**
+     * if cond is true, closes this block, entersIgnoreMode, and removes the block from
+     * its list of blocks. Used to allow a block to be started and then cancelled when it
+     * is discovered to be unreachable.
+     */
+    def killIf(cond: Boolean) {
+      if (!settings.YdisableUnreachablePrevention.value && cond) {
+        debuglog(s"Killing block $this")
+        assert(instructionList.isEmpty, s"Killing a non empty block $this")
+        // only checked under debug because fetching predecessor list is moderately expensive
+        if (settings.debug.value)
+          assert(predecessors.isEmpty, s"Killing block $this which is referred to from ${predecessors.mkString}")
+
+        close()
+        enterIgnoreMode()
+      }
+    }
+    
+    /**
+     * Same as killIf but with the logic of the condition reversed
+     */
+    def killUnless(cond: Boolean) {
+      this killIf !cond
     }
 
     def open() {

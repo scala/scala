@@ -173,6 +173,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Yinvalidate     = StringSetting     ("-Yinvalidate", "classpath-entry", "Invalidate classpath entry before run", "")
   val noSelfCheck     = BooleanSetting    ("-Yno-self-type-checks", "Suppress check for self-type conformance among inherited members.")
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
+  val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
 
