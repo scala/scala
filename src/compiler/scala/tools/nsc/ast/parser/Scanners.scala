@@ -9,7 +9,7 @@ import scala.tools.nsc.util.CharArrayReader
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
-import scala.annotation.switch
+import scala.annotation.{ switch, tailrec }
 import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, ArrayBuffer }
 import scala.xml.Utility.{ isNameStart }
@@ -83,6 +83,69 @@ trait Scanners extends ScannersCommon {
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
 
+    private var openComments = 0
+    protected def putCommentChar(): Unit = nextChar()
+
+    @tailrec private def skipLineComment(): Unit = ch match {
+      case SU | CR | LF =>
+      case _            => nextChar() ; skipLineComment()
+    }
+    private def maybeOpen() {
+      putCommentChar()
+      if (ch == '*') {
+        putCommentChar()
+        openComments += 1
+      }
+    }
+    private def maybeClose(): Boolean = {
+      putCommentChar()
+      (ch == '/') && {
+        putCommentChar()
+        openComments -= 1
+        openComments == 0
+      }
+    }
+    @tailrec final def skipNestedComments(): Unit = ch match {
+      case '/' => maybeOpen() ; skipNestedComments()
+      case '*' => if (!maybeClose()) skipNestedComments()
+      case SU  => incompleteInputError("unclosed comment")
+      case _   => putCommentChar() ; skipNestedComments()
+    }
+    def skipDocComment(): Unit = skipNestedComments()
+    def skipBlockComment(): Unit = skipNestedComments()
+
+    private def skipToCommentEnd(isLineComment: Boolean) {
+      nextChar()
+      if (isLineComment) skipLineComment()
+      else {
+        openComments = 1
+        val isDocComment = (ch == '*') && { nextChar(); true }
+        if (isDocComment) {
+          // Check for the amazing corner case of /**/
+          if (ch == '/')
+            nextChar()
+          else
+            skipDocComment()
+        }
+        else skipBlockComment()
+      }
+    }
+
+    /** @pre ch == '/'
+     *  Returns true if a comment was skipped.
+     */
+    def skipComment(): Boolean = ch match {
+      case '/' | '*' => skipToCommentEnd(isLineComment = ch == '/') ; true
+      case _         => false
+    }
+    def flushDoc(): DocComment = null
+
+    /** To prevent doc comments attached to expressions from leaking out of scope
+     *  onto the next documentable entity, they are discarded upon passing a right
+     *  brace, bracket, or parenthesis.
+     */
+    def discardDocBuffer(): Unit = ()
+
     def isAtEnd = charOffset >= buf.length
 
     def resume(lastCode: Int) = {
@@ -129,22 +192,6 @@ trait Scanners extends ScannersCommon {
       strVal = cbuf.toString
       cbuf.clear()
     }
-
-    /** Should doc comments be built? */
-    def buildDocs: Boolean = forScaladoc
-
-    /** holder for the documentation comment
-     */
-    var docComment: DocComment = null
-
-    def flushDoc: DocComment = {
-      val ret = docComment
-      docComment = null
-      ret
-    }
-
-    protected def foundComment(value: String, start: Int, end: Int) = ()
-    protected def foundDocComment(value: String, start: Int, end: Int) = ()
 
     private class TokenData0 extends TokenData
 
@@ -218,12 +265,15 @@ trait Scanners extends ScannersCommon {
         case RBRACE =>
           while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
             sepRegions = sepRegions.tail
-          if (!sepRegions.isEmpty) sepRegions = sepRegions.tail
-          docComment = null
+          if (!sepRegions.isEmpty)
+            sepRegions = sepRegions.tail
+
+          discardDocBuffer()
         case RBRACKET | RPAREN =>
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
-          docComment = null
+
+          discardDocBuffer()
         case ARROW =>
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
@@ -513,62 +563,6 @@ trait Scanners extends ScannersCommon {
             }
           }
           fetchOther()
-      }
-    }
-
-    private def skipComment(): Boolean = {
-
-      if (ch == '/' || ch == '*') {
-
-        val comment = new StringBuilder("/")
-        def appendToComment() = comment.append(ch)
-
-        if (ch == '/') {
-          do {
-        	appendToComment()
-            nextChar()
-          } while ((ch != CR) && (ch != LF) && (ch != SU))
-        } else {
-          docComment = null
-          var openComments = 1
-          appendToComment()
-          nextChar()
-          appendToComment()
-          var buildingDocComment = false
-          if (ch == '*' && buildDocs) {
-            buildingDocComment = true
-          }
-          while (openComments > 0) {
-            do {
-              do {
-                if (ch == '/') {
-                  nextChar(); appendToComment()
-                  if (ch == '*') {
-                    nextChar(); appendToComment()
-                    openComments += 1
-                  }
-                }
-                if (ch != '*' && ch != SU) {
-                  nextChar(); appendToComment()
-                }
-              } while (ch != '*' && ch != SU)
-              while (ch == '*') {
-                nextChar(); appendToComment()
-              }
-            } while (ch != '/' && ch != SU)
-            if (ch == '/') nextChar()
-            else incompleteInputError("unclosed comment")
-            openComments -= 1
-          }
-
-          if (buildingDocComment)
-            foundDocComment(comment.toString, offset, charOffset - 2)
-        }
-
-        foundComment(comment.toString, offset, charOffset - 2)
-        true
-      } else {
-        false
       }
     }
 
@@ -1233,7 +1227,7 @@ trait Scanners extends ScannersCommon {
 
   /** A scanner over a given compilation unit
    */
-  class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
+  class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
     override def deprecationWarning(off: Offset, msg: String)   = unit.deprecationWarning(unit.position(off), msg)
@@ -1280,17 +1274,6 @@ trait Scanners extends ScannersCommon {
           false
         }
       }
-    }
-
-    override def foundComment(value: String, start: Int, end: Int) {
-      val pos = new RangePosition(unit.source, start, start, end)
-      unit.comment(pos, value)
-    }
-
-    override def foundDocComment(value: String, start: Int, end: Int) {
-      val docPos = new RangePosition(unit.source, start, start, end)
-      docComment = new DocComment(value, docPos)
-      unit.comment(docPos, value)
     }
   }
 
@@ -1382,17 +1365,24 @@ trait Scanners extends ScannersCommon {
           bpbuf += current
         }
       }
+      def bracePairString(bp: BracePair, indent: Int): String = {
+        val rangeString = {
+          import bp._
+          val lline = line(loff)
+          val rline = line(roff)
+          val tokens = List(lline, lindent, rline, rindent) map (n => if (n < 0) "??" else "" + n)
+          "%s:%s to %s:%s".format(tokens: _*)
+        }
+        val outer  = (" " * indent) + rangeString
+        val inners = bp.nested map (bracePairString(_, indent + 2))
 
-      def printBP(bp: BracePair, indent: Int) {
-        println(" "*indent+line(bp.loff)+":"+bp.lindent+" to "+line(bp.roff)+":"+bp.rindent)
-        if (bp.nested.nonEmpty)
-          for (bp1 <- bp.nested) {
-            printBP(bp1, indent + 2)
-          }
+        if (inners.isEmpty) outer
+        else inners.mkString(outer + "\n", "\n", "")
       }
-//      println("lineStart = "+lineStart)//DEBUG
-//      println("bracepairs = ")
-//      for (bp <- bpbuf.toList) printBP(bp, 0)
+      def bpString    = bpbuf.toList map ("\n" + bracePairString(_, 0)) mkString ""
+      def startString = lineStart.mkString("line starts: [", ", ", "]")
+
+      log(s"\n$startString\n$bpString")
       bpbuf.toList
     }
 

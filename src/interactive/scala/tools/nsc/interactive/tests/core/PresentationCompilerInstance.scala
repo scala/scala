@@ -13,11 +13,16 @@ private[tests] trait PresentationCompilerInstance extends TestSettings {
     override def compiler = PresentationCompilerInstance.this.compiler
   }
 
+  private class ScaladocEnabledGlobal extends Global(settings, compilerReporter) {
+    override lazy val analyzer = new {
+      val global: ScaladocEnabledGlobal.this.type = ScaladocEnabledGlobal.this
+    } with InteractiveScaladocAnalyzer
+  }
+
   protected lazy val compiler: Global = {
     prepareSettings(settings)
-    new Global(settings, compilerReporter) {
-      override def forScaladoc = withDocComments
-    }
+    if (withDocComments) new ScaladocEnabledGlobal
+    else new Global(settings, compilerReporter)
   }
 
   /**
