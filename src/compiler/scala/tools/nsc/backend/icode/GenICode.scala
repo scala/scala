@@ -990,11 +990,11 @@ abstract class GenICode extends SubComponent  {
               }
 
               caseCtx = genLoad(body, tmpCtx, generatedType)
-              afterCtxReachable |= !caseCtx.bb.ignore
+              afterCtxReachable ||= !caseCtx.bb.ignore
               // close the block unless it's already been closed by the body, which closes the block if it ends in a jump (which is emitted to have alternatives share their body)
               caseCtx.bb.closeWith(JUMP(afterCtx.bb) setPos caze.pos)
             }
-            afterCtxReachable |= (default == afterCtx)
+            afterCtxReachable ||= (default == afterCtx)
             ctx1.bb.emitOnly(
               SWITCH(tags.reverse map (x => List(x)), (default :: targets).reverse) setPos tree.pos
             )
@@ -1357,6 +1357,14 @@ abstract class GenICode extends SubComponent  {
                         thenCtx: Context,
                         elseCtx: Context): Boolean =
     {      
+      /**
+       * Generate the de-sugared comparison mechanism that will underly an '=='
+       * 
+       * @param l       left-hand side of the '=='
+       * @param r       right-hand side of the '=='
+       * @param code    the comparison operator to use
+       * @return true if either branch can continue normally to a follow on block, false otherwise
+       */
       def genComparisonOp(l: Tree, r: Tree, code: Int): Boolean = {
         val op: TestOp = code match {
           case scalaPrimitives.LT => LT
@@ -1455,6 +1463,7 @@ abstract class GenICode extends SubComponent  {
      * @param ctx     current context
      * @param thenCtx target context if the comparison yields true
      * @param elseCtx target context if the comparison yields false
+     * @return true if either branch can continue normally to a follow on block, false otherwise
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Boolean = {
       def getTempLocal = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) getOrElse {
@@ -2047,7 +2056,7 @@ abstract class GenICode extends SubComponent  {
             exhStartCtx.addFinalizer(finalizer, finalizerCtx)
             loadException(exhStartCtx, exh, tree.pos)
             val exhEndCtx = handler(exhStartCtx)
-            normalExitReachable |= !exhEndCtx.bb.ignore
+            normalExitReachable ||= !exhEndCtx.bb.ignore
             exhEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
             outerCtx.endHandler()
           }
@@ -2062,7 +2071,7 @@ abstract class GenICode extends SubComponent  {
 
         outerCtx.bb.closeWith(JUMP(bodyCtx.bb))
 
-        normalExitReachable |= !bodyEndCtx.bb.ignore
+        normalExitReachable ||= !bodyEndCtx.bb.ignore
         normalExitCtx.bb killUnless normalExitReachable
         bodyEndCtx.bb.closeWith(JUMP(normalExitCtx.bb))
 
