@@ -93,9 +93,9 @@ object Test extends App {
     x match {
       case 0 => return 0
       case 1 => return 1
-      case _ => error("wtf")
+      case -1 => return 2
     }
-    2
+    3
   }
 
   def unreachableAfterSwitch: Int = {
@@ -103,7 +103,7 @@ object Test extends App {
     x match {
       case 0 => return 42
       case 1 => return 41 + x
-      case _ => error("wtf")
+      case -1 => return 43 + x
     }
     2
   }
