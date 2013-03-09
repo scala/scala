@@ -7,7 +7,7 @@
 package scala.reflect
 package io
 
-import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
+import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }
 import java.io.{ File => JFile }
 import java.net.URL
 import scala.collection.mutable.ArrayBuffer
@@ -54,6 +54,8 @@ object AbstractFile {
     if (url == null || !Path.isExtensionJarOrZip(url.getPath)) null
     else ZipArchive fromURL url
   }
+
+  def getResources(url: URL): AbstractFile = ZipArchive fromManifestURL url
 }
 
 /**
@@ -156,16 +158,28 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   @throws(classOf[IOException])
   def toByteArray: Array[Byte] = {
     val in = input
-    var rest = sizeOption.getOrElse(0)
-    val arr = new Array[Byte](rest)
-    while (rest > 0) {
-      val res = in.read(arr, arr.length - rest, rest)
-      if (res == -1)
-        throw new IOException("read error")
-      rest -= res
+    sizeOption match {
+      case Some(size) =>
+        var rest = size
+        val arr = new Array[Byte](rest)
+        while (rest > 0) {
+          val res = in.read(arr, arr.length - rest, rest)
+          if (res == -1)
+            throw new IOException("read error")
+          rest -= res
+        }
+        in.close()
+        arr
+      case None =>
+        val out = new ByteArrayOutputStream()
+        var c = in.read()
+        while(c != -1) {
+          out.write(c)
+          c = in.read()
+        }
+        in.close()
+        out.toByteArray()
     }
-    in.close()
-    arr
   }
 
   /** Returns all abstract subfiles of this abstract directory. */
