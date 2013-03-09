@@ -1,0 +1,6 @@
+t7238.scala:6: error: type mismatch;
+ found   : Seq[Any]
+ required: Seq[String]
+  c.c()(Seq[Any](): _*)
+                ^
+one error found
