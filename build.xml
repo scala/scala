@@ -433,6 +433,7 @@ INITIALISATION
     <property name="scalac.args.quickonly" value=""/>
     <property name="scalac.args.all" value="${scalac.args.always} ${scalac.args} ${scalac.args.optimise}"/>
     <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <property name="scalac.args.strap" value="${scalac.args.quick}"/>
     <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
     <!-- This is the start time for the distribution -->
@@ -926,7 +927,6 @@ QUICK BUILD (QUICK)
     <uptodate property="quick.lib.available" targetfile="${build-quick.dir}/library.complete">
       <srcfiles dir="${src.dir}">
         <include name="library/**"/>
-        <include name="continuations/**"/>
         <include name="swing/**"/>
         <include name="actors/**"/>
       </srcfiles>
@@ -989,28 +989,14 @@ QUICK BUILD (QUICK)
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
         <include name="**/*.css"/>
+        <include name="rootdoc.txt"/>
       </fileset>
     </copy>
-  </target>
-
-  <target name="quick.swing" depends="quick.lib" if="has.java6" unless="quick.lib.available">
-    <scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/swing"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="quick.compilation.path"/>
-    </scalacfork>
-  </target>
-
-  <target name="quick.lib.done" depends="quick.swing, quick.lib">
-    <stopwatch name="quick.lib.timer" action="total"/>
     <touch file="${build-quick.dir}/library.complete" verbose="no"/>
+    <stopwatch name="quick.lib.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-reflect" depends="quick.lib.done">
+  <target name="quick.pre-reflect" depends="quick.lib">
     <uptodate property="quick.reflect.available" targetfile="${build-quick.dir}/reflect.complete">
       <srcfiles dir="${src.dir}">
         <include name="reflect/**"/>
@@ -1031,11 +1017,11 @@ QUICK BUILD (QUICK)
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <path refid="forkjoin.classpath"/>
         <path refid="aux.libs"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
-    <!-- TODO - needed? -->
     <propertyfile file="${build-quick.dir}/classes/reflect/reflect.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="maven.version.number" value="${maven.version.number}"/>
@@ -1109,6 +1095,18 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
 
+  <target name="quick.swing" depends="quick.comp" if="has.java6" unless="quick.comp.available">
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/swing"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath refid="quick.compilation.path"/>
+    </scalacfork>
+  </target>
+
   <target name="quick.pre-plugins" depends="quick.comp">
     <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">
       <srcfiles dir="${src.dir}/continuations"/>
@@ -1118,6 +1116,7 @@ QUICK BUILD (QUICK)
   <target name="quick.plugins" depends="quick.pre-plugins" unless="quick.plugins.available">
     <stopwatch name="quick.plugins.timer"/>
     <mkdir dir="${build-quick.dir}/classes/continuations-plugin"/>
+    <mkdir dir="${build-quick.dir}/classes/continuations-library"/>
     <scalacfork
       destdir="${build-quick.dir}/classes/continuations-plugin"
       compilerpathref="quick.classpath"
@@ -1144,7 +1143,7 @@ QUICK BUILD (QUICK)
     </jar>
     <!-- might split off library part into its own ant target -->
     <scalacfork
-      destdir="${build-quick.dir}/classes/library"
+      destdir="${build-quick.dir}/classes/continuations-library"
       compilerpathref="quick.classpath"
       params="${scalac.args.quick} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
@@ -1269,7 +1268,86 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.partest.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-bin" depends="quick.partest">
+  <target name="quick.pre-scaladoc" depends="quick.partest">
+    <uptodate property="quick.scaladoc.available" targetfile="${build-quick.dir}/scaladoc.complete">
+      <srcfiles dir="${src.dir}/scaladoc" />
+    </uptodate>
+  </target>
+
+  <target name="quick.scaladoc" depends="quick.pre-scaladoc" unless="quick.scaladoc.available">
+    <mkdir dir="${build-quick.dir}/classes/scaladoc"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/scaladoc"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/scaladoc"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
+        <pathelement location="${ant.jar}"/>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${scalacheck.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <propertyfile file="${build-quick.dir}/classes/scaladoc/scaladoc.properties">
+      <entry key="version.number" value="${scaladoc.version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-quick.dir}/classes/scaladoc">
+      <fileset dir="${src.dir}/scaladoc">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+        <include name="**/*.html"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.txt"/>
+      </fileset>
+    </copy>
+    <touch file="${build-quick.dir}/scaladoc.complete" verbose="no"/>
+  </target>
+
+  <target name="quick.pre-interactive" depends="quick.scaladoc">
+    <uptodate property="quick.interactive.available" targetfile="${build-quick.dir}/interactive.complete">
+      <srcfiles dir="${src.dir}/interactive" />
+    </uptodate>
+  </target>
+
+  <target name="quick.interactive" depends="quick.pre-interactive" unless="quick.interactive.available">
+    <mkdir dir="${build-quick.dir}/classes/interactive"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/interactive"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/interactive"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
+        <pathelement location="${build-quick.dir}/classes/interactive"/>
+        <pathelement location="${ant.jar}"/>
+        <path refid="forkjoin.classpath"/>
+        <pathelement location="${scalacheck.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/interactive.complete" verbose="no"/>
+  </target>
+
+  <target name="quick.pre-bin" depends="quick.interactive">
     <condition property="quick.bin.available">
       <isset property="quick.comp.available"/>
     </condition>
@@ -1360,6 +1438,7 @@ PACKED QUICK BUILD (PACK)
         <exclude name="scala/swing/**"/>
         <exclude name="scala/actors/**"/>
       </fileset>
+      <fileset dir="${build-quick.dir}/classes/continuations-library"/>
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
     <jar destfile="${build-pack.dir}/lib/scala-actors.jar">
@@ -1407,6 +1486,8 @@ PACKED QUICK BUILD (PACK)
     <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
+      <fileset dir="${build-quick.dir}/classes/scaladoc"/>
+      <fileset dir="${build-quick.dir}/classes/interactive"/>
       <fileset dir="${build-asm.dir}/classes"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
@@ -1529,6 +1610,11 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${ant.jar}"/>
       <pathelement location="${jline.jar}"/>
       <path refid="lib.extra"/>
+    </path>
+    <path id="partest.classpath">
+      <path refid="pack.classpath"/>
+      <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      <pathelement location="${pack.dir}/lib/scala-swing.jar"/> <!-- TODO - segregate swing tests (there can't be many) -->
     </path>
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
@@ -1714,7 +1800,7 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
       srcpath="${src.dir}/library"
-      params="${scalac.args.quick}"
+      params="${scalac.args.strap}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1723,7 +1809,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
+      params="${scalac.args.strap}"
       srcdir="${src.dir}/actors"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1743,28 +1829,15 @@ BOOTSTRAPPING BUILD (STRAP)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-  </target>
-
-  <target name="strap.swing" if="has.java6" unless="strap.lib.available" depends="strap.lib">
-    <scalacfork
-      destdir="${build-strap.dir}/classes/library"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/swing"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="strap.compilation.path"/>
-    </scalacfork>
-  </target>
-
-  <target name="strap.lib.done" depends="strap.swing, strap.lib">
     <touch file="${build-strap.dir}/library.complete" verbose="no"/>
     <stopwatch name="strap.lib.timer" action="total"/>
   </target>
 
-  <target name="strap.pre-reflect" depends="strap.lib.done">
+  <target name="strap.pre-reflect" depends="strap.lib">
     <uptodate property="strap.reflect.available" targetfile="${build-strap.dir}/reflect.complete">
-      <srcfiles dir="${src.dir}/reflect"/>
+      <srcfiles dir="${src.dir}">
+        <include name="reflect/**"/>
+      </srcfiles>
     </uptodate>
   </target>
 
@@ -1807,7 +1880,7 @@ BOOTSTRAPPING BUILD (STRAP)
        </fileset>
     </copy>
     <touch file="${build-strap.dir}/reflect.complete" verbose="no"/>
-    <stopwatch name="strap.comp.timer" action="total"/>
+    <stopwatch name="strap.reflect.timer" action="total"/>
   </target>
 
   <target name="strap.pre-comp" depends="strap.reflect">
@@ -1822,7 +1895,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/compiler"
       compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
+      params="${scalac.args.strap}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1860,153 +1933,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.comp.timer" action="total"/>
   </target>
 
-  <target name="strap.pre-plugins" depends="strap.comp">
-    <uptodate property="strap.plugins.available" targetfile="${build-strap.dir}/plugins.complete">
-      <srcfiles dir="${src.dir}/continuations"/>
-    </uptodate>
-  </target>
-
-  <target name="strap.plugins" depends="strap.pre-plugins" unless="strap.plugins.available">
-    <stopwatch name="strap.plugins.timer"/>
-    <mkdir dir="${build-strap.dir}/classes/continuations-plugin"/>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/continuations-plugin"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/continuations/plugin"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${build-strap.dir}/classes/reflect"/>
-        <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${build-strap.dir}/classes/continuations-plugin"/>
-        <path refid="forkjoin.classpath"/>
-        <path refid="aux.libs"/>
-      </compilationpath>
-    </scalacfork>
-    <copy
-       file="${src.dir}/continuations/plugin/scalac-plugin.xml"
-       todir="${build-strap.dir}/classes/continuations-plugin"/>
-    <!-- not very nice to create jar here but needed to load plugin -->
-    <mkdir dir="${build-strap.dir}/misc/scala-devel/plugins"/>
-    <jar destfile="${build-strap.dir}/misc/scala-devel/plugins/continuations.jar">
-      <fileset dir="${build-strap.dir}/classes/continuations-plugin"/>
-    </jar>
-    <!-- might split off library part into its own ant target -->
-    <scalacfork
-      destdir="${build-strap.dir}/classes/library"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.quick} -Xplugin-require:continuations -P:continuations:enable"
-      srcdir="${src.dir}/continuations/library"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath refid="strap.compilation.path"/>
-      <compilerarg value="-Xpluginsdir"/>
-      <compilerarg file="${build-strap.dir}/misc/scala-devel/plugins"/>
-    </scalacfork>
-    <touch file="${build-strap.dir}/plugins.complete" verbose="no"/>
-    <stopwatch name="strap.plugins.timer" action="total"/>
-  </target>
-
-  <target name="strap.scalacheck" depends="strap.plugins">
-    <mkdir dir="${build-strap.dir}/classes/scalacheck"/>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/scalacheck"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.quick} -nowarn"
-      srcdir="${src.dir}/scalacheck"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-      </compilationpath>
-    </scalacfork>
-  </target>
-
-  <target name="strap.pre-scalap" depends="strap.scalacheck">
-    <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
-      <srcfiles dir="${src.dir}/scalap"/>
-    </uptodate>
-  </target>
-
-  <target name="strap.scalap" depends="strap.pre-scalap" unless="strap.scalap.available">
-    <stopwatch name="strap.scalap.timer"/>
-    <mkdir dir="${build-strap.dir}/classes/scalap"/>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/scalap"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/scalap"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${build-strap.dir}/classes/reflect"/>
-        <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${build-strap.dir}/classes/scalap"/>
-        <pathelement location="${build-strap.dir}/classes/partest"/>
-        <pathelement location="${ant.jar}"/>
-        <path refid="forkjoin.classpath"/>
-      </compilationpath>
-    </scalacfork>
-    <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
-    <stopwatch name="strap.scalap.timer" action="total"/>
-  </target>
-
-  <target name="strap.pre-partest" depends="strap.scalap, asm.done">
-    <uptodate property="strap.partest.available" targetfile="${build-strap.dir}/partest.complete">
-      <srcfiles dir="${src.dir}/partest"/>
-    </uptodate>
-  </target>
-
-  <target name="strap.partest" depends="strap.pre-partest" unless="strap.partest.available">
-    <stopwatch name="strap.partest.timer"/>
-    <mkdir dir="${build-strap.dir}/classes/partest"/>
-    <javac
-      srcdir="${src.dir}/partest"
-      destdir="${build-strap.dir}/classes/partest"
-      target="1.6" source="1.5">
-      <classpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${build-strap.dir}/classes/reflect"/>
-        <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${build-strap.dir}/classes/scalap"/>
-        <pathelement location="${build-strap.dir}/classes/partest"/>
-        <path refid="asm.classpath"/>
-      </classpath>
-      <include name="**/*.java"/>
-      <compilerarg line="${javac.args}"/>
-    </javac>
-    <scalacfork
-      destdir="${build-strap.dir}/classes/partest"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/partest"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${build-strap.dir}/classes/reflect"/>
-        <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${build-strap.dir}/classes/scalap"/>
-        <pathelement location="${build-strap.dir}/classes/partest"/>
-        <pathelement location="${ant.jar}"/>
-        <path refid="forkjoin.classpath"/>
-        <path refid="asm.classpath"/>
-        <pathelement location="${scalacheck.jar}"/>
-      </compilationpath>
-    </scalacfork>
-    <copy todir="${build-strap.dir}/classes/partest">
-      <fileset dir="${src.dir}/partest">
-        <include name="**/*.xml"/>
-      </fileset>
-    </copy>
-    <touch file="${build-strap.dir}/partest.complete" verbose="no"/>
-    <stopwatch name="strap.partest.timer" action="total"/>
-  </target>
-
-  <target name="strap.done" depends="strap.partest"/>
+  <target name="strap.done" depends="strap.comp"/>
 
   <target name="strap.clean">
     <delete dir="${build-strap.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -2071,6 +1998,7 @@ SBT Compiler Interface
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -2370,13 +2298,10 @@ DOCUMENTATION
 BOOTRAPING TEST AND TEST SUITE
 ============================================================================ -->
 
-  <target name="test.stability" depends="strap.done, init">
-    <same dir="${build-quick.dir}" todir="${build-strap.dir}" failondifferent="yes">
-      <exclude name="**/*.properties"/>
-      <exclude name="bin/**"/>
-      <exclude name="*.complete"/>
-      <exclude name="misc/scala-devel/plugins/*.jar"/>
-    </same>
+  <target name="test.stability" depends="pack.done, strap.done">
+    <exec osfamily="unix" vmlauncher="false" executable="${basedir}/tools/stability-test.sh" failonerror="true" />
+    <!-- I think doing it this way means it will auto-pass on windows... that's the idea. If not, something like this. -->
+    <!-- <exec osfamily="windows" executable="foo" failonerror="false" failifexecutionfails="false" /> -->
   </target>
 
   <target name="test.classload" depends="pack.done">
@@ -2395,47 +2320,39 @@ BOOTRAPING TEST AND TEST SUITE
     </antcall>
   </target>
 
-  <target name="test.run" depends="pack.done">
+  <target name="test.pre-run" depends="pack.done">
     <property name="partest.srcdir" value="files" />
+  </target>
+
+  <target name="test.run" depends="test.pre-run">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="1200000"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+
+      <compilationpath refid="partest.classpath"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
       <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
     </partest>
   </target>
 
-  <target name="test.ant" depends="pack.done">
+  <target name="test.ant" depends="test.pre-run">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <anttests dir="${partest.dir}/${partest.srcdir}/ant" includes="*build.xml"/>
     </partest>
   </target>
 
-  <target name="test.suite" depends="pack.done">
+  <target name="test.suite" depends="test.pre-run">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
@@ -2451,14 +2368,10 @@ BOOTRAPING TEST AND TEST SUITE
       <instrumentedtests dir="${partest.dir}/${partest.srcdir}/instrumented">
         <include name="*.scala"/>
       </instrumentedtests>
-      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
-        <include name="*/*.scala"/>
-      </presentationtests>
-      <!-- <scripttests dir="${partest.dir}/${partest.srcdir}/script" includes="*.scala"/> -->
     </partest>
   </target>
 
-  <target name="test.continuations.suite" depends="pack.done">
+  <target name="test.continuations.suite" depends="test.pre-run">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000"
@@ -2466,27 +2379,30 @@ BOOTRAPING TEST AND TEST SUITE
              scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
       <compilerarg value="-Xpluginsdir"/>
       <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/continuations-run" includes="*.scala"/>
     </partest>
   </target>
 
-  <target name="test.scaladoc" depends="pack.done">
+  <target name="test.scaladoc" depends="test.pre-run">
     <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath>
-        <path refid="pack.classpath"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      </compilationpath>
+      <compilationpath refid="partest.classpath"/>
       <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
       <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability, test.sbt"/>
+  <target name="test.interactive" depends="test.pre-run">
+    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
+      <compilationpath refid="partest.classpath"/>
+      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
+        <include name="*/*.scala"/>
+      </presentationtests>
+    </partest>
+  </target>
+
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.interactive, test.stability, test.sbt"/>
 
 
 <!-- ===========================================================================

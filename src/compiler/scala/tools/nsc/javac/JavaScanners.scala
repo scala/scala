@@ -10,7 +10,7 @@ import scala.tools.nsc.util.JavaCharArrayReader
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import JavaTokens._
-import scala.annotation.switch
+import scala.annotation.{ switch, tailrec }
 import scala.language.implicitConversions
 
 // Todo merge these better with Scanners
@@ -233,16 +233,6 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     private def setName() {
       name = newTermName(cbuf.toString())
       cbuf.setLength(0)
-    }
-
-    /** buffer for the documentation comment
-     */
-    var docBuffer: StringBuilder = null
-
-    /** add the given character to the documentation buffer
-     */
-    protected def putDocChar(c: Char) {
-      if (docBuffer ne null) docBuffer.append(c)
     }
 
     private class JavaTokenData0 extends JavaTokenData
@@ -587,33 +577,20 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
-    private def skipComment(): Boolean = {
-      if (in.ch == '/') {
-        do {
-          in.next()
-        } while ((in.ch != CR) && (in.ch != LF) && (in.ch != SU))
-        true
-      } else if (in.ch == '*') {
-        docBuffer = null
-        in.next()
-        val scalaDoc = ("/**", "*/")
-        if (in.ch == '*' && forScaladoc)
-          docBuffer = new StringBuilder(scalaDoc._1)
-        do {
-          do {
-            if (in.ch != '*' && in.ch != SU) {
-              in.next(); putDocChar(in.ch)
-            }
-          } while (in.ch != '*' && in.ch != SU)
-          while (in.ch == '*') {
-            in.next(); putDocChar(in.ch)
-          }
-        } while (in.ch != '/' && in.ch != SU)
-        if (in.ch == '/') in.next()
-        else incompleteInputError("unclosed comment")
-        true
-      } else {
-        false
+    protected def skipComment(): Boolean = {
+      @tailrec def skipLineComment(): Unit = in.ch match {
+        case CR | LF | SU =>
+        case _            => in.next; skipLineComment()
+      }
+      @tailrec def skipJavaComment(): Unit = in.ch match {
+        case SU  => incompleteInputError("unclosed comment")
+        case '*' => in.next; if (in.ch == '/') in.next else skipJavaComment()
+        case _   => in.next; skipJavaComment()
+      }
+      in.ch match {
+        case '/' => in.next ; skipLineComment() ; true
+        case '*' => in.next ; skipJavaComment() ; true
+        case _   => false
       }
     }
 

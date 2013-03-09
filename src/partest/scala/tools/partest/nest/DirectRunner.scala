@@ -38,27 +38,15 @@ trait DirectRunner {
   def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, TestState] = {
     System.setProperty("line.separator", "\n")
 
-    // @partest maintainer: we cannot create a fresh file manager here
-    // since the FM must respect --buildpath and --classpath from the command line
-    // for example, see how it's done in ReflectiveRunner
-    //val consFM = new ConsoleFileManager
-    //import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
-    val latestCompFile    = new File(fileManager.LATEST_COMP)
-    val latestReflectFile = new File(fileManager.LATEST_REFLECT)
-    val latestLibFile     = new File(fileManager.LATEST_LIB)
-    val latestPartestFile = new File(fileManager.LATEST_PARTEST)
-    val latestActorsFile  = new File(fileManager.LATEST_ACTORS)
-    val scalacheckURL     = PathSettings.scalaCheck.toURL
-    val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      scalacheckURL :: (List(latestCompFile, latestReflectFile, latestLibFile, latestActorsFile, latestPartestFile).map(_.toURI.toURL))
-    )
-
-    val kindFiles = onlyValidTestPaths(_kindFiles)
-    val pool      = Executors.newFixedThreadPool(numThreads)
-    val manager   = new RunnerManager(kind, fileManager, TestRunParams(scalaCheckParentClassLoader))
-    val futures   = kindFiles map (f => (f, pool submit callable(manager runTest f))) toMap
+    val allUrls                     = PathSettings.scalaCheck.toURL :: fileManager.latestUrls
+    val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(allUrls)
+    val kindFiles                   = onlyValidTestPaths(_kindFiles)
+    val pool                        = Executors.newFixedThreadPool(numThreads)
+    val manager                     = new RunnerManager(kind, fileManager, TestRunParams(scalaCheckParentClassLoader))
+    val futures                     = kindFiles map (f => (f, pool submit callable(manager runTest f))) toMap
 
     pool.shutdown()
+
     try if (!pool.awaitTermination(4, TimeUnit.HOURS))
       NestUI.warning("Thread pool timeout elapsed before all tests were complete!")
     catch { case t: InterruptedException =>

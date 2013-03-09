@@ -37,17 +37,23 @@ object Test extends InteractiveTest {
     prepre + docComment(nTags) + prepost + post
   }
 
-
-
   override lazy val compiler = {
     prepareSettings(settings)
-    new Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase {
+    new Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase with doc.ScaladocGlobalTrait {
       outer =>
+
       val global: this.type = this
 
       override lazy val analyzer = new {
         val global: outer.type = outer
-      } with doc.ScaladocAnalyzer
+      } with doc.ScaladocAnalyzer with InteractiveAnalyzer {
+        override def newTyper(context: Context): InteractiveTyper with ScaladocTyper =
+          new Typer(context) with InteractiveTyper with ScaladocTyper
+      }
+
+      override lazy val loaders = new scala.tools.nsc.symtab.SymbolLoaders {
+        val global: outer.type = outer
+      }
 
       def chooseLink(links: List[LinkTo]): LinkTo = links.head
       def internalLink(sym: Symbol, site: Symbol) = None
@@ -125,7 +131,7 @@ object Test extends InteractiveTest {
       case s: Seq[_] => s exists (existsText(_, text))
       case p: Product => p.productIterator exists (existsText(_, text))
     }
-    val (derived, base) = compiler.ask { () => 
+    val (derived, base) = compiler.ask { () =>
       val derived = definitions.RootPackage.info.decl(newTermName("p")).info.decl(newTypeName("Derived"))
       (derived, derived.ancestors(0))
     }

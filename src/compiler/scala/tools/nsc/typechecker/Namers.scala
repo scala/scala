@@ -47,10 +47,11 @@ trait Namers extends MethodSynthesis {
 
   private class NormalNamer(context: Context) extends Namer(context)
   def newNamer(context: Context): Namer = new NormalNamer(context)
-  def newNamerFor(context: Context, tree: Tree): Namer =
-    newNamer(context.makeNewScope(tree, tree.symbol))
+  def newNamerFor(context: Context, tree: Tree): Namer = newNamer(context.makeNewScope(tree, tree.symbol))
 
   abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
+    // overridden by the presentation compiler
+    def saveDefaultGetter(meth: Symbol, default: Symbol) { }
 
     import NamerErrorGen._
     val typer = newTyper(context)
@@ -594,17 +595,6 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def enterIfNotThere(sym: Symbol) {
-      val scope = context.scope
-      @tailrec def search(e: ScopeEntry) {
-        if ((e eq null) || (e.owner ne scope))
-          scope enter sym
-        else if (e.sym ne sym)  // otherwise, aborts since we found sym
-          search(e.tail)
-      }
-      search(scope lookupEntry sym.name)
-    }
-
     def enterValDef(tree: ValDef) {
       if (noEnterGetterSetter(tree))
         assignAndEnterFinishedSymbol(tree)
@@ -697,22 +687,9 @@ trait Namers extends MethodSynthesis {
       validateCompanionDefs(tree)
     }
 
-    // this logic is needed in case typer was interrupted half
-    // way through and then comes back to do the tree again. In
-    // that case the definitions that were already attributed as
-    // well as any default parameters of such methods need to be
-    // re-entered in the current scope.
-    protected def enterExistingSym(sym: Symbol): Context = {
-      if (forInteractive && sym != null && sym.owner.isTerm) {
-        enterIfNotThere(sym)
-        if (sym.isLazy)
-          sym.lazyAccessor andAlso enterIfNotThere
-
-        for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
-          defAtt.defaultGetters foreach enterIfNotThere
-      }
-      this.context
-    }
+    // Hooks which are overridden in the presentation compiler
+    def enterExistingSym(sym: Symbol): Context = this.context
+    def enterIfNotThere(sym: Symbol) { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)
@@ -1297,17 +1274,10 @@ trait Namers extends MethodSynthesis {
             if (!isConstr)
               methOwner.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
-            if (forInteractive && default.owner.isTerm) {
-              // save the default getters as attachments in the method symbol. if compiling the
-              // same local block several times (which can happen in interactive mode) we might
-              // otherwise not find the default symbol, because the second time it the method
-              // symbol will be re-entered in the scope but the default parameter will not.
-              meth.attachments.get[DefaultsOfLocalMethodAttachment] match {
-                case Some(att) => att.defaultGetters += default
-                case None      => meth.updateAttachment(new DefaultsOfLocalMethodAttachment(default))
-              }
-            }
-          } else if (baseHasDefault) {
+            if (default.owner.isTerm)
+              saveDefaultGetter(meth, default)
+          }
+          else if (baseHasDefault) {
             // the parameter does not have a default itself, but the
             // corresponding parameter in the base class does.
             sym.setFlag(DEFAULTPARAM)

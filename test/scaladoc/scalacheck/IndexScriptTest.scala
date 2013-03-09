@@ -35,7 +35,7 @@ object Test extends Properties("IndexScript") {
     }
 
   property("allPackages") = {
-    createIndexScript("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
+    createIndexScript("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
         index.allPackages.map(_.toString) == List(
           "scala",

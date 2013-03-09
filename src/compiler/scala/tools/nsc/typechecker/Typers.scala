@@ -86,8 +86,6 @@ trait Typers extends Adaptations with Tags {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
-  private def isPastTyper = phase.id > currentRun.typerPhase.id
-
   // To enable decent error messages when the typer crashes.
   // TODO - this only catches trees which go through def typed,
   // but there are all kinds of back ways - typedClassDef, etc. etc.
@@ -98,12 +96,17 @@ trait Typers extends Adaptations with Tags {
   //  - we may virtualize matches (if -Xexperimental and there's a suitable __match in scope)
   //  - we synthesize PartialFunction implementations for `x => x match {...}` and `match {...}` when the expected type is PartialFunction
   // this is disabled by: interactive compilation (we run it for scaladoc due to SI-5933)
-  private def newPatternMatching = !forInteractive //&& !forScaladoc && (phase.id < currentRun.uncurryPhase.id)
+  protected def newPatternMatching = true // presently overridden in the presentation compiler
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with TyperContextErrors {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
     import TyperErrorGen._
+
+    /** Overridden to false in scaladoc and/or interactive. */
+    def canAdaptConstantTypeToLiteral = true
+    def canTranslateEmptyListToNil    = true
+    def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
 
     def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree =
       typed(docDef.definition, mode, pt)
@@ -1038,7 +1041,7 @@ trait Typers extends Adaptations with Tags {
       tree.tpe match {
         case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
-        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && !forScaladoc && !forInteractive => // (0)
+        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
           val sym = tree.symbol
           if (sym != null && sym.isDeprecated) {
             val msg = sym.toString + sym.locationString + " is deprecated: " + sym.deprecationMessage.getOrElse("")
@@ -2433,11 +2436,9 @@ trait Typers extends Adaptations with Tags {
       if (pat1.tpe.paramSectionCount > 0)
         pat1 setType pat1.tpe.finalResultType
 
-      if (forInteractive) {
-        for (bind @ Bind(name, _) <- cdef.pat)
-          if (name.toTermName != nme.WILDCARD && bind.symbol != null && bind.symbol != NoSymbol)
-            namer.enterIfNotThere(bind.symbol)
-      }
+      for (bind @ Bind(name, _) <- cdef.pat)
+        if (name.toTermName != nme.WILDCARD && bind.symbol != null && bind.symbol != NoSymbol)
+          namer.enterIfNotThere(bind.symbol)
 
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanClass.tpe)
@@ -3262,7 +3263,7 @@ trait Typers extends Adaptations with Tags {
                  *  forced during kind-arity checking, so it is guarded by additional
                  *  tests to ensure we're sufficiently far along.
                  */
-                if (args.isEmpty && !forInteractive && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == List_apply))
+                if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == List_apply))
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else
                   constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
@@ -4688,11 +4689,7 @@ trait Typers extends Adaptations with Tags {
 
         if (!reallyExists(sym)) {
           def handleMissing: Tree = {
-            def errorTree = tree match {
-              case _ if !forInteractive     => tree
-                case Select(_, _) => treeCopy.Select(tree, qual, name)
-                case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
-              }
+            def errorTree = missingSelectErrorTree(tree, qual, name)
             def asTypeSelection = (
               if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
                 atPos(tree.pos)(gen.convertToSelectFromType(qual, name)) match {
@@ -5255,7 +5252,6 @@ trait Typers extends Adaptations with Tags {
         case tree: ApplyDynamic                 => typedApplyDynamic(tree)
         case tree: ReferenceToBoxed             => typedReferenceToBoxed(tree)
         case tree: TypeTreeWithDeferredRefCheck => tree // TODO: retype the wrapped tree? TTWDRC would have to change to hold the wrapped tree (not a closure)
-        case tree: Import                       => assert(forInteractive, "!forInteractive") ; tree setType tree.symbol.tpe // should not happen in normal circumstances.
         case _                                  => abort(s"unexpected tree: ${tree.getClass}\n$tree")
       }
     }
