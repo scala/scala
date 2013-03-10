@@ -5,6 +5,7 @@ package tpe
 import scala.collection.{ mutable }
 import Flags._
 import util.Statistics
+import scala.annotation.tailrec
 
 trait TypeComparers {
   self: SymbolTable =>
@@ -583,9 +584,9 @@ trait TypeComparers {
 
 
   def isWeakSubType(tp1: Type, tp2: Type) =
-    tp1.widen.normalize match {
+    tp1.dealiasWiden match {
       case TypeRef(_, sym1, _) if isNumericValueClass(sym1) =>
-        tp2.deconst.normalize match {
+        tp2.deconst.dealias match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
             isNumericSubClass(sym1, sym2)
           case tv2 @ TypeVar(_, _) =>
@@ -594,7 +595,7 @@ trait TypeComparers {
             isSubType(tp1, tp2)
         }
       case tv1 @ TypeVar(_, _) =>
-        tp2.deconst.normalize match {
+        tp2.deconst.dealias match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
             tv1.registerBound(tp2, isLowerBound = false, isNumericBound = true)
           case _ =>
@@ -604,14 +605,18 @@ trait TypeComparers {
         isSubType(tp1, tp2)
     }
 
-  /** The isNumericValueType tests appear redundant, but without them
-    *  test/continuations-neg/function3.scala goes into an infinite loop.
-    *  (Even if the calls are to typeSymbolDirect.)
-    */
-  def isNumericSubType(tp1: Type, tp2: Type): Boolean = (
-         isNumericValueType(tp1.dealiasWiden)
-      && isNumericValueType(tp2.dealias)
-      && isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
-    )
+  def isNumericSubType(tp1: Type, tp2: Type) = (
+    isNumericSubClass(primitiveBaseClass(tp1.dealiasWiden), primitiveBaseClass(tp2.dealias))
+   )
 
+  /** If the given type has a primitive class among its base classes,
+   *  the symbol of that class. Otherwise, NoSymbol.
+   */
+  private def primitiveBaseClass(tp: Type): Symbol = {
+    @tailrec def loop(bases: List[Symbol]): Symbol = bases match {
+      case Nil     => NoSymbol
+      case x :: xs => if (isPrimitiveValueClass(x)) x else loop(xs)
+    }
+    loop(tp.baseClasses)
+  }
 }
