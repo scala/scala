@@ -50,22 +50,15 @@ class ReflectiveRunner {
       else // auto detection
         new ConsoleFileManager
 
-    import fileManager.
-      { latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestScalapFile, latestActorsFile }
-    val files =
-      Array(latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestScalapFile, latestActorsFile) map (x => io.File(x))
-
-    val sepUrls   = files map (_.toURL)
-    var sepLoader = new URLClassLoader(sepUrls, null)
-
     // this is a workaround for https://issues.scala-lang.org/browse/SI-5433
-    // when that bug is fixed, this paragraph of code can be safely removed
+    // when that bug is fixed, the addition of PathSettings.srcCodeLib can be removed
     // we hack into the classloader that will become parent classloader for scalac
     // this way we ensure that reflective macro lookup will pick correct Code.lift
-    sepLoader = new URLClassLoader((PathSettings.srcCodeLib +: files) map (_.toURL), null)
+    val sepUrls   = PathSettings.srcCodeLib.toURI.toURL :: fileManager.latestUrls
+    val sepLoader = new URLClassLoader(sepUrls.toArray, null)
 
     if (isPartestDebug)
-      println("Loading classes from:\n" + sepUrls.mkString("\n"))
+      println("Loading classes from:\n  " + fileManager.latestUrls.mkString("\n  "))
 
     // @partest maintainer: it seems to me that commented lines are incorrect
     // if classPath is not empty, then it has been provided by the --classpath option
@@ -76,11 +69,8 @@ class ReflectiveRunner {
     //  case Some(cp) => Nil
     //  case _        => files.toList map (_.path)
     //}
-    val paths = files.toList map (_.path)
 
-    val newClasspath = ClassPath.join(paths: _*)
-
-    setProp("java.class.path", newClasspath)
+    setProp("java.class.path", ClassPath.join(fileManager.latestPaths: _*))
 
     // don't let partest find pluginsdir; in ant build, standard plugin has dedicated test suite
     //setProp("scala.home", latestLibFile.parent.parent.path)
