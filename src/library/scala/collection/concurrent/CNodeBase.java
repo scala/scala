@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 abstract class CNodeBase<K, V> extends MainNode<K, V> {
     
+    @SuppressWarnings("rawtypes")
     public static final AtomicIntegerFieldUpdater<CNodeBase> updater = AtomicIntegerFieldUpdater.newUpdater(CNodeBase.class, "csize");
     
     public volatile int csize = -1;
