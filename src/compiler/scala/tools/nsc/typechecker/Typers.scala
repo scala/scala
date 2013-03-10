@@ -1133,7 +1133,7 @@ trait Typers extends Adaptations with Tags {
                         return typedPos(tree.pos, mode, pt) {
                           Block(List(tree), Literal(Constant()))
                         }
-                      } else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
+                      } else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe.dealiasWiden, pt)) {
                         if (settings.warnNumericWiden.value)
                           context.unit.warning(tree.pos, "implicit numeric widening")
                         return typedPos(tree.pos, mode, pt) {

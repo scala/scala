@@ -583,7 +583,7 @@ trait TypeComparers {
 
 
   def isWeakSubType(tp1: Type, tp2: Type) =
-    tp1.deconst.normalize match {
+    tp1.widen.normalize match {
       case TypeRef(_, sym1, _) if isNumericValueClass(sym1) =>
         tp2.deconst.normalize match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
@@ -609,8 +609,8 @@ trait TypeComparers {
     *  (Even if the calls are to typeSymbolDirect.)
     */
   def isNumericSubType(tp1: Type, tp2: Type): Boolean = (
-    isNumericValueType(tp1)
-      && isNumericValueType(tp2)
+         isNumericValueType(tp1.dealiasWiden)
+      && isNumericValueType(tp2.dealias)
       && isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
     )
 
