@@ -912,7 +912,25 @@ trait Contexts { self: Analyzer =>
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
         importedAccessibleSymbol(imp, name, requireExplicit) filter qualifies
 
-      while (!impSym.exists && imports.nonEmpty && imp1.depth > symbolDepth) {
+      // Java: A single-type-import declaration d in a compilation unit c of package p
+      // that imports a type named n shadows, throughout c, the declarations of:
+      //
+      //  1) any top level type named n declared in another compilation unit of p
+      //
+      // A type-import-on-demand declaration never causes any other declaration to be shadowed.
+      //
+      // Scala: Bindings of different kinds have a precedence deﬁned on them:
+      //
+      //  1) Deﬁnitions and declarations that are local, inherited, or made available by a
+      //     package clause in the same compilation unit where the deﬁnition occurs have
+      //     highest precedence.
+      //  2) Explicit imports have next highest precedence.
+      def depthOk(imp: ImportInfo) = (
+           imp.depth > symbolDepth
+        || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
+      )
+
+      while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           imports = imports.tail
