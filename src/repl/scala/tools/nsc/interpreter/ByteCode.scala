@@ -28,15 +28,5 @@ object ByteCode {
       method.invoke(module, _: String).asInstanceOf[Option[Map[String, String]]]
   }
 
-  /** Scala sig bytes.
-   */
-  def scalaSigBytesForPath(path: String) =
-    for {
-      module <- DECODER
-      method <- decoderMethod("scalaSigAnnotationBytes", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
-    }
-    yield names
-
   def aliasesForPackage(pkg: String) = aliasMap flatMap (_(pkg))
 }

@@ -5,7 +5,7 @@ import scala.tools.nsc.EXPRmode
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.io.VirtualDirectory
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
+import scala.tools.nsc.util.AbstractFileClassLoader
 import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
 import java.lang.{Class => jClass}

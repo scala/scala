@@ -4,7 +4,7 @@
  */
 
 package scala.tools.nsc
-package interpreter
+package typechecker
 
 import java.lang.{ reflect => r }
 import r.TypeVariable
@@ -12,7 +12,6 @@ import scala.reflect.NameTransformer
 import NameTransformer._
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
-import typechecker.DestructureTypes
 
 /** A more principled system for turning types into strings.
  */
@@ -53,8 +52,7 @@ trait StructuredTypeStrings extends DestructureTypes {
   private def shortClass(x: Any) = {
     if (settings.debug.value) {
       val name   = (x.getClass.getName split '.').last
-      val isAnon = name.reverse takeWhile (_ != '$') forall (_.isDigit)
-      val str    = if (isAnon) name else (name split '$').last
+      val str    = if (TypeStrings.isAnonClass(x.getClass)) name else (name split '$').last
 
       " // " + str
     }
@@ -152,11 +150,11 @@ trait StructuredTypeStrings extends DestructureTypes {
  *  "definition" is when you want strings like
  */
 trait TypeStrings {
+  private type JClass = java.lang.Class[_]
   private val ObjectClass = classOf[java.lang.Object]
   private val primitives = Set[String]("byte", "char", "short", "int", "long", "float", "double", "boolean", "void")
   private val primitiveMap = primitives.toList map { x =>
     val key = x match {
-      case "void" => "Void"
       case "int"  => "Integer"
       case "char" => "Character"
       case s      => s.capitalize
@@ -169,6 +167,11 @@ trait TypeStrings {
     ("java.lang." + key) -> ("scala." + value)
   } toMap
 
+  def isAnonClass(cl: Class[_]) = {
+    val xs = cl.getName.reverse takeWhile (_ != '$')
+    xs.nonEmpty && xs.forall(_.isDigit)
+  }
+
   def scalaName(s: String): String = {
     if (s endsWith MODULE_SUFFIX_STRING) s.init + ".type"
     else if (s == "void") "scala.Unit"
@@ -178,17 +181,16 @@ trait TypeStrings {
   // Trying to put humpty dumpty back together again.
   def scalaName(clazz: JClass): String = {
     val name      = clazz.getName
-    val isAnon    = clazz.isScalaAnonymous
     val enclClass = clazz.getEnclosingClass
     def enclPre   = enclClass.getName + MODULE_SUFFIX_STRING
     def enclMatch = name startsWith enclPre
 
     scalaName(
-      if (enclClass == null || isAnon || !enclMatch) name
+      if (enclClass == null || isAnonClass(clazz) || !enclMatch) name
       else enclClass.getName + "." + (name stripPrefix enclPre)
     )
   }
-  def anyClass(x: Any): JClass          = if (x == null) null else x.getClass
+  def anyClass(x: Any): JClass = if (x == null) null else x.getClass
 
   private def brackets(tps: String*): String =
     if (tps.isEmpty) ""
