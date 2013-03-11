@@ -81,6 +81,27 @@ object TestMutable2 {
   println
 }
 
+object TestMutable3 {
+  import scala.collection.mutable.BitSet
+
+  val b0 = BitSet(5, 6)
+  val b1 = BitSet(7)
+  val b2 = BitSet(1, 5)
+  val b3 = BitSet(6, 7)
+  val b4 = BitSet(6, 7)
+
+  b1 |= b0
+  println(s"b1:$b1")
+  b2 &= b0
+  println(s"b2:$b2")
+  b3 ^= b0
+  println(s"b3:$b3")
+  b4 &~= b0
+  println(s"b4:$b4")
+  b0 ^= b0 |= b1
+  println(s"b0:$b0")
+}
+
 object TestImmutable {
   import scala.collection.immutable.BitSet
 
@@ -155,6 +176,7 @@ object TestImmutable2 {
 object Test extends App {
   TestMutable
   TestMutable2
+  TestMutable3
   TestImmutable
   TestImmutable2
 }
