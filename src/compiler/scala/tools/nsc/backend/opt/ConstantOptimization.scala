@@ -84,17 +84,17 @@ abstract class ConstantOptimization extends SubComponent {
       }
 
       /**
-       * True if this constant has the same representation (and therefore would compare true under eq) as another constant
+       * True if this constant would compare to other as true under primitive eq
        */
-      override def equals(other: Any) = (other match {
+      override def equals(other: Any) = other match {
         case oc @ Const(o) => (this eq oc) || (if (this.isIntAssignable && oc.isIntAssignable) this.toInt == oc.toInt else c.value == o.value)
         case _ => false
-      })
+      }
 
       /**
-       * Hash code based on representation of the constant, consistent with equals
+       * Hash code consistent with equals
        */
-      override def hashCode = if (c.isIntRange) c.intValue else c.hashCode
+      override def hashCode = if (this.isIntAssignable) this.toInt else c.hashCode
 
     }
     /**
@@ -296,142 +296,123 @@ abstract class ConstantOptimization extends SubComponent {
     /**
      * interpret a single instruction to find its impact on the abstract state
      */
-    private def interpretInst(in: State, inst: Instruction): State = inst match {
-      case THIS(_) =>
-        in load THIS_LOCAL
+    private def interpretInst(in: State, inst: Instruction): State = {
+      // pop the consumed number of values off the `in` state's stack, producing a new state
+      def dropConsumed: State = in drop inst.consumed
+      
+      inst match {
+        case THIS(_) =>
+          in load THIS_LOCAL
+  
+        case CONSTANT(k) =>
+          // treat NaN as UNKNOWN because NaN must never equal NaN
+          val const = if (k.isNaN) UNKNOWN
+          else SinglePossible(Const(k))
+          in push const
+  
+        case LOAD_ARRAY_ITEM(_) | LOAD_FIELD(_, _) | CALL_PRIMITIVE(_) =>
+          dropConsumed push UNKNOWN
 
-      case CONSTANT(k) =>
-        in push SinglePossible(Const(k))
-
-      case LOAD_ARRAY_ITEM(_) =>
-        in drop 2 push UNKNOWN
-
-      case LOAD_LOCAL(local) =>
-        // TODO if a local is known to hold a constant then we can replace this instruction with a push of that constant
-        in load local
-
-      case LOAD_FIELD(_, isStatic) =>
-        val drops = if (isStatic) 0 else 1
-        in drop drops push UNKNOWN
-
-      case LOAD_MODULE(_) =>
-        in push NOT_NULL
-
-      case STORE_ARRAY_ITEM(_) =>
-        in drop 3
-
-      case STORE_LOCAL(local) =>
-        in store local
-
-      case STORE_THIS(_) =>
-        // if a local is already known to have a constant and we're replacing with the same constant then we can
-        // replace this with a drop
-        in store THIS_LOCAL
-
-      case STORE_FIELD(_, isStatic) =>
-        val drops = if (isStatic) 1 else 2
-        in drop drops
-
-      case CALL_PRIMITIVE(_) =>
-        in drop inst.consumed push UNKNOWN
-
-      case CALL_METHOD(_, _) =>
-        // TODO we could special case implementations of equals that are known, e.g. String#equals
-        // We could turn Possible(string constants).equals(Possible(string constants) into an eq check
-        // We could turn nonConstantString.equals(constantString) into constantString.equals(nonConstantString)
-        //  and eliminate the null check that likely precedes this call
-        val initial = in drop inst.consumed
-        (0 until inst.produced).foldLeft(initial) { case (know, _) => know push UNKNOWN }
-
-      case BOX(_) =>
-        val value = in peek 0
-        // we simulate boxing by, um, boxing the possible/impossible contents
-        // so if we have Possible(1,2) originally then we'll end up with
-        // a Possible(Boxed(1), Boxed(2))
-        // Similarly, if we know the input is not a 0 then we'll know the
-        // output is not a Boxed(0)
-        val newValue = value match {
-          case Possible(values) => Possible(values map Boxed)
-          case Impossible(values) => Impossible(values map Boxed)
-        }
-        in drop 1 push newValue
-
-      case UNBOX(_) =>
-        val value = in peek 0
-        val newValue = value match {
-          // if we have a Possible, then all the possibilities
-          // should themselves be Boxes. In that
-          // case we can merge them to figure out what the UNBOX will produce
-          case Possible(inners) =>
-            assert(inners.nonEmpty, "Empty possible set indicating an uninitialized location")
-            val sanitized: Set[Contents] = (inners map {
-              case Boxed(content) => SinglePossible(content)
-              case _ => UNKNOWN
-            })
-            sanitized reduce (_ merge _)
-          // if we have an impossible then the thing that's impossible
-          // should be a box. We'll unbox that to see what we get
-          case unknown@Impossible(inners) =>
-            if (inners.isEmpty) {
-              unknown
-            } else {
+        case LOAD_LOCAL(local) =>
+          // TODO if a local is known to hold a constant then we can replace this instruction with a push of that constant
+          in load local
+  
+        case STORE_LOCAL(local) =>
+          in store local
+  
+        case STORE_THIS(_) =>
+          // if a local is already known to have a constant and we're replacing with the same constant then we can
+          // replace this with a drop
+          in store THIS_LOCAL
+    
+        case CALL_METHOD(_, _) =>
+          // TODO we could special case implementations of equals that are known, e.g. String#equals
+          // We could turn Possible(string constants).equals(Possible(string constants) into an eq check
+          // We could turn nonConstantString.equals(constantString) into constantString.equals(nonConstantString)
+          //  and eliminate the null check that likely precedes this call
+          val initial = dropConsumed
+          (0 until inst.produced).foldLeft(initial) { case (know, _) => know push UNKNOWN }
+  
+        case BOX(_) =>
+          val value = in peek 0
+          // we simulate boxing by, um, boxing the possible/impossible contents
+          // so if we have Possible(1,2) originally then we'll end up with
+          // a Possible(Boxed(1), Boxed(2))
+          // Similarly, if we know the input is not a 0 then we'll know the
+          // output is not a Boxed(0)
+          val newValue = value match {
+            case Possible(values) => Possible(values map Boxed)
+            case Impossible(values) => Impossible(values map Boxed)
+          }
+          dropConsumed push newValue
+  
+        case UNBOX(_) =>
+          val value = in peek 0
+          val newValue = value match {
+            // if we have a Possible, then all the possibilities
+            // should themselves be Boxes. In that
+            // case we can merge them to figure out what the UNBOX will produce
+            case Possible(inners) =>
+              assert(inners.nonEmpty, "Empty possible set indicating an uninitialized location")
               val sanitized: Set[Contents] = (inners map {
-                case Boxed(content) => SingleImpossible(content)
+                case Boxed(content) => SinglePossible(content)
                 case _ => UNKNOWN
               })
               sanitized reduce (_ merge _)
-            }
-        }
-        in drop 1 push newValue
+            // if we have an impossible then the thing that's impossible
+            // should be a box. We'll unbox that to see what we get
+            case unknown@Impossible(inners) =>
+              if (inners.isEmpty) {
+                unknown
+              } else {
+                val sanitized: Set[Contents] = (inners map {
+                  case Boxed(content) => SingleImpossible(content)
+                  case _ => UNKNOWN
+                })
+                sanitized reduce (_ merge _)
+              }
+          }
+          dropConsumed push newValue
+  
+        case LOAD_MODULE(_) | NEW(_) | LOAD_EXCEPTION(_) =>
+          in push NOT_NULL
 
-      case NEW(_) =>
-        in push NOT_NULL
+        case CREATE_ARRAY(_, _) =>
+          dropConsumed push NOT_NULL
+    
+        case IS_INSTANCE(_) =>
+          // TODO IS_INSTANCE is going to be followed by a C(Z)JUMP
+          // and if IS_INSTANCE/C(Z)JUMP the branch for "true" can
+          // know that whatever was checked was not a null
+          // see the TODO on CJUMP for more information about propagating null
+          // information
+          // TODO if the top of stack is guaranteed null then we can eliminate this IS_INSTANCE check and 
+          // replace with a constant false, but how often is a knowable null checked for instanceof?
+          // TODO we could track type information and statically know to eliminate IS_INSTANCE
+          // which might be a nice win under specialization
+          dropConsumed push UNKNOWN // it's actually a Possible(true, false) but since the following instruction
+        // will be a conditional jump comparing to true or false there
+        // nothing to be gained by being more precise
+  
+        case CHECK_CAST(_) =>
+          // TODO we could track type information and statically know to eliminate CHECK_CAST
+          // but that's probably not a huge win
+          in
+  
+        case DUP(_) =>
+          val value = in peek 0
+          in push value
+  
+        case DROP(_) | MONITOR_ENTER() | MONITOR_EXIT() | STORE_ARRAY_ITEM(_) | STORE_FIELD(_, _) =>
+          dropConsumed
 
-      case CREATE_ARRAY(_, dims) =>
-        in drop dims push NOT_NULL
-
-      case IS_INSTANCE(_) =>
-        // TODO IS_INSTANCE is going to be followed by a C(Z)JUMP
-        // and if IS_INSTANCE/C(Z)JUMP the branch for "true" can
-        // know that whatever was checked was not a null
-        // see the TODO on CJUMP for more information about propagating null
-        // information
-        // TODO if the top of stack is guaranteed null then we can eliminate this IS_INSTANCE check and 
-        // replace with a constant false, but how often is a knowable null checked for instanceof?
-        // TODO we could track type information and statically know to eliminate IS_INSTANCE
-        // but that's probably not a huge win
-        in drop 1 push UNKNOWN // it's actually a Possible(true, false) but since the following instruction
-      // will be a conditional jump comparing to true or false there
-      // nothing to be gained by being more precise
-
-      case CHECK_CAST(_) =>
-        // TODO we could track type information and statically know to eliminate CHECK_CAST
-        // but that's probably not a huge win
-        in
-
-      case DROP(_) =>
-        in drop 1
-
-      case DUP(_) =>
-        val value = in peek 0
-        in push value
-
-      case MONITOR_ENTER() =>
-        in drop 1
-
-      case MONITOR_EXIT() =>
-        in drop 1
-
-      case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
-        in
-
-      case LOAD_EXCEPTION(_) =>
-        in push NOT_NULL
-
-      case JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | RETURN(_) | THROW(_) | SWITCH(_, _) =>
-        dumpClassesAndAbort("Unexpected block ending instruction: " + inst)
+        case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
+          in
+  
+        case JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | RETURN(_) | THROW(_) | SWITCH(_, _) =>
+          dumpClassesAndAbort("Unexpected block ending instruction: " + inst)
+      }
     }
-
     /**
      * interpret the last instruction of a block which will be jump, a conditional branch, a throw, or a return.
      * It will result in a map from target blocks to the input state computed for that block. It
@@ -445,7 +426,7 @@ abstract class ConstantOptimization extends SubComponent {
       /**
        * common code for interpreting CJUMP and CZJUMP
        */
-      def interpretConditional(kind: TypeKind, in: State, toDrop: Int, val1: Contents, val2: Contents, success: BasicBlock, failure: BasicBlock, cond: TestOp): (Map[BasicBlock, State], List[Instruction]) = {
+      def interpretConditional(kind: TypeKind, val1: Contents, val2: Contents, success: BasicBlock, failure: BasicBlock, cond: TestOp): (Map[BasicBlock, State], List[Instruction]) = {
         // TODO use reaching analysis to update the state in the two branches
         // e.g. if the comparison was checking null equality on local x
         // then the in the success branch we know x is null and
@@ -476,7 +457,7 @@ abstract class ConstantOptimization extends SubComponent {
           case LE | GE => !guaranteedEqual // if the two are guaranteed to be equal then they must be LE/GE
         }
 
-        val out = in drop toDrop
+        val out = in drop inst.consumed
 
         var result = Map[BasicBlock, State]()
         if (succPossible) {
@@ -487,8 +468,10 @@ abstract class ConstantOptimization extends SubComponent {
           result += ((failure, out))
         }
 
-        if (result.size == 1) (result, List.fill(toDrop)(DROP(kind)) :+ JUMP(result.keySet.head))
-        else (result, inst :: Nil)
+        val replacements = if (result.size == 1) List.fill(inst.consumed)(DROP(kind)) :+ JUMP(result.keySet.head)
+        else inst :: Nil
+        
+        (result, replacements)
       }
 
       inst match {
@@ -498,18 +481,18 @@ abstract class ConstantOptimization extends SubComponent {
         case CJUMP(success, failure, cond, kind) =>
           val in1 = in peek 0
           val in2 = in peek 1
-          interpretConditional(kind, in, 2, in1, in2, success, failure, cond)
+          interpretConditional(kind, in1, in2, success, failure, cond)
 
         case CZJUMP(success, failure, cond, kind) =>
           val in1 = in peek 0
           val in2 = getZeroOf(kind)
-          interpretConditional(kind, in, 1, in1, in2, success, failure, cond)
+          interpretConditional(kind, in1, in2, success, failure, cond)
 
         case SWITCH(tags, labels) =>
           val in1 = in peek 0
           val newStuff = tags zip labels filter { case (tagSet, _) => canSwitch(in1, tagSet) }
           val (reachableTags, reachableNormalLabels) = (tags zip labels filter { case (tagSet, _) => canSwitch(in1, tagSet) }).unzip
-          val reachableLabels = if (labels.size > tags.size) {
+          val reachableLabels = if (labels.lengthCompare(tags.length) > 0) {
             // if we've got an extra label then it's the default
             val defaultLabel = labels.last
             // see if the default is reachable by seeing if the input might be out of the set
@@ -528,7 +511,7 @@ abstract class ConstantOptimization extends SubComponent {
           // are the same we need to merge State rather than clobber
 
           // alternative, maybe we should simplify the SWITCH to not have same target labels
-          val newState = in drop 1
+          val newState = in drop inst.consumed
           val result = Map(reachableLabels map { label => (label, newState) }: _*)
           if (reachableLabels.size == 1) (result, DROP(INT) :: JUMP(reachableLabels.head) :: Nil)
           else (result, inst :: Nil)
