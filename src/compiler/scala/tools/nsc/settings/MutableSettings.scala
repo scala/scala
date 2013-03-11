@@ -248,11 +248,11 @@ class MutableSettings(val errorFn: String => Unit)
     private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
       if (dir != null && dir.isDirectory)
         dir
-// was:      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
       else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
         new PlainFile(Path(name))
       else
-        throw new FatalError(name + " does not exist or is not a directory")
+//      throw new FatalError(name + " does not exist or is not a directory")
+        dir
     )
 
     /** Set the single output directory. From now on, all files will
