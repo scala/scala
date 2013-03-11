@@ -528,7 +528,7 @@ abstract class Pickler extends SubComponent {
     private def writeSymInfo(sym: Symbol) {
       writeRef(sym.name)
       writeRef(localizedOwner(sym))
-      writeLongNat((rawToPickledFlags(sym.flags & PickledFlags)))
+      writeLongNat((rawToPickledFlags(sym.rawflags & PickledFlags)))
       if (sym.hasAccessBoundary) writeRef(sym.privateWithin)
       writeRef(sym.info)
     }
