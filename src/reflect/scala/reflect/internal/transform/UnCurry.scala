@@ -17,7 +17,14 @@ trait UnCurry {
       val tp = expandAlias(tp0)
       tp match {
         case MethodType(params, MethodType(params1, restpe)) =>
-          apply(MethodType(params ::: params1, restpe))
+          // This transformation is described in UnCurryTransformer.dependentParamTypeErasure
+          val packSymbolsMap = new TypeMap {
+            // Wrapping in a TypeMap to reuse the code that opts for a fast path if the function is an identity.
+            def apply(tp: Type): Type = packSymbols(params, tp)
+          }
+          val existentiallyAbstractedParam1s = packSymbolsMap.mapOver(params1)
+          val substitutedResult = restpe.substSym(params1, existentiallyAbstractedParam1s)
+          apply(MethodType(params ::: existentiallyAbstractedParam1s, substitutedResult))
         case MethodType(params, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
           abort("unexpected curried method types with intervening existential")
         case MethodType(h :: t, restpe) if h.isImplicit =>
