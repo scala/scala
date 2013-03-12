@@ -8,7 +8,6 @@ package scala.tools.nsc
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
-import interpreter.{ ILoop }
 import GenericRunnerCommand._
 
 object JarRunner extends CommonRunner {
@@ -78,7 +77,7 @@ class MainGenericRunner {
         Right(false)
       case _  =>
         // We start the repl when no arguments are given.
-        Right(new ILoop process settings)
+        Right(new interpreter.ILoop process settings)
     }
 
     /** If -e and -i were both given, we want to execute the -e code after the

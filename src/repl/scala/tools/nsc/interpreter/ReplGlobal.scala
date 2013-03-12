@@ -23,6 +23,14 @@ trait ReplGlobal extends Global {
   override lazy val analyzer = new {
     val global: ReplGlobal.this.type = ReplGlobal.this
   } with Analyzer {
+
+    override protected def findMacroClassLoader(): ClassLoader = {
+      val loader = super.findMacroClassLoader
+      macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
+      val virtualDirectory = globalSettings.outputDirs.getSingleOutput.get
+      new util.AbstractFileClassLoader(virtualDirectory, loader) {}
+    }
+
     override def newTyper(context: Context): Typer = new Typer(context) {
       override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
         val res = super.typed(tree, mode, pt)

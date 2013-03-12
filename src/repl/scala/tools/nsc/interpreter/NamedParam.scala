@@ -10,6 +10,7 @@ import NamedParam._
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
+import scala.tools.nsc.typechecker.{ TypeStrings }
 
 trait NamedParamCreator {
   protected def freshName: () => String

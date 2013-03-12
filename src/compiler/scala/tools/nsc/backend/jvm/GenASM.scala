@@ -72,19 +72,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           new DirectToJarfileWriter(f.file)
 
         case _                               =>
-          import scala.tools.util.Javap
-          if (settings.Ygenjavap.isDefault) {
-            if(settings.Ydumpclasses.isDefault)
-              new ClassBytecodeWriter { }
-            else
-              new ClassBytecodeWriter with DumpBytecodeWriter { }
-          }
-          else if (Javap.isAvailable()) new ClassBytecodeWriter with JavapBytecodeWriter { }
-          else {
-            warning("No javap on classpath, skipping javap output.")
+          if (settings.Ydumpclasses.isDefault)
             new ClassBytecodeWriter { }
-          }
-
+          else
+            new ClassBytecodeWriter with DumpBytecodeWriter { }
           // TODO A ScalapBytecodeWriter could take asm.util.Textifier as starting point.
           //      Three areas where javap ouput is less than ideal (e.g. when comparing versions of the same classfile) are:
           //        (a) unreadable pickle;
@@ -2519,7 +2510,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               if (nextBlock != whereto)
                 jcode goTo labels(whereto)
                 // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
-                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"              
+                // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
               else if (newNormal.isJumpOnly(b) && m.exh.exists(eh => eh.covers(b))) {
                 debugwarn("Had a jump only block that wasn't collapsed")
                 emit(asm.Opcodes.NOP)
@@ -3084,7 +3075,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       assert(nonICode.hasNext, "empty block")
       nonICode.next.isInstanceOf[JUMP]
     }
-    
+
     /**
      * Returns the list of instructions in a block that follow all ICode only instructions,
      * where an ICode only instruction is one that won't make it to the JVM
@@ -3101,7 +3092,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      * Returns the target of a block that is "jump only" which is defined
      * as being a block that consists only of 0 or more instructions that
      * won't make it to the JVM followed by a JUMP.
-     * 
+     *
      * @param b The basic block to examine
      * @return Some(target) if b is a "jump only" block or None if it's not
      */
@@ -3150,12 +3141,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       def rephraseGotos(detour: mutable.Map[BasicBlock, BasicBlock]) {
         def lookup(b: BasicBlock) = detour.getOrElse(b, b)
-            
+
         m.code.startBlock = lookup(m.code.startBlock)
-          
+
         for(eh <- m.exh)
           eh.setStartBlock(lookup(eh.startBlock))
-            
+
         for (b <- m.blocks) {
           def replaceLastInstruction(i: Instruction) = {
             if (b.lastInstruction != i) {
@@ -3164,18 +3155,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 	          b.replaceInstruction(idxLast, i)
             }
           }
- 
+
           b.lastInstruction match {
             case JUMP(whereto) =>
               replaceLastInstruction(JUMP(lookup(whereto)))
             case CJUMP(succ, fail, cond, kind) =>
               replaceLastInstruction(CJUMP(lookup(succ), lookup(fail), cond, kind))
-            case CZJUMP(succ, fail, cond, kind)  =>             
+            case CZJUMP(succ, fail, cond, kind)  =>
               replaceLastInstruction(CZJUMP(lookup(succ), lookup(fail), cond, kind))
             case SWITCH(tags, labels) =>
               val newLabels = (labels map lookup)
               replaceLastInstruction(SWITCH(tags, newLabels))
-            case _ => ()                
+            case _ => ()
           }
         }
       }
@@ -3203,7 +3194,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         // blocks
         for (key <- detour.keySet) {
           // we use the Robert Floyd's classic Tortoise and Hare algorithm
-          @tailrec 
+          @tailrec
           def findDestination(tortoise: BasicBlock, hare: BasicBlock): BasicBlock = {
             if (tortoise == hare)
               // cycle detected, map key to key
@@ -3227,7 +3218,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
         detour
       }
-      
+
       val detour = computeDetour
       rephraseGotos(detour)
 
@@ -3235,33 +3226,33 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         val (remappings, cycles) = detour partition {case (source, target) => source != target}
         for ((source, target) <- remappings) {
 		   debuglog(s"Will elide jump only block $source because it can be jumped around to get to $target.")
-		   if (m.startBlock == source) debugwarn("startBlock should have been re-wired by now")        
+		   if (m.startBlock == source) debugwarn("startBlock should have been re-wired by now")
         }
         val sources = remappings.keySet
         val targets = remappings.values.toSet
         val intersection = sources intersect targets
-        
+
         if (intersection.nonEmpty) debugwarn(s"contradiction: we seem to have some source and target overlap in blocks ${intersection.mkString}. Map was ${detour.mkString}")
-        
+
         for ((source, _) <- cycles) {
           debuglog(s"Block $source is in a do-nothing infinite loop. Did the user write 'while(true){}'?")
         }
       }
     }
-    
+
     /**
      * Removes all blocks that are unreachable in a method using a standard reachability analysis.
      */
     def elimUnreachableBlocks(m: IMethod) {
-      assert(m.hasCode, "code-less method")      
-      
+      assert(m.hasCode, "code-less method")
+
       // assume nothing is reachable until we prove it can be reached
       val reachable = mutable.Set[BasicBlock]()
-      
+
       // the set of blocks that we know are reachable but have
       // yet to be  marked reachable, initially only the start block
       val worklist = mutable.Set(m.startBlock)
-      
+
       while (worklist.nonEmpty) {
         val block = worklist.head
         worklist remove block
@@ -3271,7 +3262,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         // think are unreachable
         worklist ++= (block.successors filterNot reachable)
       }
-      
+
       // exception handlers need to be told not to cover unreachable blocks
       // and exception handlers that no longer cover any blocks need to be
       // removed entirely
@@ -3282,9 +3273,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           unusedExceptionHandlers += exh
         }
       }
-      
+
       // remove the unusued exception handler references
-      if (settings.debug.value) 
+      if (settings.debug.value)
         for (exh <- unusedExceptionHandlers) debuglog(s"eliding exception handler $exh because it does not cover any reachable blocks")
       m.exh = m.exh filterNot unusedExceptionHandlers
 

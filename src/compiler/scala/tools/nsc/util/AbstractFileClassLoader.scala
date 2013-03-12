@@ -3,10 +3,9 @@
  */
 
 package scala.tools.nsc
-package interpreter
+package util
 
 import scala.tools.nsc.io.AbstractFile
-import util.ScalaClassLoader
 import java.net.{ URL, URLConnection, URLStreamHandler }
 import scala.collection.{ mutable, immutable }
 
@@ -78,7 +77,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     case null => super.classBytes(name)
     case file => file.toByteArray
   }
-  override def findClass(name: String): JClass = {
+  override def findClass(name: String): Class[_] = {
     val bytes = classBytes(name)
     if (bytes.length == 0)
       throw new ClassNotFoundException(name)

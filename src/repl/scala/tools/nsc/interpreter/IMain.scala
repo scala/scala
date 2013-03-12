@@ -15,6 +15,7 @@ import scala.tools.nsc.io.AbstractFile
 import reporters._
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.ScalaClassLoader
+import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
@@ -22,7 +23,7 @@ import IMain._
 import java.util.concurrent.Future
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
-import scala.tools.reflect.StdRuntimeTags._
+import StdReplTags._
 
 /** An interpreter for Scala code.
  *
@@ -80,8 +81,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    *  use a lazy val to ensure that any attempt to use the compiler object waits
    *  on the future.
    */
-  private var _classLoader: AbstractFileClassLoader = null                              // active classloader
-  private val _compiler: Global                     = newCompiler(settings, reporter)   // our private compiler
+  private var _classLoader: util.AbstractFileClassLoader = null                              // active classloader
+  private val _compiler: ReplGlobal                 = newCompiler(settings, reporter)   // our private compiler
 
   def compilerClasspath: Seq[URL] = (
     if (isInitializeComplete) global.classPath.asURLs
@@ -271,7 +272,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     if (_classLoader == null)
       _classLoader = makeClassLoader()
   }
-  def classLoader: AbstractFileClassLoader = {
+  def classLoader: util.AbstractFileClassLoader = {
     ensureClassLoader()
     _classLoader
   }
@@ -318,7 +319,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
   }
 
-  private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
+  private class TranslatingClassLoader(parent: ClassLoader) extends util.AbstractFileClassLoader(replOutput.dir, parent) {
     /** Overridden here to try translating a simple name to the generated
      *  class name if the original attempt fails.  This method is used by
      *  getResourceAsStream as well as findClass.
@@ -329,7 +330,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         case file => file
       }
   }
-  private def makeClassLoader(): AbstractFileClassLoader =
+  private def makeClassLoader(): util.AbstractFileClassLoader =
     new TranslatingClassLoader(parentClassLoader match {
       case null   => ScalaClassLoader fromURLs compilerClasspath
       case p      => new URLClassLoader(compilerClasspath, p)
