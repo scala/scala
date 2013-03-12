@@ -106,7 +106,10 @@ object Streamable {
     /** Convenience function to import entire file into a String.
      */
     def slurp(): String = slurp(creationCodec)
-    def slurp(codec: Codec) = chars(codec).mkString
+    def slurp(codec: Codec) = {
+      val src = chars(codec)
+      try src.mkString finally src.close()  // Always Be Closing
+    }
   }
 
   /** Call a function on something Closeable, finally closing it. */
