@@ -48,7 +48,7 @@ object Lexer {
   /** The '`(`' token */
   val LParen = new Delim('(')
 
-  /** The '`(`' token */
+  /** The '`)`' token */
   val RParen = new Delim(')')
 
   /** The '`{`' token */
