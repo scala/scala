@@ -11,7 +11,6 @@ import java.io.{ BufferedReader, FileReader }
 import session._
 import scala.annotation.tailrec
 import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
-import scala.tools.util.{ Javap }
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import io.{ File, Directory }
 import util.ScalaClassLoader
@@ -19,7 +18,7 @@ import ScalaClassLoader._
 import scala.tools.util._
 import scala.language.{implicitConversions, existentials}
 import scala.reflect.classTag
-import scala.tools.reflect.StdRuntimeTags._
+import StdReplTags._
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
 

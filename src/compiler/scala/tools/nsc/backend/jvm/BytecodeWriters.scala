@@ -9,7 +9,6 @@ package backend.jvm
 import java.io.{ DataOutputStream, FileOutputStream, OutputStream, File => JFile }
 import scala.tools.nsc.io._
 import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.util.{ Javap, JavapClass }
 import java.util.jar.Attributes.Name
 import scala.language.postfixOps
 
@@ -57,35 +56,6 @@ trait BytecodeWriters {
       informProgress("added " + label + path + " to jar")
     }
     override def close() = writer.close()
-  }
-
-  /** To be mixed-in with the BytecodeWriter that generates
-   *  the class file to be disassembled.
-   */
-  trait JavapBytecodeWriter extends BytecodeWriter {
-    val baseDir = Directory(settings.Ygenjavap.value).createDirectory()
-    val cl      = ScalaClassLoader.appLoader
-
-    def emitJavap(classFile: AbstractFile, javapFile: File) {
-      val pw = javapFile.printWriter()
-      try {
-        val javap = new JavapClass(cl, pw) {
-          override def findBytes(path: String): Array[Byte] = classFile.toByteArray
-        }
-        javap(Seq("-verbose", "-protected", classFile.name)) foreach (_.show())
-      } finally pw.close()
-    }
-    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
-      super.writeClass(label, jclassName, jclassBytes, sym)
-
-      val classFile = getFile(sym, jclassName, ".class")
-      val segments  = jclassName.split("[./]")
-      val javapFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "javap" toFile;
-      javapFile.parent.createDirectory()
-
-      if (Javap.isAvailable(cl)) emitJavap(classFile, javapFile)
-      else warning("No javap on classpath, skipping javap output.")
-    }
   }
 
   trait ClassBytecodeWriter extends BytecodeWriter {

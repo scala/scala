@@ -13,7 +13,6 @@ import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
 import scala.reflect.internal.{Flags, Names}
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import interpreter.ByteCode.scalaSigBytesForPath
 
 object ShowPickled extends Names {
   import PickleFormat._
@@ -272,7 +271,6 @@ object ShowPickled extends Names {
   }
 
   def fromFile(path: String) = fromBytes(io.File(path).toByteArray())
-  def fromName(name: String) = fromBytes(scalaSigBytesForPath(name) getOrElse Array())
   def fromBytes(data: => Array[Byte]): Option[PickleBuffer] =
     try Some(new PickleBuffer(data, 0, data.length))
     catch { case _: Exception => None }
@@ -287,7 +285,7 @@ object ShowPickled extends Names {
 
   def main(args: Array[String]) {
     args foreach { arg =>
-      (fromFile(arg) orElse fromName(arg)) match {
+      fromFile(arg) match {
         case Some(pb) => show(arg + ":", pb)
         case _        => Console.println("Cannot read " + arg)
       }

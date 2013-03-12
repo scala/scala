@@ -43,7 +43,14 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   import definitions._
   import treeInfo.{isRepeatedParamType => _, _}
   import MacrosStats._
+
   def globalSettings = global.settings
+
+  protected def findMacroClassLoader(): ClassLoader = {
+    val classpath = global.classPath.asURLs
+    macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
+    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+  }
 
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
@@ -474,21 +481,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  Loads classes from from -cp (aka the library classpath).
    *  Is also capable of detecting REPL and reusing its classloader.
    */
-  lazy val macroClassloader: ClassLoader = {
-    val classpath = global.classPath.asURLs
-    macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-    val loader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-
-    // a heuristic to detect the REPL
-    if (global.settings.exposeEmptyPackage.value) {
-      macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
-      import scala.tools.nsc.interpreter._
-      val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
-      new AbstractFileClassLoader(virtualDirectory, loader) {}
-    } else {
-      loader
-    }
-  }
+  lazy val macroClassloader: ClassLoader = findMacroClassLoader()
 
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.

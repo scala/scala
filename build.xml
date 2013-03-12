@@ -1095,6 +1095,32 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
 
+  <target name="quick.pre-repl" depends="quick.comp">
+    <uptodate property="quick.repl.available" targetfile="${build-quick.dir}/repl.complete">
+      <srcfiles dir="${src.dir}/repl" />
+    </uptodate>
+  </target>
+
+  <target name="quick.repl" depends="quick.pre-repl" unless="quick.repl.available">
+    <mkdir dir="${build-quick.dir}/classes/repl"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/repl"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/repl"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/reflect"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/repl"/>
+        <pathelement location="${jline.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/repl.complete" verbose="no"/>
+  </target>
+
   <target name="quick.swing" depends="quick.comp" if="has.java6" unless="quick.comp.available">
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
@@ -1107,7 +1133,7 @@ QUICK BUILD (QUICK)
     </scalacfork>
   </target>
 
-  <target name="quick.pre-plugins" depends="quick.comp">
+  <target name="quick.pre-plugins" depends="quick.repl" unless="quick.repl.available">
     <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">
       <srcfiles dir="${src.dir}/continuations"/>
     </uptodate>
@@ -1229,6 +1255,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/repl"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <path refid="asm.classpath"/>
@@ -1247,6 +1274,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/repl"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
@@ -1358,11 +1386,12 @@ QUICK BUILD (QUICK)
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/reflect"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
+      <pathelement location="${build-quick.dir}/classes/repl"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
+      <pathelement location="${jline.jar}"/>
+      <path refid="asm.classpath"/>
       <path refid="forkjoin.classpath"/>
       <path refid="aux.libs"/>
-      <path refid="asm.classpath"/>
-      <pathelement location="${jline.jar}"/>
     </path>
     <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool" classpathref="quick.bin.classpath"/>
     <mkdir dir="${build-quick.dir}/bin"/>
@@ -1488,6 +1517,7 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <fileset dir="${build-quick.dir}/classes/scaladoc"/>
       <fileset dir="${build-quick.dir}/classes/interactive"/>
+      <fileset dir="${build-quick.dir}/classes/repl"/>
       <fileset dir="${build-asm.dir}/classes"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
@@ -1998,10 +2028,11 @@ SBT Compiler Interface
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
-        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/scaladoc"/>
+        <pathelement location="${build-quick.dir}/classes/repl"/>
         <pathelement location="${sbt.interface.jar}"/>
         <path refid="forkjoin.classpath"/>
       </compilationpath>
