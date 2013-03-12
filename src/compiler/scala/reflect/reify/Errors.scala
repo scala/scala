@@ -27,6 +27,11 @@ trait Errors {
     throw new ReificationException(defaultErrorPosition, msg)
   }
 
+  def CannotReifyCompoundTypeTreeWithNonEmptyBody(ctt: CompoundTypeTree) = {
+    val msg = "implementation restriction: cannot reify refinement type trees with non-empty bodies"
+    throw new ReificationException(ctt.pos, msg)
+  }
+
   def CannotReifyWeakType(details: Any) = {
     val msg = "cannot create a TypeTag" + details + ": use WeakTypeTag instead"
     throw new ReificationException(defaultErrorPosition, msg)
