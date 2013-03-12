@@ -189,7 +189,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
 
       val pickleVersionFormat = payload("versionFormat").asInstanceOf[Int]
-      if (versionFormat != pickleVersionFormat) throw new Error("macro impl binding format mismatch: expected $versionFormat, actual $pickleVersionFormat")
+      if (versionFormat != pickleVersionFormat) throw new Error(s"macro impl binding format mismatch: expected $versionFormat, actual $pickleVersionFormat")
 
       val className = payload("className").asInstanceOf[String]
       val methodName = payload("methodName").asInstanceOf[String]

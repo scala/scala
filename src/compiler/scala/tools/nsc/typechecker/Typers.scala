@@ -86,6 +86,9 @@ trait Typers extends Adaptations with Tags {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
+  private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
+  private final val InterpolatorIdentRegex = """\$\w+""".r
+
   // To enable decent error messages when the typer crashes.
   // TODO - this only catches trees which go through def typed,
   // but there are all kinds of back ways - typedClassDef, etc. etc.
@@ -5151,6 +5154,19 @@ trait Typers extends Adaptations with Tags {
 
       def typedLiteral(tree: Literal) = {
         val value = tree.value
+        // Warn about likely interpolated strings which are missing their interpolators
+        if (settings.lint.value) value match {
+          case Constant(s: String) =>
+            def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
+            val shouldWarn = (
+                 (InterpolatorCodeRegex findFirstIn s).nonEmpty
+              || (names exists (n => context.lookupSymbol(n, _ => true).symbol.exists))
+            )
+            if (shouldWarn)
+              unit.warning(tree.pos, "looks like an interpolated String; did you forget the interpolator?")
+          case _ =>
+        }
+
         tree setType (
           if (value.tag == UnitTag) UnitClass.tpe
           else ConstantType(value))

@@ -1,0 +1,9 @@
+forgot-interpolator.scala:4: warning: looks like an interpolated String; did you forget the interpolator?
+  def f = "Put the $bippy in the $bippy!" // warn
+          ^
+forgot-interpolator.scala:14: warning: looks like an interpolated String; did you forget the interpolator?
+  def f = """Put the ${println("bippy")} in the bippy!""" // warn
+          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
