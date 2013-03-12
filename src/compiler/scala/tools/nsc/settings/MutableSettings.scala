@@ -486,8 +486,6 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String,
     default: ScalaVersion)
   extends Setting(name, descr) {
-    import ScalaVersion._
-    
     type T = ScalaVersion
     protected var v: T = NoScalaVersion
 
@@ -495,14 +493,14 @@ class MutableSettings(val errorFn: String => Unit)
       value = default
       Some(args)
     }
-    
+
     override def tryToSetColon(args: List[String]) = args match {
       case Nil      => value = default; Some(Nil)
       case x :: xs  => value = ScalaVersion(x, errorFn) ; Some(xs)
     }
-    
+
     override def tryToSetFromPropertyValue(s: String) = tryToSet(List(s))
-    
+
     def unparse: List[String] = if (value == NoScalaVersion) Nil else List(s"${name}:${value.unparse}")
 
     withHelpSyntax(s"${name}:<${arg}>")

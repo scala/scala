@@ -283,7 +283,6 @@ abstract class TreeCheckers extends Analyzer {
 
       private def checkSymbolRefsRespectScope(tree: Tree) {
         def symbolOf(t: Tree): Symbol = Option(tree.symbol).getOrElse(NoSymbol)
-        def definedSymbolOf(t: Tree): Symbol = if (t.isDef) symbolOf(t) else NoSymbol
         val info = Option(symbolOf(tree).info).getOrElse(NoType)
         val referencedSymbols: List[Symbol] = {
           val directRef = tree match {

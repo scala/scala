@@ -21,7 +21,6 @@ abstract class Erasure extends AddInterfaces
   import global._
   import definitions._
   import CODE._
-  import treeInfo._
 
   val phaseName: String = "erasure"
 

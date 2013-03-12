@@ -20,7 +20,6 @@ trait ContextErrors {
 
   import global._
   import definitions._
-  import treeInfo._
 
   object ErrorKinds extends Enumeration {
     type ErrorKind = Value

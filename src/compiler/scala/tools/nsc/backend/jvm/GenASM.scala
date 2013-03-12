@@ -2634,7 +2634,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
         if(from == to) { return }
         // the only conversion involving BOOL that is allowed is (BOOL -> BOOL)
-        assert(from != BOOL && to != BOOL, "inconvertible types : $from -> $to")
+        assert(from != BOOL && to != BOOL, s"inconvertible types : $from -> $to")
 
         if(from.isIntSizedType) { // BYTE, CHAR, SHORT, and INT. (we're done with BOOL already)
 

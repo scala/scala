@@ -1134,7 +1134,7 @@ trait Typers extends Adaptations with Tags {
                         if (settings.warnValueDiscard.value)
                           context.unit.warning(tree.pos, "discarded non-Unit value")
                         return typedPos(tree.pos, mode, pt) {
-                          Block(List(tree), Literal(Constant()))
+                          Block(List(tree), Literal(Constant(())))
                         }
                       } else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
                         if (settings.warnNumericWiden.value)
@@ -1248,7 +1248,7 @@ trait Typers extends Adaptations with Tags {
       val savedUndetparams = context.undetparams
       silent(_.instantiate(tree, mode, UnitClass.tpe)) orElse { _ =>
           context.undetparams = savedUndetparams
-          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
+          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
     }
@@ -1507,7 +1507,7 @@ trait Typers extends Adaptations with Tags {
      */
     private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean): Tree = {
       val app = treeInfo.dissectApplied(encodedtpt)
-      val (treeInfo.Applied(core, targs, argss), decodedtpt) = (app, app.callee)
+      val (treeInfo.Applied(core, targs, argss), decodedtpt) = ((app, app.callee))
       val argssAreTrivial = argss == Nil || argss == ListOfNil
 
       // we cannot avoid cyclic references with `initialize` here, because when type macros arrive,
@@ -2988,9 +2988,8 @@ trait Typers extends Adaptations with Tags {
             else if (isByNameParamType(formals.head)) NOmode
             else BYVALmode
           )
-          var tree = typedArg(args.head, mode, typedMode, adapted.head)
           // formals may be empty, so don't call tail
-          tree :: loop(args.tail, formals drop 1, adapted.tail)
+          typedArg(args.head, mode, typedMode, adapted.head) :: loop(args.tail, formals drop 1, adapted.tail)
         }
       }
       loop(args0, formals0, adapted0)

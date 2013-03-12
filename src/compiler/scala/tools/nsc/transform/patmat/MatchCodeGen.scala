@@ -10,7 +10,6 @@ import scala.tools.nsc.symtab.Flags.SYNTHETIC
 import scala.language.postfixOps
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.NoPosition
 
 /** Factory methods used by TreeMakers to make the actual trees.
  *
@@ -18,10 +17,7 @@ import scala.reflect.internal.util.NoPosition
  * and pure (aka "virtualized": match is parametric in its monad).
  */
 trait MatchCodeGen extends Interface {
-  import PatternMatchingStats._
-  import global.{nme, treeInfo, definitions, gen, Tree, Type, Symbol, NoSymbol,
-    appliedType, NoType, MethodType, newTermName, Name,
-    Block, Literal, Constant, EmptyTree, Function, Typed, ValDef, LabelDef}
+  import global._
   import definitions._
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +75,7 @@ trait MatchCodeGen extends Interface {
       // duplicated out of frustration with cast generation
       def mkZero(tp: Type): Tree = {
         tp.typeSymbol match {
-          case UnitClass    => Literal(Constant())
+          case UnitClass    => Literal(Constant(()))
           case BooleanClass => Literal(Constant(false))
           case FloatClass   => Literal(Constant(0.0f))
           case DoubleClass  => Literal(Constant(0.0d))

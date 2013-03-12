@@ -100,12 +100,11 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant())))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1
-        val superRef: Tree = atPos(superPos)(gen.mkSuperInitCall)
         val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
                                          // this requires knowing which of the parents is a type macro and which is not
                                          // and that's something that cannot be found out before typer
@@ -116,7 +115,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
           // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
           // is it going to be a problem that we can no longer include the `argss`?
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant(()))))))
       }
     }
     constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
