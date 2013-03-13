@@ -270,22 +270,25 @@ trait NamesDefaults { self: Analyzer =>
      */
     def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[Option[ValDef]] = {
       val context = blockTyper.context
-      val symPs = map2(args, paramTypes)((arg, tpe) => arg match {
+      val symPs = map2(args, paramTypes)((arg, paramTpe) => arg match {
         case Ident(nme.SELECTOR_DUMMY) =>
           None // don't create a local ValDef if the argument is <unapply-selector>
         case _ =>
-          val byName   = isByNameParamType(tpe)
-          val repeated = isScalaRepeatedParamType(tpe)
+          val byName   = isByNameParamType(paramTpe)
+          val repeated = isScalaRepeatedParamType(paramTpe)
           val argTpe = (
             if (repeated) arg match {
               case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
               case _                                       => seqType(arg.tpe)
             }
-            else arg.tpe
-            ).widen // have to widen or types inferred from literal defaults will be singletons
+            else
+              // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
+              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe)
+          // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
+          ).deconst
           val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo (
-              if (byName) functionType(Nil, argTpe) else argTpe
-              )
+            if (byName) functionType(Nil, argTpe) else argTpe
+          )
           Some((context.scope.enter(s), byName, repeated))
       })
       map2(symPs, args) {
@@ -326,11 +329,10 @@ trait NamesDefaults { self: Analyzer =>
 
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
-          if (typedApp.isErrorTyped) tree
-          else typedApp match {
+          typedApp match {
             // Extract the typed arguments, restore the call-site evaluation order (using
             // ValDef's in the block), change the arguments to these local values.
-            case Apply(expr, typedArgs) =>
+            case Apply(expr, typedArgs) if !(typedApp :: typedArgs).exists(_.isErrorTyped) => // bail out with erroneous args, see SI-7238
               // typedArgs: definition-site order
               val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, removeByName = false, removeRepeated = false)
               // valDefs: call-site order
@@ -358,6 +360,7 @@ trait NamesDefaults { self: Analyzer =>
               context.namedApplyBlockInfo =
                 Some((block, NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper)))
               block
+            case _ => tree
           }
         }
 
