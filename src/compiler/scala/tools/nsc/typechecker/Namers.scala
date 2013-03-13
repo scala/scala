@@ -805,23 +805,19 @@ trait Namers extends MethodSynthesis {
         case _ =>
           false
       }
-
-      val tpe1 = dropIllegalStarTypes(tpe.deconst)
-      val tpe2 = tpe1.widen
-
-      // This infers Foo.type instead of "object Foo"
-      // See Infer#adjustTypeArgs for the polymorphic case.
-      if (tpe.typeSymbolDirect.isModuleClass) tpe1
-      else if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
-        if (tpe2 <:< pt) tpe2 else tpe1
-      else if (isHidden(tpe)) tpe2
-      // In an attempt to make pattern matches involving method local vals
-      // compilable into switches, for a time I had a more generous condition:
-      //    `if (sym.isFinal || sym.isLocal) tpe else tpe1`
-      // This led to issues with expressions like classOf[List[_]] which apparently
-      // depend on being deconst-ed here, so this is again the original:
-      else if (!sym.isFinal) tpe1
-      else tpe
+      val shouldWiden = (
+           !tpe.typeSymbolDirect.isModuleClass // Infer Foo.type instead of "object Foo"
+        && (tpe.widen <:< pt)                  // Don't widen our way out of conforming to pt
+        && (   sym.isVariable
+            || sym.isMethod && !sym.hasAccessorFlag
+            || isHidden(tpe)
+           )
+      )
+      dropIllegalStarTypes(
+        if (shouldWiden) tpe.widen
+        else if (sym.isFinal) tpe    // "final val" allowed to retain constant type
+        else tpe.deconst
+      )
     }
     /** Computes the type of the body in a ValDef or DefDef, and
      *  assigns the type to the tpt's node.  Returns the type.

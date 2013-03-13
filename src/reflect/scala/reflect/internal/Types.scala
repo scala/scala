@@ -1217,7 +1217,7 @@ trait Types
     protected def rewrap(newtp: Type): Type = NotNullType(newtp)
     override def isNotNull: Boolean = true
     override def notNull = this
-    override def deconst: Type = underlying //todo: needed?
+    override def deconst: Type = underlying.deconst //todo: needed?
     override def safeToString: String = underlying.toString + " with NotNull"
     override def kind = "NotNullType"
   }
@@ -1989,7 +1989,7 @@ trait Types
     assert(underlying.typeSymbol != UnitClass)
     override def isTrivial: Boolean = true
     override def isNotNull = value.value != null
-    override def deconst: Type = underlying
+    override def deconst: Type = underlying.deconst
     override def safeToString: String =
       underlying.toString + "(" + value.escapedStringValue + ")"
     override def kind = "ConstantType"
