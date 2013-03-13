@@ -1671,6 +1671,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  and is this class symbol also different from Null or Nothing? */
     def isNonBottomSubClass(that: Symbol): Boolean = false
 
+    /** Is this class symbol Null or Nothing,
+     *  and (if Null) is `that` inhabited by null?
+     *  If this is Nothing, of course, it is a
+     *  subclass of `that` by definition.
+     *
+     *  TODO - what is implied by the fact that AnyVal now has
+     *  infinitely many non-bottom subclasses, not only 9?
+     */
+    def isBottomSubClass(that: Symbol) = (
+         (this eq NothingClass)
+      || (this eq NullClass) && that.isClass && (that ne NothingClass) && !(that isNonBottomSubClass AnyValClass)
+    )
+
     /** Overridden in NullClass and NothingClass for custom behavior.
      */
     def isSubClass(that: Symbol) = isNonBottomSubClass(that)

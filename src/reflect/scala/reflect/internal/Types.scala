@@ -4051,23 +4051,22 @@ trait Types
     corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
   }
 
-  protected[internal] def containsNull(sym: Symbol): Boolean =
-    sym.isClass && sym != NothingClass &&
-    !(sym isNonBottomSubClass AnyValClass)
-
-  def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean =
-    tp.typeSymbol == NothingClass ||
-    tp.typeSymbol == NullClass && containsNull(sym.owner) || {
-      def specializedBy(membr: Symbol): Boolean =
-        membr == sym || specializesSym(tp.narrow, membr, sym.owner.thisType, sym, depth)
-      val member = tp.nonPrivateMember(sym.name)
+  def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean = {
+    def directlySpecializedBy(member: Symbol): Boolean = (
+         member == sym
+      || specializesSym(tp.narrow, member, sym.owner.thisType, sym, depth)
+    )
+    // Closure reduction, else this would be simply `member exists directlySpecializedBy`
+    def specializedBy(member: Symbol): Boolean = (
       if (member eq NoSymbol) false
-      else if (member.isOverloaded) member.alternatives exists specializedBy
-      else specializedBy(member)
-      // was
-      // (tp.nonPrivateMember(sym.name).alternatives exists
-      //   (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym, depth)))
-    }
+      else if (member.isOverloaded) member.alternatives exists directlySpecializedBy
+      else directlySpecializedBy(member)
+    )
+
+    (    (tp.typeSymbol isBottomSubClass sym.owner)
+      || specializedBy(tp nonPrivateMember sym.name)
+    )
+  }
 
   /** Does member `sym1` of `tp1` have a stronger type
    *  than member `sym2` of `tp2`?
