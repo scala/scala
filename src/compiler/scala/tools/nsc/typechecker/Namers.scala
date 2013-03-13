@@ -516,7 +516,13 @@ trait Namers extends MethodSynthesis {
           // Setting the position at the import means that if there is
           // more than one hidden name, the second will not be warned.
           // So it is the position of the actual hidden name.
-          checkNotRedundant(tree.pos withPoint fromPos, from, to)
+          //
+          // Note: java imports have precence over definitions in the same package
+          //       so don't warn for them. There is a corresponding special treatment
+          //       in the shadowing rules in typedIdent to (SI-7232). In any case,
+          //       we shouldn't be emitting warnings for .java source files.
+          if (!context.unit.isJava)
+            checkNotRedundant(tree.pos withPoint fromPos, from, to)
         }
       }
 
