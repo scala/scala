@@ -101,6 +101,7 @@ trait EtaExpansion { self: Analyzer =>
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
         case Select(qual, name) =>
+          val name = tree.symbol.name // account for renamed imports, SI-7233
           treeCopy.Select(tree, liftout(qual, false), name) setSymbol NoSymbol setType null
         case Ident(name) =>
           tree
