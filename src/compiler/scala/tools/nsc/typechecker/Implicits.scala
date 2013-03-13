@@ -573,15 +573,16 @@ trait Implicits {
       )
 
       def fail(reason: String): SearchResult = failure(itree, reason)
+      def fallback = typed1(itree, EXPRmode, wildPt)
       try {
-        val itree1 = pt match {
-          case Function1(arg1, arg2) if isView =>
+        val itree1 = if (!isView) fallback else pt match {
+          case Function1(arg1, arg2) =>
             typed1(
               atPos(itree.pos)(Apply(itree, List(Ident("<argument>") setType approximate(arg1)))),
               EXPRmode,
               approximate(arg2)
             )
-          case _ => typed1(itree, EXPRmode, wildPt)
+          case _ => fallback
         }
         if (context.hasErrors) {
           log("implicit adapt failed: " + context.errBuffer.head.errMsg)
