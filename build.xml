@@ -1388,6 +1388,7 @@ QUICK BUILD (QUICK)
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
+      <pathelement location="${build-quick.dir}/classes/continuations-library"/>
       <pathelement location="${jline.jar}"/>
       <path refid="asm.classpath"/>
       <path refid="forkjoin.classpath"/>
