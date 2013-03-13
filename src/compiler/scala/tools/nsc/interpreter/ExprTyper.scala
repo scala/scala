@@ -57,15 +57,13 @@ trait ExprTyper {
       // Typing it with a lazy val would give us the right type, but runs
       // into compiler bugs with things like existentials, so we compile it
       // behind a def and strip the NullaryMethodType which wraps the expr.
-      val line = "def " + name + " = {\n" + code + "\n}"
+      val line = "def " + name + " = " + code
 
       interpretSynthetic(line) match {
         case IR.Success =>
           val sym0 = symbolOfTerm(name)
           // drop NullaryMethodType
-          val sym = sym0.cloneSymbol setInfo afterTyper(sym0.info.finalResultType)
-          if (sym.info.typeSymbol eq UnitClass) NoSymbol
-          else sym
+          sym0.cloneSymbol setInfo afterTyper(sym0.info.finalResultType)
         case _          => NoSymbol
       }
     }
@@ -82,7 +80,11 @@ trait ExprTyper {
         case _ => NoSymbol
       }
     }
-    beQuietDuring(asExpr()) orElse beQuietDuring(asDefn())
+    def asError(): Symbol = {
+      interpretSynthetic(code)
+      NoSymbol
+    }
+    beSilentDuring(asExpr()) orElse beSilentDuring(asDefn()) orElse asError()
   }
 
   private var typeOfExpressionDepth = 0
