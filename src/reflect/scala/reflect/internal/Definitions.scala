@@ -1131,7 +1131,7 @@ trait Definitions extends api.StandardDefinitions {
     /** Is type's symbol a numeric value class? */
     def isNumericValueType(tp: Type): Boolean = tp match {
       case TypeRef(_, sym, _) => isNumericValueClass(sym)
-      case _ => false
+      case _                  => false
     }
 
     // todo: reconcile with javaSignature!!!

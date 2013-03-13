@@ -1124,16 +1124,19 @@ trait Typers extends Adaptations with Tags {
               else {
                 if (mode.inExprModeButNot(FUNmode)) {
                   pt.dealias match {
-                    case TypeRef(_, sym, _) =>
+                    // The <: Any requirement inhibits attempts to adapt continuation types
+                    // to non-continuation types.
+                    case TypeRef(_, sym, _) if tree.tpe <:< AnyClass.tpe =>
                       // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
                       // infinite expansion if pt is constant type ()
-                      if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12)
+                      if (sym == UnitClass) { // (12)
                         if (settings.warnValueDiscard.value)
                           context.unit.warning(tree.pos, "discarded non-Unit value")
                         return typedPos(tree.pos, mode, pt) {
                           Block(List(tree), Literal(Constant()))
                         }
-                      } else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
+                      }
+                      else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
                         if (settings.warnNumericWiden.value)
                           context.unit.warning(tree.pos, "implicit numeric widening")
                         return typedPos(tree.pos, mode, pt) {
