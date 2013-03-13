@@ -4494,35 +4494,31 @@ trait Typers extends Adaptations with Tags {
                   reportError
               }
           }
-          silent(_.typed(fun, mode.forFunMode, funpt),
-                 if (mode.inExprMode) false else context.ambiguousErrors,
-                 if (mode.inExprMode) tree else context.tree) match {
+          val silentResult = silent(
+            op                    = _.typed(fun, mode.forFunMode, funpt),
+            reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
+            newtree               = if (mode.inExprMode) tree else context.tree
+          )
+          silentResult match {
             case SilentResultValue(fun1) =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
               if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
-              def isImplicitMethod(tpe: Type) = tpe match {
-                case mt: MethodType => mt.isImplicit
-                case _ => false
-              }
-              val useTry = (
-                   !isPastTyper
-                && fun2.isInstanceOf[Select]
-                && !isImplicitMethod(fun2.tpe)
-                && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
-                && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
+              val noSecondTry = (
+                   isPastTyper
+                || (fun2.symbol ne null) && fun2.symbol.isConstructor
+                || (fun2.tpe match { case mt: MethodType => mt.isImplicit case _ => false })
               )
-              val res =
-                if (useTry) tryTypedApply(fun2, args)
-                else doTypedApply(tree, fun2, args, mode, pt)
+              val isFirstTry = !noSecondTry && (
+                fun2 match {
+                  case Select(_, _) => mode inExprModeButNot SNDTRYmode
+                  case _            => false
+                }
+              )
+              if (isFirstTry)
+                tryTypedApply(fun2, args)
+              else
+                doTypedApply(tree, fun2, args, mode, pt)
 
-              if (fun2.symbol == Array_apply && !res.isErrorTyped) {
-                val checked = gen.mkCheckInit(res)
-                // this check is needed to avoid infinite recursion in Duplicators
-                // (calling typed1 more than once for the same tree)
-                if (checked ne res) typed { atPos(tree.pos)(checked) }
-                else res
-              } else
-                res
             case SilentTypeError(err) =>
               onError({issue(err); setError(tree)})
           }
