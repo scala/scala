@@ -1986,7 +1986,7 @@ SBT Compiler Interface
 
   <target name="sbt.start" depends="init">
     <!-- TODO - Put this in init?   Allow this to be overriden simply -->
-    <property name="sbt.latest.version" value="0.12.0"/>
+    <property name="sbt.latest.version" value="0.12.2"/>
 
 
     <property name="sbt.src.dir" value="${build-sbt.dir}/${sbt.latest.version}/src"/>
@@ -2034,6 +2034,7 @@ SBT Compiler Interface
         <pathelement location="${build-quick.dir}/classes/reflect"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/scaladoc"/>
+        <pathelement location="${build-quick.dir}/classes/interactive"/>
         <pathelement location="${build-quick.dir}/classes/repl"/>
         <pathelement location="${sbt.interface.jar}"/>
         <path refid="forkjoin.classpath"/>
