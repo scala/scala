@@ -490,7 +490,7 @@ trait TypeComparers {
 
     /** Third try, on the right:
       *   - decompose refined types.
-      *   - handle typerefs, existentials, and notnull types.
+      *   - handle typerefs and existentials.
       *   - handle left+right method types, polytypes, typebounds
       */
     def thirdTry = tp2 match {
@@ -534,7 +534,7 @@ trait TypeComparers {
     }
 
     /** Fourth try, on the left:
-      *   - handle typerefs, refined types, notnull and singleton types.
+      *   - handle typerefs, refined types, and singleton types.
       */
     def fourthTry = tp1 match {
       case tr1 @ TypeRef(pre1, sym1, _) =>
