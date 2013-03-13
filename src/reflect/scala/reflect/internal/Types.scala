@@ -131,7 +131,6 @@ trait Types
     override def isTrivial = underlying.isTrivial
     override def isHigherKinded: Boolean = underlying.isHigherKinded
     override def typeConstructor: Type = underlying.typeConstructor
-    override def isNotNull = underlying.isNotNull
     override def isError = underlying.isError
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
@@ -273,9 +272,6 @@ trait Types
      *  T_i (i > 1) is an abstract type.
      */
     def isVolatile: Boolean = false
-
-    /** Is this type guaranteed not to have `null` as a value? */
-    def isNotNull: Boolean = false
 
     /** Is this type a structural refinement type (it ''refines'' members that have not been inherited) */
     def isStructuralRefinement: Boolean = false
@@ -460,10 +456,6 @@ trait Types
     /** For a (potentially wrapped) poly or existential type, its bound symbols,
      *  the empty list for all other types */
     def boundSyms: immutable.Set[Symbol] = emptySymbolSet
-
-    /** Obsolete, here for backward compatibility.
-     */
-    @deprecated("This method will be removed", "2.11.0") def notNull: Type = this
 
     /** Replace formal type parameter symbols with actual type arguments.
      *
@@ -1205,7 +1197,6 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Int = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def isNotNull = supertype.isNotNull
   }
 
   /** A base class for types that represent a single value
@@ -1310,7 +1301,6 @@ trait Types
     }
 
     override def isTrivial: Boolean = sym.isPackageClass
-    override def isNotNull = true
     override def typeSymbol = sym
     override def underlying: Type = sym.typeOfThis
     override def isVolatile = false
@@ -1349,7 +1339,6 @@ trait Types
     }
     override def isGround = sym.isPackageClass || pre.isGround
 
-    override def isNotNull = underlying.isNotNull
     private[reflect] var underlyingCache: Type = NoType
     private[reflect] var underlyingPeriod = NoPeriod
     override def underlying: Type = {
@@ -1416,8 +1405,6 @@ trait Types
       if (trivial == UNKNOWN) trivial = fromBoolean(thistpe.isTrivial && supertpe.isTrivial)
       toBoolean(trivial)
     }
-    override def isNotNull = true
-
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
@@ -1530,7 +1517,6 @@ trait Types
     }
 
     override def narrow: Type = typeSymbol.thisType
-    override def isNotNull: Boolean = parents exists typeIsNotNull
 
     override def isStructuralRefinement: Boolean =
       typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
@@ -1974,7 +1960,6 @@ trait Types
     override def underlying: Type = value.tpe
     assert(underlying.typeSymbol != UnitClass)
     override def isTrivial: Boolean = true
-    override def isNotNull = value.value != null
     override def deconst: Type = underlying.deconst
     override def safeToString: String =
       underlying.toString + "(" + value.escapedStringValue + ")"
@@ -2028,7 +2013,6 @@ trait Types
 
       narrowedCache
     }
-    final override def isNotNull = true
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
@@ -2332,8 +2316,6 @@ trait Types
     override def typeOfThis       = transform(sym.typeOfThis)
     override def typeSymbol       = sym
     override def typeSymbolDirect = sym
-
-    override def isNotNull = sym == NothingClass || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -4498,7 +4480,6 @@ trait Types
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
 
-  private[scala] val typeIsNotNull = (tp: Type) => tp.isNotNull
   private[scala] val isTypeVar = (tp: Type) => tp.isInstanceOf[TypeVar]
   private[scala] val typeContainsTypeVar = (tp: Type) => tp exists isTypeVar
   private[scala] val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
