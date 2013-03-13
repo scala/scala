@@ -4187,11 +4187,11 @@ trait Typers extends Adaptations with Tags {
 
       def typedArrayValue(tree: ArrayValue) = {
         val elemtpt1 = typedType(tree.elemtpt, mode)
-        val elems1 = tree.elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
-        treeCopy.ArrayValue(tree, elemtpt1, elems1)
-          .setType(
-            (if (isFullyDefined(pt) && !phase.erasedTypes) pt
-             else arrayType(elemtpt1.tpe)).notNull)
+        val elems1   = tree.elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
+        // see run/t6126 for an example where `pt` does not suffice (tagged types)
+        val tpe1     = if (isFullyDefined(pt) && !phase.erasedTypes) pt else arrayType(elemtpt1.tpe)
+
+        treeCopy.ArrayValue(tree, elemtpt1, elems1) setType tpe1
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
@@ -4737,16 +4737,6 @@ trait Typers extends Adaptations with Tags {
             case SilentResultValue(treeAndPre) =>
               (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
           }
-
-          def isPotentialNullDeference() = {
-            !isPastTyper &&
-            !sym.isConstructor &&
-            !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull &&
-            !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
-          }
-          // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
-          if (settings.warnSelectNullable.value && isPotentialNullDeference && unit != null)
-            unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
           result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?

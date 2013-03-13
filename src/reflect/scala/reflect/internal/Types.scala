@@ -187,7 +187,6 @@ trait Types
     override def params: List[Symbol] = List()
     override def paramTypes: List[Type] = List()
     override def typeArgs = underlying.typeArgs
-    override def notNull = maybeRewrap(underlying.notNull)
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(underlying.normalize)
@@ -462,12 +461,9 @@ trait Types
      *  the empty list for all other types */
     def boundSyms: immutable.Set[Symbol] = emptySymbolSet
 
-    /** Mixin a NotNull trait unless type already has one
-     *  ...if the option is given, since it is causing typing bugs.
+    /** Obsolete, here for backward compatibility.
      */
-    def notNull: Type =
-      if (!settings.Ynotnull.value || isNotNull || phase.erasedTypes) this
-      else NotNullType(this)
+    @deprecated("This method will be removed", "2.11.0") def notNull: Type = this
 
     /** Replace formal type parameter symbols with actual type arguments.
      *
@@ -1210,16 +1206,6 @@ trait Types
     override def baseTypeSeqDepth: Int = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
     override def isNotNull = supertype.isNotNull
-  }
-
-  case class NotNullType(override val underlying: Type) extends SubType with RewrappingTypeProxy {
-    def supertype = underlying
-    protected def rewrap(newtp: Type): Type = NotNullType(newtp)
-    override def isNotNull: Boolean = true
-    override def notNull = this
-    override def deconst: Type = underlying.deconst //todo: needed?
-    override def safeToString: String = underlying.toString + " with NotNull"
-    override def kind = "NotNullType"
   }
 
   /** A base class for types that represent a single value
@@ -2347,8 +2333,7 @@ trait Types
     override def typeSymbol       = sym
     override def typeSymbolDirect = sym
 
-    override def isNotNull =
-      sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
+    override def isNotNull = sym == NothingClass || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -4086,8 +4071,7 @@ trait Types
 
   protected[internal] def containsNull(sym: Symbol): Boolean =
     sym.isClass && sym != NothingClass &&
-    !(sym isNonBottomSubClass AnyValClass) &&
-    !(sym isNonBottomSubClass NotNullClass)
+    !(sym isNonBottomSubClass AnyValClass)
 
   def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean =
     tp.typeSymbol == NothingClass ||
