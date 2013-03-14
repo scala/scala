@@ -1,0 +1,6 @@
+error: Unable to load s.Outer$Triple$. Most commonly, this arises from referencing an object's
+implementation-internal name instead of its name as defined within the scala language.
+B_2.scala:5: error: object s.Outer$Triple$ is not a value
+    println( s.Outer$Triple$ )
+               ^
+two errors found
