@@ -38,7 +38,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def futureSettings = List[BooleanSetting]()
 
   /** Enabled under -optimise. */
-  protected def optimiseSettings = List[BooleanSetting](inline, inlineHandlers, Xcloselim, Xdce)
+  protected def optimiseSettings = List[BooleanSetting](inline, inlineHandlers, Xcloselim, Xdce, YconstOptimization)
 
   /** Internal use - syntax enhancements. */
   private class EnableSettings[T <: BooleanSetting](val s: T) {
@@ -128,6 +128,7 @@ trait ScalaSettings extends AbsScalaSettings
   val check           = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Yshow           = PhasesSetting     ("-Yshow", "(Requires -Xshow-class or -Xshow-object) Show after")
   val Xcloselim       = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination.")
+  val YconstOptimization  = BooleanSetting    ("-Yconst-opt", "Perform optimization with constant values.")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
   val Xdce            = BooleanSetting    ("-Ydead-code", "Perform dead code elimination.")
