@@ -42,7 +42,7 @@ abstract class ExplicitOuter extends InfoTransform
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
   private def haveSameOuter(parent: Type, clazz: Symbol) = parent match {
-    case TypeRef(pre, sym, _)   =>
+    case TypeRef(pre, sym, _) if !sym.isJavaDefined   =>
       val owner = clazz.owner
 
       //println(s"have same outer $parent $clazz $sym ${sym.owner} $owner $pre")
