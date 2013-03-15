@@ -25,7 +25,8 @@ superaccessors   6  add super accessors in traits and nested classes
        inliner  23  optimization: do inlining
 inlinehandlers  24  optimization: inline exception handlers
       closelim  25  optimization: eliminate uncalled closures
-           dce  26  optimization: eliminate dead code
-           jvm  27  generate JVM bytecode
-       ploogin  28  A sample phase that does so many things it's kind of hard...
-      terminal  29  The last phase in the compiler chain
+      constopt  26  optimization: optimize null and other constants
+           dce  27  optimization: eliminate dead code
+           jvm  28  generate JVM bytecode
+       ploogin  29  A sample phase that does so many things it's kind of hard...
+      terminal  30  The last phase in the compiler chain
