@@ -426,7 +426,7 @@ trait MethodSynthesis {
             Nil,
             Nil,
             tpt,
-            if (mods.isDeferred) EmptyTree else gen.mkCheckInit(fieldSelection)
+            if (mods.isDeferred) EmptyTree else fieldSelection
           ) setSymbol derivedSym
         }
       }

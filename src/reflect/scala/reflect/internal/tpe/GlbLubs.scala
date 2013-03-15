@@ -396,7 +396,7 @@ private[internal] trait GlbLubs {
       indent = indent stripSuffix "  "
       println(indent + "lub of " + ts + " is " + res)//debug
     }
-    if (ts forall typeIsNotNull) res.notNull else res
+    res
   }
 
   val GlbFailure = new Throwable
@@ -536,13 +536,9 @@ private[internal] trait GlbLubs {
       }
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
-
     if (Statistics.canEnable) Statistics.incCounter(nestedLubCount)
-    val res = glb0(ts)
-
+    glb0(ts)
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
-
-    if (ts exists typeIsNotNull) res.notNull else res
   }
 
   /** All types in list must be polytypes with type parameter lists of

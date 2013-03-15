@@ -174,10 +174,6 @@ private[internal] trait TypeMaps {
       case tv@TypeVar(_, constr) =>
         if (constr.instValid) this(constr.inst)
         else tv.applyArgs(mapOverArgs(tv.typeArgs, tv.params))  //@M !args.isEmpty implies !typeParams.isEmpty
-      case NotNullType(tp) =>
-        val tp1 = this(tp)
-        if (tp1 eq tp) tp
-        else NotNullType(tp1)
       case AnnotatedType(annots, atp, selfsym) =>
         val annots1 = mapOverAnnotations(annots)
         val atp1 = this(atp)
@@ -1135,7 +1131,6 @@ private[internal] trait TypeMaps {
       case TypeBounds(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
       case AnnotatedType(_,_,_) => mapOver(tp)
-      case NotNullType(_) => mapOver(tp)
       case ExistentialType(_, _) => mapOver(tp)
       case _ => tp
     }

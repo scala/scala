@@ -125,7 +125,7 @@ trait Erasure {
           if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
           else if (args.head.typeSymbol.isBottomClass) ObjectArray
           else typeRef(apply(pre), sym, args map applyInArray)
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) ErasedObject
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ErasedObject
         else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
