@@ -1167,6 +1167,11 @@ abstract class ClassfileParser {
   }
 
   object innerClasses extends mutable.HashMap[Name, InnerClassEntry] {
+    // if loading during initialization of `definitions` typerPhase is not yet set.
+    // in that case we simply load the member at the current phase
+    @inline private def enteringTyperIfPossible(body: => Symbol): Symbol =
+      if (currentRun.typerPhase eq null) body else enteringTyper(body)
+
     /** Return the class symbol for `externalName`. It looks it up in its outer class.
      *  Forces all outer class symbols to be completed.
      *
@@ -1183,28 +1188,15 @@ abstract class ClassfileParser {
             if (sym == clazz) instanceScope.lookup(name)
             else sym.info.member(name)
 
-        innerClasses.get(externalName) match {
-          case Some(entry) =>
-            val outerName = nme.stripModuleSuffix(entry.outerName)
-            val sym = classSymbol(outerName)
-            val s =
-              // if loading during initialization of `definitions` typerPhase is not yet set.
-              // in that case we simply load the member at the current phase
-              if (currentRun.typerPhase != null)
-                enteringTyper(getMember(sym, innerName.toTypeName))
-              else
-                getMember(sym, innerName.toTypeName)
-
-            assert(s ne NoSymbol,
-              "" + ((externalName, outerName, innerName, sym.fullLocationString)) + " / " +
-              " while parsing " + ((in.file, busy)) +
-              sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members
-            )
-            s
-
-          case None =>
-            classNameToSymbol(externalName)
+        val result = (innerClasses get externalName).fold(classNameToSymbol(externalName)) { entry =>
+          val outerName = nme.stripModuleSuffix(entry.outerName)
+          enteringTyperIfPossible(getMember(classSymbol(outerName), innerName.toTypeName))
         }
+        if (result eq NoSymbol) globalError(
+          sm"""|Unable to load $externalName. Most commonly, this arises from referencing an object's
+               |implementation-internal name instead of its name as defined within the scala language."""
+        )
+        result
       }
 
       get(externalName) match {
