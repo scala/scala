@@ -8,7 +8,6 @@ package util
 import scala.tools.nsc.io.AbstractFile
 import java.security.cert.Certificate
 import java.security.{ ProtectionDomain, CodeSource }
-import util.ScalaClassLoader
 import java.net.{ URL, URLConnection, URLStreamHandler }
 import scala.collection.{ mutable, immutable }
 
@@ -91,10 +90,13 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
   lazy val protectionDomain = {
     val cl = Thread.currentThread().getContextClassLoader()
     val resource = cl.getResource("scala/runtime/package.class")
-    if (resource == null) null else {
+    if (resource == null || resource.getProtocol != "jar") null else {
       val s = resource.getPath
-      val path = s.substring(0, s.lastIndexOf('!'))
-      new ProtectionDomain(new CodeSource(new URL(path), null.asInstanceOf[Array[Certificate]]), null, this, null)
+      val n = s.lastIndexOf('!')
+      if (n < 0) null else {
+        val path = s.substring(0, n)
+        new ProtectionDomain(new CodeSource(new URL(path), null.asInstanceOf[Array[Certificate]]), null, this, null)
+      }
     }
   }
 
