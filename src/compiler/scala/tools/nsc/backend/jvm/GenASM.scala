@@ -2260,8 +2260,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         hostSymbol.info ; methodOwner.info
 
         def isInterfaceCall(sym: Symbol) = (
-             //XXX remove the test for ObjectClass.
-             sym.isInterface && methodOwner != ObjectClass
+             sym.isInterface
           || sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass)
         )
         // whether to reference the type of the receiver or
