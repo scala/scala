@@ -3558,7 +3558,7 @@ trait Typers extends Adaptations with Tags {
         // If there are dummy type arguments in typeFun part, it suggests we
         // must type the actual constructor call, not only the select. The value
         // arguments are how the type arguments will be inferred.
-        if (targs.isEmpty && typedFun0.exists(t => isDummyAppliedType(t.tpe)))
+        if (targs.isEmpty && typedFun0.exists(t => t.tpe != null && isDummyAppliedType(t.tpe)))
           logResult(s"Retyped $typedFun0 to find type args")(typed(argss.foldLeft(fun0)(Apply(_, _))))
         else
           typedFun0
@@ -4692,7 +4692,9 @@ trait Typers extends Adaptations with Tags {
           def handleMissing: Tree = {
             def errorTree = missingSelectErrorTree(tree, qual, name)
             def asTypeSelection = (
-              if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
+              if (context.unit.isJava && name.isTypeName) {
+                // SI-3120 Java uses the same syntax, A.B, to express selection from the
+                // value A and from the type A. We have to try both.
                 atPos(tree.pos)(gen.convertToSelectFromType(qual, name)) match {
                   case EmptyTree => None
                   case tree1     => Some(typed1(tree1, mode, pt))
