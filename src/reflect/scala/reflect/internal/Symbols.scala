@@ -2538,20 +2538,32 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** change name by appending $$<fully-qualified-name-of-class `base`>
-     *  Do the same for any accessed symbols or setters/getters
+     *  Do the same for any accessed symbols or setters/getters.
+     *  If the accessor to be renamed is overriding a base symbol, enter
+     *  a cloned symbol with the original name but without ACCESSOR flag.
      */
     override def expandName(base: Symbol) {
-      if (!hasFlag(EXPANDEDNAME)) {
-        setFlag(EXPANDEDNAME)
-        if (hasAccessorFlag && !isDeferred) {
-          accessed.expandName(base)
-        }
-        else if (hasGetter) {
-          getter(owner).expandName(base)
-          setter(owner).expandName(base)
-        }
-        name = nme.expandedName(name.toTermName, base)
+      def expand(sym: Symbol) {
+        if ((sym eq NoSymbol) || (sym hasFlag EXPANDEDNAME)) () // skip
+        else sym setFlag EXPANDEDNAME setName nme.expandedName(sym.name.toTermName, base)
       }
+      def cloneAndExpand(accessor: Symbol) {
+        val clone = accessor.cloneSymbol(accessor.owner, (accessor.flags | ARTIFACT) & ~ACCESSOR)
+        expand(accessor)
+        log(s"Expanded overriding accessor to $accessor, but cloned $clone to preserve override")
+        accessor.owner.info.decls enter clone
+      }
+      def expandAccessor(accessor: Symbol) {
+        if (accessor.isOverridingSymbol) cloneAndExpand(accessor) else expand(accessor)
+      }
+      if (hasAccessorFlag && !isDeferred) {
+        expand(accessed)
+      }
+      else if (hasGetter) {
+        expandAccessor(getter(owner))
+        expandAccessor(setter(owner))
+      }
+      expand(this)
     }
 
     protected def doCookJavaRawInfo() {
@@ -3223,6 +3235,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def companionModule = NoSymbol
     override def companionSymbol = NoSymbol
     override def isSubClass(that: Symbol) = false
+    override def isOverridingSymbol = false
     override def filter(cond: Symbol => Boolean) = this
     override def defString: String = toString
     override def locationString: String = ""
