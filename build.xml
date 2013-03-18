@@ -2665,99 +2665,52 @@ Binary compatibility testing
     </artifact:dependencies>
   </target>
 
-  <target name="bc.run" depends="bc.init, pack.done">
-    <java
-       fork="true"
-       failonerror="true"
-       classname="com.typesafe.tools.mima.cli.Main">
-         <arg value="--prev"/>
-         <arg value="${org.scala-lang:scala-library:jar}"/>
-         <arg value="--curr"/>
-         <arg value="${build-pack.dir}/lib/scala-library.jar"/>
-         <arg value="--filters"/>
-         <arg value="${basedir}/bincompat-backward.whitelist.conf"/>
-         <arg value="--generate-filters"/>
-         <classpath>
-           <path refid="mima.classpath"/>
-         </classpath>
-    </java>
-    <java
-       fork="true"
-       failonerror="true"
-       classname="com.typesafe.tools.mima.cli.Main">
-         <arg value="--prev"/>
-         <arg value="${org.scala-lang:scala-reflect:jar}"/>
-         <arg value="--curr"/>
-         <arg value="${build-pack.dir}/lib/scala-reflect.jar"/>
-         <arg value="--filters"/>
-         <arg value="${basedir}/bincompat-backward.whitelist.conf"/>
-         <arg value="--generate-filters"/>
-         <classpath>
-           <path refid="mima.classpath"/>
-         </classpath>
-    </java>
-    <java
-       fork="true"
-       failonerror="true"
-       classname="com.typesafe.tools.mima.cli.Main">
-         <arg value="--prev"/>
-         <arg value="${org.scala-lang:scala-swing:jar}"/>
-         <arg value="--curr"/>
-         <arg value="${build-pack.dir}/lib/scala-swing.jar"/>
-         <arg value="--filters"/>
-         <arg value="${basedir}/bincompat-backward.whitelist.conf"/>
-         <arg value="--generate-filters"/>
-         <classpath>
-           <path refid="mima.classpath"/>
-         </classpath>
-    </java>
-    <java
-       fork="true"
-       failonerror="true"
-       classname="com.typesafe.tools.mima.cli.Main">
-         <arg value="--curr"/>
-         <arg value="${org.scala-lang:scala-library:jar}"/>
-         <arg value="--prev"/>
-         <arg value="${build-pack.dir}/lib/scala-library.jar"/>
-         <arg value="--filters"/>
-         <arg value="${basedir}/bincompat-forward.whitelist.conf"/>
-         <arg value="--generate-filters"/>
-         <classpath>
-           <path refid="mima.classpath"/>
-         </classpath>
-    </java>
-    <java
-       fork="true"
-       failonerror="true"
-       classname="com.typesafe.tools.mima.cli.Main">
-         <arg value="--curr"/>
-         <arg value="${org.scala-lang:scala-reflect:jar}"/>
-         <arg value="--prev"/>
-         <arg value="${build-pack.dir}/lib/scala-reflect.jar"/>
-         <arg value="--filters"/>
-         <arg value="${basedir}/bincompat-forward.whitelist.conf"/>
-         <arg value="--generate-filters"/>
-         <classpath>
-           <path refid="mima.classpath"/>
-         </classpath>
-    </java>
-    <java
-       fork="true"
-       failonerror="true"
-       classname="com.typesafe.tools.mima.cli.Main">
-         <arg value="--curr"/>
-         <arg value="${org.scala-lang:scala-swing:jar}"/>
-         <arg value="--prev"/>
-         <arg value="${build-pack.dir}/lib/scala-swing.jar"/>
-         <arg value="--filters"/>
-         <arg value="${basedir}/bincompat-forward.whitelist.conf"/>
-         <arg value="--generate-filters"/>
-         <classpath>
-           <path refid="mima.classpath"/>
-         </classpath>
-    </java>
-  </target>
+  <macrodef name="bc.run-mima">
+    <attribute name="jar-name"/>
+    <attribute name="prev"/>
+    <attribute name="curr"/>
+    <attribute name="direction"/>
+    <sequential>
+      <echo message="Checking @{direction} binary compatibility for @{jar-name}"/>
+      <java
+         fork="true"
+         failonerror="true"
+         classname="com.typesafe.tools.mima.cli.Main">
+           <arg value="--prev"/>
+           <arg value="@{prev}"/>
+           <arg value="--curr"/>
+           <arg value="@{curr}"/>
+           <arg value="--filters"/>
+           <arg value="${basedir}/bincompat-@{direction}.whitelist.conf"/>
+           <arg value="--generate-filters"/>
+           <classpath>
+             <path refid="mima.classpath"/>
+           </classpath>
+      </java>
+    </sequential>
+  </macrodef>
 
+  <macrodef name="bc.check">
+    <attribute name="jar-name"/>
+    <sequential>
+        <bc.run-mima
+                jar-name="@{jar-name}"
+                prev="${org.scala-lang:@{jar-name}:jar}"
+                curr="${build-pack.dir}/lib/@{jar-name}.jar"
+                direction="backward"/>
+        <bc.run-mima
+                jar-name="@{jar-name}"
+                prev="${build-pack.dir}/lib/@{jar-name}.jar"
+                curr="${org.scala-lang:@{jar-name}:jar}"
+                direction="forward"/>
+    </sequential>
+  </macrodef>
+
+  <target name="bc.run" depends="bc.init, pack.done">
+    <bc.check jar-name="scala-library"/>
+    <bc.check jar-name="scala-reflect"/>
+    <bc.check jar-name="scala-swing"/>
+  </target>
 
 <!-- ===========================================================================
 DISTRIBUTION
