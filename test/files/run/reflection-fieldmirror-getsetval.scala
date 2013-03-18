@@ -12,13 +12,7 @@ object Test extends App {
   val cs = im.symbol
   val f = cs.typeSignature.declaration(newTermName("x" + nme.LOCAL_SUFFIX_STRING)).asTerm
   val fm: FieldMirror = im.reflectField(f)
-  try {
-    println(fm.get)
-    fm.set(2)
-    println(fm.get)
-    println("this indicates a failure")
-  } catch {
-    case ex: Throwable =>
-      println(ex.getMessage)
-  }
+  println(fm.get)
+  fm.set(2)
+  println(fm.get)
 }

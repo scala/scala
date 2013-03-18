@@ -133,9 +133,7 @@ package api
  *   scala> fmX.get
  *   res0: Any = 2
  *
- *   scala> fmX.set(3)
- *   scala.ScalaReflectionException: cannot set an immutable field x
- *   ...
+ *   scala> fmX.set(3) // NOTE: can set an underlying value of an immutable field!
  *
  *   scala> val fieldY = typeOf[C].declaration(newTermName("y")).asTerm.accessed.asTerm
  *   fieldY: reflect.runtime.universe.TermSymbol = variable y
