@@ -1375,9 +1375,8 @@ trait Typers extends Modes with Adaptations with Tags {
       def onError(reportError: => Tree): Tree = {
         context.tree match {
           case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty =>
-            silent(_.typedArgs(args, mode)) match {
-              case SilentResultValue(xs) =>
-                val args = xs.asInstanceOf[List[Tree]]
+            silent(_.typedArgs(args.map(_.duplicate), mode)) match {
+              case SilentResultValue(args) =>
                 if (args exists (_.isErrorTyped))
                   reportError
                 else
