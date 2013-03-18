@@ -4812,7 +4812,9 @@ trait Typers extends Modes with Adaptations with Tags {
 
         if (!reallyExists(sym)) {
           def handleMissing: Tree = {
-            if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
+            if (context.unit.isJava && name.isTypeName) {
+              // SI-3120 Java uses the same syntax, A.B, to express selection from the
+              // value A and from the type A. We have to try both.
               val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name) }
               if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
             }
