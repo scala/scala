@@ -248,8 +248,6 @@ trait Importers extends api.Importers { self: SymbolTable =>
           AntiPolyType(importType(pre), targs map importType)
         case x: from.TypeVar =>
           TypeVar(importType(x.origin), importTypeConstraint(x.constr), x.typeArgs map importType, x.params map importSymbol)
-        case from.NotNullType(tpe) =>
-          NotNullType(importType(tpe))
         case from.AnnotatedType(annots, tpe, selfsym) =>
           AnnotatedType(annots map importAnnotationInfo, importType(tpe), importSymbol(selfsym))
         case from.ErrorType =>

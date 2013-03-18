@@ -281,7 +281,7 @@ trait Definitions extends api.StandardDefinitions {
     def Predef_AnyRef = AnyRefModule
 
     lazy val AnyValClass: ClassSymbol = (ScalaPackageClass.info member tpnme.AnyVal orElse {
-      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), ABSTRACT)
+      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, AnyClass.tpe :: Nil, ABSTRACT)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
       anyval
@@ -383,7 +383,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
     lazy val ArrowAssocClass            = getRequiredClass("scala.Predef.ArrowAssoc") // SI-5731
     lazy val StringAdd_+                = getMemberMethod(StringAddClass, nme.PLUS)
-    lazy val NotNullClass               = getRequiredClass("scala.NotNull")
     lazy val ScalaNumberClass           = requiredClass[scala.math.ScalaNumber]
     lazy val TraitSetterAnnotationClass = requiredClass[scala.runtime.TraitSetter]
     lazy val DelayedInitClass           = requiredClass[scala.DelayedInit]
