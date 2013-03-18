@@ -5046,7 +5046,25 @@ trait Typers extends Modes with Adaptations with Tags {
                          else cx.depth - (cx.scope.nestingLevel - defEntry.owner.nestingLevel)
           var impSym: Symbol = NoSymbol      // the imported symbol
           var imports = context.imports      // impSym != NoSymbol => it is imported from imports.head
-          while (!reallyExists(impSym) && !imports.isEmpty && imports.head.depth > symDepth) {
+
+          // Java: A single-type-import declaration d in a compilation unit c of package p
+          // that imports a type named n shadows, throughout c, the declarations of:
+          //
+          //  1) any top level type named n declared in another compilation unit of p
+          //
+          // A type-import-on-demand declaration never causes any other declaration to be shadowed.
+          //
+          // Scala: Bindings of different kinds have a precedence deﬁned on them:
+          //
+          //  1) Deﬁnitions and declarations that are local, inherited, or made available by a
+          //     package clause in the same compilation unit where the deﬁnition occurs have
+          //     highest precedence.
+          //  2) Explicit imports have next highest precedence.
+          def depthOk(imp: ImportInfo) = (
+               imp.depth > symDepth
+            || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symDepth)
+          )
+          while (!reallyExists(impSym) && !imports.isEmpty && depthOk(imports.head)) {
             impSym = imports.head.importedSymbol(name)
             if (!impSym.exists) imports = imports.tail
           }
