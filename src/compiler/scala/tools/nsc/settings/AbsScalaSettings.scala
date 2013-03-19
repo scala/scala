@@ -40,3 +40,12 @@ trait AbsScalaSettings {
     def unparse: List[String] = List(name)
   }
 }
+
+/*
+ * This is the natural place for this conversion, except for reflect.internal.settings.MutableSettings.
+ * We'd prefer not to bias the mutable; maybe the Settings type hierarchy will simplify at some point.
+object AbsScalaSettings {
+  import scala.language.implicitConversions
+  @inline implicit def valueOfBooleanSetting(s: AbsScalaSettings#BooleanSetting): Boolean = s.value
+}
+ */
