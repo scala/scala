@@ -30,12 +30,12 @@ class ISettings(intp: IMain) {
   var unwrapStrings = true
 
   def deprecation_=(x: Boolean) = {
-    val old = intp.settings.deprecation.value
+    val old = intp.settings.deprecation
     intp.settings.deprecation.value = x
     if (!old && x) println("Enabled -deprecation output.")
     else if (old && !x) println("Disabled -deprecation output.")
   }
-  def deprecation: Boolean = intp.settings.deprecation.value
+  def deprecation: Boolean = intp.settings.deprecation
 
   def allSettings = Map[String, Any](
     "maxPrintString" -> maxPrintString,

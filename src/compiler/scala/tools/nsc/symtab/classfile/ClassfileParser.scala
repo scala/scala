@@ -9,11 +9,12 @@ package classfile
 
 import java.io.{ File, IOException }
 import java.lang.Integer.toHexString
+import scala.annotation.switch
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
-import scala.annotation.switch
+import scala.compat.Platform.EOL
 import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
-import scala.tools.nsc.io.AbstractFile
+import scala.reflect.io.AbstractFile
 
 /** This abstract class implements a class file parser.
  *
@@ -50,19 +51,16 @@ abstract class ClassfileParser {
   }
 
   private def handleMissing(e: MissingRequirementError) = {
-    if (settings.debug.value) e.printStackTrace
-    throw new IOException("Missing dependency '" + e.req + "', required by " + in.file)
+    if (settings.debug) e.printStackTrace()
+    throw new IOException(s"Missing dependency '${e.req}', required by ${in.file}")
   }
   private def handleError(e: Exception) = {
-    if (settings.debug.value) e.printStackTrace()
-    throw new IOException("class file '%s' is broken\n(%s/%s)".format(
-      in.file,
-      e.getClass,
-      if (e.getMessage eq null) "" else e.getMessage)
-    )
+    def msg = if (e.getMessage eq null) "" else e.getMessage
+    if (settings.debug) e.printStackTrace()
+    throw new IOException(s"class file '${in.file}' is broken$EOL(${e.getClass}/$msg)")
   }
   private def mismatchError(c: Symbol) = {
-    throw new IOException("class file '%s' has location not matching its contents: contains ".format(in.file) + c)
+    throw new IOException(s"class file '${in.file}' has location not matching its contents: contains $c")
   }
 
   private def parseErrorHandler[T]: PartialFunction[Throwable, T] = {
@@ -599,7 +597,7 @@ abstract class ClassfileParser {
   def parseField() {
     val jflags = in.nextChar
     val sflags = toScalaFieldFlags(jflags)
-    if ((sflags & PRIVATE) != 0L && !global.settings.optimise.value) {
+    if ((sflags & PRIVATE) != 0L && !global.settings.optimise) {
       in.skip(4); skipAttributes()
     } else {
       val name    = pool.getName(in.nextChar)
@@ -629,13 +627,13 @@ abstract class ClassfileParser {
   def parseMethod() {
     val jflags = in.nextChar.toInt
     val sflags = toScalaMethodFlags(jflags)
-    if (isPrivate(jflags) && !global.settings.optimise.value) {
+    if (isPrivate(jflags) && !global.settings.optimise) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((sflags & PRIVATE) != 0L && global.settings.optimise.value) {
+      if ((sflags & PRIVATE) != 0L && global.settings.optimise) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
@@ -862,7 +860,7 @@ abstract class ClassfileParser {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
-            if (settings.debug.value && settings.verbose.value)
+            if (settings.debug && settings.verbose)
               println("" + sym + "; signature = " + sig + " type = " + newType)
           }
           else in.skip(attrLen)
@@ -1025,7 +1023,7 @@ abstract class ClassfileParser {
         // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
         // and that should never be swallowed silently.
         warning("Caught: " + ex + " while parsing annotations in " + in.file)
-        if (settings.debug.value) ex.printStackTrace()
+        if (settings.debug) ex.printStackTrace()
 
         None // ignore malformed annotations
     }

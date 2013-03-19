@@ -17,7 +17,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   val compiler = new Global(settings, reporter)
 
   def askAndListen[T, U](msg: String,  arg: T, op: (T, Response[U]) => Unit) {
-    if (settings.verbose.value) print(msg+" "+arg+": ")
+    if (settings.verbose) print(msg+" "+arg+": ")
     val TIMEOUT = 10 // ms
     val limit = System.currentTimeMillis() + randomDelayMillis
     val res = new Response[U]
@@ -28,7 +28,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
       } else res.get(TIMEOUT) match {
         case Some(Left(t)) =>
           /**/
-          if (settings.verbose.value) println(t)
+          if (settings.verbose) println(t)
         case Some(Right(ex)) =>
           ex.printStackTrace()
           println(ex)

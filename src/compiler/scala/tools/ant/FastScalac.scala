@@ -129,7 +129,7 @@ class FastScalac extends Scalac {
     val phaseSetting = {
       val s = settings.log
       if (s.value.isEmpty) Nil
-      else List("%s:%s".format(s.name, s.value.mkString(",")))
+      else List(s.value mkString (s"${s.name}:", ",", ""))
     }
 
     val fscOptions =

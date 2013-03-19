@@ -162,7 +162,7 @@ trait Erasure {
     }
   }
 
-  protected def verifyJavaErasure = false
+  protected def verifyJavaErasure: Boolean = false
 
   /**   The erasure |T| of a type T. This is:
    *

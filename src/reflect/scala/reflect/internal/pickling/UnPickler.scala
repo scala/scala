@@ -41,7 +41,7 @@ abstract class UnPickler {
       case ex: MissingRequirementError =>
         throw ex
       case ex: Throwable =>
-        /*if (settings.debug.value)*/ ex.printStackTrace()
+        /*if (settings.debug)*/ ex.printStackTrace()
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
     }
   }
@@ -49,7 +49,7 @@ abstract class UnPickler {
   class Scan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
 
-    protected def debug = settings.debug.value
+    protected def debug: Boolean = settings.debug
 
     checkVersion()
 

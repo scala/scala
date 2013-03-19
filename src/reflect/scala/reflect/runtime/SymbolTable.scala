@@ -10,11 +10,9 @@ import scala.reflect.internal.Flags._
  */
 private[scala] trait SymbolTable extends internal.SymbolTable with JavaMirrors with SymbolLoaders with SynchronizedOps {
 
-  def info(msg: => String) =
-    if (settings.verbose.value) println("[reflect-compiler] "+msg)
+  def info(msg: => String) = if (settings.verbose) println(s"[reflect-compiler] ${msg}")
 
-  def debugInfo(msg: => String) =
-    if (settings.debug.value) info(msg)
+  def debugInfo(msg: => String) = if (settings.debug) info(msg)
 
   /** Declares that this is a runtime reflection universe.
    *

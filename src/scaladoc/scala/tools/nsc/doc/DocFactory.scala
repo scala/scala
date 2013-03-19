@@ -126,7 +126,6 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
   }
 
   private[doc] def docdbg(msg: String) {
-    if (settings.Ydocdebug.value)
-      println(msg)
+    if (settings.Ydocdebug) println(msg)
   }
 }

@@ -32,7 +32,7 @@ object REPL {
     val settings = new Settings(replError)
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
-    if (command.settings.version.value)
+    if (command.settings.version)
       reporter.echo(versionMsg)
     else {
       try {
@@ -50,7 +50,7 @@ object REPL {
         }
       } catch {
         case ex @ FatalError(msg) =>
-          if (true || command.settings.debug.value) // !!!
+          if (true || command.settings.debug) // !!!
             ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
       }

@@ -57,15 +57,15 @@ abstract class SymbolTable extends macros.Universe
   def abort(): Nothing = abort("unknown error")
 
   @deprecated("Use devWarning if this is really a warning; otherwise use log", "2.11.0")
-  def debugwarn(msg: => String): Unit = devWarning(msg)
+  def debugwarn(msg: => String): Unit  = devWarning(msg)
 
   /** Override with final implementation for inlining. */
-  def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
-  def devWarning(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
+  def debuglog(msg:  => String): Unit  = if (settings.debug) log(msg)
+  def devWarning(msg: => String): Unit = if (settings.debug) Console.err println msg
   def throwableAsString(t: Throwable): String = "" + t
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
-  def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
+  def debugStack(t: Throwable): Unit   = devWarning(throwableAsString(t))
 
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg

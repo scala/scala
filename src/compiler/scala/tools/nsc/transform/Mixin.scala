@@ -86,7 +86,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  Note: The `checkinit` option does not check if transient fields are initialized.
    */
   private def needsInitFlag(sym: Symbol) = (
-        settings.checkInit.value
+        settings.checkInit
      && sym.isGetter
      && !sym.isInitializedToDefault
      && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED | LAZY)
@@ -125,7 +125,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
             " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
       while (!bcs.isEmpty && sym == NoSymbol) {
-        if (settings.debug.value) {
+        if (settings.debug) {
           val other = bcs.head.info.nonPrivateDecl(member.name)
           debuglog("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
               " " + other.isDeferred)
@@ -924,7 +924,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           else if (sym.isConstructor) {
             deriveDefDef(stat)(addInitBits(clazz, _))
           }
-          else if (settings.checkInit.value && !clazz.isTrait && sym.isSetter) {
+          else if (settings.checkInit && !clazz.isTrait && sym.isSetter) {
             val getter = sym.getter(clazz)
             if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
               deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))

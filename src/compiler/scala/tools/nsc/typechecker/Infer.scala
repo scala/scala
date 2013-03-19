@@ -131,7 +131,7 @@ trait Infer extends Checkable {
         else if (optionArgs.nonEmpty)
           if (nbSubPats == 1) {
             val productArity = productArgs.size
-            if (productArity > 1 && settings.lint.value)
+            if (productArity > 1 && settings.lint)
               global.currentUnit.warning(pos, s"extractor pattern binds a single value to a Product${productArity} of type ${optionArgs.head}")
             optionArgs
           }
@@ -283,7 +283,7 @@ trait Infer extends Checkable {
     def setError[T <: Tree](tree: T): T = {
       debuglog("set error: "+ tree)
       // this breaks -Ydebug pretty radically
-      // if (settings.debug.value) { // DEBUG
+      // if (settings.debug) { // DEBUG
       //   println("set error: "+tree);
       //   throw new Error()
       // }
@@ -337,7 +337,7 @@ trait Infer extends Checkable {
           sym1 = sym
 
         if (sym1 == NoSymbol) {
-          if (settings.debug.value) {
+          if (settings.debug) {
             Console.println(context)
             Console.println(tree)
             Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
@@ -377,7 +377,7 @@ trait Infer extends Checkable {
             try pre.memberType(sym1)
             catch {
               case ex: MalformedType =>
-                if (settings.debug.value) ex.printStackTrace
+                if (settings.debug) ex.printStackTrace
                 val sym2 = underlyingSymbol(sym1)
                 val itype = pre.memberType(sym2)
                 ErrorUtils.issueTypeError(
@@ -679,7 +679,7 @@ trait Infer extends Checkable {
         }
         case _ => context.tree.pos
       }
-      if (settings.warnInferAny.value && context.reportErrors && canWarnAboutAny) {
+      if (settings.warnInferAny && context.reportErrors && canWarnAboutAny) {
         foreachWithIndex(targs) ((targ, idx) =>
           targ.typeSymbol match {
             case sym @ (AnyClass | AnyValClass) =>
@@ -1312,7 +1312,7 @@ trait Infer extends Checkable {
         case _ =>
           def full = if (isFullyDefined(pt)) "(fully defined)" else "(not fully defined)"
           devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt $full")
-        // if (settings.explaintypes.value) explainTypes(resTp.instantiateTypeParams(undetparams, tvars), pt)
+        // if (settings.explaintypes) explainTypes(resTp.instantiateTypeParams(undetparams, tvars), pt)
         ConstrInstantiationError(tree, resTp, pt)
       }
     }
