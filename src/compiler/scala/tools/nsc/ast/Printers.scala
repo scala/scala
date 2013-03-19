@@ -200,15 +200,19 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     override def printTree(tree: Tree) { print(safe(tree)) }
   }
 
-  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
-  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
+  // render with current settings
+  private def renderWithSettings(t: Tree, tp: PrintWriter => TreePrinter) =
+    render(t, tp, printTypes = settings.printtypes, printIds = settings.uniqid, printKinds = settings.Yshowsymkinds)
+
+  def asString(t: Tree): String = renderWithSettings(t, newStandardTreePrinter)
+  def asCompactString(t: Tree): String = renderWithSettings(t, newCompactTreePrinter)
   def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newCompactTreePrinter(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
 
   override def newTreePrinter(writer: PrintWriter): TreePrinter =
-    if (settings.Ycompacttrees.value) newCompactTreePrinter(writer)
+    if (settings.Ycompacttrees) newCompactTreePrinter(writer)
     else newStandardTreePrinter(writer)
   override def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))
   override def newTreePrinter(): TreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))

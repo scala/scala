@@ -110,14 +110,14 @@ trait Printers { self: ICodes =>
       print(bb.label)
       if (bb.loopHeader) print("[loop header]")
       print(": ")
-      if (settings.debug.value) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
+      if (settings.debug) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
       indent(); println()
       bb.toList foreach printInstruction
       undent(); println()
     }
 
     def printInstruction(i: Instruction) {
-//      if (settings.Xdce.value)
+//      if (settings.Xdce)
 //        print(if (i.useful) "   " else " * ");
       if (i.pos.isDefined) print(i.pos.line.toString + "\t") else print("?\t")
       println(i.toString())

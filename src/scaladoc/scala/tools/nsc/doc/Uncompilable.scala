@@ -28,7 +28,7 @@ trait Uncompilable {
 
   lazy val pairs = files flatMap { f =>
     val comments = docPairs(f.slurp())
-    if (settings.verbose.value)
+    if (settings.verbose)
       inform("Found %d doc comments in parse-only file %s: %s".format(comments.size, f, comments.map(_._1).mkString(", ")))
 
     comments
@@ -37,7 +37,7 @@ trait Uncompilable {
   def symbols   = pairs map (_._1)
   def templates = symbols filter (x => x.isClass || x.isTrait || x == AnyRefClass/* which is now a type alias */) toSet
   def comments = {
-    if (settings.debug.value || settings.verbose.value)
+    if (settings.debug || settings.verbose)
       inform("Found %d uncompilable files: %s".format(files.size, files mkString ", "))
 
     if (pairs.isEmpty)

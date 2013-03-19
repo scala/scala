@@ -66,8 +66,7 @@ private[internal] trait TypeConstraints {
     def clear() {
       lock()
       try {
-        if (settings.debug.value)
-          self.log("Clearing " + log.size + " entries from the undoLog.")
+        if (settings.debug) self log s"Clearing ${log.size} entries from the undoLog."
         log = Nil
       } finally unlock()
     }

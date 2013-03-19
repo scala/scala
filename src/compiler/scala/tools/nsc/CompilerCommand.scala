@@ -5,7 +5,8 @@
 
 package scala.tools.nsc
 
-import io.File
+import scala.compat.Platform.EOL
+import scala.reflect.io.File
 
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], val settings: Settings) {
@@ -89,14 +90,14 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   def getInfoMessage(global: Global): String = {
     import settings._
-    if (help.value)               usageMsg + global.pluginOptionsHelp
-    else if (Xhelp.value)         xusageMsg
-    else if (Yhelp.value)         yusageMsg
-    else if (showPlugins.value)   global.pluginDescriptions
-    else if (showPhases.value)    global.phaseDescriptions + (
-      if (debug.value) "\n" + global.phaseFlagDescriptions else ""
+    if (help)               usageMsg + global.pluginOptionsHelp
+    else if (Xhelp)         xusageMsg
+    else if (Yhelp)         yusageMsg
+    else if (showPlugins)   global.pluginDescriptions
+    else if (showPhases)    global.phaseDescriptions + (
+      if (debug) EOL + global.phaseFlagDescriptions else ""
     )
-    else                          ""
+    else                    ""
   }
 
   /**

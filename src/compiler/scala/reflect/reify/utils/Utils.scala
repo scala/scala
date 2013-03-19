@@ -15,7 +15,7 @@ trait Utils extends NodePrinters
   def getReifier: Reifier { val global: Utils.this.global.type } = ???
   def hasReifier = false
 
-  val reifyDebug = global.settings.Yreifydebug.value
-  val reifyCopypaste = global.settings.Yreifycopypaste.value
+  val reifyDebug: Boolean     = global.settings.Yreifydebug
+  val reifyCopypaste: Boolean = global.settings.Yreifycopypaste
   val reifyTrace = scala.tools.nsc.util.trace when reifyDebug
 }

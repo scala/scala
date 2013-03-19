@@ -382,7 +382,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        * has specialized fields, and their initialization should be deferred to the subclass, method
        * 'specInstance$' is added in phase specialize.
        */
-      def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
+      def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization) stats else {
         // split the statements in presuper and postsuper
     //    var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
       //  if (postfix.nonEmpty) {

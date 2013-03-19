@@ -25,32 +25,22 @@ abstract class AbstractReporter extends Reporter {
     positions.clear()
   }
 
-  private def isVerbose   = settings.verbose.value
-  private def noWarnings  = settings.nowarnings.value
-  private def isPromptSet = settings.prompt.value
-
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
-    if (severity == INFO) {
-      if (isVerbose || force) {
-        severity.count += 1
-        display(pos, msg, severity)
-      }
+    import settings.{ nowarnings => noWarnings, _ }
+    def info0Prefix(p: String) {
+      severity.count += 1
+      display(pos, if (p != null) p + msg else msg, severity)
     }
-    else {
-      val hidden = testAndLog(pos, severity)
-      if (severity == WARNING && noWarnings) ()
-      else {
-        if (!hidden || isPromptSet) {
-          severity.count += 1
-          display(pos, msg, severity)
-        } else if (settings.debug.value) {
-          severity.count += 1
-          display(pos, "[ suppressed ] " + msg, severity)
-        }
-
-        if (isPromptSet)
-          displayPrompt()
-      }
+    severity match {
+      case INFO =>
+        if (verbose || force) info0Prefix(null)
+      case WARNING if noWarnings =>
+        testAndLog(pos, severity)
+      case _ =>
+        val hidden = testAndLog(pos, severity)
+        if (!hidden || prompt) info0Prefix(null)
+        else if (debug) info0Prefix("[ suppressed ] ")
+        if (prompt) displayPrompt()
     }
   }
 

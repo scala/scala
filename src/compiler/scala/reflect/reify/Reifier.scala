@@ -1,9 +1,10 @@
 package scala.reflect.reify
 
-import scala.tools.nsc.Global
+import scala.compat.Platform.EOL
 import scala.reflect.macros.ReificationException
 import scala.reflect.macros.UnexpectedReificationException
 import scala.reflect.reify.utils.Utils
+import scala.tools.nsc.Global
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.
  *  See more info in the comments to `reify` in scala.reflect.api.Universe.
@@ -57,7 +58,7 @@ abstract class Reifier extends States
 
       val result = reifee match {
         case tree: Tree =>
-          reifyTrace("reifying = ")(if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
+          reifyTrace("reifying = ")(resOf(tree))
           reifyTrace("reifee is located at: ")(tree.pos)
           reifyTrace("universe = ")(universe)
           reifyTrace("mirror = ")(mirror)
@@ -132,12 +133,18 @@ abstract class Reifier extends States
 
       untyped
     } catch {
-      case ex: ReificationException =>
-        throw ex
-      case ex: UnexpectedReificationException =>
-        throw ex
-      case ex: Throwable =>
-        throw new UnexpectedReificationException(defaultErrorPosition, "reification crashed", ex)
+      case e: ReificationException =>
+        throw e
+      case e: UnexpectedReificationException =>
+        throw e
+      case e: Throwable =>
+        throw new UnexpectedReificationException(defaultErrorPosition, "reification crashed", e)
     }
   }
+
+  // A thing that is reified is just a res. Provide an appropriate debug string.
+  def resOf(tree: Tree): String =
+    if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified)
+      s"$EOL${nodePrinters.nodeToString(tree).trim}"
+    else tree.toString
 }

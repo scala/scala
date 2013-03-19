@@ -54,7 +54,7 @@ trait ModelFactoryImplicitSupport {
   import settings.hardcoded
 
   // debugging:
-  val DEBUG: Boolean = settings.docImplicitsDebug.value
+  val DEBUG: Boolean = settings.docImplicitsDebug
   val ERROR: Boolean = true // currently we show all errors
   @inline final def debug(msg: => String) = if (DEBUG) settings.printMsg(msg)
   @inline final def error(msg: => String) = if (ERROR) settings.printMsg(msg)
@@ -241,7 +241,7 @@ trait ModelFactoryImplicitSupport {
       available match {
         case Some(true) =>
           Nil
-        case Some(false) if (!settings.docImplicitsShowAll.value) =>
+        case Some(false) if (!settings.docImplicitsShowAll) =>
           // if -implicits-show-all is not set, we get rid of impossible conversions (such as Numeric[String])
           throw new ImplicitNotFound(implType)
         case _ =>
@@ -430,7 +430,7 @@ trait ModelFactoryImplicitSupport {
 
         // check if it's shadowed by a member in the original class.
         val shadowed = membersByName.get(sym1.name).toList.flatten filter { other =>
-          !settings.docImplicitsSoundShadowing.value || !isDistinguishableFrom(tpe1, inTpl.sym.info.memberInfo(other.sym))
+          !settings.docImplicitsSoundShadowing || !isDistinguishableFrom(tpe1, inTpl.sym.info.memberInfo(other.sym))
         }
 
         // check if it's shadowed by another conversion.
