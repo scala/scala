@@ -382,7 +382,7 @@ trait StdNames {
     *  Otherwise `name` itself.
     */
     def originalName(name: Name): Name = name.toString lastIndexOf "$$" match {
-      case -1 => name
+      case -1 | 0 => name
       case idx0 =>
         // Sketchville - We've found $$ but if it's part of $$$ or $$$$
         // or something we need to keep the bonus dollars, so e.g. foo$$$outer
