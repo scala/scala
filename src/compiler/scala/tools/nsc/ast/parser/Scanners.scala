@@ -425,6 +425,7 @@ trait Scanners extends ScannersCommon {
               if (ch == '\"') {
                 nextRawChar()
                 if (ch == '\"') {
+                  offset += 3
                   nextRawChar()
                   getStringPart(multiLine = true)
                   sepRegions = STRINGPART :: sepRegions // indicate string part
@@ -434,6 +435,7 @@ trait Scanners extends ScannersCommon {
                   strVal = ""
                 }
               } else {
+                offset += 1
                 getStringPart(multiLine = false)
                 sepRegions = STRINGLIT :: sepRegions // indicate single line string part
               }
