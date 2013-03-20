@@ -1,15 +1,15 @@
 t5510.scala:2: error: unclosed string literal
   val s1 = s"xxx
-            ^
+             ^
 t5510.scala:3: error: unclosed string literal
   val s2 = s"xxx $x
                    ^
 t5510.scala:4: error: unclosed string literal
   val s3 = s"xxx $$
-            ^
+             ^
 t5510.scala:5: error: unclosed string literal
   val s4 = ""s"
-              ^
+               ^
 t5510.scala:6: error: unclosed multi-line string literal
   val s5 = ""s""" $s1 $s2 s"
                          ^
