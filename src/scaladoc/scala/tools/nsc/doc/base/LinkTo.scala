@@ -6,8 +6,6 @@ package scala.tools.nsc
 package doc
 package base
 
-import scala.collection._
-
 sealed trait LinkTo
 final case class LinkToMember[Mbr, Tpl](mbr: Mbr, tpl: Tpl) extends LinkTo
 final case class LinkToTpl[Tpl](tpl: Tpl) extends LinkTo

@@ -86,6 +86,9 @@ trait Typers extends Adaptations with Tags {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
+  private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
+  private final val InterpolatorIdentRegex = """\$\w+""".r
+
   // To enable decent error messages when the typer crashes.
   // TODO - this only catches trees which go through def typed,
   // but there are all kinds of back ways - typedClassDef, etc. etc.
@@ -1133,7 +1136,7 @@ trait Typers extends Adaptations with Tags {
                         if (settings.warnValueDiscard.value)
                           context.unit.warning(tree.pos, "discarded non-Unit value")
                         return typedPos(tree.pos, mode, pt) {
-                          Block(List(tree), Literal(Constant()))
+                          Block(List(tree), Literal(Constant(())))
                         }
                       }
                       else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
@@ -1248,7 +1251,7 @@ trait Typers extends Adaptations with Tags {
       val savedUndetparams = context.undetparams
       silent(_.instantiate(tree, mode, UnitClass.tpe)) orElse { _ =>
           context.undetparams = savedUndetparams
-          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
+          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
     }
@@ -1507,7 +1510,7 @@ trait Typers extends Adaptations with Tags {
      */
     private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean): Tree = {
       val app = treeInfo.dissectApplied(encodedtpt)
-      val (treeInfo.Applied(core, targs, argss), decodedtpt) = (app, app.callee)
+      val (treeInfo.Applied(core, targs, argss), decodedtpt) = ((app, app.callee))
       val argssAreTrivial = argss == Nil || argss == ListOfNil
 
       // we cannot avoid cyclic references with `initialize` here, because when type macros arrive,
@@ -2988,9 +2991,8 @@ trait Typers extends Adaptations with Tags {
             else if (isByNameParamType(formals.head)) NOmode
             else BYVALmode
           )
-          var tree = typedArg(args.head, mode, typedMode, adapted.head)
           // formals may be empty, so don't call tail
-          tree :: loop(args.tail, formals drop 1, adapted.tail)
+          typedArg(args.head, mode, typedMode, adapted.head) :: loop(args.tail, formals drop 1, adapted.tail)
         }
       }
       loop(args0, formals0, adapted0)
@@ -5140,6 +5142,19 @@ trait Typers extends Adaptations with Tags {
 
       def typedLiteral(tree: Literal) = {
         val value = tree.value
+        // Warn about likely interpolated strings which are missing their interpolators
+        if (settings.lint.value) value match {
+          case Constant(s: String) =>
+            def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
+            val shouldWarn = (
+                 (InterpolatorCodeRegex findFirstIn s).nonEmpty
+              || (names exists (n => context.lookupSymbol(n, _ => true).symbol.exists))
+            )
+            if (shouldWarn)
+              unit.warning(tree.pos, "looks like an interpolated String; did you forget the interpolator?")
+          case _ =>
+        }
+
         tree setType (
           if (value.tag == UnitTag) UnitClass.tpe
           else ConstantType(value))

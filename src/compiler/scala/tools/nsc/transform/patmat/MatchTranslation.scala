@@ -243,7 +243,7 @@ trait MatchTranslation { self: PatternMatching  =>
         if (!extractor.isTyped) ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
         // if (extractor.resultInMonad == ErrorType) throw new TypeError(pos, "Unsupported extractor type: "+ extractor.tpe)
 
-        debug.patmat("translateExtractorPattern checking parameter type: "+ (patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType))
+        debug.patmat("translateExtractorPattern checking parameter type: "+ ((patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType)))
 
         // must use type `tp`, which is provided by extractor's result, not the type expected by binder,
         // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation

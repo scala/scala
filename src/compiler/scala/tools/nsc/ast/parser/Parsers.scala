@@ -57,7 +57,7 @@ trait ParsersCommon extends ScannersCommon {
       if (in.token == LPAREN) inParens(body)
       else { accept(LPAREN) ; alt }
 
-    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant()))
+    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant(())))
     @inline final def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
 
     @inline final def inBraces[T](body: => T): T = {
@@ -71,7 +71,7 @@ trait ParsersCommon extends ScannersCommon {
       else { accept(LBRACE) ; alt }
 
     @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
-    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
+    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant(())))
     @inline final def dropAnyBraces[T](body: => T): T =
       if (in.token == LBRACE) inBraces(body)
       else body
@@ -1249,7 +1249,7 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-          else Literal(Constant())
+          else Literal(Constant(()))
           If(cond, thenp, elsep)
         }
         parseIf
@@ -1323,7 +1323,7 @@ self =>
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
-            Return(if (isExprIntro) expr() else Literal(Constant()))
+            Return(if (isExprIntro) expr() else Literal(Constant(())))
           }
         parseReturn
       case THROW =>
@@ -2524,7 +2524,7 @@ self =>
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
       if (in.token == LBRACE) constrBlock(vparamss)
-      else Block(List(selfInvocation(vparamss)), Literal(Constant()))
+      else Block(List(selfInvocation(vparamss)), Literal(Constant(())))
 
     /** {{{
      *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
@@ -2554,7 +2554,7 @@ self =>
           else Nil
         }
         accept(RBRACE)
-        Block(stats, Literal(Constant()))
+        Block(stats, Literal(Constant(())))
       }
 
     /** {{{
@@ -2760,7 +2760,7 @@ self =>
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
-        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant())))
+        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant(()))))
       )
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
@@ -2986,7 +2986,7 @@ self =>
         else List(tmplDef(pos, mods))
 
       in.token match {
-        case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
+        case RBRACE | CASE  => defs :+ (Literal(Constant(())) setPos o2p(in.offset))
         case _              => defs
       }
     }

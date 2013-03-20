@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import util.{ClassPath,JavaClassPath,MergedClassPath,DeltaClassPath}
+import util.{ClassPath,MergedClassPath,DeltaClassPath}
 import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform {

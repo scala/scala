@@ -131,7 +131,7 @@ abstract class TreeBuilder {
   }
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil => Literal(Constant())
+    case Nil => Literal(Constant(()))
     case List(tree) if flattenUnary => tree
     case _ => makeTuple(trees, isType = false)
   }
@@ -250,21 +250,21 @@ abstract class TreeBuilder {
   /** Create tree representing a while loop */
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
     val continu = atPos(o2p(body.pos pointOrElse wrappingPos(List(cond, body)).pos.endOrPoint)) { Apply(Ident(lname), Nil) }
-    val rhs = If(cond, Block(List(body), continu), Literal(Constant()))
+    val rhs = If(cond, Block(List(body), continu), Literal(Constant(())))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create tree representing a do-while loop */
   def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
     val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), If(cond, continu, Literal(Constant())))
+    val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create block of statements `stats`  */
   def makeBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) Literal(Constant())
-    else if (!stats.last.isTerm) Block(stats, Literal(Constant()))
+    if (stats.isEmpty) Literal(Constant(()))
+    else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 

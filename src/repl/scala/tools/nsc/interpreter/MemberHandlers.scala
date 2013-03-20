@@ -7,7 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
-import scala.reflect.internal.Flags._
 import scala.language.implicitConversions
 
 trait MemberHandlers {

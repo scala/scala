@@ -1269,7 +1269,7 @@ trait Infer extends Checkable {
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
             Some(targs)
           } catch ifNoInstance { msg =>
-            debuglog("NO INST "+ (tvars, tvars map (_.constr)))
+            debuglog("NO INST "+ ((tvars, tvars map (_.constr))))
             NoConstructorInstanceError(tree, resTp, pt, msg)
             None
           }
