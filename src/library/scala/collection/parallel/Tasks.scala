@@ -214,6 +214,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
 
 /** An implementation of tasks objects based on the Java thread pooling API. */
+@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
 trait ThreadPoolTasks extends Tasks {
   import java.util.concurrent._
 
@@ -322,6 +323,7 @@ trait ThreadPoolTasks extends Tasks {
 
 }
 
+@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
 object ThreadPoolTasks {
   import java.util.concurrent._
 
@@ -455,7 +457,7 @@ trait AdaptiveWorkStealingForkJoinTasks extends ForkJoinTasks with AdaptiveWorkS
 
 }
 
-
+@deprecated("Use `AdaptiveWorkStealingForkJoinTasks` instead.", "2.11.0")
 trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveWorkStealingTasks {
 
   class WrappedTask[R, Tp](val body: Task[R, Tp])
