@@ -503,8 +503,8 @@ abstract class ClassfileParser {
     val nameIdx      = in.nextChar
     currentClass     = pool.getClassName(nameIdx)
 
-    /** Parse parents for Java classes. For Scala, return AnyRef, since the real type will be unpickled.
-     *  Updates the read pointer of 'in'. */
+    /* Parse parents for Java classes. For Scala, return AnyRef, since the real type will be unpickled.
+     * Updates the read pointer of 'in'. */
     def parseParents: List[Type] = {
       if (isScala) {
         in.nextChar              // skip superclass
@@ -984,8 +984,8 @@ abstract class ClassfileParser {
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
     }
 
-    /** Parse and return a single annotation.  If it is malformed,
-     *  return None.
+    /* Parse and return a single annotation.  If it is malformed,
+     * return None.
      */
     def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = try {
       val attrType = pool.getType(attrNameIndex)
@@ -1030,7 +1030,7 @@ abstract class ClassfileParser {
         None // ignore malformed annotations
     }
 
-    /**
+    /*
      * Parse the "Exceptions" attribute which denotes the exceptions
      * thrown by a method.
      */
@@ -1046,8 +1046,8 @@ abstract class ClassfileParser {
       }
     }
 
-    /** Parse a sequence of annotations and attaches them to the
-     *  current symbol sym, except for the ScalaSignature annotation that it returns, if it is available. */
+    /* Parse a sequence of annotations and attaches them to the
+     * current symbol sym, except for the ScalaSignature annotation that it returns, if it is available. */
     def parseAnnotations(len: Int): Option[AnnotationInfo] =  {
       val nAttr = in.nextChar
       var scalaSigAnnot: Option[AnnotationInfo] = None
@@ -1173,7 +1173,7 @@ abstract class ClassfileParser {
      *  If the given name is not an inner class, it returns the symbol found in `definitions`.
      */
     def classSymbol(externalName: Name): Symbol = {
-      /** Return the symbol of `innerName`, having the given `externalName`. */
+      /* Return the symbol of `innerName`, having the given `externalName`. */
       def innerSymbol(externalName: Name, innerName: Name, static: Boolean): Symbol = {
         def getMember(sym: Symbol, name: Name): Symbol =
           if (static)

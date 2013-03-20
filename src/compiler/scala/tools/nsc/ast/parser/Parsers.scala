@@ -321,38 +321,38 @@ self =>
       accept(EOF)
 
       def mainModuleName = newTermName(settings.script.value)
-      /** If there is only a single object template in the file and it has a
-       *  suitable main method, we will use it rather than building another object
-       *  around it.  Since objects are loaded lazily the whole script would have
-       *  been a no-op, so we're not taking much liberty.
+      /* If there is only a single object template in the file and it has a
+       * suitable main method, we will use it rather than building another object
+       * around it.  Since objects are loaded lazily the whole script would have
+       * been a no-op, so we're not taking much liberty.
        */
       def searchForMain(): Option[Tree] = {
-        /** Have to be fairly liberal about what constitutes a main method since
-         *  nothing has been typed yet - for instance we can't assume the parameter
-         *  type will look exactly like "Array[String]" as it could have been renamed
-         *  via import, etc.
+        /* Have to be fairly liberal about what constitutes a main method since
+         * nothing has been typed yet - for instance we can't assume the parameter
+         * type will look exactly like "Array[String]" as it could have been renamed
+         * via import, etc.
          */
         def isMainMethod(t: Tree) = t match {
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
-        /** For now we require there only be one top level object. */
+        /* For now we require there only be one top level object. */
         var seenModule = false
         val newStmts = stmts collect {
           case t @ Import(_, _) => t
           case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
             seenModule = true
-            /** This slightly hacky situation arises because we have no way to communicate
-             *  back to the scriptrunner what the name of the program is.  Even if we were
-             *  willing to take the sketchy route of settings.script.value = progName, that
-             *  does not work when using fsc.  And to find out in advance would impose a
-             *  whole additional parse.  So instead, if the actual object's name differs from
-             *  what the script is expecting, we transform it to match.
+            /* This slightly hacky situation arises because we have no way to communicate
+             * back to the scriptrunner what the name of the program is.  Even if we were
+             * willing to take the sketchy route of settings.script.value = progName, that
+             * does not work when using fsc.  And to find out in advance would impose a
+             * whole additional parse.  So instead, if the actual object's name differs from
+             * what the script is expecting, we transform it to match.
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
           case _ =>
-            /** If we see anything but the above, fail. */
+            /* If we see anything but the above, fail. */
             return None
         }
         Some(makePackaging(0, emptyPkg, newStmts))
@@ -2265,8 +2265,8 @@ self =>
         accept(DOT)
         result
       }
-      /** Walks down import `foo.bar.baz.{ ... }` until it ends at a
-       *  an underscore, a left brace, or an undotted identifier.
+      /* Walks down import `foo.bar.baz.{ ... }` until it ends at a
+       * an underscore, a left brace, or an undotted identifier.
        */
       def loop(expr: Tree): Tree = {
         expr setPos expr.pos.makeTransparent

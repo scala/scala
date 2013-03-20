@@ -351,7 +351,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               else if (resultSym == ObjectClass) tree                                     // no cast necessary
               else gen.mkCast(tree, boxedResType)                                         // cast to expected type
 
-            /** Normal non-Array call */
+            /* Normal non-Array call */
             def genDefaultCall = {
               // reflective method call machinery
               val invokeName  = MethodClass.tpe member nme.invoke_                                  // scala.reflect.Method.invoke(...)
@@ -369,7 +369,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY)
             }
 
-            /** A possible primitive method call, represented by methods in BoxesRunTime. */
+            /* A possible primitive method call, represented by methods in BoxesRunTime. */
             def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
             def genValueCallWithTest = {
               getPrimitiveReplacementForStructuralCall(methSym.name) match {
@@ -380,7 +380,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               }
             }
 
-            /** A native Array call. */
+            /* A native Array call. */
             def genArrayCall = fixResult(
               methSym.name match {
                 case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
@@ -391,9 +391,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               mustBeUnit = methSym.name == nme.update
             )
 
-            /** A conditional Array call, when we can't determine statically if the argument is
-             *  an Array, but the structural type method signature is consistent with an Array method
-             *  so we have to generate both kinds of code.
+            /* A conditional Array call, when we can't determine statically if the argument is
+             * an Array, but the structural type method signature is consistent with an Array method
+             * so we have to generate both kinds of code.
              */
             def genArrayCallWithTest =
               IF ((qual1() GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall

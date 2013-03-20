@@ -513,7 +513,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      */
     def javaName(sym: Symbol): String = {
 
-        /**
+        /*
          * Checks if given symbol corresponds to inner class/object and add it to innerClassBuffer
          *
          * Note: This method is called recursively thus making sure that we add complete chain
@@ -608,9 +608,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
     def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
-      /** The outer name for this inner class. Note that it returns null
-       *  when the inner class should not get an index in the constant pool.
-       *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
+      /* The outer name for this inner class. Note that it returns null
+       * when the inner class should not get an index in the constant pool.
+       * That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
        */
       def outerName(innerSym: Symbol): String = {
         if (innerSym.originalEnclosingMethod != NoSymbol)
@@ -1044,9 +1044,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       val paramJavaTypes: List[asm.Type] = methodInfo.paramTypes map javaType
       // val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
-      /** Forwarders must not be marked final,
-       *  as the JVM will not allow redefinition of a final static method,
-       *  and we don't know what classes might be subclassing the companion class.  See SI-4827.
+      /* Forwarders must not be marked final,
+       * as the JVM will not allow redefinition of a final static method,
+       * and we don't know what classes might be subclassing the companion class.  See SI-4827.
        */
       // TODO: evaluate the other flags we might be dropping on the floor here.
       // TODO: ACC_SYNTHETIC ?
@@ -1270,8 +1270,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           case _                => None
         }
 
-        /** Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
-         *  This is important on Android because there is otherwise an interface explosion.
+        /* Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
+         * This is important on Android because there is otherwise an interface explosion.
          */
         def minimizeInterfaces(lstIfaces: List[Symbol]): List[Symbol] = {
           var rest   = lstIfaces
@@ -1847,7 +1847,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         val keyMax = keys(keys.length - 1)
 
         val isDenseEnough: Boolean = {
-          /** Calculate in long to guard against overflow. TODO what overflow??? */
+          /* Calculate in long to guard against overflow. TODO what overflow??? */
           val keyRangeD: Double = (keyMax.asInstanceOf[Long] - keyMin + 1).asInstanceOf[Double]
           val klenD:     Double = keys.length
           val kdensity:  Double = (klenD / keyRangeD)
@@ -1982,7 +1982,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       // Part 2 of genCode(): demarcating exception handler boundaries (visitTryCatchBlock() must be invoked before visitLabel() in genBlock())
       // ------------------------------------------------------------------------------------------------------------
 
-        /**Generate exception handlers for the current method.
+        /* Generate exception handlers for the current method.
          *
          * Quoting from the JVMS 4.7.3 The Code Attribute
          * The items of the Code_attribute structure are as follows:
@@ -2005,16 +2005,16 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
          */
         def genExceptionHandlers() {
 
-          /** Return a list of pairs of intervals where the handler is active.
-           *  Each interval is closed on both ends, ie. inclusive both in the left and right endpoints: [start, end].
-           *  Preconditions:
-           *    - e.covered non-empty
-           *  Postconditions for the result:
-           *    - always non-empty
-           *    - intervals are sorted as per `linearization`
-           *    - the argument's `covered` blocks have been grouped into maximally contiguous intervals,
-           *      ie. between any two intervals in the result there is a non-empty gap.
-           *    - each of the `covered` blocks in the argument is contained in some interval in the result
+          /* Return a list of pairs of intervals where the handler is active.
+           * Each interval is closed on both ends, ie. inclusive both in the left and right endpoints: [start, end].
+           * Preconditions:
+           *   - e.covered non-empty
+           * Postconditions for the result:
+           *   - always non-empty
+           *   - intervals are sorted as per `linearization`
+           *   - the argument's `covered` blocks have been grouped into maximally contiguous intervals,
+           *     ie. between any two intervals in the result there is a non-empty gap.
+           *   - each of the `covered` blocks in the argument is contained in some interval in the result
            */
           def intervals(e: ExceptionHandler): List[BlockInteval] = {
             assert(e.covered.nonEmpty, e)
@@ -2460,7 +2460,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           case icodes.mthdsCat =>
           def genMethodsInstr() = (instr: @unchecked) match {
 
-            /** Special handling to access native Array.clone() */
+            /* Special handling to access native Array.clone() */
             case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
               val target: String = javaType(call.targetTypeKind).getInternalName
               jcode.invokevirtual(target, "clone", mdesc_arrayClone)
@@ -2610,7 +2610,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
       }
 
-      /**
+      /*
        * Emits one or more conversion instructions based on the types given as arguments.
        *
        * @param from The type of the value to be converted into another type.
@@ -3171,7 +3171,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
       }
 
-      /**
+      /*
        * Computes a mapping from jump only block to its
        * final destination which is either a non-jump-only
        * block or, if it's in a jump-only block cycle, is

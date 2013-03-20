@@ -777,8 +777,8 @@ abstract class GenICode extends SubComponent  {
               ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx1)
               val cm = CALL_METHOD(sym, invokeStyle)
 
-              /** In a couple cases, squirrel away a little extra information in the
-               *  CALL_METHOD for use by GenASM.
+              /* In a couple cases, squirrel away a little extra information in the
+               * CALL_METHOD for use by GenASM.
                */
               fun match {
                 case Select(qual, _) =>
@@ -1470,11 +1470,11 @@ abstract class GenICode extends SubComponent  {
         ctx.makeLocal(l.pos, AnyRefClass.tpe, nme.EQEQ_LOCAL_VAR.toString)
       }
 
-      /** True if the equality comparison is between values that require the use of the rich equality
-        * comparator (scala.runtime.Comparator.equals). This is the case when either side of the
-        * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
-        * When it is statically known that both sides are equal and subtypes of Number of Character,
-        * not using the rich equality is possible (their own equals method will do ok.)*/
+      /* True if the equality comparison is between values that require the use of the rich equality
+       * comparator (scala.runtime.Comparator.equals). This is the case when either side of the
+       * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
+       * When it is statically known that both sides are equal and subtypes of Number of Character,
+       * not using the rich equality is possible (their own equals method will do ok.)*/
       def mustUseAnyComparator: Boolean = {
         def areSameFinals = l.tpe.isFinalType && r.tpe.isFinalType && (l.tpe =:= r.tpe)
         !areSameFinals && isMaybeBoxed(l.tpe.typeSymbol) && isMaybeBoxed(r.tpe.typeSymbol)
@@ -1568,12 +1568,12 @@ abstract class GenICode extends SubComponent  {
       debugassert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
-      /** Non-method term members are fields, except for module members. Module
-       *  members can only happen on .NET (no flatten) for inner traits. There,
-       *  a module symbol is generated (transformInfo in mixin) which is used
-       *  as owner for the members of the implementation class (so that the
-       *  backend emits them as static).
-       *  No code is needed for this module symbol.
+      /* Non-method term members are fields, except for module members. Module
+       * members can only happen on .NET (no flatten) for inner traits. There,
+       * a module symbol is generated (transformInfo in mixin) which is used
+       * as owner for the members of the implementation class (so that the
+       * backend emits them as static).
+       * No code is needed for this module symbol.
        */
       for (f <- cls.info.decls ; if !f.isMethod && f.isTerm && !f.isModule)
         ctx.clazz addField new IField(f)

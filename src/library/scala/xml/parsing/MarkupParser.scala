@@ -108,7 +108,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
         val ilen = inpStack.length
         //Console.println("  ilen = "+ilen+ " extIndex = "+extIndex);
         if ((ilen != extIndex) && (ilen > 0)) {
-          /** for external source, inpStack == Nil ! need notify of eof! */
+          /* for external source, inpStack == Nil ! need notify of eof! */
           pop()
         } else {
           reachedEof = true
@@ -880,7 +880,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       externalID()
     }
     else if (ch == 'P') {
-      /** PublicID (without system, only used in NOTATION) */
+      /* PublicID (without system, only used in NOTATION) */
       nextch()
       xToken("UBLIC")
       xSpace()

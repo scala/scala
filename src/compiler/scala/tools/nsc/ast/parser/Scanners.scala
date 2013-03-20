@@ -303,11 +303,11 @@ trait Scanners extends ScannersCommon {
         next.token = EMPTY
       }
 
-      /** Insert NEWLINE or NEWLINES if
-       *  - we are after a newline
-       *  - we are within a { ... } or on toplevel (wrt sepRegions)
-       *  - the current token can start a statement and the one before can end it
-       *  insert NEWLINES if we are past a blank line, NEWLINE otherwise
+      /* Insert NEWLINE or NEWLINES if
+       * - we are after a newline
+       * - we are within a { ... } or on toplevel (wrt sepRegions)
+       * - the current token can start a statement and the one before can end it
+       * insert NEWLINES if we are past a blank line, NEWLINE otherwise
        */
       if (!applyBracePatch() && afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
@@ -440,7 +440,7 @@ trait Scanners extends ScannersCommon {
               nextChar()
               base = 16
             } else {
-              /**
+              /*
                * What should leading 0 be in the future? It is potentially dangerous
                *  to let it be base-10 because of history.  Should it be an error? Is
                *  there a realistic situation where one would need it?
@@ -959,7 +959,7 @@ trait Scanners extends ScannersCommon {
       }
       token = INTLIT
 
-      /** When we know for certain it's a number after using a touch of lookahead */
+      /* When we know for certain it's a number after using a touch of lookahead */
       def restOfNumber() = {
         putChar(ch)
         nextChar()
@@ -987,8 +987,8 @@ trait Scanners extends ScannersCommon {
         val lookahead = lookaheadReader
         val c = lookahead.getc()
 
-        /** As of scala 2.11, it isn't a number unless c here is a digit, so
-         *  settings.future.value excludes the rest of the logic.
+        /* As of scala 2.11, it isn't a number unless c here is a digit, so
+         * settings.future.value excludes the rest of the logic.
          */
         if (settings.future.value && !isDigit(c))
           return setStrVal()
@@ -998,16 +998,16 @@ trait Scanners extends ScannersCommon {
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
             true
 
-          /** Backquoted idents like 22.`foo`. */
+          /* Backquoted idents like 22.`foo`. */
           case '`' =>
             return setStrVal()  /** Note the early return */
 
-          /** These letters may be part of a literal, or a method invocation on an Int.
+          /* These letters may be part of a literal, or a method invocation on an Int.
            */
           case 'd' | 'D' | 'f' | 'F' =>
             !isIdentifierPart(lookahead.getc())
 
-          /** A little more special handling for e.g. 5e7 */
+          /* A little more special handling for e.g. 5e7 */
           case 'e' | 'E' =>
             val ch = lookahead.getc()
             !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')

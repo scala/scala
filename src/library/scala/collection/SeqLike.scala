@@ -210,13 +210,13 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
       if (!hasNext)
         Iterator.empty.next()
 
-      /** Calculate this result. */
+      /* Calculate this result. */
       val buf = self.newBuilder
       for(k <- 0 until nums.length; j <- 0 until nums(k))
         buf += elms(offs(k)+j)
       val res = buf.result()
 
-      /** Prepare for the next call to next. */
+      /* Prepare for the next call to next. */
       var idx = nums.length - 1
       while (idx >= 0 && nums(idx) == cnts(idx))
         idx -= 1

@@ -302,7 +302,7 @@ trait ContextErrors {
           val target           = qual.tpe.widen
           def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
           def nameString       = decodeWithKind(name, owner)
-          /** Illuminating some common situations and errors a bit further. */
+          /* Illuminating some common situations and errors a bit further. */
           def addendum         = {
             val companion = {
               if (name.isTermName && owner.isPackageClass) {

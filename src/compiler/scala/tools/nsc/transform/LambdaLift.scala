@@ -253,8 +253,7 @@ abstract class LambdaLift extends InfoTransform {
         }
       }
 
-      /** Rename a trait's interface and implementation class in coordinated fashion.
-       */
+      /* Rename a trait's interface and implementation class in coordinated fashion. */
       def renameTrait(traitSym: Symbol, implSym: Symbol) {
         val originalImplName = implSym.name
         renameSym(traitSym)
@@ -457,7 +456,7 @@ abstract class LambdaLift extends InfoTransform {
               case arg => arg
             }
 
-            /** Wrap expr argument in new *Ref(..) constructor. But try/catch
+            /* Wrap expr argument in new *Ref(..) constructor. But try/catch
              * is a problem because a throw will clear the stack and post catch
              * we would expect the partially-constructed object to be on the stack
              * for the call to init. So we recursively

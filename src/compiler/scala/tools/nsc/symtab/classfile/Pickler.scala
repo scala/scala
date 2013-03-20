@@ -222,7 +222,7 @@ abstract class Pickler extends SubComponent {
         case NullaryMethodType(restpe) =>
           putType(restpe)
         case PolyType(tparams, restpe) =>
-          /** no longer needed since all params are now local
+          /* no longer needed since all params are now local
           tparams foreach { tparam =>
             if (!isLocal(tparam)) locals += tparam // similar to existential types, these tparams are local
           }

@@ -559,11 +559,11 @@ abstract class Erasure extends AddInterfaces
           case x          =>
             assert(x != ArrayClass)
             tree match {
-              /** Can't always remove a Box(Unbox(x)) combination because the process of boxing x
-               *  may lead to throwing an exception.
+              /* Can't always remove a Box(Unbox(x)) combination because the process of boxing x
+               * may lead to throwing an exception.
                *
-               *  This is important for specialization: calls to the super constructor should not box/unbox specialized
-               *  fields (see TupleX). (ID)
+               * This is important for specialization: calls to the super constructor should not box/unbox specialized
+               * fields (see TupleX). (ID)
                */
               case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
                 log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")

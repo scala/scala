@@ -29,7 +29,7 @@ object ClassPath {
   private def expandS(pattern: String): List[String] = {
     val wildSuffix = File.separator + "*"
 
-    /** Get all subdirectories, jars, zips out of a directory. */
+    /* Get all subdirectories, jars, zips out of a directory. */
     def lsDir(dir: Directory, filt: String => Boolean = _ => true) =
       dir.list filter (x => filt(x.name) && (x.isDirectory || isJarOrZip(x))) map (_.path) toList
 

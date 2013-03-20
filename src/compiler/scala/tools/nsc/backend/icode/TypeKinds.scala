@@ -130,21 +130,21 @@ trait TypeKinds { self: ICodes =>
    * The lub is based on the lub of scala types.
    */
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
-    /** The compiler's lub calculation does not order classes before traits.
-     *  This is apparently not wrong but it is inconvenient, and causes the
-     *  icode checker to choke when things don't match up.  My attempts to
-     *  alter the calculation at the compiler level were failures, so in the
-     *  interests of a working icode checker I'm making the adjustment here.
+    /* The compiler's lub calculation does not order classes before traits.
+     * This is apparently not wrong but it is inconvenient, and causes the
+     * icode checker to choke when things don't match up.  My attempts to
+     * alter the calculation at the compiler level were failures, so in the
+     * interests of a working icode checker I'm making the adjustment here.
      *
-     *  Example where we'd like a different answer:
+     * Example where we'd like a different answer:
      *
-     *    abstract class Tom
-     *    case object Bob extends Tom
-     *    case object Harry extends Tom
-     *    List(Bob, Harry)  // compiler calculates "Product with Tom" rather than "Tom with Product"
+     *   abstract class Tom
+     *   case object Bob extends Tom
+     *   case object Harry extends Tom
+     *   List(Bob, Harry)  // compiler calculates "Product with Tom" rather than "Tom with Product"
      *
-     *  Here we make the adjustment by rewinding to a pre-erasure state and
-     *  sifting through the parents for a class type.
+     * Here we make the adjustment by rewinding to a pre-erasure state and
+     * sifting through the parents for a class type.
      */
     def lub0(tk1: TypeKind, tk2: TypeKind): Type = enteringUncurry {
       val tp = global.lub(List(tk1.toType, tk2.toType))

@@ -501,7 +501,7 @@ trait DocComments { self: Global =>
         result
       }
 
-      /**
+      /*
        * work around the backticks issue suggested by Simon in
        * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
        * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup

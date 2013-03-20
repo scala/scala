@@ -873,8 +873,8 @@ trait Implicits {
         }
 
         if (best.isFailure) {
-          /** If there is no winner, and we witnessed and caught divergence,
-           *  now we can throw it for the error message.
+          /* If there is no winner, and we witnessed and caught divergence,
+           * now we can throw it for the error message.
            */
           if (divergence)
             throw DivergentImplicit
@@ -934,8 +934,8 @@ trait Implicits {
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
 
-      /** Populate implicit info map by traversing all parts of type `tp`.
-       *  Parameters as for `getParts`.
+      /* Populate implicit info map by traversing all parts of type `tp`.
+       * Parameters as for `getParts`.
        */
       def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
         case TypeRef(pre, sym, args) =>
@@ -967,13 +967,13 @@ trait Implicits {
             }
       }
 
-      /** Populate implicit info map by traversing all parts of type `tp`.
-       *  This method is performance critical.
-       *  @param tp   The type for which we want to traverse parts
-       *  @param infoMap  The infoMap in which implicit infos corresponding to parts are stored
-       *  @param seen     The types that were already visited previously when collecting parts for the given infoMap
-       *  @param pending  The set of static symbols for which we are currently trying to collect their parts
-       *                  in order to cache them in infoMapCache
+      /* Populate implicit info map by traversing all parts of type `tp`.
+       * This method is performance critical.
+       * @param tp   The type for which we want to traverse parts
+       * @param infoMap  The infoMap in which implicit infos corresponding to parts are stored
+       * @param seen     The types that were already visited previously when collecting parts for the given infoMap
+       * @param pending  The set of static symbols for which we are currently trying to collect their parts
+       *                 in order to cache them in infoMapCache
        */
       def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) {
         if (seen(tp))
@@ -1136,7 +1136,7 @@ trait Implicits {
       val full = flavor == FullManifestClass
       val opt = flavor == OptManifestClass
 
-      /** Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
+      /* Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
@@ -1145,12 +1145,12 @@ trait Implicits {
           mani
         }
 
-      /** Creates a tree representing one of the singleton manifests.*/
+      /* Creates a tree representing one of the singleton manifests.*/
       def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
         Select(gen.mkAttributedRef(FullManifestModule), name)
       }
 
-      /** Re-wraps a type in a manifest before calling inferImplicit on the result */
+      /* Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
         inferImplicit(tree, appliedType(manifestClass, tp), reportAmbiguous = true, isView = false, context).tree
 
