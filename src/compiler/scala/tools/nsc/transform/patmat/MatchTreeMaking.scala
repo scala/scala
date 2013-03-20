@@ -130,7 +130,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     }
 
     // unless we're optimizing, emit local variable bindings for all subpatterns of extractor/case class patterns
-    protected val debugInfoEmitVars = !settings.optimise.value
+    protected val debugInfoEmitVars: Boolean = !settings.optimise
 
     trait PreserveSubPatBinders extends TreeMaker {
       val subPatBinders: List[Symbol]
@@ -528,7 +528,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         val (suppression, requireSwitch): (Suppression, Boolean) =
-          if (settings.XnoPatmatAnalysis.value) (Suppression.NoSuppression, false)
+          if (settings.XnoPatmatAnalysis) (Suppression.NoSuppression, false)
           else scrut match {
             case Typed(tree, tpt) =>
               val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass

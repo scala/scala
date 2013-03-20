@@ -90,7 +90,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (!found.isErroneous && !req.isErroneous) {
           val msg = analyzer.ErrorUtils.typeErrorMsg(found, req, typer.infer.isPossiblyMissingArgs(found, req))
           typer.context.error(pos, analyzer.withAddendum(pos)(msg))
-          if (settings.explaintypes.value)
+          if (settings.explaintypes)
             explainTypes(found, req)
         }
       }
@@ -240,7 +240,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               // also exists in a superclass, because they may be surprised
               // to find out that a constructor parameter will shadow a
               // field. See SI-4762.
-              if (settings.lint.value) {
+              if (settings.lint) {
                 if (sym.isPrivateLocal && sym.paramss.isEmpty) {
                   qual.symbol.ancestors foreach { parent =>
                     parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
@@ -295,7 +295,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
             case Super(_, mix) =>
               if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
-                if (!settings.overrideVars.value)
+                if (!settings.overrideVars)
                   unit.error(tree.pos, "super may be not be used on " + sym.accessedOrSelf)
               } else if (isDisallowed(sym)) {
                 unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")

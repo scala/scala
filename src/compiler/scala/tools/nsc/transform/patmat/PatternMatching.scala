@@ -93,7 +93,7 @@ trait Debugging {
 
   // TODO: the inliner fails to inline the closures to debug.patmat unless the method is nested in an object
   object debug {
-    val printPatmat = global.settings.Ypatmatdebug.value
+    val printPatmat: Boolean = global.settings.Ypatmatdebug
     @inline final def patmat(s: => String) = if (printPatmat) println(s)
   }
 }

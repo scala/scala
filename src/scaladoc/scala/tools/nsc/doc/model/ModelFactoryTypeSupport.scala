@@ -140,7 +140,7 @@ trait ModelFactoryTypeSupport {
           }
 
           val prefix =
-            if (!settings.docNoPrefixes.value && needsPrefix && (bSym != AnyRefClass /* which we normalize */)) {
+            if (!settings.docNoPrefixes && needsPrefix && (bSym != AnyRefClass /* which we normalize */)) {
               if (!owner.isRefinementClass) {
                 val qName = makeQualifiedName(owner, Some(inTpl.sym))
                 if (qName != "") qName + "." else ""
@@ -308,7 +308,7 @@ trait ModelFactoryTypeSupport {
 
     // SI-4360: Entity caching depends on both the type AND the template it's in, as the prefixes might change for the
     // same type based on the template the type is shown in.
-    if (settings.docNoPrefixes.value)
+    if (settings.docNoPrefixes)
       typeCache.getOrElseUpdate(aType, createTypeEntity)
     else createTypeEntity
   }

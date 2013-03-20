@@ -190,7 +190,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def varianceString: String = variance.symbolicString
 
     override def flagMask =
-      if (settings.debug.value && !isAbstractType) AllFlags
+      if (settings.debug && !isAbstractType) AllFlags
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
@@ -202,7 +202,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def shortSymbolClass = shortClassOfInstance(this)
     def symbolCreationString: String = (
       "%s%25s | %-40s | %s".format(
-        if (settings.uniqid.value) "%06d | ".format(id) else "",
+        if (settings.uniqid) "%06d | ".format(id) else "",
         shortSymbolClass,
         name.decode + " in " + owner,
         rawFlagString
@@ -834,7 +834,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
          (this hasFlag FINAL | PACKAGE)
-      || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects.value)
+      || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects)
       || isTerm && (
              isPrivate
           || isLocal
@@ -1237,7 +1237,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // disabled to keep the method maximally hotspot-friendly:
     // def tpe: Type = {
     //   val result = tpe_*
-    //   if (settings.debug.value && result.typeArgs.nonEmpty)
+    //   if (settings.debug && result.typeArgs.nonEmpty)
     //     printCaller(s"""Call to ${this.tpe} created $result: call tpe_* or tpeHK""")("")
     //   result
     // }
@@ -1248,11 +1248,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def info: Type = try {
       var cnt = 0
       while (validTo == NoPeriod) {
-        //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
+        //if (settings.debug) System.out.println("completing " + this);//DEBUG
         assert(infos ne null, this.name)
         assert(infos.prev eq null, this.name)
         val tp = infos.info
-        //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
+        //if (settings.debug) System.out.println("completing " + this.rawname + tp.getClass());//debug
 
         if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
           lock {
@@ -2369,7 +2369,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       symbolKind.abbreviation
 
     final def kindString: String =
-      if (settings.debug.value) accurateKindString
+      if (settings.debug) accurateKindString
       else sanitizedKindString
 
     /** If the name of the symbol's owner should be used when you care about
@@ -2391,12 +2391,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If settings.uniqid, adds id.
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
-    def nameString: String = (
-      if (!settings.uniqid.value && !settings.Yshowsymkinds.value) "" + originalName.decode
-      else if (settings.uniqid.value && !settings.Yshowsymkinds.value) originalName.decode + "#" + id
-      else if (!settings.uniqid.value && settings.Yshowsymkinds.value) originalName.decode + "#" + abbreviatedKindString
-      else originalName.decode + "#" + id + "#" + abbreviatedKindString
-    )
+    def nameString: String =
+      if (settings.uniqid || settings.Yshowsymkinds) {
+        val sb = new StringBuilder
+        sb append originalName.decode
+        if (settings.uniqid) sb append "#" append id
+        if (settings.Yshowsymkinds) sb append "#" append abbreviatedKindString
+        sb.toString
+      } else "" + originalName.decode
 
     def fullNameString: String = {
       def recur(sym: Symbol): String = {
@@ -2404,12 +2406,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (sym.owner.isEffectiveRoot) sym.nameString
         else recur(sym.effectiveOwner.enclClass) + "." + sym.nameString
       }
-
       recur(this)
     }
 
     /** If settings.uniqid is set, the symbol's id, else "" */
-    final def idString = if (settings.uniqid.value) "#"+id else ""
+    final def idString = if (settings.uniqid) "#"+id else ""
 
     /** String representation, including symbol's kind e.g., "class Foo", "method Bar".
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
@@ -2439,7 +2440,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
       def parents = (
-        if (settings.debug.value) parentsString(tp.parents)
+        if (settings.debug) parentsString(tp.parents)
         else briefParentsString(tp.parents)
       )
       if (isType) typeParamsString(tp) + (
@@ -2485,7 +2486,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** String representation of existentially bound variable */
     def existentialToString =
-      if (isSingletonExistential && !settings.debug.value)
+      if (isSingletonExistential && !settings.debug)
         "val " + tpnme.dropSingletonName(name) + ": " + dropSingletonType(info.bounds.hi)
       else defString
   }
@@ -2939,7 +2940,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
 
     override def nameString: String =
-      if (settings.debug.value) (super.nameString + "&" + level)
+      if (settings.debug) (super.nameString + "&" + level)
       else super.nameString
   }
 
@@ -3208,7 +3209,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
         globalError(missingMessage)
-        if (settings.debug.value)
+        if (settings.debug)
           (new Throwable).printStackTrace
 
         this setFlag IS_ERROR
@@ -3373,7 +3374,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug.value) printStackTrace()
+    if (settings.debug) printStackTrace()
   }
 
   /** A class for type histories */

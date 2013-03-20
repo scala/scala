@@ -199,7 +199,7 @@ abstract class CopyPropagation {
 
     override def run() {
       forwardAnalysis(blockTransfer)
-      if (settings.debug.value) {
+      if (settings.debug) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(in(b) != lattice.bottom,
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"))

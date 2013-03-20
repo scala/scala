@@ -103,12 +103,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   import definitions._
 
-  val debugIDE: Boolean = settings.YpresentationDebug.value
-  val verboseIDE: Boolean = settings.YpresentationVerbose.value
+  val debugIDE: Boolean   = settings.YpresentationDebug
+  val verboseIDE: Boolean = settings.YpresentationVerbose
 
-  private def replayName = settings.YpresentationReplay.value
-  private def logName = settings.YpresentationLog.value
-  private def afterTypeDelay = settings.YpresentationDelay.value
+  private def replayName  = settings.YpresentationReplay.value
+  private def logName     = settings.YpresentationLog.value
+  private def afterTypeDelay  = settings.YpresentationDelay.value
   private final val SleepTime = 10
 
   val log =
@@ -547,7 +547,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     for (s <- allSources; if !ignoredFiles(s.file); unit <- getUnit(s)) {
       try {
         if (!unit.isUpToDate)
-          if (unit.problems.isEmpty || !settings.YpresentationStrict.value)
+          if (unit.problems.isEmpty || !settings.YpresentationStrict)
             typeCheck(unit)
           else debugLog("%s has syntax errors. Skipped typechecking".format(unit))
         else debugLog("already up to date: "+unit)

@@ -46,7 +46,7 @@ trait Mirrors extends api.Mirrors {
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
-        if (settings.debug.value) { log(sym.info); log(sym.info.members) }//debug
+        if (settings.debug) { log(sym.info); log(sym.info.members) }//debug
         thisMirror.missingHook(owner, name) orElse {
           MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path+" in "+thisMirror)
         }

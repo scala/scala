@@ -8,7 +8,6 @@ package util
 import scala.tools.nsc.io.AbstractFile
 import java.security.cert.Certificate
 import java.security.{ ProtectionDomain, CodeSource }
-import util.ScalaClassLoader
 import java.net.{ URL, URLConnection, URLStreamHandler }
 import scala.collection.{ mutable, immutable }
 

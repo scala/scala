@@ -264,7 +264,7 @@ trait MatchTranslation { self: PatternMatching  =>
             // TODO: get to the bottom of this -- I assume it happens when type checking infers a weird type for an unapply call
             // by going back to the parameterType for the extractor call we get a saner type, so let's just do that for now
             /* TODO: uncomment when `settings.developer` and `devWarning` become available
-              if (settings.developer.value && !(patBinder.info =:= extractor.paramType))
+              if (settings.developer && !(patBinder.info =:= extractor.paramType))
                 devWarning(s"resetting info of $patBinder: ${patBinder.info} to ${extractor.paramType}")
             */
             (Nil, patBinder setInfo extractor.paramType, false)

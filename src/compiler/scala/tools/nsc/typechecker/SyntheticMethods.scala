@@ -93,7 +93,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     // like Tags and Arrays which are not robust and infer things
     // which they shouldn't.
     val accessorLub  = (
-      if (settings.Xexperimental.value) {
+      if (settings.Xexperimental) {
         global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
           case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
           case tp                                            => tp
@@ -337,7 +337,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         def shouldGenerate(m: Symbol) = {
           !hasOverridingImplementation(m) || {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
-              if (settings.lint.value) {
+              if (settings.lint) {
                 (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
                   currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
                 }

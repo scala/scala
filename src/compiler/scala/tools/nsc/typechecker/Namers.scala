@@ -669,7 +669,7 @@ trait Namers extends MethodSynthesis {
         m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
       }
       val owner = tree.symbol.owner
-      if (settings.lint.value && owner.isPackageObjectClass && !mods.isImplicit) {
+      if (settings.lint && owner.isPackageObjectClass && !mods.isImplicit) {
         context.unit.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
           "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
@@ -705,7 +705,7 @@ trait Namers extends MethodSynthesis {
           // check that lower bound is not an F-bound
           // but carefully: class Foo[T <: Bar[_ >: T]] should be allowed
           for (tp1 @ TypeRef(_, sym, _) <- lo) {
-            if (settings.breakCycles.value) {
+            if (settings.breakCycles) {
               if (!sym.maybeInitialize) {
                 log(s"Cycle inspecting $lo for possible f-bounds: ${sym.fullLocationString}")
                 return sym
@@ -1457,11 +1457,10 @@ trait Namers extends MethodSynthesis {
     }
 
     class LogTransitions[S](onEnter: S => String, onExit: S => String) {
-      val enabled = settings.debug.value
       @inline final def apply[T](entity: S)(body: => T): T = {
-        if (enabled) log(onEnter(entity))
+        if (settings.debug) log(onEnter(entity))
         try body
-        finally if (enabled) log(onExit(entity))
+        finally if (settings.debug) log(onExit(entity))
       }
     }
     private val logDefinition = new LogTransitions[Symbol](

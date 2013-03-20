@@ -35,8 +35,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
     } else if (sym != null && sym != NoSymbol) {
       val prefix = if (sym.isMixinConstructor) "/*%s*/".format(quotedName(sym.owner.name, decoded)) else ""
       var suffix = ""
-      if (settings.uniqid.value) suffix += ("#" + sym.id)
-      if (settings.Yshowsymkinds.value) suffix += ("#" + sym.abbreviatedKindString)
+      if (settings.uniqid) suffix += ("#" + sym.id)
+      if (settings.Yshowsymkinds) suffix += ("#" + sym.abbreviatedKindString)
       prefix + quotedName(tree.symbol.decodedName) + suffix
     } else {
       quotedName(name, decoded)
@@ -168,7 +168,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     )
 
     def printFlags(flags: Long, privateWithin: String) {
-      val mask: Long = if (settings.debug.value) -1L else PrintableFlags
+      val mask: Long = if (settings.debug) -1L else PrintableFlags
       val s = flagsToString(flags & mask, privateWithin)
       if (s != "") print(s + " ")
     }
@@ -375,7 +375,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           if (!qual.isEmpty) print(symName(tree, qual) + ".")
           print("this")
 
-        case Select(qual @ New(tpe), name) if (!settings.debug.value) =>
+        case Select(qual @ New(tpe), name) if (!settings.debug) =>
           print(qual)
 
         case Select(qualifier, name) =>

@@ -37,6 +37,6 @@ class Compiler(classpath: Array[URL], val settings: Settings)
       (result >> 16, result & 0x00FF)
     }
     catch {
-      case ex: Exception => throw CompilationFailure(ex.getMessage, ex)
+      case e: Exception => throw CompilationFailure(e.getMessage, e)
     }
 }
