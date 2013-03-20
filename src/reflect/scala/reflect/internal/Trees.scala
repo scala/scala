@@ -1434,6 +1434,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
   /** Substitute symbols in `from` with symbols in `to`. Returns a new
    *  tree using the new symbols and whose Ident and Select nodes are
    *  name-consistent with the new symbols.
+   *
+   *  Note: This is currently a destructive operation on the original Tree.
+   *  Trees currently assigned a symbol in `from` will be assigned the new symbols
+   *  without copying, and trees that define symbols with an `info` that refer
+   *  a symbol in `from` will have a new type assigned.
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
     val symSubst = new SubstSymMap(from, to)
@@ -1628,7 +1633,27 @@ trait Trees extends api.Trees { self: SymbolTable =>
       sys.error("Not a LabelDef: " + t + "/" + t.getClass)
   }
 
-// -------------- Classtags --------------------------------------------------------
+  /**
+   * Thanks to `InfoTransformer`-s, we routinely find that
+   *   `dd.symbol.info.typeParams != dd.tparamss map (_.symbol)`
+   *   `dd.symbol.info.paramss != mmap(dd.vparamss)(_.symbol)`
+   *
+   *  This method brings the two back into line, by substituting
+   *  the parameter symbols from the `info` into the tree.
+   */
+  // TODO consider calling this automatically after each compiler phase that has an info transformer.
+  final def substituteInfoParamsIntoDefDef(dd: DefDef): DefDef = {
+    val info        = dd.symbol.info
+    val infoParams  = info.paramss.flatten
+    val infoTParams = info.typeParams
+    val treeParams  = mmap(dd.vparamss)(_.symbol).flatten
+    val treeTParams = dd.tparams.map(_.symbol)
+
+    def subst(from: List[Symbol], to: List[Symbol]) = if (from == to) dd else dd.substituteSymbols(from, to)
+    subst(treeTParams ::: treeParams, infoTParams ::: infoParams).asInstanceOf[DefDef]
+  }
+
+  // -------------- Classtags --------------------------------------------------------
 
   implicit val TreeTag = ClassTag[Tree](classOf[Tree])
   implicit val TermTreeTag = ClassTag[TermTree](classOf[TermTree])
