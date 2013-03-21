@@ -803,8 +803,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     } reverse
   }
 
-  private def numberedPhase(ph: Phase) = "%2d/%s".format(ph.id, ph.name)
-
   // ------------ Invalidations ---------------------------------
 
   /** Is given package class a system package class that cannot be invalidated?

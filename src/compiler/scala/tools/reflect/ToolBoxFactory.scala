@@ -142,8 +142,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
         val expr1 = wrapper(transform(currentTyper, expr))
         var (dummies1, unwrapped) = expr1 match {
-          case Block(dummies, unwrapped) => (dummies, unwrapped)
-          case unwrapped => (Nil, unwrapped)
+          case Block(dummies, unwrapped) => ((dummies, unwrapped))
+          case unwrapped                 => ((Nil, unwrapped))
         }
         val invertedIndex = freeTerms map (_.swap)
         // todo. also fixup singleton types
@@ -369,7 +369,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     }
 
     private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = compiler.withCleanupCaches {
-      if (compiler.settings.verbose.value) println("importing "+pt, ", tree = "+tree+", pos = "+pos)
+      if (compiler.settings.verbose.value) println(s"importing pt=$pt, tree=$tree, pos=$pos")
       val ctree: compiler.Tree = importer.importTree(tree)
       val cpt: compiler.Type = importer.importType(pt)
       val cpos: compiler.Position = importer.importPosition(pos)

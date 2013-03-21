@@ -277,7 +277,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
-    if (elems.isEmpty) Literal(Constant())
+    if (elems.isEmpty) Literal(Constant(()))
     else Apply(
       Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
       elems)

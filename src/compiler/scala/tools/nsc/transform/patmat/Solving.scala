@@ -13,13 +13,6 @@ import scala.reflect.internal.util.Statistics
 trait Solving extends Logic {
   import PatternMatchingStats._
   trait CNF extends PropositionalLogic {
-
-    /** Override Array creation for efficiency (to not go through reflection). */
-    private implicit val clauseTag: scala.reflect.ClassTag[Clause] = new scala.reflect.ClassTag[Clause] {
-      def runtimeClass: java.lang.Class[Clause] = classOf[Clause]
-      final override def newArray(len: Int): Array[Clause] = new Array[Clause](len)
-    }
-
     import scala.collection.mutable.ArrayBuffer
     type FormulaBuilder = ArrayBuffer[Clause]
     def formulaBuilder  = ArrayBuffer[Clause]()

@@ -80,7 +80,7 @@ abstract class Duplicators extends Analyzer {
             BodyDuplicator.super.silent(_.typedType(Ident(sym.name))) match {
               case SilentResultValue(t) =>
                 sym1 = t.symbol
-                debuglog("fixed by trying harder: "+(sym, sym1, context))
+                debuglog("fixed by trying harder: "+((sym, sym1, context)))
               case _ =>
             }
           }

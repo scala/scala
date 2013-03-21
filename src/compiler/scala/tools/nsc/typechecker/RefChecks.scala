@@ -1124,7 +1124,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
      *     accessor for that field. The instance is created lazily, on first access.
      */
     private def eliminateModuleDefs(moduleDef: Tree): List[Tree] = exitingRefchecks {
-      val ModuleDef(mods, name, impl) = moduleDef
+      val ModuleDef(_, _, impl) = moduleDef
       val module        = moduleDef.symbol
       val site          = module.owner
       val moduleName    = module.name.toTermName
@@ -1485,7 +1485,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
-        if (t == EmptyTree) Literal(Constant()).setPos(tree.pos).setType(UnitClass.tpe) else t
+        if (t == EmptyTree) Literal(Constant(())).setPos(tree.pos).setType(UnitClass.tpe) else t
 
       cond.tpe match {
         case ConstantType(value) =>

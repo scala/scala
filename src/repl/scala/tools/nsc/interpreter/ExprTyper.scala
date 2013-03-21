@@ -13,7 +13,6 @@ trait ExprTyper {
 
   import repl._
   import global.{ reporter => _, Import => _, _ }
-  import definitions._
   import syntaxAnalyzer.UnitParser
   import naming.freshInternalVarName
 

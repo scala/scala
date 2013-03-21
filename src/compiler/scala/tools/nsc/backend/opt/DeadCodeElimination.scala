@@ -218,7 +218,7 @@ abstract class DeadCodeElimination extends SubComponent {
         // worklist so we also mark their reaching defs as useful - see SI-7060
         if (!useful(bb)(idx)) {
           useful(bb) += idx
-          dropOf.get(bb, idx) foreach {
+          dropOf.get((bb, idx)) foreach {
             for ((bb1, idx1) <- _) {
               /*
                * SI-7060: A drop that we now mark as useful can be reached via several paths,
@@ -346,7 +346,7 @@ abstract class DeadCodeElimination extends SubComponent {
           if (useful(bb)(idx)) {
             debuglog(" * " + i + " is useful")
             bb.emit(i, i.pos)
-            compensations.get(bb, idx) match {
+            compensations.get((bb, idx)) match {
               case Some(is) => is foreach bb.emit
               case None => ()
             }
