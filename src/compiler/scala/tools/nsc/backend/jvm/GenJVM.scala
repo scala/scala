@@ -1196,16 +1196,16 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         // info calls so that types are up to date; erasure may add lateINTERFACE to traits
         hostSymbol.info ; methodOwner.info
 
-        def isInterfaceCall(sym: Symbol) = (
-             sym.isInterface && methodOwner != ObjectClass
+        def needsInterfaceCall(sym: Symbol) = (
+             sym.isInterface
           || sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass)
         )
         // whether to reference the type of the receiver or
-        // the type of the method owner (if not an interface!)
+        // the type of the method owner
         val useMethodOwner = (
              style != Dynamic
-          || !isInterfaceCall(hostSymbol) && isAccessibleFrom(methodOwner, siteSymbol)
           || hostSymbol.isBottomClass
+          || methodOwner == ObjectClass
         )
         val receiver = if (useMethodOwner) methodOwner else hostSymbol
         val jowner   = javaName(receiver)
@@ -1230,11 +1230,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         style match {
-          case Static(true)                         => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
-          case Static(false)                        => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
-          case Dynamic if isInterfaceCall(receiver) => dbg("invokinterface"); jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
-          case Dynamic                              => dbg("invokevirtual");    jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
-          case SuperCall(_)                         =>
+          case Static(true)                            => dbg("invokespecial");    jcode.emitINVOKESPECIAL(jowner, jname, jtype)
+          case Static(false)                           => dbg("invokestatic");      jcode.emitINVOKESTATIC(jowner, jname, jtype)
+          case Dynamic if needsInterfaceCall(receiver) => dbg("invokinterface"); jcode.emitINVOKEINTERFACE(jowner, jname, jtype)
+          case Dynamic                                 => dbg("invokevirtual");    jcode.emitINVOKEVIRTUAL(jowner, jname, jtype)
+          case SuperCall(_)                            =>
             dbg("invokespecial")
             jcode.emitINVOKESPECIAL(jowner, jname, jtype)
             initModule()
