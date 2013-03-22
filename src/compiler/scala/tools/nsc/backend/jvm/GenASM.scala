@@ -105,29 +105,30 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           "Such classes will overwrite one another on case-insensitive filesystems.")
       }
 
-      debuglog("Created new bytecode generator for " + classes.size + " classes.")
+      debuglog(s"Created new bytecode generator for ${classes.size} classes.")
       val bytecodeWriter  = initBytecodeWriter(sortedClasses filter isJavaEntryPoint)
       val plainCodeGen    = new JPlainBuilder(bytecodeWriter)
       val mirrorCodeGen   = new JMirrorBuilder(bytecodeWriter)
       val beanInfoCodeGen = new JBeanInfoBuilder(bytecodeWriter)
 
-      while(!sortedClasses.isEmpty) {
-        val c = sortedClasses.head
-
+      def emitFor(c: IClass) {
         if (isStaticModule(c.symbol) && isTopLevelModule(c.symbol)) {
-          if (c.symbol.companionClass == NoSymbol) {
-            mirrorCodeGen.genMirrorClass(c.symbol, c.cunit)
-          } else {
-            log("No mirror class for module with linked class: " + c.symbol.fullName)
-          }
+          if (c.symbol.companionClass == NoSymbol)
+            mirrorCodeGen genMirrorClass (c.symbol, c.cunit)
+          else
+            log(s"No mirror class for module with linked class: ${c.symbol.fullName}")
         }
+        plainCodeGen genClass c
+        if (c.symbol hasAnnotation BeanInfoAttr) beanInfoCodeGen genBeanInfoClass c
+      }
 
-        plainCodeGen.genClass(c)
-
-        if (c.symbol hasAnnotation BeanInfoAttr) {
-          beanInfoCodeGen.genBeanInfoClass(c)
+      while (!sortedClasses.isEmpty) {
+        val c = sortedClasses.head
+        try emitFor(c)
+        catch {
+          case e: FileConflictException =>
+            c.cunit.error(c.symbol.pos, s"error writing ${c.symbol}: ${e.getMessage}")
         }
-
         sortedClasses = sortedClasses.tail
         classes -= c.symbol // GC opportunity
       }
@@ -454,7 +455,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     }
 
     // -----------------------------------------------------------------------------------------
-    // utitilies useful when emitting plain, mirror, and beaninfo classes.
+    // utilities useful when emitting plain, mirror, and beaninfo classes.
     // -----------------------------------------------------------------------------------------
 
     def writeIfNotTooBig(label: String, jclassName: String, jclass: asm.ClassWriter, sym: Symbol) {
@@ -1397,7 +1398,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       addInnerClasses(clasz.symbol, jclass)
       jclass.visitEnd()
       writeIfNotTooBig("" + c.symbol.name, thisName, jclass, c.symbol)
-
     }
 
     /**
@@ -2903,7 +2903,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                                      JAVA_LANG_OBJECT.getInternalName,
                                      EMPTY_STRING_ARRAY)
 
-      log("Dumping mirror class for '%s'".format(mirrorName))
+      log(s"Dumping mirror class for '$mirrorName'")
 
       // typestate: entering mode with valid call sequences:
       //   [ visitSource ] [ visitOuterClass ] ( visitAnnotation | visitAttribute )*
@@ -2926,8 +2926,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       mirrorClass.visitEnd()
       writeIfNotTooBig("" + modsym.name, mirrorName, mirrorClass, modsym)
     }
-
-
   } // end of class JMirrorBuilder
 
 
