@@ -1,13 +1,10 @@
 package scala.tools
 package partest
 
-import nsc.io.{ File, Path, Directory }
-import scala.tools.util.PathResolver
-import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
-import java.lang.Runtime.getRuntime
+import scala.tools.nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
+import java.lang.Runtime.{ getRuntime => runtime }
 
 object PartestDefaults {
-  import nsc.Properties._
 
   def testRootName  = propOrNone("partest.root")
   def srcDirName    = propOrElse("partest.srcdir", "files")
@@ -23,7 +20,7 @@ object PartestDefaults {
 
   def testBuild  = propOrNone("partest.build")
   def errorCount = propOrElse("partest.errors", "0").toInt
-  def numThreads = propOrNone("partest.threads") map (_.toInt) getOrElse getRuntime.availableProcessors
+  def numThreads = propOrNone("partest.threads") map (_.toInt) getOrElse runtime.availableProcessors
 
   def timeout     = "1200000"
 }

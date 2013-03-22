@@ -81,6 +81,7 @@ targets exercised:
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="partest.dir" value="${basedir}/test"/>
+  <property name="partest.kinds" value="pos neg run jvm res scalap scalacheck specialized instrumented presentation"/>
 
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <!-- For developers: any jars placed in this dir will be added to the classpath
@@ -119,7 +120,7 @@ targets exercised:
   <property name="dists.dir" value="${basedir}/dists"/>
 
   <property name="copyright.string" value="Copyright 2002-2013, LAMP/EPFL"/>
-  <property name="partest.version.number" value="0.9.2"/>
+  <property name="partest.version.number" value="0.9.3"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
@@ -1363,69 +1364,56 @@ targets exercised:
 
   <property name="partest.srcdir" value="files" /> <!-- TODO: make targets for `pending` and other subdirs -->
 
-  <target name="test.run" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="1200000"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise}">
-
-      <compilationpath refid="partest.classpath"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
-      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
-    </partest>
+  <target name="test.run">
+    <antcall target="test.suite" inheritRefs="true">
+      <param name="partest.kinds" value="run jvm"/>
+    </antcall>
   </target>
 
+  <!-- suspended animation
+  <target name="test.ant">
+    <antcall target="test.suite" inheritRefs="true">
+      <param name="partest.kinds" value="ant"/>
+    </antcall>
+  </target>
+  -->
+
+  <target name="test.scaladoc">
+    <antcall target="test.suite" inheritRefs="true">
+      <param name="partest.srcdir" value="scaladoc"/>
+      <param name="partest.kinds" value="run scalacheck"/>
+    </antcall>
+  </target>
+
+  <target name="test.interactive">
+    <antcall target="test.suite" inheritRefs="true">
+      <param name="partest.kinds" value="presentation"/>
+    </antcall>
+  </target>
+
+
+  <target name="test.continuations.suite">
+    <antcall target="test.suite" inheritRefs="true">
+      <param name="partest.scalacopts" value="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable" />
+      <param name="partest.kinds" value="continuations-neg continuations-run"/>
+    </antcall>
+  </target>
+
+  <target name="test.suite.color">
+    <antcall target="test.suite" inheritRefs="true">
+      <param name="partest.colors" value="8"/>
+    </antcall>
+  </target>
+
+  <!-- obsolete: partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java" timeout="2400000" -->
   <target name="test.suite" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="2400000"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise}">
-      <compilationpath refid="partest.classpath"/>
-      <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
-      <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
-      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
-      <residenttests dir="${partest.dir}/${partest.srcdir}/res" includes="*.res"/>
-      <scalaptests dir="${partest.dir}/${partest.srcdir}/scalap" includes="**/*.scala"/>
-      <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck">
-        <include name="*.scala"/>
-      </scalachecktests>
-      <specializedtests dir="${partest.dir}/${partest.srcdir}/specialized">
-        <include name="*.scala"/>
-      </specializedtests>
-      <instrumentedtests dir="${partest.dir}/${partest.srcdir}/instrumented">
-        <include name="*.scala"/>
-      </instrumentedtests>
-    </partest>
-  </target>
-
-  <target name="test.continuations.suite" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="2400000"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
-      <compilerarg value="-Xpluginsdir"/>
-      <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-      <compilationpath refid="partest.classpath"/>
-      <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}/continuations-run" includes="*.scala"/>
-    </partest>
-  </target>
-
-  <target name="test.scaladoc" depends="pack.done">
-    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath refid="partest.classpath"/>
-      <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
-      <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
-    </partest>
-  </target>
-
-  <target name="test.interactive" depends="pack.done">
-    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath refid="partest.classpath"/>
-      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
-        <include name="*/*.scala"/>
-      </presentationtests>
+    <property name="partest.srcdir" value="files" />
+    <property name="partest.scalacopts" value="${scalac.args.optimise}" />
+    <partest srcdir="${partest.srcdir}"
+             kinds="${partest.kinds}"
+             colors="${partest.colors}"
+             scalacOpts="${partest.scalacopts}">
+      <compilationpath refid="partest.classpath" />
     </partest>
   </target>
 
@@ -1855,16 +1843,6 @@ targets exercised:
   <target name="test.classload" depends="pack.done">
     <!-- TODO - Add actors + reflect to this -->
     <classloadVerify classpath="${build-pack.dir}/lib/scala-library.jar" />
-  </target>
-
-  <!-- not called by test target -->
-  <target name="test.ant" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise}">
-      <compilationpath refid="partest.classpath"/>
-      <anttests dir="${partest.dir}/${partest.srcdir}/ant" includes="*build.xml"/>
-    </partest>
   </target>
 
   <!-- not called by test target -->

@@ -3,20 +3,15 @@
  * @author Philipp Haller
  */
 
-// $Id$
+
 
 package scala.tools.partest
 package nest
 
-import java.io.{ File, FilenameFilter, IOException, StringWriter }
+import java.io.{ FilenameFilter, IOException }
 import java.net.URI
 import scala.util.Properties.{ propOrElse, scalaCmd, scalacCmd }
-import scala.tools.util.PathResolver
 import scala.tools.nsc.{ io, util }
-import util.{ ClassPath }
-import io.{ Path, Directory }
-import File.pathSeparator
-import ClassPath.{ join }
 import PathResolver.{ Environment, Defaults }
 
 class ConsoleFileManager extends FileManager {
@@ -55,7 +50,7 @@ class ConsoleFileManager extends FileManager {
   var JAVAC_CMD   = PartestDefaults.javacCmd
 
 
-  NestUI.verbose("CLASSPATH: "+CLASSPATH)
+  vlog("CLASSPATH: "+CLASSPATH)
 
   if (!srcDir.isDirectory) {
     NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
@@ -70,14 +65,14 @@ class ConsoleFileManager extends FileManager {
   }
 
   def findLatest() {
-    NestUI.verbose("test parent: "+testParent)
+    vlog("test parent: "+testParent)
 
-    def prefixFileWith(parent: File, relPath: String) = (io.File(parent) / relPath).toCanonical
+    def prefixFileWith(parent: File, relPath: String) = (SFile(parent) / relPath).toCanonical
     def prefixFile(relPath: String) = (testParent / relPath).toCanonical
 
     if (!testClasses.isEmpty) {
       testClassesDir = Path(testClasses.get).toCanonical.toDirectory
-      NestUI.verbose("Running with classes in "+testClassesDir)
+      vlog("Running with classes in "+testClassesDir)
 
       latestLibFile     = testClassesDir / "library"
       latestActorsFile  = testClassesDir / "library" / "actors"
@@ -87,7 +82,7 @@ class ConsoleFileManager extends FileManager {
     }
     else if (testBuild.isDefined) {
       val dir = Path(testBuild.get)
-      NestUI.verbose("Running on "+dir)
+      vlog("Running on "+dir)
       latestLibFile     = dir / "lib/scala-library.jar"
       latestActorsFile  = dir / "lib/scala-actors.jar"
       latestReflectFile = dir / "lib/scala-reflect.jar"
@@ -96,7 +91,7 @@ class ConsoleFileManager extends FileManager {
     }
     else {
       def setupQuick() {
-        NestUI.verbose("Running build/quick")
+        vlog("Running build/quick")
         latestLibFile     = prefixFile("build/quick/classes/library")
         latestActorsFile  = prefixFile("build/quick/classes/library/actors")
         latestReflectFile = prefixFile("build/quick/classes/reflect")
@@ -105,7 +100,7 @@ class ConsoleFileManager extends FileManager {
       }
 
       def setupInst() {
-        NestUI.verbose("Running dist (installed)")
+        vlog("Running dist (installed)")
         val p = testParent.getParentFile
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
         latestActorsFile  = prefixFileWith(p, "lib/scala-actors.jar")
@@ -115,7 +110,7 @@ class ConsoleFileManager extends FileManager {
       }
 
       def setupDist() {
-        NestUI.verbose("Running dists/latest")
+        vlog("Running dists/latest")
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
         latestActorsFile  = prefixFile("dists/latest/lib/scala-actors.jar")
         latestReflectFile = prefixFile("dists/latest/lib/scala-reflect.jar")
@@ -124,7 +119,7 @@ class ConsoleFileManager extends FileManager {
       }
 
       def setupPack() {
-        NestUI.verbose("Running build/pack")
+        vlog("Running build/pack")
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
         latestActorsFile  = prefixFile("build/pack/lib/scala-actors.jar")
         latestReflectFile = prefixFile("build/pack/lib/scala-reflect.jar")
@@ -170,11 +165,13 @@ class ConsoleFileManager extends FileManager {
   var latestReflectFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
-  def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
+  //def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
+  //def latestScalapFile: File = new File(latestLibFile.getParentFile, "scalap.jar")
   var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
 
+  /*
   def getFiles(kind: String, cond: Path => Boolean): List[File] = {
     def ignoreDir(p: Path) = List("svn", "obj") exists (p hasExtension _)
 
@@ -187,4 +184,6 @@ class ConsoleFileManager extends FileManager {
 
     ( if (failed) files filter (x => logFileExists(x, kind)) else files ) map (_.jfile)
   }
+  */
+  var latestFjbgFile: File = _
 }
