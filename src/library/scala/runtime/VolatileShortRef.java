@@ -17,4 +17,7 @@ public class VolatileShortRef implements java.io.Serializable {
     volatile public short elem;
     public VolatileShortRef(short elem) { this.elem = elem; }
     public String toString() { return java.lang.Short.toString(elem); }
+
+    public static VolatileShortRef create(short e) { return new VolatileShortRef(e); }
+    public static VolatileShortRef zero() { return new VolatileShortRef((short)0); }
 }

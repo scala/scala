@@ -17,4 +17,7 @@ public class BooleanRef implements java.io.Serializable {
     public boolean elem;
     public BooleanRef(boolean elem) { this.elem = elem; }
     public String toString() { return String.valueOf(elem); }
+
+    public static BooleanRef create(boolean e) { return new BooleanRef(e); }
+    public static BooleanRef zero() { return new BooleanRef(false); }
 }

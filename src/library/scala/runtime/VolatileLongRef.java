@@ -17,4 +17,7 @@ public class VolatileLongRef implements java.io.Serializable {
     volatile public long elem;
     public VolatileLongRef(long elem) { this.elem = elem; }
     public String toString() { return java.lang.Long.toString(elem); }
+
+    public static VolatileLongRef create(long e) { return new VolatileLongRef(e); }
+    public static VolatileLongRef zero() { return new VolatileLongRef(0); }
 }
