@@ -201,6 +201,16 @@ targets exercised:
         <!--<dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>-->
       </artifact:dependencies>
 
+      <!-- Download STARR via maven if `starr.version` is specified.
+           Want to slow down STARR changes, using only released versions. -->
+      <if><isset property="starr.version"/><then>
+        <artifact:dependencies pathId="starr.core.path">
+          <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
+          <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
+          <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
+        </artifact:dependencies>
+      </then></if>
+
       <property name="maven-deps-done" value="yep!"/>
     </then></if>
 
@@ -387,15 +397,35 @@ targets exercised:
       There must be a variable of the shape @{stage}.compiler.path  for all @{stage} in starr, locker, quick, strap.
     -->
     <path id="starr.compiler.path">
-      <pathelement location="${library.starr.jar}"/>
-      <pathelement location="${reflect.starr.jar}"/>
-      <pathelement location="${compiler.starr.jar}"/>
-      <pathelement location="${msil.starr.jar}"/>
+      <path refid="starr.core.path"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
       <path refid="aux.libs"/>
     </path>
 
-    <path id="locker.compiler.path"><path refid="locker.compiler.build.path"/></path>
+    <!-- Download STARR (see above) via maven if `starr.version` is specified.
+         Want to slow down STARR changes, using only released versions. -->
+    <if><isset property="starr.version"/><then>
+      <property name="strr" refid="starr.compiler.path"/>
+      <echo message="Using Scala ${starr.version} for STARR."/>
+      <!-- <echo message="STARR classpath: ${strr}"/> -->
+    </then><else>
+      <path id="starr.core.path">
+        <pathelement location="${library.starr.jar}"/>
+        <pathelement location="${reflect.starr.jar}"/>
+        <pathelement location="${compiler.starr.jar}"/>
+        <pathelement location="${msil.starr.jar}"/>
+      </path>
+    </else></if>
+
+    <!-- Skip locker with -Dlocker.skip=YESSIR. Uses STARR instead. -->
+    <if><isset property="locker.skip"/><then>
+      <echo message="Skipping locker! Using STARR instead."/>
+      <path id="locker.compiler.path"><path refid="starr.compiler.path"/></path>
+      <property name="locker.locked" value="locker skipped"/></then>
+    <else>
+      <path id="locker.compiler.path"><path refid="locker.compiler.build.path"/></path></else></if>
+
+    <!-- compilerpathref for compiling with quick -->
     <path id="quick.compiler.path"> <path refid="quick.compiler.build.path"/></path>
 
 
