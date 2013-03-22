@@ -732,7 +732,7 @@ targets exercised:
 
     <sequential>
       <if><equals arg1="@{srcpath}" arg2="NOT SET"/><then>
-        <scalacfork
+        <scalacfork taskname="@{stage}.@{project}"
           destdir="${build-@{stage}.dir}/classes/@{destproject}"
           compilerpathref="@{with}.compiler.path"
           params="${scalac.args.@{stage}} @{args}"
@@ -743,7 +743,7 @@ targets exercised:
           <args/>
         </scalacfork></then>
       <else>
-        <scalacfork
+        <scalacfork taskname="@{stage}.@{project}"
           destdir="${build-@{stage}.dir}/classes/@{destproject}"
           compilerpathref="@{with}.compiler.path"
           srcpath="@{srcpath}"
