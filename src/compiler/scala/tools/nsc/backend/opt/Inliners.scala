@@ -342,7 +342,7 @@ abstract class Inliners extends SubComponent {
         inlineWithoutTFA(inputBlocks, callsites)
       }
 
-      /**
+      /*
        *  Inline straightforward callsites (those that can be inlined without a TFA).
        *
        *  To perform inlining, all we need to know is listed as formal params in `analyzeInc()`:
@@ -372,7 +372,7 @@ abstract class Inliners extends SubComponent {
         inlineCount
       }
 
-      /**
+      /*
        *  Decides whether it's feasible and desirable to inline the body of the method given by `concreteMethod`
        *  at the program point given by `i` (a callsite). The boolean result indicates whether inlining was performed.
        *
@@ -788,7 +788,7 @@ abstract class Inliners extends SubComponent {
 
         val varsInScope = mutable.HashSet[Local]() ++= block.varsInScope
 
-        /** Side effects varsInScope when it sees SCOPE_ENTERs. */
+        /* Side effects varsInScope when it sees SCOPE_ENTERs. */
         def instrBeforeFilter(i: Instruction): Boolean = {
           i match { case SCOPE_ENTER(l) => varsInScope += l ; case _ => () }
           i ne instr
@@ -801,7 +801,7 @@ abstract class Inliners extends SubComponent {
         // store the '$this' into the special local
         val inlinedThis = newLocal("$inlThis", REFERENCE(ObjectClass))
 
-        /** buffer for the returned value */
+        /* buffer for the returned value */
         val retVal = inc.m.returnType match {
           case UNIT  => null
           case x     => newLocal("$retVal", x)
@@ -809,7 +809,7 @@ abstract class Inliners extends SubComponent {
 
         val inlinedLocals = mutable.HashMap.empty[Local, Local]
 
-        /** Add a new block in the current context. */
+        /* Add a new block in the current context. */
         def newBlock() = {
           val b = caller.m.code.newBlock()
           activeHandlers foreach (_ addCoveredBlock b)
@@ -826,7 +826,7 @@ abstract class Inliners extends SubComponent {
           handler
         }
 
-        /** alfa-rename `l` in caller's context. */
+        /* alfa-rename `l` in caller's context. */
         def dupLocal(l: Local): Local = {
           val sym = caller.sym.newVariable(freshName(l.sym.name.toString), l.sym.pos)
           // sym.setInfo(l.sym.tpe)
@@ -837,10 +837,10 @@ abstract class Inliners extends SubComponent {
 
         val afterBlock = newBlock()
 
-        /** Map from nw.init instructions to their matching NEW call */
+        /* Map from nw.init instructions to their matching NEW call */
         val pending: mutable.Map[Instruction, NEW] = new mutable.HashMap
 
-        /** Map an instruction from the callee to one suitable for the caller. */
+        /* Map an instruction from the callee to one suitable for the caller. */
         def map(i: Instruction): Instruction = {
           def assertLocal(l: Local) = {
             assert(caller.locals contains l, "Could not find local '" + l + "' in locals, nor in inlinedLocals: " + inlinedLocals)

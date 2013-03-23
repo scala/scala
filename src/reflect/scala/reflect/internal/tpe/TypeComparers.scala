@@ -396,11 +396,11 @@ trait TypeComparers {
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
     if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType(tp1, tp2, depth)
 
-    /** First try, on the right:
-      *   - unwrap Annotated types, BoundedWildcardTypes,
-      *   - bind TypeVars  on the right, if lhs is not Annotated nor BoundedWildcard
-      *   - handle common cases for first-kind TypeRefs on both sides as a fast path.
-      */
+    /* First try, on the right:
+     *   - unwrap Annotated types, BoundedWildcardTypes,
+     *   - bind TypeVars  on the right, if lhs is not Annotated nor BoundedWildcard
+     *   - handle common cases for first-kind TypeRefs on both sides as a fast path.
+     */
     def firstTry = tp2 match {
       // fast path: two typerefs, none of them HK
       case tr2: TypeRef =>
@@ -445,11 +445,11 @@ trait TypeComparers {
         secondTry
     }
 
-    /** Second try, on the left:
-      *   - unwrap AnnotatedTypes, BoundedWildcardTypes,
-      *   - bind typevars,
-      *   - handle existential types by skolemization.
-      */
+    /* Second try, on the left:
+     *   - unwrap AnnotatedTypes, BoundedWildcardTypes,
+     *   - bind typevars,
+     *   - handle existential types by skolemization.
+     */
     def secondTry = tp1 match {
       case AnnotatedType(_, _, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
@@ -487,11 +487,11 @@ trait TypeComparers {
       }
     }
 
-    /** Third try, on the right:
-      *   - decompose refined types.
-      *   - handle typerefs and existentials.
-      *   - handle left+right method types, polytypes, typebounds
-      */
+    /* Third try, on the right:
+     *   - decompose refined types.
+     *   - handle typerefs and existentials.
+     *   - handle left+right method types, polytypes, typebounds
+     */
     def thirdTry = tp2 match {
       case tr2: TypeRef =>
         thirdTryRef(tp1, tr2)
@@ -532,9 +532,9 @@ trait TypeComparers {
         fourthTry
     }
 
-    /** Fourth try, on the left:
-      *   - handle typerefs, refined types, and singleton types.
-      */
+    /* Fourth try, on the left:
+     *   - handle typerefs, refined types, and singleton types.
+     */
     def fourthTry = {
       def retry(lhs: Type, rhs: Type)  = isSubType(lhs, rhs, depth)
       def abstractTypeOnLeft(hi: Type) = isDifferentTypeConstructor(tp1, hi) && retry(hi, tp2)

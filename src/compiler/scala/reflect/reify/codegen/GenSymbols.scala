@@ -42,7 +42,7 @@ trait GenSymbols {
     else if (sym.isPackage)
       mirrorMirrorCall(nme.staticPackage, reify(sym.fullName))
     else if (sym.isLocatable) {
-      /** This is a fancy conundrum that stems from the fact that Scala allows
+      /*  This is a fancy conundrum that stems from the fact that Scala allows
        *  packageless packages and packageless objects with the same names in the same program.
        *
        *  For more details read the docs to staticModule and staticPackage.

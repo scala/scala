@@ -1112,7 +1112,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   override def currentRunId = curRunId
 
   def echoPhaseSummary(ph: Phase) = {
-    /** Only output a summary message under debug if we aren't echoing each file. */
+    /* Only output a summary message under debug if we aren't echoing each file. */
     if (settings.debug.value && !(settings.verbose.value || currentRun.size < 5))
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
@@ -1206,7 +1206,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       curRunId += 1
       curRun = this
 
-      /** Set phase to a newly created syntaxAnalyzer and call definitions.init. */
+      /* Set phase to a newly created syntaxAnalyzer and call definitions.init. */
       val parserPhase: Phase = syntaxAnalyzer.newPhase(NoPhase)
       phase = parserPhase
       definitions.init()

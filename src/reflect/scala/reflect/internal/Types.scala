@@ -2825,10 +2825,10 @@ trait Types
        *  See SI-5359.
        */
       val bounds  = tparam.info.bounds
-      /** We can seed the type constraint with the type parameter
-       *  bounds as long as the types are concrete.  This should lower
-       *  the complexity of the search even if it doesn't improve
-       *  any results.
+      /* We can seed the type constraint with the type parameter
+       * bounds as long as the types are concrete.  This should lower
+       * the complexity of the search even if it doesn't improve
+       * any results.
        */
       if (propagateParameterBoundsToTypeVars) {
         val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
@@ -3533,7 +3533,7 @@ trait Types
     if (args.isEmpty)
       return tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
 
-    /** Disabled - causes cycles in tcpoly tests. */
+    /* Disabled - causes cycles in tcpoly tests. */
     if (false && isDefinitionsInitialized) {
       assert(isUseableAsTypeArgs(args), {
         val tapp_s = s"""$tycon[${args mkString ", "}]"""
@@ -4596,7 +4596,7 @@ object TypesStats {
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val typeOpsStack = Statistics.newTimerStack()
 
-  /** Commented out, because right now this does not inline, so creates a closure which will distort statistics
+  /* Commented out, because right now this does not inline, so creates a closure which will distort statistics
   @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
     val start = Statistics.pushTimer(typeOpsStack, c)
     try op

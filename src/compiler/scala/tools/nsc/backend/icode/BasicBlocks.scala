@@ -68,10 +68,10 @@ trait BasicBlocks {
           addBlock(scratchBlocks.head)
           scratchBlocks = scratchBlocks.tail
         }
-        /** Return a list of successors for 'b' that come from exception handlers
-         *  covering b's (non-exceptional) successors. These exception handlers
-         *  might not cover 'b' itself. This situation corresponds to an
-         *  exception being thrown as the first thing of one of b's successors.
+        /* Return a list of successors for 'b' that come from exception handlers
+         * covering b's (non-exceptional) successors. These exception handlers
+         * might not cover 'b' itself. This situation corresponds to an
+         * exception being thrown as the first thing of one of b's successors.
          */
         while (scratchHandlers ne Nil) {
           val handler = scratchHandlers.head
@@ -332,8 +332,8 @@ trait BasicBlocks {
 
       if (ignore) {
         if (settings.debug.value) {
-          /** Trying to pin down what it's likely to see after a block has been
-           *  put into ignore mode so we hear about it if there's a problem.
+          /* Trying to pin down what it's likely to see after a block has been
+           * put into ignore mode so we hear about it if there's a problem.
            */
           instr match {
             case JUMP(_) | RETURN(_) | THROW(_) | SCOPE_EXIT(_)               => // ok

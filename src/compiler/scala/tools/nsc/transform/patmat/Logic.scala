@@ -365,7 +365,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
        * and thus in this variable's equality symbols), but reachability also requires us to model things like V = 1 precluding V = "1"
        */
       lazy val implications = {
-        /** when we know V = C, which other equalities must hold
+        /* when we know V = C, which other equalities must hold
          *
          * in general, equality to some type implies equality to its supertypes
          * (this multi-valued kind of equality is necessary for unreachability)
@@ -384,7 +384,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // else  debug.patmat("NOT implies: "+(lower, upper))
 
 
-        /** does V = C preclude V having value `other`?
+        /* does V = C preclude V having value `other`?
          (1) V = null is an exclusive assignment,
          (2) V = A and V = B, for A and B value constants, are mutually exclusive unless A == B
              we err on the safe side, for example:

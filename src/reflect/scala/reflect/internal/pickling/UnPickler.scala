@@ -516,18 +516,18 @@ abstract class UnPickler {
       var mods: Modifiers = null
       var name: Name = null
 
-      /** Read a Symbol, Modifiers, and a Name */
+      /* Read a Symbol, Modifiers, and a Name */
       def setSymModsName() {
         symbol = readSymbolRef()
         mods = readModifiersRef()
         name = readNameRef()
       }
-      /** Read a Symbol and a Name */
+      /* Read a Symbol and a Name */
       def setSymName() {
         symbol = readSymbolRef()
         name = readNameRef()
       }
-      /** Read a Symbol */
+      /* Read a Symbol */
       def setSym() {
         symbol = readSymbolRef()
       }
