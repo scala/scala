@@ -1375,9 +1375,8 @@ trait Typers extends Modes with Adaptations with Tags {
       def onError(reportError: => Tree): Tree = {
         context.tree match {
           case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty =>
-            silent(_.typedArgs(args, mode)) match {
-              case SilentResultValue(xs) =>
-                val args = xs.asInstanceOf[List[Tree]]
+            silent(_.typedArgs(args.map(_.duplicate), mode)) match {
+              case SilentResultValue(args) =>
                 if (args exists (_.isErrorTyped))
                   reportError
                 else
@@ -4813,7 +4812,9 @@ trait Typers extends Modes with Adaptations with Tags {
 
         if (!reallyExists(sym)) {
           def handleMissing: Tree = {
-            if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
+            if (context.unit.isJava && name.isTypeName) {
+              // SI-3120 Java uses the same syntax, A.B, to express selection from the
+              // value A and from the type A. We have to try both.
               val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name) }
               if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
             }
@@ -5046,7 +5047,25 @@ trait Typers extends Modes with Adaptations with Tags {
                          else cx.depth - (cx.scope.nestingLevel - defEntry.owner.nestingLevel)
           var impSym: Symbol = NoSymbol      // the imported symbol
           var imports = context.imports      // impSym != NoSymbol => it is imported from imports.head
-          while (!reallyExists(impSym) && !imports.isEmpty && imports.head.depth > symDepth) {
+
+          // Java: A single-type-import declaration d in a compilation unit c of package p
+          // that imports a type named n shadows, throughout c, the declarations of:
+          //
+          //  1) any top level type named n declared in another compilation unit of p
+          //
+          // A type-import-on-demand declaration never causes any other declaration to be shadowed.
+          //
+          // Scala: Bindings of different kinds have a precedence deﬁned on them:
+          //
+          //  1) Deﬁnitions and declarations that are local, inherited, or made available by a
+          //     package clause in the same compilation unit where the deﬁnition occurs have
+          //     highest precedence.
+          //  2) Explicit imports have next highest precedence.
+          def depthOk(imp: ImportInfo) = (
+               imp.depth > symDepth
+            || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symDepth)
+          )
+          while (!reallyExists(impSym) && !imports.isEmpty && depthOk(imports.head)) {
             impSym = imports.head.importedSymbol(name)
             if (!impSym.exists) imports = imports.tail
           }

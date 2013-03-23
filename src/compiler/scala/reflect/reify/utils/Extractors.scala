@@ -164,51 +164,30 @@ trait Extractors {
     }
   }
 
-  object FreeDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
-      case FreeTermDef(uref, name, binding, flags, origin) =>
-        Some((uref, name, binding, flags, origin))
-      case FreeTypeDef(uref, name, binding, flags, origin) =>
-        Some((uref, name, binding, flags, origin))
-      case _ =>
-        None
+  sealed abstract class FreeDefExtractor(acceptTerms: Boolean, acceptTypes: Boolean) {
+    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = {
+      def acceptFreeTermFactory(name: Name) = {
+        (acceptTerms && name == nme.newFreeTerm) ||
+        (acceptTypes && name == nme.newFreeType)
+      }
+      tree match {
+        case
+          ValDef(_, name, _, Apply(
+            Select(Select(uref1 @ Ident(_), build1), freeTermFactory),
+            _ :+
+            Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))) :+
+            Literal(Constant(origin: String))))
+        if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && acceptFreeTermFactory(freeTermFactory) &&
+           uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
+          Some(uref1, name, reifyBinding(tree), flags, origin)
+        case _ =>
+          None
+      }
     }
   }
-
-  object FreeTermDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
-      case
-        ValDef(_, name, _, Apply(
-          Select(Select(uref1 @ Ident(_), build1), newFreeTerm),
-          List(
-            _,
-            _,
-            Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
-            Literal(Constant(origin: String)))))
-      if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeTerm == nme.newFreeTerm &&
-         uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, reifyBinding(tree), flags, origin)
-      case _ =>
-        None
-    }
-  }
-
-  object FreeTypeDef {
-    def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = tree match {
-      case
-        ValDef(_, name, _, Apply(
-          Select(Select(uref1 @ Ident(_), build1), newFreeType),
-          List(
-            _,
-            Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
-            Literal(Constant(origin: String)))))
-      if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newFreeType == nme.newFreeType &&
-         uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-        Some(uref1, name, reifyBinding(tree), flags, origin)
-      case _ =>
-        None
-    }
-  }
+  object FreeDef extends FreeDefExtractor(acceptTerms = true, acceptTypes = true)
+  object FreeTermDef extends FreeDefExtractor(acceptTerms = true, acceptTypes = false)
+  object FreeTypeDef extends FreeDefExtractor(acceptTerms = false, acceptTypes = true)
 
   object FreeRef {
     def unapply(tree: Tree): Option[(Tree, TermName)] = tree match {
