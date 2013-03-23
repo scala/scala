@@ -72,7 +72,7 @@ private[scala] trait PropertiesTrait {
    *  it is an RC, Beta, etc. or was built from source, or if the version
    *  cannot be read.
    */
-  val releaseVersion = 
+  val releaseVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if !(v endsWith "-SNAPSHOT")
@@ -86,7 +86,7 @@ private[scala] trait PropertiesTrait {
    *  @return Some(version) if this is a non-final version, None if this
    *  is a final release or the version cannot be read.
    */
-  val developmentVersion = 
+  val developmentVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if v endsWith "-SNAPSHOT"
@@ -150,18 +150,70 @@ private[scala] trait PropertiesTrait {
   def scalaCmd              = if (isWin) "scala.bat" else "scala"
   def scalacCmd             = if (isWin) "scalac.bat" else "scalac"
 
-  /** Can the java version be determined to be at least as high as the argument?
-   *  Hard to properly future proof this but at the rate 1.7 is going we can leave
-   *  the issue for our cyborg grandchildren to solve.
-   */
-  def isJavaAtLeast(version: String) = {
-    val okVersions = version match {
-      case "1.5"    => List("1.5", "1.6", "1.7")
-      case "1.6"    => List("1.6", "1.7")
-      case "1.7"    => List("1.7")
-      case _        => Nil
+
+  /** Compares the given Java version string to the runtime's Java version string.
+    *
+    * @return `true` iff the given Java version string denotes an equal or
+    * higher version compared to the Java version of the current runtime,
+    * `false` otherwise.
+    *
+    * @example {{{
+    * // In this example, the runtime's Java version is considered to be 1.7.0_17.
+    * isJavaAtLeast("1.6")            // true
+    * isJavaAtLeast("1.7")            // true
+    * isJavaAtLeast("1.8")            // false
+    * isJavaAtLeast("1.7.0")          // true
+    * isJavaAtLeast("1.7.0_17")       // true
+    * isJavaAtLeast("1.7.0_18")       // false
+    * isJavaAtLeast("1.7.0-internal") // true
+    * isJavaAtLeast("1.8.0-internal") // false
+    * }}}
+    */
+  def isJavaAtLeast(version: String): Boolean = {
+
+    def parseVersionString(version: String): Array[Int] = {
+      def readUntilNonDigit(startPos: Int): Array[Int] = {
+
+        var curPos = startPos
+        while (curPos < version.length && !version.charAt(curPos).isDigit) {
+          curPos += 1
+        }
+
+        var endPos = curPos
+        while (endPos < version.length && version.charAt(endPos).isDigit) {
+          endPos += 1
+        }
+
+        Array(curPos, endPos)
+      }
+
+      var pos = Array(0, 0)
+      var result = Array(-1, -1, -1, -1)
+
+      var i = 0
+      while (i < result.length) {
+        pos = readUntilNonDigit(pos(1))
+        val versionString = version.substring(pos(0), pos(1))
+        if (versionString.nonEmpty)
+          result(i) = versionString.toInt
+        i += 1
+      }
+
+      result
     }
-    okVersions exists (javaVersion startsWith _)
+
+    val versionParts = parseVersionString(version)
+    val javaVersionParts = parseVersionString(javaVersion)
+
+    var i = 0
+    while (i < versionParts.length) {
+      if (versionParts(i) > javaVersionParts(i))
+        return false
+      else if (versionParts(i) < javaVersionParts(i))
+        return true
+      i += 1
+    }
+    true
   }
 
   // provide a main method so version info can be obtained by running this
