@@ -1103,6 +1103,13 @@ QUICK BUILD (QUICK)
 
   <target name="quick.repl" depends="quick.pre-repl" unless="quick.repl.available">
     <mkdir dir="${build-quick.dir}/classes/repl"/>
+    <javac
+      srcdir="${src.dir}/repl"
+      destdir="${build-quick.dir}/classes/repl"
+      includes="**/*.java"
+      target="1.6" source="1.5">
+      <compilerarg line="${javac.args} -XDignore.symbol.file"/>
+    </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/repl"
       compilerpathref="quick.classpath"

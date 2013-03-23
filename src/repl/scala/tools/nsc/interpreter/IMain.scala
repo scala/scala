@@ -21,7 +21,7 @@ import scala.tools.nsc.util.Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
 import scala.reflect.BeanProperty
 import scala.util.Properties.versionString
-import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, SimpleBindings, CompiledScript, Compilable}
+import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 import java.io.{ StringWriter, Reader }
 import java.util.Arrays
 import IMain._
@@ -62,9 +62,10 @@ import StdReplTags._
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter) extends AbstractScriptEngine(new SimpleBindings) with Compilable with Imports {
+class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter) extends AbstractScriptEngine with Compilable with Imports {
   imain =>
 
+  setBindings(createBindings, ScriptContext.ENGINE_SCOPE)
   object replOutput extends ReplOutput(settings.Yreploutdir) { }
 
   @deprecated("Use replOutput.dir instead", "2.11.0")
@@ -554,7 +555,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   @throws(classOf[ScriptException])
   def compile(script: String): CompiledScript = {
     if (!bound) {
-      quietBind("bindings", getBindings(ScriptContext.ENGINE_SCOPE))
+      quietBind("engine", this.asInstanceOf[ScriptEngine])
       bound = true
     }
     val cat = code + script
@@ -969,7 +970,18 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
   }
 
-  def createBindings: Bindings = new SimpleBindings
+  def createBindings: Bindings = new IBindings {
+    override def put(name: String, value: Object): Object = {
+      val n = name.indexOf(":")
+      val p: NamedParam = if (n < 0) (name, value) else {
+        val nme = name.substring(0, n).trim
+        val tpe = name.substring(n + 1).trim
+        NamedParamClass(nme, tpe, value)
+      }
+      if (!p.name.startsWith("javax.script")) bind(p)
+      null
+    }
+  }
 
   @throws(classOf[ScriptException])
   def eval(script: String, context: ScriptContext): Object = compile(script).eval(context)
