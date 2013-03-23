@@ -3076,12 +3076,14 @@ trait Types extends api.Types { self: SymbolTable =>
     /** The variable's skolemization level */
     val level = skolemizationLevel
 
-    /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
-     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
+    /** Applies this TypeVar to type arguments, if arity matches.
      *
-     *  `constr` for `?CC` only tracks type constructors anyway,
-     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
-     *  `?CC's` hibounds contains List and Iterable.
+     * Different applications of the same type constructor variable `?CC`,
+     * e.g. `?CC[Int]` and `?CC[String]`, are modeled as distinct instances of `TypeVar`
+     * that share a `TypeConstraint`, so that the comparisons `?CC[Int] <:< List[Int]`
+     * and `?CC[String] <:< Iterable[String]` result in `?CC` being upper-bounded by `List` and `Iterable`.
+     *
+     * Applying the wrong number of type args results in a TypeVar whose instance is set to `ErrorType`.
      */
     def applyArgs(newArgs: List[Type]): TypeVar = (
       if (newArgs.isEmpty && typeArgs.isEmpty)
@@ -3091,7 +3093,7 @@ trait Types extends api.Types { self: SymbolTable =>
         TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
       }
       else
-        throw new Error("Invalid type application in TypeVar: " + params + ", " + newArgs)
+        TypeVar(typeSymbol).setInst(ErrorType)
     )
     // newArgs.length may differ from args.length (could've been empty before)
     //
@@ -3121,13 +3123,14 @@ trait Types extends api.Types { self: SymbolTable =>
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
     // (undoLog is used to reset constraints to avoid piling up unrelated ones)
-    def setInst(tp: Type) {
+    def setInst(tp: Type): this.type = {
 //      assert(!(tp containsTp this), this)
       undoLog record this
       // if we were compared against later typeskolems, repack the existential,
       // because skolems are only compatible if they were created at the same level
       val res = if (shouldRepackType) repackExistential(tp) else tp
       constr.inst = TypeVar.trace("setInst", "In " + originLocation + ", " + originName + "=" + res)(res)
+      this
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
