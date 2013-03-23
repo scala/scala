@@ -1152,7 +1152,7 @@ self =>
       val exprBuf = new ListBuffer[Tree]
       in.nextToken()
       while (in.token == STRINGPART) {
-        partsBuf += literal()
+        partsBuf += atPos(in.offset)(literal())
         exprBuf += {
           if (inPattern) dropAnyBraces(pattern())
           else {
@@ -1166,7 +1166,7 @@ self =>
           }
         }
       }
-      if (in.token == STRINGLIT) partsBuf += literal()
+      if (in.token == STRINGLIT) partsBuf += atPos(in.offset)(literal())
 
       val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
       val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
