@@ -6,6 +6,7 @@
 package scala.tools.nsc.doc.html
 
 import scala.xml.NodeSeq
+import scala.annotation.tailrec
 
 /** Highlight the syntax of Scala code appearing in a `{{{` wiki block
   * (see method `HtmlPage.blockToHtml`).
@@ -209,9 +210,9 @@ private[html] object SyntaxHigh {
       out.toString
     }
 
-    def parse(pre: String, i: Int): Int = {
+    @tailrec def parse(pre: String, i: Int): Unit = {
       out append pre
-      if (i == buf.length) return i
+      if (i == buf.length) return
       buf(i) match {
         case '\n' =>
           parse("\n", i+1)
@@ -277,7 +278,6 @@ private[html] object SyntaxHigh {
           } else
             parse(buf(i).toChar.toString, i+1)
       }
-      i
     }
 
     parse("", 0)
