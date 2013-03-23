@@ -111,7 +111,7 @@ trait NamesDefaults { self: Analyzer =>
     val context = typer.context
     import context.unit
 
-    /**
+    /*
      * Transform a function into a block, and passing context.namedApplyBlockInfo to
      * the new block as side-effect.
      *
@@ -256,7 +256,7 @@ trait NamesDefaults { self: Analyzer =>
       }
     }
 
-    /**
+    /*
      * For each argument (arg: T), create a local value
      *  x$n: T = arg
      *

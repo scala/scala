@@ -114,7 +114,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
         mapper
       ) map (x => new File(sourceDir, x))
 
-    /** Nothing to do. */
+    /* Nothing to do. */
     if (includedFiles.isEmpty && argfile.isEmpty)
       return
 

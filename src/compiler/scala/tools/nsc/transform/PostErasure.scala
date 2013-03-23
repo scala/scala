@@ -33,11 +33,11 @@ trait PostErasure extends InfoTransform with TypingTransformers {
     override def transform(tree: Tree) = {
       def finish(res: Tree) = logResult(s"Posterasure reduction\n  Old: $tree\n  New")(res)
 
-      /** We use the name of the operation being performed and not the symbol
-       *  itself because the symbol hails from the boxed class, and this transformation
-       *  exists to operate directly on the values. So we are for instance looking
-       *  up == on an lhs of type Int, whereas the symbol which has been passed in
-       *  is from java.lang.Integer.
+      /* We use the name of the operation being performed and not the symbol
+       * itself because the symbol hails from the boxed class, and this transformation
+       * exists to operate directly on the values. So we are for instance looking
+       * up == on an lhs of type Int, whereas the symbol which has been passed in
+       * is from java.lang.Integer.
        */
       def binop(lhs: Tree, op: Symbol, rhs: Tree) =
         finish(localTyper typed (Apply(Select(lhs, op.name) setPos tree.pos, rhs :: Nil) setPos tree.pos))

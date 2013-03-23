@@ -56,8 +56,8 @@ trait EtaExpansion { self: Analyzer =>
     }
     val defs = new ListBuffer[Tree]
 
-    /** Append to `defs` value definitions for all non-stable
-     *  subexpressions of the function application `tree`.
+    /* Append to `defs` value definitions for all non-stable
+     * subexpressions of the function application `tree`.
      */
     def liftoutPrefix(tree: Tree): Tree = {
       def liftout(tree: Tree, byName: Boolean): Tree =
@@ -106,8 +106,7 @@ trait EtaExpansion { self: Analyzer =>
       tree1
     }
 
-    /** Eta-expand lifted tree.
-     */
+    /* Eta-expand lifted tree. */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
       case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>
         val params: List[(ValDef, Boolean)] = paramSyms.map {

@@ -304,12 +304,11 @@ trait Infer extends Checkable {
 
     def isPossiblyMissingArgs(found: Type, req: Type) = (
       false
-      /** However it is that this condition is expected to imply
-       *  "is possibly missing args", it is too weak.  It is
-       *  better to say nothing than to offer misleading guesses.
+      /* However it is that this condition is expected to imply
+       * "is possibly missing args", it is too weak.  It is
+       * better to say nothing than to offer misleading guesses.
 
-         (found.resultApprox ne found)
-      && isWeaklyCompatible(found.resultApprox, req)
+       * (found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req)
       */
     )
 
@@ -511,8 +510,8 @@ trait Infer extends Checkable {
     */
     def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                       pt: Type): List[Type] = {
-      /** Map type variable to its instance, or, if `variance` is covariant/contravariant,
-       *  to its upper/lower bound */
+      /* Map type variable to its instance, or, if `variance` is covariant/contravariant,
+       * to its upper/lower bound */
       def instantiateToBound(tvar: TypeVar, variance: Variance): Type = {
         lazy val hiBounds = tvar.constr.hiBounds
         lazy val loBounds = tvar.constr.loBounds
@@ -1252,8 +1251,7 @@ trait Infer extends Checkable {
 
       debuglog("infer constr inst "+ tree +"/"+ undetparams +"/ pt= "+ pt +" pt0= "+ pt0 +" resTp: "+ resTp)
 
-      /** Compute type arguments for undetermined params
-       */
+      /* Compute type arguments for undetermined params */
       def inferFor(pt: Type): Option[List[Type]] = {
         val tvars   = undetparams map freshVar
         val resTpV  = resTp.instantiateTypeParams(undetparams, tvars)
@@ -1386,9 +1384,9 @@ trait Infer extends Checkable {
       def ptMatchesPattp = pt matchesPattern pattp.widen
       def pattpMatchesPt = pattp matchesPattern pt
 
-      /** If we can absolutely rule out a match we can fail early.
-       *  This is the case if the scrutinee has no unresolved type arguments
-       *  and is a "final type", meaning final + invariant in all type parameters.
+      /* If we can absolutely rule out a match we can fail early.
+       * This is the case if the scrutinee has no unresolved type arguments
+       * and is a "final type", meaning final + invariant in all type parameters.
        */
       if (pt.isFinalType && ptparams.isEmpty && !ptMatchesPattp) {
         IncompatibleScrutineeTypeError(tree0, pattp, pt)
@@ -1424,9 +1422,9 @@ trait Infer extends Checkable {
         }
         tvars foreach instantiateTypeVar
       }
-      /** If the scrutinee has free type parameters but the pattern does not,
-       *  we have to flip the arguments so the expected type is treated as more
-       *  general when calculating the intersection.  See run/bug2755.scala.
+      /* If the scrutinee has free type parameters but the pattern does not,
+       * we have to flip the arguments so the expected type is treated as more
+       * general when calculating the intersection.  See run/bug2755.scala.
        */
       if (tpparams.isEmpty && ptparams.nonEmpty) intersect(pattp, pt)
       else intersect(pt, pattp)

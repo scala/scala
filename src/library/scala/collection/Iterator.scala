@@ -555,7 +555,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     val self = buffered
 
-    /**
+    /*
      * Giving a name to following iterator (as opposed to trailing) because
      * anonymous class is represented as a structural type that trailing
      * iterator is referring (the finish() method) and thus triggering

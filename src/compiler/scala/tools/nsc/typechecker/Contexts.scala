@@ -532,7 +532,7 @@ trait Contexts { self: Analyzer =>
         case _ => false
       }
 
-      /** Is protected access to target symbol permitted */
+      /* Is protected access to target symbol permitted */
       def isProtectedAccessOK(target: Symbol) = {
         val c = enclosingSubClassContext(sym.owner)
         if (c == NoContext)

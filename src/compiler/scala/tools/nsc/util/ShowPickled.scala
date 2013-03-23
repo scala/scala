@@ -163,7 +163,7 @@ object ShowPickled extends Names {
         out.print(" %s[%s]".format(toHexString(pflags), flagString))
       }
 
-      /** Might be info or privateWithin */
+      /* Might be info or privateWithin */
       val x = buf.readNat()
       if (buf.readIndex == end) {
         printFlags(None)
@@ -175,9 +175,9 @@ object ShowPickled extends Names {
       }
     }
 
-    /** Note: the entries which require some semantic analysis to be correctly
-     *  interpreted are for the most part going to tell you the wrong thing.
-     *  It's not so easy to duplicate the logic applied in the UnPickler.
+    /* Note: the entries which require some semantic analysis to be correctly
+     * interpreted are for the most part going to tell you the wrong thing.
+     * It's not so easy to duplicate the logic applied in the UnPickler.
      */
     def printEntry(i: Int) {
       buf.readIndex = index(i)

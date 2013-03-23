@@ -281,8 +281,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
          else "")
       }
 
-      /** Check that all conditions for overriding `other` by `member`
-       *  of class `clazz` are met.
+      /* Check that all conditions for overriding `other` by `member`
+       * of class `clazz` are met.
        */
       def checkOverride(member: Symbol, other: Symbol) {
         debuglog("Checking validity of %s overriding %s".format(member.fullLocationString, other.fullLocationString))
@@ -361,8 +361,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
         }
 
-        /** Is the intersection between given two lists of overridden symbols empty?
-         */
+        /* Is the intersection between given two lists of overridden symbols empty? */
         def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) =
           !(syms1 exists (syms2 contains _))
 
@@ -736,9 +735,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
       }
 
-      /** Returns whether there is a symbol declared in class `inclazz`
-       *  (which must be different from `clazz`) whose name and type
-       *  seen as a member of `class.thisType` matches `member`'s.
+      /* Returns whether there is a symbol declared in class `inclazz`
+       * (which must be different from `clazz`) whose name and type
+       * seen as a member of `class.thisType` matches `member`'s.
        */
       def hasMatchingSym(inclazz: Symbol, member: Symbol): Boolean = {
         val isVarargs = hasRepeatedParam(member.tpe)
@@ -750,22 +749,22 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           matches(member.tpe) || (isVarargs && matches(varargsType))
         }
-        /** The rules for accessing members which have an access boundary are more
-         *  restrictive in java than scala.  Since java has no concept of package nesting,
-         *  a member with "default" (package-level) access can only be accessed by members
-         *  in the exact same package.  Example:
+        /* The rules for accessing members which have an access boundary are more
+         * restrictive in java than scala.  Since java has no concept of package nesting,
+         * a member with "default" (package-level) access can only be accessed by members
+         * in the exact same package.  Example:
          *
-         *    package a.b;
-         *    public class JavaClass { void foo() { } }
+         *   package a.b;
+         *   public class JavaClass { void foo() { } }
          *
-         *  The member foo() can be accessed only from members of package a.b, and not
-         *  nested packages like a.b.c.  In the analogous scala class:
+         * The member foo() can be accessed only from members of package a.b, and not
+         * nested packages like a.b.c.  In the analogous scala class:
          *
-         *    package a.b
-         *    class ScalaClass { private[b] def foo() = () }
+         *   package a.b
+         *   class ScalaClass { private[b] def foo() = () }
          *
-         *  The member IS accessible to classes in package a.b.c.  The javaAccessCheck logic
-         *  is restricting the set of matching signatures according to the above semantics.
+         * The member IS accessible to classes in package a.b.c.  The javaAccessCheck logic
+         * is restricting the set of matching signatures according to the above semantics.
          */
         def javaAccessCheck(sym: Symbol) = (
              !inclazz.isJavaDefined                             // not a java defined member
@@ -812,7 +811,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       for (i <- 0 until seenTypes.length)
         seenTypes(i) = Nil
 
-      /** validate all base types of a class in reverse linear order. */
+      /* validate all base types of a class in reverse linear order. */
       def register(tp: Type): Unit = {
 //        if (clazz.fullName.endsWith("Collection.Projection"))
 //            println("validate base type "+tp)
@@ -948,7 +947,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
         def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
 
-        /** Symbols which limit the warnings we can issue since they may be value types */
+        /* Symbols which limit the warnings we can issue since they may be value types */
         val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
 
         // Whether def equals(other: Any) has known behavior: it is the default
@@ -1455,11 +1454,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       val Select(qual, _) = tree
       val sym = tree.symbol
 
-      /** Note: if a symbol has both @deprecated and @migration annotations and both
-       *  warnings are enabled, only the first one checked here will be emitted.
-       *  I assume that's a consequence of some code trying to avoid noise by suppressing
-       *  warnings after the first, but I think it'd be better if we didn't have to
-       *  arbitrarily choose one as more important than the other.
+      /* Note: if a symbol has both @deprecated and @migration annotations and both
+       * warnings are enabled, only the first one checked here will be emitted.
+       * I assume that's a consequence of some code trying to avoid noise by suppressing
+       * warnings after the first, but I think it'd be better if we didn't have to
+       * arbitrarily choose one as more important than the other.
        */
       checkDeprecated(sym, tree.pos)
       if(settings.Xmigration.value != NoScalaVersion)

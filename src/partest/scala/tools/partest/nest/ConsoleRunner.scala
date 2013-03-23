@@ -76,7 +76,7 @@ class ConsoleRunner extends DirectRunner {
     val parsed = CommandLineParser(argstr) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
     val args   = onlyValidTestPaths(parsed.residualArgs)
 
-    /** Early return on no args, version, or invalid args */
+    /* Early return on no args, version, or invalid args */
     if (argstr == "") return NestUI.usage()
     if (parsed isSet "--version") return printVersion
     if (parsed isSet "--help") return NestUI.usage()

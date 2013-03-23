@@ -423,9 +423,7 @@ abstract class ConstantOptimization extends SubComponent {
         in1 mightEqual Possible(tagSet.toSet map { tag: Int => Const(Constant(tag)) })
       }
 
-      /**
-       * common code for interpreting CJUMP and CZJUMP
-       */
+      /* common code for interpreting CJUMP and CZJUMP */
       def interpretConditional(kind: TypeKind, val1: Contents, val2: Contents, success: BasicBlock, failure: BasicBlock, cond: TestOp): (Map[BasicBlock, State], List[Instruction]) = {
         // TODO use reaching analysis to update the state in the two branches
         // e.g. if the comparison was checking null equality on local x
