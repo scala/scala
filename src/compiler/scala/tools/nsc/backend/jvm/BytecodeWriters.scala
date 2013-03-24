@@ -41,6 +41,17 @@ trait BytecodeWriters {
   private def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
     getFile(outputDirectory(sym), clsName, suffix)
 
+  def factoryNonJarBytecodeWriter(): BytecodeWriter = {
+    val emitAsmp  = settings.Ygenasmp.isSetByUser
+    val doDump    = settings.Ydumpclasses.isSetByUser
+    (emitAsmp, doDump) match {
+      case (false, false) => new ClassBytecodeWriter { }
+      case (false, true ) => new ClassBytecodeWriter with DumpBytecodeWriter { }
+      case (true,  false) => new ClassBytecodeWriter with AsmpBytecodeWriter
+      case (true,  true ) => new ClassBytecodeWriter with AsmpBytecodeWriter with DumpBytecodeWriter { }
+    }
+  }
+
   trait BytecodeWriter {
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol): Unit
     def close(): Unit = ()
@@ -63,6 +74,43 @@ trait BytecodeWriters {
       informProgress("added " + label + path + " to jar")
     }
     override def close() = writer.close()
+  }
+
+  /*
+   * The ASM textual representation for bytecode overcomes disadvantages of javap ouput in three areas:
+   *    (a) pickle dingbats undecipherable to the naked eye;
+   *    (b) two constant pools, while having identical contents, are displayed differently due to physical layout.
+   *    (c) stack maps (classfile version 50 and up) are displayed in encoded form by javap,
+   *        their expansion by ASM is more readable.
+   *
+   * */
+  trait AsmpBytecodeWriter extends BytecodeWriter {
+    import scala.tools.asm
+
+    private val baseDir = Directory(settings.Ygenasmp.value).createDirectory()
+
+    private def emitAsmp(jclassBytes: Array[Byte], asmpFile: io.File) {
+      val pw = asmpFile.printWriter()
+      try {
+        val cnode = new asm.tree.ClassNode()
+        val cr    = new asm.ClassReader(jclassBytes)
+        cr.accept(cnode, 0)
+        val trace = new scala.tools.asm.util.TraceClassVisitor(new java.io.PrintWriter(new java.io.StringWriter()))
+        cnode.accept(trace)
+        trace.p.print(pw)
+      }
+      finally pw.close()
+    }
+
+    abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], sym: Symbol) {
+      super.writeClass(label, jclassName, jclassBytes, sym)
+
+      val segments = jclassName.split("[./]")
+      val asmpFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "asmp" toFile;
+
+      asmpFile.parent.createDirectory()
+      emitAsmp(jclassBytes, asmpFile)
+    }
   }
 
   trait ClassBytecodeWriter extends BytecodeWriter {

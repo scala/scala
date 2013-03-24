@@ -75,16 +75,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
           new DirectToJarfileWriter(f.file)
 
-        case _                               =>
-          if (settings.Ydumpclasses.isDefault)
-            new ClassBytecodeWriter { }
-          else
-            new ClassBytecodeWriter with DumpBytecodeWriter { }
-          // TODO A ScalapBytecodeWriter could take asm.util.Textifier as starting point.
-          //      Three areas where javap ouput is less than ideal (e.g. when comparing versions of the same classfile) are:
-          //        (a) unreadable pickle;
-          //        (b) two constant pools, while having identical contents, are displayed differently due to physical layout.
-          //        (c) stack maps (classfile version 50 and up) are displayed in encoded form by javap, their expansion makes more sense instead.
+        case _ => factoryNonJarBytecodeWriter()
       }
     }
 
