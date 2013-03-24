@@ -789,6 +789,7 @@ trait Scanners extends ScannersCommon {
       if (ch == '\\') {
         nextChar()
         if ('0' <= ch && ch <= '7') {
+          val start = charOffset - 2
           val leadch: Char = ch
           var oct: Int = digit2int(ch, 8)
           nextChar()
@@ -800,6 +801,12 @@ trait Scanners extends ScannersCommon {
               nextChar()
             }
           }
+          val alt = if (oct == LF) "\\n" else "\\u%04x" format oct
+          def msg(what: String) = s"Octal escape literals are $what, use $alt instead."
+          if (settings.future)
+            syntaxError(start, msg("unsupported"))
+          else
+            deprecationWarning(start, msg("deprecated"))
           putChar(oct.toChar)
         } else {
           ch match {
