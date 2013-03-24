@@ -236,13 +236,15 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           constrStatBuf += intoConstructor(impl.symbol, stat)
       }
 
-      // ----------- avoid making fields for symbols that are not accessed --------------
+      // ----------- avoid making parameter-accessor fields for symbols accessed only within the primary constructor --------------
 
       // A sorted set of symbols that are known to be accessed outside the primary constructor.
       val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
 
       // a list of outer accessor symbols and their bodies
       var outerAccessors: List[(Symbol, Tree)] = List()
+
+      val isDelayedInitSubclass = (clazz isSubClass DelayedInitClass)
 
       // Could symbol's definition be omitted, provided it is not accessed?
       // This is the case if the symbol is defined in the current class, and
@@ -251,7 +253,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
         sym.isParamAccessor && sym.isPrivateLocal ||
         sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol &&
-        !(clazz isSubClass DelayedInitClass)
+        !isDelayedInitSubclass
       )
 
       // Is symbol known to be accessed outside of the primary constructor,
@@ -568,7 +570,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        * particulars.
        */
       val needsDelayedInit =
-        (clazz isSubClass DelayedInitClass) /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty
+        isDelayedInitSubclass /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty
 
       if (needsDelayedInit) {
         val dicl = new ConstructorTransformer(unit) transform delayedInitClosure(remainingConstrStats)
