@@ -31,7 +31,7 @@ abstract class SymbolLoaders {
   }
 
   protected def signalError(root: Symbol, ex: Throwable) {
-    if (settings.debug.value) ex.printStackTrace()
+    if (settings.debug) ex.printStackTrace()
     globalError(ex.getMessage() match {
       case null => "i/o error while loading " + root.name
       case msg  => "error while loading " + root.name + ", " + msg
@@ -136,10 +136,10 @@ abstract class SymbolLoaders {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
-        if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
+        if (settings.verbose) inform("[symloader] picked up newer source file for " + src.path)
         global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
       case (None, Some(src)) =>
-        if (settings.verbose.value) inform("[symloader] no class, picked up source file for " + src.path)
+        if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
         global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
         global.loaders.enterClassAndModule(owner, classRep.name, platform.newClassLoader(bin))

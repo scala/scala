@@ -919,7 +919,7 @@ trait ContextErrors {
       def NotWithinBounds(tree: Tree, prefix: String, targs: List[Type],
                           tparams: List[Symbol], kindErrors: List[String]) =
         issueNormalTypeError(tree,
-          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes.value))
+          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes))
 
       //substExpr
       def PolymorphicExpressionInstantiationError(tree: Tree, undetparams: List[Symbol], pt: Type) =
@@ -1272,13 +1272,12 @@ trait ContextErrors {
     // not exactly an error generator, but very related
     // and I dearly wanted to push it away from Macros.scala
     private def checkSubType(slot: String, rtpe: Type, atpe: Type) = {
-      val ok = if (macroDebugVerbose) {
-        withTypesExplained(rtpe <:< atpe)
-      } else rtpe <:< atpe
+      val ok = if (macroDebugVerbose) withTypesExplained(rtpe <:< atpe) else rtpe <:< atpe
       if (!ok) {
         if (!macroDebugVerbose)
           explainTypes(rtpe, atpe)
-        compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, abbreviateCoreAliases(rtpe.toString), abbreviateCoreAliases(atpe.toString)))
+        def abbrev(t: Type) = abbreviateCoreAliases(t.toString)
+        compatibilityError(s"type mismatch for $slot: ${abbrev(rtpe)} does not conform to ${abbrev(atpe)}")
       }
     }
 
@@ -1364,7 +1363,7 @@ trait ContextErrors {
     }
 
     def MacroImplTargMismatchError(atargs: List[Type], atparams: List[Symbol]) =
-      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes.value))
+      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes))
 
     def MacroImplTparamInstantiationError(atparams: List[Symbol], ex: NoInstance) =
       compatibilityError(

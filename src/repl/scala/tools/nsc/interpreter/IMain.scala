@@ -97,10 +97,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def settings = initialSettings
   // Run the code body with the given boolean settings flipped to true.
   def withoutWarnings[T](body: => T): T = beQuietDuring {
-    val saved = settings.nowarn.value
-    if (!saved)
-      settings.nowarn.value = true
-
+    val saved: Boolean = settings.nowarn
+    // this has the side effect of setting setByUser
+    if (!saved) settings.nowarn.value = true
     try body
     finally if (!saved) settings.nowarn.value = false
   }
@@ -396,10 +395,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
   }
 
-  private[nsc] def replwarn(msg: => String) {
-    if (!settings.nowarnings.value)
-      printMessage(msg)
-  }
+  private[nsc] def replwarn(msg: => String): Unit =
+    if (!settings.nowarnings) printMessage(msg)
 
   def compileSourcesKeepingRun(sources: SourceFile*) = {
     val run = new Run()

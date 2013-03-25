@@ -88,7 +88,7 @@ class StandardCompileServer extends SocketServer {
     val args        = input.split("\0", -1).toList
     val newSettings = new FscSettings(fscError)
     val command     = new OfflineCompilerCommand(args, newSettings)
-    this.verbose    = newSettings.verbose.value
+    this.verbose    = newSettings.verbose
 
     info("Settings after normalizing paths: " + newSettings)
     if (!command.files.isEmpty) info("Input files after normalizing paths: " + (command.files mkString ","))
@@ -102,11 +102,11 @@ class StandardCompileServer extends SocketServer {
 
       this.idleMinutes = mins
     }
-    if (newSettings.shutdown.value) {
+    if (newSettings.shutdown) {
       shutdown = true
       return out.println("[Compile server exited]")
     }
-    if (newSettings.reset.value) {
+    if (newSettings.reset) {
       clearCompiler()
       out.println("[Compile server was reset]")
       if (command.files.isEmpty)

@@ -142,7 +142,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
 
       // This has become noisy with implicit classes.
-      if (settings.lint.value && settings.developer.value) {
+      if (settings.lint && settings.developer) {
         clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
           val alts = clazz.info.decl(sym.name).alternatives
           if (alts.size > 1)
@@ -307,7 +307,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
                 infoStringWithLocation(other),
                 infoStringWithLocation(member)
               )
-            else if (settings.debug.value)
+            else if (settings.debug)
               analyzer.foundReqMsg(member.tpe, other.tpe)
             else ""
 
@@ -407,7 +407,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
             // !?! this is not covered by the spec. We need to resolve this either by changing the spec or removing the test here.
             // !!! is there a !?! convention? I'm !!!ing this to make sure it turns up on my searches.
-            if (!settings.overrideVars.value)
+            if (!settings.overrideVars)
               overrideError("cannot override a mutable variable")
           }
           else if (member.isAnyOverride &&
@@ -431,7 +431,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           } else {
             checkOverrideTypes()
             checkOverrideDeprecated()
-            if (settings.warnNullaryOverride.value) {
+            if (settings.warnNullaryOverride) {
               if (other.paramss.isEmpty && !member.paramss.isEmpty) {
                 unit.warning(member.pos, "non-nullary method overrides nullary method")
               }
@@ -920,7 +920,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       def apply(tp: Type) = mapOver(tp).normalize
     }
 
-    def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.lint.value) (fn, args) match {
+    def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.lint) (fn, args) match {
       case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == Option_apply =>
         unit.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // SI-6567
       case _ =>
@@ -1199,7 +1199,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       catch {
         case ex: TypeError =>
           unit.error(tree0.pos, ex.getMessage())
-          if (settings.explaintypes.value) {
+          if (settings.explaintypes) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
             (argtps, bounds).zipped map ((targ, bound) => explainTypes(bound.lo, targ))
             (argtps, bounds).zipped map ((targ, bound) => explainTypes(targ, bound.hi))
@@ -1537,9 +1537,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)
             checkInfiniteLoop(tree.asInstanceOf[ValOrDefDef])
-            if (settings.warnNullaryUnit.value)
+            if (settings.warnNullaryUnit)
               checkNullaryMethodReturnType(sym)
-            if (settings.warnInaccessible.value) {
+            if (settings.warnInaccessible) {
               if (!sym.isConstructor && !sym.isEffectivelyFinal && !sym.isSynthetic)
                 checkAccessibilityOfReferencedTypes(tree)
             }
@@ -1642,7 +1642,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         result
       } catch {
         case ex: TypeError =>
-          if (settings.debug.value) ex.printStackTrace()
+          if (settings.debug) ex.printStackTrace()
           unit.error(tree.pos, ex.getMessage())
           tree
       } finally {

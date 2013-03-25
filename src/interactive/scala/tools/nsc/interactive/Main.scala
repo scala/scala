@@ -12,7 +12,7 @@ package interactive
  */
 object Main extends nsc.MainClass {
   override def processSettingsHook(): Boolean = {
-    if (this.settings.Yidedebug.value) {
+    if (this.settings.Yidedebug) {
       this.settings.Xprintpos.value = true
       this.settings.Yrangepos.value = true
       val compiler = new interactive.Global(this.settings, this.reporter)

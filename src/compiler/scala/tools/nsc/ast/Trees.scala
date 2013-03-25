@@ -271,7 +271,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *  (bq:) This transformer has mutable state and should be discarded after use
    */
   private class ResetAttrs(localOnly: Boolean, leaveAlone: Tree => Boolean = null, keepLabels: Boolean = false) {
-    val debug = settings.debug.value
+    val debug: Boolean = settings.debug
     val trace = scala.tools.nsc.util.trace when debug
 
     val locals = util.HashSet[Symbol](8)

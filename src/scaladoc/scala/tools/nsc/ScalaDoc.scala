@@ -29,23 +29,23 @@ class ScalaDoc {
     val command = new ScalaDoc.Command(args.toList, docSettings)
     def hasFiles = command.files.nonEmpty || docSettings.uncompilableFiles.nonEmpty
 
-    if (docSettings.version.value)
+    if (docSettings.version)
       reporter.echo(versionMsg)
-    else if (docSettings.Xhelp.value)
+    else if (docSettings.Xhelp)
       reporter.echo(command.xusageMsg)
-    else if (docSettings.Yhelp.value)
+    else if (docSettings.Yhelp)
       reporter.echo(command.yusageMsg)
-    else if (docSettings.showPlugins.value)
+    else if (docSettings.showPlugins)
       reporter.warning(null, "Plugins are not available when using Scaladoc")
-    else if (docSettings.showPhases.value)
+    else if (docSettings.showPhases)
       reporter.warning(null, "Phases are restricted when using Scaladoc")
-    else if (docSettings.help.value || !hasFiles)
+    else if (docSettings.help || !hasFiles)
       reporter.echo(command.usageMsg)
     else
       try { new DocFactory(reporter, docSettings) document command.files }
     catch {
       case ex @ FatalError(msg) =>
-        if (docSettings.debug.value) ex.printStackTrace()
+        if (docSettings.debug) ex.printStackTrace()
         reporter.error(null, "fatal error: " + msg)
     }
     finally reporter.printSummary()
