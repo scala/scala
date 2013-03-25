@@ -607,6 +607,8 @@ abstract class ClassfileParser {
       val sym     = getOwner(jflags).newValue(name.toTermName, NoPosition, sflags)
       val isEnum  = (jflags & JAVA_ACC_ENUM) != 0
 
+      // Note: the info may be overrwritten later with a generic signature
+      // parsed from SignatureATTR
       sym setInfo {
         if (isEnum) ConstantType(Constant(sym))
         else info
@@ -661,6 +663,8 @@ abstract class ClassfileParser {
               }
               info = MethodType(newParams, clazz.tpe)
           }
+        // Note: the info may be overrwritten later with a generic signature
+        // parsed from SignatureATTR
         sym.setInfo(info)
         importPrivateWithinFromJavaFlags(sym, jflags)
         parseAttributes(sym, info)
@@ -754,7 +758,9 @@ abstract class ClassfileParser {
             accept('.')
             val name = subName(c => c == ';' || c == '<' || c == '.').toTypeName
             val clazz = tpe.member(name)
-            tpe = processClassType(processInner(clazz.tpe))
+            val dummyArgs = Nil // the actual arguments are added in processClassType
+            val inner = typeRef(pre = tpe, sym = clazz, args = dummyArgs)
+            tpe = processClassType(inner)
           }
           accept(';')
           tpe
