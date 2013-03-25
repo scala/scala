@@ -35,7 +35,7 @@ object TailCalls {
 
   /** This class represents a tailcalling computation
    */
-  case class TailRec[+A] private(val underlying: () => _) extends AnyVal {
+  class TailRec[+A] private[TailCalls](val underlying: () => _) extends AnyVal {
     /** Returns the result of the tailcalling computation.
      */
     def result:A = loop(this).asInstanceOf[A]
@@ -49,13 +49,13 @@ object TailCalls {
    *  @param rest  the expression to be evaluated in the tailcall
    *  @return a `TailRec` object representing the expression `rest`
    */
-  def tailcall[A](rest: => TailRec[A]): TailRec[A] = TailRec(rest _)
+  def tailcall[A](rest: => TailRec[A]): TailRec[A] = new TailRec(rest _)
 
   /** Used to return final result from tailcalling computation
    *  @param  `result` the result value
    *  @return a `TailRec` object representing a computation which immediately
    *          returns `result`
    */
-  def done[A](result: A): TailRec[A] = TailRec(Done(result))
+  def done[A](result: A): TailRec[A] = new TailRec(Done(result))
 
 }
