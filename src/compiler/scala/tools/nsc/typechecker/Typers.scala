@@ -4461,6 +4461,12 @@ trait Typers extends Modes with Adaptations with Tags {
           treeCopy.New(tree, tpt1).setType(tp)
       }
 
+      def functionTypeWildcard(tree: Tree, arity: Int): Type = {
+        val tp = functionType(List.fill(arity)(WildcardType), WildcardType)
+        if (tp == NoType) MaxFunctionArityError(tree)
+        tp
+      }
+
       def typedEta(expr1: Tree): Tree = expr1.tpe match {
         case TypeRef(_, ByNameParamClass, _) =>
           val expr2 = Function(List(), expr1) setPos expr1.pos
@@ -4472,7 +4478,7 @@ trait Typers extends Modes with Adaptations with Tags {
           typed1(expr2, mode, pt)
         case PolyType(_, MethodType(formals, _)) =>
           if (isFunctionType(pt)) expr1
-          else adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
+          else adapt(expr1, mode, functionTypeWildcard(expr1, formals.length))
         case MethodType(formals, _) =>
           if (isFunctionType(pt)) expr1
           else expr1 match {
@@ -4491,7 +4497,7 @@ trait Typers extends Modes with Adaptations with Tags {
               val rhs = Apply(f, args)
               typed(rhs)
             case _ =>
-              adapt(expr1, mode, functionType(formals map (t => WildcardType), WildcardType))
+              adapt(expr1, mode, functionTypeWildcard(expr1, formals.length))
           }
         case ErrorType =>
           expr1
