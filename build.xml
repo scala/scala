@@ -1501,10 +1501,14 @@ PACKED QUICK BUILD (PACK)
   </target>
 
   <target name="pack.pre-comp" depends="pack.reflect">
-    <uptodate
-      property="pack.comp.available"
-      targetfile="${build-pack.dir}/lib/scala-compiler.jar"
-      srcfile="${build-quick.dir}/compiler.complete"/>
+    <uptodate property="pack.comp.available" targetfile="${build-pack.dir}/lib/scala-compiler.jar">
+      <srcfiles dir="${build-quick.dir}">
+        <includesFile name="${build-quick.dir}/compiler.complete"/>
+        <includesFile name="${build-quick.dir}/repl.complete"/>
+        <includesFile name="${build-quick.dir}/interactive.complete"/>
+        <includesFile name="${build-quick.dir}/scaladoc.complete"/>
+      </srcfiles>
+    </uptodate>
   </target>
 
   <target name="pack.comp" depends="pack.pre-comp" unless="pack.comp.available">
