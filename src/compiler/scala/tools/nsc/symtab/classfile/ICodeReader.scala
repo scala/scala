@@ -508,6 +508,7 @@ abstract class ICodeReader extends ClassfileParser {
             code.emit(CALL_METHOD(m, Static(false)))
         case JVM.invokedynamic  =>
           // TODO, this is just a place holder. A real implementation must parse the class constant entry
+          debuglog("Found JVM invokedynamic instructionm, inserting place holder ICode INVOKE_DYNAMIC.")
           containsInvokeDynamic = true
           val poolEntry = in.nextChar
           in.skip(2)
