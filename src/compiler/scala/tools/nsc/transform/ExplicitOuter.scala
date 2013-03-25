@@ -45,26 +45,24 @@ abstract class ExplicitOuter extends InfoTransform
   private def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
-  private def haveSameOuter(parent: Type, clazz: Symbol) = parent match {
-    case TypeRef(pre, sym, _)   =>
-      val owner = clazz.owner
+  private def haveSameOuter(parent: Type, clazz: Symbol) = {
+    val owner = clazz.owner
+    val parentSym = parent.typeSymbol
 
-      //println(s"have same outer $parent $clazz $sym ${sym.owner} $owner $pre")
-
-      sym.isClass && owner.isClass &&
-      (owner isSubClass sym.owner) &&
-      owner.thisType =:= pre
-
-    case _                      => false
+    parentSym.isClass && owner.isClass &&
+      (owner isSubClass parentSym.owner) &&
+      owner.thisType =:= parent.prefix
   }
 
   /** Does given clazz define an outer field? */
   def hasOuterField(clazz: Symbol) = {
-    val parents = clazz.info.parents
+    val parent = clazz.info.firstParent
 
-    isInner(clazz) && !clazz.isTrait && {
-      parents.isEmpty || !haveSameOuter(parents.head, clazz)
-    }
+    // space optimization: inherit the $outer pointer from the parent class if
+    // we know that it will point to the correct instance.
+    def canReuseParentOuterField = !parent.typeSymbol.isJavaDefined && haveSameOuter(parent, clazz)
+
+    isInner(clazz) && !clazz.isTrait && !canReuseParentOuterField
   }
 
   private def outerField(clazz: Symbol): Symbol = {
