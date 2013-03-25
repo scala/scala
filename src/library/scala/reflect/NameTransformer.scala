@@ -15,9 +15,12 @@ package reflect
 object NameTransformer {
   // XXX Short term: providing a way to alter these without having to recompile
   // the compiler before recompiling the compiler.
-  val MODULE_SUFFIX_STRING = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
-  val NAME_JOIN_STRING     = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
-  val MODULE_INSTANCE_NAME = "MODULE$"
+  val MODULE_SUFFIX_STRING          = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
+  val NAME_JOIN_STRING              = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
+  val MODULE_INSTANCE_NAME          = "MODULE$"
+  val LOCAL_SUFFIX_STRING           = " "
+  val SETTER_SUFFIX_STRING          = "_$eq"
+  val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
 
   private val nops = 128
   private val ncodes = 26 * 26

@@ -1,7 +1,7 @@
 [[syntax trees at end of                lambdalift]] // newSource1
 package <empty> {
   class T extends Object {
-    <paramaccessor> val T$$classParam: Int = _;
+    <paramaccessor> val classParam: Int = _;
     def <init>(classParam: Int): T = {
       T.super.<init>();
       ()
@@ -30,15 +30,15 @@ package <empty> {
         ()
       };
       final def apply(): Int = $anonfun$foo$1.this.apply$mcI$sp();
-      <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.T$$classParam.+($anonfun$foo$1.this.$outer.field()).+($anonfun$foo$1.this.methodParam$1).+($anonfun$foo$1.this.methodLocal$1);
+      <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.classParam.+($anonfun$foo$1.this.$outer.field()).+($anonfun$foo$1.this.methodParam$1).+($anonfun$foo$1.this.methodLocal$1);
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
-      <synthetic> <stable> <artifact> def T$$anonfun$$$outer(): T = $anonfun$foo$1.this.$outer;
+      <synthetic> <stable> <artifact> def $outer(): T = $anonfun$foo$1.this.$outer;
       final <bridge> <artifact> def apply(): Object = scala.Int.box($anonfun$foo$1.this.apply());
       <synthetic> <paramaccessor> private[this] val methodParam$1: Int = _;
       <synthetic> <paramaccessor> private[this] val methodLocal$1: Int = _
     };
     abstract trait MethodLocalTrait$1 extends Object {
-      <synthetic> <stable> <artifact> def T$MethodLocalTrait$$$outer(): T
+      <synthetic> <stable> <artifact> def $outer(): T
     };
     object MethodLocalObject$2 extends Object with T#MethodLocalTrait$1 {
       def <init>($outer: T, barParam$1: Int): T#MethodLocalObject$2.type = {
@@ -47,8 +47,8 @@ package <empty> {
         ()
       };
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
-      <synthetic> <stable> <artifact> def T$MethodLocalObject$$$outer(): T = MethodLocalObject$2.this.$outer;
-      <synthetic> <stable> <artifact> def T$MethodLocalTrait$$$outer(): T = MethodLocalObject$2.this.$outer
+      <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer;
+      <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer
     };
     final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
       MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1);
@@ -70,7 +70,7 @@ package <empty> {
         $anonfun$tryy$1.this.tryyLocal$1.elem = $anonfun$tryy$1.this.tryyParam$1
       } finally ();
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
-      <synthetic> <stable> <artifact> def T$$anonfun$$$outer(): T = $anonfun$tryy$1.this.$outer;
+      <synthetic> <stable> <artifact> def $outer(): T = $anonfun$tryy$1.this.$outer;
       final <bridge> <artifact> def apply(): Object = {
         $anonfun$tryy$1.this.apply();
         scala.runtime.BoxedUnit.UNIT

@@ -242,6 +242,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   trait NameTree extends Tree with NameTreeApi {
     def name: Name
+    def getterName: TermName = name.getterName
+    def setterName: TermName = name.setterName
+    def localName: TermName = name.localName
   }
 
   trait RefTree extends SymTree with NameTree with RefTreeApi {

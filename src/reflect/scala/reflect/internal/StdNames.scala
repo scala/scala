@@ -86,8 +86,12 @@ trait StdNames {
     def flattenedName(segments: Name*): NameType =
       compactify(segments mkString NAME_JOIN_STRING)
 
-    val MODULE_SUFFIX_STRING: String = NameTransformer.MODULE_SUFFIX_STRING
-    val NAME_JOIN_STRING: String     = NameTransformer.NAME_JOIN_STRING
+    val NAME_JOIN_STRING: String              = NameTransformer.NAME_JOIN_STRING
+    val MODULE_SUFFIX_STRING: String          = NameTransformer.MODULE_SUFFIX_STRING
+    val SETTER_SUFFIX_STRING: String          = NameTransformer.SETTER_SUFFIX_STRING
+    val LOCAL_SUFFIX_STRING: String           = NameTransformer.LOCAL_SUFFIX_STRING
+    val TRAIT_SETTER_SEPARATOR_STRING: String = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
+
     val SINGLETON_SUFFIX: String     = ".type"
 
     val ANON_CLASS_NAME: NameType    = "$anon"
@@ -265,7 +269,7 @@ trait StdNames {
     val BITMAP_PREFIX                 = "bitmap$"
     val CHECK_IF_REFUTABLE_STRING     = "check$ifrefutable$"
     val DEFAULT_GETTER_STRING         = "$default$"
-    val DEFAULT_GETTER_INIT_STRING    = "$lessinit$greater" // CONSTRUCTOR.encoded, less is more
+    val DEFAULT_GETTER_INIT_STRING    = NameTransformer.encode("<init>") + DEFAULT_GETTER_STRING
     val DO_WHILE_PREFIX               = "doWhile$"
     val EVIDENCE_PARAM_PREFIX         = "evidence$"
     val EXCEPTION_RESULT_PREFIX       = "exceptionResult"
@@ -275,7 +279,6 @@ trait StdNames {
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SUPER_PREFIX_STRING           = "super$"
-    val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val WHILE_PREFIX                  = "while$"
 
     // Compiler internal names
@@ -284,10 +287,8 @@ trait StdNames {
     val DEFAULT_CASE: NameType             = "defaultCase$"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
-    val INITIALIZER: NameType              = CONSTRUCTOR // Is this buying us something?
     val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
-    val LOCAL_SUFFIX_STRING                = " "
     val UNIVERSE_BUILD_PREFIX: NameType    = "$u.build."
     val UNIVERSE_PREFIX: NameType          = "$u."
     val UNIVERSE_SHORT: NameType           = "$u"
@@ -301,20 +302,15 @@ trait StdNames {
     val MIXIN_CONSTRUCTOR: NameType        = "$init$"
     val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
-    val OUTER_LOCAL: NameType              = OUTER + LOCAL_SUFFIX_STRING // "$outer ", note the space
+    val OUTER_LOCAL: NameType              = OUTER.localName
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
     val ROOTPKG: NameType                  = "_root_"
     val SELECTOR_DUMMY: NameType           = "<unapply-selector>"
     val SELF: NameType                     = "$this"
-    val SETTER_SUFFIX: NameType            = encode("_=")
+    val SETTER_SUFFIX: NameType            = NameTransformer.SETTER_SUFFIX_STRING
     val SPECIALIZED_INSTANCE: NameType     = "specInstance$"
     val STAR: NameType                     = "*"
     val THIS: NameType                     = "_$this"
-
-    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
-    def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
-    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
-    def SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX.toTermName
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
@@ -345,31 +341,52 @@ trait StdNames {
       name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
     }
 
-    /** The expanded name of `name` relative to this class `base` with given `separator`
-     */
-    def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName =
+    private def expandedNameInternal(name: TermName, base: Symbol, separator: String): TermName =
       newTermNameCached(base.fullName('$') + separator + name)
+
+    /** The expanded name of `name` relative to this class `base`
+     */
+    def expandedName(name: TermName, base: Symbol) = expandedNameInternal(name, base, EXPAND_SEPARATOR_STRING)
 
     /** The expanded setter name of `name` relative to this class `base`
     */
-    def expandedSetterName(name: TermName, base: Symbol): TermName =
-      expandedName(name, base, separator = TRAIT_SETTER_SEPARATOR_STRING)
+    def expandedSetterName(name: TermName, base: Symbol) = expandedNameInternal(name, base, TRAIT_SETTER_SEPARATOR_STRING)
 
-    /** If `name` is an expandedName name, the original name.
-    *  Otherwise `name` itself.
-    */
-    def originalName(name: Name): Name = {
-      var i = name.length
-      while (i >= 2 && !(name.charAt(i - 1) == '$' && name.charAt(i - 2) == '$')) i -= 1
-      if (i >= 2) {
-        while (i >= 3 && name.charAt(i - 3) == '$') i -= 1
-        name.subName(i, name.length)
-      } else name
+    /** If `name` is an expandedName name, the original (unexpanded) name.
+     *  Otherwise `name` itself.
+     *  Look backward from the end of the string for "$$", and take the
+     *  part of the string after that; but if the string is "$$$" or longer,
+     *  be sure to retain the extra dollars.
+     */
+    def unexpandedName(name: Name): Name = name lastIndexOf "$$" match {
+      case -1  => name
+      case idx0 =>
+        // Sketchville - We've found $$ but if it's part of $$$ or $$$$
+        // or something we need to keep the bonus dollars, so e.g. foo$$$outer
+        // has an original name of $outer.
+        var idx = idx0
+        while (idx > 0 && name.charAt(idx - 1) == '$')
+          idx -= 1
+        name drop idx + 2
     }
+
+    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
+    def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
+    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
+    def SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX.toTermName
+
+    @deprecated("Use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
+    @deprecated("Use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
+    @deprecated("Use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
+    @deprecated("Use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = name.dropLocal
+    @deprecated("Use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = name.localName
+    @deprecated("Use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = name.setterName
+    @deprecated("Use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
+    @deprecated("Use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
 
     def unspecializedName(name: Name): Name = (
       if (name endsWith SPECIALIZED_SUFFIX)
-      name.subName(0, name.lastIndexOf('m') - 1)
+        name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
 
@@ -394,39 +411,23 @@ trait StdNames {
     } else
     (name, "", "")
 
-    def getterName(name: TermName): TermName     = if (isLocalName(name)) localToGetter(name) else name
-    def getterToLocal(name: TermName): TermName  = name append LOCAL_SUFFIX_STRING
-    def getterToSetter(name: TermName): TermName = name append SETTER_SUFFIX
-    def localToGetter(name: TermName): TermName  = name dropRight LOCAL_SUFFIX_STRING.length
-
-    def dropLocalSuffix(name: Name): Name  = if (name endsWith ' ') name dropRight 1 else name
-
-    def setterToGetter(name: TermName): TermName = {
-      val p = name.pos(TRAIT_SETTER_SEPARATOR_STRING)
-      if (p < name.length)
-      setterToGetter(name drop (p + TRAIT_SETTER_SEPARATOR_STRING.length))
-      else
-      name.subName(0, name.length - SETTER_SUFFIX.length)
-    }
-
     // Nominally, name$default$N, encoded for <init>
-    def defaultGetterName(name: Name, pos: Int): TermName = {
-      val prefix = if (isConstructorName(name)) DEFAULT_GETTER_INIT_STRING else name
-      newTermName(prefix + DEFAULT_GETTER_STRING + pos)
-    }
-    // Nominally, name from name$default$N, CONSTRUCTOR for <init>
-    def defaultGetterToMethod(name: Name): TermName = {
-      val p = name.pos(DEFAULT_GETTER_STRING)
-      if (p < name.length) {
-        val q = name.toTermName.subName(0, p)
-        // i.e., if (q.decoded == CONSTRUCTOR.toString) CONSTRUCTOR else q
-        if (q.toString == DEFAULT_GETTER_INIT_STRING) CONSTRUCTOR else q
-      } else name.toTermName
-    }
-
-    def stripModuleSuffix(name: Name): Name = (
-      if (isModuleName(name)) name dropRight MODULE_SUFFIX_STRING.length else name
+    def defaultGetterName(name: Name, pos: Int): TermName = (
+      if (isConstructorName(name))
+        DEFAULT_GETTER_INIT_STRING + pos
+      else
+        name + DEFAULT_GETTER_STRING + pos
     )
+    // Nominally, name from name$default$N, CONSTRUCTOR for <init>
+    def defaultGetterToMethod(name: Name): TermName = (
+      if (name startsWith DEFAULT_GETTER_INIT_STRING)
+        nme.CONSTRUCTOR
+      else name indexOf DEFAULT_GETTER_STRING match {
+        case -1  => name.toTermName
+        case idx => name.toTermName take idx
+      }
+    )
+
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
     def superName(name: Name): TermName         = newTermName(SUPER_PREFIX_STRING + name)
 

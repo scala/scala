@@ -471,7 +471,7 @@ trait MethodSynthesis {
       }
     }
     case class Setter(tree: ValDef) extends DerivedSetter {
-      def name       = nme.getterToSetter(tree.name)
+      def name       = tree.setterName
       def category   = SetterTargetClass
       def flagsMask  = SetterFlags
       def flagsExtra = ACCESSOR
@@ -479,7 +479,7 @@ trait MethodSynthesis {
       override def derivedSym = basisSym.setter(enclClass)
     }
     case class Field(tree: ValDef) extends DerivedFromValDef {
-      def name       = nme.getterToLocal(tree.name)
+      def name       = tree.localName
       def category   = FieldTargetClass
       def flagsMask  = FieldFlags
       def flagsExtra = PrivateLocal

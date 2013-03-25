@@ -4211,7 +4211,7 @@ trait Typers extends Adaptations with Tags {
         if (treeInfo.mayBeVarGetter(varsym)) {
           lhs1 match {
             case treeInfo.Applied(Select(qual, name), _, _) =>
-              val sel = Select(qual, nme.getterToSetter(name.toTermName)) setPos lhs.pos
+              val sel = Select(qual, name.setterName) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
               return typed(app, mode, pt)
 
