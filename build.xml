@@ -44,8 +44,8 @@ targets exercised:
   <target name="distpack-maven" depends="dist.done, docs.done">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-maven.done" inheritall="yes" inheritrefs="yes"/></target>
 
-  <target name="distpack-opt" description="Builds an optimised distribution."> <optimize name="distpack"/></target>
-  <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimize name="distpack-maven"/></target>
+  <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
+  <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
   <target name="all.done" depends="dist.done, test.done"/>
 
@@ -916,7 +916,7 @@ targets exercised:
         <do>
           <stopwatch name="docs.@{project}.timer"/>
           <mkdir dir="${build-docs.dir}/@{project}"/>
-          <if><equals arg1="@{classpathref}" arg2="NOT SET"/><then>
+          <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
             <scaladoc
               destdir="${build-docs.dir}/@{project}"
               doctitle="@{title}"
@@ -1849,7 +1849,7 @@ targets exercised:
   </target>
 
   <target name="replacestarr-opt" description="Replaces the Starr compiler and library by fresh, optimised ones built from current sources and tests them.">
-    <optimize name="replacestarr"/></target>
+    <optimized name="replacestarr"/></target>
 
   <!-- Ant on Windows is not able to delete jar files that are referenced in any <path>.
        See ticket 1290 on trac. -->
@@ -1866,13 +1866,13 @@ targets exercised:
   </target>
 
   <target name="replacestarrwin-opt" description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
-    <optimize name="replacestarrwin"/></target>
+    <optimized name="replacestarrwin"/></target>
 
   <target name="replacelocker" description="Replaces the Locker compiler and library by fresh ones built from current sources."
     depends="palo.clean, locker.unlock, palo.done"/>
 
   <target name="replacelocker-opt" description="Replaces the Locker compiler and library by fresh, optimised ones built from current sources.">
-    <optimize name="replacelocker"/></target>
+    <optimized name="replacelocker"/></target>
 
   <target name="buildlocker" description="Does the same for locker as build does for quick." depends="locker.unlock, palo.bin"/>
   <target name="unlocklocker" description="Same as buildlocker." depends="buildlocker"/> <!-- REMOVE -->
