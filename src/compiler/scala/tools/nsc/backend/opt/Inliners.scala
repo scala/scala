@@ -961,6 +961,7 @@ abstract class Inliners extends SubComponent {
             if(isInlineForbidden)  { rs ::= "is annotated @noinline" }
             if(inc.isSynchronized) { rs ::= "is synchronized method" }
             if(inc.m.bytecodeHasEHs) { rs ::= "bytecode contains exception handlers / finally clause" } // SI-6188
+            if(inc.m.bytecodeHasInvokeDynamic) { rs ::= "bytecode contains invoke dynamic" }
             if(rs.isEmpty) null else rs.mkString("", ", and ", "")
           }
 

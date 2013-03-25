@@ -409,6 +409,25 @@ trait Opcodes { self: ICodes =>
 
       override def category = mthdsCat
     }
+    
+    /**
+     * A place holder entry that allows us to parse class files with invoke dynamic
+     * instructions. Because the compiler doesn't yet really understand the
+     * behavior of invokeDynamic, this op acts as a poison pill. Any attempt to analyze
+     * this instruction will cause a failure. The only optimization that
+     * should ever look at non-Scala generated icode is the inliner, and it
+     * has been modified to not examine any method with invokeDynamic 
+     * instructions. So if this poison pill ever causes problems then
+     * there's been a serious misunderstanding
+     */
+    // TODO do the real thing
+    case class INVOKE_DYNAMIC(poolEntry: Char) extends Instruction {
+      private def error = sys.error("INVOKE_DYNAMIC is not fully implemented and should not be analyzed")
+      override def consumed = error
+      override def produced = error
+      override def producedTypes = error
+      override def category = error
+    }
 
     case class BOX(boxType: TypeKind) extends Instruction {
       assert(boxType.isValueType && (boxType ne UNIT)) // documentation
