@@ -1373,7 +1373,9 @@ trait Namers extends MethodSynthesis {
       if (!cdef.symbol.hasAbstractFlag)
         namer.enterSyntheticSym(caseModuleApplyMeth(cdef))
 
-      namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
+      val primaryConstructorArity = treeInfo.firstConstructorArgs(cdef.impl.body).size
+      if (primaryConstructorArity <= MaxTupleArity)
+        namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
     }
 
     def addCopyMethod(cdef: ClassDef, namer: Namer) {
