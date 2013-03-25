@@ -1,0 +1,5 @@
+t6815.scala:15: error: stable identifier required, but Test.this.u.emptyValDef found.
+ Note that value emptyValDef is not stable because its type, Test.u.ValDef, is volatile.
+    case _: u.emptyValDef.T => // and, unlike in pos/t6185.scala, we shouldn't allow this.
+              ^
+one error found
