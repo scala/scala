@@ -1,0 +1,11 @@
+Chain(List(Chain(List(Text(Here z(1) is defined as follows:), Text(
+), HtmlTag(<br>), Text(
+), Text(  ), HtmlTag(<img src='http://example.com/fig1.png'>), Text(
+), HtmlTag(<br>), Text(
+), Text(plus z(1) times), Text(
+), HtmlTag(<br>), Text(
+), Text(  ), HtmlTag(<img src='http://example.com/fig2.png'>), Text(
+), HtmlTag(<br>), Text(
+), Text(equals QL of something
+)))))
+Done.
