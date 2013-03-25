@@ -34,6 +34,41 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val stats = impl.body          // the transformed template body
       val localTyper = typer.atOwner(impl, clazz)
 
+      // Inspect for obvious out-of-order initialization; concrete, eager vals or vars,
+      // declared in this class, for which a reference to the member precedes its definition.
+      def checkableForInit(sym: Symbol) = (
+           (sym ne null)
+        && (sym.isVal || sym.isVar)
+        && !(sym hasFlag LAZY | DEFERRED | SYNTHETIC)
+      )
+      val uninitializedVals = mutable.Set[Symbol](
+        stats collect { case vd: ValDef if checkableForInit(vd.symbol) => vd.symbol.accessedOrSelf }: _*
+      )
+      if (uninitializedVals.nonEmpty)
+        log("Checking constructor for init order issues among: " + uninitializedVals.map(_.name).mkString(", "))
+
+      for (stat <- stats) {
+        // Checking the qualifier symbol is necessary to prevent a selection on
+        // another instance of the same class from potentially appearing to be a forward
+        // reference on the member in the current class.
+        def check(tree: Tree) = {
+          for (t <- tree) t match {
+            case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
+              unit.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
+            case _ =>
+          }
+        }
+        stat match {
+          case vd: ValDef      =>
+            // doing this first allows self-referential vals, which to be a conservative
+            // warner we will do because it's possible though difficult for it to be useful.
+            uninitializedVals -= vd.symbol.accessedOrSelf
+            if (!vd.symbol.isLazy)
+              check(vd.rhs)
+          case _: MemberDef    => // skip other member defs
+          case t               => check(t) // constructor body statement
+        }
+      }
       val specializedFlag: Symbol = clazz.info.decl(nme.SPECIALIZED_INSTANCE)
       val shouldGuard = (specializedFlag != NoSymbol) && !clazz.hasFlag(SPECIALIZED)
 
@@ -268,10 +303,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         copyParam(acc, parameter(acc))
       }
 
-      /** Return a single list of statements, merging the generic class constructor with the
-       *  specialized stats. The original statements are retyped in the current class, and
-       *  assignments to generic fields that have a corresponding specialized assignment in
-       *  `specializedStats` are replaced by the specialized assignment.
+      /* Return a single list of statements, merging the generic class constructor with the
+       * specialized stats. The original statements are retyped in the current class, and
+       * assignments to generic fields that have a corresponding specialized assignment in
+       * `specializedStats` are replaced by the specialized assignment.
        */
       def mergeConstructors(genericClazz: Symbol, originalStats: List[Tree], specializedStats: List[Tree]): List[Tree] = {
         val specBuf = new ListBuffer[Tree]
@@ -286,10 +321,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             case _ => false
           }
 
-        /** Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
-         *  Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
-         *  variable, but after specialization this is a concrete primitive type, so it would
-         *  be an error to pass it to array_update(.., .., Object).
+        /* Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
+         * Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
+         * variable, but after specialization this is a concrete primitive type, so it would
+         * be an error to pass it to array_update(.., .., Object).
          */
         def rewriteArrayUpdate(tree: Tree): Tree = {
           val adapter = new Transformer {
@@ -338,14 +373,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         res
       }
 
-      /** Add an 'if' around the statements coming after the super constructor. This
-       *  guard is necessary if the code uses specialized fields. A specialized field is
-       *  initialized in the subclass constructor, but the accessors are (already) overridden
-       *  and pointing to the (empty) fields. To fix this, a class with specialized fields
-       *  will not run its constructor statements if the instance is specialized. The specialized
-       *  subclass includes a copy of those constructor statements, and runs them. To flag that a class
-       *  has specialized fields, and their initialization should be deferred to the subclass, method
-       *  'specInstance$' is added in phase specialize.
+      /* Add an 'if' around the statements coming after the super constructor. This
+       * guard is necessary if the code uses specialized fields. A specialized field is
+       * initialized in the subclass constructor, but the accessors are (already) overridden
+       * and pointing to the (empty) fields. To fix this, a class with specialized fields
+       * will not run its constructor statements if the instance is specialized. The specialized
+       * subclass includes a copy of those constructor statements, and runs them. To flag that a class
+       * has specialized fields, and their initialization should be deferred to the subclass, method
+       * 'specInstance$' is added in phase specialize.
        */
       def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
         // split the statements in presuper and postsuper
@@ -366,7 +401,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                 CODE.NOT (
                  Apply(gen.mkAttributedRef(specializedFlag), List())),
                 List()),
-              Block(stats, Literal(Constant())),
+              Block(stats, Literal(Constant(()))),
               EmptyTree)
 
           List(localTyper.typed(tree))
@@ -390,8 +425,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       }
 */
 
-      /** Create a getter or a setter and enter into `clazz` scope
-       */
+      /* Create a getter or a setter and enter into `clazz` scope */
       def addAccessor(sym: Symbol, name: TermName, flags: Long) = {
         val m = clazz.newMethod(name, sym.pos, flags & ~(LOCAL | PRIVATE)) setPrivateWithin clazz
         clazz.info.decls enter m
@@ -520,7 +554,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol.tpe, This(clazz))))
       }
 
-      /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
+      /* Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
       def splitAtSuper(stats: List[Tree]) = {
         def isConstr(tree: Tree) = (tree.symbol ne null) && tree.symbol.isConstructor
         val (pre, rest0) = stats span (!isConstr(_))
@@ -531,12 +565,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val (uptoSuperStats, remainingConstrStats0) = splitAtSuper(constrStatBuf.toList)
       var remainingConstrStats = remainingConstrStats0
 
-      /** XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
-       *  but excluding it includes too much.  The constructor sequence being mimicked
-       *  needs to be reproduced with total fidelity.
+      /* XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
+       * but excluding it includes too much.  The constructor sequence being mimicked
+       * needs to be reproduced with total fidelity.
        *
-       *  See test case files/run/bug4680.scala, the output of which is wrong in many
-       *  particulars.
+       * See test case files/run/bug4680.scala, the output of which is wrong in many
+       * particulars.
        */
       val needsDelayedInit =
         (clazz isSubClass DelayedInitClass) /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty

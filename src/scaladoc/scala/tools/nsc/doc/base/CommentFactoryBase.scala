@@ -679,7 +679,6 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val SchemeUri = """([a-z]+:.*)""".r
       jump("[[")
       val parens = 2 + repeatJump('[')
-      val start = "[" * parens
       val stop  = "]" * parens
       //println("link with " + parens + " matching parens")
       val target = readUntil { check(stop) || check(" ") }

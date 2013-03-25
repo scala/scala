@@ -268,7 +268,7 @@ trait Implicits {
    */
   object Function1 {
     val Sym = FunctionClass(1)
-    def unapply(tp: Type) = tp match {
+    def unapply(tp: Type) = tp baseType Sym match {
       case TypeRef(_, Sym, arg1 :: arg2 :: _) => Some((arg1, arg2))
       case _                                  => None
     }
@@ -311,7 +311,7 @@ trait Implicits {
       (info2 == NoImplicitInfo) ||
       (info1 != NoImplicitInfo) && {
         if (info1.sym.isStatic && info2.sym.isStatic) {
-          improvesCache get (info1, info2) match {
+          improvesCache get ((info1, info2)) match {
             case Some(b) => if (Statistics.canEnable) Statistics.incCounter(improvesCachedCount); b
             case None =>
               val result = isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
@@ -431,10 +431,8 @@ trait Implicits {
       val start = if (Statistics.canEnable) Statistics.startTimer(matchesPtNanos) else null
       val result = normSubType(tp, pt) || isView && {
         pt match {
-          case TypeRef(_, Function1.Sym, arg1 :: arg2 :: Nil) =>
-            matchesPtView(tp, arg1, arg2, undet)
-          case _ =>
-            false
+          case Function1(arg1, arg2) => matchesPtView(tp, arg1, arg2, undet)
+          case _                     => false
         }
       }
       if (Statistics.canEnable) Statistics.stopTimer(matchesPtNanos, start)
@@ -575,21 +573,21 @@ trait Implicits {
       )
 
       def fail(reason: String): SearchResult = failure(itree, reason)
+      def fallback = typed1(itree, EXPRmode, wildPt)
       try {
-        val itree1 =
-          if (isView) {
-            val arg1 :: arg2 :: _ = pt.typeArgs
+        val itree1 = if (!isView) fallback else pt match {
+          case Function1(arg1, arg2) =>
             typed1(
               atPos(itree.pos)(Apply(itree, List(Ident("<argument>") setType approximate(arg1)))),
               EXPRmode,
               approximate(arg2)
             )
-          }
-          else
-            typed1(itree, EXPRmode, wildPt)
-
-        if (context.hasErrors)
+          case _ => fallback
+        }
+        if (context.hasErrors) {
+          log("implicit adapt failed: " + context.errBuffer.head.errMsg)
           return fail(context.errBuffer.head.errMsg)
+        }
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
 
@@ -875,8 +873,8 @@ trait Implicits {
         }
 
         if (best.isFailure) {
-          /** If there is no winner, and we witnessed and caught divergence,
-           *  now we can throw it for the error message.
+          /* If there is no winner, and we witnessed and caught divergence,
+           * now we can throw it for the error message.
            */
           if (divergence)
             throw DivergentImplicit
@@ -936,8 +934,8 @@ trait Implicits {
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
 
-      /** Populate implicit info map by traversing all parts of type `tp`.
-       *  Parameters as for `getParts`.
+      /* Populate implicit info map by traversing all parts of type `tp`.
+       * Parameters as for `getParts`.
        */
       def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
         case TypeRef(pre, sym, args) =>
@@ -969,13 +967,13 @@ trait Implicits {
             }
       }
 
-      /** Populate implicit info map by traversing all parts of type `tp`.
-       *  This method is performance critical.
-       *  @param tp   The type for which we want to traverse parts
-       *  @param infoMap  The infoMap in which implicit infos corresponding to parts are stored
-       *  @param seen     The types that were already visited previously when collecting parts for the given infoMap
-       *  @param pending  The set of static symbols for which we are currently trying to collect their parts
-       *                  in order to cache them in infoMapCache
+      /* Populate implicit info map by traversing all parts of type `tp`.
+       * This method is performance critical.
+       * @param tp   The type for which we want to traverse parts
+       * @param infoMap  The infoMap in which implicit infos corresponding to parts are stored
+       * @param seen     The types that were already visited previously when collecting parts for the given infoMap
+       * @param pending  The set of static symbols for which we are currently trying to collect their parts
+       *                 in order to cache them in infoMapCache
        */
       def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) {
         if (seen(tp))
@@ -1138,7 +1136,7 @@ trait Implicits {
       val full = flavor == FullManifestClass
       val opt = flavor == OptManifestClass
 
-      /** Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
+      /* Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
@@ -1147,12 +1145,12 @@ trait Implicits {
           mani
         }
 
-      /** Creates a tree representing one of the singleton manifests.*/
+      /* Creates a tree representing one of the singleton manifests.*/
       def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
         Select(gen.mkAttributedRef(FullManifestModule), name)
       }
 
-      /** Re-wraps a type in a manifest before calling inferImplicit on the result */
+      /* Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
         inferImplicit(tree, appliedType(manifestClass, tp), reportAmbiguous = true, isView = false, context).tree
 

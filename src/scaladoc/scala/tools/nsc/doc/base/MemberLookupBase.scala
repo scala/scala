@@ -46,7 +46,7 @@ trait MemberLookupBase {
     } else ""
 
   def memberLookup(pos: Position, query: String, siteOpt: Option[Symbol]): LinkTo = {
-    var members = breakMembers(query)
+    val members = breakMembers(query)
 
     // (1) First look in the root package, as most of the links are qualified
     val fromRoot = lookupInRootPackage(pos, members)

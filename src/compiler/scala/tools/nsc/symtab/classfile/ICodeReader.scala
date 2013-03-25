@@ -197,7 +197,7 @@ abstract class ICodeReader extends ClassfileParser {
       import code._
       var size = 1 // instruction size
 
-      /** Parse 16 bit jump target. */
+      /* Parse 16 bit jump target. */
       def parseJumpTarget = {
         size += 2
         val offset = in.nextChar.toShort
@@ -206,7 +206,7 @@ abstract class ICodeReader extends ClassfileParser {
         target
       }
 
-      /** Parse 32 bit jump target. */
+      /* Parse 32 bit jump target. */
       def parseJumpTargetW: Int = {
         size += 4
         val offset = in.nextInt

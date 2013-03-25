@@ -60,7 +60,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
   /** The API of a mirror for a reflective universe */
   class JavaMirror(owner: Symbol,
-    /** Class loader that is a mastermind behind the reflexive mirror */
+    /* Class loader that is a mastermind behind the reflexive mirror */
     val classLoader: ClassLoader
   ) extends Roots(owner) with super.JavaMirror { thisMirror =>
 

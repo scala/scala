@@ -25,7 +25,7 @@ import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, JavaPlatform }
 import backend.jvm.GenASM
-import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
+import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
 
@@ -594,6 +594,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with ClosureElimination
 
+  // phaseName = "constopt"
+  object constantOptimization extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("closelim")
+    val runsRightAfter = None
+  } with ConstantOptimization
+
   // phaseName = "dce"
   object deadCode extends {
     val global: Global.this.type = Global.this
@@ -678,6 +685,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       inliner                 -> "optimization: do inlining",
       inlineExceptionHandlers -> "optimization: inline exception handlers",
       closureElimination      -> "optimization: eliminate uncalled closures",
+      constantOptimization    -> "optimization: optimize null and other constants",
       deadCode                -> "optimization: eliminate dead code",
       terminal                -> "The last phase in the compiler chain"
     )
@@ -794,8 +802,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       else ((ph, value)) :: res
     } reverse
   }
-
-  private def numberedPhase(ph: Phase) = "%2d/%s".format(ph.id, ph.name)
 
   // ------------ Invalidations ---------------------------------
 
@@ -1106,7 +1112,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   override def currentRunId = curRunId
 
   def echoPhaseSummary(ph: Phase) = {
-    /** Only output a summary message under debug if we aren't echoing each file. */
+    /* Only output a summary message under debug if we aren't echoing each file. */
     if (settings.debug.value && !(settings.verbose.value || currentRun.size < 5))
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
@@ -1200,7 +1206,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       curRunId += 1
       curRun = this
 
-      /** Set phase to a newly created syntaxAnalyzer and call definitions.init. */
+      /* Set phase to a newly created syntaxAnalyzer and call definitions.init. */
       val parserPhase: Phase = syntaxAnalyzer.newPhase(NoPhase)
       phase = parserPhase
       definitions.init()

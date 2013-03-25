@@ -314,7 +314,7 @@ trait ModelFactoryImplicitSupport {
               })
             case other =>
               // this is likely an error on the lub/glb side
-              error("Scaladoc implicits: Error computing lub/glb for: " + (tparam, constr) + ":\n" + other)
+              error("Scaladoc implicits: Error computing lub/glb for: " + ((tparam, constr)) + ":\n" + other)
               Nil
           }
         }

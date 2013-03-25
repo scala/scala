@@ -197,8 +197,8 @@ trait Mirrors extends api.Mirrors {
     /************************ helpers ************************/
 
     def erasureName[T: ClassTag] : String = {
-      /** We'd like the String representation to be a valid
-       *  scala type, so we have to decode the jvm's secret language.
+      /* We'd like the String representation to be a valid
+       * scala type, so we have to decode the jvm's secret language.
        */
       def erasureString(clazz: Class[_]): String = {
         if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"

@@ -131,7 +131,7 @@ abstract class TreeBuilder {
   }
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil => Literal(Constant())
+    case Nil => Literal(Constant(()))
     case List(tree) if flattenUnary => tree
     case _ => makeTuple(trees, isType = false)
   }
@@ -250,21 +250,21 @@ abstract class TreeBuilder {
   /** Create tree representing a while loop */
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
     val continu = atPos(o2p(body.pos pointOrElse wrappingPos(List(cond, body)).pos.endOrPoint)) { Apply(Ident(lname), Nil) }
-    val rhs = If(cond, Block(List(body), continu), Literal(Constant()))
+    val rhs = If(cond, Block(List(body), continu), Literal(Constant(())))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create tree representing a do-while loop */
   def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
     val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), If(cond, continu, Literal(Constant())))
+    val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create block of statements `stats`  */
   def makeBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) Literal(Constant())
-    else if (!stats.last.isTerm) Block(stats, Literal(Constant()))
+    if (stats.isEmpty) Literal(Constant(()))
+    else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
@@ -353,9 +353,9 @@ abstract class TreeBuilder {
   */
   private def makeFor(mapName: TermName, flatMapName: TermName, enums: List[Enumerator], body: Tree): Tree = {
 
-    /** make a closure pat => body.
-     *  The closure is assigned a transparent position with the point at pos.point and
-     *  the limits given by pat and body.
+    /* make a closure pat => body.
+     * The closure is assigned a transparent position with the point at pos.point and
+     * the limits given by pat and body.
      */
     def makeClosure(pos: Position, pat: Tree, body: Tree): Tree = {
       def splitpos = wrappingPos(List(pat, body)).withPoint(pos.point).makeTransparent
@@ -371,26 +371,23 @@ abstract class TreeBuilder {
       }
     }
 
-    /** Make an application  qual.meth(pat => body) positioned at `pos`.
+    /* Make an application  qual.meth(pat => body) positioned at `pos`.
      */
     def makeCombination(pos: Position, meth: TermName, qual: Tree, pat: Tree, body: Tree): Tree =
       Apply(Select(qual, meth) setPos qual.pos, List(makeClosure(pos, pat, body))) setPos pos
 
-    /** If `pat` is not yet a `Bind` wrap it in one with a fresh name
-     */
+    /* If `pat` is not yet a `Bind` wrap it in one with a fresh name */
     def makeBind(pat: Tree): Tree = pat match {
       case Bind(_, _) => pat
       case _ => Bind(freshName(), pat) setPos pat.pos
     }
 
-    /** A reference to the name bound in Bind `pat`.
-     */
+    /* A reference to the name bound in Bind `pat`. */
     def makeValue(pat: Tree): Tree = pat match {
       case Bind(name, _) => Ident(name) setPos pat.pos.focus
     }
 
-    /** The position of the closure that starts with generator at position `genpos`.
-     */
+    /* The position of the closure that starts with generator at position `genpos`. */
     def closurePos(genpos: Position) = {
       val end = body.pos match {
         case NoPosition => genpos.point

@@ -57,7 +57,7 @@ trait ParsersCommon extends ScannersCommon {
       if (in.token == LPAREN) inParens(body)
       else { accept(LPAREN) ; alt }
 
-    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant()))
+    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant(())))
     @inline final def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
 
     @inline final def inBraces[T](body: => T): T = {
@@ -71,7 +71,7 @@ trait ParsersCommon extends ScannersCommon {
       else { accept(LBRACE) ; alt }
 
     @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
-    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
+    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant(())))
     @inline final def dropAnyBraces[T](body: => T): T =
       if (in.token == LBRACE) inBraces(body)
       else body
@@ -321,38 +321,38 @@ self =>
       accept(EOF)
 
       def mainModuleName = newTermName(settings.script.value)
-      /** If there is only a single object template in the file and it has a
-       *  suitable main method, we will use it rather than building another object
-       *  around it.  Since objects are loaded lazily the whole script would have
-       *  been a no-op, so we're not taking much liberty.
+      /* If there is only a single object template in the file and it has a
+       * suitable main method, we will use it rather than building another object
+       * around it.  Since objects are loaded lazily the whole script would have
+       * been a no-op, so we're not taking much liberty.
        */
       def searchForMain(): Option[Tree] = {
-        /** Have to be fairly liberal about what constitutes a main method since
-         *  nothing has been typed yet - for instance we can't assume the parameter
-         *  type will look exactly like "Array[String]" as it could have been renamed
-         *  via import, etc.
+        /* Have to be fairly liberal about what constitutes a main method since
+         * nothing has been typed yet - for instance we can't assume the parameter
+         * type will look exactly like "Array[String]" as it could have been renamed
+         * via import, etc.
          */
         def isMainMethod(t: Tree) = t match {
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
-        /** For now we require there only be one top level object. */
+        /* For now we require there only be one top level object. */
         var seenModule = false
         val newStmts = stmts collect {
           case t @ Import(_, _) => t
           case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
             seenModule = true
-            /** This slightly hacky situation arises because we have no way to communicate
-             *  back to the scriptrunner what the name of the program is.  Even if we were
-             *  willing to take the sketchy route of settings.script.value = progName, that
-             *  does not work when using fsc.  And to find out in advance would impose a
-             *  whole additional parse.  So instead, if the actual object's name differs from
-             *  what the script is expecting, we transform it to match.
+            /* This slightly hacky situation arises because we have no way to communicate
+             * back to the scriptrunner what the name of the program is.  Even if we were
+             * willing to take the sketchy route of settings.script.value = progName, that
+             * does not work when using fsc.  And to find out in advance would impose a
+             * whole additional parse.  So instead, if the actual object's name differs from
+             * what the script is expecting, we transform it to match.
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
           case _ =>
-            /** If we see anything but the above, fail. */
+            /* If we see anything but the above, fail. */
             return None
         }
         Some(makePackaging(0, emptyPkg, newStmts))
@@ -1249,7 +1249,7 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-          else Literal(Constant())
+          else Literal(Constant(()))
           If(cond, thenp, elsep)
         }
         parseIf
@@ -1323,7 +1323,7 @@ self =>
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
-            Return(if (isExprIntro) expr() else Literal(Constant()))
+            Return(if (isExprIntro) expr() else Literal(Constant(())))
           }
         parseReturn
       case THROW =>
@@ -2265,8 +2265,8 @@ self =>
         accept(DOT)
         result
       }
-      /** Walks down import `foo.bar.baz.{ ... }` until it ends at a
-       *  an underscore, a left brace, or an undotted identifier.
+      /* Walks down import `foo.bar.baz.{ ... }` until it ends at a
+       * an underscore, a left brace, or an undotted identifier.
        */
       def loop(expr: Tree): Tree = {
         expr setPos expr.pos.makeTransparent
@@ -2524,7 +2524,7 @@ self =>
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
       if (in.token == LBRACE) constrBlock(vparamss)
-      else Block(List(selfInvocation(vparamss)), Literal(Constant()))
+      else Block(List(selfInvocation(vparamss)), Literal(Constant(())))
 
     /** {{{
      *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
@@ -2554,7 +2554,7 @@ self =>
           else Nil
         }
         accept(RBRACE)
-        Block(stats, Literal(Constant()))
+        Block(stats, Literal(Constant(())))
       }
 
     /** {{{
@@ -2760,7 +2760,7 @@ self =>
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
-        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant())))
+        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant(()))))
       )
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
@@ -2986,7 +2986,7 @@ self =>
         else List(tmplDef(pos, mods))
 
       in.token match {
-        case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
+        case RBRACE | CASE  => defs :+ (Literal(Constant(())) setPos o2p(in.offset))
         case _              => defs
       }
     }

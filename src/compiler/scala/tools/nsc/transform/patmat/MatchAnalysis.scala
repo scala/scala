@@ -12,13 +12,9 @@ import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 trait TreeAndTypeAnalysis extends Debugging {
-  import global.{Tree, Type, Symbol, definitions, analyzer,
-    ConstantType, Literal, Constant,  appliedType, WildcardType, TypeRef, ModuleClassSymbol,
-    nestedMemberType, TypeMap, Ident}
-
+  import global._
   import definitions._
   import analyzer.Typer
-
 
   // we use subtyping as a model for implication between instanceof tests
   // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
@@ -60,7 +56,7 @@ trait TreeAndTypeAnalysis extends Debugging {
           Some(List(tp))
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
-          debug.patmat("enum unsealed "+ (tp, sym, sym.isSealed, isPrimitiveValueClass(sym)))
+          debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
           None
         case sym =>
           val subclasses = (
@@ -68,7 +64,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             // symbols which are both sealed and abstract need not be covered themselves, because
             // all of their children must be and they cannot otherwise be created.
             filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x)))
-          debug.patmat("enum sealed -- subclasses: "+ (sym, subclasses))
+          debug.patmat("enum sealed -- subclasses: "+ ((sym, subclasses)))
 
           val tpApprox = typer.infer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
@@ -86,7 +82,7 @@ trait TreeAndTypeAnalysis extends Debugging {
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
               else None
             })
-          debug.patmat("enum sealed "+ (tp, tpApprox) + " as "+ validSubTypes)
+          debug.patmat("enum sealed "+ ((tp, tpApprox)) + " as "+ validSubTypes)
           Some(validSubTypes)
       }
 
@@ -108,7 +104,7 @@ trait TreeAndTypeAnalysis extends Debugging {
       }
 
       val res = typeArgsToWildcardsExceptArray(tp)
-      debug.patmat("checkable "+(tp, res))
+      debug.patmat("checkable "+((tp, res)))
       res
     }
 
@@ -126,8 +122,8 @@ trait TreeAndTypeAnalysis extends Debugging {
 }
 
 trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchTreeMaking {
-  import global.{Tree, Type, NoType, Symbol, NoSymbol, ConstantType, Literal, Constant, Ident, UniqueType, RefinedType, EmptyScope}
-  import global.definitions.{ListClass, NilModule}
+  import global._
+  import global.definitions._
 
   /**
    * Represent a match as a formula in propositional logic that encodes whether the match matches (abstractly: we only consider types)
@@ -344,8 +340,8 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 
 trait MatchAnalysis extends MatchApproximation {
   import PatternMatchingStats._
-  import global.{Tree, Type, Symbol, NoSymbol, Ident, Select}
-  import global.definitions.{isPrimitiveValueClass, ConsClass, isTupleSymbol}
+  import global._
+  import global.definitions._
 
   trait MatchAnalyzer extends MatchApproximator  {
     def uncheckedWarning(pos: Position, msg: String) = global.currentUnit.uncheckedWarning(pos, msg)
@@ -636,7 +632,7 @@ trait MatchAnalysis extends MatchApproximation {
         def toCounterExample(beBrief: Boolean = false): CounterExample =
           if (!allFieldAssignmentsLegal) NoExample
           else {
-            debug.patmat("describing "+ (variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal))
+            debug.patmat("describing "+ ((variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal)))
             val res = prunedEqualTo match {
               // a definite assignment to a value
               case List(eq: ValueConst) if fields.isEmpty => ValueExample(eq)

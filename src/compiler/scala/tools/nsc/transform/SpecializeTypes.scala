@@ -518,9 +518,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def specializeClass(clazz: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     def specializedClass(env0: TypeEnv, normMembers: List[Symbol]): Symbol = {
-      /** It gets hard to follow all the clazz and cls, and specializedClass
-       *  was both already used for a map and mucho long.  So "sClass" is the
-       *  specialized subclass of "clazz" throughout this file.
+      /* It gets hard to follow all the clazz and cls, and specializedClass
+       * was both already used for a map and mucho long.  So "sClass" is the
+       * specialized subclass of "clazz" throughout this file.
        */
 
       // SI-5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
@@ -558,12 +558,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         def applyContext(tpe: Type) =
           subst(env, tpe).instantiateTypeParams(oldClassTParams, newClassTParams map (_.tpe))
 
-        /** Return a list of specialized parents to be re-mixed in a specialized subclass.
-         *  Assuming env = [T -> Int] and
-         *    class Integral[@specialized T] extends Numeric[T]
-         *  and Numeric[U] is specialized on U, this produces List(Numeric$mcI).
+        /* Return a list of specialized parents to be re-mixed in a specialized subclass.
+         * Assuming env = [T -> Int] and
+         *   class Integral[@specialized T] extends Numeric[T]
+         * and Numeric[U] is specialized on U, this produces List(Numeric$mcI).
          *
-         *  so that class Integral$mci extends Integral[Int] with Numeric$mcI.
+         * so that class Integral$mci extends Integral[Int] with Numeric$mcI.
          */
         def specializedParents(parents: List[Type]): List[Type] = {
           var res: List[Type] = Nil
@@ -604,10 +604,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       exitingSpecialize(sClass setInfo specializedInfoType)
       val fullEnv = outerEnv ++ env
 
-      /** Enter 'sym' in the scope of the current specialized class. It's type is
-       *  mapped through the active environment, binding type variables to concrete
-       *  types. The existing typeEnv for `sym` is composed with the current active
-       *  environment
+      /* Enter 'sym' in the scope of the current specialized class. It's type is
+       * mapped through the active environment, binding type variables to concrete
+       * types. The existing typeEnv for `sym` is composed with the current active
+       * environment
        */
       def enterMember(sym: Symbol): Symbol = {
         typeEnv(sym) = fullEnv ++ typeEnv(sym) // append the full environment
@@ -620,18 +620,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         decls1 enter subst(fullEnv)(sym)
       }
 
-      /** Create and enter in scope an overridden symbol m1 for `m` that forwards
-       *  to `om`. `om` is a fresh, special overload of m1 that is an implementation
-       *  of `m`. For example, for a
+      /* Create and enter in scope an overridden symbol m1 for `m` that forwards
+       * to `om`. `om` is a fresh, special overload of m1 that is an implementation
+       * of `m`. For example, for a
        *
-       *  class Foo[@specialized A] {
-       *    def m(x: A) = <body> // m
-       *  }
-       *  , for class Foo$I extends Foo[Int], this method enters two new symbols in
-       *  the scope of Foo$I:
+       * class Foo[@specialized A] {
+       *   def m(x: A) = <body> // m
+       * }
+       * , for class Foo$I extends Foo[Int], this method enters two new symbols in
+       * the scope of Foo$I:
        *
-       *    def m(x: Int) = m$I(x) // m1
-       *    def m$I(x: Int) = <body>/adapted to env {A -> Int} // om
+       *   def m(x: Int) = m$I(x) // m1
+       *   def m$I(x: Int) = <body>/adapted to env {A -> Int} // om
        */
       def forwardToOverload(m: Symbol): Symbol = {
         val specMember = enterMember(cloneInSpecializedClass(m, f => (f | OVERRIDE) & ~(DEFERRED | CASEACCESSOR)))
@@ -935,13 +935,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  this method will return List('apply$mcII$sp')
    */
   private def specialOverrides(clazz: Symbol) = logResultIf[List[Symbol]]("specialized overrides in " + clazz, _.nonEmpty) {
-    /** Return the overridden symbol in syms that needs a specialized overriding symbol,
-     *  together with its specialization environment. The overridden symbol may not be
-     *  the closest to 'overriding', in a given hierarchy.
+    /* Return the overridden symbol in syms that needs a specialized overriding symbol,
+     * together with its specialization environment. The overridden symbol may not be
+     * the closest to 'overriding', in a given hierarchy.
      *
-     *  An method m needs a special override if
-     *    * m overrides a method whose type contains specialized type variables
-     *    * there is a valid specialization environment that maps the overridden method type to m's type.
+     * An method m needs a special override if
+     *   * m overrides a method whose type contains specialized type variables
+     *   * there is a valid specialization environment that maps the overridden method type to m's type.
      */
     def needsSpecialOverride(overriding: Symbol): (Symbol, TypeEnv) = {
       def checkOverriddenTParams(overridden: Symbol) {
@@ -1527,7 +1527,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (symbol.isConstructor) {
             val t = atOwner(symbol)(forwardCtorCall(tree.pos, gen.mkSuperInitCall, vparamss, symbol.owner))
             if (symbol.isPrimaryConstructor)
-              localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant()))))
+              localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant(())))))
             else // duplicate the original constructor
               reportError(duplicateBody(ddef, info(symbol).target))(_ => ddef)
           }
@@ -1797,11 +1797,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def forwardCtorCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
     log(s"forwardCtorCall($pos, $receiver, $paramss, $clazz)")
 
-    /** A constructor parameter `f` initializes a specialized field
-     *  iff:
-     *    - it is specialized itself
-     *    - there is a getter for the original (non-specialized) field in the same class
-     *    - there is a getter for the specialized field in the same class
+    /* A constructor parameter `f` initializes a specialized field
+     * iff:
+     *   - it is specialized itself
+     *   - there is a getter for the original (non-specialized) field in the same class
+     *   - there is a getter for the specialized field in the same class
      */
     def initializesSpecializedField(f: Symbol) = (
          (f.name endsWith nme.SPECIALIZED_SUFFIX)

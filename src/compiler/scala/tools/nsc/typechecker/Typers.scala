@@ -86,6 +86,9 @@ trait Typers extends Adaptations with Tags {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
+  private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
+  private final val InterpolatorIdentRegex = """\$\w+""".r
+
   // To enable decent error messages when the typer crashes.
   // TODO - this only catches trees which go through def typed,
   // but there are all kinds of back ways - typedClassDef, etc. etc.
@@ -905,7 +908,7 @@ trait Typers extends Adaptations with Tags {
         }
       }
 
-      /**
+      /*
        * To deal with the type slack between actual (run-time) types and statically known types, for each abstract type T,
        * reflect its variance as a skolem that is upper-bounded by T (covariant position), or lower-bounded by T (contravariant).
        *
@@ -1124,16 +1127,19 @@ trait Typers extends Adaptations with Tags {
               else {
                 if (mode.inExprModeButNot(FUNmode)) {
                   pt.dealias match {
-                    case TypeRef(_, sym, _) =>
+                    // The <: Any requirement inhibits attempts to adapt continuation types
+                    // to non-continuation types.
+                    case TypeRef(_, sym, _) if tree.tpe <:< AnyClass.tpe =>
                       // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
                       // infinite expansion if pt is constant type ()
-                      if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12)
+                      if (sym == UnitClass) { // (12)
                         if (settings.warnValueDiscard.value)
                           context.unit.warning(tree.pos, "discarded non-Unit value")
                         return typedPos(tree.pos, mode, pt) {
-                          Block(List(tree), Literal(Constant()))
+                          Block(List(tree), Literal(Constant(())))
                         }
-                      } else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
+                      }
+                      else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
                         if (settings.warnNumericWiden.value)
                           context.unit.warning(tree.pos, "implicit numeric widening")
                         return typedPos(tree.pos, mode, pt) {
@@ -1245,7 +1251,7 @@ trait Typers extends Adaptations with Tags {
       val savedUndetparams = context.undetparams
       silent(_.instantiate(tree, mode, UnitClass.tpe)) orElse { _ =>
           context.undetparams = savedUndetparams
-          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
+          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
     }
@@ -1504,7 +1510,7 @@ trait Typers extends Adaptations with Tags {
      */
     private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean): Tree = {
       val app = treeInfo.dissectApplied(encodedtpt)
-      val (treeInfo.Applied(core, targs, argss), decodedtpt) = (app, app.callee)
+      val (treeInfo.Applied(core, targs, argss), decodedtpt) = ((app, app.callee))
       val argssAreTrivial = argss == Nil || argss == ListOfNil
 
       // we cannot avoid cyclic references with `initialize` here, because when type macros arrive,
@@ -2153,7 +2159,7 @@ trait Typers extends Adaptations with Tags {
         unit.error(pos, msg)
         false
       }
-      /** Have to examine all parameters in all lists.
+      /* Have to examine all parameters in all lists.
        */
       def paramssTypes(tp: Type): List[List[Type]] = tp match {
         case mt @ MethodType(_, restpe) => mt.paramTypes :: paramssTypes(restpe)
@@ -2172,10 +2178,10 @@ trait Typers extends Adaptations with Tags {
           val sym = paramType.typeSymbol
           def paramPos = nthParamPos(listIdx, paramIdx)
 
-          /** Not enough to look for abstract types; have to recursively check the bounds
-           *  of each abstract type for more abstract types. Almost certainly there are other
-           *  exploitable type soundness bugs which can be seen by bounding a type parameter
-           *  by an abstract type which itself is bounded by an abstract type.
+          /* Not enough to look for abstract types; have to recursively check the bounds
+           * of each abstract type for more abstract types. Almost certainly there are other
+           * exploitable type soundness bugs which can be seen by bounding a type parameter
+           * by an abstract type which itself is bounded by an abstract type.
            */
           def checkAbstract(tp0: Type, what: String): Boolean = {
             def check(sym: Symbol): Boolean = !sym.isAbstractType || {
@@ -2861,8 +2867,8 @@ trait Typers extends Adaptations with Tags {
           }
       }
 
-      /** 'accessor' and 'accessed' are so similar it becomes very difficult to
-       *  follow the logic, so I renamed one to something distinct.
+      /* 'accessor' and 'accessed' are so similar it becomes very difficult to
+       * follow the logic, so I renamed one to something distinct.
        */
       def accesses(looker: Symbol, accessed: Symbol) = accessed.hasLocalFlag && (
            (accessed.isParamAccessor)
@@ -2985,9 +2991,8 @@ trait Typers extends Adaptations with Tags {
             else if (isByNameParamType(formals.head)) NOmode
             else BYVALmode
           )
-          var tree = typedArg(args.head, mode, typedMode, adapted.head)
           // formals may be empty, so don't call tail
-          tree :: loop(args.tail, formals drop 1, adapted.tail)
+          typedArg(args.head, mode, typedMode, adapted.head) :: loop(args.tail, formals drop 1, adapted.tail)
         }
       }
       loop(args0, formals0, adapted0)
@@ -3119,9 +3124,9 @@ trait Typers extends Adaptations with Tags {
           val argslen = args.length
           val formals = formalTypes(paramTypes, argslen)
 
-          /** Try packing all arguments into a Tuple and apply `fun`
-           *  to that. This is the last thing which is tried (after
-           *  default arguments)
+          /* Try packing all arguments into a Tuple and apply `fun`
+           * to that. This is the last thing which is tried (after
+           * default arguments)
            */
           def tryTupleApply: Option[Tree] = (
             if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
@@ -3142,10 +3147,10 @@ trait Typers extends Adaptations with Tags {
             else None
           )
 
-          /** Treats an application which uses named or default arguments.
-           *  Also works if names + a vararg used: when names are used, the vararg
-           *  parameter has to be specified exactly once. Note that combining varargs
-           *  and defaults is ruled out by typedDefDef.
+          /* Treats an application which uses named or default arguments.
+           * Also works if names + a vararg used: when names are used, the vararg
+           * parameter has to be specified exactly once. Note that combining varargs
+           * and defaults is ruled out by typedDefDef.
            */
           def tryNamesDefaults: Tree = {
             val lencmp = compareLengths(args, formals)
@@ -3255,7 +3260,7 @@ trait Typers extends Adaptations with Tags {
                   case _ => tp
                 }
 
-                /**
+                /*
                  * This is translating uses of List() into Nil.  This is less
                  *  than ideal from a consistency standpoint, but it shouldn't be
                  *  altered without due caution.
@@ -3472,8 +3477,8 @@ trait Typers extends Adaptations with Tags {
         ErroneousAnnotation
       }
 
-      /** Calling constfold right here is necessary because some trees (negated
-       *  floats and literals in particular) are not yet folded.
+      /* Calling constfold right here is necessary because some trees (negated
+       * floats and literals in particular) are not yet folded.
        */
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
         // The typed tree may be relevantly different than the tree `tr`,
@@ -3495,8 +3500,8 @@ trait Typers extends Adaptations with Tags {
           Some(LiteralAnnotArg(const))
       }
 
-      /** Converts an untyped tree to a ClassfileAnnotArg. If the conversion fails,
-       *  an error message is reported and None is returned.
+      /* Converts an untyped tree to a ClassfileAnnotArg. If the conversion fails,
+       * an error message is reported and None is returned.
        */
       def tree2ConstArg(tree: Tree, pt: Type): Option[ClassfileAnnotArg] = tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) if (pt.typeSymbol == ArrayClass) =>
@@ -3995,13 +4000,13 @@ trait Typers extends Adaptations with Tags {
           def applyOp(args: List[Tree]) = if (hasNamed(args)) nme.applyDynamicNamed else nme.applyDynamic
           def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
 
-          /** Note that the trees which arrive here are potentially some distance from
-           *  the trees of direct interest. `cxTree` is some enclosing expression which
-           *  may apparently be arbitrarily larger than `tree`; and `tree` itself is
-           *  too small, having at least in some cases lost its explicit type parameters.
-           *  This logic is designed to use `tree` to pinpoint the immediately surrounding
-           *  Apply/TypeApply/Select node, and only then creates the dynamic call.
-           *  See SI-6731 among others.
+          /* Note that the trees which arrive here are potentially some distance from
+           * the trees of direct interest. `cxTree` is some enclosing expression which
+           * may apparently be arbitrarily larger than `tree`; and `tree` itself is
+           * too small, having at least in some cases lost its explicit type parameters.
+           * This logic is designed to use `tree` to pinpoint the immediately surrounding
+           * Apply/TypeApply/Select node, and only then creates the dynamic call.
+           * See SI-6731 among others.
            */
           def findSelection(t: Tree): Option[(TermName, Tree)] = t match {
             case Apply(fn, args) if hasStar(args) => DynamicVarArgUnsupported(tree, applyOp(args)) ; None
@@ -4060,7 +4065,7 @@ trait Typers extends Adaptations with Tags {
       def typedAnnotated(atd: Annotated): Tree = {
         val ann = atd.annot
         val arg1 = typed(atd.arg, mode, pt)
-        /** mode for typing the annotation itself */
+        /* mode for typing the annotation itself */
         val annotMode = (mode &~ TYPEmode) | EXPRmode
 
         def resultingTypeTree(tpe: Type) = {
@@ -4184,11 +4189,11 @@ trait Typers extends Adaptations with Tags {
 
       def typedArrayValue(tree: ArrayValue) = {
         val elemtpt1 = typedType(tree.elemtpt, mode)
-        val elems1 = tree.elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
-        treeCopy.ArrayValue(tree, elemtpt1, elems1)
-          .setType(
-            (if (isFullyDefined(pt) && !phase.erasedTypes) pt
-             else arrayType(elemtpt1.tpe)).notNull)
+        val elems1   = tree.elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
+        // see run/t6126 for an example where `pt` does not suffice (tagged types)
+        val tpe1     = if (isFullyDefined(pt) && !phase.erasedTypes) pt else arrayType(elemtpt1.tpe)
+
+        treeCopy.ArrayValue(tree, elemtpt1, elems1) setType tpe1
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
@@ -4336,8 +4341,8 @@ trait Typers extends Adaptations with Tags {
           else tpt0
         }
 
-        /** If current tree <tree> appears in <val x(: T)? = <tree>>
-         *  return `tp with x.type' else return `tp`.
+        /* If current tree <tree> appears in <val x(: T)? = <tree>>
+         * return `tp with x.type' else return `tp`.
          */
         def narrowRhs(tp: Type) = { val sym = context.tree.symbol
           context.tree match {
@@ -4406,8 +4411,8 @@ trait Typers extends Adaptations with Tags {
         }
       }
 
-      /** Try to apply function to arguments; if it does not work, try to convert Java raw to existentials, or try to
-       *  insert an implicit conversion.
+      /* Try to apply function to arguments; if it does not work, try to convert Java raw to existentials, or try to
+       * insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
@@ -4491,35 +4496,31 @@ trait Typers extends Adaptations with Tags {
                   reportError
               }
           }
-          silent(_.typed(fun, mode.forFunMode, funpt),
-                 if (mode.inExprMode) false else context.ambiguousErrors,
-                 if (mode.inExprMode) tree else context.tree) match {
+          val silentResult = silent(
+            op                    = _.typed(fun, mode.forFunMode, funpt),
+            reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
+            newtree               = if (mode.inExprMode) tree else context.tree
+          )
+          silentResult match {
             case SilentResultValue(fun1) =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
               if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
-              def isImplicitMethod(tpe: Type) = tpe match {
-                case mt: MethodType => mt.isImplicit
-                case _ => false
-              }
-              val useTry = (
-                   !isPastTyper
-                && fun2.isInstanceOf[Select]
-                && !isImplicitMethod(fun2.tpe)
-                && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
-                && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
+              val noSecondTry = (
+                   isPastTyper
+                || (fun2.symbol ne null) && fun2.symbol.isConstructor
+                || (fun2.tpe match { case mt: MethodType => mt.isImplicit case _ => false })
               )
-              val res =
-                if (useTry) tryTypedApply(fun2, args)
-                else doTypedApply(tree, fun2, args, mode, pt)
+              val isFirstTry = !noSecondTry && (
+                fun2 match {
+                  case Select(_, _) => mode inExprModeButNot SNDTRYmode
+                  case _            => false
+                }
+              )
+              if (isFirstTry)
+                tryTypedApply(fun2, args)
+              else
+                doTypedApply(tree, fun2, args, mode, pt)
 
-              if (fun2.symbol == Array_apply && !res.isErrorTyped) {
-                val checked = gen.mkCheckInit(res)
-                // this check is needed to avoid infinite recursion in Duplicators
-                // (calling typed1 more than once for the same tree)
-                if (checked ne res) typed { atPos(tree.pos)(checked) }
-                else res
-              } else
-                res
             case SilentTypeError(err) =>
               onError({issue(err); setError(tree)})
           }
@@ -4647,8 +4648,8 @@ trait Typers extends Adaptations with Tags {
             if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
         }
 
-      /** Attribute a selection where `tree` is `qual.name`.
-       *  `qual` is already attributed.
+      /* Attribute a selection where `tree` is `qual.name`.
+       * `qual` is already attributed.
        */
       def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
         val t = typedSelectInternal(tree, qual, name)
@@ -4735,16 +4736,6 @@ trait Typers extends Adaptations with Tags {
               (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
           }
 
-          def isPotentialNullDeference() = {
-            !isPastTyper &&
-            !sym.isConstructor &&
-            !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull &&
-            !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
-          }
-          // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
-          if (settings.warnSelectNullable.value && isPotentialNullDeference && unit != null)
-            unit.warning(tree.pos, "potential null pointer dereference: "+tree)
-
           result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
             case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
@@ -4814,7 +4805,7 @@ trait Typers extends Adaptations with Tags {
         }
       }
 
-      /** A symbol qualifies if:
+      /* A symbol qualifies if:
        *  - it exists
        *  - it is not stale (stale symbols are made to disappear here)
        *  - if we are in a pattern constructor, method definitions do not qualify
@@ -4826,12 +4817,12 @@ trait Typers extends Adaptations with Tags {
         && !(inPatternConstructor && sym.isMethod && !sym.isStable)
       )
 
-      /** Attribute an identifier consisting of a simple name or an outer reference.
+      /* Attribute an identifier consisting of a simple name or an outer reference.
        *
-       *  @param tree      The tree representing the identifier.
-       *  @param name      The name of the identifier.
-       *  Transformations: (1) Prefix class members with this.
-       *                   (2) Change imported symbols to selections
+       * @param tree      The tree representing the identifier.
+       * @param name      The name of the identifier.
+       * Transformations: (1) Prefix class members with this.
+       *                  (2) Change imported symbols to selections
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
         // setting to enable unqualified idents in empty package (used by the repl)
@@ -4973,7 +4964,7 @@ trait Typers extends Adaptations with Tags {
         treeCopy.PackageDef(tree, pid1, stats1) setType NoType
       }
 
-      /**
+      /*
        * The typer with the correct context for a method definition. If the method is a default getter for
        * a constructor default, the resulting typer has a constructor context (fixes SI-5543).
        */
@@ -5151,6 +5142,19 @@ trait Typers extends Adaptations with Tags {
 
       def typedLiteral(tree: Literal) = {
         val value = tree.value
+        // Warn about likely interpolated strings which are missing their interpolators
+        if (settings.lint.value) value match {
+          case Constant(s: String) =>
+            def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
+            val shouldWarn = (
+                 (InterpolatorCodeRegex findFirstIn s).nonEmpty
+              || (names exists (n => context.lookupSymbol(n, _ => true).symbol.exists))
+            )
+            if (shouldWarn)
+              unit.warning(tree.pos, "looks like an interpolated String; did you forget the interpolator?")
+          case _ =>
+        }
+
         tree setType (
           if (value.tag == UnitTag) UnitClass.tpe
           else ConstantType(value))

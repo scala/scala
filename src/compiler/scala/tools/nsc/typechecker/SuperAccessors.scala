@@ -1,3 +1,4 @@
+
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author Martin Odersky
@@ -264,7 +265,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 debuglog("alias replacement: " + tree + " ==> " + result); //debug
                 localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, beforeRefChecks = true))
               } else {
-                /**
+                /*
                  * A trait which extends a class and accesses a protected member
                  *  of that class cannot implement the necessary accessor method
                  *  because its implementation is in an implementation class (e.g.

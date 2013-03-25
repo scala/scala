@@ -532,7 +532,7 @@ trait Contexts { self: Analyzer =>
         case _ => false
       }
 
-      /** Is protected access to target symbol permitted */
+      /* Is protected access to target symbol permitted */
       def isProtectedAccessOK(target: Symbol) = {
         val c = enclosingSubClassContext(sym.owner)
         if (c == NoContext)
@@ -594,11 +594,11 @@ trait Contexts { self: Analyzer =>
       def restore(): Type = savedTypeBounds.foldLeft(tp) { case (current, (sym, savedInfo)) =>
         def bounds_s(tb: TypeBounds) = if (tb.isEmptyBounds) "<empty bounds>" else s"TypeBounds(lo=${tb.lo}, hi=${tb.hi})"
         //@M TODO: when higher-kinded types are inferred, probably need a case PolyType(_, TypeBounds(...)) if ... =>
-        val tb @ TypeBounds(lo, hi) = sym.info.bounds
-        val isUnique                = lo <:< hi && hi <:< lo
-        val isPresent               = current contains sym
-        def saved_s                 = bounds_s(savedInfo.bounds)
-        def current_s               = bounds_s(sym.info.bounds)
+        val TypeBounds(lo, hi) = sym.info.bounds
+        val isUnique           = lo <:< hi && hi <:< lo
+        val isPresent          = current contains sym
+        def saved_s            = bounds_s(savedInfo.bounds)
+        def current_s          = bounds_s(sym.info.bounds)
 
         if (isUnique && isPresent)
           devWarningResult(s"Preserving inference: ${sym.nameString}=$hi in $current (based on $current_s) before restoring $sym to saved $saved_s")(
@@ -962,15 +962,15 @@ trait Contexts { self: Analyzer =>
           // import check from being misled by symbol lookups which are not
           // actually used.
           val other = lookupImport(imp2, requireExplicit = !sameDepth)
-          def imp1wins = { imports = imp1 :: imports.tail.tail }
-          def imp2wins = { impSym = other ; imports = imports.tail }
+          def imp1wins() = { imports = imp1 :: imports.tail.tail }
+          def imp2wins() = { impSym = other ; imports = imports.tail }
 
           if (!other.exists) // imp1 wins; drop imp2 and continue.
-            imp1wins
+            imp1wins()
           else if (sameDepth && !imp1Explicit && imp2Explicit) // imp2 wins; drop imp1 and continue.
-            imp2wins
+            imp2wins()
           else resolveAmbiguousImport(name, imp1, imp2) match {
-            case Some(imp) => if (imp eq imp1) imp1wins else imp2wins
+            case Some(imp) => if (imp eq imp1) imp1wins() else imp2wins()
             case _         => lookupError = ambiguousImports(imp1, imp2)
           }
         }

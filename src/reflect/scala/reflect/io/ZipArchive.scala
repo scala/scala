@@ -259,7 +259,11 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
   }
 
   def name  = path
-  def path: String = url.getPath() match { case s => s.substring(0, s.lastIndexOf('!')) }
+  def path: String = {
+    val s = url.getPath
+    val n = s.lastIndexOf('!')
+    s.substring(0, n)
+  }
   def input = url.openStream()
   def lastModified =
     try url.openConnection().getLastModified()

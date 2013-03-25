@@ -401,8 +401,7 @@ abstract class UnCurry extends InfoTransform
         finally needTryLift = saved
       }
 
-      /** Transform tree `t` to { def f = t; f } where `f` is a fresh name
-       */
+      /* Transform tree `t` to { def f = t; f } where `f` is a fresh name */
       def liftTree(tree: Tree) = {
         debuglog("lifting tree at: " + (tree.pos))
         val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
@@ -549,8 +548,6 @@ abstract class UnCurry extends InfoTransform
         case _ =>
           false
       }
-
-      def isDefaultCatch(cdef: CaseDef) = isThrowable(cdef.pat) && cdef.guard.isEmpty
 
       tree match {
         /* Some uncurry post transformations add members to templates.
@@ -701,7 +698,7 @@ abstract class UnCurry extends InfoTransform
         // update the type of the method after uncurry.
         dd.symbol updateInfo {
           val GenPolyType(tparams, tp) = dd.symbol.info
-          logResult("erased dependent param types for ${dd.symbol.info}") {
+          logResult(s"erased dependent param types for ${dd.symbol.info}") {
             GenPolyType(tparams, MethodType(allParams map (_.symbol), tp.finalResultType))
           }
         }

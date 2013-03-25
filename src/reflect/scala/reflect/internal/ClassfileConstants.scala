@@ -350,7 +350,7 @@ object ClassfileConstants {
     }
     private def translateFlags(jflags: Int, baseFlags: Long): Long = {
       var res: Long = JAVA | baseFlags
-      /** fast, elegant, maintainable, pick any two... */
+      /* fast, elegant, maintainable, pick any two... */
       res |= translateFlag(jflags & JAVA_ACC_PRIVATE)
       res |= translateFlag(jflags & JAVA_ACC_PROTECTED)
       res |= translateFlag(jflags & JAVA_ACC_FINAL)

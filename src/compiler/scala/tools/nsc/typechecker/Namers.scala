@@ -554,8 +554,8 @@ trait Namers extends MethodSynthesis {
       val sym      = copyDef.symbol
       val lazyType = completerOf(copyDef)
 
-      /** Assign the types of the class parameters to the parameters of the
-       *  copy method. See comment in `Unapplies.caseClassCopyMeth` */
+      /* Assign the types of the class parameters to the parameters of the
+       * copy method. See comment in `Unapplies.caseClassCopyMeth` */
       def assignParamTypes() {
         val clazz = sym.owner
         val constructorType = clazz.primaryConstructor.tpe
@@ -805,23 +805,19 @@ trait Namers extends MethodSynthesis {
         case _ =>
           false
       }
-
-      val tpe1 = dropIllegalStarTypes(tpe.deconst)
-      val tpe2 = tpe1.widen
-
-      // This infers Foo.type instead of "object Foo"
-      // See Infer#adjustTypeArgs for the polymorphic case.
-      if (tpe.typeSymbolDirect.isModuleClass) tpe1
-      else if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
-        if (tpe2 <:< pt) tpe2 else tpe1
-      else if (isHidden(tpe)) tpe2
-      // In an attempt to make pattern matches involving method local vals
-      // compilable into switches, for a time I had a more generous condition:
-      //    `if (sym.isFinal || sym.isLocal) tpe else tpe1`
-      // This led to issues with expressions like classOf[List[_]] which apparently
-      // depend on being deconst-ed here, so this is again the original:
-      else if (!sym.isFinal) tpe1
-      else tpe
+      val shouldWiden = (
+           !tpe.typeSymbolDirect.isModuleClass // Infer Foo.type instead of "object Foo"
+        && (tpe.widen <:< pt)                  // Don't widen our way out of conforming to pt
+        && (   sym.isVariable
+            || sym.isMethod && !sym.hasAccessorFlag
+            || isHidden(tpe)
+           )
+      )
+      dropIllegalStarTypes(
+        if (shouldWiden) tpe.widen
+        else if (sym.isFinal) tpe    // "final val" allowed to retain constant type
+        else tpe.deconst
+      )
     }
     /** Computes the type of the body in a ValDef or DefDef, and
      *  assigns the type to the tpt's node.  Returns the type.
@@ -989,7 +985,7 @@ trait Namers extends MethodSynthesis {
       var vparamSymss = enterValueParams(vparamss)
 
 
-      /**
+      /*
        * Creates a method type using tparamSyms and vparamsSymss as argument symbols and `respte` as result type.
        * All typeRefs to type skolems are replaced by references to the corresponding non-skolem type parameter,
        * so the resulting type is a valid external method type, it does not contain (references to) skolems.
@@ -1023,7 +1019,7 @@ trait Namers extends MethodSynthesis {
         res.substSym(tparamSkolems, tparamSyms)
       }
 
-      /**
+      /*
        * Creates a schematic method type which has WildcardTypes for non specified
        * return or parameter types. For instance, in `def f[T](a: T, b) = ...`, the
        * type schema is
@@ -1047,7 +1043,7 @@ trait Namers extends MethodSynthesis {
       // def overriddenSymbol = meth.nextOverriddenSymbol
 
 
-      /**
+      /*
        * If `meth` doesn't have an explicit return type, extracts the return type from the method
        * overridden by `meth` (if there's an unique one). This type is lateron used as the expected
        * type for computing the type of the rhs. The resulting type references type skolems for
@@ -1391,12 +1387,12 @@ trait Namers extends MethodSynthesis {
      */
     def typeSig(tree: Tree): Type = {
       // log("typeSig " + tree)
-      /** For definitions, transform Annotation trees to AnnotationInfos, assign
-       *  them to the sym's annotations. Type annotations: see Typer.typedAnnotated
-       *  We have to parse definition annotations here (not in the typer when traversing
-       *  the MemberDef tree): the typer looks at annotations of certain symbols; if
-       *  they were added only in typer, depending on the compilation order, they may
-       *  or may not be visible.
+      /* For definitions, transform Annotation trees to AnnotationInfos, assign
+       * them to the sym's annotations. Type annotations: see Typer.typedAnnotated
+       * We have to parse definition annotations here (not in the typer when traversing
+       * the MemberDef tree): the typer looks at annotations of certain symbols; if
+       * they were added only in typer, depending on the compilation order, they may
+       * or may not be visible.
        */
       def annotate(annotated: Symbol) = {
         // typeSig might be called multiple times, e.g. on a ValDef: val, getter, setter

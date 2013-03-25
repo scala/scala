@@ -243,7 +243,7 @@ trait MatchTranslation { self: PatternMatching  =>
         if (!extractor.isTyped) ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
         // if (extractor.resultInMonad == ErrorType) throw new TypeError(pos, "Unsupported extractor type: "+ extractor.tpe)
 
-        debug.patmat("translateExtractorPattern checking parameter type: "+ (patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType))
+        debug.patmat("translateExtractorPattern checking parameter type: "+ ((patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType)))
 
         // must use type `tp`, which is provided by extractor's result, not the type expected by binder,
         // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
@@ -309,7 +309,7 @@ trait MatchTranslation { self: PatternMatching  =>
           // debug.patmat("unfun: "+ (unfun.tpe, unfun.symbol.ownerChain, unfun.symbol.info, patBinder.info))
           translateExtractorPattern(ExtractorCall(unfun, args))
 
-        /** A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
+        /* A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
           It consists of a stable identifier c, followed by element patterns p1, ..., pn.
           The constructor c is a simple or qualified name which denotes a case class (§5.3.2).
 
@@ -328,22 +328,22 @@ trait MatchTranslation { self: PatternMatching  =>
             noFurtherSubPats()
           }
 
-        /** A typed pattern x : T consists of a pattern variable x and a type pattern T.
-            The type of x is the type pattern T, where each type variable and wildcard is replaced by a fresh, unknown type.
-            This pattern matches any value matched by the type pattern T (§8.2); it binds the variable name to that value.
-        **/
+        /* A typed pattern x : T consists of a pattern variable x and a type pattern T.
+           The type of x is the type pattern T, where each type variable and wildcard is replaced by a fresh, unknown type.
+           This pattern matches any value matched by the type pattern T (§8.2); it binds the variable name to that value.
+        */
         // must treat Typed and Bind together -- we need to know the patBinder of the Bind pattern to get at the actual type
         case MaybeBoundTyped(subPatBinder, pt) =>
           val next = glb(List(dealiasWiden(patBinder.info), pt)).normalize
           // a typed pattern never has any subtrees
           noFurtherSubPats(TypeTestTreeMaker(subPatBinder, patBinder, pt, next)(pos))
 
-        /** A pattern binder x@p consists of a pattern variable x and a pattern p.
-            The type of the variable x is the static type T of the pattern p.
-            This pattern matches any value v matched by the pattern p,
-            provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
-            and it binds the variable name to that value.
-        **/
+        /* A pattern binder x@p consists of a pattern variable x and a pattern p.
+           The type of the variable x is the static type T of the pattern p.
+           This pattern matches any value v matched by the pattern p,
+           provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
+           and it binds the variable name to that value.
+        */
         case Bound(subpatBinder, p)          =>
           // replace subpatBinder by patBinder (as if the Bind was not there)
           withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)),
@@ -351,14 +351,14 @@ trait MatchTranslation { self: PatternMatching  =>
             (patBinder, p)
           )
 
-        /** 8.1.4 Literal Patterns
-              A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
-              The type of L must conform to the expected type of the pattern.
+        /* 8.1.4 Literal Patterns
+             A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
+             The type of L must conform to the expected type of the pattern.
 
-            8.1.5 Stable Identifier Patterns  (a stable identifier r (see §3.1))
-              The pattern matches any value v such that r == v (§12.1).
-              The type of r must conform to the expected type of the pattern.
-        **/
+           8.1.5 Stable Identifier Patterns  (a stable identifier r (see §3.1))
+             The pattern matches any value v such that r == v (§12.1).
+             The type of r must conform to the expected type of the pattern.
+        */
         case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) =>
           noFurtherSubPats(EqualityTestTreeMaker(patBinder, patTree, pos))
 

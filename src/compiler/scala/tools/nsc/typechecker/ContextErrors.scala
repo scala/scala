@@ -20,7 +20,6 @@ trait ContextErrors {
 
   import global._
   import definitions._
-  import treeInfo._
 
   object ErrorKinds extends Enumeration {
     type ErrorKind = Value
@@ -173,8 +172,7 @@ trait ContextErrors {
         assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
 
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req, infer.isPossiblyMissingArgs(foundType, req))) )
-        if (settings.explaintypes.value)
-          explainTypes(foundType, req)
+        infer.explainTypes(foundType, req)
       }
 
       def WithFilterError(tree: Tree, ex: AbsTypeError) = {
@@ -302,7 +300,7 @@ trait ContextErrors {
           val target           = qual.tpe.widen
           def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
           def nameString       = decodeWithKind(name, owner)
-          /** Illuminating some common situations and errors a bit further. */
+          /* Illuminating some common situations and errors a bit further. */
           def addendum         = {
             val companion = {
               if (name.isTermName && owner.isPackageClass) {
@@ -1274,11 +1272,12 @@ trait ContextErrors {
     // not exactly an error generator, but very related
     // and I dearly wanted to push it away from Macros.scala
     private def checkSubType(slot: String, rtpe: Type, atpe: Type) = {
-      val ok = if (macroDebugVerbose || settings.explaintypes.value) {
-        if (rtpe eq atpe) println(rtpe + " <: " + atpe + "?" + EOL + "true")
+      val ok = if (macroDebugVerbose) {
         withTypesExplained(rtpe <:< atpe)
       } else rtpe <:< atpe
       if (!ok) {
+        if (!macroDebugVerbose)
+          explainTypes(rtpe, atpe)
         compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, abbreviateCoreAliases(rtpe.toString), abbreviateCoreAliases(atpe.toString)))
       }
     }

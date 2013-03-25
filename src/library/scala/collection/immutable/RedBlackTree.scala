@@ -325,54 +325,56 @@ object RedBlackTree {
   // whether the zipper was traversed left-most or right-most.
 
   // If the trees were balanced, returns an empty zipper
-  private[this] def compareDepth[A, B](left: Tree[A, B], right: Tree[A, B]): (List[Tree[A, B]], Boolean, Boolean, Int) = {
+  private[this] def compareDepth[A, B](left: Tree[A, B], right: Tree[A, B]): (NList[Tree[A, B]], Boolean, Boolean, Int) = {
+    import NList.cons
     // Once a side is found to be deeper, unzip it to the bottom
-    def unzip(zipper: List[Tree[A, B]], leftMost: Boolean): List[Tree[A, B]] = {
+    def unzip(zipper: NList[Tree[A, B]], leftMost: Boolean): NList[Tree[A, B]] = {
       val next = if (leftMost) zipper.head.left else zipper.head.right
-      next match {
-        case null => zipper
-        case node => unzip(node :: zipper, leftMost)
-      }
+      if (next eq null) zipper
+      else unzip(cons(next, zipper), leftMost)
     }
 
     // Unzip left tree on the rightmost side and right tree on the leftmost side until one is
     // found to be deeper, or the bottom is reached
     def unzipBoth(left: Tree[A, B],
                   right: Tree[A, B],
-                  leftZipper: List[Tree[A, B]],
-                  rightZipper: List[Tree[A, B]],
-                  smallerDepth: Int): (List[Tree[A, B]], Boolean, Boolean, Int) = {
+                  leftZipper: NList[Tree[A, B]],
+                  rightZipper: NList[Tree[A, B]],
+                  smallerDepth: Int): (NList[Tree[A, B]], Boolean, Boolean, Int) = {
       if (isBlackTree(left) && isBlackTree(right)) {
-        unzipBoth(left.right, right.left, left :: leftZipper, right :: rightZipper, smallerDepth + 1)
+        unzipBoth(left.right, right.left, cons(left, leftZipper), cons(right, rightZipper), smallerDepth + 1)
       } else if (isRedTree(left) && isRedTree(right)) {
-        unzipBoth(left.right, right.left, left :: leftZipper, right :: rightZipper, smallerDepth)
+        unzipBoth(left.right, right.left, cons(left, leftZipper), cons(right, rightZipper), smallerDepth)
       } else if (isRedTree(right)) {
-        unzipBoth(left, right.left, leftZipper, right :: rightZipper, smallerDepth)
+        unzipBoth(left, right.left, leftZipper, cons(right, rightZipper), smallerDepth)
       } else if (isRedTree(left)) {
-        unzipBoth(left.right, right, left :: leftZipper, rightZipper, smallerDepth)
+        unzipBoth(left.right, right, cons(left, leftZipper), rightZipper, smallerDepth)
       } else if ((left eq null) && (right eq null)) {
-        (Nil, true, false, smallerDepth)
+        (null, true, false, smallerDepth)
       } else if ((left eq null) && isBlackTree(right)) {
         val leftMost = true
-        (unzip(right :: rightZipper, leftMost), false, leftMost, smallerDepth)
+        (unzip(cons(right, rightZipper), leftMost), false, leftMost, smallerDepth)
       } else if (isBlackTree(left) && (right eq null)) {
         val leftMost = false
-        (unzip(left :: leftZipper, leftMost), false, leftMost, smallerDepth)
+        (unzip(cons(left, leftZipper), leftMost), false, leftMost, smallerDepth)
       } else {
         sys.error("unmatched trees in unzip: " + left + ", " + right)
       }
     }
-    unzipBoth(left, right, Nil, Nil, 0)
+    unzipBoth(left, right, null, null, 0)
   }
 
   private[this] def rebalance[A, B](tree: Tree[A, B], newLeft: Tree[A, B], newRight: Tree[A, B]) = {
     // This is like drop(n-1), but only counting black nodes
-    def  findDepth(zipper: List[Tree[A, B]], depth: Int): List[Tree[A, B]] = zipper match {
-      case head :: tail if isBlackTree(head) =>
-        if (depth == 1) zipper else findDepth(tail, depth - 1)
-      case _ :: tail => findDepth(tail, depth)
-      case Nil => sys.error("Defect: unexpected empty zipper while computing range")
-    }
+    @tailrec
+    def  findDepth(zipper: NList[Tree[A, B]], depth: Int): NList[Tree[A, B]] = 
+      if (zipper eq null) {
+        sys.error("Defect: unexpected empty zipper while computing range")
+      } else if (isBlackTree(zipper.head)) {
+        if (depth == 1) zipper else findDepth(zipper.tail, depth - 1)
+      } else {
+        findDepth(zipper.tail, depth)
+      }
 
     // Blackening the smaller tree avoids balancing problems on union;
     // this can't be done later, though, or it would change the result of compareDepth
@@ -389,7 +391,7 @@ object RedBlackTree {
       } else {
         RedTree(tree.key, tree.value, zipFrom.head, blkNewRight)
       }
-      val zippedTree = zipFrom.tail.foldLeft(union: Tree[A, B]) { (tree, node) =>
+      val zippedTree = NList.foldLeft(zipFrom.tail, union: Tree[A, B]) { (tree, node) =>
         if (leftMost)
           balanceLeft(isBlackTree(node), node.key, node.value, tree, node.right)
         else
@@ -397,6 +399,25 @@ object RedBlackTree {
       }
       zippedTree
     }
+  }
+  
+  // Null optimized list implementation for tree rebalancing. null presents Nil.
+  private[this] final class NList[A](val head: A, val tail: NList[A])
+
+  private[this] final object NList {
+    
+    def cons[B](x: B, xs: NList[B]): NList[B] = new NList(x, xs)
+    
+    def foldLeft[A, B](xs: NList[A], z: B)(f: (B, A) => B): B = {
+      var acc = z
+      var these = xs
+      while (these ne null) {
+        acc = f(acc, these.head)
+        these = these.tail
+      }
+      acc
+    }
+    
   }
 
   /*

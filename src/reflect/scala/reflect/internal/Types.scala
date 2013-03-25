@@ -131,7 +131,6 @@ trait Types
     override def isTrivial = underlying.isTrivial
     override def isHigherKinded: Boolean = underlying.isHigherKinded
     override def typeConstructor: Type = underlying.typeConstructor
-    override def isNotNull = underlying.isNotNull
     override def isError = underlying.isError
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
@@ -187,7 +186,6 @@ trait Types
     override def params: List[Symbol] = List()
     override def paramTypes: List[Type] = List()
     override def typeArgs = underlying.typeArgs
-    override def notNull = maybeRewrap(underlying.notNull)
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(underlying.normalize)
@@ -274,9 +272,6 @@ trait Types
      *  T_i (i > 1) is an abstract type.
      */
     def isVolatile: Boolean = false
-
-    /** Is this type guaranteed not to have `null` as a value? */
-    def isNotNull: Boolean = false
 
     /** Is this type a structural refinement type (it ''refines'' members that have not been inherited) */
     def isStructuralRefinement: Boolean = false
@@ -461,13 +456,6 @@ trait Types
     /** For a (potentially wrapped) poly or existential type, its bound symbols,
      *  the empty list for all other types */
     def boundSyms: immutable.Set[Symbol] = emptySymbolSet
-
-    /** Mixin a NotNull trait unless type already has one
-     *  ...if the option is given, since it is causing typing bugs.
-     */
-    def notNull: Type =
-      if (!settings.Ynotnull.value || isNotNull || phase.erasedTypes) this
-      else NotNullType(this)
 
     /** Replace formal type parameter symbols with actual type arguments.
      *
@@ -1209,17 +1197,6 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Int = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def isNotNull = supertype.isNotNull
-  }
-
-  case class NotNullType(override val underlying: Type) extends SubType with RewrappingTypeProxy {
-    def supertype = underlying
-    protected def rewrap(newtp: Type): Type = NotNullType(newtp)
-    override def isNotNull: Boolean = true
-    override def notNull = this
-    override def deconst: Type = underlying //todo: needed?
-    override def safeToString: String = underlying.toString + " with NotNull"
-    override def kind = "NotNullType"
   }
 
   /** A base class for types that represent a single value
@@ -1324,7 +1301,6 @@ trait Types
     }
 
     override def isTrivial: Boolean = sym.isPackageClass
-    override def isNotNull = true
     override def typeSymbol = sym
     override def underlying: Type = sym.typeOfThis
     override def isVolatile = false
@@ -1363,7 +1339,6 @@ trait Types
     }
     override def isGround = sym.isPackageClass || pre.isGround
 
-    override def isNotNull = underlying.isNotNull
     private[reflect] var underlyingCache: Type = NoType
     private[reflect] var underlyingPeriod = NoPeriod
     override def underlying: Type = {
@@ -1430,8 +1405,6 @@ trait Types
       if (trivial == UNKNOWN) trivial = fromBoolean(thistpe.isTrivial && supertpe.isTrivial)
       toBoolean(trivial)
     }
-    override def isNotNull = true
-
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
@@ -1544,7 +1517,6 @@ trait Types
     }
 
     override def narrow: Type = typeSymbol.thisType
-    override def isNotNull: Boolean = parents exists typeIsNotNull
 
     override def isStructuralRefinement: Boolean =
       typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
@@ -1988,8 +1960,7 @@ trait Types
     override def underlying: Type = value.tpe
     assert(underlying.typeSymbol != UnitClass)
     override def isTrivial: Boolean = true
-    override def isNotNull = value.value != null
-    override def deconst: Type = underlying
+    override def deconst: Type = underlying.deconst
     override def safeToString: String =
       underlying.toString + "(" + value.escapedStringValue + ")"
     override def kind = "ConstantType"
@@ -2042,7 +2013,6 @@ trait Types
 
       narrowedCache
     }
-    final override def isNotNull = true
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
@@ -2346,9 +2316,6 @@ trait Types
     override def typeOfThis       = transform(sym.typeOfThis)
     override def typeSymbol       = sym
     override def typeSymbolDirect = sym
-
-    override def isNotNull =
-      sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -2858,10 +2825,10 @@ trait Types
        *  See SI-5359.
        */
       val bounds  = tparam.info.bounds
-      /** We can seed the type constraint with the type parameter
-       *  bounds as long as the types are concrete.  This should lower
-       *  the complexity of the search even if it doesn't improve
-       *  any results.
+      /* We can seed the type constraint with the type parameter
+       * bounds as long as the types are concrete.  This should lower
+       * the complexity of the search even if it doesn't improve
+       * any results.
        */
       if (propagateParameterBoundsToTypeVars) {
         val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
@@ -3566,7 +3533,7 @@ trait Types
     if (args.isEmpty)
       return tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
 
-    /** Disabled - causes cycles in tcpoly tests. */
+    /* Disabled - causes cycles in tcpoly tests. */
     if (false && isDefinitionsInitialized) {
       assert(isUseableAsTypeArgs(args), {
         val tapp_s = s"""$tycon[${args mkString ", "}]"""
@@ -4084,24 +4051,22 @@ trait Types
     corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
   }
 
-  protected[internal] def containsNull(sym: Symbol): Boolean =
-    sym.isClass && sym != NothingClass &&
-    !(sym isNonBottomSubClass AnyValClass) &&
-    !(sym isNonBottomSubClass NotNullClass)
-
-  def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean =
-    tp.typeSymbol == NothingClass ||
-    tp.typeSymbol == NullClass && containsNull(sym.owner) || {
-      def specializedBy(membr: Symbol): Boolean =
-        membr == sym || specializesSym(tp.narrow, membr, sym.owner.thisType, sym, depth)
-      val member = tp.nonPrivateMember(sym.name)
+  def specializesSym(tp: Type, sym: Symbol, depth: Int): Boolean = {
+    def directlySpecializedBy(member: Symbol): Boolean = (
+         member == sym
+      || specializesSym(tp.narrow, member, sym.owner.thisType, sym, depth)
+    )
+    // Closure reduction, else this would be simply `member exists directlySpecializedBy`
+    def specializedBy(member: Symbol): Boolean = (
       if (member eq NoSymbol) false
-      else if (member.isOverloaded) member.alternatives exists specializedBy
-      else specializedBy(member)
-      // was
-      // (tp.nonPrivateMember(sym.name).alternatives exists
-      //   (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym, depth)))
-    }
+      else if (member.isOverloaded) member.alternatives exists directlySpecializedBy
+      else directlySpecializedBy(member)
+    )
+
+    (    (tp.typeSymbol isBottomSubClass sym.owner)
+      || specializedBy(tp nonPrivateMember sym.name)
+    )
+  }
 
   /** Does member `sym1` of `tp1` have a stronger type
    *  than member `sym2` of `tp2`?
@@ -4514,7 +4479,6 @@ trait Types
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
 
-  private[scala] val typeIsNotNull = (tp: Type) => tp.isNotNull
   private[scala] val isTypeVar = (tp: Type) => tp.isInstanceOf[TypeVar]
   private[scala] val typeContainsTypeVar = (tp: Type) => tp exists isTypeVar
   private[scala] val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
@@ -4632,7 +4596,7 @@ object TypesStats {
   val singletonBaseTypeSeqCount = Statistics.newSubCounter("  of which for singletons", baseTypeSeqCount)
   val typeOpsStack = Statistics.newTimerStack()
 
-  /** Commented out, because right now this does not inline, so creates a closure which will distort statistics
+  /* Commented out, because right now this does not inline, so creates a closure which will distort statistics
   @inline final def timedTypeOp[T](c: Statistics.StackableTimer)(op: => T): T = {
     val start = Statistics.pushTimer(typeOpsStack, c)
     try op

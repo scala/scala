@@ -35,7 +35,6 @@ abstract class MutableSettings extends AbsSettings {
   def overrideObjects: BooleanSetting
   def printtypes: BooleanSetting
   def debug: BooleanSetting
-  def Ynotnull: BooleanSetting
   def explaintypes: BooleanSetting
   def verbose: BooleanSetting
   def uniqid: BooleanSetting

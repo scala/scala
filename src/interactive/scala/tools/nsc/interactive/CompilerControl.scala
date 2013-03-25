@@ -118,7 +118,7 @@ trait CompilerControl { self: Global =>
       case ri: ReloadItem if ri.sources == sources => Some(ri)
       case _ => None
     }
-    superseeded.foreach(_.response.set())
+    superseeded.foreach(_.response.set(()))
     postWorkItem(new ReloadItem(sources, response))
   }
 

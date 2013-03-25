@@ -169,10 +169,10 @@ abstract class ICodeCheckers {
 
       def hasNothingType(s: TypeStack) = s.nonEmpty && (s.head == NothingReference)
 
-      /** XXX workaround #1: one stack empty, the other has BoxedUnit.
-       *  One example where this arises is:
+      /* XXX workaround #1: one stack empty, the other has BoxedUnit.
+       * One example where this arises is:
        *
-       *  def f(b: Boolean): Unit = synchronized { if (b) () }
+       * def f(b: Boolean): Unit = synchronized { if (b) () }
        */
       def allUnits(s: TypeStack)   = s.types forall (_ == BoxedUnitReference)
 
@@ -181,10 +181,10 @@ abstract class ICodeCheckers {
         case (x1, x2) if f(x2)  => x1
       }
 
-      /** XXX workaround #2: different stacks heading into an exception
-       *  handler which will clear them anyway.  Examples where it arises:
+      /* XXX workaround #2: different stacks heading into an exception
+       * handler which will clear them anyway.  Examples where it arises:
        *
-       *  var bippy: Int = synchronized { if (b) 5 else 10 }
+       * var bippy: Int = synchronized { if (b) 5 else 10 }
        */
       def isHandlerBlock() = bl.exceptionHandlerStart
 
@@ -336,7 +336,7 @@ abstract class ICodeCheckers {
       def popStack2    = { checkStack(2) ; (popStackN(2): @unchecked) match { case List(x, y) => (x, y) } }
       def popStack3    = { checkStack(3) ; (popStackN(3): @unchecked) match { case List(x, y, z) => (x, y, z) } }
 
-      /** Called by faux instruction LOAD_EXCEPTION to wipe out the stack. */
+      /* Called by faux instruction LOAD_EXCEPTION to wipe out the stack. */
       def clearStack() = {
         if (stack.nonEmpty)
           logChecker("Wiping out the " + stack.length + " element stack for exception handler: " + stack)
@@ -385,7 +385,7 @@ abstract class ICodeCheckers {
             icodeError(" expected reference type, but " + obj + " found")
         }
 
-        /** Checks that tpe is a subtype of one of the allowed types */
+        /* Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) = (
           if (allowed exists (k => isSubtype(tpe, k))) ()
           else icodeError(tpe + " is not one of: " + allowed.mkString("{ ", ", ", " }"))
@@ -393,16 +393,14 @@ abstract class ICodeCheckers {
         def checkNumeric(tpe: TypeKind) =
           checkType(tpe, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
 
-        /** Checks that the 2 topmost elements on stack are of the
-         *  kind TypeKind.
-         */
+        /* Checks that the 2 topmost elements on stack are of the kind TypeKind. */
         def checkBinop(kind: TypeKind) {
           val (a, b) = popStack2
           checkType(a, kind)
           checkType(b, kind)
         }
 
-        /** Check that arguments on the stack match method params. */
+        /* Check that arguments on the stack match method params. */
         def checkMethodArgs(method: Symbol) {
           val params = method.info.paramTypes
           checkStack(params.length)
@@ -412,8 +410,8 @@ abstract class ICodeCheckers {
           )
         }
 
-        /** Checks that the object passed as receiver has a method
-         *  `method` and that it is callable from the current method.
+        /* Checks that the object passed as receiver has a method
+         * `method` and that it is callable from the current method.
          */
         def checkMethod(receiver: TypeKind, method: Symbol) =
           receiver match {

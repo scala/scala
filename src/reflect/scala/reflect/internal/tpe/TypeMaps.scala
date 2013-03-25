@@ -174,10 +174,6 @@ private[internal] trait TypeMaps {
       case tv@TypeVar(_, constr) =>
         if (constr.instValid) this(constr.inst)
         else tv.applyArgs(mapOverArgs(tv.typeArgs, tv.params))  //@M !args.isEmpty implies !typeParams.isEmpty
-      case NotNullType(tp) =>
-        val tp1 = this(tp)
-        if (tp1 eq tp) tp
-        else NotNullType(tp1)
       case AnnotatedType(annots, atp, selfsym) =>
         val annots1 = mapOverAnnotations(annots)
         val atp1 = this(atp)
@@ -1037,7 +1033,7 @@ private[internal] trait TypeMaps {
           devWarning(s"$pre.$sym no longer exist at phase $phase")
           throw new MissingTypeControl // For build manager and presentation compiler purposes
         }
-        /** The two symbols have the same fully qualified name */
+        /* The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
@@ -1135,7 +1131,6 @@ private[internal] trait TypeMaps {
       case TypeBounds(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
       case AnnotatedType(_,_,_) => mapOver(tp)
-      case NotNullType(_) => mapOver(tp)
       case ExistentialType(_, _) => mapOver(tp)
       case _ => tp
     }

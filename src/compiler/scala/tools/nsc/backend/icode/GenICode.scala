@@ -276,8 +276,8 @@ abstract class GenICode extends SubComponent  {
         generatedType = elem
         ctx1.bb.emit(LOAD_ARRAY_ITEM(elementType), tree.pos)
         // it's tempting to just drop array loads of type Null instead
-        // of adapting them but array accesses can cause 
-        // ArrayIndexOutOfBounds so we can't. Besides, Array[Null] 
+        // of adapting them but array accesses can cause
+        // ArrayIndexOutOfBounds so we can't. Besides, Array[Null]
         // probably isn't common enough to figure out an optimization
         adaptNullRef(generatedType, expectedType, ctx1, tree.pos)
       }
@@ -479,11 +479,11 @@ abstract class GenICode extends SubComponent  {
       val resCtx: Context = tree match {
         case LabelDef(name, params, rhs) =>
           def genLoadLabelDef = {
-            val ctx1 = ctx.newBlock() // note: we cannot kill ctx1 if ctx is in ignore mode because 
+            val ctx1 = ctx.newBlock() // note: we cannot kill ctx1 if ctx is in ignore mode because
                                       // label defs can be the target of jumps from other locations.
                                       // that means label defs can lead to unreachable code without
                                       // proper reachability analysis
-            
+
             if (nme.isLoopHeaderLabel(name))
               ctx1.bb.loopHeader = true
 
@@ -777,8 +777,8 @@ abstract class GenICode extends SubComponent  {
               ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx1)
               val cm = CALL_METHOD(sym, invokeStyle)
 
-              /** In a couple cases, squirrel away a little extra information in the
-               *  CALL_METHOD for use by GenASM.
+              /* In a couple cases, squirrel away a little extra information in the
+               * CALL_METHOD for use by GenASM.
                */
               fun match {
                 case Select(qual, _) =>
@@ -1018,7 +1018,7 @@ abstract class GenICode extends SubComponent  {
 
       resCtx
     }
-    
+
     /**
      * If we have a method call, field load, or array element load of type Null then
      * we need to convince the JVM that we have a null value because in Scala
@@ -1030,9 +1030,9 @@ abstract class GenICode extends SubComponent  {
      */
     private def adaptNullRef(from: TypeKind, to: TypeKind, ctx: Context, pos: Position) {
       log(s"GenICode#adaptNullRef($from, $to, $ctx, $pos)")
-      
+
       // Don't need to adapt null to unit because we'll just drop it anyway. Don't
-      // need to adapt to Object or AnyRef because the JVM is happy with 
+      // need to adapt to Object or AnyRef because the JVM is happy with
       // upcasting Null to them.
       // We do have to adapt from NullReference to NullReference because we could be storing
       // this value into a local of type Null and we want the JVM to see that it's
@@ -1066,12 +1066,12 @@ abstract class GenICode extends SubComponent  {
           ctx.bb.enterIgnoreMode()
         case _ if from isAssignabledTo to =>
           ()
-        case (_, UNIT) => 
+        case (_, UNIT) =>
           ctx.bb.emit(DROP(from), pos)
         // otherwise we'd better be doing a primtive -> primitive coercion or there's a problem
-        case _ if !from.isRefOrArrayType && !to.isRefOrArrayType => 
+        case _ if !from.isRefOrArrayType && !to.isRefOrArrayType =>
           coerce(from, to)
-        case _ =>   
+        case _ =>
           assert(false, s"Can't convert from $from to $to in unit ${unit.source} at $pos")
       }
     }
@@ -1356,10 +1356,10 @@ abstract class GenICode extends SubComponent  {
                         ctx: Context,
                         thenCtx: Context,
                         elseCtx: Context): Boolean =
-    {      
+    {
       /**
        * Generate the de-sugared comparison mechanism that will underly an '=='
-       * 
+       *
        * @param l       left-hand side of the '=='
        * @param r       right-hand side of the '=='
        * @param code    the comparison operator to use
@@ -1470,11 +1470,11 @@ abstract class GenICode extends SubComponent  {
         ctx.makeLocal(l.pos, AnyRefClass.tpe, nme.EQEQ_LOCAL_VAR.toString)
       }
 
-      /** True if the equality comparison is between values that require the use of the rich equality
-        * comparator (scala.runtime.Comparator.equals). This is the case when either side of the
-        * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
-        * When it is statically known that both sides are equal and subtypes of Number of Character,
-        * not using the rich equality is possible (their own equals method will do ok.)*/
+      /* True if the equality comparison is between values that require the use of the rich equality
+       * comparator (scala.runtime.Comparator.equals). This is the case when either side of the
+       * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
+       * When it is statically known that both sides are equal and subtypes of Number of Character,
+       * not using the rich equality is possible (their own equals method will do ok.)*/
       def mustUseAnyComparator: Boolean = {
         def areSameFinals = l.tpe.isFinalType && r.tpe.isFinalType && (l.tpe =:= r.tpe)
         !areSameFinals && isMaybeBoxed(l.tpe.typeSymbol) && isMaybeBoxed(r.tpe.typeSymbol)
@@ -1568,12 +1568,12 @@ abstract class GenICode extends SubComponent  {
       debugassert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
-      /** Non-method term members are fields, except for module members. Module
-       *  members can only happen on .NET (no flatten) for inner traits. There,
-       *  a module symbol is generated (transformInfo in mixin) which is used
-       *  as owner for the members of the implementation class (so that the
-       *  backend emits them as static).
-       *  No code is needed for this module symbol.
+      /* Non-method term members are fields, except for module members. Module
+       * members can only happen on .NET (no flatten) for inner traits. There,
+       * a module symbol is generated (transformInfo in mixin) which is used
+       * as owner for the members of the implementation class (so that the
+       * backend emits them as static).
+       * No code is needed for this module symbol.
        */
       for (f <- cls.info.decls ; if !f.isMethod && f.isTerm && !f.isModule)
         ctx.clazz addField new IField(f)
@@ -1961,34 +1961,34 @@ abstract class GenICode extends SubComponent  {
        *   }), (AnotherExceptionClass,
        *   ctx => {...
        *   } ))`
-       *   
+       *
        *   The resulting structure will look something like
-       *   
+       *
        *   outer:
        *     // this 'useless' jump will be removed later,
        *     // for now it separates the try body's blocks from previous
        *     // code since the try body needs its own exception handlers
        *     JUMP body
-       *     
+       *
        *   body:
        *     [ try body ]
        *     JUMP normalExit
-       *     
+       *
        *   catch[i]:
        *     [ handler[i] body ]
        *     JUMP normalExit
-       *     
+       *
        *   catchAll:
        *     STORE exception
        *     [ finally body ]
        *     THROW exception
-       *     
+       *
        *   normalExit:
        *     [ finally body ]
-       *     
+       *
        *  each catch[i] will cover body.  catchAll will cover both body and each catch[i]
        *  Additional finally copies are created on the emission of every RETURN in the try body and exception handlers.
-       *  
+       *
        *  This could result in unreachable code which has to be cleaned up later, e.g. if the try and all the exception
        *  handlers always end in RETURN then there will be no "normal" flow out of the try/catch/finally.
        *  Later reachability analysis will remove unreacahble code.
@@ -2047,7 +2047,7 @@ abstract class GenICode extends SubComponent  {
             exhEndCtx.bb.enterIgnoreMode()
             finalizerCtx.endHandler()
           }
-  
+
           // Generate each exception handler
           for ((sym, kind, handler) <- handlers) {
             val exh = this.newExceptionHandler(sym, tree.pos)

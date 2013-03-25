@@ -221,7 +221,7 @@ abstract class TreeCheckers extends Analyzer {
                 case _: ConstantType  => ()
                 case _                =>
                   checkSym(tree)
-                  /** XXX: lots of syms show up here with accessed == NoSymbol. */
+                  /* XXX: lots of syms show up here with accessed == NoSymbol. */
                   if (accessed != NoSymbol) {
                     val agetter = accessed.getter(sym.owner)
                     val asetter = accessed.setter(sym.owner)
@@ -248,7 +248,7 @@ abstract class TreeCheckers extends Analyzer {
             else if (currentOwner.ownerChain takeWhile (_ != sym) exists (_ == NoSymbol))
               return fail("tree symbol "+sym+" does not point to enclosing class; tree = ")
 
-          /** XXX: temporary while Import nodes are arriving untyped. */
+          /* XXX: temporary while Import nodes are arriving untyped. */
           case Import(_, _) =>
             return
           case _ =>
@@ -283,7 +283,6 @@ abstract class TreeCheckers extends Analyzer {
 
       private def checkSymbolRefsRespectScope(tree: Tree) {
         def symbolOf(t: Tree): Symbol = Option(tree.symbol).getOrElse(NoSymbol)
-        def definedSymbolOf(t: Tree): Symbol = if (t.isDef) symbolOf(t) else NoSymbol
         val info = Option(symbolOf(tree).info).getOrElse(NoType)
         val referencedSymbols: List[Symbol] = {
           val directRef = tree match {
