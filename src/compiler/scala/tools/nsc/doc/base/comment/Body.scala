@@ -75,16 +75,20 @@ object EntityLink {
   def unapply(el: EntityLink): Option[(Inline, LinkTo)] = Some((el.title, el.link))
 }
 final case class HtmlTag(data: String) extends Inline {
-  def canClose(open: HtmlTag) = {
-    open.data.stripPrefix("<") == data.stripPrefix("</")
+  private val Pattern = """(?ms)\A<(/?)(.*?)[\s>].*\z""".r
+  private val (isEnd, tagName) = data match {
+    case Pattern(s1, s2) =>
+      (! s1.isEmpty, Some(s2.toLowerCase))
+    case _ =>
+      (false, None)
   }
 
-  def close = {
-    if (data.indexOf("</") == -1)
-      Some(HtmlTag("</" + data.stripPrefix("<")))
-    else
-      None
+  def canClose(open: HtmlTag) = {
+    isEnd && tagName == open.tagName
   }
+
+  private val TagsNotToClose = Set("br", "img")
+  def close = tagName collect { case name if !TagsNotToClose(name) => HtmlTag(s"</$name>") }
 }
 
 /** The summary of a comment, usually its first sentence. There must be exactly one summary per body. */
