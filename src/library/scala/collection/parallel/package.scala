@@ -42,11 +42,8 @@ package object parallel {
   private[parallel] def outofbounds(idx: Int) = throw new IndexOutOfBoundsException(idx.toString)
 
   private[parallel] def getTaskSupport: TaskSupport =
-    if (scala.util.Properties.isJavaAtLeast("1.6")) {
-      val vendor = scala.util.Properties.javaVmVendor
-      if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinTaskSupport
-      else new ThreadPoolTaskSupport
-    } else new ThreadPoolTaskSupport
+    if (scala.util.Properties.isJavaAtLeast("1.6")) new ForkJoinTaskSupport
+    else new ThreadPoolTaskSupport
 
   val defaultTaskSupport: TaskSupport = getTaskSupport
 
