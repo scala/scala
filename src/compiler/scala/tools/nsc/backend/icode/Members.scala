@@ -171,6 +171,7 @@ trait Members {
     var returnType: TypeKind = _
     var recursive: Boolean = false
     var bytecodeHasEHs = false // set by ICodeReader only, used by Inliner to prevent inlining (SI-6188)
+    var bytecodeHasInvokeDynamic = false // set by ICodeReader only, used by Inliner to prevent inlining until we have proper invoke dynamic support
 
     /** local variables and method parameters */
     var locals: List[Local] = Nil
