@@ -663,74 +663,39 @@ targets exercised:
   </macrodef>
 
 <!-- ===========================================================================
-                                  LOCAL DEPENDENCY (FJBG)
+                                  LOCAL DEPENDENCIES
 ============================================================================ -->
-  <target name="fjbg.done" depends="init">
-    <uptodate property="fjbg.available" targetfile="${build-libs.dir}/fjbg.complete">
-      <srcfiles dir="${src.dir}/forkjoin"/></uptodate>
-    <if><not><isset property="fjbg.available"/></not><then>
-      <stopwatch name="fjbg.lib.timer"/>
-      <mkdir dir="${build-libs.dir}/classes/fjbg"/>
-      <javac
-        srcdir="${src.dir}/fjbg"
-        destdir="${build-libs.dir}/classes/fjbg"
-        classpath="${build-libs.dir}/classes/fjbg"
-        includes="**/*.java"
-        target="1.6" source="1.5">
-          <compilerarg line="${javac.args}"/>
-      </javac>
-      <jar whenmanifestonly="fail" destfile="${build-libs.dir}/fjbg.jar" basedir="${build-libs.dir}/classes/fjbg"/>
-      <stopwatch name="fjbg.lib.timer" action="total"/>
-      <touch file="${build-libs.dir}/fjbg.complete" verbose="no"/>
-    </then></if>
-  </target>
+  <macrodef name="simple-javac" >
+    <attribute name="project"/>  <!-- project: fjbg/asm/forkjoin -->
+    <attribute name="args" default=""/>
+    <attribute name="jar"  default="yes"/>
+    <sequential>
+      <uptodate property="@{project}.available" targetfile="${build-libs.dir}/@{project}.complete">
+        <srcfiles dir="${src.dir}/@{project}"/></uptodate>
+      <if><not><isset property="@{project}.available"/></not><then>
+        <stopwatch name="@{project}.timer"/>
+        <mkdir dir="${@{project}-classes}"/>
+        <javac
+          srcdir="${src.dir}/@{project}"
+          destdir="${@{project}-classes}"
+          classpath="${@{project}-classes}"
+          includes="**/*.java"
+          target="1.6" source="1.5"
+          compiler="javac1.6">
+            <compilerarg line="${javac.args} @{args}"/>
+        </javac>
+        <if><equals arg1="@{jar}" arg2="yes"/><then>
+          <jar whenmanifestonly="fail" destfile="${build-libs.dir}/@{project}.jar" basedir="${@{project}-classes}"/></then></if>
+        <stopwatch name="@{project}.timer" action="total"/>
+        <mkdir dir="${build-libs.dir}"/>
+        <touch file="${build-libs.dir}/@{project}.complete" verbose="no"/>
+      </then></if>
+    </sequential>
+  </macrodef>
 
-<!-- ===========================================================================
-                                  LOCAL DEPENDENCY (Adapted ASM)
-============================================================================ -->
-  <target name="asm.done" depends="init">
-    <available file="${build-asm.dir}/asm.complete" property="asm.available"/>
-    <if><not><isset property="asm.available"/></not><then>
-      <stopwatch name="asm.lib.timer"/>
-      <mkdir dir="${build-asm.dir}/classes/"/>
-      <javac
-        srcdir="${src.dir}/asm"
-        destdir="${build-asm.dir}/classes"
-        classpath="${build-asm.dir}/classes"
-        includes="**/*.java"
-        target="1.6" source="1.5">
-          <compilerarg line="${javac.args} -XDignore.symbol.file"/>
-      </javac>
-      <stopwatch name="asm.lib.timer" action="total"/>
-      <touch file="${build-asm.dir}/asm.complete" verbose="no"/>
-    </then></if>
-  </target>
-
-<!-- ===========================================================================
-                                  LOCAL DEPENDENCY (FORKJOIN)
-============================================================================ -->
-  <target name="forkjoin.done" depends="init">
-    <uptodate property="forkjoin.available" targetfile="${build-libs.dir}/forkjoin.complete">
-      <srcfiles dir="${src.dir}/forkjoin"/></uptodate>
-    <if><not><isset property="forkjoin.available"/></not><then>
-      <stopwatch name="forkjoin.lib.timer"/>
-      <mkdir dir="${build-libs.dir}/classes/forkjoin"/>
-      <javac
-        fork="yes"
-        compiler="javac1.6"
-        srcdir="${src.dir}/forkjoin"
-        destdir="${build-libs.dir}/classes/forkjoin"
-        classpath="${build-libs.dir}/classes/forkjoin"
-        includes="**/*.java"
-        debug="true"
-        target="1.6" source="1.5">
-          <compilerarg line="${javac.args} -XDignore.symbol.file"/>
-      </javac>
-      <jar whenmanifestonly="fail" destfile="${build-libs.dir}/forkjoin.jar" basedir="${build-libs.dir}/classes/forkjoin"/>
-      <stopwatch name="forkjoin.lib.timer" action="total"/>
-      <touch file="${build-libs.dir}/forkjoin.complete" verbose="no"/>
-    </then></if>
-  </target>
+  <target name="asm.done"      depends="init"> <simple-javac project="asm" jar="no"/> </target>
+  <target name="fjbg.done"     depends="init"> <simple-javac project="fjbg"/> </target>
+  <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file"/></target>
 
 <!-- ===========================================================================
                                   STAGED COMPILATION MACROS
