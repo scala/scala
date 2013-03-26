@@ -871,7 +871,7 @@ trait Types
     def baseTypeSeqDepth: Int = 1
 
     /** The list of all baseclasses of this type (including its own typeSymbol)
-     *  in reverse linearization order, starting with the class itself and ending
+     *  in linearization order, starting with the class itself and ending
      *  in class Any.
      */
     def baseClasses: List[Symbol] = List()
