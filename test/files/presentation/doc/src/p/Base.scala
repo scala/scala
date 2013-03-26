@@ -1,7 +1,7 @@
 package p
 
 /**
- * @define BaseComment $BaseVar comment.
+ * @define BaseComment This is $BaseVar comment.
  */
 trait Base {
   /**

@@ -74,7 +74,7 @@ abstract class InteractiveTest
   /** Test's entry point */
   def main(args: Array[String]) {
     try execute()
-    finally shutdown()
+    finally askShutdown()
   }
 
   protected def execute(): Unit = {
@@ -110,14 +110,4 @@ abstract class InteractiveTest
     tester.run()
   }
   ****/
-
-  /** shutdown the presentation compiler. */
-  protected def shutdown() {
-    askShutdown()
-
-    // this is actually needed to force exit on test completion.
-    // Note: May be a bug on either the testing framework or (less likely)
-    //           the presentation compiler
-    sys.exit(0)
-  }
 }

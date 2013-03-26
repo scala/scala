@@ -127,16 +127,17 @@ object Test extends InteractiveTest {
     val baseSource = findSource("Base.scala")
     val derivedSource = findSource("Derived.scala")
     def existsText(where: Any, text: String): Boolean = where match {
-      case `text` => true
+      case s: String => s contains text
       case s: Seq[_] => s exists (existsText(_, text))
       case p: Product => p.productIterator exists (existsText(_, text))
+      case c: Comment => existsText(c.body, text)
     }
     val (derived, base) = compiler.ask { () =>
       val derived = definitions.RootPackage.info.decl(newTermName("p")).info.decl(newTypeName("Derived"))
       (derived, derived.ancestors(0))
     }
     val cmt1 = getComment(derived, derivedSource, (base, baseSource)::(derived, derivedSource)::Nil)
-    if (!existsText(cmt1, "Derived comment."))
+    if (!existsText(cmt1, "This is Derived comment"))
       println("Unexpected Derived class comment:"+cmt1)
 
     val (fooDerived, fooBase) = compiler.ask { () =>
@@ -145,7 +146,7 @@ object Test extends InteractiveTest {
     }
 
     val cmt2 = getComment(fooDerived, derivedSource, (fooBase, baseSource)::(fooDerived, derivedSource)::Nil)
-    if (!existsText(cmt2, "Base method has documentation."))
+    if (!existsText(cmt2, "Base method has documentation"))
       println("Unexpected foo method comment:"+cmt2)
   }
 }
