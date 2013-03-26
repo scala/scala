@@ -1452,7 +1452,6 @@ targets exercised:
     </partest>
   </target>
 
-<!-- currently disabled: test.ant, test.positions, test.classload -->
   <target name="test.done" depends="test.osgi, test.sbt, test.bc, test.interactive, test.continuations.suite, test.suite, test.scaladoc, test.stability"/>
 
 
@@ -1894,105 +1893,6 @@ targets exercised:
   </target>
 
   <target name="fastlocker" description="Buildlocker without extra fuss" depends="fastlocker.comp"/>
-
-
-<!-- ===========================================================================
-                                  TODO: FIX OR REMOVE
-============================================================================ -->
-
-  <!-- not called by test target -->
-  <target name="test.classload" depends="pack.done">
-    <!-- TODO - Add actors + reflect to this -->
-    <classloadVerify classpath="${build-pack.dir}/lib/scala-library.jar" />
-  </target>
-
-  <!-- not called by test target -->
-  <target name="test.ant" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise}">
-      <compilationpath refid="partest.classpath"/>
-      <anttests dir="${partest.dir}/${partest.srcdir}/ant" includes="*build.xml"/>
-    </partest>
-  </target>
-
-  <!-- not called by test target -->
-  <target name="test.positions" depends="quick.comp">
-    <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.dir}/files/positions"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/compiler"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/library"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/actors"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/dbc"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/swing"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/partest"/>
-    </antcall>
-    <antcall target="test.positions.sub" inheritRefs="true">
-      <param name="test.srcs" value="${src.dir}/scalap"/>
-    </antcall>
-    <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.dir}/files/pos"/>
-    </antcall>
-    <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.dir}/files/run"/>
-    </antcall>
-    <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.dir}/files/neg"/>
-    </antcall>
-  </target>
-
-  <target name="test.positions.sub">
-    <echo message="Validating positions for: ${test.srcs}"/>
-    <if>
-      <isfileselected file="${test.srcs}">
-        <type type="dir"/>
-      </isfileselected>
-      <then>
-        <property name="srcdir" value="${test.srcs}"/>
-        <property name="srcs" value="**/*.scala"/>
-      </then>
-      <else>
-        <dirname property="srcdir" file="${test.srcs}"/>
-        <basename property="srcs" file="${test.srcs}"/>
-      </else>
-    </if>
-    <scalacfork
-      destdir=""
-      compilerpathref="locker.compiler.path"
-      srcpath="${srcdir}"
-      params="-Xprint-pos -Yide-debug"
-      srcdir="${srcdir}"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="${srcs}"/>
-      <compilationpath refid="test.positions.sub.build.path"/>
-    </scalacfork>
-  </target>
-
-  <target name="test.positions.tests.sub">
-    <foreach target="test.positions.sub"
-      inheritAll="true"
-      inheritRefs="true"
-      param="test.srcs">
-      <path>
-        <fileset dir="${test.tests.srcs}" includes="*.scala"/>
-        <dirset dir="${test.tests.srcs}">
-          <include name="*"/>
-        </dirset>
-      </path>
-    </foreach>
-  </target>
 
 <!-- ===========================================================================
                                   VISUALIZATION
