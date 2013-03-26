@@ -86,10 +86,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     override def run() {
 
-      if (settings.debug.value)
+      if (settings.debug)
         inform("[running phase " + name + " on icode]")
 
-      if (settings.Xdce.value)
+      if (settings.Xdce)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
           log(s"Optimizer eliminated ${sym.fullNameString}")
           icodes.classes -= sym
@@ -804,7 +804,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       // without it.  This is particularly bad because the availability of
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
-         settings.Ynogenericsig.value
+         settings.Ynogenericsig
       || sym.isArtifact
       || sym.isLiftedMethod
       || sym.isBridge
@@ -834,7 +834,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             catch { case _: Throwable => false }
           }
 
-      if (settings.Xverify.value) {
+      if (settings.Xverify) {
         // Run the signature parser to catch bogus signatures.
         val isValidSignature = wrap {
           // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)
@@ -1362,7 +1362,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         for (constructor <- c.lookupStaticCtor) {
           addStaticInit(Some(constructor))
         }
-        val skipStaticForwarders = (c.symbol.isInterface || settings.noForwarders.value)
+        val skipStaticForwarders = (c.symbol.isInterface || settings.noForwarders)
         if (!skipStaticForwarders) {
           val lmoc = c.symbol.companionModule
           // add static forwarders if there are no name conflicts; see bugs #363 and #1735
@@ -3220,7 +3220,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       val detour = computeDetour
       rephraseGotos(detour)
 
-      if (settings.debug.value) {
+      if (settings.debug) {
         val (remappings, cycles) = detour partition {case (source, target) => source != target}
         for ((source, target) <- remappings) {
 		   debuglog(s"Will elide jump only block $source because it can be jumped around to get to $target.")
@@ -3273,7 +3273,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       }
 
       // remove the unusued exception handler references
-      if (settings.debug.value)
+      if (settings.debug)
         for (exh <- unusedExceptionHandlers) debuglog(s"eliding exception handler $exh because it does not cover any reachable blocks")
       m.exh = m.exh filterNot unusedExceptionHandlers
 
@@ -3287,7 +3287,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     def normalize(m: IMethod) {
       if(!m.hasCode) { return }
       collapseJumpOnlyBlocks(m)
-      if (settings.optimise.value)
+      if (settings.optimise)
         elimUnreachableBlocks(m)
       icodes checkValid m
     }

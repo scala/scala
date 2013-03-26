@@ -94,7 +94,7 @@ abstract class ICodeCheckers {
     }
 
     def checkICodes(): Unit = {
-      if (settings.verbose.value)
+      if (settings.verbose)
       println("[[consistency check at the beginning of phase " + globalPhase.name + "]]")
       classes.values foreach check
     }
@@ -444,7 +444,7 @@ abstract class ICodeCheckers {
         def checkBool(cond: Boolean, msg: String) =
           if (!cond) icodeError(msg)
 
-        if (settings.debug.value) {
+        if (settings.debug) {
           log("PC: " + instr)
           log("stack: " + stack)
           log("================")

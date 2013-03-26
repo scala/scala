@@ -265,7 +265,7 @@ abstract class Inliners extends SubComponent {
     }
 
     def analyzeClass(cls: IClass): Unit =
-      if (settings.inline.value) {
+      if (settings.inline) {
         inlineLog("class", s"${cls.symbol.decodedName}", s"analyzing ${cls.methods.size} methods in $cls")
 
         this.currentIClazz = cls
@@ -319,7 +319,7 @@ abstract class Inliners extends SubComponent {
      * */
     def analyzeMethod(m: IMethod): Unit = {
       // m.normalize
-      if (settings.debug.value)
+      if (settings.debug)
         inlineLog("caller", ownedName(m.symbol), "in " + m.symbol.owner.fullName)
 
       val sizeBeforeInlining  = m.code.blockCount
@@ -383,7 +383,7 @@ abstract class Inliners extends SubComponent {
 
         def warnNoInline(reason: String): Boolean = {
           def msg = "Could not inline required method %s because %s.".format(i.method.originalName.decode, reason)
-          if (settings.debug.value)
+          if (settings.debug)
             inlineLog("fail", i.method.fullName, reason)
           if (shouldWarn)
             warn(i.pos, msg)
@@ -935,7 +935,7 @@ abstract class Inliners extends SubComponent {
         // add exception handlers of the callee
         caller addHandlers (inc.handlers map translateExh)
         assert(pending.isEmpty, "Pending NEW elements: " + pending)
-        if (settings.debug.value) icodes.checkValid(caller.m)
+        if (settings.debug) icodes.checkValid(caller.m)
       }
 
       def isStampedForInlining(stackLength: Int): InlineSafetyInfo = {

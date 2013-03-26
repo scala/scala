@@ -32,7 +32,7 @@ abstract class NodePrinters {
   }
 
   trait DefaultPrintAST extends PrintAST {
-    val printPos = settings.Xprintpos.value || settings.Yposdebug.value
+    val printPos = settings.Xprintpos || settings.Yposdebug
 
     def showNameAndPos(tree: NameTree) = showPosition(tree) + showName(tree.name)
     def showDefTreeName(tree: DefTree) = showName(tree.name)
@@ -100,9 +100,9 @@ abstract class NodePrinters {
 
     def stringify(tree: Tree): String = {
       buf.clear()
-      if (settings.XshowtreesStringified.value) buf.append(tree.toString + EOL)
-      if (settings.XshowtreesCompact.value) {
-        buf.append(showRaw(tree, printIds = settings.uniqid.value, printTypes = settings.printtypes.value))
+      if (settings.XshowtreesStringified) buf.append(tree.toString + EOL)
+      if (settings.XshowtreesCompact) {
+        buf.append(showRaw(tree, printIds = settings.uniqid, printTypes = settings.printtypes))
       } else {
         level = 0
         traverse(tree)

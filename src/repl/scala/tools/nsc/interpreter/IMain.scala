@@ -397,7 +397,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   private[nsc] def replwarn(msg: => String) {
-    if (!settings.nowarnings.value)
+    if (!settings.nowarnings)
       printMessage(msg)
   }
 

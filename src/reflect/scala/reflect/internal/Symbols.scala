@@ -190,7 +190,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def varianceString: String = variance.symbolicString
 
     override def flagMask =
-      if (settings.debug.value && !isAbstractType) AllFlags
+      if (settings.debug && !isAbstractType) AllFlags
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
@@ -202,7 +202,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def shortSymbolClass = shortClassOfInstance(this)
     def symbolCreationString: String = (
       "%s%25s | %-40s | %s".format(
-        if (settings.uniqid.value) "%06d | ".format(id) else "",
+        if (settings.uniqid) "%06d | ".format(id) else "",
         shortSymbolClass,
         name.decode + " in " + owner,
         rawFlagString
@@ -834,7 +834,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
          (this hasFlag FINAL | PACKAGE)
-      || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects.value)
+      || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects)
       || isTerm && (
              isPrivate
           || isLocal

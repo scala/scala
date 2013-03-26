@@ -39,7 +39,7 @@ abstract class GenICode extends SubComponent  {
   override def newPhase(prev: Phase) = new ICodePhase(prev)
 
   @inline private def debugassert(cond: => Boolean, msg: => Any) {
-    if (settings.debug.value)
+    if (settings.debug)
       assert(cond, msg)
   }
 
@@ -129,7 +129,7 @@ abstract class GenICode extends SubComponent  {
             case Return(_) => ()
             case EmptyTree =>
               globalError("Concrete method has no definition: " + tree + (
-                if (settings.debug.value) "(found: " + m.symbol.owner.info.decls.toList.mkString(", ") + ")"
+                if (settings.debug) "(found: " + m.symbol.owner.info.decls.toList.mkString(", ") + ")"
                 else "")
               )
             case _ => if (ctx1.bb.isEmpty)
@@ -710,7 +710,7 @@ abstract class GenICode extends SubComponent  {
             debuglog("BOX : " + fun.symbol.fullName)
             val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
             val nativeKind = toTypeKind(expr.tpe)
-            if (settings.Xdce.value) {
+            if (settings.Xdce) {
               // we store this boxed value to a local, even if not really needed.
               // boxing optimization might use it, and dead code elimination will
               // take care of unnecessary stores
@@ -1483,7 +1483,7 @@ abstract class GenICode extends SubComponent  {
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
         val equalsMethod =
-          if (!settings.optimise.value) {
+          if (!settings.optimise) {
             def default = platform.externalEquals
             platform match {
               case x: JavaPlatform =>
@@ -1507,7 +1507,7 @@ abstract class GenICode extends SubComponent  {
         val ctx2 = genLoad(r, ctx1, ObjectReference)
         val branchesReachable = !ctx2.bb.ignore
         ctx2.bb.emitOnly(
-          CALL_METHOD(equalsMethod, if (settings.optimise.value) Dynamic else Static(onInstance = false)),
+          CALL_METHOD(equalsMethod, if (settings.optimise) Dynamic else Static(onInstance = false)),
           CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
         )
         branchesReachable
@@ -2032,7 +2032,7 @@ abstract class GenICode extends SubComponent  {
         // Generate the catch-all exception handler that deals with uncaught exceptions coming
         // from the try or exception handlers. It catches the exception, runs the finally code, then rethrows
         // the exception
-        if (settings.YdisableUnreachablePrevention.value || !outerCtx.bb.ignore) {
+        if (settings.YdisableUnreachablePrevention || !outerCtx.bb.ignore) {
           if (finalizer != EmptyTree) {
             val exh = outerCtx.newExceptionHandler(NoSymbol, finalizer.pos) // finalizer covers exception handlers
             this.addActiveHandler(exh)  // .. and body aswell
