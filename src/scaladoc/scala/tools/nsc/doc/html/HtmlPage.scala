@@ -60,7 +60,7 @@ abstract class HtmlPage extends Page { thisPage =>
       w.write(xml.Xhtml.toXhtml(html))
     }
 
-    if (site.universe.settings.docRawOutput.value)
+    if (site.universe.settings.docRawOutput)
       writeFile(site, ".raw") {
         // we're only interested in the body, as this will go into the diff
         _.write(body.text)

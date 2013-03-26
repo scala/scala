@@ -1306,7 +1306,7 @@ trait Types
     override def isVolatile = false
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
-      if (settings.debug.value) sym.nameString + ".this."
+      if (settings.debug) sym.nameString + ".this."
       else if (sym.isAnonOrRefinementClass) "this."
       else if (sym.isOmittablePrefix) ""
       else if (sym.isModuleClass) sym.fullNameString + "."
@@ -1522,7 +1522,7 @@ trait Types
       typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
 
     override def safeToString: String = parentsString(parents) + (
-      (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
+      (if (settings.debug || parents.isEmpty || (decls.elems ne null))
         fullyInitializeScope(decls).mkString("{", "; ", "}") else "")
     )
   }
@@ -1622,7 +1622,7 @@ trait Types
   object baseClassesCycleMonitor {
     private var open: List[Symbol] = Nil
     @inline private def cycleLog(msg: => String) {
-      if (settings.debug.value)
+      if (settings.debug)
         Console.err.println(msg)
     }
     def size = open.size
@@ -1868,7 +1868,7 @@ trait Types
         tp match {
           case tr @ TypeRef(_, sym, args) if args.nonEmpty =>
             val tparams = tr.initializedTypeParams
-            if (settings.debug.value && !sameLength(tparams, args))
+            if (settings.debug && !sameLength(tparams, args))
               devWarning(s"Mismatched zip in computeRefs(): ${sym.info.typeParams}, $args")
 
             foreach2(tparams, args) { (tparam1, arg) =>
@@ -1934,7 +1934,7 @@ trait Types
     override def kind = "ClassInfoType"
 
     override def safeToString =
-      if (settings.debug.value || decls.size > 1)
+      if (settings.debug || decls.size > 1)
         formattedToString
       else
         super.safeToString
@@ -1943,7 +1943,7 @@ trait Types
      */
     def formattedToString: String =
       parents.mkString("\n        with ") + (
-        if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
+        if (settings.debug || parents.isEmpty || (decls.elems ne null))
          fullyInitializeScope(decls).mkString(" {\n  ", "\n  ", "\n}")
         else ""
       )
@@ -2352,7 +2352,7 @@ trait Types
 
     // ensure that symbol is not a local copy with a name coincidence
     private def needsPreString = (
-         settings.debug.value
+         settings.debug
       || !shorthands(sym.fullName)
       || (sym.ownersIterator exists (s => !s.isClass))
     )
@@ -2403,12 +2403,12 @@ trait Types
           ""
     }
     override def safeToString = {
-      val custom = if (settings.debug.value) "" else customToString
+      val custom = if (settings.debug) "" else customToString
       if (custom != "") custom
       else finishPrefix(preString + sym.nameString + argsString)
     }
     override def prefixString = "" + (
-      if (settings.debug.value)
+      if (settings.debug)
         super.prefixString
       else if (sym.isOmittablePrefix)
         ""
@@ -2722,10 +2722,10 @@ trait Types
     override def safeToString: String = {
       def clauses = {
         val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
-        if (settings.explaintypes.value) "(" + str + ")" else str
+        if (settings.explaintypes) "(" + str + ")" else str
       }
       underlying match {
-        case TypeRef(pre, sym, args) if !settings.debug.value && isRepresentableWithWildcards =>
+        case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
           "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
           "(" + underlying + ")" + clauses
@@ -3228,7 +3228,7 @@ trait Types
         if (sym.owner.isTerm && (sym.owner != encl)) Some(sym.owner) else None
       ).flatten map (s => s.decodedName + tparamsOfSym(s)) mkString "#"
     }
-    private def levelString = if (settings.explaintypes.value) level else ""
+    private def levelString = if (settings.explaintypes) level else ""
     override def safeToString = (
       if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
       else if (constr.inst ne NoType) "=?" + constr.inst
@@ -3791,7 +3791,7 @@ trait Types
    *  the maximum depth `bd` of all types in the base type sequences of these types.
    */
   private def lubDepthAdjust(td: Int, bd: Int): Int =
-    if (settings.XfullLubs.value) bd
+    if (settings.XfullLubs) bd
     else if (bd <= 3) bd
     else if (bd <= 5) td max (bd - 1)
     else if (bd <= 7) td max (bd - 2)
@@ -4407,7 +4407,7 @@ trait Types
   /** An exception for cyclic references from which we can recover */
   case class RecoverableCyclicReference(sym: Symbol)
     extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug.value) printStackTrace()
+    if (settings.debug) printStackTrace()
   }
 
   class NoCommonType(tps: List[Type]) extends Throwable(
@@ -4433,12 +4433,12 @@ trait Types
 
   /** If option `explaintypes` is set, print a subtype trace for `found <:< required`. */
   def explainTypes(found: Type, required: Type) {
-    if (settings.explaintypes.value) withTypesExplained(found <:< required)
+    if (settings.explaintypes) withTypesExplained(found <:< required)
   }
 
   /** If option `explaintypes` is set, print a subtype trace for `op(found, required)`. */
   def explainTypes(op: (Type, Type) => Any, found: Type, required: Type) {
-    if (settings.explaintypes.value) withTypesExplained(op(found, required))
+    if (settings.explaintypes) withTypesExplained(op(found, required))
   }
 
   /** Execute `op` while printing a trace of the operations on types executed. */
