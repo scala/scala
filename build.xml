@@ -1174,7 +1174,8 @@ targets exercised:
     <staged-bin stage="pack"/>
   </target>
 
-  <target name="pack.done" depends="pack.bin">
+  <!-- depend on quick.done so quick.bin is run when pack.done is -->
+  <target name="pack.done" depends="quick.done, pack.bin">
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.compiler.path"/>
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.compiler.path"/>
   </target>
