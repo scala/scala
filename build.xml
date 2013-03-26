@@ -1452,14 +1452,16 @@ targets exercised:
     </partest>
   </target>
 
-<!-- currently disabled: test.ant, test.bc, test.positions, test.classload -->
-  <target name="test.done" depends="test.osgi, test.sbt, test.interactive, test.continuations.suite, test.suite, test.scaladoc, test.stability"/>
+<!-- currently disabled: test.ant, test.positions, test.classload -->
+  <target name="test.done" depends="test.osgi, test.sbt, test.bc, test.interactive, test.continuations.suite, test.suite, test.scaladoc, test.stability"/>
 
 
 <!-- ===========================================================================
                                   BINARY COMPATIBILITY TESTING
 ============================================================================ -->
   <target name="bc.init" depends="init" unless="maven-deps-done-mima">
+    <property name="bc-reference-version" value="2.10.0"/>
+
     <property name="bc-build.dir" value="${build.dir}/bc"/>
     <!-- Obtain mima -->
     <mkdir dir="${bc-build.dir}"/>
@@ -1468,9 +1470,9 @@ targets exercised:
       <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
-      <dependency groupId="org.scala-lang" artifactId="scala-swing" version="2.10.0"/>
-      <dependency groupId="org.scala-lang" artifactId="scala-library" version="2.10.0"/>
-      <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="2.10.0"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-swing" version="${bc-reference-version}"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${bc-reference-version}"/>
     </artifact:dependencies>
     <property name="maven-deps-done-mima" value="true"/>
   </target>
@@ -1481,8 +1483,8 @@ targets exercised:
     <attribute name="curr"/>
     <attribute name="direction"/>
     <sequential>
-      <echo message="Checking @{direction} binary compatibility for @{jar-name}"/>
-      <java
+      <echo message="Checking @{direction} binary compatibility for @{jar-name} (against ${bc-reference-version})"/>
+      <java taskname="mima"
          fork="true"
          failonerror="true"
          classname="com.typesafe.tools.mima.cli.Main">
@@ -1516,6 +1518,7 @@ targets exercised:
     </sequential>
   </macrodef>
 
+  <target name="test.bc-opt" description="Optimized version of test.bc."> <optimized name="test.bc"/></target>
   <target name="test.bc" depends="bc.init, pack.lib, pack.reflect, pack.swing">
     <bc.check jar-name="scala-library"/>
     <bc.check jar-name="scala-reflect"/>
