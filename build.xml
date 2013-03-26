@@ -1528,6 +1528,7 @@ targets exercised:
         <include name="swing/**"/>
         <include name="actors/**"/>
         <include name="reflect/**"/>
+        <include name="continuations/library/**"/>
       </srcfiles></check>
       <do>
         <stopwatch name="docs.lib.timer"/>
