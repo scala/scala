@@ -544,6 +544,45 @@ targets exercised:
       <path refid="aux.libs"/>
     </path>
 
+    <path id="pack.library.files">
+      <fileset dir="${build-quick.dir}/classes/library">
+        <!-- <exclude name="scala/swing/**"/> -->
+        <exclude name="scala/actors/**"/>
+      </fileset>
+      <fileset dir="${build-quick.dir}/classes/continuations-library"/>
+      <fileset dir="${forkjoin-classes}"/>
+    </path>
+
+    <path id="pack.actors.files">
+      <fileset dir="${build-quick.dir}/classes/library">
+        <include name="scala/actors/**"/>
+      </fileset>
+    </path>
+
+    <path id="pack.compiler.files">
+      <fileset dir="${build-quick.dir}/classes/compiler"/>
+      <fileset dir="${asm-classes}"/>
+      <fileset dir="${fjbg-classes}"/>
+    </path>
+
+    <path id="pack.swing.files">      <fileset dir="${build-quick.dir}/classes/swing"/> </path>
+    <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
+    <path id="pack.plugins.files">    <fileset dir="${build-quick.dir}/classes/continuations-plugin"/> </path>
+    <path id="pack.scalacheck.files"> <fileset dir="${build-quick.dir}/classes/scalacheck"/> </path>
+    <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>
+                                      <fileset file="${src.dir}/scalap/decoder.properties"/> </path>
+
+    <path id="pack.partest.files">
+      <fileset dir="${build-quick.dir}/classes/partest">
+        <exclude name="scala/tools/partest/javaagent/**"/>
+      </fileset>
+    </path>
+
+    <path id="pack.partest-javaagent.files">
+      <fileset dir="${build-quick.dir}/classes/partest">
+        <include name="scala/tools/partest/javaagent/**"/>
+      </fileset>
+    </path>
 
     <!-- STRAP -->
     <path id="strap.library.build.path">
@@ -860,15 +899,33 @@ targets exercised:
     <attribute name="project"/>
     <attribute name="targetdir" default="lib"/>
     <attribute name="targetjar" default="scala-@{project}.jar"/>
-    <element name="do" implicit="true"/>
+    <attribute name="destfile"  default="${build-pack.dir}/@{targetdir}/@{targetjar}"/>
+    <attribute name="manifest"  default=""/>
+    <element name="pre"         optional="true"/>
+    <element name="jar-opts"    optional="true"/>
 
     <sequential>
-      <uptodate property="pack.@{project}.available"
-        targetfile="${build-pack.dir}/@{targetdir}/@{targetjar}"
-        srcfile="${build-quick.dir}/@{project}.complete"/>
+      <uptodate property="pack.@{project}.available" targetfile="@{destfile}">
+        <srcresources>
+          <resources refid="pack.@{project}.files"/>
+          <!-- <path><pathelement location="${build-quick.dir}/@{project}.complete"/></path> -->
+        </srcresources>
+      </uptodate>
       <if><not><isset property="pack.@{project}.available"/></not><then>
         <mkdir dir="${build-pack.dir}/@{targetdir}"/>
-        <do/>
+        <pre/>
+
+        <if><not><equals arg1="@{manifest}" arg2=""/></not><then>
+          <jar whenmanifestonly="fail" destfile="@{destfile}" manifest="@{manifest}"> <!-- update="true" makes no difference on my machine, so starting from scratch-->
+            <jar-opts/>
+            <path refid="pack.@{project}.files"/>
+          </jar></then>
+        <else>
+          <jar whenmanifestonly="fail" destfile="@{destfile}">
+            <jar-opts/>
+            <path refid="pack.@{project}.files"/>
+          </jar>
+        </else></if>
       </then></if>
     </sequential>
   </macrodef>
@@ -1042,105 +1099,56 @@ targets exercised:
 <!-- ===========================================================================
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  <target name="pack.lib" depends="quick.lib, quick.plugins, forkjoin.done">
+  <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done">
     <staged-pack project="library">
       <!-- First copy maven dependencies -->
-      <copy todir="${build-pack.dir}/lib">
-        <fileset refid="dependency.fileset" />
-        <mapper type="flatten" />
-      </copy>
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scala-library.jar">
-        <fileset dir="${build-quick.dir}/classes/library">
-          <exclude name="scala/swing/**"/>
-          <exclude name="scala/actors/**"/>
-        </fileset>
-        <fileset dir="${build-quick.dir}/classes/continuations-library"/>
-        <fileset dir="${forkjoin-classes}"/>
-      </jar>
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scala-actors.jar">
-        <fileset dir="${build-quick.dir}/classes/library">
-          <include name="scala/actors/**"/>
-        </fileset>
-      </jar>
+      <pre>
+        <copy todir="${build-pack.dir}/lib">
+          <fileset refid="dependency.fileset" />
+          <mapper type="flatten" />
+        </copy>
+      </pre>
     </staged-pack>
   </target>
 
-  <target name="pack.swing" depends="quick.swing" if="has.java6">
-    <staged-pack project="swing’">
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scala-swing.jar" basedir="${build-quick.dir}/classes/swing"/>
-    </staged-pack>
-  </target>
+  <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
+  <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
+  <target name="pack.reflect" depends="quick.reflect">            <staged-pack project="reflect"/> </target>
 
-  <target name="pack.reflect" depends="quick.reflect">
-    <staged-pack project="reflect’">
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scala-reflect.jar" basedir="${build-quick.dir}/classes/reflect"/>
-    </staged-pack>
-  </target>
-
-  <target name="pack.comp" depends="quick.comp, asm.done">
-    <staged-pack project="compiler">
-      <mkdir dir="${build-pack.dir}/META-INF"/>
-      <copy file="META-INF/MANIFEST.MF" toDir="${build-pack.dir}/META-INF"/>
-      <manifest file="${build-pack.dir}/META-INF/MANIFEST.MF" mode="update">
-        <attribute name="Bundle-Version" value="${version.number}"/>
-        <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
-      </manifest>
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
+  <target name="pack.comp"    depends="quick.comp, asm.done">
+    <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
+      <pre> <!-- TODO the files copied here do not influence actuality of this target (nor does the manifest) -->
+        <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
+        <copy todir="${build-pack.dir}/lib">
+          <fileset dir="${lib-extra.dir}">
+            <include name="**/*.jar"/>
+          </fileset>
+        </copy>
+        <mkdir dir="${build-pack.dir}/META-INF"/>
+        <copy file="${basedir}/META-INF/MANIFEST.MF" toDir="${build-pack.dir}/META-INF"/>
+        <manifest file="${build-pack.dir}/META-INF/MANIFEST.MF" mode="update">
+          <attribute name="Bundle-Version" value="${version.number}"/>
+          <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
+        </manifest>
+      </pre>
+      <jar-opts>
         <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
-        <fileset dir="${build-quick.dir}/classes/compiler"/>
-        <fileset dir="${asm-classes}"/>
-        <fileset dir="${fjbg-classes}"/>
-      </jar>
-      <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
-      <copy todir="${build-pack.dir}/lib">
-        <fileset dir="${lib-extra.dir}">
-          <include name="**/*.jar"/>
-        </fileset>
-      </copy>
+      </jar-opts>
     </staged-pack>
   </target>
 
-  <target name="pack.plugins" depends="quick.plugins">
-    <staged-pack project="plugins" targetdir="misc/scala-devel/plugins" targetjar="continuations.jar">
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/misc/scala-devel/plugins/continuations.jar" basedir="${build-quick.dir}/classes/continuations-plugin"/>
-    </staged-pack>
-  </target>
-
-  <target name="pack.scalacheck" depends="quick.scalacheck">
-    <uptodate property="pack.scalacheck.available"
-         targetfile="${build-pack.dir}/lib/scalacheck.jar">
-      <srcfiles  dir="${build-quick.dir}/classes/scalacheck"/></uptodate>
-    <if><not><isset property="pack.scalacheck.available"/></not><then>
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scalacheck.jar" basedir="${build-quick.dir}/classes/scalacheck"/>
-    </then></if>
-  </target>
+  <target name="pack.plugins"    depends="quick.plugins">    <staged-pack project="plugins"    targetdir="misc/scala-devel/plugins" targetjar="continuations.jar"/> </target>
+  <target name="pack.scalacheck" depends="quick.scalacheck"> <staged-pack project="scalacheck" targetjar="scalacheck.jar"/> </target>
 
   <target name="pack.partest" depends="quick.partest">
-    <staged-pack project="partest">
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scala-partest.jar">
-        <fileset dir="${build-quick.dir}/classes/partest">
-          <exclude name="scala/tools/partest/javaagent/**"/>
-        </fileset>
-      </jar>
-      <jar whenmanifestonly="fail" destfile     = "${build-pack.dir}/lib/scala-partest-javaagent.jar"
-        manifest        = "${src.dir}/partest/scala/tools/partest/javaagent/MANIFEST.MF">
-        <fileset dir    = "${build-quick.dir}/classes/partest">
-          <include name = "scala/tools/partest/javaagent/**"/>
-        </fileset>
-      </jar>
-    </staged-pack>
+    <staged-pack project="partest"/>
+     <!-- TODO the manifest should influence actuality of this target -->
+    <staged-pack project="partest-javaagent" manifest="${src.dir}/partest/scala/tools/partest/javaagent/MANIFEST.MF"/>
   </target>
 
-  <target name="pack.scalap" depends="quick.scalap">
-    <staged-pack project="plugins" targetjar="scalap.jar">
-      <jar whenmanifestonly="fail" destfile="${build-pack.dir}/lib/scalap.jar">
-        <fileset dir="${build-quick.dir}/classes/scalap"/>
-        <fileset file="${src.dir}/scalap/decoder.properties"/>
-      </jar>
-    </staged-pack>
-  </target>
+  <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"     targetjar="scalap.jar"/> </target>
 
-  <target name="pack.bin" depends="pack.comp, pack.lib, pack.partest, pack.plugins, pack.reflect, pack.scalacheck, pack.scalap, pack.swing">
+  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.partest, pack.plugins, pack.reflect, pack.scalacheck, pack.scalap, pack.swing">
     <staged-bin stage="pack"/>
   </target>
 
