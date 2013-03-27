@@ -107,7 +107,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     def validate(tree: Tree, encltree: Tree): Unit = {
 
       if (!tree.isEmpty && tree.canHaveAttrs) {
-        if (settings.Yposdebug.value && (settings.verbose.value || settings.Yrangepos.value))
+        if (settings.Yposdebug && (settings.verbose || settings.Yrangepos))
           println("[%10s] %s".format("validate", treeStatus(tree, encltree)))
 
         if (!tree.pos.isDefined)

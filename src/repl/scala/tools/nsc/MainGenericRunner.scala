@@ -17,7 +17,7 @@ object JarRunner extends CommonRunner {
     val jarURLs   = ClassPath expandManifestPath jarPath
     val urls      = if (jarURLs.isEmpty) File(jarPath).toURL +: settings.classpathURLs else jarURLs
 
-    if (settings.Ylogcp.value) {
+    if (settings.Ylogcp) {
       Console.err.println("Running jar with these URLs as the classpath:")
       urls foreach println
     }
@@ -46,7 +46,7 @@ class MainGenericRunner {
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 
     if (!command.ok)                      return errorFn("\n" + command.shortUsageMsg)
-    else if (settings.version.value)      return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
+    else if (settings.version)            return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
     else if (command.shouldStopWithInfo)  return errorFn(command getInfoMessage sampleCompiler)
 
     def isE   = !settings.execute.isDefault

@@ -241,7 +241,7 @@ trait ModelFactoryImplicitSupport {
       available match {
         case Some(true) =>
           Nil
-        case Some(false) if (!settings.docImplicitsShowAll.value) =>
+        case Some(false) if !settings.docImplicitsShowAll =>
           // if -implicits-show-all is not set, we get rid of impossible conversions (such as Numeric[String])
           throw new ImplicitNotFound(implType)
         case _ =>

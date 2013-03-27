@@ -32,7 +32,7 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
           else newUnitParser(unit).smartParse()
       }
 
-      if (settings.Yrangepos.value && !reporter.hasErrors)
+      if (settings.Yrangepos && !reporter.hasErrors)
         validatePositions(unit.body)
     }
   }

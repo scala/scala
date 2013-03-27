@@ -17,7 +17,7 @@ class MainClass extends Driver with EvalLoop {
 
   override def newCompiler(): Global = Global(settings, reporter)
   override def doCompile(compiler: Global) {
-    if (settings.resident.value) resident(compiler)
+    if (settings.resident) resident(compiler)
     else super.doCompile(compiler)
   }
 }

@@ -43,7 +43,7 @@ abstract class AbstractReporter extends Reporter {
         if (!hidden || isPromptSet) {
           severity.count += 1
           display(pos, msg, severity)
-        } else if (settings.debug.value) {
+        } else if (settings.debug) {
           severity.count += 1
           display(pos, "[ suppressed ] " + msg, severity)
         }

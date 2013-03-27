@@ -248,7 +248,7 @@ trait DiagramDirectiveParser {
             hideNodesFilter = hideNodesFilter0,
             hideEdgesFilter = hideEdgesFilter0)
 
-      if (settings.docDiagramsDebug.value && result != NoDiagramAtAll && result != FullDiagram)
+      if (settings.docDiagramsDebug && result != NoDiagramAtAll && result != FullDiagram)
         settings.printMsg(template.kind + " " + template.qualifiedName + " filter: " + result)
       tFilter += System.currentTimeMillis
 

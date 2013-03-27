@@ -203,7 +203,7 @@ trait Checkable {
     private def isEffectivelyFinal(sym: Symbol): Boolean = (
       // initialization important
       sym.initialize.isEffectivelyFinal || (
-        settings.future.value && isTupleSymbol(sym) // SI-7294 step into the future and treat TupleN as final.
+        settings.future && isTupleSymbol(sym) // SI-7294 step into the future and treat TupleN as final.
       )
     )
 

@@ -628,10 +628,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  with SimpleReader.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
-    if (settings.Xnojline.value || Properties.isEmacsShell)
+    if (settings.Xnojline || Properties.isEmacsShell)
       SimpleReader()
     else try new JLineReader(
-      if (settings.noCompletion.value) NoCompletion
+      if (settings.noCompletion) NoCompletion
       else new JLineCompletion(intp)
     )
     catch {

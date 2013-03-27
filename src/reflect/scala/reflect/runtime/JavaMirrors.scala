@@ -565,7 +565,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def markAbsent(tpe: Type) = setAllInfos(clazz, module, tpe)
       def handleError(ex: Exception) = {
         markAbsent(ErrorType)
-        if (settings.debug.value) ex.printStackTrace()
+        if (settings.debug) ex.printStackTrace()
         val msg = ex.getMessage()
         MissingRequirementError.signal(
           (if (msg eq null) "reflection error while loading " + clazz.name
