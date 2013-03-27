@@ -16,9 +16,9 @@ import scala.reflect.internal.util.NoPosition
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *
  * The patmat translation doesn't rely on this, so it could be disabled in principle.
- *
- * TODO: split out match analysis
+ *  - well, not quite: the backend crashes if we emit duplicates in switches (e.g. SI-7290)
  */
+// TODO: split out match analysis
 trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
@@ -457,9 +457,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                     case _              => t
                   }
                   // SI-7290 Discard duplicate alternatives that would crash the backend
-                  def distinctAlts = distinctBy(switchableAlts)(extractConst)
+                  val distinctAlts = distinctBy(switchableAlts)(extractConst)
                   if (distinctAlts.size < switchableAlts.size) {
-                    val duplicated = switchableAlts.groupBy(extractConst).flatMap(_._2.drop(1))
+                    val duplicated = switchableAlts.groupBy(extractConst).flatMap(_._2.drop(1).take(1)) // report the first duplicated
                     global.currentUnit.warning(pos, s"Pattern contains duplicate alternatives: ${duplicated.mkString(", ")}")
                   }
                   CaseDef(Alternative(distinctAlts), guard, body)
