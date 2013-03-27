@@ -17,7 +17,7 @@ private[tests] trait CoreTestDefs
     with AskCompletionAt {
 
     def memberPrinter(member: compiler.Member): String =
-        "[accessible: %5s] ".format(member.accessible) + "`" + (member.sym.toString() + member.tpe.toString()).trim() + "`"
+        "[accessible: %5s] ".format(member.accessible) + "`" + (member.sym.toString.trim + member.tpe.toString()).trim + "`"
 
     override def runTest() {
       askAllSources(CompletionMarker) { pos =>
@@ -29,7 +29,7 @@ private[tests] trait CoreTestDefs
           // universal check file that we can provide for this to work
           reporter.println("retrieved %d members".format(members.size))
           compiler ask { () =>
-            val filtered = members.filterNot(member => member.sym.name.toString == "getClass" || member.sym.isConstructor)
+            val filtered = members.filterNot(member => (member.sym.name string_== "getClass") || member.sym.isConstructor)
             reporter.println(filtered.map(memberPrinter).sortBy(_.toString()).mkString("\n"))
           }
         }

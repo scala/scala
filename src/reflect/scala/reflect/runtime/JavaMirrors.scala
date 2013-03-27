@@ -242,10 +242,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def reflectField(field: TermSymbol): FieldMirror = {
         checkMemberOf(field, symbol)
         if ((field.isMethod && !field.isAccessor) || field.isModule) ErrorNotField(field)
-        val name =
-          if (field.isGetter) nme.getterToLocal(field.name)
-          else if (field.isSetter) nme.getterToLocal(nme.setterToGetter(field.name))
-          else field.name
+        val name = if (field.isAccessor) field.localName else field.name
         val field1 = (field.owner.info decl name).asTerm
         try fieldToJava(field1)
         catch {
@@ -313,7 +310,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     // the "symbol == Any_getClass || symbol == Object_getClass" test doesn't cut it
     // because both AnyVal and its primitive descendants define their own getClass methods
-    private def isGetClass(meth: MethodSymbol) = meth.name.toString == "getClass" && meth.paramss.flatten.isEmpty
+    private def isGetClass(meth: MethodSymbol) = (meth.name string_== "getClass") && meth.paramss.flatten.isEmpty
     private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (meth.owner.isPrimitiveValueClass && meth.returnType =:= StringClass.toType)
     lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
     lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
@@ -844,9 +841,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      *  that start with the given name are searched instead.
      */
     private def lookup(clazz: Symbol, jname: String): Symbol = {
-      def approximateMatch(sym: Symbol, jstr: String): Boolean =
-        (sym.name.toString == jstr) ||
-        sym.isPrivate && nme.expandedName(sym.name.toTermName, sym.owner).toString == jstr
+      def approximateMatch(sym: Symbol, jstr: String): Boolean = (
+           (sym.name string_== jstr)
+        || sym.isPrivate && (nme.expandedName(sym.name.toTermName, sym.owner) string_== jstr)
+      )
 
       clazz.info.decl(newTermName(jname)) orElse {
         (clazz.info.decls.iterator filter (approximateMatch(_, jname))).toList match {
@@ -1008,7 +1006,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private def typeParamToScala1(jparam: jTypeVariable[_ <: GenericDeclaration]): TypeSymbol = {
       val owner = genericDeclarationToScala(jparam.getGenericDeclaration)
       owner.info match {
-        case PolyType(tparams, _) => tparams.find(_.name.toString == jparam.getName).get.asType
+        case PolyType(tparams, _) => tparams.find(_.name string_== jparam.getName).get.asType
       }
     }
 
@@ -1202,7 +1200,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      */
     def fieldToJava(fld: TermSymbol): jField = fieldCache.toJava(fld) {
       val jclazz = classToJava(fld.owner.asClass)
-      val jname = nme.dropLocalSuffix(fld.name).toString
+      val jname = fld.name.dropLocal.toString
       try jclazz getDeclaredField jname
       catch {
         case ex: NoSuchFieldException => jclazz getDeclaredField expandedName(fld)
@@ -1215,7 +1213,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     def methodToJava(meth: MethodSymbol): jMethod = methodCache.toJava(meth) {
       val jclazz = classToJava(meth.owner.asClass)
       val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
-      val jname = nme.dropLocalSuffix(meth.name).toString
+      val jname = meth.name.dropLocal.toString
       try jclazz getDeclaredMethod (jname, paramClasses: _*)
       catch {
         case ex: NoSuchMethodException =>

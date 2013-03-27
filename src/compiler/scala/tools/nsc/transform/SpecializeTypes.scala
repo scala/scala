@@ -322,20 +322,20 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Specialize name for the two list of types. The first one denotes
    *  specialization on method type parameters, the second on outer environment.
    */
-  private def specializedName(name: Name, types1: List[Type], types2: List[Type]): TermName = {
-    if (nme.INITIALIZER == name || (types1.isEmpty && types2.isEmpty))
+  private def specializedName(name: Name, types1: List[Type], types2: List[Type]): TermName = (
+    if (name == nme.CONSTRUCTOR || (types1.isEmpty && types2.isEmpty))
       name.toTermName
     else if (nme.isSetterName(name))
-      nme.getterToSetter(specializedName(nme.setterToGetter(name.toTermName), types1, types2))
+      specializedName(name.getterName, types1, types2).setterName
     else if (nme.isLocalName(name))
-      nme.getterToLocal(specializedName(nme.localToGetter(name.toTermName), types1, types2))
+      specializedName(name.getterName, types1, types2).localName
     else {
       val (base, cs, ms) = nme.splitSpecializedName(name)
       newTermName(base.toString + "$"
                   + "m" + ms + types1.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "")
                   + "c" + cs + types2.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "$sp"))
     }
-  }
+  )
 
   lazy val specializableTypes = ScalaValueClasses map (_.tpe) sorted
 
@@ -714,7 +714,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           // debuglog("m: " + m + " isLocal: " + nme.isLocalName(m.name) + " specVal: " + specVal.name + " isLocal: " + nme.isLocalName(specVal.name))
 
           if (nme.isLocalName(m.name)) {
-            val specGetter = mkAccessor(specVal, nme.localToGetter(specVal.name.toTermName)) setInfo MethodType(Nil, specVal.info)
+            val specGetter = mkAccessor(specVal, specVal.getterName) setInfo MethodType(Nil, specVal.info)
             val origGetter = overrideIn(sClass, m.getter(clazz))
             info(origGetter) = Forward(specGetter)
             enterMember(specGetter)
@@ -729,7 +729,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
 
             if (specVal.isVariable && m.setter(clazz) != NoSymbol) {
-              val specSetter = mkAccessor(specVal, nme.getterToSetter(specGetter.name))
+              val specSetter = mkAccessor(specVal, specGetter.setterName)
                 .resetFlag(STABLE)
               specSetter.setInfo(MethodType(specSetter.newSyntheticValueParams(List(specVal.info)),
                                             UnitClass.tpe))
@@ -1805,7 +1805,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      */
     def initializesSpecializedField(f: Symbol) = (
          (f.name endsWith nme.SPECIALIZED_SUFFIX)
-      && clazz.info.member(nme.originalName(f.name)).isPublic
+      && clazz.info.member(f.unexpandedName).isPublic
       && clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol
     )
 
