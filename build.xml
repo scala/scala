@@ -1424,7 +1424,7 @@ targets exercised:
 
   <!-- for use in PR validation, where stability is rarely broken, so we're going to use starr for locker,
        and skip test.stability (which requires locker == quick) -->
-  <target name="test.core" depends="test.osgi, test.sbt, test.bc, test.interactive, test.continuations.suite, test.suite, test.scaladoc"/>
+  <target name="test.core" depends="test.osgi, test.sbt, test.bc, test.interactive, test.continuations.suite, test.scaladoc, test.suite"/>
   <target name="test.done" depends="test.core, test.stability"/>
 
 
