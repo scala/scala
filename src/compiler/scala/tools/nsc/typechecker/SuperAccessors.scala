@@ -388,7 +388,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       assert(clazz != NoSymbol, sym)
       debuglog("Decided for host class: " + clazz)
 
-      val accName    = nme.protName(sym.originalName)
+      val accName    = nme.protName(sym.unexpandedName)
       val hasArgs    = sym.tpe.paramSectionCount > 0
       val memberType = refChecks.toScalaRepeatedParam(sym.tpe) // fix for #2413
 
@@ -406,7 +406,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
       val protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s)) orElse {
-        val newAcc = clazz.newMethod(nme.protName(sym.originalName), tree.pos, newFlags = ARTIFACT)
+        val newAcc = clazz.newMethod(nme.protName(sym.unexpandedName), tree.pos, newFlags = ARTIFACT)
         newAcc setInfoAndEnter accType(newAcc)
 
         val code = DefDef(newAcc, {
@@ -466,7 +466,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       assert(clazz != NoSymbol, field)
       debuglog("Decided for host class: " + clazz)
 
-      val accName = nme.protSetterName(field.originalName)
+      val accName = nme.protSetterName(field.unexpandedName)
       val protectedAccessor = clazz.info decl accName orElse {
         val protAcc      = clazz.newMethod(accName, field.pos, newFlags = ARTIFACT)
         val paramTypes   = List(clazz.typeOfThis, field.tpe)

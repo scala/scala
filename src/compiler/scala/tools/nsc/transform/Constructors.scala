@@ -94,8 +94,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val paramAccessors = clazz.constrParamAccessors
 
       // The constructor parameter corresponding to an accessor
-      def parameter(acc: Symbol): Symbol =
-        parameterNamed(nme.getterName(acc.originalName.toTermName))
+      def parameter(acc: Symbol): Symbol = parameterNamed(acc.unexpandedName.getterName)
 
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$` afterwards.
@@ -191,8 +190,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         stat match {
           case ValDef(mods, name, _, _) if (mods hasFlag PRESUPER) =>
             // stat is the constructor-local definition of the field value
-            val fields = presupers filter (
-              vdef => nme.localToGetter(vdef.name) == name)
+            val fields = presupers filter (_.getterName == name)
             assert(fields.length == 1)
             val to = fields.head.symbol
             if (!to.tpe.isInstanceOf[ConstantType])
@@ -314,10 +312,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         def specializedAssignFor(sym: Symbol): Option[Tree] =
           specializedStats find {
-            case Assign(sel @ Select(This(_), _), rhs) =>
-              (    (sel.symbol hasFlag SPECIALIZED)
-                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name.toTermName)) == nme.localToGetter(sym.name.toTermName))
-              )
+            case Assign(sel @ Select(This(_), _), _) =>
+              sel.symbol.isSpecialized && (nme.unspecializedName(sel.symbol.getterName) == sym.getterName)
             case _ => false
           }
 
@@ -432,8 +428,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       }
 
       def addGetter(sym: Symbol): Symbol = {
-        val getr = addAccessor(
-          sym, nme.getterName(sym.name.toTermName), getterFlags(sym.flags))
+        val getr = addAccessor(sym, sym.getterName, getterFlags(sym.flags))
         getr setInfo MethodType(List(), sym.tpe)
         defBuf += localTyper.typedPos(sym.pos)(DefDef(getr, Select(This(clazz), sym)))
         getr
@@ -441,8 +436,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       def addSetter(sym: Symbol): Symbol = {
         sym setFlag MUTABLE
-        val setr = addAccessor(
-          sym, nme.getterToSetter(nme.getterName(sym.name.toTermName)), setterFlags(sym.flags))
+        val setr = addAccessor(sym, sym.setterName, setterFlags(sym.flags))
         setr setInfo MethodType(setr.newSyntheticValueParams(List(sym.tpe)), UnitClass.tpe)
         defBuf += localTyper.typed {
           //util.trace("adding setter def for "+setr) {

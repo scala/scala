@@ -184,7 +184,7 @@ trait Namers extends MethodSynthesis {
            (newS.owner.isTypeParameter || newS.owner.isAbstractType)
            // FIXME: name comparisons not successful, are these underscores
            // sometimes nme.WILDCARD and sometimes tpnme.WILDCARD?
-        && (newS.name.toString == nme.WILDCARD.toString)
+        && (newS.name string_== nme.WILDCARD)
        )
     )
 
@@ -323,7 +323,7 @@ trait Namers extends MethodSynthesis {
       }
     }
     private def createFieldSymbol(tree: ValDef): TermSymbol =
-      owner.newValue(nme.getterToLocal(tree.name), tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
+      owner.newValue(tree.localName, tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
 
     private def createImportSymbol(tree: Tree) =
       NoSymbol.newImport(tree.pos) setInfo completerOf(tree)
@@ -523,7 +523,7 @@ trait Namers extends MethodSynthesis {
         if (from != nme.WILDCARD && base != ErrorType) {
           if (isValid(from)) {
             // for Java code importing Scala objects
-            if (!nme.isModuleName(from) || isValid(nme.stripModuleSuffix(from))) {
+            if (!nme.isModuleName(from) || isValid(from.dropModule)) {
               typer.TyperErrorGen.NotAMemberError(tree, expr, from)
             }
           }

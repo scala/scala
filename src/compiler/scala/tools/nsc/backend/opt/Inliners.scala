@@ -382,7 +382,7 @@ abstract class Inliners extends SubComponent {
         val shouldWarn = hasInline(i.method)
 
         def warnNoInline(reason: String): Boolean = {
-          def msg = "Could not inline required method %s because %s.".format(i.method.originalName.decode, reason)
+          def msg = "Could not inline required method %s because %s.".format(i.method.unexpandedName.decode, reason)
           if (settings.debug.value)
             inlineLog("fail", i.method.fullName, reason)
           if (shouldWarn)
@@ -565,7 +565,7 @@ abstract class Inliners extends SubComponent {
       while (retry && count < MAX_INLINE_RETRY)
 
       for(inlFail <- tfa.warnIfInlineFails) {
-        warn(inlFail.pos, "At the end of the day, could not inline @inline-marked method " + inlFail.method.originalName.decode)
+        warn(inlFail.pos, "At the end of the day, could not inline @inline-marked method " + inlFail.method.unexpandedName.decode)
       }
 
       m.normalize()

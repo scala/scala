@@ -290,7 +290,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
   def inameToSymbol(iname: String): Symbol = {
     val name = global.newTypeName(iname)
     val res0 =
-      if (nme.isModuleName(name)) rootMirror.getModule(nme.stripModuleSuffix(name))
+      if (nme.isModuleName(name)) rootMirror.getModule(name.dropModule)
       else                        rootMirror.getClassByName(name.replace('/', '.')) // TODO fails for inner classes (but this hasn't been tested).
     assert(res0 != NoSymbol)
     val res = jsymbol(res0)
