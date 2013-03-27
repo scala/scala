@@ -136,7 +136,7 @@ class Runner(val testFile: File, fileManager: FileManager) {
       outDir.getAbsolutePath,
       "-classpath",
       join(outDir.toString, CLASSPATH)
-    ) ++ files.map("" + _)
+    ) ++ files.map(_.getAbsolutePath)
 
     pushTranscript(args mkString " ")
     val captured = StreamCapture(runCommand(args, logFile))
