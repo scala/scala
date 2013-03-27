@@ -16,7 +16,7 @@ import scala.tools.nsc.util.{ ClassPath, FakePos, ScalaClassLoader, stackTraceSt
 import ClassPath.{ join, split }
 import scala.tools.scalap.scalax.rules.scalasig.ByteCode
 import scala.collection.{ mutable, immutable }
-import scala.sys.process._
+import scala.sys.process.Process
 import java.util.concurrent.{ Executors, TimeUnit, TimeoutException }
 import PartestDefaults.{ javaCmd, javacCmd }
 import scala.tools.scalap.Main.decompileScala
@@ -136,7 +136,7 @@ class Runner(val testFile: File, fileManager: FileManager) {
       outDir.getAbsolutePath,
       "-classpath",
       join(outDir.toString, CLASSPATH)
-    ) ++ files.map("" + _)
+    ) ++ files.map(_.getAbsolutePath)
 
     pushTranscript(args mkString " ")
     val captured = StreamCapture(runCommand(args, logFile))
@@ -240,8 +240,51 @@ class Runner(val testFile: File, fileManager: FileManager) {
     false
   }
 
+  /** Filter the diff for conditional blocks.
+   *  The check file can contain lines of the form:
+   *  `#partest java7`
+   *  where the line contains a conventional flag name.
+   *  In the diff output, these lines have the form:
+   *  `> #partest java7`
+   *  Blocks which don't apply are filtered out,
+   *  and what remains is the desired diff.
+   *  Line edit commands such as `0a1,6` don't count
+   *  as diff, so return a nonempty diff only if
+   *  material diff output was seen.
+   *  Filtering the diff output (instead of every check
+   *  file) means that we only post-process a test that
+   *  might be failing, in the normal case.
+   */
+  def diffilter(d: String) = {
+    import scala.util.Properties.javaVersion
+    val prefix = "#partest"
+    val margin = "> "
+    val leader = margin + prefix
+    // use lines in block so labeled? Default to sure, go ahead.
+    def retainOn(f: String) = f match {
+      case "java7"  => javaVersion startsWith "1.7"
+      case "java6"  => javaVersion startsWith "1.6"
+      case _        => true
+    }
+    if (d contains prefix) {
+      val sb = new StringBuilder
+      var retain = true           // use the current line
+      var material = false        // saw a line of diff
+      for (line <- d.lines)
+        if (line startsWith leader) {
+          val rest = (line stripPrefix leader).trim
+          retain = retainOn(rest)
+        } else if (retain) {
+          if (line startsWith margin) material = true
+          sb ++= line
+          sb ++= EOL
+        }
+      if (material) sb.toString else ""
+    } else d
+  }
+
   def currentDiff = (
-    if (checkFile.canRead) compareFiles(logFile, checkFile)
+    if (checkFile.canRead) diffilter(compareFiles(logFile, checkFile))
     else compareContents(augmentString(file2String(logFile)).lines.toList, Nil)
   )
 
@@ -566,6 +609,7 @@ class Runner(val testFile: File, fileManager: FileManager) {
     diffIsOk
   }
   def runScriptTest() = {
+    import scala.sys.process._
     val (swr, wr) = newTestWriters()
 
     val args = file2String(testFile changeExtension "args")
