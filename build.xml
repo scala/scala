@@ -57,8 +57,8 @@ targets exercised:
   <target name="nightly.checkall">
     <antcall target="nightly-nopt"> <param name="partest.scalac_opts" value="-Ycheck:all"/></antcall></target>
 
-  <target name="clean"     depends="locker.clean"   description="Removes binaries of compiler and library. Distributions are untouched."/>
-  <target name="docsclean" depends="docs.clean"     description="Removes generated documentation. Distributions are untouched."/>
+  <target name="clean"       depends="quick.clean"  description="Removes binaries of compiler and library. Locker and distributions are untouched."/>
+  <target name="docsclean"   depends="docs.clean"   description="Removes generated documentation. Distributions are untouched."/>
   <target name="distclean"   depends="dist.clean"   description="Removes all distributions. Binaries and documentation are untouched."/>
 
   <macrodef name="optimized" >
