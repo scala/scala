@@ -2422,20 +2422,28 @@ trait Types
     override def kind = "TypeRef"
   }
 
+  // No longer defined as anonymous classes in `object TypeRef` to avoid an unnecessary outer pointer.
+  private final class AliasArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args) with AliasTypeRef
+  private final class AbstractArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args) with AbstractTypeRef
+  private final class ClassArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args) with ClassTypeRef
+  private final class AliasNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AliasTypeRef
+  private final class AbstractNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AbstractTypeRef
+  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with ClassTypeRef
+
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
       if (args.nonEmpty) {
-        if (sym.isAliasType)              new ArgsTypeRef(pre, sym, args) with AliasTypeRef
-        else if (sym.isAbstractType)      new ArgsTypeRef(pre, sym, args) with AbstractTypeRef
-        else                              new ArgsTypeRef(pre, sym, args) with ClassTypeRef
+        if (sym.isAliasType)              new AliasArgsTypeRef(pre, sym, args)
+        else if (sym.isAbstractType)      new AbstractArgsTypeRef(pre, sym, args)
+        else                              new ClassArgsTypeRef(pre, sym, args)
       }
       else {
-        if (sym.isAliasType)              new NoArgsTypeRef(pre, sym) with AliasTypeRef
-        else if (sym.isAbstractType)      new NoArgsTypeRef(pre, sym) with AbstractTypeRef
+        if (sym.isAliasType)              new AliasNoArgsTypeRef(pre, sym)
+        else if (sym.isAbstractType)      new AbstractNoArgsTypeRef(pre, sym)
         else if (sym.isRefinementClass)   new RefinementTypeRef(pre, sym)
         else if (sym.isPackageClass)      new PackageTypeRef(pre, sym)
         else if (sym.isModuleClass)       new ModuleTypeRef(pre, sym)
-        else                              new NoArgsTypeRef(pre, sym) with ClassTypeRef
+        else                              new ClassNoArgsTypeRef(pre, sym)
       }
     })
   }
