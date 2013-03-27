@@ -161,6 +161,41 @@ object Iterator {
     def hasNext = true
     def next = elem
   }
+
+  /** Avoid stack overflows when applying ++ to lots of iterators by
+   *  flattening the unevaluated iterators out into a vector of closures.
+   */
+  private[scala] final class ConcatIterator[+A](initial: Vector[() => Iterator[A]]) extends Iterator[A] {
+    // current set to null when all iterators are exhausted
+    private[this] var current: Iterator[A] = Iterator.empty
+    private[this] var queue: Vector[() => Iterator[A]] = initial
+    // Advance current to the next non-empty iterator
+    private[this] def advance(): Boolean = {
+      if (queue.isEmpty) {
+        current = null
+        false
+      }
+      else {
+        current = queue.head()
+        queue = queue.tail
+        current.hasNext || advance()
+      }
+    }
+    def hasNext = (current ne null) && (current.hasNext || advance())
+    def next()  = if (hasNext) current.next else Iterator.empty.next
+
+    override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
+      new ConcatIterator(queue :+ (() => that.toIterator))
+  }
+
+  private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
+    private[this] lazy val rhs: Iterator[A] = that.toIterator
+    def hasNext = lhs.hasNext || rhs.hasNext
+    def next    = if (lhs.hasNext) lhs.next else rhs.next
+
+    override def ++[B >: A](that: => GenTraversableOnce[B]) =
+      new ConcatIterator(Vector(() => this, () => that.toIterator))
+  }
 }
 
 import Iterator.empty
@@ -338,24 +373,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
    *    @inheritdoc
    */
-  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
-    // optimize a little bit to prevent n log n behavior.
-    private var cur : Iterator[B] = self
-    private var selfExhausted : Boolean = false
-    // since that is by-name, make sure it's only referenced once -
-    // if "val it = that" is inside the block, then hasNext on an empty
-    // iterator will continually reevaluate it.  (ticket #3269)
-    lazy val it = that.toIterator
-    // the eq check is to avoid an infinite loop on "x ++ x"
-    def hasNext = cur.hasNext || (!selfExhausted && {
-      it.hasNext && {
-        cur = it
-        selfExhausted = true
-        true
-      }
-    })
-    def next() = { hasNext; cur.next() }
-  }
+  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.JoinIterator(self, that)
 
   /** Creates a new iterator by applying a function to all values produced by this iterator
    *  and concatenating the results.
