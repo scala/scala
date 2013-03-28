@@ -16,13 +16,13 @@ import scala.reflect.internal.util.NoPosition
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *
  * The patmat translation doesn't rely on this, so it could be disabled in principle.
- *
- * TODO: split out match analysis
+ *  - well, not quite: the backend crashes if we emit duplicates in switches (e.g. SI-7290)
  */
+// TODO: split out match analysis
 trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   import PatternMatchingStats._
   import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
-    ConstantType, Literal, Constant, gen, EmptyTree,
+    ConstantType, Literal, Constant, gen, EmptyTree, distinctBy,
     Typed, treeInfo, nme, Ident,
     Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw}
 
@@ -442,7 +442,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
               case SwitchableTreeMaker(pattern) :: GuardAndBodyTreeMakers(guard, body) =>
                 Some(CaseDef(pattern, guard, body))
               // alternatives
-              case AlternativesTreeMaker(_, altss, _) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
+              case AlternativesTreeMaker(_, altss, pos) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
                 val switchableAlts = altss map {
                   case SwitchableTreeMaker(pattern) :: Nil =>
                     Some(pattern)
@@ -452,7 +452,17 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
                 // succeed if they were all switchable
                 sequence(switchableAlts) map { switchableAlts =>
-                  CaseDef(Alternative(switchableAlts), guard, body)
+                  def extractConst(t: Tree) = t match {
+                    case Literal(const) => const
+                    case _              => t
+                  }
+                  // SI-7290 Discard duplicate alternatives that would crash the backend
+                  val distinctAlts = distinctBy(switchableAlts)(extractConst)
+                  if (distinctAlts.size < switchableAlts.size) {
+                    val duplicated = switchableAlts.groupBy(extractConst).flatMap(_._2.drop(1).take(1)) // report the first duplicated
+                    global.currentUnit.warning(pos, s"Pattern contains duplicate alternatives: ${duplicated.mkString(", ")}")
+                  }
+                  CaseDef(Alternative(distinctAlts), guard, body)
                 }
               case _ =>
                 // debug.patmat("can't emit switch for "+ makers)

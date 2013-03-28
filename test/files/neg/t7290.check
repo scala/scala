@@ -1,0 +1,10 @@
+t7290.scala:4: error: Pattern contains duplicate alternatives: 0
+    case 0 | 0 => 0
+         ^
+t7290.scala:5: error: Pattern contains duplicate alternatives: 2, 3
+    case 2 | 2 | 2 | 3 | 2 | 3 => 0
+         ^
+t7290.scala:6: error: Pattern contains duplicate alternatives: 4
+    case 4 | (_ @ 4) => 0
+         ^
+three errors found
