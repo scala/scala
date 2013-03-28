@@ -31,7 +31,8 @@ val fTpe = typeOf[O.type].decl(newTermName("foo")).paramss.head.head.tpe
 def memType(sub: Type, scrut: Type): Type =
   nestedMemberType(sub.typeSymbol, scrut.prefix, scrut.typeSymbol.owner)
 
-memType(S1, fTpe)
+val mt1 = memType(S1, fTpe)
+global.typeDeconstruct.show(mt1)
 memType(S2, fTpe)
 memType(S3, fTpe)
 memType(S4, fTpe)

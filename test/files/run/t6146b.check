@@ -37,8 +37,15 @@ memType: (sub: u.Type, scrut: u.Type)u.Type
 
 scala> 
 
-scala> memType(S1, fTpe)
-res0: u.Type = O.X.S1.type
+scala> val mt1 = memType(S1, fTpe)
+mt1: u.Type = O.X.S1.type
+
+scala> global.typeDeconstruct.show(mt1)
+res0: String = 
+TypeRef(
+  pre = SingleType(pre = ThisType(object O), object X)
+  TypeSymbol(class S1 extends C.this.F[T])
+)
 
 scala> memType(S2, fTpe)
 res1: u.Type = O.S2
