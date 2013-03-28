@@ -775,32 +775,27 @@ targets exercised:
     <attribute name="args" default=""/>                  <!-- additional args -->
     <attribute name="destproject" default="@{project}"/> <!-- overrides the output directory; used when building multiple projects into the same directory-->
     <attribute name="srcdir" default="@{project}"/>
-    <element name="args" implicit="true" optional="true"/>
 
     <sequential>
       <if><equals arg1="@{srcpath}" arg2="NOT SET"/><then>
         <scalacfork taskname="@{stage}.@{project}"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
+          jvmargs="${scalacfork.jvmargs}"
           compilerpathref="@{with}.compiler.path"
-          params="${scalac.args.@{stage}} @{args}"
+          destdir="${build-@{stage}.dir}/classes/@{destproject}"
           srcdir="${src.dir}/@{srcdir}"
-          jvmargs="${scalacfork.jvmargs}">
+          params="${scalac.args.@{stage}} @{args}">
           <include name="**/*.scala"/>
-          <compilationpath refid="@{stage}.@{project}.build.path"/>
-          <args/>
-        </scalacfork></then>
+          <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></then>
       <else>
         <scalacfork taskname="@{stage}.@{project}"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
+          jvmargs="${scalacfork.jvmargs}"
           compilerpathref="@{with}.compiler.path"
-          srcpath="@{srcpath}"
-          params="${scalac.args.@{stage}} @{args}"
+          destdir="${build-@{stage}.dir}/classes/@{destproject}"
           srcdir="${src.dir}/@{srcdir}"
-          jvmargs="${scalacfork.jvmargs}">
+          srcpath="@{srcpath}"
+          params="${scalac.args.@{stage}} @{args}">
           <include name="**/*.scala"/>
-          <compilationpath refid="@{stage}.@{project}.build.path"/>
-          <args/>
-        </scalacfork></else>
+          <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></else>
       </if>
     </sequential>
   </macrodef>
@@ -1087,10 +1082,7 @@ targets exercised:
         <!-- have to compile with quick compiler here! -->
         <staged-scalac with="quick" stage="quick" project="plugins"
                        srcdir="continuations/library" destproject="continuations-library"
-                       args="-Xplugin-require:continuations -P:continuations:enable">
-          <compilerarg value="-Xpluginsdir"/>
-          <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-        </staged-scalac>
+                       args="-Xplugin-require:continuations -P:continuations:enable -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins"/>
 
         <stopwatch name="quick.plugins.timer" action="total"/>
       </do>
