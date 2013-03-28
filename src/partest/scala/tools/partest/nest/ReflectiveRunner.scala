@@ -53,13 +53,14 @@ class ReflectiveRunner {
       Array(latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile) map (x => io.File(x))
 
     val sepUrls   = files map (_.toURL)
+    // this seems to be the core classloader that determines which classes can be found when running partest from the test/partest script
     var sepLoader = new URLClassLoader(sepUrls, null)
 
     // this is a workaround for https://issues.scala-lang.org/browse/SI-5433
-    // when that bug is fixed, this paragraph of code can be safely removed
     // we hack into the classloader that will become parent classloader for scalac
     // this way we ensure that reflective macro lookup will pick correct Code.lift
-    sepLoader = new URLClassLoader((PathSettings.srcCodeLib +: files) map (_.toURL), null)
+    // it's also used to inject diffutils into the classpath when running partest from the test/partest script
+    sepLoader = new URLClassLoader((PathSettings.srcCodeLib +: (PathSettings.diffUtils +: files)) map (_.toURL), null)
 
     if (isPartestDebug)
       println("Loading classes from:\n" + sepUrls.mkString("\n"))
