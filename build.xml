@@ -197,17 +197,12 @@ targets exercised:
         <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="3.2.2"/>
       </artifact:dependencies>
 
-      <artifact:dependencies pathId="partest.extras.classpath" filesetId="partest.extras.fileset">
+      <artifact:dependencies pathId="partest.extras.classpath" filesetId="partest.extras.fileset" versionsId="partest.extras.versions">
         <dependency groupId="com.googlecode.java-diff-utils" artifactId="diffutils" version="1.3.0"/>
       </artifact:dependencies>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
-
-      <!--<dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>-->
-      <union id="dependency.fileset">
-        <resources refid="partest.extras.fileset"/>
-      </union>
 
       <!-- Download STARR via maven if `starr.version` is specified.
            Want to slow down STARR changes, using only released versions. -->
@@ -1159,10 +1154,11 @@ targets exercised:
 
   <!-- depend on quick.done so quick.bin is run when pack.done is -->
   <target name="pack.done" depends="quick.done, pack.bin">
-    <!-- copy maven dependencies -->
+    <!-- copy dependencies to build/pack/lib, it only takes a second so don't bother with uptodate checks -->
     <copy todir="${build-pack.dir}/lib">
-      <resources refid="dependency.fileset" />
-      <mapper type="flatten" />
+      <resources refid="partest.extras.fileset"/>
+      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
+              from="${partest.extras.versions}" to="flatten"/>
     </copy>
 
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.compiler.path"/>
@@ -1694,8 +1690,14 @@ targets exercised:
         <include name="scala-partest.jar"/>
         <include name="scalap.jar"/>
       </fileset>
-      <resources refid="partest.extras.fileset"/>
     </copy>
+
+    <copy todir="${dist.dir}/lib">
+      <resources refid="partest.extras.fileset"/>
+      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
+              from="${partest.extras.versions}" to="flatten"/>
+    </copy>
+
     <mkdir dir="${dist.dir}/bin"/>
     <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
     <copy-bundle name="scala-library"/>

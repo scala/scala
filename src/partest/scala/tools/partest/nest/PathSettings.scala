@@ -74,7 +74,7 @@ object PathSettings {
     }
 
   lazy val diffUtils: File =
-    findJar(buildPackLibDir.files, "diffutils-1.3.0") getOrElse sys.error(s"No diffutils-1.3.0.jar found in '$buildPackLibDir'.")
+    findJar(buildPackLibDir.files, "diffutils") getOrElse sys.error(s"No diffutils.jar found in '$buildPackLibDir'.")
 }
 
 class PathSettings() {
