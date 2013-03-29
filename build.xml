@@ -170,11 +170,15 @@ targets exercised:
     <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
 
+    <!-- Resolve maven dependencies -->
+
     <!-- work around http://jira.codehaus.org/browse/MANTTASKS-203:
          java.lang.ClassCastException: org.codehaus.plexus.DefaultPlexusContainer cannot be cast to org.codehaus.plexus.PlexusContainer
          on repeated use of artifact:dependencies
     -->
     <if><not><isset property="maven-deps-done"></isset></not><then>
+      <mkdir dir="${user.home}/.m2/repository"/>
+      <!-- This task has an issue where if the user directory does not exist, so we create it above. UGH. -->
       <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset">
         <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
       </artifact:dependencies>
@@ -193,15 +197,12 @@ targets exercised:
         <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="3.2.2"/>
       </artifact:dependencies>
 
+      <artifact:dependencies pathId="partest.extras.classpath" filesetId="partest.extras.fileset" versionsId="partest.extras.versions">
+        <dependency groupId="com.googlecode.java-diff-utils" artifactId="diffutils" version="1.3.0"/>
+      </artifact:dependencies>
+
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
-
-      <!-- Resolve maven dependencies -->
-      <mkdir dir="${user.home}/.m2/repository"/>
-      <!-- This task has an issue where if the user directory does not exist, so we create it above. UGH. -->
-      <artifact:dependencies pathId="dependency.classpath" filesetId="dependency.fileset">
-        <!--<dependency groupId="com.typesafe" artifactId="config" version="0.4.0"/>-->
-      </artifact:dependencies>
 
       <!-- Download STARR via maven if `starr.version` is specified.
            Want to slow down STARR changes, using only released versions. -->
@@ -351,7 +352,6 @@ targets exercised:
       <fileset dir="${lib-extra.dir}">
         <include name="**/*.jar"/>
       </fileset>
-      <path refid="dependency.classpath"/>
     </path>
 
     <!-- And print-out what we are building -->
@@ -507,6 +507,7 @@ targets exercised:
 
     <path id="quick.partest.build.path">
       <path refid="quick.scalap.build.path"/>
+      <path refid="partest.extras.classpath"/>
       <pathelement location="${scalacheck.jar}"/>
     </path>
 
@@ -523,6 +524,7 @@ targets exercised:
      </path>
 
     <!-- PACK -->
+    <!-- also used for docs.* targets TODO: use separate paths for those -->
     <path id="pack.compiler.path">
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
@@ -532,6 +534,7 @@ targets exercised:
       <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
       <pathelement location="${ant.jar}"/>
       <pathelement location="${jline.jar}"/>
+      <path refid="partest.extras.classpath"/>
       <path refid="aux.libs"/>
     </path>
 
@@ -618,6 +621,11 @@ targets exercised:
     </path>
 
     <path id="partest.classpath">
+      <path refid="pack.compiler.path"/>
+      <path refid="partest.extras.classpath"/>
+    </path>
+
+    <path id="partest.build.path">
       <path refid="pack.compiler.path"/>
       <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       <pathelement location="${pack.dir}/lib/scala-swing.jar"/> <!-- TODO - segregate swing tests (there can't be many) -->
@@ -944,6 +952,7 @@ targets exercised:
           <stopwatch name="docs.@{project}.timer"/>
           <mkdir dir="${build-docs.dir}/@{project}"/>
           <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
+            <!-- TODO: introduce docs.@{project}.build.path for classpathref -->
             <scaladoc
               destdir="${build-docs.dir}/@{project}"
               doctitle="@{title}"
@@ -1100,16 +1109,7 @@ targets exercised:
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
   <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done">
-    <staged-pack project="library">
-      <!-- First copy maven dependencies -->
-      <pre>
-        <copy todir="${build-pack.dir}/lib">
-          <fileset refid="dependency.fileset" />
-          <mapper type="flatten" />
-        </copy>
-      </pre>
-    </staged-pack>
-  </target>
+    <staged-pack project="library"/></target>
 
   <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
   <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
@@ -1154,8 +1154,15 @@ targets exercised:
 
   <!-- depend on quick.done so quick.bin is run when pack.done is -->
   <target name="pack.done" depends="quick.done, pack.bin">
+    <!-- copy dependencies to build/pack/lib, it only takes a second so don't bother with uptodate checks -->
+    <copy todir="${build-pack.dir}/lib">
+      <resources refid="partest.extras.fileset"/>
+      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
+              from="${partest.extras.versions}" to="flatten"/>
+    </copy>
+
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.compiler.path"/>
-    <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.compiler.path"/>
+    <taskdef resource="scala/tools/partest/antlib.xml" classpathref="partest.classpath"/>
   </target>
 
 
@@ -1369,7 +1376,7 @@ targets exercised:
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
 
-      <compilationpath refid="partest.classpath"/>
+      <compilationpath refid="partest.build.path"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
       <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
     </partest>
@@ -1380,7 +1387,7 @@ targets exercised:
              timeout="2400000"
              srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
-      <compilationpath refid="partest.classpath"/>
+      <compilationpath refid="partest.build.path"/>
       <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
@@ -1407,7 +1414,7 @@ targets exercised:
              scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
       <compilerarg value="-Xpluginsdir"/>
       <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-      <compilationpath refid="partest.classpath"/>
+      <compilationpath refid="partest.build.path"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/${partest.srcdir}/continuations-run" includes="*.scala"/>
     </partest>
@@ -1415,7 +1422,7 @@ targets exercised:
 
   <target name="test.scaladoc" depends="pack.done">
     <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath refid="partest.classpath"/>
+      <compilationpath refid="partest.build.path"/>
       <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
       <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
     </partest>
@@ -1423,7 +1430,7 @@ targets exercised:
 
   <target name="test.interactive" depends="pack.done">
     <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath refid="partest.classpath"/>
+      <compilationpath refid="partest.build.path"/>
       <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
         <include name="*/*.scala"/>
       </presentationtests>
@@ -1684,6 +1691,13 @@ targets exercised:
         <include name="scalap.jar"/>
       </fileset>
     </copy>
+
+    <copy todir="${dist.dir}/lib">
+      <resources refid="partest.extras.fileset"/>
+      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
+              from="${partest.extras.versions}" to="flatten"/>
+    </copy>
+
     <mkdir dir="${dist.dir}/bin"/>
     <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
     <copy-bundle name="scala-library"/>
