@@ -43,7 +43,7 @@ abstract class ClassfileParser {
 
   def srcfile = srcfile0
 
-  private def currentIsTopLevel = currentClass.toString.indexOf('$') < 0
+  private def currentIsTopLevel = !(currentClass.decodedName containsChar '$')
 
   private object unpickler extends scala.reflect.internal.pickling.UnPickler {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
@@ -435,63 +435,59 @@ abstract class ClassfileParser {
     sym
   }
 
+  private def loadClassSymbol(name: Name): Symbol = {
+    val file = global.classPath findSourceFile ("" +name) getOrElse {
+      // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+      // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
+      // that are not in their correct place (see bug for details)
+      if (!settings.isScaladoc)
+        warning(s"Class $name not found - continuing with a stub.")
+      return NoSymbol.newClass(name.toTypeName)
+    }
+    val completer     = new global.loaders.ClassfileLoader(file)
+    var owner: Symbol = rootMirror.RootClass
+    var sym: Symbol   = NoSymbol
+    var ss: Name      = null
+    var start         = 0
+    var end           = name indexOf '.'
+
+    while (end > 0) {
+      ss = name.subName(start, end)
+      sym = owner.info.decls lookup ss
+      if (sym == NoSymbol) {
+        sym = owner.newPackage(ss.toTermName) setInfo completer
+        sym.moduleClass setInfo completer
+        owner.info.decls enter sym
+      }
+      owner = sym.moduleClass
+      start = end + 1
+      end = name.indexOf('.', start)
+    }
+    ss = name.subName(0, start)
+    owner.info.decls lookup ss orElse {
+      sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
+      debuglog("loaded "+sym+" from file "+file)
+      sym
+    }
+  }
+
+  /** FIXME - we shouldn't be doing ad hoc lookups in the empty package.
+   *  The method called "getClassByName" should either return the class or not.
+   */
+  private def lookupClass(name: Name) = (
+    if (name containsChar '.')
+      rootMirror getClassByName name // see tickets #2464, #3756
+    else
+      definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
+  )
+
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
-    def loadClassSymbol(name: Name): Symbol = {
-      val file = global.classPath findSourceFile ("" +name) getOrElse {
-        // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
-        // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
-        // that are not in their correct place (see bug for details)
-        if (!settings.isScaladoc)
-          warning("Class " + name + " not found - continuing with a stub.")
-        return NoSymbol.newClass(name.toTypeName)
-      }
-      val completer     = new global.loaders.ClassfileLoader(file)
-      var owner: Symbol = rootMirror.RootClass
-      var sym: Symbol   = NoSymbol
-      var ss: Name      = null
-      var start         = 0
-      var end           = name indexOf '.'
-
-      while (end > 0) {
-        ss = name.subName(start, end)
-        sym = owner.info.decls lookup ss
-        if (sym == NoSymbol) {
-          sym = owner.newPackage(ss.toTermName) setInfo completer
-          sym.moduleClass setInfo completer
-          owner.info.decls enter sym
-        }
-        owner = sym.moduleClass
-        start = end + 1
-        end = name.indexOf('.', start)
-      }
-      ss = name.subName(0, start)
-      owner.info.decls lookup ss orElse {
-        sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
-        debuglog("loaded "+sym+" from file "+file)
-        sym
-      }
-    }
-
-    def lookupClass(name: Name) = try {
-      if (name.pos('.') == name.length)
-        definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
-      else
-        rootMirror.getClassByName(name) // see tickets #2464, #3756
-    } catch {
-      case _: FatalError => loadClassSymbol(name)
-    }
-
-    innerClasses.get(name) match {
-      case Some(entry) =>
-        //println("found inner class " + name)
-        val res = innerClasses.classSymbol(entry.externalName)
-        //println("\trouted to: " + res)
-        res
-      case None =>
-        //if (name.toString.contains("$")) println("No inner class: " + name + innerClasses + " while parsing " + in.file.name)
-        lookupClass(name)
-    }
+    if (innerClasses contains name)
+      innerClasses innerSymbol name
+    else
+      try lookupClass(name)
+      catch { case _: FatalError => loadClassSymbol(name) }
   }
 
   var sawPrivateConstructor = false
@@ -645,7 +641,7 @@ abstract class ClassfileParser {
           info match {
             case MethodType(params, restpe) =>
               // if this is a non-static inner class, remove the explicit outer parameter
-              val newParams = innerClasses.get(currentClass) match {
+              val newParams = innerClasses getEntry currentClass match {
                 case Some(entry) if !isScalaRaw && !isStatic(entry.jflags) =>
                   /* About `clazz.owner.isPackage` below: SI-5957
                    * For every nested java class A$B, there are two symbols in the scala compiler.
@@ -743,7 +739,7 @@ abstract class ClassfileParser {
               // raw type - existentially quantify all type parameters
               else logResult(s"raw type from $classSym")(definitions.unsafeClassExistentialType(classSym))
             case tp =>
-              assert(sig.charAt(index) != '<', tp)
+              assert(sig.charAt(index) != '<', s"sig=$sig, index=$index, tp=$tp")
               tp
           }
 
@@ -1102,7 +1098,7 @@ abstract class ClassfileParser {
       unlinkIfPresent(cName.toTypeName)
     }
 
-    for (entry <- innerClasses.values) {
+    for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
         val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {
@@ -1140,14 +1136,9 @@ abstract class ClassfileParser {
         case tpnme.InnerClassesATTR if !isScala =>
           val entries = in.nextChar.toInt
           for (i <- 0 until entries) {
-            val innerIndex = in.nextChar.toInt
-            val outerIndex = in.nextChar.toInt
-            val nameIndex = in.nextChar.toInt
-            val jflags = in.nextChar.toInt
-            if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0) {
-              val entry = InnerClassEntry(innerIndex, outerIndex, nameIndex, jflags)
-              innerClasses += (pool.getClassName(innerIndex) -> entry)
-            }
+            val innerIndex, outerIndex, nameIndex, jflags = in.nextChar.toInt
+            if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0)
+              innerClasses add InnerClassEntry(innerIndex, outerIndex, nameIndex, jflags)
           }
         case _ =>
           in.skip(attrLen)
@@ -1161,58 +1152,58 @@ abstract class ClassfileParser {
     def externalName = pool getClassName external
     def outerName    = pool getClassName outer
     def originalName = pool getName name
+    def isStatic     = ClassfileParser.this.isStatic(jflags)
+    def isModule     = originalName.isTermName
+    def scope        = if (isStatic) staticScope else instanceScope
+    def enclosing    = if (isStatic) enclModule else enclClass
 
-    override def toString =
-      originalName + " in " + outerName + "(" + externalName +")"
+    // The name of the outer class, without its trailing $ if it has one.
+    private def strippedOuter = nme stripModuleSuffix outerName
+    private def isInner       = innerClasses contains strippedOuter
+    private def enclClass     = if (isInner) innerClasses innerSymbol strippedOuter else classNameToSymbol(strippedOuter)
+    private def enclModule    = enclClass.companionModule
   }
 
-  object innerClasses extends mutable.HashMap[Name, InnerClassEntry] {
-    /** Return the class symbol for `externalName`. It looks it up in its outer class.
-     *  Forces all outer class symbols to be completed.
-     *
-     *  If the given name is not an inner class, it returns the symbol found in `definitions`.
-     */
-    def classSymbol(externalName: Name): Symbol = {
-      /* Return the symbol of `innerName`, having the given `externalName`. */
-      def innerSymbol(externalName: Name, innerName: Name, static: Boolean): Symbol = {
-        def getMember(sym: Symbol, name: Name): Symbol =
-          if (static)
-            if (sym == clazz) staticScope.lookup(name)
-            else sym.companionModule.info.member(name)
-          else
-            if (sym == clazz) instanceScope.lookup(name)
-            else sym.info.member(name)
+  /** Return the class symbol for the given name. It looks it up in its outer class.
+   *  Forces all outer class symbols to be completed.
+   *
+   *  If the given name is not an inner class, it returns the symbol found in `definitions`.
+   */
+  object innerClasses {
+    private val inners = mutable.HashMap[Name, InnerClassEntry]()
 
-        innerClasses.get(externalName) match {
-          case Some(entry) =>
-            val outerName = entry.outerName.dropModule
-            val sym = classSymbol(outerName)
-            val s =
-              // if loading during initialization of `definitions` typerPhase is not yet set.
-              // in that case we simply load the member at the current phase
-              if (currentRun.typerPhase != null)
-                enteringTyper(getMember(sym, innerName.toTypeName))
-              else
-                getMember(sym, innerName.toTypeName)
+    def contains(name: Name) = inners contains name
+    def getEntry(name: Name) = inners get name
+    def entries              = inners.values
 
-            assert(s ne NoSymbol,
-              "" + ((externalName, outerName, innerName, sym.fullLocationString)) + " / " +
-              " while parsing " + ((in.file, busy)) +
-              sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members
-            )
-            s
+    def add(entry: InnerClassEntry): Unit = {
+      inners get entry.externalName foreach (existing =>
+        debugwarn(s"Overwriting inner class entry! Was $existing, now $entry")
+      )
+      inners(entry.externalName) = entry
+    }
+    def innerSymbol(externalName: Name): Symbol = this getEntry externalName match {
+      case Some(entry) => innerSymbol(entry)
+      case _           => NoSymbol
+    }
+    // if loading during initialization of `definitions` typerPhase is not yet set.
+    // in that case we simply load the member at the current phase
+    @inline private def enteringTyperIfPossible(body: => Symbol): Symbol =
+      if (currentRun.typerPhase eq null) body else enteringTyper(body)
 
-          case None =>
-            classNameToSymbol(externalName)
-        }
-      }
-
-      get(externalName) match {
-        case Some(entry) =>
-          innerSymbol(entry.externalName, entry.originalName, isStatic(entry.jflags))
-        case None =>
-          classNameToSymbol(externalName)
-      }
+    private def innerSymbol(entry: InnerClassEntry): Symbol = {
+      val name      = entry.originalName.toTypeName
+      val enclosing = entry.enclosing
+      def getMember = (
+        if (enclosing == clazz) entry.scope lookup name
+        else enclosing.info member name
+      )
+      enteringTyperIfPossible(getMember)
+      /** There used to be an assertion that this result is not NoSymbol; changing it to an error
+       *  revealed it had been going off all the time, but has been swallowed by a catch t: Throwable
+       *  in Repository.scala. Since it has been accomplishing nothing except misleading anyone who
+       *  thought it wasn't triggering, I removed it entirely.
+       */
     }
   }
 
