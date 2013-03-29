@@ -13,6 +13,7 @@ import java.io.{ File => JFile }
 import java.net.{ URI, URL }
 import scala.util.Random.alphanumeric
 import scala.language.implicitConversions
+import scala.reflect.internal.util.Statistics
 
 /** An abstraction for filesystem paths.  The differences between
  *  Path, File, and Directory are primarily to communicate intent.
@@ -57,8 +58,18 @@ object Path {
 
   def apply(path: String): Path = apply(new JFile(path))
   def apply(jfile: JFile): Path = try {
-    if (jfile.isFile) new File(jfile)
-    else if (jfile.isDirectory) new Directory(jfile)
+    def isFile = {
+      if (Statistics.canEnable) Statistics.incCounter(IOStats.fileIsFileCount)
+      jfile.isFile
+    }
+
+    def isDirectory = {
+      if (Statistics.canEnable) Statistics.incCounter(IOStats.fileIsDirectoryCount)
+      jfile.isDirectory
+    }
+
+    if (isFile) new File(jfile)
+    else if (isDirectory) new Directory(jfile)
     else new Path(jfile)
   } catch { case ex: SecurityException => new Path(jfile) }
 
@@ -187,10 +198,19 @@ class Path private[io] (val jfile: JFile) {
   // Boolean tests
   def canRead = jfile.canRead()
   def canWrite = jfile.canWrite()
-  def exists = try jfile.exists() catch { case ex: SecurityException => false }
+  def exists = {
+    if (Statistics.canEnable) Statistics.incCounter(IOStats.fileExistsCount)
+    try jfile.exists() catch { case ex: SecurityException => false }
+  }
 
-  def isFile = try jfile.isFile() catch { case ex: SecurityException => false }
-  def isDirectory = try jfile.isDirectory() catch { case ex: SecurityException => false }
+  def isFile = {
+    if (Statistics.canEnable) Statistics.incCounter(IOStats.fileIsFileCount)
+    try jfile.isFile() catch { case ex: SecurityException => false }
+  }
+  def isDirectory = {
+    if (Statistics.canEnable) Statistics.incCounter(IOStats.fileIsDirectoryCount)
+    try jfile.isDirectory() catch { case ex: SecurityException => false }
+  }
   def isAbsolute = jfile.isAbsolute()
   def isEmpty = path.length == 0
 
