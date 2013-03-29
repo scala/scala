@@ -1738,14 +1738,16 @@ trait Typers extends Adaptations with Tags {
           if (psym.isFinal)
             pending += ParentFinalInheritanceError(parent, psym)
 
-          if (psym.hasDeprecatedInheritanceAnnotation) {
+          val sameSourceFile = context.unit.source.file == psym.sourceFile
+
+          if (psym.hasDeprecatedInheritanceAnnotation && !sameSourceFile) {
             val suffix = psym.deprecatedInheritanceMessage map (": " + _) getOrElse ""
             val msg = s"inheritance from ${psym.fullLocationString} is deprecated$suffix"
             unit.deprecationWarning(parent.pos, msg)
           }
 
           if (psym.isSealed && !phase.erasedTypes)
-            if (context.unit.source.file == psym.sourceFile)
+            if (sameSourceFile)
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(parent, psym)
