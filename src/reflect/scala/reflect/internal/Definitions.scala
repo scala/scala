@@ -244,8 +244,8 @@ trait Definitions extends api.StandardDefinitions {
          (sym eq NoSymbol)
       || sym.isConstructor
       || sym.isPrivateLocal
-      || isUniversalMember(sym)
     )
+    def isUnimportableUnlessRenamed(sym: Symbol) = isUnimportable(sym) || isUniversalMember(sym)
     def isImportable(sym: Symbol) = !isUnimportable(sym)
 
     /** Is this type equivalent to Any, AnyVal, or AnyRef? */
