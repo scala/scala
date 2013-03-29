@@ -98,6 +98,7 @@ trait EtaExpansion { self: Analyzer =>
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args).clearType()
         case Select(qual, name) =>
+          val name = tree.symbol.name // account for renamed imports, SI-7233
           treeCopy.Select(tree, liftout(qual, byName = false), name).clearType() setSymbol NoSymbol
         case Ident(name) =>
           tree

@@ -117,7 +117,8 @@ abstract class MacroImplementations {
       if (!strIsEmpty) {
         val len = str.length
         while (idx < len) {
-          if (str(idx) == '%') {
+          def notPercentN = str(idx) != '%' || (idx + 1 < len && str(idx + 1) != 'n')
+          if (str(idx) == '%' && notPercentN) {
             bldr append (str substring (start, idx)) append "%%"
             start = idx + 1
           }

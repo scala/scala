@@ -730,7 +730,7 @@ abstract class Erasure extends AddInterfaces
           else if (tree.symbol == Any_isInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
           else if (tree.symbol.owner == AnyClass)
-            adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
+            adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, tree.symbol.name))))
           else {
             var qual1 = typedQualifier(qual)
             if ((isPrimitiveValueType(qual1.tpe) && !isPrimitiveValueMember(tree.symbol)) ||
