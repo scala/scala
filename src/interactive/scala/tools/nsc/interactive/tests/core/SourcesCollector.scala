@@ -11,7 +11,7 @@ private[tests] object SourcesCollector {
    * With the default `filter` only .scala and .java files are collected.
    * */
   def apply(base: Path, filter: SourceFilter): Array[SourceFile] = {
-    assert(base.isDirectory)
+    assert(base.isDirectory, base + " is not a directory")
     base.walk.filter(filter).map(source).toList.toArray.sortBy(_.file.name)
   }
 
