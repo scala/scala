@@ -3063,7 +3063,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (Statistics.canEnable) Statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
-          flatname = nme.flattenedName(rawowner.name, rawname).toTypeName
+          flatname = tpnme.flattenedName(rawowner.name, rawname)
 
         flatname
       }
