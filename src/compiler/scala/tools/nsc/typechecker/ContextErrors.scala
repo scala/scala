@@ -1058,9 +1058,6 @@ trait ContextErrors {
         issueSymbolTypeError(currentSym, prevSym.name + " is already defined as " + s2 + s3 + where)
       }
 
-      def MaxParametersCaseClassError(tree: Tree) =
-        issueNormalTypeError(tree, "Implementation restriction: case classes cannot have more than " + definitions.MaxFunctionArity + " parameters.")
-
       def MissingParameterOrValTypeError(vparam: Tree) =
         issueNormalTypeError(vparam, "missing parameter type")
 
