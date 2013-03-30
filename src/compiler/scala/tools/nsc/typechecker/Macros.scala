@@ -796,8 +796,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
 
     (wasDelayed, nowDelayed) match {
-      case (true, true) => Delay(expandee)
-      case (true, false) => Skip(macroExpandAll(typer, expandee))
+      case (true, true) =>
+        Delay(expandee)
+      case (true, false) =>
+        val expanded = macroExpandAll(typer, expandee)
+        if (expanded exists (_.isErroneous)) Failure(expandee)
+        else Skip(expanded)
       case (false, true) =>
         macroLogLite("macro expansion is delayed: %s".format(expandee))
         delayed += expandee -> undetparams
