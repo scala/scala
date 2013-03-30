@@ -3059,8 +3059,7 @@ trait Typers extends Modes with Adaptations with Tags {
             else if (isByNameParamType(formals.head)) 0
             else BYVALmode
           )
-          var tree = typedArg(args.head, mode, typedMode, adapted.head)
-          if (hasPendingMacroExpansions) tree = macroExpandAll(this, tree)
+          val tree = typedArg(args.head, mode, typedMode, adapted.head)
           // formals may be empty, so don't call tail
           tree :: loop(args.tail, formals drop 1, adapted.tail)
         }
@@ -5612,7 +5611,12 @@ trait Typers extends Modes with Adaptations with Tags {
         }
 
         tree1.tpe = pluginsTyped(tree1.tpe, this, tree1, mode, ptPlugins)
-        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, ptPlugins, tree)
+        val result =
+          if (tree1.isEmpty) tree1
+          else {
+            val result = adapt(tree1, mode, ptPlugins, tree)
+            if (hasPendingMacroExpansions) macroExpandAll(this, result) else result
+          }
 
         if (!alreadyTyped) {
           printTyping("adapted %s: %s to %s, %s".format(
