@@ -341,8 +341,45 @@ trait StdNames {
       name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
     }
 
-    private def expandedNameInternal(name: TermName, base: Symbol, separator: String): TermName =
-      newTermNameCached(base.fullName('$') + separator + name)
+    private def expandedNameInternal(name: TermName, base: Symbol, separator: String): TermName = {
+      def prefix(sym: Symbol): Name =
+        if (sym.effectiveOwner == StdNames.this.NoSymbol || sym.owner.isEffectiveRoot)
+          sym.name
+        else if (sym.isClass)
+         ((prefix(sym.effectiveOwner) append '$'): Name) append sym.name.dropLocal
+        else
+          /* The correctness argument to insert a single '!' for non-class owners goes as follows:
+             1) It's impossible to inadvertently override a non-local symbol with the local one,
+             since the latter expanded name contains '!' while the former does not - all source occurrences
+             of '!' are replaced with "$bang".
+             2) For two local symbols overriding each other, i.e. having their expanded names equal
+             and their classes inheriting one another:
+              let's consider their owner chains. The first different elements of these chains have to correspond
+             to different term symbols. The enclosing classes have to be nested in these term symbols.
+             For example:
+             {{{
+               class C {
+                 val f = {
+                   class N1 { def foo = "" }
+                   ...
+                 }
+                 def g = {
+                   class N2 extends ??? { def foo = "" }
+                   ...
+                 }
+               }
+             }}}
+             Here `f` and `g` are different term symbols.
+             Since class `N1` is not visible outside `f`, it is impossible to include it as a base class of `N2`,
+             so overriding between `foo` methods can't happen either.
+             Note: we use '!' character to avoid possible collisions, since it's
+             1) valid in JVM binary name.
+             2) is escaped in scala source code. */
+          prefix(sym.effectiveOwner) append '!'
+
+      assert(base ne StdNames.this.NoSymbol)
+      newTermNameCached(prefix(base) + separator + name)
+    }
 
     /** The expanded name of `name` relative to this class `base`
      */
