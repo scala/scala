@@ -40,14 +40,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     <xml:group>
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("diagrams.css", "lib")} } media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} } id="jquery-js"></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
-      { if (universe.settings.docDiagrams.value) {
-      <script type="text/javascript" src={ relativeLinkTo{List("modernizr.custom.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("diagrams.js", "lib")} } id="diagrams-js"></script>
-      } else NodeSeq.Empty }
       <script type="text/javascript">
          if(top === self) {{
             var url = '{ val p = templateToPath(tpl); "../" * (p.size - 1) + "index.html" }';
@@ -60,6 +52,22 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
          }}
    	  </script>
     </xml:group>
+
+  private val scripts = {
+    val sources = {
+      val default = List("jquery.js", "jquery-ui.js", "tools.tooltip.js", "template.js")
+      val forDiagrams = List("modernizr.custom.js", "diagrams.js")
+
+      (default ++ (if (universe.settings.docDiagrams.value) forDiagrams else Nil)) map {
+        x => x.replace('.', '-') -> relativeLinkTo(List(x, "lib"))
+      }
+    }
+
+    sources map {
+      case (id, src) =>
+        <script defer="defer" type="text/javascript" id={id} src={src}></script>
+    }
+  }
 
   val valueMembers =
     tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
@@ -280,8 +288,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         else
           <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }
-
-
+      { scripts }
     </body>
   }
 
