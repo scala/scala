@@ -72,6 +72,9 @@ object PathSettings {
     findJar(buildPackLibDir.files ++ srcLibDir.files, "scalacheck") getOrElse {
       sys.error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
     }
+
+  lazy val diffUtils: File =
+    findJar(buildPackLibDir.files, "diffutils") getOrElse sys.error(s"No diffutils.jar found in '$buildPackLibDir'.")
 }
 
 class PathSettings() {

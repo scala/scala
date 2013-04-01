@@ -18,34 +18,31 @@ import scala.collection.mutable
 
 trait FileUtil {
   /**
-   * Compares two files using a Java implementation of the GNU diff
-   * available at http://www.bmsi.com/java/#diff.
+   * Compares two files using difflib to produce a unified diff.
    *
    * @param  f1  the first file to be compared
    * @param  f2  the second file to be compared
-   * @return the text difference between the compared files
+   * @return the unified diff of the compared files or the empty string if they're equal
    */
   def compareFiles(f1: File, f2: File): String = {
-    val diffWriter = new StringWriter
-    val args = Array(f1.getAbsolutePath(), f2.getAbsolutePath())
-
-    DiffPrint.doDiff(args, diffWriter)
-    val res = diffWriter.toString
-    if (res startsWith "No") "" else res
+    compareContents(io.Source.fromFile(f1).getLines.toSeq, io.Source.fromFile(f2).getLines.toSeq, f1.getName, f2.getName)
   }
-  def compareContents(lines1: Seq[String], lines2: Seq[String]): String = {
-    val xs1 = lines1.toArray[AnyRef]
-    val xs2 = lines2.toArray[AnyRef]
 
-    val diff   = new Diff(xs1, xs2)
-    val change = diff.diff_2(false)
-    val writer = new StringWriter
-    val p      = new DiffPrint.NormalPrint(xs1, xs2, writer)
+  /**
+   * Compares two lists of lines using difflib to produce a unified diff.
+   *
+   * @param  origLines  the first seq of lines to be compared
+   * @param  newLines   the second seq of lines to be compared
+   * @param  origName   file name to be used in unified diff for `origLines`
+   * @param  newName    file name to be used in unified diff for `newLines`
+   * @return the unified diff of the `origLines` and `newLines` or the empty string if they're equal
+   */
+  def compareContents(origLines: Seq[String], newLines: Seq[String], origName: String = "a", newName: String = "b"): String = {
+    import collection.JavaConverters._
 
-    p.print_script(change)
-    val res = writer.toString
-    if (res startsWith "No ") ""
-    else res
+    val diff = difflib.DiffUtils.diff(origLines.asJava, newLines.asJava)
+    if (diff.getDeltas.isEmpty) ""
+    else difflib.DiffUtils.generateUnifiedDiff(origName, newName, origLines.asJava, diff, 1).asScala.mkString("\n")
   }
 }
 object FileUtil extends FileUtil { }
