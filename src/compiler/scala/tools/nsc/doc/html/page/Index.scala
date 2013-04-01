@@ -27,12 +27,18 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
   val headers =
     <xml:group>
       <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.layout.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
+
+  private val scripts = {
+    val sources =
+      (List("jquery.js", "jquery-ui.js", "jquery.layout.js", "scheduler.js", "index.js").map {
+        x => relativeLinkTo(List(x, "lib"))
+      }) :+ "index.js"
+
+    sources map {
+      src => <script defer="defer" type="text/javascript" src={src}></script>
+    }
+  }
 
   val body =
     <body>
@@ -46,6 +52,7 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
       <div id="content" class="ui-layout-center">
         <iframe id="template" name="template" src={ relativeLinkTo{List("package.html")} }/>
       </div>
+      { scripts }
     </body>
 
   def letters: NodeSeq =
@@ -125,7 +132,7 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
           </xml:group>
         }
         packageElem(universe.rootPackage)
-      }</div></div><script src="index.js"></script>
+      }</div></div>
     </div>
 
   def packageQualifiedName(ety: DocTemplateEntity): String =
