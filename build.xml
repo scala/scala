@@ -1108,37 +1108,37 @@ targets exercised:
 <!-- ===========================================================================
                                   QUICK BUILD (QUICK)
 ============================================================================ -->
-  <target name="quick.start" depends="locker.done"/>
+  <target name="quick.start"      depends="locker.done"/>
 
-  <target name="quick.lib" depends="quick.start">
-    <staged-build with="locker" stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
+  <target name="quick.lib"        depends="quick.start">
+    <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
 
   <target name="quick.actors"     depends="quick.lib">
-    <staged-build with="locker" stage="quick" project="actors"/> </target>
+    <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
   <target name="quick.msil"       depends="quick.lib">
-    <staged-build with="locker" stage="quick" project="msil" java-excludes="**/tests/**"/> </target>
+    <staged-build with="locker"   stage="quick" project="msil" java-excludes="**/tests/**"/> </target>
 
   <target name="quick.reflect"    depends="quick.lib">
-    <staged-build with="locker" stage="quick" project="reflect"/> </target>
+    <staged-build with="locker"   stage="quick" project="reflect"/> </target>
 
   <target name="quick.comp"       depends="quick.reflect, quick.msil">
-    <staged-build with="locker" stage="quick" project="compiler"/> </target>
+    <staged-build with="locker"   stage="quick" project="compiler"/> </target>
 
   <target name="quick.scalacheck" depends="quick.actors, quick.lib">
-    <staged-build with="locker" stage="quick" project="scalacheck" args="-nowarn"/> </target>
+    <staged-build with="locker"   stage="quick" project="scalacheck" args="-nowarn"/> </target>
 
   <target name="quick.scalap"     depends="quick.comp">
-    <staged-build with="locker" stage="quick" project="scalap"/> </target>
+    <staged-build with="locker"   stage="quick" project="scalap"/> </target>
 
   <target name="quick.partest"    depends="quick.scalap, quick.comp, asm.done">
-    <staged-build with="locker" stage="quick" project="partest" version="partest"/> </target>
+    <staged-build with="locker"   stage="quick" project="partest" version="partest"/> </target>
 
   <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
-    <staged-build with="locker" stage="quick" project="swing"/> </target>
+    <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
-  <target name="quick.plugins" depends="quick.comp">
-    <staged-uptodate stage="quick" project="plugins">
+  <target name="quick.plugins"    depends="quick.comp">
+    <staged-uptodate              stage="quick" project="plugins">
       <check><srcfiles dir="${src.dir}/continuations"/></check>
       <do>
         <stopwatch name="quick.plugins.timer"/>
