@@ -755,13 +755,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val pos = in.currentPos
       val name = identForType()
       val (statics, body) = typeBody(AT, name)
-      def getValueMethodType(tree: Tree) = tree match {
-        case DefDef(_, nme.value, _, _, tpt, _) => Some(tpt.duplicate)
-        case _ => None
-      }
-      var templ = makeTemplate(annotationParents, body)
-      for (stat <- templ.body; tpt <- getValueMethodType(stat))
-        templ = makeTemplate(annotationParents, makeConstructor(List(tpt)) :: templ.body)
+      val templ = makeTemplate(annotationParents, body)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods, name, List(), templ)
       })

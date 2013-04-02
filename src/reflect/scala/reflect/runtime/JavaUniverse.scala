@@ -14,7 +14,7 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
   lazy val settings = new Settings
   private val isLogging = sys.props contains "scala.debug.reflect"
 
-  def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
+  def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)  
 
   type TreeCopier = InternalTreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier

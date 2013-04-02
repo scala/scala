@@ -1,0 +1,15 @@
+t7285.scala:15: warning: match may not be exhaustive.
+It would fail on the following input: (Up, Down)
+      (d1, d2) match {
+      ^
+t7285.scala:33: warning: match may not be exhaustive.
+It would fail on the following input: Down
+      (d1) match {
+       ^
+t7285.scala:51: warning: match may not be exhaustive.
+It would fail on the following input: (Up, Down)
+    (d1, d2) match {
+    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

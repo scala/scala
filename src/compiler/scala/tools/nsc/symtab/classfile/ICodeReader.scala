@@ -501,6 +501,13 @@ abstract class ICodeReader extends ClassfileParser {
             code.emit(UNBOX(toTypeKind(m.info.resultType)))
           else
             code.emit(CALL_METHOD(m, Static(onInstance = false)))
+        case JVM.invokedynamic  =>
+          // TODO, this is just a place holder. A real implementation must parse the class constant entry
+          debuglog("Found JVM invokedynamic instructionm, inserting place holder ICode INVOKE_DYNAMIC.")
+          containsInvokeDynamic = true
+          val poolEntry = in.nextChar
+          in.skip(2)
+          code.emit(INVOKE_DYNAMIC(poolEntry))
 
         case JVM.new_          =>
           code.emit(NEW(REFERENCE(pool.getClassSymbol(in.nextChar))))
@@ -639,6 +646,7 @@ abstract class ICodeReader extends ClassfileParser {
     var containsDUPX = false
     var containsNEW  = false
     var containsEHs  = false
+    var containsInvokeDynamic = false
 
     def emit(i: Instruction) {
       instrs += ((pc, i))
@@ -657,6 +665,7 @@ abstract class ICodeReader extends ClassfileParser {
       val code = new Code(method)
       method.setCode(code)
       method.bytecodeHasEHs = containsEHs
+      method.bytecodeHasInvokeDynamic = containsInvokeDynamic
       var bb = code.startBlock
 
       def makeBasicBlocks: mutable.Map[Int, BasicBlock] =
