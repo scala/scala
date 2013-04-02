@@ -56,9 +56,9 @@ abstract class ClassfileParser {
   // They are an unsigned byte, unsigned char, and unsigned int respectively.
   // We bitmask u1 into an Int to make sure it's 0-255 (and u1 isn't used
   // for much beyond tags) but leave u2 alone as it's already unsigned.
-  protected final def u1 = in.nextByte & 0xFF
-  protected final def u2 = in.nextChar
-  protected final def u4 = in.nextInt
+  protected final def u1(): Int  = in.nextByte & 0xFF
+  protected final def u2(): Char = in.nextChar
+  protected final def u4(): Int  = in.nextInt
 
   private def readInnerClassFlags() = readClassFlags()
   private def readClassFlags()      = JavaAccFlags classFlags u2
