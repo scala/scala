@@ -381,13 +381,16 @@ trait StdNames {
     /** If `name` is an expandedName name, the original name.
     *  Otherwise `name` itself.
     */
-    def originalName(name: Name): Name = {
-      var i = name.length
-      while (i >= 2 && !(name.charAt(i - 1) == '$' && name.charAt(i - 2) == '$')) i -= 1
-      if (i >= 2) {
-        while (i >= 3 && name.charAt(i - 3) == '$') i -= 1
-        name.subName(i, name.length)
-      } else name
+    def originalName(name: Name): Name = name.toString lastIndexOf "$$" match {
+      case -1 | 0 => name
+      case idx0 =>
+        // Sketchville - We've found $$ but if it's part of $$$ or $$$$
+        // or something we need to keep the bonus dollars, so e.g. foo$$$outer
+        // has an original name of $outer.
+        var idx = idx0
+        while (idx > 0 && name.charAt(idx - 1) == '$')
+          idx -= 1
+        name drop idx + 2
     }
 
     def unspecializedName(name: Name): Name = (
