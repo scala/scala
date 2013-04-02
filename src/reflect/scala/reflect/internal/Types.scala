@@ -3760,10 +3760,11 @@ trait Types
       if (tp.isTrivial) tp
       else if (tp.prefix.typeSymbol isNonBottomSubClass owner) {
         val widened = tp match {
-          case _: ConstantType => tp        // Java enum constants: don't widen to the enum type!
-          case _               => tp.widen  // C.X.type widens to C.this.X.type, otherwise `tp asSeenFrom (pre, C)` has no effect.
+          case _: ConstantType => tp // Java enum constants: don't widen to the enum type!
+          case _               => tp.widen // C.X.type widens to C.this.X.type, otherwise `tp asSeenFrom (pre, C)` has no effect.
         }
-        widened asSeenFrom (pre, tp.typeSymbol.owner)
+        val memType = widened asSeenFrom (pre, tp.typeSymbol.owner)
+        if (tp eq widened) memType else memType.narrow
       }
       else loop(tp.prefix) memberType tp.typeSymbol
 

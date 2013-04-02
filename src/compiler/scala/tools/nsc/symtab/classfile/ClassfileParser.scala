@@ -136,10 +136,13 @@ abstract class ClassfileParser {
         (in.nextByte.toInt: @switch) match {
           case CONSTANT_UTF8 | CONSTANT_UNICODE =>
             in.skip(in.nextChar)
-          case CONSTANT_CLASS | CONSTANT_STRING =>
+          case CONSTANT_CLASS | CONSTANT_STRING | CONSTANT_METHODTYPE=>
             in.skip(2)
+          case CONSTANT_METHODHANDLE =>
+            in.skip(3)
           case CONSTANT_FIELDREF | CONSTANT_METHODREF | CONSTANT_INTFMETHODREF
-             | CONSTANT_NAMEANDTYPE | CONSTANT_INTEGER | CONSTANT_FLOAT =>
+             | CONSTANT_NAMEANDTYPE | CONSTANT_INTEGER | CONSTANT_FLOAT
+             | CONSTANT_INVOKEDYNAMIC =>
             in.skip(4)
           case CONSTANT_LONG | CONSTANT_DOUBLE =>
             in.skip(8)
