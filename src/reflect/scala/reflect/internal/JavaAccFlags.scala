@@ -2,24 +2,21 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
-
 package scala.reflect
 package internal
 
 import java.lang.{ Class => jClass }
-import java.lang.reflect.{
-  Member => jMember, Constructor => jConstructor, Field => jField, Method => jMethod,
-  AnnotatedElement => jAnnotatedElement
-}
-import java.lang.reflect.Modifier
+import java.lang.reflect.{ Member => jMember, Constructor => jConstructor, Field => jField, Method => jMethod }
 import JavaAccFlags._
 import ClassfileConstants._
 
 /** A value class which encodes the access_flags (JVMS 4.1)
  *  for a field, method, or class. The low 16 bits are the same
- *  as those returned by java.lang.reflect.Member#getModifiers.
- *  The high bits encode whether the access flags are associated
- *  with a class, constructor, field, interface, or method.
+ *  as those returned by java.lang.reflect.Member#getModifiers
+ *  and found in the bytecode.
+ *
+ *  The high bits encode whether the access flags are directly
+ *  associated with a class, constructor, field, or method.
  */
 final class JavaAccFlags private (val coded: Int) extends AnyVal {
   private def has(mask: Int) = (flags & mask) != 0
