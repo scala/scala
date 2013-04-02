@@ -23,6 +23,7 @@ import scala.tools.nsc.io.AbstractFile
 abstract class ClassfileParser {
   val global: Global
   import global._
+  import definitions._
   import scala.reflect.internal.ClassfileConstants._
   import Flags._
 
@@ -108,19 +109,11 @@ abstract class ClassfileParser {
   private def parseHeader() {
     val magic = in.nextInt
     if (magic != JAVA_MAGIC)
-      throw new IOException("class file '" + in.file + "' "
-                            + "has wrong magic number 0x" + toHexString(magic)
-                            + ", should be 0x" + toHexString(JAVA_MAGIC))
-    val minorVersion = in.nextChar.toInt
-    val majorVersion = in.nextChar.toInt
-    if ((majorVersion < JAVA_MAJOR_VERSION) ||
-        ((majorVersion == JAVA_MAJOR_VERSION) &&
-         (minorVersion < JAVA_MINOR_VERSION)))
-      throw new IOException("class file '" + in.file + "' "
-                            + "has unknown version "
-                            + majorVersion + "." + minorVersion
-                            + ", should be at least "
-                            + JAVA_MAJOR_VERSION + "." + JAVA_MINOR_VERSION)
+      abort(s"class file ${in.file} has wrong magic number 0x${toHexString(magic)}")
+
+    val minor, major = in.nextChar.toInt
+    if (major < JAVA_MAJOR_VERSION || major == JAVA_MAJOR_VERSION && minor < JAVA_MINOR_VERSION)
+      abort(s"class file ${in.file} has unknown version $major.$minor, should be at least $JAVA_MAJOR_VERSION.$JAVA_MINOR_VERSION")
   }
 
   class ConstantPool {
