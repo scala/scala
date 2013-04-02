@@ -19,6 +19,14 @@ targets exercised:
   build-opt nightly test.suite test.continuations.suite test.scaladoc locker.done
 -->
 
+<!-- To use Zinc with the ant build:
+  - install zinc and symlink the installed zinc script to ${basedir}/tools/zinc  (${basedir} is where build.xml and the rest of your checkout resides)
+  - make sure to set ZINC_OPTS to match ANT_OPTS!
+  - invoke ant as `ant -Dstarr.version="2.10.1" -Dlocker.skip=1`
+    (zinc needs compiler jars
+     TODO rework the build to pack locker and build using that when using zinc)
+-->
+
 
 <!-- ===========================================================================
                                   END-USER TARGETS
@@ -792,6 +800,49 @@ targets exercised:
     </sequential>
   </macrodef>
 
+  <!-- Zinc assumes a one-to-one correspondence of output folder to set of source files.
+   When compiling different sets of source files in multiple compilations to the same output directory,
+   Zinc thinks source files that appeared in an earlier compilation but are absent in the current one,
+   were deleted and thus deletes the corresponding output files.
+
+   Note that zinc also requires each arg to scalac to be prefixed by -S.
+  -->
+  <macrodef name="zinc">
+    <attribute name="compilerpathref"   />
+    <attribute name="destdir"           />
+    <attribute name="srcdir"            />
+    <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library -->
+    <attribute name="buildpathref"      />
+    <attribute name="params" default="" />
+    <attribute name="java-excludes" default=""/>
+
+    <sequential>
+      <local name="sources"/>
+      <pathconvert pathsep=" " property="sources">
+        <fileset dir="@{srcdir}">
+          <include name="**/*.java"/>
+          <include name="**/*.scala"/>
+          <exclude name="@{java-excludes}"/>
+        </fileset>
+      </pathconvert>
+      <local name="args"/>
+      <local name="sargs"/>
+      <if><not><equals arg1="@{srcpath}" arg2="NOT SET"/></not><then>
+        <property name="args" value="@{params} -sourcepath @{srcpath}"/>
+      </then></if>
+      <property name="args" value="@{params}"/> <!-- default -->
+
+      <!-- HACK: prefix scalac args by -S -->
+      <script language="javascript">
+        project.setProperty("sargs", project.getProperty("args").trim().replaceAll(" ", " -S"));
+      </script>
+
+      <exec osfamily="unix" executable="tools/zinc" failifexecutionfails="true" failonerror="true">
+        <arg line="-nailed -compile-order JavaThenScala -scala-path ${ant.refid:@{compilerpathref}} -d @{destdir} -classpath ${toString:@{buildpathref}} ${sargs} ${sources}"/>
+      </exec>
+    </sequential>
+  </macrodef>
+
   <macrodef name="staged-scalac" >
     <attribute name="with"/>           <!-- will use path `@{with}.compiler.path` to locate scalac -->
     <attribute name="stage"/>          <!-- current stage (locker, quick, strap) -->
@@ -803,6 +854,21 @@ targets exercised:
     <attribute name="java-excludes" default=""/>
 
     <sequential>
+      <!-- use zinc for the quick stage if it's available;
+           would use it for locker but something is iffy in sbt: get a class cast error on global phase -->
+      <if><and> <available file="tools/zinc"/>
+                <equals arg1="@{stage}" arg2="quick"/>
+                <not><equals arg1="@{project}" arg2="plugins"/></not> <!-- doesn't work in zinc because it requires the quick compiler, which isn't jarred up-->
+          </and><then>
+        <zinc taskname="Z.@{stage}.@{project}"
+          compilerpathref="@{with}.compiler.path"
+          destdir="${build-@{stage}.dir}/classes/@{destproject}"
+          srcdir="${src.dir}/@{srcdir}"
+          srcpath="@{srcpath}"
+          buildpathref="@{stage}.@{project}.build.path"
+          params="${scalac.args.@{stage}} @{args}"
+          java-excludes="@{java-excludes}"/></then>
+      <else>
       <if><equals arg1="@{srcpath}" arg2="NOT SET"/><then>
         <scalacfork taskname="@{stage}.@{project}"
           jvmargs="${scalacfork.jvmargs}"
@@ -823,6 +889,7 @@ targets exercised:
           <include name="**/*.scala"/>
           <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></else>
       </if>
+      </else></if>
     </sequential>
   </macrodef>
 
