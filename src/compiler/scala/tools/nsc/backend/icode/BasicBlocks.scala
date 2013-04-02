@@ -331,7 +331,7 @@ trait BasicBlocks {
       assert(!closed || ignore, this)
 
       if (ignore) {
-        if (settings.debug.value) {
+        if (settings.debug) {
           /* Trying to pin down what it's likely to see after a block has been
            * put into ignore mode so we hear about it if there's a problem.
            */
@@ -405,11 +405,11 @@ trait BasicBlocks {
      * is discovered to be unreachable.
      */
     def killIf(cond: Boolean) {
-      if (!settings.YdisableUnreachablePrevention.value && cond) {
+      if (!settings.YdisableUnreachablePrevention && cond) {
         debuglog(s"Killing block $this")
         assert(instructionList.isEmpty, s"Killing a non empty block $this")
         // only checked under debug because fetching predecessor list is moderately expensive
-        if (settings.debug.value)
+        if (settings.debug)
           assert(predecessors.isEmpty, s"Killing block $this which is referred to from ${predecessors.mkString}")
 
         close()

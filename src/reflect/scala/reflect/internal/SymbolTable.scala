@@ -60,8 +60,8 @@ abstract class SymbolTable extends macros.Universe
   def debugwarn(msg: => String): Unit = devWarning(msg)
 
   /** Override with final implementation for inlining. */
-  def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
-  def devWarning(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
+  def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
+  def devWarning(msg: => String): Unit = if (settings.debug) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */

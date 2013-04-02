@@ -95,7 +95,7 @@ class ScriptRunner extends HasCompileSocket {
 
       settings.outdir.value = compiledPath.path
 
-      if (settings.nc.value) {
+      if (settings.nc) {
         /* Setting settings.script.value informs the compiler this is not a
          * self contained compilation unit.
          */
@@ -114,7 +114,7 @@ class ScriptRunner extends HasCompileSocket {
      * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     util.waitingForThreads {
-      if (settings.save.value) {
+      if (settings.save) {
         val jarFile = jarFileFor(scriptFile)
         def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 

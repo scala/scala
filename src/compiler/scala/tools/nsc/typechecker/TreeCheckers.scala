@@ -69,7 +69,7 @@ abstract class TreeCheckers extends Analyzer {
       // new symbols
       if (newSyms.nonEmpty) {
         informFn(newSyms.size + " new symbols.")
-        val toPrint = if (settings.debug.value) sortedNewSyms mkString " " else ""
+        val toPrint = if (settings.debug) sortedNewSyms mkString " " else ""
 
         newSyms.clear()
         if (toPrint != "")
@@ -120,7 +120,7 @@ abstract class TreeCheckers extends Analyzer {
   def errorFn(msg: Any): Unit                = {hasError = true; println("[check: %s] %s".format(phase.prev, msg))}
   def errorFn(pos: Position, msg: Any): Unit = errorFn(posstr(pos) + ": " + msg)
   def informFn(msg: Any) {
-    if (settings.verbose.value || settings.debug.value)
+    if (settings.verbose || settings.debug)
       println("[check: %s] %s".format(phase.prev, msg))
   }
 
@@ -137,7 +137,7 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def checkTrees() {
-    if (settings.verbose.value)
+    if (settings.verbose)
       Console.println("[consistency check at the beginning of phase " + phase + "]")
 
     currentRun.units foreach (x => wrap(x)(check(x)))

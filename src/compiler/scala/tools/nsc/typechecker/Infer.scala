@@ -131,7 +131,7 @@ trait Infer extends Checkable {
         else if (optionArgs.nonEmpty)
           if (nbSubPats == 1) {
             val productArity = productArgs.size
-            if (productArity > 1 && settings.lint.value)
+            if (productArity > 1 && settings.lint)
               global.currentUnit.warning(pos, s"extractor pattern binds a single value to a Product${productArity} of type ${optionArgs.head}")
             optionArgs
           }
@@ -338,7 +338,7 @@ trait Infer extends Checkable {
           sym1 = sym
 
         if (sym1 == NoSymbol) {
-          if (settings.debug.value) {
+          if (settings.debug) {
             Console.println(context)
             Console.println(tree)
             Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
@@ -378,7 +378,7 @@ trait Infer extends Checkable {
             try pre.memberType(sym1)
             catch {
               case ex: MalformedType =>
-                if (settings.debug.value) ex.printStackTrace
+                if (settings.debug) ex.printStackTrace
                 val sym2 = underlyingSymbol(sym1)
                 val itype = pre.memberType(sym2)
                 ErrorUtils.issueTypeError(

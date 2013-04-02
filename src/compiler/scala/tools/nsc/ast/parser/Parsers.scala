@@ -2085,7 +2085,7 @@ self =>
         val name = ident()
         var bynamemod = 0
         val tpt =
-          if (settings.YmethodInfer.value && !owner.isTypeName && in.token != COLON) {
+          if (settings.YmethodInfer && !owner.isTypeName && in.token != COLON) {
             TypeTree()
           } else { // XX-METHOD-INFER
             accept(COLON)

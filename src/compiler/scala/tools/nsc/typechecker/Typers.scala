@@ -1141,14 +1141,14 @@ trait Typers extends Adaptations with Tags {
                       // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
                       // infinite expansion if pt is constant type ()
                       if (sym == UnitClass) { // (12)
-                        if (settings.warnValueDiscard.value)
+                        if (settings.warnValueDiscard)
                           context.unit.warning(tree.pos, "discarded non-Unit value")
                         return typedPos(tree.pos, mode, pt) {
                           Block(List(tree), Literal(Constant(())))
                         }
                       }
                       else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
-                        if (settings.warnNumericWiden.value)
+                        if (settings.warnNumericWiden)
                           context.unit.warning(tree.pos, "implicit numeric widening")
                         return typedPos(tree.pos, mode, pt) {
                           Select(tree, "to" + sym.name)
@@ -1167,7 +1167,7 @@ trait Typers extends Adaptations with Tags {
                     val coercion = inferView(tree, tree.tpe, pt, reportAmbiguous = true)
                     if (coercion != EmptyTree) {
                       def msg = "inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe
-                      if (settings.logImplicitConv.value)
+                      if (settings.logImplicitConv)
                         unit.echo(tree.pos, msg)
 
                       debuglog(msg)
@@ -1178,9 +1178,9 @@ trait Typers extends Adaptations with Tags {
                     }
                   }
                 }
-                if (settings.debug.value) {
+                if (settings.debug) {
                   log("error tree = " + tree)
-                  if (settings.explaintypes.value) explainTypes(tree.tpe, pt)
+                  if (settings.explaintypes) explainTypes(tree.tpe, pt)
                 }
 
                 val found = tree.tpe
@@ -1294,7 +1294,7 @@ trait Typers extends Adaptations with Tags {
         inferView(qual, qual.tpe, searchTemplate, reportAmbiguous, saveErrors) match {
           case EmptyTree  => qual
           case coercion   =>
-            if (settings.logImplicitConv.value)
+            if (settings.logImplicitConv)
               unit.echo(qual.pos,
                 "applied implicit conversion from %s to %s = %s".format(
                   qual.tpe, searchTemplate, coercion.symbol.defString))
@@ -1752,12 +1752,12 @@ trait Typers extends Adaptations with Tags {
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
               !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
-              !settings.noSelfCheck.value &&  // setting to suppress this very check
+              !settings.noSelfCheck &&  // setting to suppress this very check
               !selfType.isErroneous &&
               !parent.tpe.isErroneous)
           {
             pending += ParentSelfTypeConformanceError(parent, selfType)
-            if (settings.explaintypes.value) explainTypes(selfType, parent.tpe.typeOfThis)
+            if (settings.explaintypes) explainTypes(selfType, parent.tpe.typeOfThis)
           }
 
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
@@ -2307,7 +2307,7 @@ trait Typers extends Adaptations with Tags {
       tdef.symbol.annotations.map(_.completeInfo())
 
       // @specialized should not be pickled when compiling with -no-specialize
-      if (settings.nospecialization.value && currentRun.compiles(tdef.symbol)) {
+      if (settings.nospecialization && currentRun.compiles(tdef.symbol)) {
         tdef.symbol.removeAnnotation(definitions.SpecializedClass)
         tdef.symbol.deSkolemize.removeAnnotation(definitions.SpecializedClass)
       }
@@ -2499,7 +2499,7 @@ trait Typers extends Adaptations with Tags {
 
       // TODO: add fallback __match sentinel to predef
       val matchStrategy: Tree =
-        if (!(newPatternMatching && settings.Xexperimental.value && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
+        if (!(newPatternMatching && settings.Xexperimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
         else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) orElse (_ => null)
 
       if (matchStrategy ne null) // virtualize
@@ -4092,7 +4092,7 @@ trait Typers extends Adaptations with Tags {
           if (ann.tpe == null) {
             // an annotated type
             val selfsym =
-              if (!settings.selfInAnnots.value)
+              if (!settings.selfInAnnots)
                 NoSymbol
               else
                 arg1.tpe.selfsym orElse {
@@ -4671,7 +4671,7 @@ trait Typers extends Adaptations with Tags {
         if (isPastTyper) t.tpe match {
           case OverloadedType(pre, alts) =>
             if (alts forall (s => (s.owner == ObjectClass) || (s.owner == AnyClass) || isPrimitiveValueClass(s.owner))) ()
-            else if (settings.debug.value) printCaller(
+            else if (settings.debug) printCaller(
               s"""|Select received overloaded type during $phase, but typer is over.
                   |If this type reaches the backend, we are likely doomed to crash.
                   |$t has these overloads:
@@ -4841,7 +4841,7 @@ trait Typers extends Adaptations with Tags {
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
         // setting to enable unqualified idents in empty package (used by the repl)
-        def inEmptyPackage = if (settings.exposeEmptyPackage.value) lookupInEmpty(name) else NoSymbol
+        def inEmptyPackage = if (settings.exposeEmptyPackage) lookupInEmpty(name) else NoSymbol
 
         def issue(err: AbsTypeError) = {
           // Avoiding some spurious error messages: see SI-2388.
@@ -4962,7 +4962,7 @@ trait Typers extends Adaptations with Tags {
             AppliedTypeNoParametersError(tree, tpt1.tpe)
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug.value) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info)//debug
+            if (settings.debug) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info)//debug
             AppliedTypeWrongNumberOfArgsError(tree, tpt1, tparams)
           }
         }
@@ -5158,7 +5158,7 @@ trait Typers extends Adaptations with Tags {
       def typedLiteral(tree: Literal) = {
         val value = tree.value
         // Warn about likely interpolated strings which are missing their interpolators
-        if (settings.lint.value) value match {
+        if (settings.lint) value match {
           case Constant(s: String) =>
             def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
             val shouldWarn = (
@@ -5340,7 +5340,7 @@ trait Typers extends Adaptations with Tags {
           reportTypeError(context, tree.pos, ex)
           setError(tree)
         case ex: Exception =>
-          if (settings.debug.value) // @M causes cyclic reference error
+          if (settings.debug) // @M causes cyclic reference error
             Console.println("exception when typing "+tree+", pt = "+ptPlugins)
           if (context != null && context.unit.exists && tree != null)
             logError("AT: " + (tree.pos).dbgString, ex)

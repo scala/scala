@@ -146,7 +146,7 @@ object PathResolver {
 import PathResolver.{ Defaults, Environment, ppcp }
 
 class PathResolver(settings: Settings, context: JavaContext) {
-  def this(settings: Settings) = this(settings, if (settings.inline.value) new JavaContext else DefaultJavaContext)
+  def this(settings: Settings) = this(settings, if (settings.inline) new JavaContext else DefaultJavaContext)
 
   private def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
@@ -240,7 +240,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
 
   lazy val result = {
     val cp = new JavaClassPath(containers.toIndexedSeq, context)
-    if (settings.Ylogcp.value) {
+    if (settings.Ylogcp) {
       Console.println("Classpath built from " + settings.toConciseString)
       Console.println("Defaults: " + PathResolver.Defaults)
       Console.println("Calculated: " + Calculated)

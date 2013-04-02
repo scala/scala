@@ -50,11 +50,11 @@ abstract class ClassfileParser {
   }
 
   private def handleMissing(e: MissingRequirementError) = {
-    if (settings.debug.value) e.printStackTrace
+    if (settings.debug) e.printStackTrace
     throw new IOException("Missing dependency '" + e.req + "', required by " + in.file)
   }
   private def handleError(e: Exception) = {
-    if (settings.debug.value) e.printStackTrace()
+    if (settings.debug) e.printStackTrace()
     throw new IOException("class file '%s' is broken\n(%s/%s)".format(
       in.file,
       e.getClass,
@@ -598,7 +598,7 @@ abstract class ClassfileParser {
   def parseField() {
     val jflags = in.nextChar
     val sflags = toScalaFieldFlags(jflags)
-    if ((sflags & PRIVATE) != 0L && !global.settings.optimise.value) {
+    if ((sflags & PRIVATE) != 0L && !global.settings.optimise) {
       in.skip(4); skipAttributes()
     } else {
       val name    = pool.getName(in.nextChar)
@@ -630,13 +630,13 @@ abstract class ClassfileParser {
   def parseMethod() {
     val jflags = in.nextChar.toInt
     val sflags = toScalaMethodFlags(jflags)
-    if (isPrivate(jflags) && !global.settings.optimise.value) {
+    if (isPrivate(jflags) && !global.settings.optimise) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((sflags & PRIVATE) != 0L && global.settings.optimise.value) {
+      if ((sflags & PRIVATE) != 0L && global.settings.optimise) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
@@ -867,7 +867,7 @@ abstract class ClassfileParser {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
-            if (settings.debug.value && settings.verbose.value)
+            if (settings.debug && settings.verbose)
               println("" + sym + "; signature = " + sig + " type = " + newType)
           }
           else in.skip(attrLen)
@@ -1030,7 +1030,7 @@ abstract class ClassfileParser {
         // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
         // and that should never be swallowed silently.
         warning("Caught: " + ex + " while parsing annotations in " + in.file)
-        if (settings.debug.value) ex.printStackTrace()
+        if (settings.debug) ex.printStackTrace()
 
         None // ignore malformed annotations
     }
