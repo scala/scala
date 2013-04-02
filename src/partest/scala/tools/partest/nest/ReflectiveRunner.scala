@@ -51,10 +51,13 @@ class ReflectiveRunner {
         new ConsoleFileManager
 
     // this is a workaround for https://issues.scala-lang.org/browse/SI-5433
-    // when that bug is fixed, the addition of PathSettings.srcCodeLib can be removed
+    // when that bug is fixed, the addition of PathSettings.srcCodeLib can be removed    
     // we hack into the classloader that will become parent classloader for scalac
     // this way we ensure that reflective macro lookup will pick correct Code.lift
-    val sepUrls   = PathSettings.srcCodeLib.toURI.toURL :: fileManager.latestUrls
+    // it's also used to inject diffutils into the classpath when running partest from the test/partest script    
+    val srcCodeLibAndDiff = List(PathSettings.srcCodeLib, PathSettings.diffUtils) 
+    val sepUrls   = srcCodeLibAndDiff.map(_.toURI.toURL) ::: fileManager.latestUrls
+    // this seems to be the core classloader that determines which classes can be found when running partest from the test/partest script    
     val sepLoader = new URLClassLoader(sepUrls.toArray, null)
 
     if (isPartestDebug)

@@ -573,6 +573,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         assert(tp.isInstanceOf[SingletonType])
         val toString = tp match {
           case ConstantType(c) => c.escapedStringValue
+          case _ if tp.typeSymbol.isModuleClass => tp.typeSymbol.name.toString
           case _ => tp.toString
         }
         Const.unique(tp, new ValueConst(tp, tp.widen, toString))

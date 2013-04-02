@@ -78,6 +78,7 @@ class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunP
 
   val compileMgr = new CompileManager(fileManager)
   fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
+  fileManager.CLASSPATH += File.pathSeparator + PathSettings.diffUtils // needed to put diffutils on test/partest's classpath
 
   private def compareFiles(f1: File, f2: File): String =
     try fileManager.compareFiles(f1, f2)

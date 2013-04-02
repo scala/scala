@@ -41,26 +41,24 @@ abstract class ExplicitOuter extends InfoTransform
   private def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
-  private def haveSameOuter(parent: Type, clazz: Symbol) = parent match {
-    case TypeRef(pre, sym, _)   =>
-      val owner = clazz.owner
+  private def haveSameOuter(parent: Type, clazz: Symbol) = {
+    val owner = clazz.owner
+    val parentSym = parent.typeSymbol
 
-      //println(s"have same outer $parent $clazz $sym ${sym.owner} $owner $pre")
-
-      sym.isClass && owner.isClass &&
-      (owner isSubClass sym.owner) &&
-      owner.thisType =:= pre
-
-    case _                      => false
+    parentSym.isClass && owner.isClass &&
+      (owner isSubClass parentSym.owner) &&
+      owner.thisType =:= parent.prefix
   }
 
   /** Does given clazz define an outer field? */
   def hasOuterField(clazz: Symbol) = {
-    val parents = clazz.info.parents
+    val parent = clazz.info.firstParent
 
-    isInner(clazz) && !clazz.isTrait && {
-      parents.isEmpty || !haveSameOuter(parents.head, clazz)
-    }
+    // space optimization: inherit the $outer pointer from the parent class if
+    // we know that it will point to the correct instance.
+    def canReuseParentOuterField = !parent.typeSymbol.isJavaDefined && haveSameOuter(parent, clazz)
+
+    isInner(clazz) && !clazz.isTrait && !canReuseParentOuterField
   }
 
   private def outerField(clazz: Symbol): Symbol = {
@@ -98,6 +96,29 @@ abstract class ExplicitOuter extends InfoTransform
     val sym      = clazz.newValue(nme.OUTER_LOCAL, clazz.pos, accFlags)
 
     sym setInfo clazz.outerClass.thisType
+  }
+
+  /**
+   * Will the outer accessor of the `clazz` subsume the outer accessor of
+   * `mixin`?
+   *
+   * This arises when an inner object mixes in its companion trait.
+   *
+   * {{{
+   *   class C {
+   *     trait T { C.this }            // C$T$$$outer$ : C
+   *     object T extends T { C.this } // C$T$$$outer$ : C.this.type
+   *   }
+   * }}}
+   *
+   * See SI-7242.
+   }}
+   */
+  private def skipMixinOuterAccessor(clazz: Symbol, mixin: Symbol) = {
+    // Reliant on the current scheme for name expansion, the expanded name
+    // of the outer accessors in a trait and its companion object are the same.
+    // If the assumption is one day falsified, run/t7424.scala will let us know.
+    clazz.fullName == mixin.fullName
   }
 
   /** <p>
@@ -162,10 +183,14 @@ abstract class ExplicitOuter extends InfoTransform
         for (mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = exitingExplicitOuter(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
-            if (decls1 eq decls) decls1 = decls.cloneScope
-            val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
-            newAcc setInfo (clazz.thisType memberType mixinOuterAcc)
-            decls1 enter newAcc
+            if (skipMixinOuterAccessor(clazz, mc))
+              debuglog(s"Reusing outer accessor symbol of $clazz for the mixin outer accessor of $mc")
+            else {
+              if (decls1 eq decls) decls1 = decls.cloneScope
+              val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
+              newAcc setInfo (clazz.thisType memberType mixinOuterAcc)
+              decls1 enter newAcc
+            }
           }
         }
       }
@@ -370,6 +395,7 @@ abstract class ExplicitOuter extends InfoTransform
       val outerAcc    = outerAccessor(mixinClass) overridingSymbol currentClass
       def mixinPrefix = (currentClass.thisType baseType mixinClass).prefix
       assert(outerAcc != NoSymbol, "No outer accessor for inner mixin " + mixinClass + " in " + currentClass)
+      assert(outerAcc.alternatives.size == 1, s"Multiple outer accessors match inner mixin $mixinClass in $currentClass : ${outerAcc.alternatives.map(_.defString)}")
       // I added the mixinPrefix.typeArgs.nonEmpty condition to address the
       // crash in SI-4970.  I feel quite sure this can be improved.
       val path = (
@@ -404,7 +430,7 @@ abstract class ExplicitOuter extends InfoTransform
               }
               if (!currentClass.isTrait)
                 for (mc <- currentClass.mixinClasses)
-                  if (outerAccessor(mc) != NoSymbol)
+                  if (outerAccessor(mc) != NoSymbol && !skipMixinOuterAccessor(currentClass, mc))
                     newDefs += mixinOuterAccessorDef(mc)
             }
           }

@@ -499,7 +499,7 @@ trait NamesDefaults { self: Analyzer =>
         // disable conforms as a view...
         val errsBefore = reporter.ERROR.count
         try typer.silent { tpr =>
-          val res = tpr.typed(arg, subst(paramtpe))
+          val res = tpr.typed(arg.duplicate, subst(paramtpe))
           // better warning for SI-5044: if `silent` was not actually silent give a hint to the user
           // [H]: the reason why `silent` is not silent is because the cyclic reference exception is
           // thrown in a context completely different from `context` here. The exception happens while
