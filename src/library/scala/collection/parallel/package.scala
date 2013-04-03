@@ -41,9 +41,7 @@ package object parallel {
 
   private[parallel] def outofbounds(idx: Int) = throw new IndexOutOfBoundsException(idx.toString)
 
-  private[parallel] def getTaskSupport: TaskSupport =
-    if (scala.util.Properties.isJavaAtLeast("1.6")) new ForkJoinTaskSupport
-    else new ThreadPoolTaskSupport
+  private[parallel] def getTaskSupport: TaskSupport = new ForkJoinTaskSupport
 
   val defaultTaskSupport: TaskSupport = getTaskSupport
 
