@@ -40,12 +40,22 @@ class TreeSet[T >: Null <: AnyRef](less: (T, T) => Boolean) extends Set[T] {
     tree = add(tree)
   }
 
-  def iterator = {
-    def elems(t: Tree): Iterator[T] = {
-      if (t eq null) Iterator.empty
-      else elems(t.l) ++ (Iterator single t.elem) ++ elems(t.r)
+  def iterator = toList.iterator
+
+  override def foreach[U](f: T => U) {
+    def loop(t: Tree) {
+      if (t ne null) {
+        loop(t.l)
+        f(t.elem)
+        loop(t.r)
+      }
     }
-    elems(tree)
+    loop(tree)
+  }
+  override def toList = {
+    val xs = scala.collection.mutable.ListBuffer[T]()
+    foreach(xs += _)
+    xs.toList
   }
 
   override def toString(): String = {
