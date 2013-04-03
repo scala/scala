@@ -322,7 +322,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ThrowableClass                 = getClassByName(sn.Throwable)
     lazy val UninitializedErrorClass        = requiredClass[UninitializedFieldError]
 
-    lazy val NPEConstructor                = getMemberMethod(NullPointerExceptionClass, nme.CONSTRUCTOR) suchThat (_.paramss.flatten.isEmpty)
     lazy val UninitializedFieldConstructor = UninitializedErrorClass.primaryConstructor
 
     // fundamental reference classes
