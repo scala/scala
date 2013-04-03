@@ -298,7 +298,7 @@ trait Implicits {
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
     def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
-      if (settings.XlogImplicits.value)
+      if (settings.XlogImplicits)
         reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
       SearchFailure
     }
@@ -1118,7 +1118,7 @@ trait Implicits {
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
-      if (settings.XlogImplicits.value) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
+      if (settings.XlogImplicits) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently
       // otherwise -Xlog-implicits will spam the long with zillions of "macros are disabled"
@@ -1141,7 +1141,7 @@ trait Implicits {
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
           val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
-          if (settings.debug.value) println("generated manifest: "+mani) // DEBUG
+          if (settings.debug) println("generated manifest: "+mani) // DEBUG
           mani
         }
 
@@ -1316,7 +1316,7 @@ trait Implicits {
         }
       }
 
-      if (result.isFailure && settings.debug.value)
+      if (result.isFailure && settings.debug)
         log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
 
       result

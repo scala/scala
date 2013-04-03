@@ -110,7 +110,7 @@ trait Printers { self: ICodes =>
       print(bb.label)
       if (bb.loopHeader) print("[loop header]")
       print(": ")
-      if (settings.debug.value) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
+      if (settings.debug) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
       indent(); println()
       bb.toList foreach printInstruction
       undent(); println()

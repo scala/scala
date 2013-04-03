@@ -85,7 +85,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     def transformApplyDynamic(ad: ApplyDynamic) = {
       val qual0 = ad.qual
       val params = ad.args
-        if (settings.logReflectiveCalls.value)
+        if (settings.logReflectiveCalls)
           unit.echo(ad.pos, "method invocation uses reflection")
 
         val typedPos = typedWithPos(ad.pos) _
@@ -473,7 +473,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
           /* For testing purposes, the dynamic application's condition
            * can be printed-out in great detail. Remove? */
-          if (settings.debug.value) {
+          if (settings.debug) {
             def paramsToString(xs: Any*) = xs map (_.toString) mkString ", "
             val mstr = ad.symbol.tpe match {
               case MethodType(mparams, resType) =>

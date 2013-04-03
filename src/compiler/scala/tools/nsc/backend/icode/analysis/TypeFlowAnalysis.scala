@@ -136,7 +136,7 @@ abstract class TypeFlowAnalysis {
       // icodes.lubs0 = 0
       forwardAnalysis(blockTransfer)
       timer.stop
-      if (settings.debug.value) {
+      if (settings.debug) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited))
@@ -167,7 +167,7 @@ abstract class TypeFlowAnalysis {
       val bindings = out.vars
       val stack = out.stack
 
-      if (settings.debug.value) {
+      if (settings.debug) {
         // Console.println("[before] Stack: " + stack);
         // Console.println(i);
       }
@@ -367,7 +367,7 @@ abstract class TypeFlowAnalysis {
         preCandidates += rc._2.bb
       }
 
-      if (settings.debug.value) {
+      if (settings.debug) {
         for(b <- callerLin; if (b != method.startBlock) && preCandidates(b)) {
           assert(visited.contains(b),
                  "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited)

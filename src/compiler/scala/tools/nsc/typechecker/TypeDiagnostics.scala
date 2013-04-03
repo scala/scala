@@ -545,7 +545,7 @@ trait TypeDiagnostics {
         // Error suppression will squash some of these warnings unless we circumvent it.
         // It is presumed if you are using a -Y option you would really like to hear
         // the warnings you've requested.
-        if (settings.warnDeadCode.value && context.unit.exists && treeOK(tree) && exprOK)
+        if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
           context.warning(tree.pos, "dead code following this construct", force = true)
         tree
       }
@@ -585,7 +585,7 @@ trait TypeDiagnostics {
       // but it seems that throwErrors excludes some of the errors that should actually be
       // buffered, causing TypeErrors to fly around again. This needs some more investigation.
       if (!context0.reportErrors) throw ex
-      if (settings.debug.value) ex.printStackTrace()
+      if (settings.debug) ex.printStackTrace()
 
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>

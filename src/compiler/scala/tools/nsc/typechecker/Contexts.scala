@@ -79,9 +79,9 @@ trait Contexts { self: Analyzer =>
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
     assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
-    if (settings.noimports.value) Nil
+    if (settings.noimports) Nil
     else if (unit.isJava) RootImports.javaList
-    else if (settings.nopredef.value || treeInfo.noPredefImportForUnit(unit.body)) RootImports.javaAndScalaList
+    else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) RootImports.javaAndScalaList
     else RootImports.completeList
   }
 
@@ -322,7 +322,7 @@ trait Contexts { self: Analyzer =>
 
     def makeNewImport(imp: Import): Context = {
       val impInfo = new ImportInfo(imp, depth)
-      if (settings.lint.value && imp.pos.isDefined) // pos.isDefined excludes java.lang/scala/Predef imports
+      if (settings.lint && imp.pos.isDefined) // pos.isDefined excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= impInfo
 
       make(unit, imp, owner, scope, impInfo :: imports)
@@ -406,7 +406,7 @@ trait Contexts { self: Analyzer =>
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
-      if (settings.Yissuedebug.value) {
+      if (settings.Yissuedebug) {
         log("issue error: " + err.errMsg)
         (new Exception).printStackTrace()
       }
@@ -1065,7 +1065,7 @@ trait Contexts { self: Analyzer =>
         if (result == NoSymbol)
           selectors = selectors.tail
       }
-      if (settings.lint.value && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
+      if (settings.lint && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
         recordUsage(current, result)
 
       // Harden against the fallout from bugs like SI-6745

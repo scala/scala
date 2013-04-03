@@ -61,7 +61,7 @@ trait Members {
     startBlock = newBlock()
 
     def removeBlock(b: BasicBlock) {
-      if (settings.debug.value) {
+      if (settings.debug) {
         // only do this sanity check when debug is turned on because it's moderately expensive
         val referers = blocks filter (_.successors contains b)
         assert(referers.isEmpty, s"Trying to removing block $b (with preds ${b.predecessors.mkString}) but it is still refered to from block(s) ${referers.mkString}")

@@ -239,7 +239,7 @@ abstract class Pickler extends SubComponent {
           putSymbols(tparams)
         case AnnotatedType(annotations, underlying, selfsym) =>
           putType(underlying)
-          if (settings.selfInAnnots.value) putSymbol(selfsym)
+          if (settings.selfInAnnots) putSymbol(selfsym)
           putAnnotations(annotations filter (_.isStatic))
         case _ =>
           throw new FatalError("bad type: " + tp + "(" + tp.getClass + ")")
@@ -643,7 +643,7 @@ abstract class Pickler extends SubComponent {
           annotations filter (_.isStatic) match {
             case Nil          => writeBody(tp) // write the underlying type if there are no annotations
             case staticAnnots =>
-              if (settings.selfInAnnots.value && selfsym != NoSymbol)
+              if (settings.selfInAnnots && selfsym != NoSymbol)
                 writeRef(selfsym)
               writeRef(tp)
               writeRefs(staticAnnots)

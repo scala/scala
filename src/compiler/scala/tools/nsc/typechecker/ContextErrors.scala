@@ -919,7 +919,7 @@ trait ContextErrors {
       def NotWithinBounds(tree: Tree, prefix: String, targs: List[Type],
                           tparams: List[Symbol], kindErrors: List[String]) =
         issueNormalTypeError(tree,
-          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes.value))
+          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes))
 
       //substExpr
       def PolymorphicExpressionInstantiationError(tree: Tree, undetparams: List[Symbol], pt: Type) =
@@ -1361,7 +1361,7 @@ trait ContextErrors {
     }
 
     def MacroImplTargMismatchError(atargs: List[Type], atparams: List[Symbol]) =
-      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes.value))
+      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes))
 
     def MacroImplTparamInstantiationError(atparams: List[Symbol], ex: NoInstance) =
       compatibilityError(

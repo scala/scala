@@ -1156,7 +1156,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
-    if (settings.nospecialization.value && currentRun.compiles(sym)) tpe
+    if (settings.nospecialization && currentRun.compiles(sym)) tpe
     else tpe.resultType match {
       case cinfo @ ClassInfoType(parents, decls, clazz) if !unspecializableClass(cinfo) =>
         val tparams  = tpe.typeParams
@@ -1836,7 +1836,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   class SpecializationTransformer(unit: CompilationUnit) extends Transformer {
     informProgress("specializing " + unit)
     override def transform(tree: Tree) = {
-      val resultTree = if (settings.nospecialization.value) tree
+      val resultTree = if (settings.nospecialization) tree
       else exitingSpecialize(specializeCalls(unit).transform(tree))
 
       // Remove the final modifier and @inline annotation from anything in the
