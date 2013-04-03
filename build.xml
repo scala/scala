@@ -23,8 +23,15 @@ targets exercised:
   - install zinc and symlink the installed zinc script to ${basedir}/tools/zinc  (${basedir} is where build.xml and the rest of your checkout resides)
   - make sure to set ZINC_OPTS to match ANT_OPTS!
   - invoke ant as `ant -Dstarr.version="2.10.1" -Dlocker.skip=1`
-    (zinc needs compiler jars
-     TODO rework the build to pack locker and build using that when using zinc)
+    (zinc needs compiler jars)
+-->
+
+<!--
+TODO:
+  - detect zinc anywhere on PATH
+  - automatically set ZINC_OPTS
+  - skip locker (and test.stability) by default to speed up PR validation, still do full build & testing during nightly
+  - (rework the build to pack locker and build using that when using zinc)
 -->
 
 
@@ -811,7 +818,7 @@ targets exercised:
     <attribute name="compilerpathref"   />
     <attribute name="destdir"           />
     <attribute name="srcdir"            />
-    <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library -->
+    <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library, "NOT SET" is just a convention to denote an optional attribute -->
     <attribute name="buildpathref"      />
     <attribute name="params" default="" />
     <attribute name="java-excludes" default=""/>
@@ -854,7 +861,8 @@ targets exercised:
     <attribute name="java-excludes" default=""/>
 
     <sequential>
-      <!-- use zinc for the quick stage if it's available;
+      <!-- TODO: detect zinc anywhere on PATH
+           use zinc for the quick stage if it's available;
            would use it for locker but something is iffy in sbt: get a class cast error on global phase -->
       <if><and> <available file="tools/zinc"/>
                 <equals arg1="@{stage}" arg2="quick"/>
@@ -926,7 +934,7 @@ targets exercised:
         <do>
           <stopwatch name="@{stage}.@{project}.timer"/>
           <mkdir dir="${build-@{stage}.dir}/classes/@{project}"/>
-          <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/> <!-- HACK: always compile with javac -->
+          <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/> <!-- always compile with javac for simplicity and regularity; it's cheap -->
           <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
           <if><equals arg1="@{version}" arg2=""/><then>
             <propertyfile file = "${build-@{stage}.dir}/classes/@{project}/@{project}.properties">
