@@ -6,7 +6,6 @@
 package scala.tools.partest
 
 import scala.tools.nsc._
-import io.Directory
 import util.{BatchSourceFile, CommandLineParser}
 import reporters.{Reporter, ConsoleReporter}
 
@@ -21,8 +20,8 @@ abstract class DirectTest extends App {
   def show(): Unit
 
   // the test file or dir, and output directory
-  def testPath   = io.File(sys.props("partest.test-path"))
-  def testOutput = io.Directory(sys.props("partest.output"))
+  def testPath   = SFile(sys.props("partest.test-path"))
+  def testOutput = Directory(sys.props("partest.output"))
 
   // override to add additional settings with strings
   def extraSettings: String = ""

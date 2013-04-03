@@ -12,7 +12,7 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileInputStream, FileOutputStream, BufferedReader,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
-import scala.tools.nsc.io.{ Path, Directory, File => SFile }
+import scala.reflect.io.AbstractFile
 import scala.collection.mutable
 
 trait FileUtil {
@@ -62,16 +62,19 @@ trait FileManager extends FileUtil {
   var LATEST_ACTORS: String
 
   protected def relativeToLibrary(what: String): String = {
-    if (LATEST_LIB endsWith ".jar") {
-      (SFile(LATEST_LIB).parent / s"scala-$what.jar").toAbsolute.path
-    }
-    else {
+    def jarname = if (what startsWith "scala") s"$what.jar" else s"scala-$what.jar"
+    if (LATEST_LIB endsWith ".jar")
+      (SFile(LATEST_LIB).parent / jarname).toAbsolute.path
+    else
       (SFile(LATEST_LIB).parent.parent / "classes" / what).toAbsolute.path
-    }
   }
   def latestScaladoc    = relativeToLibrary("scaladoc")
   def latestInteractive = relativeToLibrary("interactive")
-  def latestPaths       = List(LATEST_LIB, LATEST_REFLECT, LATEST_COMP, LATEST_PARTEST, LATEST_ACTORS, latestScaladoc, latestInteractive)
+  def latestScalapFile  = relativeToLibrary("scalap")
+  def latestPaths       = List(
+        LATEST_LIB, LATEST_REFLECT, LATEST_COMP, LATEST_PARTEST, LATEST_ACTORS,
+        latestScalapFile, latestScaladoc, latestInteractive
+  )
   def latestFiles       = latestPaths map (p => new java.io.File(p))
   def latestUrls        = latestFiles map (_.toURI.toURL)
 
@@ -127,5 +130,35 @@ trait FileManager extends FileUtil {
     val f = SFile(file)
 
     f.printlnAll(f.lines.toList map replace: _*)
+  }
+
+  /** Massage args to merge plugins and fix paths.
+   *  Plugin path can be relative to test root, or cwd is out.
+   *  While we're at it, mix in the baseline options, too.
+   *  That's how ant passes in the plugins dir.
+   */
+  def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): List[String] = {
+    val dir = testRootDir
+    // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
+    def pathOrCwd(p: String) =
+      if (p == ".") {
+        val plugxml = "scalac-plugin.xml"
+        val pout    = if (out.isVirtual) Directory.makeTemp() else Path(out.path)
+        val srcpath = Path(srcdir.path)
+        val pd      = (srcpath / plugxml).toFile
+        if (pd.exists) pd copyTo (pout / plugxml)
+        pout
+      } else Path(p)
+    def absolutize(path: String) = pathOrCwd(path) match {
+      case x if x.isAbsolute  => x.path
+      case x                  => (dir / x).toAbsolute.path
+    }
+
+    val xprefix          = "-Xplugin:"
+    val (xplugs, others) = args partition (_ startsWith xprefix)
+    val Xplugin          = if (xplugs.isEmpty) Nil else List(xprefix +
+      (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
+    )
+    SCALAC_OPTS.toList ::: others ::: Xplugin
   }
 }
