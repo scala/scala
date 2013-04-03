@@ -164,7 +164,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         if (from.name != nme.OUTER ||
             from.tpe.typeSymbol.isPrimitiveValueClass) result
         else localTyper.typedPos(to.pos) {
-          IF (from OBJ_EQ NULL) THEN Throw(NewFromConstructor(NPEConstructor)) ELSE result
+          // `throw null` has the same effect as `throw new NullPointerException`, see JVM spec on instruction `athrow`
+          IF (from OBJ_EQ NULL) THEN Throw(gen.mkZero(ThrowableClass.tpe)) ELSE result
         }
       }
 
