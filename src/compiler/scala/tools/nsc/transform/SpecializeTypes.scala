@@ -78,7 +78,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
 
   /** For a given class and concrete type arguments, give its specialized class */
-  val specializedClass: mutable.Map[(Symbol, TypeEnv), Symbol] = new mutable.LinkedHashMap
+  val specializedClass = perRunCaches.newMap[(Symbol, TypeEnv), Symbol]
 
   /** Map a method symbol to a list of its specialized overloads in the same class. */
   private val overloads = perRunCaches.newMap[Symbol, List[Overload]]() withDefaultValue Nil
@@ -1776,21 +1776,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     /** Create specialized class definitions */
     def implSpecClasses(trees: List[Tree]): List[Tree] = {
-      val buf = new mutable.ListBuffer[Tree]
-      for (tree <- trees)
-        tree match {
-          case ClassDef(_, _, _, impl) =>
-            tree.symbol.info // force specialization
-            for (((sym1, env), specCls) <- specializedClass if sym1 == tree.symbol) {
-              val parents = specCls.info.parents.map(TypeTree)
-              buf +=
-                ClassDef(specCls, atPos(impl.pos)(Template(parents, emptyValDef, List()))
-                           .setSymbol(specCls.newLocalDummy(sym1.pos))) setPos tree.pos
-              debuglog("created synthetic class: " + specCls + " of " + sym1 + " in " + pp(env))
-            }
-          case _ =>
-        }
-      buf.toList
+      trees flatMap {
+        case tree @ ClassDef(_, _, _, impl) =>
+          tree.symbol.info // force specialization
+          for (((sym1, env), specCls) <- specializedClass if sym1 == tree.symbol) yield {
+            debuglog("created synthetic class: " + specCls + " of " + sym1 + " in " + pp(env))
+            val parents = specCls.info.parents.map(TypeTree)
+            ClassDef(specCls, atPos(impl.pos)(Template(parents, emptyValDef, List()))
+              .setSymbol(specCls.newLocalDummy(sym1.pos))) setPos tree.pos
+          }
+        case _ => Nil
+      } sortBy (_.name.decoded)
     }
   }
 
