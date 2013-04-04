@@ -19,6 +19,21 @@ targets exercised:
   build-opt nightly test.suite test.continuations.suite test.scaladoc locker.done
 -->
 
+<!-- To use Zinc with the ant build:
+  - install zinc and symlink the installed zinc script to ${basedir}/tools/zinc  (${basedir} is where build.xml and the rest of your checkout resides)
+  - make sure to set ZINC_OPTS to match ANT_OPTS!
+  - invoke ant as `ant -Dstarr.version="2.10.1" -Dlocker.skip=1`
+    (zinc needs compiler jars)
+-->
+
+<!--
+TODO:
+  - detect zinc anywhere on PATH
+  - automatically set ZINC_OPTS
+  - skip locker (and test.stability) by default to speed up PR validation, still do full build & testing during nightly
+  - (rework the build to pack locker and build using that when using zinc)
+-->
+
 
 <!-- ===========================================================================
                                   END-USER TARGETS
@@ -407,9 +422,8 @@ targets exercised:
     <!-- Download STARR via maven if `starr.version` is specified.
          Want to slow down STARR changes, using only released versions. -->
     <if><isset property="starr.version"/><then>
-      <property name="strr" refid="starr.compiler.path"/>
       <echo message="Using Scala ${starr.version} for STARR."/>
-      <!-- <echo message="STARR classpath: ${strr}"/> -->
+      <!-- <echo message="STARR classpath: ${ant.refid:starr.compiler.path}"/> -->
     </then><else>
       <path id="starr.core.path">
         <pathelement location="${library.starr.jar}"/>
@@ -445,6 +459,11 @@ targets exercised:
       <path refid="aux.libs"/>
     </path>
 
+    <path id="locker.actors.build.path">
+      <path refid="locker.library.build.path"/>
+      <pathelement location="${build-locker.dir}/classes/actors"/>
+    </path>
+
     <path id="locker.reflect.build.path">
       <path refid="locker.library.build.path"/>
       <pathelement location="${build-locker.dir}/classes/reflect"/>
@@ -463,7 +482,10 @@ targets exercised:
       <path refid="aux.libs"/>
     </path>
 
-    <path id="quick.actors.build.path"><path refid="quick.library.build.path"/></path>
+    <path id="quick.actors.build.path">
+      <path refid="quick.library.build.path"/>
+      <pathelement location="${build-quick.dir}/classes/actors"/>
+    </path>
 
     <path id="quick.reflect.build.path">
       <path refid="quick.library.build.path"/>
@@ -484,6 +506,7 @@ targets exercised:
 
     <path id="quick.swing.build.path">
       <path refid="quick.library.build.path"/>
+      <path refid="quick.actors.build.path"/>
       <pathelement location="${build-quick.dir}/classes/swing"/>
     </path>
 
@@ -494,6 +517,7 @@ targets exercised:
 
     <path id="quick.scalacheck.build.path">
       <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/actors"/>
       <pathelement location="${build-quick.dir}/classes/scalacheck"/>
     </path>
 
@@ -524,6 +548,7 @@ targets exercised:
 
     <path id="quick.bin.tool.path">
       <path refid="quick.repl.build.path"/>
+      <path refid="quick.actors.build.path"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
       <pathelement location="${build-quick.dir}/classes/continuations-library"/>
     </path>
@@ -552,18 +577,13 @@ targets exercised:
     </path>
 
     <path id="pack.library.files">
-      <fileset dir="${build-quick.dir}/classes/library">
-        <!-- <exclude name="scala/swing/**"/> -->
-        <exclude name="scala/actors/**"/>
-      </fileset>
+      <fileset dir="${build-quick.dir}/classes/library"/>
       <fileset dir="${build-quick.dir}/classes/continuations-library"/>
       <fileset dir="${forkjoin-classes}"/>
     </path>
 
     <path id="pack.actors.files">
-      <fileset dir="${build-quick.dir}/classes/library">
-        <include name="scala/actors/**"/>
-      </fileset>
+      <fileset dir="${build-quick.dir}/classes/actors"/>
     </path>
 
     <path id="pack.compiler.files">
@@ -599,7 +619,6 @@ targets exercised:
       <path refid="forkjoin.classpath"/>
       <path refid="aux.libs"/>
     </path>
-    <path id="strap.actors.build.path"><path refid="strap.library.build.path"/></path>
 
     <path id="strap.reflect.build.path">
       <path refid="strap.library.build.path"/>
@@ -771,6 +790,49 @@ targets exercised:
     </sequential>
   </macrodef>
 
+  <!-- Zinc assumes a one-to-one correspondence of output folder to set of source files.
+   When compiling different sets of source files in multiple compilations to the same output directory,
+   Zinc thinks source files that appeared in an earlier compilation but are absent in the current one,
+   were deleted and thus deletes the corresponding output files.
+
+   Note that zinc also requires each arg to scalac to be prefixed by -S.
+  -->
+  <macrodef name="zinc">
+    <attribute name="compilerpathref"   />
+    <attribute name="destdir"           />
+    <attribute name="srcdir"            />
+    <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library, "NOT SET" is just a convention to denote an optional attribute -->
+    <attribute name="buildpathref"      />
+    <attribute name="params" default="" />
+    <attribute name="java-excludes" default=""/>
+
+    <sequential>
+      <local name="sources"/>
+      <pathconvert pathsep=" " property="sources">
+        <fileset dir="@{srcdir}">
+          <include name="**/*.java"/>
+          <include name="**/*.scala"/>
+          <exclude name="@{java-excludes}"/>
+        </fileset>
+      </pathconvert>
+      <local name="args"/>
+      <local name="sargs"/>
+      <if><not><equals arg1="@{srcpath}" arg2="NOT SET"/></not><then>
+        <property name="args" value="@{params} -sourcepath @{srcpath}"/>
+      </then></if>
+      <property name="args" value="@{params}"/> <!-- default -->
+
+      <!-- HACK: prefix scalac args by -S -->
+      <script language="javascript">
+        project.setProperty("sargs", project.getProperty("args").trim().replaceAll(" ", " -S"));
+      </script>
+
+      <exec osfamily="unix" executable="tools/zinc" failifexecutionfails="true" failonerror="true">
+        <arg line="-nailed -compile-order JavaThenScala -scala-path ${ant.refid:@{compilerpathref}} -d @{destdir} -classpath ${toString:@{buildpathref}} ${sargs} ${sources}"/>
+      </exec>
+    </sequential>
+  </macrodef>
+
   <macrodef name="staged-scalac" >
     <attribute name="with"/>           <!-- will use path `@{with}.compiler.path` to locate scalac -->
     <attribute name="stage"/>          <!-- current stage (locker, quick, strap) -->
@@ -779,33 +841,46 @@ targets exercised:
     <attribute name="args" default=""/>                  <!-- additional args -->
     <attribute name="destproject" default="@{project}"/> <!-- overrides the output directory; used when building multiple projects into the same directory-->
     <attribute name="srcdir" default="@{project}"/>
-    <element name="args" implicit="true" optional="true"/>
+    <attribute name="java-excludes" default=""/>
 
     <sequential>
+      <!-- TODO: detect zinc anywhere on PATH
+           use zinc for the quick stage if it's available;
+           would use it for locker but something is iffy in sbt: get a class cast error on global phase -->
+      <if><and> <available file="tools/zinc"/>
+                <equals arg1="@{stage}" arg2="quick"/>
+                <not><equals arg1="@{project}" arg2="plugins"/></not> <!-- doesn't work in zinc because it requires the quick compiler, which isn't jarred up-->
+          </and><then>
+        <zinc taskname="Z.@{stage}.@{project}"
+          compilerpathref="@{with}.compiler.path"
+          destdir="${build-@{stage}.dir}/classes/@{destproject}"
+          srcdir="${src.dir}/@{srcdir}"
+          srcpath="@{srcpath}"
+          buildpathref="@{stage}.@{project}.build.path"
+          params="${scalac.args.@{stage}} @{args}"
+          java-excludes="@{java-excludes}"/></then>
+      <else>
       <if><equals arg1="@{srcpath}" arg2="NOT SET"/><then>
         <scalacfork taskname="@{stage}.@{project}"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
+          jvmargs="${scalacfork.jvmargs}"
           compilerpathref="@{with}.compiler.path"
-          params="${scalac.args.@{stage}} @{args}"
+          destdir="${build-@{stage}.dir}/classes/@{destproject}"
           srcdir="${src.dir}/@{srcdir}"
-          jvmargs="${scalacfork.jvmargs}">
+          params="${scalac.args.@{stage}} @{args}">
           <include name="**/*.scala"/>
-          <compilationpath refid="@{stage}.@{project}.build.path"/>
-          <args/>
-        </scalacfork></then>
+          <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></then>
       <else>
         <scalacfork taskname="@{stage}.@{project}"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
+          jvmargs="${scalacfork.jvmargs}"
           compilerpathref="@{with}.compiler.path"
-          srcpath="@{srcpath}"
-          params="${scalac.args.@{stage}} @{args}"
+          destdir="${build-@{stage}.dir}/classes/@{destproject}"
           srcdir="${src.dir}/@{srcdir}"
-          jvmargs="${scalacfork.jvmargs}">
+          srcpath="@{srcpath}"
+          params="${scalac.args.@{stage}} @{args}">
           <include name="**/*.scala"/>
-          <compilationpath refid="@{stage}.@{project}.build.path"/>
-          <args/>
-        </scalacfork></else>
+          <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></else>
       </if>
+      </else></if>
     </sequential>
   </macrodef>
 
@@ -833,10 +908,8 @@ targets exercised:
     <attribute name="srcpath"       default="NOT SET"/>        <!-- needed to compile the library -->
     <attribute name="args"          default=""/>                  <!-- additional args -->
     <attribute name="includes"      default="comp.includes"/>
+    <attribute name="java-excludes" default=""/>
     <attribute name="version"       default=""/> <!-- non-empty for partest and scaladoc: use @{version}.version.number in property file-->
-
-    <element name="pre" optional="true"/>
-    <element name="post" optional="true"/>
 
     <sequential>
       <staged-uptodate stage="@{stage}" project="@{project}">
@@ -844,9 +917,8 @@ targets exercised:
         <do>
           <stopwatch name="@{stage}.@{project}.timer"/>
           <mkdir dir="${build-@{stage}.dir}/classes/@{project}"/>
-          <pre/>
-          <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}"/>
-          <post/>
+          <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/> <!-- always compile with javac for simplicity and regularity; it's cheap -->
+          <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
           <if><equals arg1="@{version}" arg2=""/><then>
             <propertyfile file = "${build-@{stage}.dir}/classes/@{project}/@{project}.properties">
               <entry key       = "version.number" value="${version.number}"/>
@@ -999,16 +1071,20 @@ targets exercised:
 <!-- ===========================================================================
                                   LOCAL REFERENCE BUILD (LOCKER)
 ============================================================================ -->
-  <target name="locker.start" depends="asm.done, forkjoin.done">
+  <target name="locker.start"  depends="asm.done, forkjoin.done">
     <condition property="locker.locked"><available file="${build-locker.dir}/locker.locked"/></condition></target>
 
-  <target name="locker.lib"     depends="locker.start" unless="locker.locked">
-    <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes">
-            <pre><staged-javac stage="locker" project="library" args="-XDignore.symbol.file"/></pre></staged-build></target>
-            <!-- TODO: args="-XDignore.symbol.file" necessary?? -->
+  <target name="locker.lib"    depends="locker.start"     unless="locker.locked">
+    <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes"/></target>
 
-  <target name="locker.reflect" depends="locker.lib"     unless="locker.locked"> <staged-build with="starr" stage="locker" project="reflect"/></target>
-  <target name="locker.comp"    depends="locker.reflect" unless="locker.locked"> <staged-build with="starr" stage="locker" project="compiler"/></target>
+  <target name="locker.actors" depends="locker.lib"       unless="locker.locked">
+    <staged-build with="starr" stage="locker" project="actors"/> </target>
+
+  <target name="locker.reflect" depends="locker.lib"      unless="locker.locked">
+    <staged-build with="starr" stage="locker" project="reflect"/></target>
+
+  <target name="locker.comp"    depends="locker.reflect" unless="locker.locked">
+    <staged-build with="starr" stage="locker" project="compiler"/></target>
 
   <target name="locker.done"    depends="locker.comp">
     <mkdir dir="${build-locker.dir}"/>
@@ -1020,62 +1096,43 @@ targets exercised:
 <!-- ===========================================================================
                                   QUICK BUILD (QUICK)
 ============================================================================ -->
-  <target name="quick.start" depends="locker.done"/>
+  <target name="quick.start"      depends="locker.done"/>
 
-  <target name="quick.lib" depends="quick.start">
-    <staged-build with="locker" stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes">
-      <pre>
-        <staged-javac stage="quick" project="library" args="-XDignore.symbol.file"/> <!-- TODO: args="-XDignore.symbol.file" necessary?? -->
-        <staged-javac stage="quick" project="actors" destproject="library"/>
-      </pre>
-      <post>
-        <staged-scalac with="locker" stage="quick" project="actors" destproject="library"/>
-      </post>
-    </staged-build>
-  </target>
+  <target name="quick.lib"        depends="quick.start">
+    <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
 
-  <target name="quick.reflect" depends="quick.lib"> <staged-build with="locker" stage="quick" project="reflect"/> </target>
+  <target name="quick.actors"     depends="quick.lib">
+    <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
-  <target name="quick.comp" depends="quick.reflect">
-    <staged-build with="locker" stage="quick" project="compiler"/>
-  </target>
+  <target name="quick.reflect"    depends="quick.lib">
+    <staged-build with="locker"   stage="quick" project="reflect"/> </target>
 
-  <target name="quick.repl" depends="quick.comp">
-    <staged-build with="locker" stage="quick" project="repl">
-      <pre>
-        <staged-javac stage="quick" project="repl"/>
-      </pre>
-    </staged-build>
-  </target>
+  <target name="quick.comp"       depends="quick.reflect">
+    <staged-build with="locker"   stage="quick" project="compiler"/> </target>
 
-  <target name="quick.scalacheck" depends="quick.lib">
-    <staged-build with="locker" stage="quick" project="scalacheck" args="-nowarn"/>
-  </target>
+  <target name="quick.repl"       depends="quick.comp">
+    <staged-build with="locker"   stage="quick" project="repl"/> </target>
 
-  <target name="quick.scalap" depends="quick.repl">
-    <staged-build with="locker" stage="quick" project="scalap"/>
-  </target>
+  <target name="quick.scalacheck" depends="quick.actors, quick.lib">
+    <staged-build with="locker"   stage="quick" project="scalacheck" args="-nowarn"/> </target>
 
-  <target name="quick.partest" depends="quick.scalap, quick.repl, asm.done">
-    <staged-build with="locker" stage="quick" project="partest" version="partest">
-      <pre><staged-javac stage="quick" project="partest"/></pre>
-    </staged-build>
-  </target>
+  <target name="quick.scalap"     depends="quick.repl">
+    <staged-build with="locker"   stage="quick" project="scalap"/> </target>
+
+  <target name="quick.partest"    depends="quick.scalap, quick.repl, asm.done">
+    <staged-build with="locker"   stage="quick" project="partest" version="partest"/> </target>
 
   <target name="quick.scaladoc" depends="quick.comp, quick.partest">
-    <staged-build with="locker" stage="quick" project="scaladoc" version="scaladoc"/>
-  </target>
+    <staged-build with="locker" stage="quick" project="scaladoc" version="scaladoc"/> </target>
 
   <target name="quick.interactive" depends="quick.comp, quick.scaladoc">
-    <staged-build with="locker" stage="quick" project="interactive"/>
-  </target>
+    <staged-build with="locker"   stage="quick" project="interactive"/> </target>
 
-  <target name="quick.swing" depends="quick.lib" if="has.java6">
-    <staged-build with="locker" stage="quick" project="swing"/>
-  </target>
+  <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
+    <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
-  <target name="quick.plugins" depends="quick.comp">
-    <staged-uptodate stage="quick" project="plugins">
+  <target name="quick.plugins"    depends="quick.comp">
+    <staged-uptodate              stage="quick" project="plugins">
       <check><srcfiles dir="${src.dir}/continuations"/></check>
       <do>
         <stopwatch name="quick.plugins.timer"/>
@@ -1092,13 +1149,15 @@ targets exercised:
 
         <!-- might split off library part into its own ant target -->
         <mkdir dir="${build-quick.dir}/classes/continuations-library"/>
-        <!-- have to compile with quick compiler here! -->
+        <!-- TODO: must build with quick to avoid
+        [quick.plugins] error: java.lang.NoClassDefFoundError: scala/tools/nsc/transform/patmat/PatternMatching
+        [quick.plugins] 	at scala.tools.selectivecps.SelectiveCPSTransform.newTransformer(SelectiveCPSTransform.scala:29)
+
+        WHY OH WHY!? scala/tools/nsc/transform/patmat/PatternMatching should be on locker.compiler.path
+        -->
         <staged-scalac with="quick" stage="quick" project="plugins"
                        srcdir="continuations/library" destproject="continuations-library"
-                       args="-Xplugin-require:continuations -P:continuations:enable">
-          <compilerarg value="-Xpluginsdir"/>
-          <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-        </staged-scalac>
+                       args="-Xplugin-require:continuations -P:continuations:enable -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins"/>
 
         <stopwatch name="quick.plugins.timer" action="total"/>
       </do>
@@ -1140,9 +1199,6 @@ targets exercised:
         </manifest>
       </pre>
       <jar-opts>
-        <fileset dir="${build-quick.dir}/classes/scaladoc"/>
-        <fileset dir="${build-quick.dir}/classes/interactive"/>
-        <fileset dir="${build-quick.dir}/classes/repl"/>
         <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
       </jar-opts>
     </staged-pack>
@@ -1180,21 +1236,12 @@ targets exercised:
 <!-- ===========================================================================
                                   BOOTSTRAPPING BUILD (STRAP)
 ============================================================================ -->
-  <target name="strap.lib" depends="quick.done">
-    <staged-build with="quick" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes">
-      <pre>
-        <staged-javac stage="strap" project="library" args="-XDignore.symbol.file"/> <!-- TODO: args="-XDignore.symbol.file" necessary?? -->
-        <staged-javac stage="strap" project="actors" destproject="library"/>
-      </pre>
-      <post>
-        <staged-scalac with="quick" stage="strap" project="actors" destproject="library"/>
-      </post>
-    </staged-build>
+  <target name="strap.done" depends="pack.done">
+    <staged-build with="pack" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/>
+    <staged-build with="pack" stage="strap" project="reflect"/>
+    <staged-build with="pack" stage="strap" project="compiler"/>
   </target>
 
-  <target name="strap.reflect" depends="strap.lib"> <staged-build with="pack" stage="strap" project="reflect"/> </target>
-  <target name="strap.comp"    depends="strap.reflect"> <staged-build with="pack" stage="strap" project="compiler"/> </target>
-  <target name="strap.done"    depends="strap.comp"/>
   <target name="strap-opt" description="Optimized version of strap.done."> <optimized name="strap.done"/></target>
 
 
@@ -1289,7 +1336,7 @@ targets exercised:
                                   TEST SUITE
 ============================================================================ -->
   <!-- bootstrapping stability: compare {quick,strap}/(lib|reflect|comp) -->
-  <target name="test.stability" depends="quick.lib, quick.reflect, quick.comp, strap.lib, strap.reflect, strap.comp">
+  <target name="test.stability" depends="strap.done">
     <exec osfamily="unix" vmlauncher="false" executable="${basedir}/tools/stability-test.sh" failonerror="true" />
     <!-- I think doing it this way means it will auto-pass on windows... that's the idea. If not, something like this. -->
     <!-- <exec osfamily="windows" executable="foo" failonerror="false" failifexecutionfails="false" /> -->
