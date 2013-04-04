@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="sabbus" default="build" xmlns:artifact="urn:maven-artifact-ant">
+  <include file="test/build-partest.xml" as="partest"/>
+
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
@@ -135,7 +137,7 @@ TODO:
   <property name="dists.dir"               value="${basedir}/dists"/>
 
   <property name="copyright.string"        value="Copyright 2002-2013, LAMP/EPFL"/>
-  <property name="partest.version.number"  value="0.9.2"/>
+  <property name="partest.version.number"  value="0.9.3"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
@@ -530,7 +532,7 @@ TODO:
     <path id="quick.partest.build.path">
       <path refid="quick.scalap.build.path"/>
       <path refid="partest.extras.classpath"/>
-      <pathelement location="${build-quick.dir}/classes/repl"/>      
+      <pathelement location="${build-quick.dir}/classes/repl"/>
       <pathelement location="${scalacheck.jar}"/>
     </path>
 
@@ -650,11 +652,15 @@ TODO:
       <path refid="partest.extras.classpath"/>
     </path>
 
+    <!-- obsolete? -->
+    <!-- TODO - segregate swing tests (there can't be many) -->
+    <!--
     <path id="partest.build.path">
       <path refid="pack.compiler.path"/>
       <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      <pathelement location="${pack.dir}/lib/scala-swing.jar"/> <!-- TODO - segregate swing tests (there can't be many) -->
+      <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
     </path>
+    -->
 
     <path id="test.osgi.compiler.build.path">
       <pathelement location="${test.osgi.classes}"/>
@@ -762,8 +768,8 @@ TODO:
         <touch file="${build-libs.dir}/@{project}.complete" verbose="no"/>
       </then></if>
     </sequential>
-  </macrodef>    
-    
+  </macrodef>
+
   <target name="asm.done"      depends="init"> <simple-javac project="asm" jar="no"/> </target>
   <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file"/></target>
 
@@ -1418,79 +1424,38 @@ TODO:
     <stopwatch name="quick.sbt-interface.timer" action="total"/>
   </target>
 
-  <property name="partest.srcdir" value="files" /> <!-- TODO: make targets for `pending` and other subdirs -->
-
-  <target name="test.run" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="1200000"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise}">
-
-      <compilationpath refid="partest.build.path"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
-      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
-    </partest>
-  </target>
+  <!-- See test/build-partest.xml for the macro(s) being used here. -->
 
   <target name="test.suite" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="2400000"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise}">
-      <compilationpath refid="partest.build.path"/>
-      <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
-      <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
-      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
-      <residenttests dir="${partest.dir}/${partest.srcdir}/res" includes="*.res"/>
-      <scalaptests dir="${partest.dir}/${partest.srcdir}/scalap" includes="**/*.scala"/>
-      <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck">
-        <include name="*.scala"/>
-      </scalachecktests>
-      <specializedtests dir="${partest.dir}/${partest.srcdir}/specialized">
-        <include name="*.scala"/>
-      </specializedtests>
-      <instrumentedtests dir="${partest.dir}/${partest.srcdir}/instrumented">
-        <include name="*.scala"/>
-      </instrumentedtests>
-    </partest>
+    <testSuite/>
+  </target>
+
+  <target name="test.suite.color" depends="pack.done">
+    <testSuite colors="8"/>
+  </target>
+
+  <target name="test.run" depends="pack.done">
+    <testSuite kinds="run jvm"/>
   </target>
 
   <target name="test.continuations.suite" depends="pack.done">
-    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="2400000"
-             srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise} -Xplugin-require:continuations -P:continuations:enable">
-      <compilerarg value="-Xpluginsdir"/>
-      <compilerarg file="${build-quick.dir}/misc/scala-devel/plugins"/>
-      <compilationpath refid="partest.build.path"/>
-      <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}/continuations-run" includes="*.scala"/>
-    </partest>
+    <testSuite kinds="continuations-neg continuations-run"
+          scalacOpts="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable"
+    />
   </target>
 
   <target name="test.scaladoc" depends="pack.done">
-    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath refid="partest.build.path"/>
-      <runtests        dir="${partest.dir}/scaladoc/run"        includes="*.scala" />
-      <scalachecktests dir="${partest.dir}/scaladoc/scalacheck" includes="*.scala" />
-    </partest>
+    <testSuite kinds="run scalacheck" srcdir="scaladoc"/>
   </target>
 
   <target name="test.interactive" depends="pack.done">
-    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}" showlog="yes">
-      <compilationpath refid="partest.build.path"/>
-      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
-        <include name="*/*.scala"/>
-      </presentationtests>
-    </partest>
+    <testSuite kinds="presentation"/>
   </target>
 
   <!-- for use in PR validation, where stability is rarely broken, so we're going to use starr for locker,
        and skip test.stability (which requires locker == quick) -->
   <target name="test.core" depends="test.osgi, test.sbt, test.bc, test.interactive, test.continuations.suite, test.scaladoc, test.suite"/>
   <target name="test.done" depends="test.core, test.stability"/>
-
 
 <!-- ===========================================================================
                                   BINARY COMPATIBILITY TESTING
