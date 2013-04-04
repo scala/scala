@@ -589,6 +589,10 @@ trait ContextErrors {
         setError(tree)
       }
 
+      // typedPattern
+      def PatternMustBeValue(pat: Tree, pt: Type) =
+        issueNormalTypeError(pat, s"pattern must be a value: $pat"+ typePatternAdvice(pat.tpe.typeSymbol, pt.typeSymbol))
+
       // SelectFromTypeTree
       def TypeSelectionFromVolatileTypeError(tree: Tree, qual: Tree) = {
         val hiBound = qual.tpe.bounds.hi
@@ -920,33 +924,10 @@ trait ContextErrors {
       def IncompatibleScrutineeTypeError(tree: Tree, pattp: Type, pt: Type) =
         issueNormalTypeError(tree, "scrutinee is incompatible with pattern type" + foundReqMsg(pattp, pt))
 
-      def PatternTypeIncompatibleWithPtError2(pat: Tree, pt1: Type, pt: Type) = {
-        def errMsg = {
-          val sym   = pat.tpe.typeSymbol
-          val clazz = sym.companionClass
-          val addendum = (
-            if (sym.isModuleClass && clazz.isCaseClass && (clazz isSubClass pt1.typeSymbol)) {
-              // TODO: move these somewhere reusable.
-              val typeString = clazz.typeParams match {
-                case Nil  => "" + clazz.name
-                case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
-              }
-              val caseString = (
-                clazz.caseFieldAccessors
-                map (_ => "_")    // could use the actual param names here
-                mkString (clazz.name + "(", ",", ")")
-              )
-              (
-                "\nNote: if you intended to match against the class, try `case _: " +
-                typeString + "` or `case " + caseString + "`"
-              )
-            }
-            else ""
-          )
-          "pattern type is incompatible with expected type"+foundReqMsg(pat.tpe, pt) + addendum
-        }
-        issueNormalTypeError(pat, errMsg)
-      }
+      def PatternTypeIncompatibleWithPtError2(pat: Tree, pt1: Type, pt: Type) =
+        issueNormalTypeError(pat,
+          "pattern type is incompatible with expected type"+ foundReqMsg(pat.tpe, pt) +
+          typePatternAdvice(pat.tpe.typeSymbol, pt1.typeSymbol))
 
       def PolyAlternativeError(tree: Tree, argtypes: List[Type], sym: Symbol, err: PolyAlternativeErrorKind.ErrorType) = {
         import PolyAlternativeErrorKind._
