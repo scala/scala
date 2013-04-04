@@ -443,6 +443,8 @@ trait Importers extends api.Importers { self: SymbolTable =>
         }
       })
       tryFixup()
+      if (mytree ne emptyValDef)
+        mytree setPos importPosition(tree.pos)
       mytree
     }
 
