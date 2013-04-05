@@ -1178,11 +1178,11 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="init">
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.scalacheck, quick.scalap, quick.swing, quick.plugins, quick.partest">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
-  <target name="quick.done" depends="quick.lib, quick.reflect, quick.comp, quick.scalacheck, quick.scalap, quick.swing, quick.plugins, quick.partest, quick.bin"/>
+  <target name="quick.done" depends="quick.bin"/>
   <target name="quick-opt" description="Optimized version of quick.done."> <optimized name="quick.done"/></target>
 
 
