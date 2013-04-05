@@ -106,8 +106,8 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
-      while (current < end && !self.contains(current)) current += 1
-      current < end
+      while (current != end && !self.contains(current)) current += 1
+      current != end
     }
     def next(): Int =
       if (hasNext) { val r = current; current += 1; r }
@@ -117,7 +117,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   override def foreach[B](f: Int => B) {
     for (i <- 0 until nwords) {
       val w = word(i)
-      for (j <- i * WordLength until (i + 1) * WordLength) {
+      /* NOTE: `until` instead of `to` will not work here because
+         the maximum value of `(i + 1) * WordLength` could be
+         `Int.MaxValue + 1` (i.e. `Int.MinValue`). */
+      for (j <- i * WordLength to (i + 1) * WordLength - 1) {
         if ((w & (1L << j)) != 0L) f(j)
       }
     }
@@ -197,11 +200,15 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   override def addString(sb: StringBuilder, start: String, sep: String, end: String) = {
     sb append start
     var pre = ""
-    for (i <- 0 until nwords * WordLength)
+    val max = nwords * WordLength
+    var i = 0
+    while(i != max) {
       if (contains(i)) {
         sb append pre append i
         pre = sep
       }
+      i += 1
+    }
     sb append end
   }
 
@@ -212,6 +219,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 object BitSetLike {
   private[collection] val LogWL = 6
   private val WordLength = 64
+  private[collection] val MaxSize = (Int.MaxValue >> LogWL) + 1
 
   private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
     var len = elems.length
