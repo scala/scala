@@ -261,6 +261,10 @@ TODO:
       <property name="maven.version.suffix"    value="${version.suffix}"/>
       <property name="osgi.version.suffix"     value="${version.suffix}"/></else></if>
 
+    <!-- if a maven version suffix was set (or inferred), assume we're building a release -->
+    <if><isset property="maven.version.suffix"/><then>
+      <property name="build.release"  value="1"/></then></if>
+
     <!-- not building a release and no version.suffix specified -->
     <property name="maven.version.suffix"      value="-SNAPSHOT"/>
 
