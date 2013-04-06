@@ -1,9 +1,3 @@
-/** It's a pos test because it does indeed compile,
- *  not so much because I'm glad it does.  Testing
- *  that error messages created and discarded during
- *  implicit search don't blow it up.
- */
-
 import scala.collection.mutable.WeakHashMap
 import scala.collection.JavaConversions._
 
