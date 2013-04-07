@@ -1854,6 +1854,8 @@ trait Typers extends Adaptations with Tags {
           )
         })
       }
+      if (mdef.symbol == PredefModule && impl1.parents.exists(_.symbol.associatedFile != PredefModule.associatedFile))
+        unit.error(mdef.pos, s"All parents of Predef must be defined in ${PredefModule.associatedFile}")
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
       // SI-5954. On second compile of a companion class contained in a package object we end up
