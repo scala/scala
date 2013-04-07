@@ -438,7 +438,10 @@ TODO:
 
     <!-- Skip locker with -Dlocker.skip=YESSIR. Uses STARR instead. -->
     <if><isset property="locker.skip"/><then>
-      <echo message="Skipping locker! Using STARR instead."/>
+      <!-- Loading these poperties here because we need them only here but feel free to move it somewhere
+           else if needed -->
+      <property resource="compiler.properties" prefix="starr.resolved" classpathref="starr.compiler.path"/>
+      <echo message="Skipping locker! Using STARR ${starr.resolved.version.number} instead."/>
       <path id="locker.compiler.path"><path refid="starr.compiler.path"/></path>
       <property name="locker.locked" value="locker skipped"/></then>
     <else>
