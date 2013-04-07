@@ -1889,7 +1889,7 @@ trait Typers extends Adaptations with Tags {
     }
 
     private def ensurePredefParentsAreInSameSourceFile(template: Template) = {
-      val parentSyms = template.parents.map(_.symbol).filterNot(_ == AnyRefClass)
+      val parentSyms = template.parents map (_.symbol) filterNot (_ == AnyRefClass)
       if (parentSyms exists (_.associatedFile != PredefModule.associatedFile))
         unit.error(template.pos, s"All parents of Predef must be defined in ${PredefModule.associatedFile}.")
     }
