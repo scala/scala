@@ -81,7 +81,10 @@ trait Contexts { self: Analyzer =>
 
     if (settings.noimports) Nil
     else if (unit.isJava) RootImports.javaList
-    else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) RootImports.javaAndScalaList
+    else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) {
+      debuglog("Omitted import of Predef._ for " + unit)
+      RootImports.javaAndScalaList
+    }
     else RootImports.completeList
   }
 

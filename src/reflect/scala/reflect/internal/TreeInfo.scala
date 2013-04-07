@@ -667,13 +667,12 @@ abstract class TreeInfo {
    *  a class of module with given name (ignoring imports)
    */
   def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
-      case Import(_, _) :: xs               => firstDefinesClassOrObject(xs, name)
-      case Annotated(_, tree1) :: Nil       => firstDefinesClassOrObject(List(tree1), name)
-      case ModuleDef(_, `name`, _) :: Nil   => true
-      case ClassDef(_, `name`, _, _) :: Nil => true
-      case _                                => false
-    }
-
+    case Import(_, _) :: xs             => firstDefinesClassOrObject(xs, name)
+    case Annotated(_, tree1) :: _       => firstDefinesClassOrObject(List(tree1), name)
+    case ModuleDef(_, `name`, _) :: _   => true
+    case ClassDef(_, `name`, _, _) :: _ => true
+    case _                              => false
+  }
 
   /** Is this file the body of a compilation unit which should not
    *  have Predef imported?
