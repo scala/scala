@@ -1856,6 +1856,9 @@ trait Typers extends Adaptations with Tags {
       }
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
+      if (mdef.symbol == PredefModule)
+        ensurePredefParentsAreInSameSourceFile(impl2)
+
       // SI-5954. On second compile of a companion class contained in a package object we end up
       // with some confusion of names which leads to having two symbols with the same name in the
       // same owner. Until that can be straightened out we will warn on companion objects in package
@@ -1883,6 +1886,12 @@ trait Typers extends Adaptations with Tags {
         warnPackageObjectMembers(mdef)
 
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
+    }
+
+    private def ensurePredefParentsAreInSameSourceFile(template: Template) = {
+      val parentSyms = template.parents map (_.symbol) filterNot (_ == AnyRefClass)
+      if (parentSyms exists (_.associatedFile != PredefModule.associatedFile))
+        unit.error(template.pos, s"All parents of Predef must be defined in ${PredefModule.associatedFile}.")
     }
     /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
      *  all the time, it is exposed here the module/class typing methods go through it.
