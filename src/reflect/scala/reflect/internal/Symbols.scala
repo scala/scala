@@ -887,9 +887,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
 
-    // Does not always work if the rawInfo is a SourcefileLoader, see comment
-    // in "def coreClassesFirst" in Global.
-    def exists = !isTopLevel || { rawInfo.load(this); rawInfo != NoType }
+    def exists: Boolean = !isTopLevel || {
+      val isSourceLoader = rawInfo match {
+        case sl: SymLoader => sl.fromSource
+        case _             => false
+      }
+      def warnIfSourceLoader() {
+        if (isSourceLoader)
+          // Predef is completed early due to its autoimport; we used to get here when type checking its
+          // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
+          // Since the fix for SI-7335 Predef parents must be defined in Predef.scala, and we should not
+          // get here anymore.
+          devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.");
+      }
+
+      rawInfo load this
+      rawInfo != NoType || { warnIfSourceLoader(); false }
+    }
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
