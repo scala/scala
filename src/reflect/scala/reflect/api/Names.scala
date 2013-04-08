@@ -43,33 +43,15 @@ trait Names {
    */
   type Name >: Null <: NameApi
 
-  /** A tag that preserves the identity of the `Name` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val NameTag: ClassTag[Name]
-
   /** The abstract type of names representing terms.
    *  @group Names
    */
   type TypeName >: Null <: Name
 
-  /** A tag that preserves the identity of the `TypeName` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeNameTag: ClassTag[TypeName]
-
   /** The abstract type of names representing types.
    *  @group Names
    */
   type TermName >: Null <: Name
-
-  /** A tag that preserves the identity of the `TermName` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TermNameTag: ClassTag[TermName]
 
   /** The API of Name instances.
    *  @group API

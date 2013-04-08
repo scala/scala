@@ -19,13 +19,6 @@ trait Positions {
    *  @group Positions
    */
   type Position >: Null <: scala.reflect.api.Position { type Pos = Position }
-
-  /** A tag that preserves the identity of the `Position` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val PositionTag: ClassTag[Position]
-
   /** A special "missing" position.
    *  @group Positions
    */

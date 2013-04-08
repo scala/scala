@@ -61,12 +61,6 @@ trait FlagSets { self: Universe =>
    */
   type FlagSet
 
-  /** A tag that preserves the identity of the `FlagSet` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val FlagSetTag: ClassTag[FlagSet]
-
   /** The API of `FlagSet` instances.
    *  The main source of information about flag sets is the [[scala.reflect.api.FlagSets]] page.
    *  @group Flags
