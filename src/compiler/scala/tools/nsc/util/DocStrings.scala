@@ -74,7 +74,7 @@ object DocStrings {
     else idx :: findAll(str, idx)(p)
   }
 
-  /** Produces a string index, which is a list of ``sections'', i.e
+  /** Produces a string index, which is a list of `sections`, i.e
    *  pairs of start/end positions of all tagged sections in the string.
    *  Every section starts with an at sign and extends to the next at sign,
    *  or to the end of the comment string, but excluding the final two

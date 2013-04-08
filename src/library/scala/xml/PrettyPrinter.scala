@@ -141,13 +141,13 @@ class PrettyPrinter(width: Int, step: Int) {
       case Text(s) if s.trim() == "" =>
         ;
       case _:Atom[_] | _:Comment | _:EntityRef | _:ProcInstr =>
-        makeBox( ind, node.toString.trim() )
+        makeBox( ind, node.toString().trim() )
       case g @ Group(xs) =>
         traverse(xs.iterator, pscope, ind)
       case _ =>
         val test = {
           val sb = new StringBuilder()
-          Utility.serialize(node, pscope, sb, false)
+          Utility.serialize(node, pscope, sb, stripComments = false)
           if (doPreserve(node)) sb.toString
           else TextBuffer.fromString(sb.toString).toText(0).data
         }

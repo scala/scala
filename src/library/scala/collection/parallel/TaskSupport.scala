@@ -17,28 +17,25 @@ import scala.concurrent.ExecutionContext
 
 
 
-/** A trait implementing the scheduling of
- *  a parallel collection operation.
+/** A trait implementing the scheduling of a parallel collection operation.
  *
  *  Parallel collections are modular in the way operations are scheduled. Each
  *  parallel collection is parametrized with a task support object which is
  *  responsible for scheduling and load-balancing tasks to processors.
- *  
+ *
  *  A task support object can be changed in a parallel collection after it has
  *  been created, but only during a quiescent period, i.e. while there are no
  *  concurrent invocations to parallel collection methods.
  *
  *  There are currently a few task support implementations available for
  *  parallel collections. The [[scala.collection.parallel.ForkJoinTaskSupport]]
- *  uses a fork-join pool
- *  internally and is used by default on JVM 1.6 or greater. The less efficient
- *  [[scala.collection.parallel.ThreadPoolTaskSupport]] is a fallback for JVM
- *  1.5 and JVMs that do not support the fork join pools. The
- *  [[scala.collection.parallel.ExecutionContextTaskSupport]] uses the
+ *  uses a fork-join pool internally.
+ *
+ *  The [[scala.collection.parallel.ExecutionContextTaskSupport]] uses the
  *  default execution context implementation found in scala.concurrent, and it
- *  reuses the thread pool used in scala.concurrent (this is either a fork join
- *  pool or a thread pool executor, depending on the JVM version). The
- *  execution context task support is set to each parallel collection by
+ *  reuses the thread pool used in scala.concurrent.
+ *
+ *  The execution context task support is set to each parallel collection by
  *  default, so parallel collections reuse the same fork-join pool as the
  *  future API.
  *
@@ -68,17 +65,18 @@ extends TaskSupport with AdaptiveWorkStealingForkJoinTasks
  *
  *  @see [[scala.collection.parallel.TaskSupport]] for more information.
  */
+@deprecated("Use `ForkJoinTaskSupport` instead.", "2.11.0")
 class ThreadPoolTaskSupport(val environment: ThreadPoolExecutor = ThreadPoolTasks.defaultThreadPool)
 extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
 
 
 /** A task support that uses an execution context to schedule tasks.
- *  
+ *
  *  It can be used with the default execution context implementation in the
  *  `scala.concurrent` package. It internally forwards the call to either a
  *  forkjoin based task support or a thread pool executor one, depending on
  *  what the execution context uses.
- *  
+ *
  *  By default, parallel collections are parametrized with this task support
  *  object, so parallel collections share the same execution context backend
  *  as the rest of the `scala.concurrent` package.

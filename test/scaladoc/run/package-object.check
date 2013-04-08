@@ -1,3 +1,4 @@
 List(test.B, test.A, scala.AnyRef, scala.Any)
 List(B, A, AnyRef, Any)
+Some((newSource,10))
 Done.

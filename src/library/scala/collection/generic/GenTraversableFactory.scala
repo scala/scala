@@ -73,7 +73,7 @@ extends GenericCompanion[CC] {
       b.sizeHint(xss.map(_.size).sum)
 
     for (xs <- xss.seq) b ++= xs
-    b.result
+    b.result()
   }
 
   /** Produces a $coll containing the results of some element computation a number of times.
@@ -89,7 +89,7 @@ extends GenericCompanion[CC] {
       b += elem
       i += 1
     }
-    b.result
+    b.result()
   }
 
   /** Produces a two-dimensional $coll containing the results of some element computation a number of times.
@@ -147,7 +147,7 @@ extends GenericCompanion[CC] {
       b += f(i)
       i += 1
     }
-    b.result
+    b.result()
   }
 
   /** Produces a two-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
@@ -216,13 +216,13 @@ extends GenericCompanion[CC] {
 
     if (step == zero) throw new IllegalArgumentException("zero step")
     val b = newBuilder[T]
-    b sizeHint immutable.NumericRange.count(start, end, step, false)
+    b sizeHint immutable.NumericRange.count(start, end, step, isInclusive = false)
     var i = start
     while (if (step < zero) end < i else i < end) {
       b += i
       i += step
     }
-    b.result
+    b.result()
   }
 
   /** Produces a $coll containing repeated applications of a function to a start value.
@@ -246,6 +246,6 @@ extends GenericCompanion[CC] {
         b += acc
       }
     }
-    b.result
+    b.result()
   }
 }

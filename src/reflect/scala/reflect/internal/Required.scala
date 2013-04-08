@@ -4,12 +4,9 @@ package internal
 import settings.MutableSettings
 
 trait Required { self: SymbolTable =>
-
   def picklerPhase: Phase
-
   def settings: MutableSettings
 
-  def forInteractive: Boolean
-
-  def forScaladoc: Boolean
+  @deprecated("Interactive is implemented with a custom Global; this flag is ignored", "2.11.0") def forInteractive = false
+  @deprecated("Scaladoc is implemented with a custom Global; this flag is ignored", "2.11.0")    def forScaladoc = false
 }

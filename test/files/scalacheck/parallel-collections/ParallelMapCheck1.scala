@@ -20,7 +20,7 @@ abstract class ParallelMapCheck[K, V](collname: String) extends ParallelIterable
   property("gets iterated keys") = forAll(collectionPairs) {
     case (t, coll) =>
     val containsT = for ((k, v) <- t) yield (coll.get(k) == Some(v))
-    val containsSelf = for ((k, v) <- coll) yield (coll.get(k) == Some(v))
+    val containsSelf = coll.map { case (k, v) => coll.get(k) == Some(v) }
     ("Par contains elements of seq map" |: containsT.forall(_ == true)) &&
     ("Par contains elements of itself" |: containsSelf.forall(_ == true))
   }  

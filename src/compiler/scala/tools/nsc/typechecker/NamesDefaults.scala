@@ -111,7 +111,7 @@ trait NamesDefaults { self: Analyzer =>
     val context = typer.context
     import context.unit
 
-    /**
+    /*
      * Transform a function into a block, and passing context.namedApplyBlockInfo to
      * the new block as side-effect.
      *
@@ -256,7 +256,7 @@ trait NamesDefaults { self: Analyzer =>
       }
     }
 
-    /**
+    /*
      * For each argument (arg: T), create a local value
      *  x$n: T = arg
      *
@@ -265,26 +265,35 @@ trait NamesDefaults { self: Analyzer =>
      *
      * For by-name parameters, create a value
      *  x$n: () => T = () => arg
+     *
+     * For Ident(<unapply-selector>) arguments, no ValDef is created (SI-3353).
      */
-    def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[ValDef] = {
+    def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[Option[ValDef]] = {
       val context = blockTyper.context
-      val symPs = map2(args, paramTypes)((arg, tpe) => {
-        val byName   = isByNameParamType(tpe)
-        val repeated = isScalaRepeatedParamType(tpe)
-        val argTpe = (
-          if (repeated) arg match {
-            case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
-            case _                                       => seqType(arg.tpe)
-          }
-          else arg.tpe
-        ).widen // have to widen or types inferred from literal defaults will be singletons
-        val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo (
-          if (byName) functionType(Nil, argTpe) else argTpe
-        )
-        (context.scope.enter(s), byName, repeated)
+      val symPs = map2(args, paramTypes)((arg, paramTpe) => arg match {
+        case Ident(nme.SELECTOR_DUMMY) =>
+          None // don't create a local ValDef if the argument is <unapply-selector>
+        case _ =>
+          val byName   = isByNameParamType(paramTpe)
+          val repeated = isScalaRepeatedParamType(paramTpe)
+          val argTpe = (
+            if (repeated) arg match {
+              case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
+              case _                                       => seqType(arg.tpe)
+            }
+            else
+              // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
+              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe)
+          // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
+          ).deconst
+          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo (
+            if (byName) functionType(Nil, argTpe) else argTpe
+          )
+          Some((context.scope.enter(s), byName, repeated))
       })
       map2(symPs, args) {
-        case ((sym, byName, repeated), arg) =>
+        case (None, _) => None
+        case (Some((sym, byName, repeated)), arg) =>
           val body =
             if (byName) {
               val res = blockTyper.typed(Function(List(), arg))
@@ -300,7 +309,7 @@ trait NamesDefaults { self: Analyzer =>
                   blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
               } else arg
             }
-          atPos(body.pos)(ValDef(sym, body).setType(NoType))
+          Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))
       }
     }
 
@@ -320,36 +329,38 @@ trait NamesDefaults { self: Analyzer =>
 
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
-          if (typedApp.isErrorTyped) tree
-          else typedApp match {
+          typedApp match {
             // Extract the typed arguments, restore the call-site evaluation order (using
             // ValDef's in the block), change the arguments to these local values.
-            case Apply(expr, typedArgs) =>
+            case Apply(expr, typedArgs) if !(typedApp :: typedArgs).exists(_.isErrorTyped) => // bail out with erroneous args, see SI-7238
               // typedArgs: definition-site order
-              val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, false, false)
+              val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, removeByName = false, removeRepeated = false)
               // valDefs: call-site order
               val valDefs = argValDefs(reorderArgsInv(typedArgs, argPos),
                                        reorderArgsInv(formals, argPos),
                                        blockTyper)
               // refArgs: definition-site order again
-              val refArgs = map2(reorderArgs(valDefs, argPos), formals)((vDef, tpe) => {
-                val ref = gen.mkAttributedRef(vDef.symbol)
-                atPos(vDef.pos.focus) {
-                  // for by-name parameters, the local value is a nullary function returning the argument
-                  tpe.typeSymbol match {
-                    case ByNameParamClass   => Apply(ref, Nil)
-                    case RepeatedParamClass => Typed(ref, Ident(tpnme.WILDCARD_STAR))
-                    case _                  => ref
+              val refArgs = map3(reorderArgs(valDefs, argPos), formals, typedArgs)((vDefOpt, tpe, origArg) => vDefOpt match {
+                case None => origArg
+                case Some(vDef) =>
+                  val ref = gen.mkAttributedRef(vDef.symbol)
+                  atPos(vDef.pos.focus) {
+                    // for by-name parameters, the local value is a nullary function returning the argument
+                    tpe.typeSymbol match {
+                      case ByNameParamClass   => Apply(ref, Nil)
+                      case RepeatedParamClass => Typed(ref, Ident(tpnme.WILDCARD_STAR))
+                      case _                  => ref
+                    }
                   }
-                }
               })
               // cannot call blockTyper.typedBlock here, because the method expr might be partially applied only
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
               res.setPos(res.pos.makeTransparent)
-              val block = Block(stats ::: valDefs, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
+              val block = Block(stats ::: valDefs.flatten, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
               context.namedApplyBlockInfo =
                 Some((block, NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper)))
               block
+            case _ => tree
           }
         }
 
@@ -488,7 +499,7 @@ trait NamesDefaults { self: Analyzer =>
         // disable conforms as a view...
         val errsBefore = reporter.ERROR.count
         try typer.silent { tpr =>
-          val res = tpr.typed(arg, subst(paramtpe))
+          val res = tpr.typed(arg.duplicate, subst(paramtpe))
           // better warning for SI-5044: if `silent` was not actually silent give a hint to the user
           // [H]: the reason why `silent` is not silent is because the cyclic reference exception is
           // thrown in a context completely different from `context` here. The exception happens while

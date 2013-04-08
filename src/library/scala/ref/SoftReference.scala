@@ -13,7 +13,8 @@ package scala.ref
  *  @author Sean McDirmid
  */
 class SoftReference[+T <: AnyRef](value : T, queue : ReferenceQueue[T]) extends ReferenceWrapper[T] {
-  def this(value : T) = this(value, null);
+  def this(value : T) = this(value, null)
+
   val underlying: java.lang.ref.SoftReference[_ <: T] =
     new SoftReferenceWithWrapper[T](value, queue, this)
 }

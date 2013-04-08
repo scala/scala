@@ -1,0 +1,6 @@
+t7110.scala:2: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
+  try { ??? } // warn
+  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

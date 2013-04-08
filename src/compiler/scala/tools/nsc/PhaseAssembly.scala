@@ -165,7 +165,7 @@ trait PhaseAssembly {
           } else {
 
             val promote = hl.to.before.filter(e => (!e.hard))
-            hl.to.before.clear
+            hl.to.before.clear()
             sanity foreach (edge => hl.to.before += edge)
             for (edge <- promote) {
               rerun = true

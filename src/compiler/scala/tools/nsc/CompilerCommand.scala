@@ -76,9 +76,9 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   }
 
   /** Messages explaining usage and options */
-  def usageMsg    = createUsageMsg("where possible standard", false, _.isStandard)
-  def xusageMsg   = createUsageMsg("Possible advanced", true, _.isAdvanced)
-  def yusageMsg   = createUsageMsg("Possible private", true, _.isPrivate)
+  def usageMsg    = createUsageMsg("where possible standard", shouldExplain = false, _.isStandard)
+  def xusageMsg   = createUsageMsg("Possible advanced", shouldExplain = true, _.isAdvanced)
+  def yusageMsg   = createUsageMsg("Possible private", shouldExplain = true, _.isPrivate)
 
   // If any of these settings is set, the compiler shouldn't start;
   // an informative message of some sort should be printed instead.
@@ -122,6 +122,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
       case x                      => List(x)
     }
 
-    settings.processArguments(expandedArguments, true)
+    settings.processArguments(expandedArguments, processAll = true)
   }
 }

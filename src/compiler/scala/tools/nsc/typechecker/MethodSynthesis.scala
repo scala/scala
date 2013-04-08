@@ -219,8 +219,8 @@ trait MethodSynthesis {
         context.unit.synthetics get meth match {
           case Some(mdef) =>
             context.unit.synthetics -= meth
-            meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, false)
-            cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, true)
+            meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, keepClean = false)
+            cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, keepClean = true)
             List(cd, mdef)
           case _ =>
             // Shouldn't happen, but let's give ourselves a reasonable error when it does
@@ -311,6 +311,7 @@ trait MethodSynthesis {
        */
       def category: Symbol
 
+      /* Explicit isSetter required for bean setters (beanSetterSym.isSetter is false) */
       final def completer(sym: Symbol) = namerOf(sym).accessorTypeCompleter(tree, isSetter)
       final def fieldSelection         = Select(This(enclClass), basisSym)
       final def derivedMods: Modifiers = mods & flagsMask | flagsExtra mapAnnotations (_ => Nil)
@@ -371,7 +372,7 @@ trait MethodSynthesis {
         result
       }
       def derivedTree: DefDef          =
-        factoryMeth(mods & flagsMask | flagsExtra, name, tree, symbolic = false)
+        factoryMeth(mods & flagsMask | flagsExtra, name, tree)
       def flagsExtra: Long             = METHOD | IMPLICIT | SYNTHETIC
       def flagsMask: Long              = AccessFlags
       def name: TermName               = tree.name.toTermName
@@ -425,7 +426,7 @@ trait MethodSynthesis {
             Nil,
             Nil,
             tpt,
-            if (mods.isDeferred) EmptyTree else gen.mkCheckInit(fieldSelection)
+            if (mods.isDeferred) EmptyTree else fieldSelection
           ) setSymbol derivedSym
         }
       }
@@ -470,7 +471,7 @@ trait MethodSynthesis {
       }
     }
     case class Setter(tree: ValDef) extends DerivedSetter {
-      def name       = nme.getterToSetter(tree.name)
+      def name       = tree.setterName
       def category   = SetterTargetClass
       def flagsMask  = SetterFlags
       def flagsExtra = ACCESSOR
@@ -478,7 +479,7 @@ trait MethodSynthesis {
       override def derivedSym = basisSym.setter(enclClass)
     }
     case class Field(tree: ValDef) extends DerivedFromValDef {
-      def name       = nme.getterToLocal(tree.name)
+      def name       = tree.localName
       def category   = FieldTargetClass
       def flagsMask  = FieldFlags
       def flagsExtra = PrivateLocal

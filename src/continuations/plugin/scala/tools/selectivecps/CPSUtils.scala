@@ -61,7 +61,7 @@ trait CPSUtils {
   // annotation checker
 
   protected def annTypes(ann: AnnotationInfo): (Type, Type) = {
-    val tp0 :: tp1 :: Nil = ann.atp.normalize.typeArgs
+    val tp0 :: tp1 :: Nil = ann.atp.dealiasWiden.typeArgs
     ((tp0, tp1))
   }
   protected def hasMinusMarker(tpe: Type)   = tpe hasAnnotation MarkerCPSAdaptMinus

@@ -30,7 +30,7 @@ class RevertibleHistory[Evt <: Undoable, Pub] extends History[Evt, Pub] with Und
    */
   def undo(): Unit = {
     val old = log.toList.reverse
-    clear
-    old.foreach { case (sub, event) => event.undo }
+    clear()
+    old.foreach { case (sub, event) => event.undo() }
   }
 }

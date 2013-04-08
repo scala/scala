@@ -134,11 +134,11 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
       throw new NoSuchElementException("no element to remove from heap")
 
   def dequeueAll[A1 >: A, That](implicit bf: CanBuildFrom[_, A1, That]): That = {
-    val b = bf.apply
+    val b = bf.apply()
     while (nonEmpty) {
       b += dequeue()
     }
-    b.result
+    b.result()
   }
 
   /** Returns the element with the highest priority in the queue,

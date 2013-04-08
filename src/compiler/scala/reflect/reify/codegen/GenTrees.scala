@@ -15,7 +15,7 @@ trait GenTrees {
 
   /**
    *  Reify a tree.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reifyTree(tree: Tree): Tree = {
     assert(tree != null, "tree is null")
@@ -29,12 +29,12 @@ trait GenTrees {
 
     // the idea behind the new reincarnation of reifier is a simple maxim:
     //
-    //   never call ``reifyType'' to reify a tree
+    //   never call `reifyType` to reify a tree
     //
     // this works because the stuff we are reifying was once represented with trees only
     // and lexical scope information can be fully captured by reifying symbols
     //
-    // to enable this idyll, we work hard in the ``Reshape'' phase
+    // to enable this idyll, we work hard in the `Reshape` phase
     // which replaces all types with equivalent trees and works around non-idempotencies of the typechecker
     //
     // why bother? because this brings method to the madness
@@ -65,7 +65,7 @@ trait GenTrees {
     }
 
     // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
-    // however, reification of AnnotatedTypes is special. see ``reifyType'' to find out why.
+    // however, reification of AnnotatedTypes is special. see `reifyType` to find out why.
     if (reifyTreeSymbols && tree.hasSymbolField) {
       if (reifyDebug) println("reifying symbol %s for tree %s".format(tree.symbol, tree))
       rtree = mirrorBuildCall(nme.setSymbol, rtree, reify(tree.symbol))
@@ -86,13 +86,13 @@ trait GenTrees {
       case TreeSplice(splicee) =>
         if (reifyDebug) println("splicing " + tree)
 
-        // see ``Metalevels'' for more info about metalevel breaches
+        // see `Metalevels` for more info about metalevel breaches
         // and about how we deal with splices that contain them
         val isMetalevelBreach = splicee exists (sub => sub.hasSymbolField && sub.symbol != NoSymbol && sub.symbol.metalevel > 0)
         val isRuntimeEval = splicee exists (sub => sub.hasSymbolField && sub.symbol == ExprSplice)
         if (isMetalevelBreach || isRuntimeEval) {
           // we used to convert dynamic splices into runtime evals transparently, but we no longer do that
-          // why? see comments in ``Metalevels''
+          // why? see comments in `Metalevels`
           // if (reifyDebug) println("splicing has failed: cannot splice when facing a metalevel breach")
           // EmptyTree
           CannotReifyRuntimeSplice(tree)
@@ -102,7 +102,7 @@ trait GenTrees {
             // we intentionally don't care about the prefix (the first underscore in the `RefiedTree` pattern match)
             case ReifiedTree(_, _, inlinedSymtab, rtree, _, _, _) =>
               if (reifyDebug) println("inlining the splicee")
-              // all free vars local to the enclosing reifee should've already been inlined by ``Metalevels''
+              // all free vars local to the enclosing reifee should've already been inlined by `Metalevels`
               for (sym <- inlinedSymtab.syms if sym.isLocalToReifee)
                 abort("local free var, should have already been inlined by Metalevels: " + inlinedSymtab.symDef(sym))
               state.symtab ++= inlinedSymtab
@@ -155,21 +155,23 @@ trait GenTrees {
         else mirrorCall(nme.Ident, reify(name))
 
       case Select(qual, name) =>
-        if (sym == NoSymbol || sym.name == name)
-          reifyProduct(tree)
-        else
-          reifyProduct(Select(qual, sym.name))
+        if (qual.symbol != null && qual.symbol.isPackage) {
+          mirrorBuildCall(nme.Ident, reify(sym))
+        } else {
+          val effectiveName = if (sym != null && sym != NoSymbol) sym.name else name
+          reifyProduct(Select(qual, effectiveName))
+        }
 
       case _ =>
         throw new Error("internal error: %s (%s, %s) is not supported".format(tree, tree.productPrefix, tree.getClass))
     }
   }
 
-  private def reifyBoundType(tree: Tree): Tree = {
+  private def reifyBoundType(tree: RefTree): Tree = {
     val sym = tree.symbol
     val tpe = tree.tpe
 
-    def reifyBoundType(tree: Tree): Tree = {
+    def reifyBoundType(tree: RefTree): Tree = {
       assert(tpe != null, "unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
 
       // if a symbol or a type of the scrutinee are local to reifee
@@ -177,7 +179,7 @@ trait GenTrees {
       // then we can reify the scrutinee as a symless AST and that will definitely be hygienic
       // why? because then typechecking of a scrutinee doesn't depend on the environment external to the quasiquote
       // otherwise we need to reify the corresponding type
-      if (sym.isLocalToReifee || tpe.isLocalToReifee)
+      if (sym.isLocalToReifee || tpe.isLocalToReifee || treeInfo.isWildcardStarType(tree))
         reifyProduct(tree)
       else {
         if (reifyDebug) println("reifying bound type %s (underlying type is %s)".format(sym, tpe))
@@ -198,13 +200,19 @@ trait GenTrees {
               mirrorBuildCall(nme.TypeTree, spliced)
           }
         }
-        else if (sym.isLocatable) {
-          if (reifyDebug) println("tpe is locatable: reify as Ident(%s)".format(sym))
-          mirrorBuildCall(nme.Ident, reify(sym))
-        }
-        else {
-          if (reifyDebug) println("tpe is not locatable: reify as TypeTree(%s)".format(tpe))
-          mirrorBuildCall(nme.TypeTree, reify(tpe))
+        else tree match {
+          case Select(qual, name) if !qual.symbol.isPackage =>
+            if (reifyDebug) println(s"reifying Select($qual, $name)")
+            mirrorCall(nme.Select, reify(qual), reify(name))
+          case SelectFromTypeTree(qual, name) =>
+            if (reifyDebug) println(s"reifying SelectFromTypeTree($qual, $name)")
+            mirrorCall(nme.SelectFromTypeTree, reify(qual), reify(name))
+          case _ if sym.isLocatable =>
+            if (reifyDebug) println(s"tpe is locatable: reify as Ident($sym)")
+            mirrorBuildCall(nme.Ident, reify(sym))
+          case _ =>
+            if (reifyDebug) println(s"tpe is not locatable: reify as TypeTree($tpe)")
+            mirrorBuildCall(nme.TypeTree, reify(tpe))
         }
       }
     }

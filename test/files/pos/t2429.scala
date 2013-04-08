@@ -1,10 +1,10 @@
 object Msg {
   trait T
-  
+
   trait TSeq
-  
+
   object TSeq {
-    implicit def fromSeq(s: Seq[T]): TSeq = error("stub")
+    implicit def fromSeq(s: Seq[T]): TSeq = sys.error("stub")
   }
 
   def render {
@@ -12,7 +12,7 @@ object Msg {
       case (a, b) => {
         a match {
           case _ => b match {
-            case _ => error("stub")
+            case _ => sys.error("stub")
           }
         }
       }
@@ -20,6 +20,6 @@ object Msg {
   }
 }
 object Oops {
- implicit def someImplicit(s: Seq[_]): String = error("stub")
+ implicit def someImplicit(s: Seq[_]): String = sys.error("stub")
  def item: String = Nil map { case e: Any => e }
 }

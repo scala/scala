@@ -26,12 +26,12 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
     val settings     = new FscSettings(Console.println)
     val command      = new OfflineCompilerCommand(args.toList, settings)
     val shutdown     = settings.shutdown.value
-    val extraVmArgs  = if (settings.preferIPv4.value) List("-D%s=true".format(preferIPv4Stack.key)) else Nil
+    val extraVmArgs  = if (settings.preferIPv4) List("-D%s=true".format(preferIPv4Stack.key)) else Nil
 
     val vmArgs  = settings.jvmargs.unparse ++ settings.defines.unparse ++ extraVmArgs
     val fscArgs = args.toList ++ command.extraFscArgs
 
-    if (settings.version.value) {
+    if (settings.version) {
       Console println versionMsg
       return true
     }

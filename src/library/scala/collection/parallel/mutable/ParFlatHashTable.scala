@@ -48,7 +48,7 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       idx += 1
       if (hasNext) scan()
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
     def dup = newIterator(idx, until, totalsize)
     def split = if (remaining > 1) {
       val divpt = (until + idx) / 2

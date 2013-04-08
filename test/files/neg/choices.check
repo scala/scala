@@ -1,2 +1,2 @@
-partest error: bad flags: -Ylinearizer
+error: bad options: -Yresolve-term-conflict
 one error found

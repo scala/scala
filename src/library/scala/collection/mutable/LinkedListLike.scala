@@ -185,6 +185,6 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
   override def clone(): This = {
     val bf = newBuilder
     bf ++= this
-    bf.result
+    bf.result()
   }
 }

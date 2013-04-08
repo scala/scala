@@ -1,8 +1,8 @@
 // #1435
 object t1435 {
-  implicit def a(s:String):String = error("")
-  implicit def a(i:Int):String = error("")
-  implicit def b(i:Int):String = error("")
+  implicit def a(s:String):String = sys.error("")
+  implicit def a(i:Int):String = sys.error("")
+  implicit def b(i:Int):String = sys.error("")
 }
 
 class C1435 {
@@ -45,7 +45,7 @@ object Test1625 {
   implicit def byName[A](x: =>A) = new Wrapped(x)
 
   implicit def byVal[A](x: A) = x
-  
+
   def main(args: Array[String]) = {
 
 //    val res:Wrapped = 7 // works
@@ -57,7 +57,7 @@ object Test1625 {
 }
 
 object Test2188 {
-  implicit def toJavaList[A: ClassManifest](t:collection.Seq[A]):java.util.List[A] = java.util.Arrays.asList(t.toArray:_*)   
+  implicit def toJavaList[A: ClassManifest](t:collection.Seq[A]):java.util.List[A] = java.util.Arrays.asList(t.toArray:_*)
 
   val x: java.util.List[String] = List("foo")
 }
@@ -67,21 +67,21 @@ object TestNumericWidening {
   val x: java.lang.Long = y
 }
 
-// #2709 
-package foo2709 { 
-  class A 
-  class B 
- 
-  package object bar { 
-    implicit def a2b(a: A): B = new B 
-  } 
- 
-  package bar { 
-    object test { 
-      new A: B 
-    } 
-  } 
-} 
+// #2709
+package foo2709 {
+  class A
+  class B
+
+  package object bar {
+    implicit def a2b(a: A): B = new B
+  }
+
+  package bar {
+    object test {
+      new A: B
+    }
+  }
+}
 
 // Problem with specs
 object specsProblem {

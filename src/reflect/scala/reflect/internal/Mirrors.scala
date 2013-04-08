@@ -46,7 +46,7 @@ trait Mirrors extends api.Mirrors {
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
-        if (settings.debug.value) { log(sym.info); log(sym.info.members) }//debug
+        if (settings.debug) { log(sym.info); log(sym.info.members) }//debug
         thisMirror.missingHook(owner, name) orElse {
           MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path+" in "+thisMirror)
         }
@@ -197,8 +197,8 @@ trait Mirrors extends api.Mirrors {
     /************************ helpers ************************/
 
     def erasureName[T: ClassTag] : String = {
-      /** We'd like the String representation to be a valid
-       *  scala type, so we have to decode the jvm's secret language.
+      /* We'd like the String representation to be a valid
+       * scala type, so we have to decode the jvm's secret language.
        */
       def erasureString(clazz: Class[_]): String = {
         if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"

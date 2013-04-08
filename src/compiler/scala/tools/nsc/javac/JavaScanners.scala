@@ -10,7 +10,7 @@ import scala.tools.nsc.util.JavaCharArrayReader
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import JavaTokens._
-import scala.annotation.switch
+import scala.annotation.{ switch, tailrec }
 import scala.language.implicitConversions
 
 // Todo merge these better with Scanners
@@ -63,8 +63,8 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     def next: AbstractJavaTokenData
     def intVal(negated: Boolean): Long
     def floatVal(negated: Boolean): Double
-    def intVal: Long = intVal(false)
-    def floatVal: Double = floatVal(false)
+    def intVal: Long = intVal(negated = false)
+    def floatVal: Double = floatVal(negated = false)
     def currentPos: Position
   }
 
@@ -235,16 +235,6 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       cbuf.setLength(0)
     }
 
-    /** buffer for the documentation comment
-     */
-    var docBuffer: StringBuilder = null
-
-    /** add the given character to the documentation buffer
-     */
-    protected def putDocChar(c: Char) {
-      if (docBuffer ne null) docBuffer.append(c)
-    }
-
     private class JavaTokenData0 extends JavaTokenData
 
     /** we need one token lookahead
@@ -266,7 +256,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     def lookaheadToken: Int = {
       prev copyFrom this
-      nextToken
+      nextToken()
       val t = token
       next copyFrom this
       this copyFrom prev
@@ -281,7 +271,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       while (true) {
         in.ch match {
           case ' ' | '\t' | CR | LF | FF =>
-            in.next
+            in.next()
           case _ =>
             pos = in.cpos
             (in.ch: @switch) match {
@@ -298,47 +288,47 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                    'u' | 'v' | 'w' | 'x' | 'y' |
                    'z' =>
                 putChar(in.ch)
-                in.next
-                getIdentRest
+                in.next()
+                getIdentRest()
                 return
 
               case '0' =>
                 putChar(in.ch)
-                in.next
+                in.next()
                 if (in.ch == 'x' || in.ch == 'X') {
-                  in.next
+                  in.next()
                   base = 16
                 } else {
                   base = 8
                 }
-                getNumber
+                getNumber()
                 return
 
               case '1' | '2' | '3' | '4' |
                    '5' | '6' | '7' | '8' | '9' =>
                 base = 10
-                getNumber
+                getNumber()
                 return
 
               case '\"' =>
-                in.next
+                in.next()
                 while (in.ch != '\"' && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
                   getlitch()
                 }
                 if (in.ch == '\"') {
                   token = STRINGLIT
                   setName()
-                  in.next
+                  in.next()
                 } else {
                   syntaxError("unclosed string literal")
                 }
                 return
 
               case '\'' =>
-                in.next
+                in.next()
                 getlitch()
                 if (in.ch == '\'') {
-                  in.next
+                  in.next()
                   token = CHARLIT
                   setName()
                 } else {
@@ -348,31 +338,31 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
               case '=' =>
                 token = ASSIGN
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = EQEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '>' =>
                 token = GT
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = GTEQ
-                  in.next
+                  in.next()
                 } else if (in.ch == '>') {
                   token = GTGT
-                  in.next
+                  in.next()
                   if (in.ch == '=') {
                     token = GTGTEQ
-                    in.next
+                    in.next()
                   } else if (in.ch == '>') {
                     token = GTGTGT
-                    in.next
+                    in.next()
                     if (in.ch == '=') {
                       token = GTGTGTEQ
-                      in.next
+                      in.next()
                     }
                   }
                 }
@@ -380,145 +370,145 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
               case '<' =>
                 token = LT
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = LTEQ
-                  in.next
+                  in.next()
                 } else if (in.ch == '<') {
                   token = LTLT
-                  in.next
+                  in.next()
                   if (in.ch == '=') {
                     token = LTLTEQ
-                    in.next
+                    in.next()
                   }
                 }
                 return
 
               case '!' =>
                 token = BANG
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = BANGEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '~' =>
                 token = TILDE
-                in.next
+                in.next()
                 return
 
               case '?' =>
                 token = QMARK
-                in.next
+                in.next()
                 return
 
               case ':' =>
                 token = COLON
-                in.next
+                in.next()
                 return
 
               case '@' =>
                 token = AT
-                in.next
+                in.next()
                 return
 
               case '&' =>
                 token = AMP
-                in.next
+                in.next()
                 if (in.ch == '&') {
                   token = AMPAMP
-                  in.next
+                  in.next()
                 } else if (in.ch == '=') {
                   token = AMPEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '|' =>
                 token = BAR
-                in.next
+                in.next()
                 if (in.ch == '|') {
                   token = BARBAR
-                  in.next
+                  in.next()
                 } else if (in.ch == '=') {
                   token = BAREQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '+' =>
                 token = PLUS
-                in.next
+                in.next()
                 if (in.ch == '+') {
                   token = PLUSPLUS
-                  in.next
+                  in.next()
                 } else if (in.ch == '=') {
                   token = PLUSEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '-' =>
                 token = MINUS
-                in.next
+                in.next()
                 if (in.ch == '-') {
                   token = MINUSMINUS
-                  in.next
+                  in.next()
                 } else if (in.ch == '=') {
                   token = MINUSEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '*' =>
                 token = ASTERISK
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = ASTERISKEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '/' =>
-                in.next
+                in.next()
                 if (!skipComment()) {
                   token = SLASH
-                  in.next
+                  in.next()
                   if (in.ch == '=') {
                     token = SLASHEQ
-                    in.next
+                    in.next()
                   }
                   return
                 }
 
               case '^' =>
                 token = HAT
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = HATEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '%' =>
                 token = PERCENT
-                in.next
+                in.next()
                 if (in.ch == '=') {
                   token = PERCENTEQ
-                  in.next
+                  in.next()
                 }
                 return
 
               case '.' =>
                 token = DOT
-                in.next
+                in.next()
                 if ('0' <= in.ch && in.ch <= '9') {
-                  putChar('.'); getFraction
+                  putChar('.'); getFraction()
                 } else if (in.ch == '.') {
-                  in.next
+                  in.next()
                   if (in.ch == '.') {
-                    in.next
+                    in.next()
                     token = DOTDOTDOT
                   } else syntaxError("`.' character expected")
                 }
@@ -526,60 +516,60 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
               case ';' =>
                 token = SEMI
-                in.next
+                in.next()
                 return
 
               case ',' =>
                 token = COMMA
-                in.next
+                in.next()
                 return
 
               case '(' =>
                 token = LPAREN
-                in.next
+                in.next()
                 return
 
               case '{' =>
                 token = LBRACE
-                in.next
+                in.next()
                 return
 
               case ')' =>
                 token = RPAREN
-                in.next
+                in.next()
                 return
 
               case '}' =>
                 token = RBRACE
-                in.next
+                in.next()
                 return
 
               case '[' =>
                 token = LBRACKET
-                in.next
+                in.next()
                 return
 
               case ']' =>
                 token = RBRACKET
-                in.next
+                in.next()
                 return
 
               case SU =>
                 if (!in.hasNext) token = EOF
                 else {
                   syntaxError("illegal character")
-                  in.next
+                  in.next()
                 }
                 return
 
               case _ =>
                 if (Character.isUnicodeIdentifierStart(in.ch)) {
                   putChar(in.ch)
-                  in.next
-                  getIdentRest
+                  in.next()
+                  getIdentRest()
                 } else {
                   syntaxError("illegal character: "+in.ch.toInt)
-                  in.next
+                  in.next()
                 }
                 return
             }
@@ -587,33 +577,20 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
-    private def skipComment(): Boolean = {
-      if (in.ch == '/') {
-        do {
-          in.next
-        } while ((in.ch != CR) && (in.ch != LF) && (in.ch != SU))
-        true
-      } else if (in.ch == '*') {
-        docBuffer = null
-        in.next
-        val scalaDoc = ("/**", "*/")
-        if (in.ch == '*' && forScaladoc)
-          docBuffer = new StringBuilder(scalaDoc._1)
-        do {
-          do {
-            if (in.ch != '*' && in.ch != SU) {
-              in.next; putDocChar(in.ch)
-            }
-          } while (in.ch != '*' && in.ch != SU)
-          while (in.ch == '*') {
-            in.next; putDocChar(in.ch)
-          }
-        } while (in.ch != '/' && in.ch != SU)
-        if (in.ch == '/') in.next
-        else incompleteInputError("unclosed comment")
-        true
-      } else {
-        false
+    protected def skipComment(): Boolean = {
+      @tailrec def skipLineComment(): Unit = in.ch match {
+        case CR | LF | SU =>
+        case _            => in.next; skipLineComment()
+      }
+      @tailrec def skipJavaComment(): Unit = in.ch match {
+        case SU  => incompleteInputError("unclosed comment")
+        case '*' => in.next; if (in.ch == '/') in.next else skipJavaComment()
+        case _   => in.next; skipJavaComment()
+      }
+      in.ch match {
+        case '/' => in.next ; skipLineComment() ; true
+        case '*' => in.next ; skipJavaComment() ; true
+        case _   => false
       }
     }
 
@@ -637,12 +614,12 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                '0' | '1' | '2' | '3' | '4' |
                '5' | '6' | '7' | '8' | '9' =>
             putChar(in.ch)
-            in.next
+            in.next()
 
           case '_' =>
             putChar(in.ch)
-            in.next
-            getIdentRest
+            in.next()
+            getIdentRest()
             return
           case SU =>
             setName()
@@ -651,7 +628,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
           case _ =>
             if (Character.isUnicodeIdentifierPart(in.ch)) {
               putChar(in.ch)
-              in.next
+              in.next()
             } else {
               setName()
               token = JavaScannerConfiguration.name2token(name)
@@ -667,17 +644,17 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     */
     protected def getlitch() =
       if (in.ch == '\\') {
-        in.next
+        in.next()
         if ('0' <= in.ch && in.ch <= '7') {
           val leadch: Char = in.ch
           var oct: Int = digit2int(in.ch, 8)
-          in.next
+          in.next()
           if ('0' <= in.ch && in.ch <= '7') {
             oct = oct * 8 + digit2int(in.ch, 8)
-            in.next
+            in.next()
             if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
               oct = oct * 8 + digit2int(in.ch, 8)
-              in.next
+              in.next()
             }
           }
           putChar(oct.asInstanceOf[Char])
@@ -695,11 +672,11 @@ trait JavaScanners extends ast.parser.ScannersCommon {
               syntaxError(in.cpos - 1, "invalid escape character")
               putChar(in.ch)
           }
-          in.next
+          in.next()
         }
       } else  {
         putChar(in.ch)
-        in.next
+        in.next()
       }
 
     /** read fractional part and exponent of floating point number
@@ -709,35 +686,35 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       token = DOUBLELIT
       while ('0' <= in.ch && in.ch <= '9') {
         putChar(in.ch)
-        in.next
+        in.next()
       }
       if (in.ch == 'e' || in.ch == 'E') {
         val lookahead = in.copy
-        lookahead.next
+        lookahead.next()
         if (lookahead.ch == '+' || lookahead.ch == '-') {
-          lookahead.next
+          lookahead.next()
         }
         if ('0' <= lookahead.ch && lookahead.ch <= '9') {
           putChar(in.ch)
-          in.next
+          in.next()
           if (in.ch == '+' || in.ch == '-') {
             putChar(in.ch)
-            in.next
+            in.next()
           }
           while ('0' <= in.ch && in.ch <= '9') {
             putChar(in.ch)
-            in.next
+            in.next()
           }
         }
         token = DOUBLELIT
       }
       if (in.ch == 'd' || in.ch == 'D') {
         putChar(in.ch)
-        in.next
+        in.next()
         token = DOUBLELIT
       } else if (in.ch == 'f' || in.ch == 'F') {
         putChar(in.ch)
-        in.next
+        in.next()
         token = FLOATLIT
       }
       setName()
@@ -797,23 +774,23 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     protected def getNumber() {
       while (digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
         putChar(in.ch)
-        in.next
+        in.next()
       }
       token = INTLIT
       if (base <= 10 && in.ch == '.') {
         val lookahead = in.copy
-        lookahead.next
+        lookahead.next()
         lookahead.ch match {
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
                '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
             putChar(in.ch)
-            in.next
-            return getFraction
+            in.next()
+            return getFraction()
           case _ =>
             if (!isIdentifierStart(lookahead.ch)) {
               putChar(in.ch)
-              in.next
-              return getFraction
+              in.next()
+              return getFraction()
             }
         }
       }
@@ -821,11 +798,11 @@ trait JavaScanners extends ast.parser.ScannersCommon {
           (in.ch == 'e' || in.ch == 'E' ||
            in.ch == 'f' || in.ch == 'F' ||
            in.ch == 'd' || in.ch == 'D')) {
-        return getFraction
+        return getFraction()
       }
       setName()
       if (in.ch == 'l' || in.ch == 'L') {
-        in.next
+        in.next()
         token = LONGLIT
       }
     }
@@ -875,14 +852,14 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** INIT: read lookahead character and token.
      */
     def init() {
-      in.next
-      nextToken
+      in.next()
+      nextToken()
     }
   }
 
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
     in = new JavaCharArrayReader(unit.source.content, !settings.nouescape.value, syntaxError)
-    init
+    init()
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
     def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)

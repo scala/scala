@@ -39,7 +39,7 @@ trait Parallelizable[+A, +ParRepr <: Parallel] extends Any {
   def par: ParRepr = {
     val cb = parCombiner
     for (x <- seq) cb += x
-    cb.result
+    cb.result()
   }
 
   /** The default `par` implementation uses the combiner provided by this method

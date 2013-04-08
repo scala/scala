@@ -6,8 +6,8 @@
 
 abstract class IntMap[A] {
     def lookup(key: Int): A = this match {
-        case Empty() => error("KO")
-        case _ => error("ok")
+        case Empty() => sys.error("KO")
+        case _ => sys.error("ok")
     }
 }
 

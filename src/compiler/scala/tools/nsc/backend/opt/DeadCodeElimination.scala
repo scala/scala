@@ -17,6 +17,9 @@ abstract class DeadCodeElimination extends SubComponent {
   import icodes.opcodes._
   import definitions.RuntimePackage
 
+  /** The block and index where an instruction is located */
+  type InstrLoc = (BasicBlock, Int)
+
   val phaseName = "dce"
 
   /** Create a new phase */
@@ -30,7 +33,7 @@ abstract class DeadCodeElimination extends SubComponent {
     val dce = new DeadCode()
 
     override def apply(c: IClass) {
-      if (settings.Xdce.value)
+      if (settings.Xdce)
         dce.analyzeClass(c)
     }
   }
@@ -51,13 +54,13 @@ abstract class DeadCodeElimination extends SubComponent {
       }
     }
 
-    val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis;
+    val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis
 
     /** Use-def chain: give the reaching definitions at the beginning of given instruction. */
-    var defs: immutable.Map[(BasicBlock, Int), immutable.Set[rdef.lattice.Definition]] = immutable.HashMap.empty
+    var defs: immutable.Map[InstrLoc, immutable.Set[rdef.lattice.Definition]] = immutable.HashMap.empty
 
     /** Useful instructions which have not been scanned yet. */
-    val worklist: mutable.Set[(BasicBlock, Int)] = new mutable.LinkedHashSet
+    val worklist: mutable.Set[InstrLoc] = new mutable.LinkedHashSet
 
     /** what instructions have been marked as useful? */
     val useful: mutable.Map[BasicBlock, mutable.BitSet] = perRunCaches.newMap()
@@ -65,21 +68,29 @@ abstract class DeadCodeElimination extends SubComponent {
     /** what local variables have been accessed at least once? */
     var accessedLocals: List[Local] = Nil
 
+    /** Map from a local and a basic block to the instructions that store to that local in that basic block */
+    val localStores = mutable.Map[(Local, BasicBlock), mutable.BitSet]() withDefault {_ => mutable.BitSet()}
+
+    /** Stores that clobber previous stores to array or ref locals. See SI-5313 */
+    val clobbers = mutable.Set[InstrLoc]()
+
     /** the current method. */
     var method: IMethod = _
 
     /** Map instructions who have a drop on some control path, to that DROP instruction. */
-    val dropOf: mutable.Map[(BasicBlock, Int), List[(BasicBlock, Int)]] = perRunCaches.newMap()
+    val dropOf: mutable.Map[InstrLoc, List[InstrLoc]] = perRunCaches.newMap()
 
     def dieCodeDie(m: IMethod) {
       if (m.hasCode) {
-        debuglog("dead code elimination on " + m);
+        debuglog("dead code elimination on " + m)
         dropOf.clear()
+        localStores.clear()
+        clobbers.clear()
         m.code.blocks.clear()
         accessedLocals = m.params.reverse
         m.code.blocks ++= linearizer.linearize(m)
         collectRDef(m)
-        mark
+        mark()
         sweep(m)
         accessedLocals = accessedLocals.distinct
         val diff = m.locals diff accessedLocals
@@ -93,20 +104,35 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** collect reaching definitions and initial useful instructions for this method. */
     def collectRDef(m: IMethod): Unit = if (m.hasCode) {
-      defs = immutable.HashMap.empty; worklist.clear(); useful.clear();
-      rdef.init(m);
-      rdef.run;
+      defs = immutable.HashMap.empty; worklist.clear(); useful.clear()
+      rdef.init(m)
+      rdef.run()
 
       m foreachBlock { bb =>
         useful(bb) = new mutable.BitSet(bb.size)
-        var rd = rdef.in(bb);
+        var rd = rdef.in(bb)
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
+
+          // utility for adding to worklist
+          def moveToWorkList() = moveToWorkListIf(cond = true)
+
+          // utility for (conditionally) adding to worklist
+          def moveToWorkListIf(cond: Boolean) =
+            if (cond) {
+              debuglog("in worklist:     " + i)
+              worklist += ((bb, idx))
+            } else {
+              debuglog("not in worklist: " + i)
+            }
+
+          // instruction-specific logic
           i match {
 
-            case LOAD_LOCAL(l) =>
+            case LOAD_LOCAL(_) =>
               defs = defs + Pair(((bb, idx)), rd.vars)
+              moveToWorkListIf(cond = false)
 
-            case STORE_LOCAL(_) =>
+            case STORE_LOCAL(l) =>
               /* SI-4935 Check whether a module is stack top, if so mark the instruction that loaded it
                * (otherwise any side-effects of the module's constructor go lost).
                *   (a) The other two cases where a module's value is stored (STORE_FIELD and STORE_ARRAY_ITEM)
@@ -123,14 +149,25 @@ abstract class DeadCodeElimination extends SubComponent {
                   case _                   => false
                 }
               }
-              if (necessary) worklist += ((bb, idx))
+              moveToWorkListIf(necessary)
+
+              // add it to the localStores map
+              val key = (l, bb)
+              val set = localStores(key)
+              set += idx
+              localStores(key) = set
 
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
-                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
-            case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); debuglog("marking " + m1)
+                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() =>
+              moveToWorkList()
+
+            case CALL_METHOD(m1, _) if isSideEffecting(m1) =>
+              moveToWorkList()
+
             case CALL_METHOD(m1, SuperCall(_)) =>
-              worklist += ((bb, idx)) // super calls to constructor
+              moveToWorkList() // super calls to constructor
+
             case DROP(_) =>
               val necessary = rdef.findDefs(bb, idx, 1) exists { p =>
                 val (bb1, idx1) = p
@@ -139,14 +176,15 @@ abstract class DeadCodeElimination extends SubComponent {
                   case LOAD_EXCEPTION(_) | DUP(_) | LOAD_MODULE(_) => true
                   case _ =>
                     dropOf((bb1, idx1)) = (bb,idx) :: dropOf.getOrElse((bb1, idx1), Nil)
-//                    println("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
+                    debuglog("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
                     false
                 }
               }
-              if (necessary) worklist += ((bb, idx))
+              moveToWorkListIf(necessary)
             case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
-              worklist += ((bb, idx)) // SI-4859 Module initialization might side-effect.
+              moveToWorkList() // SI-4859 Module initialization might side-effect.
             case _ => ()
+              moveToWorkListIf(cond = false)
           }
           rd = rdef.interpret(bb, idx, rd)
         }
@@ -163,23 +201,50 @@ abstract class DeadCodeElimination extends SubComponent {
     def mark() {
 //      log("Starting with worklist: " + worklist)
       while (!worklist.isEmpty) {
-        val (bb, idx) = worklist.iterator.next
+        val (bb, idx) = worklist.head
         worklist -= ((bb, idx))
         debuglog("Marking instr: \tBB_" + bb + ": " + idx + " " + bb(idx))
 
         val instr = bb(idx)
+        // adds the instrutions that define the stack values about to be consumed to the work list to
+        // be marked useful
+        def addDefs() = for ((bb1, idx1) <- rdef.findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
+          debuglog(s"\t${bb1(idx1)} is consumed by $instr")
+          worklist += ((bb1, idx1))
+        }
+
+        // DROP logic -- if an instruction is useful, its drops are also useful
+        // and we don't mark the DROPs as useful directly but add them to the
+        // worklist so we also mark their reaching defs as useful - see SI-7060
         if (!useful(bb)(idx)) {
           useful(bb) += idx
-          dropOf.get(bb, idx) foreach {
-              for ((bb1, idx1) <- _)
-                useful(bb1) += idx1
+          dropOf.get((bb, idx)) foreach {
+            for ((bb1, idx1) <- _) {
+              /*
+               * SI-7060: A drop that we now mark as useful can be reached via several paths,
+               * so we should follow by marking all its reaching definition as useful too:
+               */
+              debuglog("\tAdding: " + bb1(idx1) + " to the worklist, as a useful DROP.")
+              worklist += ((bb1, idx1))
+            }
           }
+
+          // per-instruction logic
           instr match {
             case LOAD_LOCAL(l1) =>
               for ((l2, bb1, idx1) <- defs((bb, idx)) if l1 == l2; if !useful(bb1)(idx1)) {
                 debuglog("\tAdding " + bb1(idx1))
                 worklist += ((bb1, idx1))
               }
+
+            case STORE_LOCAL(l1) if l1.kind.isRefOrArrayType =>
+              addDefs()
+              // see SI-5313
+              // search for clobbers of this store if we aren't doing l1 = null
+              // this doesn't catch the second store in x=null;l1=x; but in practice this catches
+              // a lot of null stores very cheaply
+              if (idx == 0 || bb(idx - 1) != CONSTANT(Constant(null)))
+                 findClobbers(l1, bb, idx + 1)
 
             case nw @ NEW(REFERENCE(sym)) =>
               assert(nw.init ne null, "null new.init at: " + bb + ": " + idx + "(" + instr + ")")
@@ -200,28 +265,88 @@ abstract class DeadCodeElimination extends SubComponent {
               ()
 
             case _ =>
-              for ((bb1, idx1) <- rdef.findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
-                debuglog("\tAdding " + bb1(idx1))
-                worklist += ((bb1, idx1))
-              }
+              addDefs()
           }
         }
       }
     }
 
+    /**
+     * Finds and marks all clobbers of the given local starting in the given
+     * basic block at the given index
+     *
+     * Storing to local variables of reference or array type may be indirectly
+     * observable because it may remove a reference to an object which may allow the object
+     * to be gc'd. See SI-5313. In this code I call the LOCAL_STORE(s) that immediately follow a
+     * LOCAL_STORE and that store to the same local "clobbers." If a LOCAL_STORE is marked
+     * useful then its clobbers must go into the set of clobbers, which will be
+     * compensated for later
+     */
+    def findClobbers(l: Local, bb: BasicBlock, idx: Int) {
+        // previously visited blocks tracked to prevent searching forever in a cycle
+        val inspected = mutable.Set[BasicBlock]()
+        // our worklist of blocks that still need to be checked
+        val blocksToBeInspected = mutable.Set[BasicBlock]()
+
+        // Tries to find the next clobber of l1 in bb1 starting at idx1.
+        // if it finds one it adds the clobber to clobbers set for later
+        // handling. If not it adds the direct successor blocks to
+        // the uninspectedBlocks to try to find clobbers there. Either way
+        // it adds the exception successor blocks for further search
+        def findClobberInBlock(idx1: Int, bb1: BasicBlock) {
+          val key = ((l, bb1))
+          val foundClobber = (localStores contains key) && {
+            def minIdx(s : mutable.BitSet) = if(s.isEmpty) -1 else s.min
+
+            // find the smallest index greater than or equal to idx1
+            val clobberIdx = minIdx(localStores(key) dropWhile (_ < idx1))
+            if (clobberIdx == -1)
+              false
+            else {
+              debuglog(s"\t${bb1(clobberIdx)} is a clobber of ${bb(idx)}")
+              clobbers += ((bb1, clobberIdx))
+              true
+            }
+          }
+
+          // always need to look into the exception successors for additional clobbers
+          // because we don't know when flow might enter an exception handler
+          blocksToBeInspected ++= (bb1.exceptionSuccessors filterNot inspected)
+          // If we didn't find a clobber here then we need to look at successor blocks.
+          // if we found a clobber then we don't need to search in the direct successors
+          if (!foundClobber) {
+            blocksToBeInspected ++= (bb1.directSuccessors filterNot inspected)
+          }
+        }
+
+        // first search starting at the current index
+        // note we don't put bb in the inspected list yet because a loop may later force
+        // us back around to search from the beginning of bb
+        findClobberInBlock(idx, bb)
+        // then loop until we've exhausted the set of uninspected blocks
+        while(!blocksToBeInspected.isEmpty) {
+          val bb1 = blocksToBeInspected.head
+          blocksToBeInspected -= bb1
+          inspected += bb1
+          findClobberInBlock(0, bb1)
+        }
+    }
+
     def sweep(m: IMethod) {
       val compensations = computeCompensations(m)
 
+      debuglog("Sweeping: " + m)
+
       m foreachBlock { bb =>
-//        Console.println("** Sweeping block " + bb + " **")
+        debuglog(bb + ":")
         val oldInstr = bb.toList
-        bb.open
-        bb.clear
+        bb.open()
+        bb.clear()
         for (Pair(i, idx) <- oldInstr.zipWithIndex) {
           if (useful(bb)(idx)) {
-//            log(" " + i + " is useful")
+            debuglog(" * " + i + " is useful")
             bb.emit(i, i.pos)
-            compensations.get(bb, idx) match {
+            compensations.get((bb, idx)) match {
               case Some(is) => is foreach bb.emit
               case None => ()
             }
@@ -237,19 +362,25 @@ abstract class DeadCodeElimination extends SubComponent {
             i match {
               case NEW(REFERENCE(sym)) =>
                 log(s"Eliminated instantation of $sym inside $m")
+              case STORE_LOCAL(l) if clobbers contains ((bb, idx)) =>
+                // if an unused instruction was a clobber of a used store to a reference or array type
+                // then we'll replace it with the store of a null to make sure the reference is
+                // eliminated. See SI-5313
+                bb emit CONSTANT(Constant(null))
+                bb emit STORE_LOCAL(l)
               case _ => ()
             }
-            debuglog("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
+            debuglog("   " + i + " [swept]")
           }
         }
 
-        if (bb.nonEmpty) bb.close
+        if (bb.nonEmpty) bb.close()
         else log(s"empty block encountered in $m")
       }
     }
 
-    private def computeCompensations(m: IMethod): mutable.Map[(BasicBlock, Int), List[Instruction]] = {
-      val compensations: mutable.Map[(BasicBlock, Int), List[Instruction]] = new mutable.HashMap
+    private def computeCompensations(m: IMethod): mutable.Map[InstrLoc, List[Instruction]] = {
+      val compensations: mutable.Map[InstrLoc, List[Instruction]] = new mutable.HashMap
 
       m foreachBlock { bb =>
         assert(bb.closed, "Open block in computeCompensations")
@@ -260,6 +391,7 @@ abstract class DeadCodeElimination extends SubComponent {
               val defs = rdef.findDefs(bb, idx, 1, depth)
               for (d <- defs) {
                 val (bb, idx) = d
+                debuglog("rdef: "+ bb(idx))
                 bb(idx) match {
                   case DUP(_) if idx > 0 =>
                     bb(idx - 1) match {
@@ -281,7 +413,7 @@ abstract class DeadCodeElimination extends SubComponent {
       compensations
     }
 
-    private def findInstruction(bb: BasicBlock, i: Instruction): (BasicBlock, Int) = {
+    private def findInstruction(bb: BasicBlock, i: Instruction): InstrLoc = {
       for (b <- linearizer.linearizeAt(method, bb)) {
         val idx = b.toList indexWhere (_ eq i)
         if (idx != -1)

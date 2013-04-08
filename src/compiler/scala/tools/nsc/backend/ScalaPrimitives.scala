@@ -494,8 +494,8 @@ abstract class ScalaPrimitives {
   def isArraySet(code: Int): Boolean = code match {
     case ZARRAY_SET | BARRAY_SET | SARRAY_SET | CARRAY_SET |
          IARRAY_SET | LARRAY_SET | FARRAY_SET | DARRAY_SET |
-         OARRAY_SET | UPDATE => true;
-    case _ => false;
+         OARRAY_SET | UPDATE => true
+    case _ => false
   }
 
   /** Check whether the given code is a comparison operator */
@@ -514,7 +514,7 @@ abstract class ScalaPrimitives {
          DIV | MOD       => true; // binary
     case OR  | XOR | AND |
          LSL | LSR | ASR => true; // bitwise
-    case _ => false;
+    case _ => false
   }
 
   def isLogicalOp(code: Int): Boolean = code match {

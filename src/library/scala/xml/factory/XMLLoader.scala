@@ -38,7 +38,7 @@ trait XMLLoader[T <: Node]
 
     newAdapter.scopeStack push TopScope
     parser.parse(source, newAdapter)
-    newAdapter.scopeStack.pop
+    newAdapter.scopeStack.pop()
 
     newAdapter.rootElem.asInstanceOf[T]
   }

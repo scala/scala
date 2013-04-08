@@ -39,7 +39,8 @@ retrieved 41 members
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
 [accessible:  true] `value __leftOfArrowaccessibility.Foo`
 [accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormataccessibility.Foo`
+[accessible:  true] `value __thingToAddaccessibility.Foo`
 [accessible: false] `method secretPrivateThis()Unit`
 ================================================================================
 
@@ -83,7 +84,8 @@ retrieved 41 members
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
 [accessible:  true] `value __leftOfArrowaccessibility.Foo`
 [accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormataccessibility.Foo`
+[accessible:  true] `value __thingToAddaccessibility.Foo`
 ================================================================================
 
 askTypeCompletion at Completions.scala(22,11)
@@ -125,7 +127,8 @@ retrieved 41 members
 [accessible:  true] `method →[B](y: B)(accessibility.AccessibilityChecks, B)`
 [accessible:  true] `value __leftOfArrowaccessibility.AccessibilityChecks`
 [accessible:  true] `value __resultOfEnsuringaccessibility.AccessibilityChecks`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormataccessibility.AccessibilityChecks`
+[accessible:  true] `value __thingToAddaccessibility.AccessibilityChecks`
 [accessible: false] `method secretPrivate()Unit`
 ================================================================================
 
@@ -164,7 +167,8 @@ retrieved 41 members
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
 [accessible:  true] `value __leftOfArrowaccessibility.Foo`
 [accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormataccessibility.Foo`
+[accessible:  true] `value __thingToAddaccessibility.Foo`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method secretPrivate()Unit`
@@ -206,7 +210,8 @@ retrieved 41 members
 [accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
 [accessible:  true] `value __leftOfArrowaccessibility.Foo`
 [accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormataccessibility.Foo`
+[accessible:  true] `value __thingToAddaccessibility.Foo`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method secretPrivate()Unit`

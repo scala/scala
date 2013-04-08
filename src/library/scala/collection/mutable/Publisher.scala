@@ -45,7 +45,7 @@ trait Publisher[Evt] {
   def suspendSubscription(sub: Sub) { suspended += sub }
   def activateSubscription(sub: Sub) { suspended -= sub }
   def removeSubscription(sub: Sub) { filters -= sub }
-  def removeSubscriptions() { filters.clear }
+  def removeSubscriptions() { filters.clear() }
 
   protected def publish(event: Evt) {
     filters.keys.foreach(sub =>

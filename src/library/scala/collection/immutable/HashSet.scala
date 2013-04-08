@@ -301,8 +301,8 @@ time { mNew.iterator.foreach( p => ()) }
 
 */
     override def foreach[U](f: A =>  U): Unit = {
-      var i = 0;
-      while (i < elems.length) {
+      var i = 0
+  while (i < elems.length) {
         elems(i).foreach(f)
         i += 1
       }

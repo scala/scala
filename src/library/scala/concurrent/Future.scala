@@ -299,8 +299,8 @@ trait Future[+T] extends Awaitable[T] {
    *  val f = future { 5 }
    *  val g = f filter { _ % 2 == 1 }
    *  val h = f filter { _ % 2 == 0 }
-   *  await(g, 0) // evaluates to 5
-   *  await(h, 0) // throw a NoSuchElementException
+   *  Await.result(g, Duration.Zero) // evaluates to 5
+   *  Await.result(h, Duration.Zero) // throw a NoSuchElementException
    *  }}}
    */
   def filter(pred: T => Boolean)(implicit executor: ExecutionContext): Future[T] = {
@@ -348,8 +348,8 @@ trait Future[+T] extends Awaitable[T] {
    *  val h = f collect {
    *    case x if x > 0 => x * 2
    *  }
-   *  await(g, 0) // evaluates to 5
-   *  await(h, 0) // throw a NoSuchElementException
+   *  Await.result(g, Duration.Zero) // evaluates to 5
+   *  Await.result(h, Duration.Zero) // throw a NoSuchElementException
    *  }}}
    */
   def collect[S](pf: PartialFunction[T, S])(implicit executor: ExecutionContext): Future[S] = {
@@ -454,7 +454,7 @@ trait Future[+T] extends Awaitable[T] {
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
    *  val h = f fallbackTo g
-   *  await(h, 0) // evaluates to 5
+   *  Await.result(h, Duration.Zero) // evaluates to 5
    *  }}}
    */
   def fallbackTo[U >: T](that: Future[U]): Future[U] = {
@@ -576,7 +576,7 @@ object Future {
   def sequence[A, M[_] <: TraversableOnce[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
     in.foldLeft(Promise.successful(cbf(in)).future) {
       (fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)
-    } map (_.result)
+    } map (_.result())
   }
 
   /** Returns a `Future` to the result of the first future in the list that is completed.
@@ -634,11 +634,11 @@ object Future {
    *
    *  Example:
    *  {{{
-   *    val result = Await.result(Futures.reduce(futures)(_ + _), 5 seconds)
+   *    val result = Await.result(Future.reduce(futures)(_ + _), 5 seconds)
    *  }}}
    */
   def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
-    if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection")).future
+    if (futures.isEmpty) Promise[R]().failure(new NoSuchElementException("reduce attempted on empty collection")).future
     else sequence(futures).map(_ reduceLeft op)
   }
 
@@ -654,7 +654,7 @@ object Future {
     in.foldLeft(Promise.successful(cbf(in)).future) { (fr, a) =>
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <- fb) yield (r += b)
-    }.map(_.result)
+    }.map(_.result())
 
   // This is used to run callbacks which are internal
   // to scala.concurrent; our own callbacks are only
