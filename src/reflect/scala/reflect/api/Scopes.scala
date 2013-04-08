@@ -33,12 +33,6 @@ trait Scopes { self: Universe =>
    */
   trait ScopeApi extends Iterable[Symbol]
 
-  /** A tag that preserves the identity of the `Scope` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ScopeTag: ClassTag[Scope]
-
   /** Create a new scope with the given initial elements.
    *  @group Scopes
    */
@@ -61,10 +55,4 @@ trait Scopes { self: Universe =>
      */
     def sorted: List[Symbol]
   }
-
-  /** A tag that preserves the identity of the `MemberScope` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val MemberScopeTag: ClassTag[MemberScope]
 }
