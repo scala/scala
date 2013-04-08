@@ -484,7 +484,7 @@ private[scala] abstract class LowPriorityImplicits {
   // These eight implicits exist solely to exclude Null from the domain of
   // the boxed types, so that e.g. "var x: Int = null" is a compile time
   // error rather than a delayed null pointer exception by way of the
-  // conversion from java.lang.Integer.  If defined in the same file as
+  // conversion from java.lang.Integer.  If defined in the same template as
   // Integer2int, they would have higher priority because Null is a subtype
   // of Integer.  We balance that out and create conflict by moving the
   // definition into the superclass.
@@ -531,4 +531,3 @@ private[scala] abstract class LowPriorityImplicits {
       def apply() = immutable.IndexedSeq.newBuilder[T]
     }
 }
-
