@@ -26,50 +26,30 @@ package api
  *  @group ReflectionAPI
  */
 trait Names {
-  /** An implicit conversion from String to TermName.
-   *  Enables an alternative notation `"map": TermName` as opposed to `newTermName("map")`.
-   *  @group Names
-   */
-  implicit def stringToTermName(s: String): TermName = newTermName(s)
-
-  /** An implicit conversion from String to TypeName.
-   *  Enables an alternative notation `"List": TypeName` as opposed to `newTypeName("List")`.
-   *  @group Names
-   */
-  implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
-
   /** The abstract type of names.
    *  @group Names
    */
   type Name >: Null <: NameApi
-
-  /** A tag that preserves the identity of the `Name` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val NameTag: ClassTag[Name]
 
   /** The abstract type of names representing terms.
    *  @group Names
    */
   type TypeName >: Null <: Name
 
-  /** A tag that preserves the identity of the `TypeName` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeNameTag: ClassTag[TypeName]
-
   /** The abstract type of names representing types.
    *  @group Names
    */
   type TermName >: Null <: Name
 
-  /** A tag that preserves the identity of the `TermName` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
+  /** The constructor/extractor for `TermName` instances.
+   *  @group Extractors
    */
-  implicit val TermNameTag: ClassTag[TermName]
+  val TermName: TermNameExtractor
+
+  /** The constructor/extractor for `TypeName` instances.
+   *  @group Extractors
+   */
+  val TypeName: TypeNameExtractor
 
   /** The API of Name instances.
    *  @group API
@@ -106,41 +86,43 @@ trait Names {
     def encodedName: Name
   }
 
-  /** Create a new term name.
-   *  @group Names
-   */
-  @deprecated("Use TermName instead", "2.11.0")
-  def newTermName(s: String): TermName
-
-  /** Creates a new type name.
-   *  @group Names
-   */
-  @deprecated("Use TypeName instead", "2.11.0")
-  def newTypeName(s: String): TypeName
-
-  /** The constructor/extractor for `TermName` instances.
-   *  @group Extractors
-   */
-  val TermName: TermNameExtractor
-
   /** An extractor class to create and pattern match with syntax `TermName(s)`.
    *  @group Extractors
    */
   abstract class TermNameExtractor {
+    /** An implicit conversion from String to TermName.
+     *  Enables an alternative notation `"map": TermName` as opposed to `TermName("map")`.
+     *
+     *  @note This must be defined in the TermName companion and not in the general scope
+     *  to prevent methods on TermName from coming into conflict with methods defined
+     *  on other classes for which there is an implicit String -> T, such as StringOps.
+     *
+     *  @group Names
+     */
+    implicit def createTermName(s: String): TermName = apply(s)
     def apply(s: String): TermName
     def unapply(name: TermName): Option[String]
   }
-
-  /** The constructor/extractor for `TypeName` instances.
-   *  @group Extractors
-   */
-  val TypeName: TypeNameExtractor
 
   /** An extractor class to create and pattern match with syntax `TypeName(s)`.
    *  @group Extractors
    */
   abstract class TypeNameExtractor {
+    /** An implicit conversion from String to TypeName.
+     *  @note  See note in TermNameExtractor regarding placement.
+     *  @group Names
+     */
+    implicit def createTypeName(s: String): TypeName = apply(s)
     def apply(s: String): TypeName
     def unapply(name: TypeName): Option[String]
   }
+
+  @deprecated("Use TermName#createTermName", "2.11.0")
+  def stringToTermName(s: String): TermName = newTermName(s)
+  @deprecated("Use TypeName#createTypeName", "2.11.0")
+  def stringToTypeName(s: String): TypeName = newTypeName(s)
+  @deprecated("Use TermName instead", "2.11.0")
+  def newTermName(s: String): TermName
+  @deprecated("Use TypeName instead", "2.11.0")
+  def newTypeName(s: String): TypeName
 }
