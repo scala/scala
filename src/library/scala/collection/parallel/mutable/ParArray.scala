@@ -226,7 +226,7 @@ self =>
         if (all) i = nextuntil
         else {
           i = until
-          abort
+          abort()
         }
 
         if (isAborted) return false
@@ -241,7 +241,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) j += 1
         else return false
       }
-      return true
+      true
     }
 
     override def exists(p: T => Boolean): Boolean = {
@@ -254,7 +254,7 @@ self =>
         some = exists_quick(p, array, nextuntil, i)
         if (some) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return true
@@ -269,7 +269,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) return true
         else j += 1
       }
-      return false
+      false
     }
 
     override def find(p: T => Boolean): Option[T] = {
@@ -283,7 +283,7 @@ self =>
 
         if (r != None) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return r
@@ -298,7 +298,7 @@ self =>
         if (p(elem)) return Some(elem)
         else j += 1
       }
-      return None
+      None
     }
 
     override def drop(n: Int): ParArrayIterator = {
@@ -611,7 +611,8 @@ self =>
 
   class ScanToArray[U >: T](tree: ScanTree[U], z: U, op: (U, U) => U, targetarr: Array[Any])
   extends Task[Unit, ScanToArray[U]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = iterate(tree)
     private def iterate(tree: ScanTree[U]): Unit = tree match {
       case ScanNode(left, right) =>
@@ -647,7 +648,8 @@ self =>
   }
 
   class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends Task[Unit, Map[S]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = {
       val tarr = targetarr
       val sarr = array

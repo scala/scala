@@ -34,7 +34,7 @@ private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete
     value = v
     // Note that we cannot prepare the ExecutionContext at this point, since we might
     // already be running on a different thread!
-    executor.execute(this)
+    try executor.execute(this) catch { case NonFatal(t) => executor reportFailure t }
   }
 }
 
@@ -83,7 +83,7 @@ private[concurrent] object Promise {
       import Duration.Undefined
       atMost match {
         case u if u eq Undefined => throw new IllegalArgumentException("cannot wait for Undefined period")
-        case Duration.Inf        => awaitUnbounded
+        case Duration.Inf        => awaitUnbounded()
         case Duration.MinusInf   => isCompleted
         case f: FiniteDuration   => if (f > Duration.Zero) awaitUnsafe(f.fromNow, f) else isCompleted
       }
@@ -135,7 +135,7 @@ private[concurrent] object Promise {
     }
 
     def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
-      val preparedEC = executor.prepare
+      val preparedEC = executor.prepare()
       val runnable = new CallbackRunnable[T](preparedEC, func)
 
       @tailrec //Tries to add the callback, if already completed, it dispatches the callback to be executed
@@ -162,7 +162,7 @@ private[concurrent] object Promise {
 
     def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
       val completedAs = value.get
-      val preparedEC = executor.prepare
+      val preparedEC = executor.prepare()
       (new CallbackRunnable(preparedEC, func)).executeWithValue(completedAs)
     }
 

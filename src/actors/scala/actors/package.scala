@@ -14,6 +14,7 @@ package scala
  * A starting point for using the actors library would be [[scala.actors.Reactor]],
  * [[scala.actors.ReplyReactor]], or [[scala.actors.Actor]] or their companion objects.
  *
+ * @note As of release 2.10.1, replaced by <code>akka.actor</code> package. For migration of existing actors refer to the Actors Migration Guide.
  */
 package object actors {
 

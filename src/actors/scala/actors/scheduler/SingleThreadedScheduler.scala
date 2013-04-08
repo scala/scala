@@ -17,6 +17,7 @@ import scala.collection.mutable
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class SingleThreadedScheduler extends IScheduler {
 
   private val tasks = new mutable.Queue[Runnable]

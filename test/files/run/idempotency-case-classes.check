@@ -42,7 +42,7 @@ C(2,3)
       C.super.<init>();
       ()
     };
-    final override def toString(): String = "C";
+    final override <synthetic> def toString(): String = "C";
     case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
     case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
       scala.this.None
@@ -50,6 +50,6 @@ C(2,3)
       Some.apply[(Int, Int)](Tuple2.apply[Int, Int](x$0.x, x$0.y));
     <synthetic> private def readResolve(): Object = C
   };
-  scala.this.Predef.println(C.apply(2, 3))
+  Predef.println(C.apply(2, 3))
 }
 error!

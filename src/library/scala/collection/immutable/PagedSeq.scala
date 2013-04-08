@@ -30,7 +30,7 @@ object PagedSeq {
     new PagedSeq[T]((data: Array[T], start: Int, len: Int) => {
       var i = 0
       while (i < len && source.hasNext) {
-        data(start + i) = source.next
+        data(start + i) = source.next()
         i += 1
       }
       if (i == 0) -1 else i
@@ -51,7 +51,7 @@ object PagedSeq {
         if (cnt == len) cnt
         else (more(data, start + cnt, len - cnt) max 0) + cnt
       } else if (source.hasNext) {
-        current = source.next
+        current = source.next()
         more(data, start, len)
       } else -1
     new PagedSeq(more(_: Array[Char], _: Int, _: Int))

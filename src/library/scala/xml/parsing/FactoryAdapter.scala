@@ -26,7 +26,7 @@ trait ConsoleErrorHandler extends DefaultHandler {
       val s = "[%s]:%d:%d: %s".format(
         errtype, ex.getLineNumber, ex.getColumnNumber, ex.getMessage)
       Console.println(s)
-      Console.flush
+      Console.flush()
     }
 }
 
@@ -91,7 +91,7 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
     else {
       var it = ch.slice(offset, offset + length).iterator
       while (it.hasNext) {
-        val c = it.next
+        val c = it.next()
         val isSpace = c.isWhitespace
         buffer append (if (isSpace) ' ' else c)
         if (isSpace)
@@ -164,17 +164,17 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
    */
   override def endElement(uri: String , _localName: String, qname: String): Unit = {
     captureText()
-    val metaData = attribStack.pop
+    val metaData = attribStack.pop()
 
     // reverse order to get it right
     val v = (Iterator continually hStack.pop takeWhile (_ != null)).toList.reverse
     val (pre, localName) = splitName(qname)
-    val scp = scopeStack.pop
+    val scp = scopeStack.pop()
 
     // create element
     rootElem = createNode(pre, localName, metaData, scp, v)
     hStack push rootElem
-    curTag = tagStack.pop
+    curTag = tagStack.pop()
     capture = curTag != null && nodeContainsText(curTag) // root level
   }
 

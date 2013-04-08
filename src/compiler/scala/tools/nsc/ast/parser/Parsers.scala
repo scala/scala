@@ -57,7 +57,7 @@ trait ParsersCommon extends ScannersCommon {
       if (in.token == LPAREN) inParens(body)
       else { accept(LPAREN) ; alt }
 
-    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant()))
+    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant(())))
     @inline final def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
 
     @inline final def inBraces[T](body: => T): T = {
@@ -71,7 +71,7 @@ trait ParsersCommon extends ScannersCommon {
       else { accept(LBRACE) ; alt }
 
     @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
-    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
+    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant(())))
     @inline final def dropAnyBraces[T](body: => T): T =
       if (in.token == LBRACE) inBraces(body)
       else body
@@ -142,9 +142,9 @@ self =>
       if (source.isSelfContained) () => compilationUnit()
       else () => scriptBody()
 
-    def newScanner = new SourceFileScanner(source)
+    def newScanner(): Scanner = new SourceFileScanner(source)
 
-    val in = newScanner
+    val in = newScanner()
     in.init()
 
     private val globalFresh = new FreshNameCreator.Default
@@ -170,8 +170,8 @@ self =>
       val global: self.global.type = self.global
     }
 
-    def xmlLiteral : Tree = xmlp.xLiteral
-    def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
+    def xmlLiteral() : Tree = xmlp.xLiteral
+    def xmlLiteralPattern() : Tree = xmlp.xLiteralPattern
   }
 
   class OutlineParser(source: SourceFile) extends SourceFileParser(source) {
@@ -196,10 +196,9 @@ self =>
   }
 
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
+    def this(unit: global.CompilationUnit) = this(unit, Nil)
 
-    def this(unit: global.CompilationUnit) = this(unit, List())
-
-    override def newScanner = new UnitScanner(unit, patches)
+    override def newScanner() = new UnitScanner(unit, patches)
 
     override def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     override def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
@@ -219,6 +218,7 @@ self =>
       try body
       finally smartParsing = saved
     }
+    def withPatches(patches: List[BracePatch]): UnitParser = new UnitParser(unit, patches)
 
     val syntaxErrors = new ListBuffer[(Int, String)]
     def showSyntaxErrors() =
@@ -244,7 +244,7 @@ self =>
       if (syntaxErrors.isEmpty) firstTry
       else in.healBraces() match {
         case Nil      => showSyntaxErrors() ; firstTry
-        case patches  => new UnitParser(unit, patches).parse()
+        case patches  => (this withPatches patches).parse()
       }
     }
   }
@@ -321,38 +321,38 @@ self =>
       accept(EOF)
 
       def mainModuleName = newTermName(settings.script.value)
-      /** If there is only a single object template in the file and it has a
-       *  suitable main method, we will use it rather than building another object
-       *  around it.  Since objects are loaded lazily the whole script would have
-       *  been a no-op, so we're not taking much liberty.
+      /* If there is only a single object template in the file and it has a
+       * suitable main method, we will use it rather than building another object
+       * around it.  Since objects are loaded lazily the whole script would have
+       * been a no-op, so we're not taking much liberty.
        */
       def searchForMain(): Option[Tree] = {
-        /** Have to be fairly liberal about what constitutes a main method since
-         *  nothing has been typed yet - for instance we can't assume the parameter
-         *  type will look exactly like "Array[String]" as it could have been renamed
-         *  via import, etc.
+        /* Have to be fairly liberal about what constitutes a main method since
+         * nothing has been typed yet - for instance we can't assume the parameter
+         * type will look exactly like "Array[String]" as it could have been renamed
+         * via import, etc.
          */
         def isMainMethod(t: Tree) = t match {
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
-        /** For now we require there only be one top level object. */
+        /* For now we require there only be one top level object. */
         var seenModule = false
         val newStmts = stmts collect {
           case t @ Import(_, _) => t
           case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
             seenModule = true
-            /** This slightly hacky situation arises because we have no way to communicate
-             *  back to the scriptrunner what the name of the program is.  Even if we were
-             *  willing to take the sketchy route of settings.script.value = progName, that
-             *  does not work when using fsc.  And to find out in advance would impose a
-             *  whole additional parse.  So instead, if the actual object's name differs from
-             *  what the script is expecting, we transform it to match.
+            /* This slightly hacky situation arises because we have no way to communicate
+             * back to the scriptrunner what the name of the program is.  Even if we were
+             * willing to take the sketchy route of settings.script.value = progName, that
+             * does not work when using fsc.  And to find out in advance would impose a
+             * whole additional parse.  So instead, if the actual object's name differs from
+             * what the script is expecting, we transform it to match.
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
           case _ =>
-            /** If we see anything but the above, fail. */
+            /* If we see anything but the above, fail. */
             return None
         }
         Some(makePackaging(0, emptyPkg, newStmts))
@@ -424,13 +424,13 @@ self =>
 
       placeholderParams match {
         case vd :: _ =>
-          syntaxError(vd.pos, "unbound placeholder parameter", false)
+          syntaxError(vd.pos, "unbound placeholder parameter", skipIt = false)
           placeholderParams = List()
         case _ =>
       }
       placeholderTypes match {
         case td :: _ =>
-          syntaxError(td.pos, "unbound wildcard type", false)
+          syntaxError(td.pos, "unbound wildcard type", skipIt = false)
           placeholderTypes = List()
         case _ =>
       }
@@ -537,7 +537,7 @@ self =>
     def accept(token: Int): Int = {
       val offset = in.offset
       if (in.token != token) {
-        syntaxErrorOrIncomplete(expectedMsg(token), false)
+        syntaxErrorOrIncomplete(expectedMsg(token), skipIt = false)
         if ((token == RPAREN || token == RBRACE || token == RBRACKET))
           if (in.parenBalance(token) + assumedClosingParens(token) < 0)
             assumedClosingParens(token) += 1
@@ -570,9 +570,9 @@ self =>
     /** Check that type parameter is not by name or repeated. */
     def checkNotByNameOrVarargs(tpt: Tree) = {
       if (treeInfo isByNameParamType tpt)
-        syntaxError(tpt.pos, "no by-name parameter type allowed here", false)
+        syntaxError(tpt.pos, "no by-name parameter type allowed here", skipIt = false)
       else if (treeInfo isRepeatedParamType tpt)
-        syntaxError(tpt.pos, "no * parameter type allowed here", false)
+        syntaxError(tpt.pos, "no * parameter type allowed here", skipIt = false)
     }
 
     /** Check that tree is a legal clause of a forSome. */
@@ -581,7 +581,7 @@ self =>
            ValDef(_, _, _, EmptyTree) | EmptyTree =>
              ;
       case _ =>
-        syntaxError(t.pos, "not a legal existential clause", false)
+        syntaxError(t.pos, "not a legal existential clause", skipIt = false)
     }
 
 /* -------------- TOKEN CLASSES ------------------------------------------- */
@@ -650,31 +650,10 @@ self =>
 
 /* --------- COMMENT AND ATTRIBUTE COLLECTION ----------------------------- */
 
-    /** Join the comment associated with a definition. */
-    def joinComment(trees: => List[Tree]): List[Tree] = {
-      val doc = in.flushDoc
-      if ((doc ne null) && doc.raw.length > 0) {
-        val joined = trees map {
-          t =>
-            DocDef(doc, t) setPos {
-              if (t.pos.isDefined) {
-                val pos = doc.pos.withEnd(t.pos.endOrPoint)
-                // always make the position transparent
-                pos.makeTransparent
-              } else {
-                t.pos
-              }
-            }
-        }
-        joined.find(_.pos.isOpaqueRange) foreach {
-          main =>
-            val mains = List(main)
-            joined foreach { t => if (t ne main) ensureNonOverlapping(t, mains) }
-        }
-        joined
-      }
-      else trees
-    }
+    /** A hook for joining the comment associated with a definition.
+     *  Overridden by scaladoc.
+     */
+    def joinComment(trees: => List[Tree]): List[Tree] = trees
 
 /* ---------- TREE CONSTRUCTION ------------------------------------------- */
 
@@ -706,7 +685,7 @@ self =>
           removeAsPlaceholder(name)
           makeParam(name.toTermName, tpe)
         case _ =>
-          syntaxError(tree.pos, "not a legal formal parameter", false)
+          syntaxError(tree.pos, "not a legal formal parameter", skipIt = false)
           makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.endOrPoint))
       }
     }
@@ -714,7 +693,7 @@ self =>
     /** Convert (qual)ident to type identifier. */
     def convertToTypeId(tree: Tree): Tree = atPos(tree.pos) {
       convertToTypeName(tree) getOrElse {
-        syntaxError(tree.pos, "identifier expected", false)
+        syntaxError(tree.pos, "identifier expected", skipIt = false)
         errorTypeTree
       }
     }
@@ -766,7 +745,7 @@ self =>
     def checkAssoc(offset: Int, op: Name, leftAssoc: Boolean) =
       if (treeInfo.isLeftAssoc(op) != leftAssoc)
         syntaxError(
-          offset, "left- and right-associative operators with same precedence may not be mixed", false)
+          offset, "left- and right-associative operators with same precedence may not be mixed", skipIt = false)
 
     def reduceStack(isExpr: Boolean, base: List[OpInfo], top0: Tree, prec: Int, leftAssoc: Boolean): Tree = {
       var top = top0
@@ -1119,7 +1098,7 @@ self =>
         case FALSE     => false
         case NULL      => null
         case _         =>
-          syntaxErrorOrIncomplete("illegal literal", true)
+          syntaxErrorOrIncomplete("illegal literal", skipIt = true)
           null
       })
     }
@@ -1140,7 +1119,7 @@ self =>
             else if(in.token == LBRACE) expr()
             else if(in.token == THIS) { in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY)) }
             else {
-               syntaxErrorOrIncomplete("error in interpolated string: identifier or block expected", true)
+               syntaxErrorOrIncomplete("error in interpolated string: identifier or block expected", skipIt = true)
                EmptyTree
             }
           }
@@ -1270,7 +1249,7 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-          else Literal(Constant())
+          else Literal(Constant(()))
           If(cond, thenp, elsep)
         }
         parseIf
@@ -1344,7 +1323,7 @@ self =>
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
-            Return(if (isExprIntro) expr() else Literal(Constant()))
+            Return(if (isExprIntro) expr() else Literal(Constant(())))
           }
         parseReturn
       case THROW =>
@@ -1376,7 +1355,7 @@ self =>
                   Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
                 }
               } else {
-                syntaxErrorOrIncomplete("`*' expected", true)
+                syntaxErrorOrIncomplete("`*' expected", skipIt = true)
               }
             } else if (in.token == AT) {
               t = (t /: annotations(skipNewLines = false))(makeAnnotated)
@@ -1519,7 +1498,7 @@ self =>
             placeholderParams = param :: placeholderParams
             id
           case LPAREN =>
-            atPos(in.offset)(makeParens(commaSeparated(expr)))
+            atPos(in.offset)(makeParens(commaSeparated(expr())))
           case LBRACE =>
             canApply = false
             blockExpr()
@@ -1532,7 +1511,7 @@ self =>
             val cpos = r2p(tstart, tstart, in.lastOffset max tstart)
             makeNew(parents, self, stats, npos, cpos)
           case _ =>
-            syntaxErrorOrIncomplete("illegal start of simple expression", true)
+            syntaxErrorOrIncomplete("illegal start of simple expression", skipIt = true)
             errorTermTree
         }
       simpleExprRest(t, canApply = canApply)
@@ -1873,7 +1852,7 @@ self =>
       def simplePattern(): Tree = {
         // simple diagnostics for this entry point
         def badStart(): Tree = {
-          syntaxErrorOrIncomplete("illegal start of simple pattern", true)
+          syntaxErrorOrIncomplete("illegal start of simple pattern", skipIt = true)
           errorPatternTree
         }
         simplePattern(badStart)
@@ -1957,16 +1936,16 @@ self =>
     /** Drop `private` modifier when followed by a qualifier.
      *  Contract `abstract` and `override` to ABSOVERRIDE
      */
-    private def normalize(mods: Modifiers): Modifiers =
+    private def normalizeModifers(mods: Modifiers): Modifiers =
       if (mods.isPrivate && mods.hasAccessBoundary)
-        normalize(mods &~ Flags.PRIVATE)
+        normalizeModifers(mods &~ Flags.PRIVATE)
       else if (mods hasAllFlags (Flags.ABSTRACT | Flags.OVERRIDE))
-        normalize(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
+        normalizeModifers(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
       else
         mods
 
     private def addMod(mods: Modifiers, mod: Long, pos: Position): Modifiers = {
-      if (mods hasFlag mod) syntaxError(in.offset, "repeated modifier", false)
+      if (mods hasFlag mod) syntaxError(in.offset, "repeated modifier", skipIt = false)
       in.nextToken()
       (mods | mod) withPosition (mod, pos)
     }
@@ -1983,7 +1962,7 @@ self =>
       if (in.token == LBRACKET) {
         in.nextToken()
         if (mods.hasAccessBoundary)
-          syntaxError("duplicate private/protected qualifier", false)
+          syntaxError("duplicate private/protected qualifier", skipIt = false)
         result = if (in.token == THIS) { in.nextToken(); mods | Flags.LOCAL }
                  else Modifiers(mods.flags, identForType())
         accept(RBRACKET)
@@ -2006,7 +1985,7 @@ self =>
      *  AccessModifier ::= (private | protected) [AccessQualifier]
      *  }}}
      */
-    def accessModifierOpt(): Modifiers = normalize {
+    def accessModifierOpt(): Modifiers = normalizeModifers {
       in.token match {
         case m @ (PRIVATE | PROTECTED)  => in.nextToken() ; accessQualifierOpt(Modifiers(flagTokens(m)))
         case _                          => NoMods
@@ -2020,7 +1999,7 @@ self =>
      *              |  override
      *  }}}
      */
-    def modifiers(): Modifiers = normalize {
+    def modifiers(): Modifiers = normalizeModifers {
       def loop(mods: Modifiers): Modifiers = in.token match {
         case PRIVATE | PROTECTED =>
           loop(accessQualifierOpt(addMod(mods, flagTokens(in.token), tokenRange(in))))
@@ -2090,7 +2069,7 @@ self =>
         var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName) {
           mods = modifiers() | Flags.PARAMACCESSOR
-          if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
+          if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", skipIt = false)
           in.token match {
             case v @ (VAL | VAR) =>
               mods = mods withPosition (in.token, tokenRange(in))
@@ -2106,7 +2085,7 @@ self =>
         val name = ident()
         var bynamemod = 0
         val tpt =
-          if (settings.YmethodInfer.value && !owner.isTypeName && in.token != COLON) {
+          if (settings.YmethodInfer && !owner.isTypeName && in.token != COLON) {
             TypeTree()
           } else { // XX-METHOD-INFER
             accept(COLON)
@@ -2115,11 +2094,11 @@ self =>
                 syntaxError(
                   in.offset,
                   (if (mods.isMutable) "`var'" else "`val'") +
-                  " parameters may not be call-by-name", false)
+                  " parameters may not be call-by-name", skipIt = false)
               else if (implicitmod != 0)
                 syntaxError(
                   in.offset,
-                  "implicit parameters may not be call-by-name", false)
+                  "implicit parameters may not be call-by-name", skipIt = false)
               else bynamemod = Flags.BYNAMEPARAM
             }
             paramType()
@@ -2160,9 +2139,9 @@ self =>
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
         in.token match {
-          case LBRACKET   => syntaxError(in.offset, "no type parameters allowed here", false)
+          case LBRACKET   => syntaxError(in.offset, "no type parameters allowed here", skipIt = false)
           case EOF        => incompleteInputError("auxiliary constructor needs non-implicit parameter list")
-          case _          => syntaxError(start, "auxiliary constructor needs non-implicit parameter list", false)
+          case _          => syntaxError(start, "auxiliary constructor needs non-implicit parameter list", skipIt = false)
         }
       }
       addEvidenceParams(owner, result, contextBounds)
@@ -2286,8 +2265,8 @@ self =>
         accept(DOT)
         result
       }
-      /** Walks down import `foo.bar.baz.{ ... }` until it ends at a
-       *  an underscore, a left brace, or an undotted identifier.
+      /* Walks down import `foo.bar.baz.{ ... }` until it ends at a
+       * an underscore, a left brace, or an undotted identifier.
        */
       def loop(expr: Tree): Tree = {
         expr setPos expr.pos.makeTransparent
@@ -2373,7 +2352,7 @@ self =>
      */
     def defOrDcl(pos: Int, mods: Modifiers): List[Tree] = {
       if (mods.isLazy && in.token != VAL)
-        syntaxError("lazy not allowed here. Only vals can be lazy", false)
+        syntaxError("lazy not allowed here. Only vals can be lazy", skipIt = false)
       in.token match {
         case VAL =>
           patDefOrDcl(pos, mods withPosition(VAL, tokenRange(in)))
@@ -2431,8 +2410,8 @@ self =>
         if (newmods.isDeferred) {
           trees match {
             case List(ValDef(_, _, _, EmptyTree)) =>
-              if (mods.isLazy) syntaxError(p.pos, "lazy values may not be abstract", false)
-            case _ => syntaxError(p.pos, "pattern definition may not be abstract", false)
+              if (mods.isLazy) syntaxError(p.pos, "lazy values may not be abstract", skipIt = false)
+            case _ => syntaxError(p.pos, "pattern definition may not be abstract", skipIt = false)
           }
         }
         trees
@@ -2482,7 +2461,7 @@ self =>
      *  }}}
      */
     def funDefOrDcl(start : Int, mods: Modifiers): Tree = {
-      in.nextToken
+      in.nextToken()
       if (in.token == THIS) {
         atPos(start, in.skipToken()) {
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
@@ -2545,7 +2524,7 @@ self =>
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
       if (in.token == LBRACE) constrBlock(vparamss)
-      else Block(List(selfInvocation(vparamss)), Literal(Constant()))
+      else Block(List(selfInvocation(vparamss)), Literal(Constant(())))
 
     /** {{{
      *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
@@ -2575,7 +2554,7 @@ self =>
           else Nil
         }
         accept(RBRACE)
-        Block(stats, Literal(Constant()))
+        Block(stats, Literal(Constant(())))
       }
 
     /** {{{
@@ -2598,7 +2577,7 @@ self =>
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
-            syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
+            syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", skipIt = true)
             EmptyTree
         }
       }
@@ -2619,7 +2598,7 @@ self =>
      *  }}}
      */
     def tmplDef(pos: Int, mods: Modifiers): Tree = {
-      if (mods.isLazy) syntaxError("classes cannot be lazy", false)
+      if (mods.isLazy) syntaxError("classes cannot be lazy", skipIt = false)
       in.token match {
         case TRAIT =>
           classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT) withPosition (Flags.TRAIT, tokenRange(in)))
@@ -2632,7 +2611,7 @@ self =>
         case CASEOBJECT =>
           objectDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
         case _ =>
-          syntaxErrorOrIncomplete("expected start of definition", true)
+          syntaxErrorOrIncomplete("expected start of definition", skipIt = true)
           EmptyTree
       }
     }
@@ -2644,7 +2623,7 @@ self =>
      *  }}}
      */
     def classDef(start: Int, mods: Modifiers): ClassDef = {
-      in.nextToken
+      in.nextToken()
       val nameOffset = in.offset
       val name = identForType()
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
@@ -2654,7 +2633,7 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.startOrPoint)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", false)
+            syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", skipIt = false)
             classContextBounds = List()
           }
           val constrAnnots = constructorAnnotations()
@@ -2665,7 +2644,7 @@ self =>
           if (mods.isTrait) {
             if (settings.YvirtClasses && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
           } else if (in.token == SUBTYPE) {
-            syntaxError("classes are not allowed to be virtual", false)
+            syntaxError("classes are not allowed to be virtual", skipIt = false)
           }
           val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
           if (isInterface(mods1, template.body)) mods1 |= Flags.INTERFACE
@@ -2684,7 +2663,7 @@ self =>
      *  }}}
      */
     def objectDef(start: Int, mods: Modifiers): ModuleDef = {
-      in.nextToken
+      in.nextToken()
       val nameOffset = in.offset
       val name = ident()
       val tstart = in.offset
@@ -2732,7 +2711,7 @@ self =>
             case tdef @ TypeDef(mods, name, tparams, rhs) =>
               List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
             case stat if !stat.isEmpty =>
-              syntaxError(stat.pos, "only type definitions and concrete field definitions allowed in early object initialization section", false)
+              syntaxError(stat.pos, "only type definitions and concrete field definitions allowed in early object initialization section", skipIt = false)
               List()
             case _ => List()
           }
@@ -2781,7 +2760,7 @@ self =>
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
-        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant())))
+        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, Literal(Constant(()))))
       )
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
@@ -2790,7 +2769,7 @@ self =>
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents0, self, anyvalConstructor :: body)
         else
-          Template(anyrefParents, self, constrMods, vparamss, body, o2p(tstart))
+          Template(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 
@@ -2811,7 +2790,7 @@ self =>
         templateBody(isPre = false)
       } else {
         if (in.token == LPAREN) {
-          if (parenMeansSyntaxError) syntaxError(s"traits or objects may not have parameters", true)
+          if (parenMeansSyntaxError) syntaxError(s"traits or objects may not have parameters", skipIt = true)
           else abort("unexpected opening parenthesis")
         }
         (emptyValDef, List())
@@ -2895,7 +2874,7 @@ self =>
             joinComment(List(topLevelTmplDef))
           case _ =>
             if (!isStatSep)
-              syntaxErrorOrIncomplete("expected class or object definition", true)
+              syntaxErrorOrIncomplete("expected class or object definition", skipIt = true)
             Nil
         })
         acceptStatSepOpt()
@@ -2954,7 +2933,7 @@ self =>
         } else if (isDefIntro || isModifier || in.token == AT) {
           stats ++= joinComment(nonLocalDefOrDcl)
         } else if (!isStatSep) {
-          syntaxErrorOrIncomplete("illegal start of definition", true)
+          syntaxErrorOrIncomplete("illegal start of definition", skipIt = true)
         }
         acceptStatSepOpt()
       }
@@ -2977,7 +2956,7 @@ self =>
           syntaxErrorOrIncomplete(
             "illegal start of declaration"+
             (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
-             else ""), true)
+             else ""), skipIt = true)
         }
         if (in.token != RBRACE) acceptStatSep()
       }
@@ -3007,7 +2986,7 @@ self =>
         else List(tmplDef(pos, mods))
 
       in.token match {
-        case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
+        case RBRACE | CASE  => defs :+ (Literal(Constant(())) setPos o2p(in.offset))
         case _              => defs
       }
     }
@@ -3047,7 +3026,7 @@ self =>
         }
         else {
           val addendum = if (isModifier) " (no modifiers allowed here)" else ""
-          syntaxErrorOrIncomplete("illegal start of statement" + addendum, true)
+          syntaxErrorOrIncomplete("illegal start of statement" + addendum, skipIt = true)
         }
       }
       stats.toList

@@ -3,9 +3,9 @@ import scala.reflect.{ClassTag, classTag}
 
 // #1435
 object t1435 {
-  implicit def a(s:String):String = error("")
-  implicit def a(i:Int):String = error("")
-  implicit def b(i:Int):String = error("")
+  implicit def a(s:String):String = sys.error("")
+  implicit def a(i:Int):String = sys.error("")
+  implicit def b(i:Int):String = sys.error("")
 }
 
 class C1435 {

@@ -28,11 +28,11 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
       if (unit.body == EmptyTree) {
         unit.body =
           if (unit.isJava) new JavaUnitParser(unit).parse()
-          else if (reporter.incompleteHandled) new UnitParser(unit).parse()
-          else new UnitParser(unit).smartParse()
+          else if (reporter.incompleteHandled) newUnitParser(unit).parse()
+          else newUnitParser(unit).smartParse()
       }
 
-      if (settings.Yrangepos.value && !reporter.hasErrors)
+      if (settings.Yrangepos && !reporter.hasErrors)
         validatePositions(unit.body)
     }
   }

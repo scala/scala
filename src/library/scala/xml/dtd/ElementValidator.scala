@@ -99,21 +99,21 @@ class ElementValidator() extends Function1[Node,Boolean] {
    */
   def check(nodes: Seq[Node]): Boolean = contentModel match {
     case ANY    => true
-    case EMPTY  => getIterable(nodes, false).isEmpty
-    case PCDATA => getIterable(nodes, true).isEmpty
+    case EMPTY  => getIterable(nodes, skipPCDATA = false).isEmpty
+    case PCDATA => getIterable(nodes, skipPCDATA = true).isEmpty
     case MIXED(ContentModel.Alt(branches @ _*))  =>   // @todo
       val j = exc.length
       def find(Key: String): Boolean =
         branches exists { case ContentModel.Letter(ElemName(Key)) => true ; case _ => false }
 
-      getIterable(nodes, true) map (_.name) filterNot find foreach {
+      getIterable(nodes, skipPCDATA = true) map (_.name) filterNot find foreach {
         exc ::= MakeValidationException fromUndefinedElement _
       }
       (exc.length == j)   // - true if no new exception
 
     case _: ELEMENTS =>
       dfa isFinal {
-        getIterable(nodes, false).foldLeft(0) { (q, e) =>
+        getIterable(nodes, skipPCDATA = false).foldLeft(0) { (q, e) =>
           (dfa delta q).getOrElse(e, throw ValidationException("element %s not allowed here" format e))
         }
       }

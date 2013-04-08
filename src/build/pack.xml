@@ -179,41 +179,41 @@ MAIN DISTRIBUTION PACKAGING
 
   <target name="pack-maven.srcs" depends="pack-maven.libs">
     <!-- Add missing src jars. -->
-    <jar destfile="${dists.dir}/maven/${version.number}/jline/jline-src.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/jline/jline-src.jar"
          basedir="${src.dir}/jline/src/main/java">
       <include name="**/*"/>
     </jar>
 
 
     <!-- Continuations plugin -->
-    <jar destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-src.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-src.jar"
          basedir="${src.dir}/continuations/plugin">
       <include name="**/*"/>
     </jar>
   </target>
 
   <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
-    <jar destfile="${dists.dir}/maven/${version.number}/jline/jline-docs.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/jline/jline-docs.jar"
          basedir="${build-docs.dir}/jline">
       <include name="**/*"/>
     </jar>
-    <jar destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
       <include name="**/*"/>
     </jar>
-    <jar destfile="${dists.dir}/maven/${version.number}/scala-compiler/scala-compiler-docs.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-compiler/scala-compiler-docs.jar"
          basedir="${build-docs.dir}/compiler">
       <include name="**/*"/>
     </jar>
-    <jar destfile="${dists.dir}/maven/${version.number}/scalap/scalap-docs.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scalap/scalap-docs.jar"
          basedir="${build-docs.dir}/scalap">
       <include name="**/*"/>
     </jar>
-    <jar destfile="${dists.dir}/maven/${version.number}/scala-partest/scala-partest-docs.jar"
-         basedir="${build-docs.dir}/scala-partest">
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-partest/scala-partest-docs.jar"
+         basedir="${build-docs.dir}/partest">
       <include name="**/*"/>
     </jar>
-    <jar destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-docs.jar"
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-docs.jar"
          basedir="${build-docs.dir}/continuations-plugin">
       <include name="**/*"/>
     </jar>

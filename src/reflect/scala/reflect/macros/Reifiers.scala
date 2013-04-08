@@ -11,16 +11,16 @@ trait Reifiers {
   self: Context =>
 
   /** Given a tree, generate a tree that when compiled and executed produces the original tree.
-   *  For more information and examples see the documentation for ``Universe.reify''.
+   *  For more information and examples see the documentation for `Universe.reify`.
    *
-   *  The produced tree will be bound to the specified ``universe'' and ``mirror''.
-   *  Possible values for ``universe'' include ``universe.treeBuild.mkRuntimeUniverseRef''.
-   *  Possible values for ``mirror'' include ``EmptyTree'' (in that case the reifier will automatically pick an appropriate mirror).
+   *  The produced tree will be bound to the specified `universe` and `mirror`.
+   *  Possible values for `universe` include `universe.treeBuild.mkRuntimeUniverseRef`.
+   *  Possible values for `mirror` include `EmptyTree` (in that case the reifier will automatically pick an appropriate mirror).
    *
-   *  This function is deeply connected to ``Universe.reify'', a macro that reifies arbitrary expressions into runtime trees.
-   *  They do very similar things (``Universe.reify'' calls ``Context.reifyTree'' to implement itself), but they operate on different metalevels (see below).
+   *  This function is deeply connected to `Universe.reify`, a macro that reifies arbitrary expressions into runtime trees.
+   *  They do very similar things (`Universe.reify` calls `Context.reifyTree` to implement itself), but they operate on different metalevels (see below).
    *
-   *  Let's study the differences between ``Context.reifyTree'' and ``Universe.reify'' on an example of using them inside a ``fooMacro'' macro:
+   *  Let's study the differences between `Context.reifyTree` and `Universe.reify` on an example of using them inside a `fooMacro` macro:
    *
    *    * Since reify itself is a macro, it will be executed when fooMacro is being compiled (metalevel -1)
    *      and will produce a tree that when evaluated during macro expansion of fooMacro (metalevel 0) will recreate the input tree.
@@ -39,7 +39,7 @@ trait Reifiers {
    *    * The result of compiling and running the result of reify will be bound to the Universe that called reify.
    *      This is possible because it's a macro, so it can generate whatever code it wishes.
    *
-   *    * The result of compiling and running the result of reifyTree will be the ``prefix'' that needs to be passed explicitly.
+   *    * The result of compiling and running the result of reifyTree will be the `prefix` that needs to be passed explicitly.
    *      This happens because the Universe of the evaluated result is from a different metalevel than the Context the called reify.
    *
    *  Typical usage of this function is to retain some of the trees received/created by a macro
@@ -48,13 +48,13 @@ trait Reifiers {
   def reifyTree(universe: Tree, mirror: Tree, tree: Tree): Tree
 
   /** Given a type, generate a tree that when compiled and executed produces the original type.
-   *  The produced tree will be bound to the specified ``universe'' and ``mirror''.
-   *  For more information and examples see the documentation for ``Context.reifyTree'' and ``Universe.reify''.
+   *  The produced tree will be bound to the specified `universe` and `mirror`.
+   *  For more information and examples see the documentation for `Context.reifyTree` and `Universe.reify`.
    */
   def reifyType(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean = false): Tree
 
   /** Given a type, generate a tree that when compiled and executed produces the runtime class of the original type.
-   *  If ``concrete'' is true, then this function will bail on types, who refer to abstract types (like `ClassTag` does).
+   *  If `concrete` is true, then this function will bail on types, who refer to abstract types (like `ClassTag` does).
    */
   def reifyRuntimeClass(tpe: Type, concrete: Boolean = true): Tree
 
@@ -86,10 +86,10 @@ trait Reifiers {
  *  Such errors represent one of the standard ways for reification to go wrong, e.g.
  *  an attempt to create a `TypeTag` from a weak type.
  */
-case class ReificationException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)
+case class ReificationException(pos: scala.reflect.api.Position, msg: String) extends Exception(msg)
 
 /** Indicates an unexpected expected error during one of the `reifyXXX` methods in [[scala.reflect.macros.Reifiers]].
  *  Such errors wrap random crashes in reification logic and are distinguished from expected [[scala.reflect.macros.ReificationException]]s
  *  so that the latter can be reported as compilation errors, while the former manifest themselves as compiler crashes.
  */
-case class UnexpectedReificationException(val pos: scala.reflect.api.Position, val msg: String, val cause: Throwable = null) extends Exception(msg, cause)
+case class UnexpectedReificationException(pos: scala.reflect.api.Position, msg: String, cause: Throwable = null) extends Exception(msg, cause)

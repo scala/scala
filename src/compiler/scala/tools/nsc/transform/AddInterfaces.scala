@@ -174,8 +174,8 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     override def complete(implSym: Symbol) {
       debuglog("LazyImplClassType completing " + implSym)
 
-      /** If `tp` refers to a non-interface trait, return a
-       *  reference to its implementation class. Otherwise return `tp`.
+      /* If `tp` refers to a non-interface trait, return a
+       * reference to its implementation class. Otherwise return `tp`.
        */
       def mixinToImplClass(tp: Type): Type = AddInterfaces.this.erasure(implSym) {
         tp match { //@MATN: no normalize needed (comes after erasure)
@@ -276,7 +276,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
    */
   private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] =
     if (treeInfo.firstConstructor(stats) != EmptyTree) stats
-    else DefDef(clazz.primaryConstructor, Block(List(), Literal(Constant()))) :: stats
+    else DefDef(clazz.primaryConstructor, Block(List(), Literal(Constant(())))) :: stats
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = (

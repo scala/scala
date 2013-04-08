@@ -3,14 +3,12 @@
  * @author Philipp Haller
  */
 
-// $Id$
-
 package scala.tools.partest
 package nest
 
 import java.io.File
 import scala.util.Properties.setProp
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import scala.tools.nsc.io.Path
 import scala.collection.{ mutable, immutable }
 import java.util.concurrent._
@@ -22,53 +20,33 @@ trait DirectRunner {
 
   import PartestDefaults.numThreads
 
-  def denotesTestFile(arg: String) = Path(arg).hasExtension("scala", "res", "xml")
-  def denotesTestDir(arg: String)  = Path(arg).ifDirectory(_.files.nonEmpty) exists (x => x)
-  def denotesTestPath(arg: String) = denotesTestDir(arg) || denotesTestFile(arg)
+  Thread.setDefaultUncaughtExceptionHandler(
+    new Thread.UncaughtExceptionHandler {
+      def uncaughtException(thread: Thread, t: Throwable) {
+        val t1 = Exceptional unwrap t
+        System.err.println(s"Uncaught exception on thread $thread: $t1")
+        t1.printStackTrace()
+      }
+    }
+  )
+  def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
 
-  /** No duplicate, no empty directories, don't mess with this unless
-   *  you like partest hangs.
-   */
-  def onlyValidTestPaths[T](args: List[T]): List[T] = {
-    args.distinct filter (arg => denotesTestPath("" + arg) || {
-      NestUI.warning("Discarding invalid test path '%s'\n" format arg)
-      false
-    })
-  }
-  def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, TestState] = {
-    System.setProperty("line.separator", "\n")
+    NestUI.resetTestNumber()
 
-    // @partest maintainer: we cannot create a fresh file manager here
-    // since the FM must respect --buildpath and --classpath from the command line
-    // for example, see how it's done in ReflectiveRunner
-    //val consFM = new ConsoleFileManager
-    //import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
-    val latestCompFile    = new File(fileManager.LATEST_COMP)
-    val latestReflectFile = new File(fileManager.LATEST_REFLECT)
-    val latestLibFile     = new File(fileManager.LATEST_LIB)
-    val latestPartestFile = new File(fileManager.LATEST_PARTEST)
-    val latestActorsFile  = new File(fileManager.LATEST_ACTORS)
-    val scalacheckURL     = PathSettings.scalaCheck.toURL
-    val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      scalacheckURL :: (List(latestCompFile, latestReflectFile, latestLibFile, latestActorsFile, latestPartestFile).map(_.toURI.toURL))
-    )
-
-    val kindFiles = onlyValidTestPaths(_kindFiles)
-    val pool      = Executors.newFixedThreadPool(numThreads)
-    val manager   = new RunnerManager(kind, fileManager, TestRunParams(scalaCheckParentClassLoader))
-    val futures   = kindFiles map (f => (f, pool submit callable(manager runTest f))) toMap
+    val allUrls           = PathSettings.scalaCheck.toURL :: fileManager.latestUrls
+    val parentClassLoader = ScalaClassLoader fromURLs allUrls
+    val pool              = Executors newFixedThreadPool numThreads
+    val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
+    val futures           = kindFiles map (f => pool submit callable(manager runTest f))
 
     pool.shutdown()
     try if (!pool.awaitTermination(4, TimeUnit.HOURS))
-      NestUI.warning("Thread pool timeout elapsed before all tests were complete!")
+      NestUI warning "Thread pool timeout elapsed before all tests were complete!"
     catch { case t: InterruptedException =>
-      NestUI.warning("Thread pool was interrupted")
+      NestUI warning "Thread pool was interrupted"
       t.printStackTrace()
     }
 
-    for ((file, future) <- futures) yield {
-      val state = if (future.isCancelled) TestState.Timeout else future.get
-      (file.getAbsolutePath, state)
-    }
+    futures map (_.get)
   }
 }

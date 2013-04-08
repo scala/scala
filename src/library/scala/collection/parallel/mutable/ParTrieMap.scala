@@ -136,7 +136,7 @@ extends TrieMapIterator[K, V](lev, ct, mustInit)
   }
 
   def dup = {
-    val it = newIterator(0, ct, false)
+    val it = newIterator(0, ct, _mustInit = false)
     dupTo(it)
     it.iterated = this.iterated
     it

@@ -41,7 +41,7 @@ trait Plugins {
     classes map (Plugin.instantiate(_, this))
   }
 
-  protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList
+  protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList()
 
   /** Load all available plugins.  Skips plugins that
    *  either have the same name as another one, or which
@@ -62,7 +62,7 @@ trait Plugins {
       def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)
       lazy val commonPhases = phaseNames intersect plugPhaseNames
 
-      def note(msg: String): Unit = if (settings.verbose.value) inform(msg format plug.name)
+      def note(msg: String): Unit = if (settings.verbose) inform(msg format plug.name)
       def fail(msg: String)       = { note(msg) ; withoutPlug }
 
       if (plugNames contains plug.name)
@@ -79,11 +79,11 @@ trait Plugins {
 
     val plugs = pick(roughPluginsList, Set(), (phasesSet map (_.phaseName)).toSet)
 
-    /** Verify requirements are present. */
+    /* Verify requirements are present. */
     for (req <- settings.require.value ; if !(plugs exists (_.name == req)))
       globalError("Missing required plugin: " + req)
 
-    /** Process plugin options. */
+    /* Process plugin options. */
     def namec(plug: Plugin) = plug.name + ":"
     def optList(xs: List[String], p: Plugin) = xs filter (_ startsWith namec(p))
     def doOpts(p: Plugin): List[String] =
@@ -95,14 +95,14 @@ trait Plugins {
         p.processOptions(opts, globalError)
     }
 
-    /** Verify no non-existent plugin given with -P */
+    /* Verify no non-existent plugin given with -P */
     for (opt <- settings.pluginOptions.value ; if plugs forall (p => optList(List(opt), p).isEmpty))
       globalError("bad option: -P:" + opt)
 
     plugs
   }
 
-  lazy val plugins: List[Plugin] = loadPlugins
+  lazy val plugins: List[Plugin] = loadPlugins()
 
   /** A description of all the plugins that are loaded */
   def pluginDescriptions: String =

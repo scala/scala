@@ -1,0 +1,4 @@
+t7235.scala:9: error: implementation restriction: cannot reify refinement type trees with non-empty bodies
+  val Block(List(ValDef(_, _, tpt: CompoundTypeTree, _)), _) = reify{ val x: C { def x: Int } = ??? }.tree
+                                                                             ^
+one error found

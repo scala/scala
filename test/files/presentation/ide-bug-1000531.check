@@ -120,7 +120,8 @@ retrieved 124 members
 [accessible:  true] `method →[B](y: B)(java.util.Iterator[B], B)`
 [accessible:  true] `value __leftOfArrowjava.util.Iterator[B]`
 [accessible:  true] `value __resultOfEnsuringjava.util.Iterator[B]`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatjava.util.Iterator[B]`
+[accessible:  true] `value __thingToAddjava.util.Iterator[B]`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method reversed=> List[B]`

@@ -758,7 +758,7 @@ trait Parsers {
         if (elems.length == num) Success(elems.toList, in0)
         else p0(in0) match {
           case Success(x, rest) => elems += x ; applyp(rest)
-          case ns: NoSuccess    => return ns
+          case ns: NoSuccess    => ns
         }
 
       applyp(in)

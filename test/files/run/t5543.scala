@@ -22,5 +22,24 @@ object Test extends Function0[Int] {
     println(sut.toString)
     println(sut.m())
     println(A.init()())
+
+    println((new T.C()).x)
+    println((new T.D(0,0)).x)
+  }
+}
+
+object T {
+  override def toString = "T"
+
+  // `this` refers to T
+  class C(val x: Any = {println(this); this}) { // prints T
+    println(this) // prints C
+    override def toString() = "C"
+  }
+
+  class D(val x: Any) {
+    override def toString() = "D"
+    // `this` refers again to T
+    def this(a: Int, b: Int, c: Any = {println(this); this}) { this(c); println(this) } // prints T, then prints D
   }
 }
