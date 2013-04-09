@@ -329,9 +329,7 @@ trait Contexts { self: Analyzer =>
      * accessible.
      */
     def makeConstructorContext = {
-      var baseContext = enclClass.outer
-      while (baseContext.tree.isInstanceOf[Template])
-        baseContext = baseContext.outer
+      val baseContext = enclClass.outer.nextEnclosing(!_.tree.isInstanceOf[Template])
       val argContext = baseContext.makeNewScope(tree, owner)
       argContext.restoreState(state)
       argContext.inSelfSuperCall = true
