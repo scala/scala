@@ -212,7 +212,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     mkTypeApply(mkAttributedSelect(target, method), targs map TypeTree)
 
   private def mkSingleTypeApply(value: Tree, tpe: Type, what: Symbol, wrapInApply: Boolean) = {
-    val tapp = mkAttributedTypeApply(value, what, tpe.normalize :: Nil)
+    val tapp = mkAttributedTypeApply(value, what, tpe.dealias :: Nil)
     if (wrapInApply) Apply(tapp, Nil) else tapp
   }
   private def typeTestSymbol(any: Boolean) = if (any) Any_isInstanceOf else Object_isInstanceOf
@@ -277,7 +277,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
-    if (elems.isEmpty) Literal(Constant())
+    if (elems.isEmpty) Literal(Constant(()))
     else Apply(
       Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
       elems)

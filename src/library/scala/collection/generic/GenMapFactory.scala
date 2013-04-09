@@ -44,7 +44,7 @@ abstract class GenMapFactory[CC[A, B] <: GenMap[A, B] with GenMapLike[A, B, CC[A
    *  @tparam B      the type of the associated values
    *  @return        a new $coll consisting key/value pairs given by `elems`.
    */
-  def apply[A, B](elems: (A, B)*): CC[A, B] = (newBuilder[A, B] ++= elems).result
+  def apply[A, B](elems: (A, B)*): CC[A, B] = (newBuilder[A, B] ++= elems).result()
 
   /** The default builder for $Coll objects.
    *  @tparam A      the type of the keys

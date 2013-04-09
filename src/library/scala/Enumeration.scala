@@ -95,7 +95,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   protected var nextName: Iterator[String] = _
 
   private def nextNameOrNull =
-    if (nextName != null && nextName.hasNext) nextName.next else null
+    if (nextName != null && nextName.hasNext) nextName.next() else null
 
   /** The highest integer amongst those used to identify values in this
     * enumeration. */
@@ -254,7 +254,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def contains(v: Value) = nnIds contains (v.id - bottomId)
     def + (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
     def - (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
-    def iterator = nnIds.iterator map (id => thisenum.apply(id + bottomId))
+    def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
+    override def keysIteratorFrom(start: Value) = nnIds keysIteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
     override def stringPrefix = thisenum + ".ValueSet"
     /** Creates a bit mask for the zero-adjusted ids in this set as a
      *  new array of longs */
@@ -276,7 +277,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def newBuilder: mutable.Builder[Value, ValueSet] = new mutable.Builder[Value, ValueSet] {
       private[this] val b = new mutable.BitSet
       def += (x: Value) = { b += (x.id - bottomId); this }
-      def clear() = b.clear
+      def clear() = b.clear()
       def result() = new ValueSet(b.toImmutable)
     }
     /** The implicit builder for value sets */

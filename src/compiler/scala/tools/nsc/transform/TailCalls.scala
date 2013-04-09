@@ -31,7 +31,7 @@ abstract class TailCalls extends Transform {
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit) {
       if (!(settings.debuginfo.value == "notailcalls")) {
-        newTransformer(unit).transformUnit(unit);
+        newTransformer(unit).transformUnit(unit)
       }
     }
   }
@@ -134,9 +134,9 @@ abstract class TailCalls extends Transform {
         this.tailPos  = true
         this.failPos  = dd.pos
 
-        /** Create a new method symbol for the current method and store it in
-          * the label field.
-          */
+        /* Create a new method symbol for the current method and store it in
+         * the label field.
+         */
         this.label    = {
           val label     = method.newLabel(newTermName("_" + method.name), method.pos)
           val thisParam = method.newSyntheticValueParam(currentClass.typeOfThis)
@@ -186,8 +186,7 @@ abstract class TailCalls extends Transform {
     }
 
     override def transform(tree: Tree): Tree = {
-      /** A possibly polymorphic apply to be considered for tail call transformation.
-       */
+      /* A possibly polymorphic apply to be considered for tail call transformation. */
       def rewriteApply(target: Tree, fun: Tree, targs: List[Tree], args: List[Tree]) = {
         val receiver: Tree = fun match {
           case Select(qual, _)  => qual
@@ -200,8 +199,8 @@ abstract class TailCalls extends Transform {
         def transformArgs     = noTailTransforms(args)
         def matchesTypeArgs   = ctx.tparams sameElements (targs map (_.tpe.typeSymbol))
 
-        /** Records failure reason in Context for reporting.
-         *  Position is unchanged (by default, the method definition.)
+        /* Records failure reason in Context for reporting.
+         * Position is unchanged (by default, the method definition.)
          */
         def fail(reason: String) = {
           debuglog("Cannot rewrite recursive call at: " + fun.pos + " because: " + reason)
@@ -209,8 +208,7 @@ abstract class TailCalls extends Transform {
           ctx.failReason = reason
           treeCopy.Apply(tree, noTailTransform(target), transformArgs)
         }
-        /** Position of failure is that of the tree being considered.
-         */
+        /* Position of failure is that of the tree being considered. */
         def failHere(reason: String) = {
           ctx.failPos = fun.pos
           fail(reason)
@@ -264,8 +262,8 @@ abstract class TailCalls extends Transform {
 
           deriveDefDef(tree){rhs =>
             if (newCtx.isTransformed) {
-              /** We have rewritten the tree, but there may be nested recursive calls remaining.
-               *  If @tailrec is given we need to fail those now.
+              /* We have rewritten the tree, but there may be nested recursive calls remaining.
+               * If @tailrec is given we need to fail those now.
                */
               if (newCtx.isMandatory) {
                 for (t @ Apply(fn, _) <- newRHS ; if fn.symbol == newCtx.method) {
@@ -392,7 +390,7 @@ abstract class TailCalls extends Transform {
       finally maybeTail = saved
     }
 
-    def traverseNoTail(tree: Tree) = traverse(tree, false)
+    def traverseNoTail(tree: Tree) = traverse(tree, maybeTailNew = false)
     def traverseTreesNoTail(trees: List[Tree]) = trees foreach traverseNoTail
 
     override def traverse(tree: Tree) = tree match {

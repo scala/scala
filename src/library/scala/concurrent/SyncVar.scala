@@ -41,9 +41,9 @@ class SyncVar[A] {
    *  @return            `None` if variable is undefined after `timeout`, `Some(value)` otherwise
    */
   def get(timeout: Long): Option[A] = synchronized {
-    /** Defending against the system clock going backward
-     *  by counting time elapsed directly.  Loop required
-     *  to deal with spurious wakeups.
+    /* Defending against the system clock going backward
+     * by counting time elapsed directly.  Loop required
+     * to deal with spurious wakeups.
      */
     var rest = timeout
     while (!isDefined && rest > 0) {

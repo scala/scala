@@ -12,6 +12,7 @@ package immutable
 
 import scala.collection.generic.{ CanBuildFrom, BitOperations }
 import scala.collection.mutable.{ Builder, MapBuilder }
+import scala.annotation.tailrec
 
 /** Utility class for integer maps.
  *  @author David MacIver
@@ -50,8 +51,10 @@ object IntMap {
     def apply(): Builder[(Int, B), IntMap[B]] = new MapBuilder[Int, B, IntMap[B]](empty[B])
   }
 
-  def empty[T] : IntMap[T]  = IntMap.Nil;
-  def singleton[T](key: Int, value: T): IntMap[T] = IntMap.Tip(key, value);
+  def empty[T] : IntMap[T]  = IntMap.Nil
+
+  def singleton[T](key: Int, value: T): IntMap[T] = IntMap.Tip(key, value)
+
   def apply[T](elems: (Int, T)*): IntMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
@@ -427,6 +430,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   /**
    * The entry with the lowest key value considered in unsigned order.
    */
+  @tailrec
   final def firstKey: Int = this match {
     case Bin(_, _, l, r) => l.firstKey
     case Tip(k, v) => k
@@ -436,6 +440,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   /**
    * The entry with the highest key value considered in unsigned order.
    */
+  @tailrec
   final def lastKey: Int = this match {
     case Bin(_, _, l, r) => r.lastKey
     case Tip(k, v) => k

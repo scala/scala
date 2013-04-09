@@ -1038,7 +1038,7 @@ trait Trees { self: Universe =>
    *    `case` pat `if` guard => body
    *
    *  If the guard is not present, the `guard` is set to `EmptyTree`.
-   *  If the body is not specified, the `body` is set to `Literal(Constant())`
+   *  If the body is not specified, the `body` is set to `Literal(Constant(()))`
    *  @group Extractors
    */
   abstract class CaseDefExtractor {
@@ -1059,7 +1059,7 @@ trait Trees { self: Universe =>
     def guard: Tree
 
     /** The body of the pattern matching clause.
-     *  Is equal to `Literal(Constant())` if the body is not specified.
+     *  Is equal to `Literal(Constant(()))` if the body is not specified.
      */
     def body: Tree
   }

@@ -87,7 +87,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
     // `that` is no longer usable, so clear it
     // here we rely on the fact that `clear` allocates
     // new nodes instead of modifying the previous ones
-    that.clear
+    that.clear()
 
     // return a reference to this
     this
@@ -123,7 +123,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
       val r = node.array(pos)
       scan()
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
   }
 
   // this should be faster than the iterator

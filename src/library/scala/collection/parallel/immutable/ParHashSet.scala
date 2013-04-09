@@ -106,7 +106,7 @@ self =>
     }
     def next(): T = {
       i += 1
-      triter.next
+      triter.next()
     }
     def hasNext: Boolean = {
       i < sz

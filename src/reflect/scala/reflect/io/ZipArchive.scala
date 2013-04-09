@@ -7,10 +7,12 @@ package scala.reflect
 package io
 
 import java.net.URL
-import java.io.{ IOException, InputStream, ByteArrayInputStream }
+import java.io.{ IOException, InputStream, ByteArrayInputStream, FilterInputStream }
 import java.io.{ File => JFile }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
+import java.util.jar.Manifest
 import scala.collection.{ immutable, mutable }
+import scala.collection.convert.WrapAsScala.asScalaIterator
 import scala.annotation.tailrec
 
 /** An abstraction for zip files and streams.  Everything is written the way
@@ -39,8 +41,10 @@ object ZipArchive {
    */
   def fromURL(url: URL): URLZipArchive = new URLZipArchive(url)
 
-  private def dirName(path: String)  = splitPath(path, true)
-  private def baseName(path: String) = splitPath(path, false)
+  def fromManifestURL(url: URL): AbstractFile = new ManifestResources(url)
+
+  private def dirName(path: String)  = splitPath(path, front = true)
+  private def baseName(path: String) = splitPath(path, front = false)
   private def splitPath(path0: String, front: Boolean): String = {
     val isDir = path0.charAt(path0.length - 1) == '/'
     val path  = if (isDir) path0.substring(0, path0.length - 1) else path0
@@ -61,13 +65,13 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
 
   override def underlyingSource = Some(this)
   def isDirectory = true
-  def lookupName(name: String, directory: Boolean) = unsupported
-  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
-  def create()  = unsupported
-  def delete()  = unsupported
-  def output    = unsupported
-  def container = unsupported
-  def absolute  = unsupported
+  def lookupName(name: String, directory: Boolean) = unsupported()
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
+  def create()  = unsupported()
+  def delete()  = unsupported()
+  def output    = unsupported()
+  def container = unsupported()
+  def absolute  = unsupported()
 
   private def walkIterator(its: Iterator[AbstractFile]): Iterator[AbstractFile] = {
     its flatMap { f =>
@@ -225,5 +229,65 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   override def equals(that: Any) = that match {
     case x: URLZipArchive => url == x.url
     case _                => false
+  }
+}
+
+final class ManifestResources(val url: URL) extends ZipArchive(null) {
+  def iterator = {
+    val root     = new DirEntry("/")
+    val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
+    val manifest = new Manifest(input)
+    val iter     = manifest.getEntries().keySet().iterator().filter(_.endsWith(".class")).map(new ZipEntry(_))
+
+    while (iter.hasNext) {
+      val zipEntry = iter.next()
+      val dir = getDir(dirs, zipEntry)
+      if (zipEntry.isDirectory) dir
+      else {
+        class FileEntry() extends Entry(zipEntry.getName) {
+          override def lastModified = zipEntry.getTime()
+          override def input        = resourceInputStream(path)
+          override def sizeOption   = None
+        }
+        val f = new FileEntry()
+        dir.entries(f.name) = f
+      }
+    }
+
+    try root.iterator
+    finally dirs.clear()
+  }
+
+  def name  = path
+  def path: String = {
+    val s = url.getPath
+    val n = s.lastIndexOf('!')
+    s.substring(0, n)
+  }
+  def input = url.openStream()
+  def lastModified =
+    try url.openConnection().getLastModified()
+    catch { case _: IOException => 0 }  
+  
+  override def canEqual(other: Any) = other.isInstanceOf[ManifestResources]
+  override def hashCode() = url.hashCode
+  override def equals(that: Any) = that match {
+    case x: ManifestResources => url == x.url
+    case _                => false
+  }
+
+  private def resourceInputStream(path: String): InputStream = {
+    new FilterInputStream(null) {
+      override def read(): Int = {
+        if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+        if(in == null) throw new RuntimeException(path + " not found")
+        super.read();
+      }
+
+      override def close(): Unit = {
+        super.close();
+        in = null;
+      }
+    }
   }
 }

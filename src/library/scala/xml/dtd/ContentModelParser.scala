@@ -21,19 +21,19 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
     if (token != tok) {
       if ((tok == STAR) && (token == END))                  // common mistake
         scala.sys.error("in DTDs, \n"+
-              "mixed content models must be like (#PCDATA|Name|Name|...)*");
+              "mixed content models must be like (#PCDATA|Name|Name|...)*")
       else
         scala.sys.error("expected "+token2string(tok)+
-              ", got unexpected token:"+token2string(token));
+              ", got unexpected token:"+token2string(token))
     }
-    nextToken
+    nextToken()
   }
 
   // s [ '+' | '*' | '?' ]
   def maybeSuffix(s: RegExp) = token match {
-    case STAR => nextToken; Star(s)
-    case PLUS => nextToken; Sequ(s, Star(s))
-    case OPT  => nextToken; Alt(Eps, s)
+    case STAR => nextToken(); Star(s)
+    case PLUS => nextToken(); Sequ(s, Star(s))
+    case OPT  => nextToken(); Alt(Eps, s)
     case _    => s
   }
 
@@ -44,45 +44,45 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
     case NAME => value match {
       case "ANY"   => ANY
       case "EMPTY" => EMPTY
-      case _       => scala.sys.error("expected ANY, EMPTY or '(' instead of " + value );
+      case _       => scala.sys.error("expected ANY, EMPTY or '(' instead of " + value )
     }
     case LPAREN =>
 
-      nextToken;
-      sOpt;
+      nextToken()
+      sOpt()
       if (token != TOKEN_PCDATA)
-        ELEMENTS(regexp);
+        ELEMENTS(regexp)
       else {
-        nextToken;
+        nextToken()
         token match {
         case RPAREN =>
           PCDATA
         case CHOICE =>
-          val res = MIXED(choiceRest(Eps));
-          sOpt;
-          accept( RPAREN );
-          accept( STAR );
+          val res = MIXED(choiceRest(Eps))
+          sOpt()
+          accept( RPAREN )
+          accept( STAR )
           res
         case _ =>
-          scala.sys.error("unexpected token:" + token2string(token) );
+          scala.sys.error("unexpected token:" + token2string(token) )
         }
       }
 
     case _ =>
-      scala.sys.error("unexpected token:" + token2string(token) );
-    }
+      scala.sys.error("unexpected token:" + token2string(token) )
+  }
   //                                  sopt ::= S?
-  def sOpt() = if( token == S ) nextToken;
+  def sOpt() = if( token == S ) nextToken()
 
   //                      (' S? mixed ::= '#PCDATA' S? ')'
   //                                    | '#PCDATA' (S? '|' S? atom)* S? ')*'
 
   //       '(' S? regexp ::= cp S? [seqRest|choiceRest] ')' [ '+' | '*' | '?' ]
   def regexp: RegExp = {
-    val p = particle;
-    sOpt;
+    val p = particle
+    sOpt()
     maybeSuffix(token match {
-      case RPAREN  => nextToken; p
+      case RPAREN  => nextToken(); p
       case CHOICE  => val q = choiceRest( p );accept( RPAREN ); q
       case COMMA   => val q = seqRest( p );   accept( RPAREN ); q
     })
@@ -90,24 +90,24 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
 
   //                                             seqRest ::= (',' S? cp S?)+
   def seqRest(p: RegExp) = {
-    var k = List(p);
+    var k = List(p)
     while( token == COMMA ) {
-      nextToken;
-      sOpt;
-      k = particle::k;
-      sOpt;
+      nextToken()
+      sOpt()
+      k = particle::k
+      sOpt()
     }
     Sequ( k.reverse:_* )
   }
 
   //                                          choiceRest ::= ('|' S? cp S?)+
   def choiceRest( p:RegExp ) = {
-    var k = List( p );
+    var k = List( p )
     while( token == CHOICE ) {
-      nextToken;
-      sOpt;
-      k = particle::k;
-      sOpt;
+      nextToken()
+      sOpt()
+      k = particle::k
+      sOpt()
     }
     Alt( k.reverse:_* )
   }
@@ -115,14 +115,14 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
   //                                  particle ::=  '(' S? regexp
   //                                             |  name [ '+' | '*' | '?' ]
   def particle = token match {
-    case LPAREN => nextToken; sOpt; regexp;
-    case NAME   => val a = Letter(ElemName(value)); nextToken; maybeSuffix(a)
-    case _      => scala.sys.error("expected '(' or Name, got:"+token2string(token));
+    case LPAREN => nextToken(); sOpt(); regexp
+    case NAME   => val a = Letter(ElemName(value)); nextToken(); maybeSuffix(a)
+    case _      => scala.sys.error("expected '(' or Name, got:"+token2string(token))
   }
 
   //                                     atom ::= name
   def atom = token match {
-    case NAME   => val a = Letter(ElemName(value)); nextToken; a
-    case _      => scala.sys.error("expected Name, got:"+token2string(token));
+    case NAME   => val a = Letter(ElemName(value)); nextToken(); a
+    case _      => scala.sys.error("expected Name, got:"+token2string(token))
   }
 }

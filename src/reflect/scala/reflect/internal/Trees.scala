@@ -14,6 +14,23 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   private[scala] var nodeCount = 0
 
+  protected def treeLine(t: Tree): String =
+    if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
+    else t.summaryString
+
+  protected def treeStatus(t: Tree, enclosingTree: Tree = null) = {
+    val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
+
+    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
+  }
+  protected def treeSymStatus(t: Tree) = {
+    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
+    "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
+      if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
+      else treeLine(t)
+    )
+  }
+
   abstract class Tree extends TreeContextApiImpl with Attachable with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
@@ -225,6 +242,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   trait NameTree extends Tree with NameTreeApi {
     def name: Name
+    def getterName: TermName = name.getterName
+    def setterName: TermName = name.setterName
+    def localName: TermName = name.localName
   }
 
   trait RefTree extends SymTree with NameTree with RefTreeApi {
@@ -522,7 +542,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         case t => t
       }
 
-      orig = followOriginal(tree); setPos(tree.pos);
+      orig = followOriginal(tree); setPos(tree.pos)
       this
     }
 
@@ -534,7 +554,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override private[scala] def copyAttrs(tree: Tree) = {
       super.copyAttrs(tree)
       tree match {
-        case other: TypeTree => wasEmpty = other.wasEmpty // SI-6648 Critical for correct operation of `resetAttrs`.
+        case other: TypeTree =>
+          // SI-6648 Critical for correct operation of `resetAttrs`.
+          wasEmpty = other.wasEmpty
+          if (other.orig != null)
+            orig = other.orig.duplicate
         case _ =>
       }
       this
@@ -1009,6 +1033,18 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef =
     DefDef(sym, mods, mapParamss(sym)(ValDef), rhs)
 
+  /** A DefDef with original trees attached to the TypeTree of each parameter */
+  def DefDef(sym: Symbol, mods: Modifiers, originalParamTpts: Symbol => Tree, rhs: Tree): DefDef = {
+    val paramms = mapParamss(sym){ sym =>
+      val vd = ValDef(sym, EmptyTree)
+      (vd.tpt : @unchecked) match {
+        case tt: TypeTree => tt setOriginal (originalParamTpts(sym) setPos sym.pos.focus)
+      }
+      vd
+    }
+    DefDef(sym, mods, paramms, rhs)
+  }
+
   def DefDef(sym: Symbol, rhs: Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)
 
@@ -1409,7 +1445,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         def subst(from: List[Symbol], to: List[Tree]): Tree =
           if (from.isEmpty) tree
           else if (tree.symbol == from.head) to.head.shallowDuplicate // TODO: does it ever make sense *not* to perform a shallowDuplicate on `to.head`?
-          else subst(from.tail, to.tail);
+          else subst(from.tail, to.tail)
         subst(from, to)
       case _ =>
         super.transform(tree)

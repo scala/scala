@@ -1,0 +1,12 @@
+t7290.scala:4: warning: Pattern contains duplicate alternatives: 0
+    case 0 | 0 => 0
+         ^
+t7290.scala:5: warning: Pattern contains duplicate alternatives: 2, 3
+    case 2 | 2 | 2 | 3 | 2 | 3 => 0
+         ^
+t7290.scala:6: warning: Pattern contains duplicate alternatives: 4
+    case 4 | (_ @ 4) => 0
+         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

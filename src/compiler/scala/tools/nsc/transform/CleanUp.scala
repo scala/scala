@@ -85,7 +85,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     def transformApplyDynamic(ad: ApplyDynamic) = {
       val qual0 = ad.qual
       val params = ad.args
-        if (settings.logReflectiveCalls.value)
+        if (settings.logReflectiveCalls)
           unit.echo(ad.pos, "method invocation uses reflection")
 
         val typedPos = typedWithPos(ad.pos) _
@@ -127,7 +127,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           ArrayValue(TypeTree(ClassClass.tpe), paramTypes map LIT)
 
         /* ... */
-        def reflectiveMethodCache(method: String, paramTypes: List[Type]): Symbol = dispatchType match {
+        def reflectiveMethodCache(method: String, paramTypes: List[Type]): Symbol = dispatchType() match {
           case NO_CACHE =>
 
               /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)":
@@ -351,12 +351,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               else if (resultSym == ObjectClass) tree                                     // no cast necessary
               else gen.mkCast(tree, boxedResType)                                         // cast to expected type
 
-            /** Normal non-Array call */
+            /* Normal non-Array call */
             def genDefaultCall = {
               // reflective method call machinery
               val invokeName  = MethodClass.tpe member nme.invoke_                                  // scala.reflect.Method.invoke(...)
               def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))     // cache Symbol
-              def lookup      = Apply(cache, List(qual1() GETCLASS))                                // get Method object from cache
+              def lookup      = Apply(cache, List(qual1() GETCLASS()))                                // get Method object from cache
               def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
@@ -369,7 +369,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY)
             }
 
-            /** A possible primitive method call, represented by methods in BoxesRunTime. */
+            /* A possible primitive method call, represented by methods in BoxesRunTime. */
             def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
             def genValueCallWithTest = {
               getPrimitiveReplacementForStructuralCall(methSym.name) match {
@@ -380,7 +380,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               }
             }
 
-            /** A native Array call. */
+            /* A native Array call. */
             def genArrayCall = fixResult(
               methSym.name match {
                 case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
@@ -391,9 +391,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               mustBeUnit = methSym.name == nme.update
             )
 
-            /** A conditional Array call, when we can't determine statically if the argument is
-             *  an Array, but the structural type method signature is consistent with an Array method
-             *  so we have to generate both kinds of code.
+            /* A conditional Array call, when we can't determine statically if the argument is
+             * an Array, but the structural type method signature is consistent with an Array method
+             * so we have to generate both kinds of code.
              */
             def genArrayCallWithTest =
               IF ((qual1() GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
@@ -473,7 +473,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
           /* For testing purposes, the dynamic application's condition
            * can be printed-out in great detail. Remove? */
-          if (settings.debug.value) {
+          if (settings.debug) {
             def paramsToString(xs: Any*) = xs map (_.toString) mkString ", "
             val mstr = ad.symbol.tpe match {
               case MethodType(mparams, resType) =>

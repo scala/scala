@@ -10,6 +10,14 @@ trait UnCurry {
   import global._
   import definitions._
 
+  /** Note: changing tp.normalize to tp.dealias in this method leads to a single
+   *  test failure: run/t5688.scala, where instead of the expected output
+   *    Vector(ta, tb, tab)
+   *  we instead get
+   *    Vector(tab, tb, tab)
+   *  I think that difference is not the product of sentience but of randomness.
+   *  Let us figure out why it is and then change this method.
+   */
   private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
 
   val uncurry: TypeMap = new TypeMap {

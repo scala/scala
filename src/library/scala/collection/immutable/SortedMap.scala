@@ -82,11 +82,17 @@ self =>
   override def filterKeys(p: A => Boolean): SortedMap[A, B] = new FilteredKeys(p) with SortedMap.Default[A, B] {
     implicit def ordering: Ordering[A] = self.ordering
     override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, B] = self.rangeImpl(from, until).filterKeys(p)
+    override def iteratorFrom(start: A) = self iteratorFrom start filter {case (k, _) => p(k)} 
+    override def keysIteratorFrom(start : A) = self keysIteratorFrom start filter p
+    override def valuesIteratorFrom(start : A) = self iteratorFrom start collect {case (k,v) if p(k) => v}
   }
 
   override def mapValues[C](f: B => C): SortedMap[A, C] = new MappedValues(f) with SortedMap.Default[A, C] {
     implicit def ordering: Ordering[A] = self.ordering
     override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, C] = self.rangeImpl(from, until).mapValues(f)
+    override def iteratorFrom(start: A) = self iteratorFrom start map {case (k, v) => (k, f(v))} 
+    override def keysIteratorFrom(start : A) = self keysIteratorFrom start
+    override def valuesIteratorFrom(start : A) = self valuesIteratorFrom start map f
   }
 
 }
@@ -106,13 +112,13 @@ object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
       val b = SortedMap.newBuilder[A, B1]
       b ++= this
       b += ((kv._1, kv._2))
-      b.result
+      b.result()
     }
 
     override def - (key: A): SortedMap[A, B] = {
       val b = newBuilder
       for (kv <- this; if kv._1 != key) b += kv
-      b.result
+      b.result()
     }
   }
 }

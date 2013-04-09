@@ -184,7 +184,7 @@ object Main extends Main {
     val cparg = List("-classpath", "-cp") map (arguments getArgument _) reduceLeft (_ orElse _)
     val path = cparg match {
       case Some(cp) => new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
-      case _        => PathResolver.fromPathString("")
+      case _        => PathResolver.fromPathString(".") // include '.' in the default classpath SI-6669
     }
     // print the classpath if output is verbose
     if (verbose)

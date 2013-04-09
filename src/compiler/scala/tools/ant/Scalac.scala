@@ -19,7 +19,6 @@ import org.apache.tools.ant.util.facade.{FacadeTaskHelper,
                                   ImplementationSpecificArgument}
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
-import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.io.{Path => SPath}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
@@ -496,7 +495,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     path.map(asString) mkString File.pathSeparator
 
   /** Transforms a file into a Scalac-readable string.
-   *  @param path A file to convert.
+   *  @param file A file to convert.
    *  @return     A string-representation of the file like `/x/k/a.scala`. */
   protected def asString(file: File): String =
     file.getAbsolutePath()
@@ -509,10 +508,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     new Settings(error)
 
   protected def newGlobal(settings: Settings, reporter: Reporter) =
-    if (settings.Yrangepos.value)
-      new Global(settings, reporter) with RangePositions
-    else
-      new Global(settings, reporter)
+    Global(settings, reporter)
 
 /*============================================================================*\
 **                           The big execute method                           **
@@ -676,7 +672,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
         file
       }
-      val res = execWithArgFiles(java, List(writeSettings.getAbsolutePath))
+      val res = execWithArgFiles(java, List(writeSettings().getAbsolutePath))
       if (failonerror && res != 0)
         buildError("Compilation failed because of an internal compiler error;"+
               " see the error output for details.")

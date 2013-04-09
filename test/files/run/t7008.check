@@ -1,0 +1,9 @@
+<init>: List(throws[NullPointerException](classOf[java.lang.NullPointerException]))
+bar: List(throws[Exception](classOf[java.lang.Exception]))
+baz: List(throws[IllegalStateException](classOf[java.lang.IllegalStateException]))
+foo: List(throws[Exception](classOf[java.lang.Exception]))
+=============
+<init>: List(throws[java.lang.NullPointerException](classOf[java.lang.NullPointerException]))
+bar: List(throws[java.lang.Exception](classOf[java.lang.Exception]))
+baz: List(throws[java.lang.IllegalStateException](classOf[java.lang.IllegalStateException]))
+foo: List(throws[java.lang.Exception](classOf[java.lang.Exception]))

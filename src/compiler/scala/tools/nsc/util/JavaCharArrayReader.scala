@@ -35,7 +35,7 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
     ch match {
       case '\t' =>
       case CR =>
-        if (bp < buf.size && buf(bp) == LF) {
+        if (bp < buf.length && buf(bp) == LF) {
           ch = LF
           bp += 1
         }
@@ -49,13 +49,13 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
         def udigit: Int = {
           val d = digit2int(buf(bp), 16)
           if (d >= 0) bp += 1
-          else error("error in unicode escape");
+          else error("error in unicode escape")
           d
         }
         if (buf(bp) == 'u' && decodeUni && evenSlashPrefix) {
           do {
             bp += 1 //; nextcol += 1
-          } while (buf(bp) == 'u');
+          } while (buf(bp) == 'u')
           val code = udigit << 12 | udigit << 8 | udigit << 4 | udigit
           ch = code.asInstanceOf[Char]
           isUnicode = true

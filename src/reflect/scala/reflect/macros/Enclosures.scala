@@ -34,8 +34,8 @@ trait Enclosures {
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
    *
    *  Is also priceless for emitting sane error messages for macros that are called by other macros on synthetic (i.e. position-less) trees.
-   *  In that dire case navigate the ``enclosingMacros'' stack, and it will most likely contain at least one macro with a position-ful macro application.
-   *  See ``enclosingPosition'' for a default implementation of this logic.
+   *  In that dire case navigate the `enclosingMacros` stack, and it will most likely contain at least one macro with a position-ful macro application.
+   *  See `enclosingPosition` for a default implementation of this logic.
    *
    *  Unlike `openMacros`, this is a val, which means that it gets initialized when the context is created
    *  and always stays the same regardless of whatever happens during macro expansion.
@@ -51,9 +51,9 @@ trait Enclosures {
   def enclosingImplicits: List[(Type, Tree)]
 
   /** Tries to guess a position for the enclosing application.
-   *  But that is simple, right? Just dereference ``pos'' of ``macroApplication''? Not really.
+   *  But that is simple, right? Just dereference `pos` of `macroApplication`? Not really.
    *  If we're in a synthetic macro expansion (no positions), we must do our best to infer the position of something that triggerd this expansion.
-   *  Surprisingly, quite often we can do this by navigation the ``enclosingMacros'' stack.
+   *  Surprisingly, quite often we can do this by navigation the `enclosingMacros` stack.
    */
   def enclosingPosition: Position
 

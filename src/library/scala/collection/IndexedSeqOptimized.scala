@@ -88,7 +88,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
         b += ((this(i), that(i).asInstanceOf[B]))
         i += 1
       }
-      b.result
+      b.result()
     case _ =>
       super.zip[A1, B, That](that)(bf)
   }
@@ -103,7 +103,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
       b += ((this(i), i))
       i += 1
     }
-    b.result
+    b.result()
   }
 
   override /*IterableLike*/
@@ -119,7 +119,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
       b += self(i)
       i += 1
     }
-    b.result
+    b.result()
   }
 
   override /*IterableLike*/
@@ -220,7 +220,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
       i -= 1
       b += this(i)
     }
-    b.result
+    b.result()
   }
 
   override /*SeqLike*/
@@ -231,7 +231,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
       if (0 < i) {
         i -= 1
         self(i)
-      } else Iterator.empty.next
+      } else Iterator.empty.next()
   }
 
   override /*SeqLike*/

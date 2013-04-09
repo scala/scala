@@ -183,7 +183,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, _))
-          if name.toString == ("_" + methSym.name) && isMatch(params) =>
+          if (name string_== "_" + methSym.name) && isMatch(params) =>
             Block(assign, deriveLabelDef(l)(rhs => typed(prependStats(bmps, rhs))))
 
         case _ => prependStats(bmps, rhs)

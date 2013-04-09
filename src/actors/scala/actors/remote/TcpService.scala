@@ -24,6 +24,7 @@ import scala.util.Random
  * @version 0.9.9
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object TcpService {
   private val random = new Random
   private val ports = new mutable.HashMap[Int, TcpService]
@@ -67,6 +68,7 @@ object TcpService {
  * @version 0.9.10
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
   val serializer: JavaSerializer = new JavaSerializer(this, cl)
 

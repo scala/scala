@@ -123,7 +123,7 @@ abstract class CopyPropagation {
       }
 
       override def toString(): String =
-        "\nBindings: " + bindings + "\nStack: " + stack;
+        "\nBindings: " + bindings + "\nStack: " + stack
 
       def dup: State = {
         val b: Bindings = mutable.HashMap()
@@ -164,7 +164,7 @@ abstract class CopyPropagation {
         val resBindings = mutable.HashMap[Location, Value]()
 
         for ((k, v) <- a.bindings if b.bindings.isDefinedAt(k) && v == b.bindings(k))
-          resBindings += (k -> v);
+          resBindings += (k -> v)
         new State(resBindings, resStack)
       }
     }
@@ -189,20 +189,20 @@ abstract class CopyPropagation {
           debuglog("CopyAnalysis added point: " + b)
         }
         m.exh foreach { e =>
-          in(e.startBlock) = new copyLattice.State(copyLattice.emptyBinding, copyLattice.exceptionHandlerStack);
+          in(e.startBlock) = new copyLattice.State(copyLattice.emptyBinding, copyLattice.exceptionHandlerStack)
         }
 
         // first block is special: it's not bottom, but a precisely defined state with no bindings
-        in(m.startBlock) = new lattice.State(lattice.emptyBinding, Nil);
+        in(m.startBlock) = new lattice.State(lattice.emptyBinding, Nil)
       }
     }
 
     override def run() {
       forwardAnalysis(blockTransfer)
-      if (settings.debug.value) {
+      if (settings.debug) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(in(b) != lattice.bottom,
-            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"));
+            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"))
       }
     }
 
@@ -227,7 +227,7 @@ abstract class CopyPropagation {
 
         case CONSTANT(k) =>
           if (k.tag != UnitTag)
-            out.stack = Const(k) :: out.stack;
+            out.stack = Const(k) :: out.stack
 
         case LOAD_ARRAY_ITEM(_) =>
           out.stack = (Unknown :: out.stack.drop(2))
@@ -276,14 +276,14 @@ abstract class CopyPropagation {
               v match {
                 case Deref(LocalVar(other)) =>
                   if (other != local)
-                    out.bindings += (LocalVar(local) -> v);
+                    out.bindings += (LocalVar(local) -> v)
                 case _ =>
                   out.bindings += (LocalVar(local) -> v)
               }
             case Nil =>
               sys.error("Incorrect icode in " + method + ". Expecting something on the stack.")
           }
-          out.stack = out.stack drop 1;
+          out.stack = out.stack drop 1
 
         case STORE_THIS(_) =>
           cleanReferencesTo(out, This)
@@ -291,14 +291,14 @@ abstract class CopyPropagation {
 
         case STORE_FIELD(field, isStatic) =>
           if (isStatic)
-            out.stack = out.stack.drop(1);
+            out.stack = out.stack.drop(1)
           else {
-            out.stack = out.stack.drop(2);
-            cleanReferencesTo(out, Field(AllRecords, field));
+            out.stack = out.stack.drop(2)
+            cleanReferencesTo(out, Field(AllRecords, field))
             in.stack match {
               case v :: Record(_, bindings) :: vs =>
                 bindings += (field -> v)
-              case _ => ();
+              case _ => ()
             }
           }
 
@@ -308,7 +308,7 @@ abstract class CopyPropagation {
 
         case CALL_METHOD(method, style) => style match {
           case Dynamic =>
-            out = simulateCall(in, method, false)
+            out = simulateCall(in, method, static = false)
 
           case Static(onInstance) =>
             if (onInstance) {
@@ -319,19 +319,19 @@ abstract class CopyPropagation {
                   case Record(_, bindings) =>
                     for (v <- out.stack.take(method.info.paramTypes.length + 1)
                          if v ne obj) {
-                       bindings ++= getBindingsForPrimaryCtor(in, method);
+                       bindings ++= getBindingsForPrimaryCtor(in, method)
                     }
                   case _ => ()
                 }
                 // put the Record back on the stack and remove the 'returned' value
                 out.stack = out.stack.drop(1 + method.info.paramTypes.length)
               } else
-                out = simulateCall(in, method, false)
+                out = simulateCall(in, method, static = false)
             } else
-              out = simulateCall(in, method, true)
+              out = simulateCall(in, method, static = true)
 
           case SuperCall(_) =>
-            out = simulateCall(in, method, false)
+            out = simulateCall(in, method, static = false)
         }
 
         case BOX(tpe) =>
@@ -390,7 +390,7 @@ abstract class CopyPropagation {
           out.stack = out.stack.head :: out.stack
 
         case MONITOR_ENTER() =>
-          out.stack = out.stack.drop(1);
+          out.stack = out.stack.drop(1)
 
         case MONITOR_EXIT() =>
           out.stack = out.stack.drop(1)
@@ -438,7 +438,7 @@ abstract class CopyPropagation {
           case Deref(loc1) if (loc1 == target) => false
           case Boxed(loc1) if (loc1 == target) => false
           case rec @ Record(_, _) =>
-            cleanRecord(rec);
+            cleanRecord(rec)
             true
           case _ => true
         }) &&
@@ -454,12 +454,12 @@ abstract class CopyPropagation {
      *  If the method is impure, all bindings to record fields are cleared.
      */
     final def simulateCall(state: copyLattice.State, method: Symbol, static: Boolean): copyLattice.State = {
-      val out = new copyLattice.State(state.bindings, state.stack);
-      out.stack = out.stack.drop(method.info.paramTypes.length + (if (static) 0 else 1));
+      val out = new copyLattice.State(state.bindings, state.stack)
+      out.stack = out.stack.drop(method.info.paramTypes.length + (if (static) 0 else 1))
       if (method.info.resultType != definitions.UnitClass.tpe && !method.isConstructor)
-        out.stack = Unknown :: out.stack;
+        out.stack = Unknown :: out.stack
       if (!isPureMethod(method))
-        invalidateRecords(out);
+        invalidateRecords(out)
       out
     }
 
@@ -500,8 +500,8 @@ abstract class CopyPropagation {
      *  they are passed on the stack. It works for primary constructors.
      */
     private def getBindingsForPrimaryCtor(in: copyLattice.State, ctor: Symbol): mutable.Map[Symbol, Value] = {
-      val paramAccessors = ctor.owner.constrParamAccessors;
-      var values         = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
+      val paramAccessors = ctor.owner.constrParamAccessors
+      var values         = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1)
       val bindings       = mutable.HashMap[Symbol, Value]()
 
       debuglog("getBindings for: " + ctor + " acc: " + paramAccessors)
@@ -527,8 +527,8 @@ abstract class CopyPropagation {
 //               + " having acc: " + (paramAccessors map (_.tpe))+ " vs. params" + paramTypes
 //               + "\n\t failed at pos " + i + " with " + p.tpe + " == " + paramTypes(i))
         if (p.tpe == paramTypes(i))
-          bindings += (p -> values.head);
-        values = values.tail;
+          bindings += (p -> values.head)
+        values = values.tail
       }
 
       debuglog("\t" + bindings)

@@ -12,7 +12,6 @@ import scala.collection.immutable.Range
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.SeqSplitter
 import scala.collection.generic.CanCombineFrom
-import scala.collection.parallel.IterableSplitter
 import scala.collection.Iterator
 
 /** Parallel ranges.
@@ -42,7 +41,7 @@ self =>
 
   @inline final def length = range.length
 
-  @inline final def apply(idx: Int) = range.apply(idx);
+  @inline final def apply(idx: Int) = range.apply(idx)
 
   def splitter = new ParRangeIterator
 
@@ -60,7 +59,7 @@ self =>
       val r = range.apply(ind)
       ind += 1
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
 
     private def rangeleft = range.drop(ind)
 

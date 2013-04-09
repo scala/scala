@@ -15,6 +15,7 @@ import scala.language.higherKinds
  *
  * @define actor actor
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 trait AbstractActor extends OutputChannel[Any] with CanReply[Any, Any] {
 
   type Future[+R] <: scala.actors.Future[R]

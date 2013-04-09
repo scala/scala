@@ -17,7 +17,7 @@ trait BasicBlocks {
   self: ICodes =>
 
   import opcodes._
-  import global.{ settings, log, nme }
+  import global.{ settings, debuglog, log, nme }
   import nme.isExceptionResultName
 
   /** Override Array creation for efficiency (to not go through reflection). */
@@ -68,10 +68,10 @@ trait BasicBlocks {
           addBlock(scratchBlocks.head)
           scratchBlocks = scratchBlocks.tail
         }
-        /** Return a list of successors for 'b' that come from exception handlers
-         *  covering b's (non-exceptional) successors. These exception handlers
-         *  might not cover 'b' itself. This situation corresponds to an
-         *  exception being thrown as the first thing of one of b's successors.
+        /* Return a list of successors for 'b' that come from exception handlers
+         * covering b's (non-exceptional) successors. These exception handlers
+         * might not cover 'b' itself. This situation corresponds to an
+         * exception being thrown as the first thing of one of b's successors.
          */
         while (scratchHandlers ne Nil) {
           val handler = scratchHandlers.head
@@ -263,10 +263,6 @@ trait BasicBlocks {
     /** Replaces `oldInstr` with `is`. It does not update
      *  the position field in the newly inserted instructions, so it behaves
      *  differently than the one-instruction versions of this function.
-     *
-     *  @param iold ..
-     *  @param is   ..
-     *  @return     ..
      */
     def replaceInstruction(oldInstr: Instruction, is: List[Instruction]): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
@@ -335,9 +331,9 @@ trait BasicBlocks {
       assert(!closed || ignore, this)
 
       if (ignore) {
-        if (settings.debug.value) {
-          /** Trying to pin down what it's likely to see after a block has been
-           *  put into ignore mode so we hear about it if there's a problem.
+        if (settings.debug) {
+          /* Trying to pin down what it's likely to see after a block has been
+           * put into ignore mode so we hear about it if there's a problem.
            */
           instr match {
             case JUMP(_) | RETURN(_) | THROW(_) | SCOPE_EXIT(_)               => // ok
@@ -387,7 +383,6 @@ trait BasicBlocks {
     /** Close the block */
     def close() {
       assert(!closed || ignore, this)
-      assert(instructionList.nonEmpty, "Empty block: " + this)
       if (ignore && closed) { // redundant `ignore &&` for clarity -- we should never be in state `!ignore && closed`
         // not doing anything to this block is important...
         // because the else branch reverses innocent blocks, which is wrong when they're in ignore mode (and closed)
@@ -397,7 +392,36 @@ trait BasicBlocks {
         setFlag(DIRTYSUCCS)
         instructionList = instructionList.reverse
         instrs = instructionList.toArray
+        if (instructionList.isEmpty) {
+          debuglog(s"Removing empty block $this")
+          code removeBlock this
+        }
       }
+    }
+
+    /**
+     * if cond is true, closes this block, entersIgnoreMode, and removes the block from
+     * its list of blocks. Used to allow a block to be started and then cancelled when it
+     * is discovered to be unreachable.
+     */
+    def killIf(cond: Boolean) {
+      if (!settings.YdisableUnreachablePrevention && cond) {
+        debuglog(s"Killing block $this")
+        assert(instructionList.isEmpty, s"Killing a non empty block $this")
+        // only checked under debug because fetching predecessor list is moderately expensive
+        if (settings.debug)
+          assert(predecessors.isEmpty, s"Killing block $this which is referred to from ${predecessors.mkString}")
+
+        close()
+        enterIgnoreMode()
+      }
+    }
+    
+    /**
+     * Same as killIf but with the logic of the condition reversed
+     */
+    def killUnless(cond: Boolean) {
+      this killIf !cond
     }
 
     def open() {
@@ -500,18 +524,6 @@ trait BasicBlocks {
 }
 
 object BBFlags {
-  val flagMap = Map[Int, String](
-    LOOP_HEADER -> "loopheader",
-    IGNORING    -> "ignore",
-    EX_HEADER   -> "exheader",
-    CLOSED      -> "closed",
-    DIRTYSUCCS  -> "dirtysuccs",
-    DIRTYPREDS  -> "dirtypreds"
-  )
-  def flagsToString(flags: Int) = {
-    flagMap collect { case (bit, name) if (bit & flags) != 0 => "<" + name + ">" } mkString " "
-  }
-
   /** This block is a loop header (was translated from a while). */
   final val LOOP_HEADER = (1 << 0)
 
@@ -529,4 +541,16 @@ object BBFlags {
 
   /** Code has been changed, recompute predecessors. */
   final val DIRTYPREDS  = (1 << 5)
+
+  val flagMap = Map[Int, String](
+    LOOP_HEADER -> "loopheader",
+    IGNORING    -> "ignore",
+    EX_HEADER   -> "exheader",
+    CLOSED      -> "closed",
+    DIRTYSUCCS  -> "dirtysuccs",
+    DIRTYPREDS  -> "dirtypreds"
+  )
+  def flagsToString(flags: Int) = {
+    flagMap collect { case (bit, name) if (bit & flags) != 0 => "<" + name + ">" } mkString " "
+  }
 }

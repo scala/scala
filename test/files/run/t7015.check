@@ -1,0 +1,11 @@
+Method returns Null type: null
+Method takes non Null type: null
+call through method null
+call through bridge null
+fetch field: null
+fetch field on companion: null
+fetch local: null
+fetch array element: null
+method that takes object: null
+method that takes anyref: null
+method that takes any: null

@@ -158,13 +158,7 @@ object ScalaRunTime {
 
   // Java bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4071957
   // More background at ticket #2318.
-  def ensureAccessible(m: JMethod): JMethod = {
-    if (!m.isAccessible) {
-      try m setAccessible true
-      catch { case _: SecurityException => () }
-    }
-    m
-  }
+  def ensureAccessible(m: JMethod): JMethod = scala.reflect.ensureAccessible(m)
 
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
@@ -227,7 +221,7 @@ object ScalaRunTime {
     if (iv == fv) return iv
 
     val lv = fv.toLong
-    if (lv == fv) return hash(lv)
+    if (lv == fv) hash(lv)
     else fv.hashCode
   }
   def hash(lv: Long): Int = {

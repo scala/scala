@@ -15,9 +15,12 @@ package reflect
 object NameTransformer {
   // XXX Short term: providing a way to alter these without having to recompile
   // the compiler before recompiling the compiler.
-  val MODULE_SUFFIX_STRING = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
-  val NAME_JOIN_STRING     = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
-  val MODULE_INSTANCE_NAME = "MODULE$"
+  val MODULE_SUFFIX_STRING          = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
+  val NAME_JOIN_STRING              = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
+  val MODULE_INSTANCE_NAME          = "MODULE$"
+  val LOCAL_SUFFIX_STRING           = " "
+  val SETTER_SUFFIX_STRING          = "_$eq"
+  val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
 
   private val nops = 128
   private val ncodes = 26 * 26
@@ -94,7 +97,7 @@ object NameTransformer {
   def decode(name0: String): String = {
     //System.out.println("decode: " + name);//DEBUG
     val name = if (name0.endsWith("<init>")) name0.stripSuffix("<init>") + "this"
-               else name0;
+               else name0
     var buf: StringBuilder = null
     val len = name.length()
     var i = 0

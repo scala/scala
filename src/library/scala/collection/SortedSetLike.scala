@@ -40,4 +40,14 @@ self =>
     case that: SortedSet[_] if that.ordering == ordering => that.hasAll(this.iterator)
     case that => super.subsetOf(that)
   }
+
+  /**
+   * Creates an iterator that contains all values from this collection
+   * greater than or equal to `start` according to the ordering of
+   * this collection. x.iteratorFrom(y) is equivalent to but will usually
+   * be more efficient than x.from(y).iterator
+   * 
+   * @param start The lower-bound (inclusive) of the iterator
+   */
+  def iteratorFrom(start: A): Iterator[A] = keysIteratorFrom(start)
 }

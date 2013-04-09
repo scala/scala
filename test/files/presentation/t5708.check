@@ -35,8 +35,9 @@ retrieved 43 members
 [accessible:  true] `value CONST_STRINGString("constant")`
 [accessible:  true] `value __leftOfArrowtest.Compat.type`
 [accessible:  true] `value __resultOfEnsuringtest.Compat.type`
+[accessible:  true] `value __stringToFormattest.Compat.type`
+[accessible:  true] `value __thingToAddtest.Compat.type`
 [accessible:  true] `value pkgPrivateVString`
-[accessible:  true] `value selfAny`
 [accessible: false] `method clone()Object`
 [accessible: false] `method finalize()Unit`
 [accessible: false] `method privateM=> String`

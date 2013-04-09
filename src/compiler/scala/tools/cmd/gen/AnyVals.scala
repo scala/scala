@@ -13,7 +13,7 @@ trait AnyValReps {
 
   sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String) extends AnyValRep(name,repr,javaEquiv) {
 
-    case class Op(val op : String, val doc : String)
+    case class Op(op : String, doc : String)
 
     private def companionCoercions(tos: AnyValRep*) = {
       tos.toList map (to =>

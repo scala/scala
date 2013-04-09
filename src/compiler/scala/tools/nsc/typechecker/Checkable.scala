@@ -195,11 +195,18 @@ trait Checkable {
      *  so I will consult with moors about the optimal time to be doing this.
      */
     def areIrreconcilableAsParents(sym1: Symbol, sym2: Symbol): Boolean = areUnrelatedClasses(sym1, sym2) && (
-         sym1.initialize.isEffectivelyFinal // initialization important
-      || sym2.initialize.isEffectivelyFinal
+         isEffectivelyFinal(sym1) // initialization important
+      || isEffectivelyFinal(sym2)
       || !sym1.isTrait && !sym2.isTrait
       || sym1.isSealed && sym2.isSealed && allChildrenAreIrreconcilable(sym1, sym2) && !currentRun.compiles(sym1) && !currentRun.compiles(sym2)
     )
+    private def isEffectivelyFinal(sym: Symbol): Boolean = (
+      // initialization important
+      sym.initialize.isEffectivelyFinal || (
+        settings.future && isTupleSymbol(sym) // SI-7294 step into the future and treat TupleN as final.
+      )
+    )
+
     def isNeverSubClass(sym1: Symbol, sym2: Symbol) = areIrreconcilableAsParents(sym1, sym2)
 
     private def isNeverSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean = /*logResult(s"isNeverSubArgs($tps1, $tps2, $tparams)")*/ {
