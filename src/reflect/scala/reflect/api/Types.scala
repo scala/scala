@@ -50,7 +50,7 @@ package api
  *
  *  @contentDiagram hideNodes "*Api"
  */
-trait Types extends ImplicitTags {
+trait Types {
   self: Universe =>
 
   /** The type of Scala types, and also Scala type signatures.

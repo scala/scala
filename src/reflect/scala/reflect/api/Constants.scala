@@ -183,12 +183,6 @@ trait Constants {
    */
   type Constant >: Null <: AnyRef with ConstantApi
 
-  /** A tag that preserves the identity of the `Constant` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ConstantTag: ClassTag[Constant]
-
   /** The constructor/extractor for `Constant` instances.
    *  @group Extractors
    */

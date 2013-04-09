@@ -68,6 +68,7 @@ abstract class Universe extends Symbols
                            with Exprs
                            with TypeTags
                            with TagInterop
+                           with ImplicitTags
                            with StandardDefinitions
                            with StandardNames
                            with BuildUtils
