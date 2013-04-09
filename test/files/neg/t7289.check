@@ -1,0 +1,4 @@
+t7289.scala:8: error: could not find implicit value for parameter e: Test.Schtroumpf[scala.collection.immutable.Nil.type]
+  implicitly[Schtroumpf[Nil.type]]
+            ^
+one error found
