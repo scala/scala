@@ -36,7 +36,7 @@ trait StdNames {
       result
     }
     def result: Set[TermName] = try kws finally kws = null
-  }
+    }
 
   private final object compactify extends (String => String) {
     val md5 = MessageDigest.getInstance("MD5")
@@ -86,7 +86,7 @@ trait StdNames {
     def flattenedName(segments: Name*): NameType =
       compactify(segments mkString NAME_JOIN_STRING)
 
-    val NAME_JOIN_STRING: String              = NameTransformer.NAME_JOIN_STRING
+    val NAME_JOIN_STRING: String     = NameTransformer.NAME_JOIN_STRING
     val MODULE_SUFFIX_STRING: String          = NameTransformer.MODULE_SUFFIX_STRING
     val SETTER_SUFFIX_STRING: String          = NameTransformer.SETTER_SUFFIX_STRING
     val LOCAL_SUFFIX_STRING: String           = NameTransformer.LOCAL_SUFFIX_STRING
@@ -353,13 +353,13 @@ trait StdNames {
     def expandedSetterName(name: TermName, base: Symbol) = expandedNameInternal(name, base, TRAIT_SETTER_SEPARATOR_STRING)
 
     /** If `name` is an expandedName name, the original (unexpanded) name.
-     *  Otherwise `name` itself.
+    *  Otherwise `name` itself.
      *  Look backward from the end of the string for "$$", and take the
      *  part of the string after that; but if the string is "$$$" or longer,
      *  be sure to retain the extra dollars.
-     */
-    def unexpandedName(name: Name): Name = name lastIndexOf "$$" match {
-      case -1  => name
+    */
+    def unexpandedName(name: Name): Name = name lastIndexOf EXPAND_SEPARATOR_STRING match {
+      case -1 | 0 => name
       case idx0 =>
         // Sketchville - We've found $$ but if it's part of $$$ or $$$$
         // or something we need to keep the bonus dollars, so e.g. foo$$$outer
@@ -386,7 +386,7 @@ trait StdNames {
 
     def unspecializedName(name: Name): Name = (
       if (name endsWith SPECIALIZED_SUFFIX)
-        name.subName(0, name.lastIndexOf('m') - 1)
+      name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
 
@@ -425,7 +425,7 @@ trait StdNames {
       else name indexOf DEFAULT_GETTER_STRING match {
         case -1  => name.toTermName
         case idx => name.toTermName take idx
-      }
+    }
     )
 
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
@@ -1030,4 +1030,4 @@ trait StdNames {
   }
 
   lazy val sn: SymbolNames = new SymbolNames { }
-}
+  }
