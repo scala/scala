@@ -11,6 +11,7 @@ import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, Buffe
 import java.io.{ File => JFile }
 import java.net.URL
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.internal.util.Statistics
 
 /**
  * An abstraction over files for use in the reflection/compiler libraries.
@@ -112,7 +113,10 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   def underlyingSource: Option[AbstractFile] = None
 
   /** Does this abstract file denote an existing file? */
-  def exists: Boolean = (file eq null) || file.exists
+  def exists: Boolean = {
+    if (Statistics.canEnable) Statistics.incCounter(IOStats.fileExistsCount)
+    (file eq null) || file.exists
+  }
 
   /** Does this abstract file represent something which can contain classfiles? */
   def isClassContainer = isDirectory || (file != null && (extension == "jar" || extension == "zip"))
