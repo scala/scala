@@ -17,7 +17,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, MacroContextClass, MacroContextPrefixType }
+  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, isTupleType, MacroContextClass, MacroContextPrefixType }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -640,6 +640,28 @@ abstract class TreeInfo {
 
     def unapply(tree: Tree): Option[(Tree, List[Tree], List[List[Tree]])] =
       unapply(dissectApplied(tree))
+  }
+
+  // match a tree that's a tuple creation
+  object TupleCtor {
+    def unapplySeq(tree: Tree): Option[Seq[Tree]] =
+      tree match {
+        case Applied(fun, _, List(args)) if {
+              args.nonEmpty && (fun.symbol ne NoSymbol) &&
+              fun.symbol == TupleClass(args.length).companionModule.info.nonPrivateMember(nme.apply)
+              } => // Tuple::apply isn't currently specialized, so no need for `unspecializedSymbol`
+          Some(args.toSeq)
+        case _ => None
+      }
+  }
+
+  object TuplePattern {
+    def unapplySeq(tree: Tree): Option[Seq[Tree]] =
+      tree match {
+        case Apply(fun, args) if args.nonEmpty && fun.isTyped && isTupleType(fun.tpe.finalResultType) =>
+          Some(args.toSeq)
+        case _ => None
+      }
   }
 
   /** Does list of trees start with a definition of

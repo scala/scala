@@ -175,8 +175,13 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
-      private val pointsToBound = mutable.HashSet(scrutinee.sym)
-      private val trees         = mutable.HashSet.empty[Tree]
+      private val pointsToBound: mutable.HashSet[Symbol] =
+        scrutinee match {
+          case ts: TupleScrutinee => mutable.HashSet() ++ ts.rootSyms
+          case _ => mutable.HashSet(scrutinee.sym)
+        }
+
+      private val trees = mutable.HashSet.empty[Tree]
 
       // the substitution that renames variables to variables in pointsToBound
       private var normalize: Substitution  = EmptySubstitution
@@ -475,7 +480,10 @@ trait MatchAnalysis extends MatchApproximation {
           def examplesFor(rootSym: Symbol) =
             matchFailModels.map(modelToCounterExample(Var(approx.binderToUniqueTree(rootSym))))
 
-          val examples = examplesFor(scrutinee.sym)
+          val examples = scrutinee match {
+            case ts: TupleScrutinee => (ts.rootSyms map examplesFor).transpose map TupleExample
+            case _                  => examplesFor(scrutinee.sym)
+          }
 
           if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
           CounterExample.prune(examples).map(_.toString).sorted

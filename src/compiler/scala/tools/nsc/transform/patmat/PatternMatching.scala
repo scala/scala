@@ -14,6 +14,7 @@ import scala.tools.nsc.transform.Transform
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.Types
 import scala.reflect.internal.util.{Position, NoPosition}
+import scala.tools.nsc.symtab.Flags.SYNTHETIC
 
 /** Translate pattern matching.
   *
@@ -101,7 +102,7 @@ trait Debugging {
 }
 
 trait Interface extends ast.TreeDSL {
-  import global.{abort, gen, newTermName, analyzer, Type, NoType, ErrorType, Symbol, NoSymbol, Tree, EmptyTree, treeInfo}
+  import global.{abort, gen, newTermName, analyzer, currentUnit, Type, NoType, ErrorType, Symbol, NoSymbol, Tree, EmptyTree, treeInfo}
   import analyzer.Typer
 
   // 2.10/2.11 compatibility
@@ -134,7 +135,6 @@ trait Interface extends ast.TreeDSL {
     def selector: Tree
     def sym: Symbol
     def info: Type
-    def setInfo(tp: Type): Symbol
 
     def defs: List[Tree]
     // for MatchError thrown by default case
@@ -147,22 +147,22 @@ trait Interface extends ast.TreeDSL {
     assert(sym ne NoSymbol, "Use NoScrutinee for no-symbol scrutinee "+ selector)
 
     def info: Type = sym.info
-    def setInfo(tp: Type): Symbol = sym.setInfo(tp)
 
     def defs = List(CODE.VAL(sym)  === selector)
     def ref  = CODE.REF(sym)
   }
 
   // for an optimized match that unrolls the tuple that is the selector
-  case class TupleScrutinee(selector: Tree, defs: List[Tree]) extends Scrutinee {
-    def sym: Symbol               = NoSymbol
-    def setInfo(tp: Type): Symbol = NoSymbol
-
+  case class TupleScrutinee(selector: Tree, elems: List[Tree])(matchOwner: Symbol) extends Scrutinee { import CODE._
     def info: Type = selector.tpe
 
-    lazy val rootSyms = defs map (_.symbol)
-    def elemRefs      = rootSyms map (CODE.REF(_))
-    def ref           = gen.mkTuple(elemRefs)
+    lazy val rootSyms = elems map { el => matchOwner.newTermSymbol(currentUnit.freshTermName("tupEl"), el.pos, newFlags = SYNTHETIC) setInfo el.tpe }
+    def elemRefs: List[Tree] = rootSyms map (REF(_))
+
+    def defs = List.map2(rootSyms, elems)(VAL(_) === _ )
+    def ref  = gen.mkTuple(elemRefs)
+
+    def sym: Symbol = abort("TupleScrutinee does not have a symbol.")
   }
 
   // not meant to emit a match, for try/catch translation
@@ -170,7 +170,6 @@ trait Interface extends ast.TreeDSL {
     assert(sym ne NoSymbol, "Use NoScrutinee for no-symbol scrutinee "+ selector)
 
     def info: Type = sym.info
-    def setInfo(tp: Type): Symbol = sym.setInfo(tp)
 
     def ref = CODE.REF(sym)
 
@@ -180,14 +179,13 @@ trait Interface extends ast.TreeDSL {
 
   // for alternatives
   case object NoScrutinee extends Scrutinee {
-    def sym: Symbol               = NoSymbol
-    def info: Type                = NoType
-    def setInfo(tp: Type): Symbol = NoSymbol
-    def ref: Tree                 = EmptyTree
-    def defs: List[Tree]          = Nil
-    override def pos              = NoPosition
+    def sym: Symbol      = NoSymbol
+    def info: Type       = NoType
+    def ref: Tree        = EmptyTree
+    def defs: List[Tree] = Nil
+    override def pos     = NoPosition
 
-    def selector: Tree            = abort("NoScrutinee does not have a selector.")
+    def selector: Tree   = abort("NoScrutinee does not have a selector.")
   }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
