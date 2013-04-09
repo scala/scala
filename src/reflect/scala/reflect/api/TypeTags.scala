@@ -221,24 +221,7 @@ trait TypeTags { self: Universe =>
 
 
     def apply[T](mirror1: scala.reflect.api.Mirror[self.type], tpec1: TypeCreator): WeakTypeTag[T] =
-      tpec1(mirror1) match {
-        case ByteTpe    => WeakTypeTag.Byte.asInstanceOf[WeakTypeTag[T]]
-        case ShortTpe   => WeakTypeTag.Short.asInstanceOf[WeakTypeTag[T]]
-        case CharTpe    => WeakTypeTag.Char.asInstanceOf[WeakTypeTag[T]]
-        case IntTpe     => WeakTypeTag.Int.asInstanceOf[WeakTypeTag[T]]
-        case LongTpe    => WeakTypeTag.Long.asInstanceOf[WeakTypeTag[T]]
-        case FloatTpe   => WeakTypeTag.Float.asInstanceOf[WeakTypeTag[T]]
-        case DoubleTpe  => WeakTypeTag.Double.asInstanceOf[WeakTypeTag[T]]
-        case BooleanTpe => WeakTypeTag.Boolean.asInstanceOf[WeakTypeTag[T]]
-        case UnitTpe    => WeakTypeTag.Unit.asInstanceOf[WeakTypeTag[T]]
-        case AnyTpe     => WeakTypeTag.Any.asInstanceOf[WeakTypeTag[T]]
-        case AnyValTpe  => WeakTypeTag.AnyVal.asInstanceOf[WeakTypeTag[T]]
-        case AnyRefTpe  => WeakTypeTag.AnyRef.asInstanceOf[WeakTypeTag[T]]
-        case ObjectTpe  => WeakTypeTag.Object.asInstanceOf[WeakTypeTag[T]]
-        case NothingTpe => WeakTypeTag.Nothing.asInstanceOf[WeakTypeTag[T]]
-        case NullTpe    => WeakTypeTag.Null.asInstanceOf[WeakTypeTag[T]]
-        case _          => new WeakTypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
-      }
+      new WeakTypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
 
     def unapply[T](ttag: WeakTypeTag[T]): Option[Type] = Some(ttag.tpe)
   }
@@ -299,24 +282,7 @@ trait TypeTags { self: Universe =>
     val Null:    TypeTag[scala.Null]       = new PredefTypeTag[scala.Null]       (NullTpe,    _.TypeTag.Null)
 
     def apply[T](mirror1: scala.reflect.api.Mirror[self.type], tpec1: TypeCreator): TypeTag[T] =
-      tpec1(mirror1) match {
-        case ByteTpe    => TypeTag.Byte.asInstanceOf[TypeTag[T]]
-        case ShortTpe   => TypeTag.Short.asInstanceOf[TypeTag[T]]
-        case CharTpe    => TypeTag.Char.asInstanceOf[TypeTag[T]]
-        case IntTpe     => TypeTag.Int.asInstanceOf[TypeTag[T]]
-        case LongTpe    => TypeTag.Long.asInstanceOf[TypeTag[T]]
-        case FloatTpe   => TypeTag.Float.asInstanceOf[TypeTag[T]]
-        case DoubleTpe  => TypeTag.Double.asInstanceOf[TypeTag[T]]
-        case BooleanTpe => TypeTag.Boolean.asInstanceOf[TypeTag[T]]
-        case UnitTpe    => TypeTag.Unit.asInstanceOf[TypeTag[T]]
-        case AnyTpe     => TypeTag.Any.asInstanceOf[TypeTag[T]]
-        case AnyValTpe  => TypeTag.AnyVal.asInstanceOf[TypeTag[T]]
-        case AnyRefTpe  => TypeTag.AnyRef.asInstanceOf[TypeTag[T]]
-        case ObjectTpe  => TypeTag.Object.asInstanceOf[TypeTag[T]]
-        case NothingTpe => TypeTag.Nothing.asInstanceOf[TypeTag[T]]
-        case NullTpe    => TypeTag.Null.asInstanceOf[TypeTag[T]]
-        case _          => new TypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
-      }
+      new TypeTagImpl[T](mirror1.asInstanceOf[Mirror], tpec1)
 
     def unapply[T](ttag: TypeTag[T]): Option[Type] = Some(ttag.tpe)
   }
