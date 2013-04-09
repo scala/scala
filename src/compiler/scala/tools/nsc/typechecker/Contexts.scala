@@ -303,7 +303,6 @@ trait Contexts { self: Analyzer =>
 
     def makeNewScope(tree: Tree, owner: Symbol): Context =
       make(tree, owner, newNestedScope(scope))
-    // IDE stuff: distinguish between scopes created for typing and scopes created for naming.
 
     def makeSilent(reportAmbiguousErrors: Boolean, newtree: Tree = tree): Context = {
       val c = make(newtree)
