@@ -269,7 +269,7 @@ trait Contexts { self: Analyzer =>
 
       c.prefix =
         if (isTemplateOrPackage) c.owner.thisType
-        else if (c.owner != this.owner && c.owner.isTerm) NoPrefix
+        else if (c.owner != this.owner && c.isLocal) NoPrefix
         else prefix
       c.enclClass = if (isTemplateOrPackage) c else enclClass
       c(ConstructorSuffix) = !isTemplateOrPackage && c(ConstructorSuffix)
@@ -340,7 +340,7 @@ trait Contexts { self: Analyzer =>
             argContext.scope enter e.sym
           }
         }
-        if (c.owner.isTerm && !c.owner.isLocalDummy) {
+        if (c.isLocal && !c.owner.isLocalDummy) {
           enterElems(c.outer)
           enterLocalElems(c.scope.elems)
         }
@@ -405,12 +405,8 @@ trait Contexts { self: Analyzer =>
       else if (bufferErrors) warningsBuffer += ((pos, msg))
     }
 
-    def isLocal(): Boolean = tree match {
-      case Block(_,_)       => true
-      case PackageDef(_, _) => false
-      case EmptyTree        => false
-      case _                => outer.isLocal()
-    }
+    /** Is the owning symbol of this context a term? */
+    final def isLocal: Boolean = owner.isTerm
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
