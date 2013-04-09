@@ -86,9 +86,7 @@ trait Contexts { self: Analyzer =>
     else RootImports.completeList
   }
 
-  def rootContext(unit: CompilationUnit): Context             = rootContext(unit, EmptyTree, erasedTypes = false)
-  def rootContext(unit: CompilationUnit, tree: Tree): Context = rootContext(unit, tree, erasedTypes = false)
-  def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: Boolean): Context = {
+  def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, erasedTypes: Boolean = false): Context = {
     var sc = startContext
     for (sym <- rootImports(unit)) {
       sc = sc.makeNewImport(gen.mkWildcardImport(sym))

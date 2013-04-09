@@ -5292,7 +5292,7 @@ trait Typers extends Adaptations with Tags {
     }
 
     def atOwner(owner: Symbol): Typer =
-      newTyper(context.make(context.tree, owner))
+      newTyper(context.make(owner = owner))
 
     def atOwner(tree: Tree, owner: Symbol): Typer =
       newTyper(context.make(tree, owner))
