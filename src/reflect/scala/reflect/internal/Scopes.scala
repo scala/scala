@@ -6,6 +6,8 @@
 package scala.reflect
 package internal
 
+import scala.annotation.tailrec
+
 trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** An ADT to represent the results of symbol name lookups.
@@ -65,6 +67,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** a cache for all elements, to be used by symbol iterator.
      */
     private var elemsCache: List[Symbol] = null
+    private var cachedSize = -1
+    private def flushElemsCache() {
+      elemsCache = null
+      cachedSize = -1
+    }
 
     /** size and mask of hash tables
      *  todo: make hashtables grow?
@@ -86,6 +93,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** the number of entries in this scope */
     override def size: Int = {
+      if (cachedSize < 0)
+        cachedSize = directSize
+
+      cachedSize
+    }
+    private def directSize: Int = {
       var s = 0
       var e = elems
       while (e ne null) {
@@ -98,7 +111,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** enter a scope entry
      */
     protected def enterEntry(e: ScopeEntry) {
-      elemsCache = null
+      flushElemsCache()
       if (hashtable ne null)
         enterInHash(e)
       else if (size >= MIN_HASH)
@@ -192,7 +205,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
           e1.tail = e.tail
         }
       }
-      elemsCache = null
+      flushElemsCache()
     }
 
     /** remove symbol */
@@ -304,16 +317,43 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       e
     }
 
+    /** TODO - we can test this more efficiently than checking isSubScope
+     *  in both directions. However the size test might be enough to quickly
+     *  rule out most failures.
+     */
+    def isSameScope(other: Scope) = (
+         (size == other.size)     // optimization - size is cached
+      && (this isSubScope other)
+      && (other isSubScope this)
+    )
+
+    def isSubScope(other: Scope) = {
+      def scopeContainsSym(sym: Symbol): Boolean = {
+        @tailrec def entryContainsSym(e: ScopeEntry): Boolean = e match {
+          case null => false
+          case _    =>
+            val comparableInfo = sym.info.substThis(sym.owner, e.sym.owner)
+            (e.sym.info =:= comparableInfo) || entryContainsSym(lookupNextEntry(e))
+        }
+        entryContainsSym(this lookupEntry sym.name)
+      }
+      other.toList forall scopeContainsSym
+    }
+
     /** Return all symbols as a list in the order they were entered in this scope.
      */
     override def toList: List[Symbol] = {
       if (elemsCache eq null) {
-        elemsCache = Nil
+        var symbols: List[Symbol] = Nil
+        var count = 0
         var e = elems
         while ((e ne null) && e.owner == this) {
-          elemsCache = e.sym :: elemsCache
+          count += 1
+          symbols ::= e.sym
           e = e.next
         }
+        elemsCache = symbols
+        cachedSize = count
       }
       elemsCache
     }
