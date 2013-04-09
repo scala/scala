@@ -38,7 +38,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    */
   protected def xTag(pscope: NamespaceType): (String, AttributesType) = {
     val name = xName
-    xSpaceOpt
+    xSpaceOpt()
 
     (name, mkAttributes(name, pscope))
   }
@@ -49,7 +49,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    */
   def xProcInstr: ElementType = {
     val n = xName
-    xSpaceOpt
+    xSpaceOpt()
     xTakeUntil(mkProcInstr(_, n, _), () => tmppos, "?>")
   }
 
@@ -77,7 +77,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
 
   private def takeUntilChar(it: Iterator[Char], end: Char): String = {
     val buf = new StringBuilder
-    while (it.hasNext) it.next match {
+    while (it.hasNext) it.next() match {
       case `end`  => return buf.toString
       case ch     => buf append ch
     }
@@ -91,7 +91,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     if (xName != startName)
       errorNoEnd(startName)
 
-    xSpaceOpt
+    xSpaceOpt()
     xToken('>')
   }
 
@@ -138,9 +138,9 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     val buf = new StringBuilder
     val it = attval.iterator.buffered
 
-    while (it.hasNext) buf append (it.next match {
+    while (it.hasNext) buf append (it.next() match {
       case ' ' | '\t' | '\n' | '\r' => " "
-      case '&' if it.head == '#'    => it.next ; xCharRef(it)
+      case '&' if it.head == '#'    => it.next() ; xCharRef(it)
       case '&'                      => attr_unescape(takeUntilChar(it, ';'))
       case c                        => c
     })
@@ -157,11 +157,11 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     Utility.parseCharRef(ch, nextch, reportSyntaxError _, truncatedError _)
 
   def xCharRef(it: Iterator[Char]): String = {
-    var c = it.next
-    Utility.parseCharRef(() => c, () => { c = it.next }, reportSyntaxError _, truncatedError _)
+    var c = it.next()
+    Utility.parseCharRef(() => c, () => { c = it.next() }, reportSyntaxError _, truncatedError _)
   }
 
-  def xCharRef: String = xCharRef(() => ch, () => nextch)
+  def xCharRef: String = xCharRef(() => ch, () => nextch())
 
   /** Create a lookahead reader which does not influence the input */
   def lookahead(): BufferedIterator[Char]
@@ -194,20 +194,20 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   }
 
   def xToken(that: Char) {
-    if (ch == that) nextch
+    if (ch == that) nextch()
     else xHandleError(that, "'%s' expected instead of '%s'".format(that, ch))
   }
   def xToken(that: Seq[Char]) { that foreach xToken }
 
   /** scan [S] '=' [S]*/
-  def xEQ() = { xSpaceOpt; xToken('='); xSpaceOpt }
+  def xEQ() = { xSpaceOpt(); xToken('='); xSpaceOpt() }
 
   /** skip optional space S? */
-  def xSpaceOpt() = while (isSpace(ch) && !eof) nextch
+  def xSpaceOpt() = while (isSpace(ch) && !eof) nextch()
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
   def xSpace() =
-    if (isSpace(ch)) { nextch; xSpaceOpt }
+    if (isSpace(ch)) { nextch(); xSpaceOpt() }
     else xHandleError(ch, "whitespace expected")
 
   /** Apply a function and return the passed value */
@@ -240,7 +240,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
         truncatedError("")  // throws TruncatedXMLControl in compiler
 
       sb append ch
-      nextch
+      nextch()
     }
     unreachable
   }
@@ -253,7 +253,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   private def peek(lookingFor: String): Boolean =
     (lookahead() take lookingFor.length sameElements lookingFor.iterator) && {
       // drop the chars from the real reader (all lookahead + orig)
-      (0 to lookingFor.length) foreach (_ => nextch)
+      (0 to lookingFor.length) foreach (_ => nextch())
       true
     }
 }

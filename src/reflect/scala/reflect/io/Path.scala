@@ -56,10 +56,11 @@ object Path {
   def roots: List[Path] = java.io.File.listRoots().toList map Path.apply
 
   def apply(path: String): Path = apply(new JFile(path))
-  def apply(jfile: JFile): Path =
+  def apply(jfile: JFile): Path = try {
     if (jfile.isFile) new File(jfile)
     else if (jfile.isDirectory) new Directory(jfile)
     else new Path(jfile)
+  } catch { case ex: SecurityException => new Path(jfile) }
 
   /** Avoiding any shell/path issues by only using alphanumerics. */
   private[io] def randomPrefix = alphanumeric take 6 mkString ""
@@ -186,10 +187,10 @@ class Path private[io] (val jfile: JFile) {
   // Boolean tests
   def canRead = jfile.canRead()
   def canWrite = jfile.canWrite()
-  def exists = jfile.exists()
+  def exists = try jfile.exists() catch { case ex: SecurityException => false }
 
-  def isFile = jfile.isFile()
-  def isDirectory = jfile.isDirectory()
+  def isFile = try jfile.isFile() catch { case ex: SecurityException => false }
+  def isDirectory = try jfile.isDirectory() catch { case ex: SecurityException => false }
   def isAbsolute = jfile.isAbsolute()
   def isEmpty = path.length == 0
 

@@ -9,7 +9,7 @@ trait GenTypes {
 
   /**
    *  Reify a type.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reifyType(tpe: Type): Tree = {
     assert(tpe != null, "tpe is null")
@@ -69,8 +69,7 @@ trait GenTypes {
   def reificationIsConcrete: Boolean = state.reificationIsConcrete
 
   def spliceType(tpe: Type): Tree = {
-    val quantified = currentQuantified
-    if (tpe.isSpliceable && !(quantified contains tpe.typeSymbol)) {
+    if (tpe.isSpliceable && !(boundSymbolsInCallstack contains tpe.typeSymbol)) {
       if (reifyDebug) println("splicing " + tpe)
 
       val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.WeakTypeTag.toString
@@ -156,7 +155,7 @@ trait GenTypes {
    */
   private def reifySemiConcreteTypeMember(tpe: Type): Tree = tpe match {
     case tpe @ TypeRef(pre @ SingleType(prepre, presym), sym, args) if sym.isAbstractType && !sym.isExistential =>
-      return mirrorFactoryCall(nme.TypeRef, reify(pre), mirrorBuildCall(nme.selectType, reify(sym.owner), reify(sym.name.toString)), reify(args))
+      mirrorFactoryCall(nme.TypeRef, reify(pre), mirrorBuildCall(nme.selectType, reify(sym.owner), reify(sym.name.toString)), reify(args))
   }
 
   /** Reify an annotated type, i.e. the one that makes us deal with AnnotationInfos */

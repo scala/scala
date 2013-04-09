@@ -8,13 +8,13 @@
 
 package scala.util.parsing.input
 
-/** `Position` is the base trait for objects describing a position in a ``document''.
+/** `Position` is the base trait for objects describing a position in a `document`.
  *
  *  It provides functionality for:
  *   - generating a visual representation of this position (`longString`);
  *   - comparing two positions (`<`).
  *
- *  To use this class for a concrete kind of ``document'', implement the `lineContents` method.
+ *  To use this class for a concrete kind of `document`, implement the `lineContents` method.
  *
  * @author Martin Odersky
  * @author Adriaan Moors

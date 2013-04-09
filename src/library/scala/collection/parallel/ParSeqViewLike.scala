@@ -125,8 +125,8 @@ self =>
   }
   protected def newReversed: Transformed[T] = new Reversed { }
   protected def newPatched[U >: T](_from: Int, _patch: GenSeq[U], _replaced: Int): Transformed[U] = new {
-    val from = _from;
-    val patch = _patch;
+    val from = _from
+    val patch = _patch
     val replaced = _replaced
   } with Patched[U]
 
@@ -147,7 +147,7 @@ self =>
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[This, S, That]): That = newMapped(f).asInstanceOf[That]
   override def zip[U >: T, S, That](that: GenIterable[S])(implicit bf: CanBuildFrom[This, (U, S), That]): That = newZippedTryParSeq(that).asInstanceOf[That]
   override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[This, (U, Int), That]): That =
-    newZipped(ParRange(0, splitter.remaining, 1, false)).asInstanceOf[That]
+    newZipped(ParRange(0, splitter.remaining, 1, inclusive = false)).asInstanceOf[That]
   override def reverse: This = newReversed.asInstanceOf[This]
   override def reverseMap[S, That](f: T => S)(implicit bf: CanBuildFrom[This, S, That]): That = reverse.map(f)
 
@@ -173,7 +173,7 @@ self =>
   } otherwise {
     val b = bf(underlying)
     b ++= this.iterator
-    b.result
+    b.result()
   }
 
   /* tasks */

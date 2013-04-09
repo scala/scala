@@ -76,6 +76,19 @@ trait Collections {
     lb.toList
   }
 
+  final def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
+    val buf = new ListBuffer[A]
+    val seen = mutable.Set[B]()
+    xs foreach { x =>
+      val y = f(x)
+      if (!seen(y)) {
+        buf += x
+        seen += y
+      }
+    }
+    buf.toList
+  }
+
   @tailrec final def flattensToEmpty(xss: Seq[Seq[_]]): Boolean = {
     xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
   }
@@ -126,7 +139,7 @@ trait Collections {
       ys1 = ys1.tail
       ys2 = ys2.tail
     }
-    buf.result
+    buf.result()
   }
   final def foreach2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Unit): Unit = {
     var ys1 = xs1

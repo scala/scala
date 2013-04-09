@@ -39,7 +39,7 @@ class OfflineCompilerCommand(arguments: List[String], settings: FscSettings) ext
 
   override def cmdName = "fsc"
   override def usageMsg = (
-    createUsageMsg("where possible fsc", false, x => x.isStandard && settings.isFscSpecific(x.name)) +
+    createUsageMsg("where possible fsc", shouldExplain = false, x => x.isStandard && settings.isFscSpecific(x.name)) +
     "\n\nStandard scalac options also available:" +
     createUsageMsg(x => x.isStandard && !settings.isFscSpecific(x.name))
   )

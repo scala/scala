@@ -137,7 +137,7 @@ final class ListBuffer[A]
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString)
     if (exported) copy()
     if (n == 0) {
-      val newElem = new :: (x, start.tail);
+      val newElem = new :: (x, start.tail)
       if (last0 eq start) {
         last0 = newElem
       }

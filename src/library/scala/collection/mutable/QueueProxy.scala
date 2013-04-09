@@ -67,7 +67,7 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
    *
    *  @return the first element of the queue.
    */
-  override def dequeue(): A = self.dequeue
+  override def dequeue(): A = self.dequeue()
 
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.
@@ -79,7 +79,7 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear(): Unit = self.clear
+  override def clear(): Unit = self.clear()
 
   /** Returns an iterator over all elements on the queue.
    *

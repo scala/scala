@@ -69,6 +69,8 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     s
   }
 
+  override def isEmpty: Boolean = 0 until nwords forall (i => word(i) == 0)
+
   implicit def ordering: Ordering[Int] = Ordering.Int
 
   def rangeImpl(from: Option[Int], until: Option[Int]): This = {
@@ -98,8 +100,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     fromBitMaskNoCopy(a)
   }
 
-  def iterator: Iterator[Int] = new AbstractIterator[Int] {
-    private var current = 0
+  def iterator: Iterator[Int] = iteratorFrom(0)
+  
+  override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
+    private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
       while (current < end && !self.contains(current)) current += 1
@@ -107,7 +111,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     }
     def next(): Int =
       if (hasNext) { val r = current; current += 1; r }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   override def foreach[B](f: Int => B) {

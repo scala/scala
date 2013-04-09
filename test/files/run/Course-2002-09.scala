@@ -8,8 +8,8 @@ trait Constraint {
 }
 
 object NoConstraint extends Constraint {
-  def newValue: Unit = error("NoConstraint.newValue");
-  def dropValue: Unit = error("NoConstraint.dropValue");
+  def newValue: Unit = sys.error("NoConstraint.newValue");
+  def dropValue: Unit = sys.error("NoConstraint.dropValue");
 }
 
 class Adder(a1: Quantity,a2: Quantity,sum: Quantity) extends Constraint {
@@ -47,7 +47,7 @@ class Multiplier(m1: Quantity, m2: Quantity, prod: Quantity)
 
 class Squarer(square: Quantity, root: Quantity) extends Constraint {
   def newValue: Unit = Pair(square.getValue, root.getValue) match {
-    case Pair(Some(x), _      )if (x < 0) => error("Square of negative number")
+    case Pair(Some(x), _      )if (x < 0) => sys.error("Square of negative number")
     case Pair(Some(x), _      )           => root.setValue(Math.sqrt(x), this)
     case Pair(_      , Some(x))           => square.setValue(x*x, this)
     case _                                =>
@@ -72,8 +72,8 @@ class Eq(a: Quantity, b: Quantity) extends Constraint {
 }
 
 class Constant(q: Quantity, v: Double) extends Constraint {
-  def newValue: Unit = error("Constant.newValue");
-  def dropValue: Unit = error("Constant.dropValue");
+  def newValue: Unit = sys.error("Constant.newValue");
+  def dropValue: Unit = sys.error("Constant.dropValue");
   q connect this;
   q.setValue(v, this);
 }
@@ -100,7 +100,7 @@ class Quantity() {
 
   def setValue(v: Double, setter: Constraint) = value match {
     case Some(v1) =>
-      if (v != v1) error("Error! contradiction: " + v + " and " + v1);
+      if (v != v1) sys.error("Error! contradiction: " + v + " and " + v1);
     case None =>
       informant = setter; value = Some(v);
       for (c <- constraints; if !(c == informant)) {

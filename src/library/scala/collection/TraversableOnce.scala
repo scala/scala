@@ -269,7 +269,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
     val b = cbf()
     b ++= seq
-    b.result
+    b.result()
   }
 
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
@@ -277,7 +277,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     for (x <- self)
       b += x
 
-    b.result
+    b.result()
   }
 
   def mkString(start: String, sep: String, end: String): String =
@@ -383,17 +383,17 @@ object TraversableOnce {
     new FlattenOps[A](travs map ev)
 
   /* Functionality reused in Iterator.CanBuildFrom */
-  private[collection] abstract class BufferedCanBuildFrom[A, Coll[X] <: TraversableOnce[X]] extends generic.CanBuildFrom[Coll[_], A, Coll[A]] {
-    def bufferToColl[B](buff: ArrayBuffer[B]): Coll[B]
-    def traversableToColl[B](t: GenTraversable[B]): Coll[B]
+  private[collection] abstract class BufferedCanBuildFrom[A, CC[X] <: TraversableOnce[X]] extends generic.CanBuildFrom[CC[_], A, CC[A]] {
+    def bufferToColl[B](buff: ArrayBuffer[B]): CC[B]
+    def traversableToColl[B](t: GenTraversable[B]): CC[B]
 
-    def newIterator: Builder[A, Coll[A]] = new ArrayBuffer[A] mapResult bufferToColl
+    def newIterator: Builder[A, CC[A]] = new ArrayBuffer[A] mapResult bufferToColl
 
     /** Creates a new builder on request of a collection.
      *  @param from  the collection requesting the builder to be created.
      *  @return the result of invoking the `genericBuilder` method on `from`.
      */
-    def apply(from: Coll[_]): Builder[A, Coll[A]] = from match {
+    def apply(from: CC[_]): Builder[A, CC[A]] = from match {
       case xs: generic.GenericTraversableTemplate[_, _] => xs.genericBuilder.asInstanceOf[Builder[A, Traversable[A]]] mapResult {
         case res => traversableToColl(res.asInstanceOf[GenTraversable[A]])
       }
@@ -422,7 +422,7 @@ object TraversableOnce {
     def flatten: Iterator[A] = new AbstractIterator[A] {
       val its = travs.toIterator
       private var it: Iterator[A] = Iterator.empty
-      def hasNext: Boolean = it.hasNext || its.hasNext && { it = its.next.toIterator; hasNext }
+      def hasNext: Boolean = it.hasNext || its.hasNext && { it = its.next().toIterator; hasNext }
       def next(): A = if (hasNext) it.next() else Iterator.empty.next()
     }
   }

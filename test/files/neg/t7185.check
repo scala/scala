@@ -1,0 +1,7 @@
+t7185.scala:2: error: overloaded method value apply with alternatives:
+  (f: scala.xml.Node => Boolean)scala.xml.NodeSeq <and>
+  (i: Int)scala.xml.Node
+ cannot be applied to ()
+  <e></e>()
+   ^
+one error found

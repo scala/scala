@@ -1,0 +1,9 @@
+constructor-init-order.scala:7: warning: Reference to uninitialized value baz
+  val bar1         = baz     // warn
+                     ^
+constructor-init-order.scala:17: warning: Reference to uninitialized variable baz
+  var bar1         = baz     // warn
+                     ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

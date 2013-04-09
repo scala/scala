@@ -41,7 +41,7 @@ abstract class Driver {
     command  = new CompilerCommand(args.toList, ss)
     settings = command.settings
 
-    if (settings.version.value) {
+    if (settings.version) {
       reporter.echo(versionMsg)
     } else if (processSettingsHook()) {
       val compiler = newCompiler()

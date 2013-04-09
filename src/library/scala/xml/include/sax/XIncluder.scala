@@ -28,7 +28,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
   def startDocument() {
     try {
       out.write("<?xml version='1.0' encoding='"
-                + encoding + "'?>\r\n");
+                + encoding + "'?>\r\n")
     }
     catch {
       case e:IOException =>
@@ -52,16 +52,16 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
 
   def startElement(namespaceURI: String, localName: String, qualifiedName: String, atts: Attributes) = {
     try {
-      out.write("<" + qualifiedName);
+      out.write("<" + qualifiedName)
       var i = 0; while (i < atts.getLength()) {
-        out.write(" ");
-        out.write(atts.getQName(i));
-        out.write("='");
-        val value = atts.getValue(i);
+        out.write(" ")
+        out.write(atts.getQName(i))
+        out.write("='")
+        val value = atts.getValue(i)
         // @todo Need to use character references if the encoding
         // can't support the character
         out.write(scala.xml.Utility.escape(value))
-        out.write("'");
+        out.write("'")
         i += 1
       }
       out.write(">")
@@ -87,20 +87,20 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
   def characters(ch: Array[Char], start: Int, length: Int) {
     try {
       var  i = 0; while (i < length) {
-        val c = ch(start+i);
-        if (c == '&') out.write("&amp;");
-        else if (c == '<') out.write("&lt;");
+        val c = ch(start+i)
+        if (c == '&') out.write("&amp;")
+        else if (c == '<') out.write("&lt;")
         // This next fix is normally not necessary.
         // However, it is required if text contains ]]>
         // (The end CDATA section delimiter)
-        else if (c == '>') out.write("&gt;");
-        else out.write(c);
+        else if (c == '>') out.write("&gt;")
+        else out.write(c)
         i += 1
       }
     }
     catch {
       case e: IOException =>
-        throw new SAXException("Write failed", e);
+        throw new SAXException("Write failed", e)
     }
   }
 
@@ -138,8 +138,8 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
     // if this is the source document, output a DOCTYPE declaration
     if (entities.isEmpty) {
       var id = ""
-      if (publicID != null) id = " PUBLIC \"" + publicID + "\" \"" + systemID + '"';
-      else if (systemID != null) id = " SYSTEM \"" + systemID + '"';
+      if (publicID != null) id = " PUBLIC \"" + publicID + "\" \"" + systemID + '"'
+      else if (systemID != null) id = " SYSTEM \"" + systemID + '"'
       try {
         out.write("<!DOCTYPE " + name + id + ">\r\n")
       }

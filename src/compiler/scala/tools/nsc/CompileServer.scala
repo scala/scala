@@ -115,7 +115,7 @@ class StandardCompileServer extends SocketServer {
 
     reporter = new ConsoleReporter(newSettings, in, out) {
       // disable prompts, so that compile server cannot block
-      override def displayPrompt = ()
+      override def displayPrompt() = ()
     }
     def isCompilerReusable: Boolean = {
       if (compiler == null) {
@@ -157,7 +157,7 @@ class StandardCompileServer extends SocketServer {
       }
     }
     reporter.printSummary()
-    if (isMemoryFullEnough) {
+    if (isMemoryFullEnough()) {
       info("Nulling out compiler due to memory utilization.")
       clearCompiler()
     }

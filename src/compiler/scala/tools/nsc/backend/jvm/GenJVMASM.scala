@@ -67,7 +67,6 @@ trait GenJVMASM {
       // Before erasure so we can identify generic mains.
       enteringErasure {
         val companion     = sym.linkedClassOfClass
-        val companionMain = companion.tpe.member(nme.main)
 
         if (hasJavaMainMethod(companion))
           failNoForwarder("companion contains its own main method")

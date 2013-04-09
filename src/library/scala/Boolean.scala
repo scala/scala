@@ -10,8 +10,6 @@
 
 package scala
 
-import scala.language.implicitConversions
-
 /** `Boolean` (equivalent to Java's `boolean` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Boolean` are not
  *  represented by an object in the underlying runtime system.

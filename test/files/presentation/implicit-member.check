@@ -36,6 +36,7 @@ retrieved 38 members
 [accessible:  true] `method →[B](y: B)(Implicit.type, B)`
 [accessible:  true] `value __leftOfArrowImplicit.type`
 [accessible:  true] `value __resultOfEnsuringImplicit.type`
-[accessible:  true] `value selfAny`
+[accessible:  true] `value __stringToFormatImplicit.type`
+[accessible:  true] `value __thingToAddImplicit.type`
 [accessible:  true] `value xImplicit.type`
 ================================================================================

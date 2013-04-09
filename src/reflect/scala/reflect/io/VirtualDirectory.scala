@@ -34,15 +34,15 @@ extends AbstractFile {
   override def output = sys.error("directories cannot be written")
 
   /** Does this abstract file denote an existing file? */
-  def create() { unsupported }
+  def create() { unsupported() }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete() { unsupported }
+  def delete() { unsupported() }
 
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = unsupported
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = unsupported()
 
   private val files = mutable.Map.empty[String, AbstractFile]
 
@@ -54,20 +54,20 @@ extends AbstractFile {
     (files get name filter (_.isDirectory == directory)).orNull
 
   override def fileNamed(name: String): AbstractFile =
-    Option(lookupName(name, false)) getOrElse {
+    Option(lookupName(name, directory = false)) getOrElse {
       val newFile = new VirtualFile(name, path+'/'+name)
       files(name) = newFile
       newFile
     }
 
   override def subdirectoryNamed(name: String): AbstractFile =
-    Option(lookupName(name, true)) getOrElse {
+    Option(lookupName(name, directory = true)) getOrElse {
       val dir = new VirtualDirectory(name, Some(this))
       files(name) = dir
       dir
     }
 
   def clear() {
-    files.clear();
+    files.clear()
   }
 }

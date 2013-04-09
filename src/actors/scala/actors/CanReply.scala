@@ -17,6 +17,7 @@ import scala.language.higherKinds
  *
  * @define actor `CanReply`
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 trait CanReply[-T, +R] {
 
   type Future[+P] <: () => P

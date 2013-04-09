@@ -19,18 +19,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   import global._
   import definitions._
 
-  def mkCheckInit(tree: Tree): Tree = {
-    val tpe =
-      if (tree.tpe != null || !tree.hasSymbolField) tree.tpe
-      else tree.symbol.tpe
-
-    if (!global.phase.erasedTypes && settings.warnSelectNullable.value &&
-        tpe <:< NotNullClass.tpe && !tpe.isNotNull)
-      mkRuntimeCall(nme.checkInitialized, List(tree))
-    else
-      tree
-  }
-
   /** Builds a fully attributed wildcard import node.
    */
   def mkWildcardImport(pkg: Symbol): Import = {
