@@ -7,6 +7,14 @@
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
 
+<!-- HINTS
+
+ - for faster builds, have a build.properties in the same directory as build.xml that says:
+      locker.skip=1
+      starr.use.released=1
+
+-->
+
 <!-- USAGE FROM JENKINS SCRIPTS IS (CURRENTLY) AS FOLLOWS:
 ant $antArgs $scalacArgs $targets
 
@@ -18,14 +26,12 @@ scalacArgs examples:
   "-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
 
 targets exercised:
-  build-opt nightly test.suite test.continuations.suite test.scaladoc locker.done
+  locker.done build-opt nightly test.suite test.continuations.suite test.scaladoc
 -->
 
 <!-- To use Zinc with the ant build:
   - install zinc and symlink the installed zinc script to ${basedir}/tools/zinc  (${basedir} is where build.xml and the rest of your checkout resides)
   - make sure to set ZINC_OPTS to match ANT_OPTS!
-  - invoke ant as `ant -Dstarr.version="2.10.1" -Dlocker.skip=1`
-    (zinc needs compiler jars)
 -->
 
 <!--
@@ -106,8 +112,12 @@ TODO:
 
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
+
   <!-- Generating version number -->
   <property file="${basedir}/build.number"/>
+
+  <!-- read starr.version -->
+  <property file="${basedir}/starr.number"/>
 
   <!-- Sets location of pre-compiled libraries -->
   <property name="library.starr.jar"       value="${lib.dir}/scala-library.jar"/>
@@ -219,15 +229,23 @@ TODO:
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
-      <!-- Download STARR via maven if `starr.version` is specified.
+      <!-- Download STARR via maven if `starr.use.released` is set,
+           and `starr.version` is specified (see the starr.number properties file).
            Want to slow down STARR changes, using only released versions. -->
-      <if><isset property="starr.version"/><then>
+      <if><isset property="starr.use.released"/><then>
+        <echo message="Using Scala ${starr.version} for STARR."/>
         <artifact:dependencies pathId="starr.core.path">
           <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
-        </artifact:dependencies>
-      </then></if>
+        </artifact:dependencies></then>
+      <else>
+        <path id="starr.core.path">
+          <pathelement location="${library.starr.jar}"/>
+          <pathelement location="${reflect.starr.jar}"/>
+          <pathelement location="${compiler.starr.jar}"/>
+        </path></else>
+      </if>
 
       <property name="maven-deps-done"     value="yep!"/>
     </then></if>
@@ -261,6 +279,10 @@ TODO:
     <else> <!-- version.suffix set and not empty -->
       <property name="maven.version.suffix"    value="${version.suffix}"/>
       <property name="osgi.version.suffix"     value="${version.suffix}"/></else></if>
+
+    <!-- if a maven version suffix was set (or inferred), assume we're building a release -->
+    <if><isset property="maven.version.suffix"/><then>
+      <property name="build.release"  value="1"/></then></if>
 
     <!-- not building a release and no version.suffix specified -->
     <property name="maven.version.suffix"      value="-SNAPSHOT"/>
@@ -421,23 +443,10 @@ TODO:
       <path refid="aux.libs"/>
     </path>
 
-    <!-- Download STARR via maven if `starr.version` is specified.
-         Want to slow down STARR changes, using only released versions. -->
-    <if><isset property="starr.version"/><then>
-      <echo message="Using Scala ${starr.version} for STARR."/>
-      <!-- <echo message="STARR classpath: ${ant.refid:starr.compiler.path}"/> -->
-    </then><else>
-      <path id="starr.core.path">
-        <pathelement location="${library.starr.jar}"/>
-        <pathelement location="${reflect.starr.jar}"/>
-        <pathelement location="${compiler.starr.jar}"/>
-      </path>
-    </else></if>
-
-    <!-- Skip locker with -Dlocker.skip=YESSIR. Uses STARR instead. -->
+    <!-- To skip locker, use -Dlocker.skip=1 -->
     <if><isset property="locker.skip"/><then>
-      <echo message="Skipping locker! Using STARR instead."/>
-      <path id="locker.compiler.path"><path refid="starr.compiler.path"/></path>
+      <echo message="Using STARR to build the quick stage (skipping locker)."/>
+      <path id="locker.compiler.path" refid="starr.compiler.path"/>
       <property name="locker.locked" value="locker skipped"/></then>
     <else>
       <path id="locker.compiler.path"><path refid="locker.compiler.build.path"/></path></else></if>
@@ -1170,11 +1179,11 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="init">
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalacheck, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.partest, quick.scaladoc">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
-  <target name="quick.done" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalacheck, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.partest, quick.scaladoc, quick.bin"/>
+  <target name="quick.done" depends="quick.bin"/>
   <target name="quick-opt" description="Optimized version of quick.done."> <optimized name="quick.done"/></target>
 
 
