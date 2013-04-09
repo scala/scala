@@ -1491,6 +1491,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
   /** Substitute symbols in `from` with symbols in `to`. Returns a new
    *  tree using the new symbols and whose Ident and Select nodes are
    *  name-consistent with the new symbols.
+   *
+   *  Note: This is currently a destructive operation on the original Tree.
+   *  Trees currently assigned a symbol in `from` will be assigned the new symbols
+   *  without copying, and trees that define symbols with an `info` that refer
+   *  a symbol in `from` will have a new type assigned.
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
     val symSubst = new SubstSymMap(from, to)
