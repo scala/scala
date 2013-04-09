@@ -17,6 +17,7 @@ import scala.reflect.internal.util.shortClassOfInstance
 trait Contexts { self: Analyzer =>
   import global._
   import definitions.{ JavaLangPackage, ScalaPackage, PredefModule }
+  import ContextMode._
 
   object NoContext extends Context {
     outer      = this
@@ -95,8 +96,7 @@ trait Contexts { self: Analyzer =>
     }
     val c = sc.make(unit, tree, sc.owner, sc.scope, sc.imports)
     if (erasedTypes) c.setThrowErrors() else c.setReportErrors()
-    c.implicitsEnabled = !erasedTypes
-    c.enrichmentEnabled = c.implicitsEnabled
+    c(EnrichmentEnabled | ImplicitsEnabled) = !erasedTypes
     c
   }
 
@@ -111,17 +111,7 @@ trait Contexts { self: Analyzer =>
     }
   }
 
-  private object Errors {
-    final val ReportErrors     = 1 << 0
-    final val BufferErrors     = 1 << 1
-    final val AmbiguousErrors  = 1 << 2
-    final val notThrowMask     = ReportErrors | BufferErrors
-    final val AllMask          = ReportErrors | BufferErrors | AmbiguousErrors
-  }
-
   class Context private[typechecker] {
-    import Errors._
-
     var unit: CompilationUnit = NoCompilationUnit
     var tree: Tree = _                      // Tree associated with this context
     var owner: Symbol = NoSymbol            // The current owner
@@ -135,6 +125,16 @@ trait Contexts { self: Analyzer =>
       try a finally enclClass = saved
     }
 
+    private var mode: ContextMode = ContextMode.DefaultMode
+    def update(mask: ContextMode, value: Boolean) {
+       mode = mode.set(value, mask)
+    }
+    def set(enable: ContextMode = NOmode, disable: ContextMode = NOmode): this.type = {
+       mode = mode.set(true, enable).set(false, disable)
+       this
+    }
+    def apply(mask: ContextMode): Boolean = mode.inAll(mask)
+
     var enclMethod: Context = _             // The next outer context whose tree is a method
     var variance: Variance = Variance.Invariant     // Variance relative to enclosing class
     private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
@@ -146,19 +146,26 @@ trait Contexts { self: Analyzer =>
     // for a named application block (Tree) the corresponding NamedApplyInfo
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
-    var inConstructorSuffix = false         // are we in a secondary constructor
-                                            // after the this constructor call?
-    var returnsSeen = false                 // for method context: were returns encountered?
-    var inSelfSuperCall = false             // is this context (enclosed in) a constructor call?
-    // (the call to the super or self constructor in the first line of a constructor)
-    // in this context the object's fields should not be in scope
+
+    def inConstructorSuffix_=(value: Boolean) = this(ConstructorSuffix) = value
+    def inConstructorSuffix                   = this(ConstructorSuffix)
+    def returnsSeen_=(value: Boolean)         = this(ReturnsSeen) = value
+    def returnsSeen                           = this(ReturnsSeen)
+    def inSelfSuperCall_=(value: Boolean)     = this(SelfSuperCall) = value
+    def inSelfSuperCall                       = this(SelfSuperCall)
 
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
-    var implicitsEnabled = false
-    var macrosEnabled = true
-    var enrichmentEnabled = false // to selectively allow enrichment in patterns, where other kinds of implicit conversions are not allowed
-    var checking = false
-    var retyping = false
+
+    def implicitsEnabled_=(value: Boolean)    = this(ImplicitsEnabled) = value
+    def implicitsEnabled                      = this(ImplicitsEnabled)
+    def macrosEnabled_=(value: Boolean)       = this(MacrosEnabled) = value
+    def macrosEnabled                         = this(MacrosEnabled)
+    def enrichmentEnabled_=(value: Boolean)   = this(EnrichmentEnabled) = value
+    def enrichmentEnabled                     = this(EnrichmentEnabled)
+    def checking_=(value: Boolean)            = this(Checking) = value
+    def checking                              = this(Checking)
+    def retyping_=(value: Boolean)            = this(ReTyping) = value
+    def retyping                              = this(ReTyping)
 
     var savedTypeBounds: List[(Symbol, Type)] = List() // saved type bounds
        // for type parameters which are narrowed in a GADT
@@ -186,27 +193,27 @@ trait Contexts { self: Analyzer =>
       tparams
     }
 
-    private[this] var mode = 0
-
     def errBuffer = buffer
     def hasErrors = buffer.nonEmpty
     def hasWarnings = warningsBuffer.nonEmpty
 
-    def state: Int = mode
-    def restoreState(state0: Int) = mode = state0
+    def state: ContextMode = mode
+    def restoreState(state0: ContextMode) = mode = state0
 
-    def reportErrors    = (state & ReportErrors)     != 0
-    def bufferErrors    = (state & BufferErrors)     != 0
-    def ambiguousErrors = (state & AmbiguousErrors)  != 0
-    def throwErrors     = (state & notThrowMask)     == 0
+    def reportErrors    = this(ReportErrors)
+    def bufferErrors    = this(BufferErrors)
+    def ambiguousErrors = this(AmbiguousErrors)
+    def throwErrors     = mode.inNone(ReportErrors | BufferErrors)
 
-    def setReportErrors()    = mode = (ReportErrors | AmbiguousErrors)
-    def setBufferErrors()    = {
-      //assert(bufferErrors || !hasErrors, "When entering the buffer state, context has to be clean. Current buffer: " + buffer)
-      mode = BufferErrors
+    def setReportErrors(): Unit                   = set(enable = ReportErrors | AmbiguousErrors, disable = BufferErrors)
+    def setBufferErrors(): Unit                   = {set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors); warnIfBufferNotClean()}
+    def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
+    def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
+
+    private def warnIfBufferNotClean() {
+      if (!bufferErrors && hasErrors)
+        devWarning("When entering the buffer state, context has to be clean. Current buffer: " + buffer)
     }
-    def setThrowErrors()     = mode &= (~AllMask)
-    def setAmbiguousErrors(report: Boolean) = if (report) mode |= AmbiguousErrors else mode &= notThrowMask
 
     def updateBuffer(errors: mutable.Set[AbsTypeError]) = buffer ++= errors
     def condBufferFlush(removeP: AbsTypeError => Boolean) {
@@ -225,50 +232,18 @@ trait Contexts { self: Analyzer =>
       current
     }
 
-    def withImplicitsEnabled[T](op: => T): T = {
-      val saved = implicitsEnabled
-      implicitsEnabled = true
+    private def withMode[T](enabled: ContextMode = NOmode, disabled: ContextMode = NOmode)(op: => T): T = {
+      val saved = mode
+      set(enabled, disabled)
       try op
-      finally implicitsEnabled = saved
+      finally mode = saved
     }
 
-    def withImplicitsDisabled[T](op: => T): T = {
-      val saved = implicitsEnabled
-      implicitsEnabled = false
-      val savedP = enrichmentEnabled
-      enrichmentEnabled = false
-      try op
-      finally {
-        implicitsEnabled = saved
-        enrichmentEnabled = savedP
-      }
-    }
-
-    def withImplicitsDisabledAllowEnrichment[T](op: => T): T = {
-      val saved = implicitsEnabled
-      implicitsEnabled = false
-      val savedP = enrichmentEnabled
-      enrichmentEnabled = true
-      try op
-      finally {
-        implicitsEnabled = saved
-        enrichmentEnabled = savedP
-      }
-    }
-
-    def withMacrosEnabled[T](op: => T): T = {
-      val saved = macrosEnabled
-      macrosEnabled = true
-      try op
-      finally macrosEnabled = saved
-    }
-
-    def withMacrosDisabled[T](op: => T): T = {
-      val saved = macrosEnabled
-      macrosEnabled = false
-      try op
-      finally macrosEnabled = saved
-    }
+    def withImplicitsEnabled[T](op: => T): T                 = withMode(enabled = ImplicitsEnabled)(op)
+    def withImplicitsDisabled[T](op: => T): T                = withMode(disabled = ImplicitsEnabled | EnrichmentEnabled)(op)
+    def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
+    def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
+    def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
 
     def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
              scope: Scope, imports: List[ImportInfo]): Context = {
@@ -279,17 +254,18 @@ trait Contexts { self: Analyzer =>
       c.scope = scope
       c.outer = this
 
+      c.restoreState(this.state) // note: ConstructorSuffix conditionally overwritten below.
+
       tree match {
         case Template(_, _, _) | PackageDef(_, _) =>
           c.enclClass = c
           c.prefix = c.owner.thisType
-          c.inConstructorSuffix = false
+          c(ConstructorSuffix) = false
         case _ =>
           c.enclClass = this.enclClass
           c.prefix =
             if (c.owner != this.owner && c.owner.isTerm) NoPrefix
             else this.prefix
-          c.inConstructorSuffix = this.inConstructorSuffix
       }
       tree match {
         case DefDef(_, _, _, _, _, _) =>
@@ -297,18 +273,12 @@ trait Contexts { self: Analyzer =>
         case _ =>
           c.enclMethod = this.enclMethod
       }
+
       c.variance = this.variance
       c.depth = if (scope == this.scope) this.depth else this.depth + 1
       c.imports = imports
-      c.inSelfSuperCall = inSelfSuperCall
-      c.restoreState(this.state)
       c.diagnostic = this.diagnostic
       c.typingIndentLevel = typingIndentLevel
-      c.implicitsEnabled = this.implicitsEnabled
-      c.macrosEnabled = this.macrosEnabled
-      c.enrichmentEnabled = this.enrichmentEnabled
-      c.checking = this.checking
-      c.retyping = this.retyping
       c.openImplicits = this.openImplicits
       c.buffer = if (this.buffer == null) mutable.LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
       c.warningsBuffer = if (this.warningsBuffer == null) mutable.LinkedHashSet[(Position, String)]() else this.warningsBuffer
@@ -355,8 +325,7 @@ trait Contexts { self: Analyzer =>
 
     def makeImplicit(reportAmbiguousErrors: Boolean) = {
       val c = makeSilent(reportAmbiguousErrors)
-      c.implicitsEnabled = false
-      c.enrichmentEnabled = false
+      c(ImplicitsEnabled | EnrichmentEnabled) = false
       c
     }
 
@@ -375,8 +344,8 @@ trait Contexts { self: Analyzer =>
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
       val argContext = baseContext.makeNewScope(tree, owner)
+      argContext.restoreState(state)
       argContext.inSelfSuperCall = true
-      argContext.restoreState(this.state)
       def enterElems(c: Context) {
         def enterLocalElems(e: ScopeEntry) {
           if (e != null && e.owner == c.scope) {
@@ -1106,4 +1075,75 @@ trait Contexts { self: Analyzer =>
   case class ImportType(expr: Tree) extends Type {
     override def safeToString = "ImportType("+expr+")"
   }
+}
+
+object ContextMode {
+  private implicit def liftIntBitsToContextState(bits: Int): ContextMode = apply(bits)
+  def apply(bits: Int): ContextMode = new ContextMode(bits)
+  final val NOmode: ContextMode                   = 0
+
+  final val ReportErrors: ContextMode             = 1 << 0
+  final val BufferErrors: ContextMode             = 1 << 1
+  final val AmbiguousErrors: ContextMode          = 1 << 2
+
+  /** Are we in a secondary constructor after the this constructor call? */
+  final val ConstructorSuffix: ContextMode        = 1 << 3
+
+  /** For method context: were returns encountered? */
+  final val ReturnsSeen: ContextMode              = 1 << 4
+
+  /** Is this context (enclosed in) a constructor call?
+    * (the call to the super or self constructor in the first line of a constructor.)
+    * In such a context, the object's fields should not be in scope
+    */
+  final val SelfSuperCall: ContextMode            = 1 << 5
+
+  // TODO harvest documentation for this
+  final val ImplicitsEnabled: ContextMode         = 1 << 6
+
+  final val MacrosEnabled: ContextMode            = 1 << 7
+
+  /** To selectively allow enrichment in patterns, where other kinds of implicit conversions are not allowed */
+  final val EnrichmentEnabled: ContextMode        = 1 << 8
+
+  /** Are we in a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
+  final val Checking: ContextMode                 = 1 << 9
+
+  // TODO harvest documentation for this
+  final val ReTyping: ContextMode                 = 1 << 10
+
+  final val DefaultMode: ContextMode      = MacrosEnabled
+
+  private val contextModeNameMap = Map(
+    ReportErrors -> "ReportErrors",
+    BufferErrors -> "BufferErrors",
+    AmbiguousErrors -> "AmbiguousErrors",
+    ConstructorSuffix -> "ConstructorSuffix",
+    SelfSuperCall -> "SelfSuperCall",
+    ImplicitsEnabled -> "ImplicitsEnabled",
+    MacrosEnabled -> "MacrosEnabled",
+    Checking -> "Checking",
+    ReTyping -> "ReTyping"
+  )
+}
+
+/**
+ * A value class to carry the boolean flags of a context, such as whether errors should
+ * be buffered or reported.
+ */
+final class ContextMode private (val bits: Int) extends AnyVal {
+  import ContextMode._
+
+  def &(other: ContextMode): ContextMode  = new ContextMode(bits & other.bits)
+  def |(other: ContextMode): ContextMode  = new ContextMode(bits | other.bits)
+  def &~(other: ContextMode): ContextMode = new ContextMode(bits & ~(other.bits))
+  def set(value: Boolean, mask: ContextMode) = if (value) |(mask) else &~(mask)
+
+  def inAll(required: ContextMode)        = (this & required) == required
+  def inAny(required: ContextMode)        = (this & required) != NOmode
+  def inNone(prohibited: ContextMode)     = (this & prohibited) == NOmode
+
+  override def toString =
+    if (bits == 0) "NOmode"
+    else (contextModeNameMap filterKeys inAll).values.toList.sorted mkString " "
 }

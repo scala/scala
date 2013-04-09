@@ -95,7 +95,7 @@ object Mode {
 
   /** Translates a mask of mode flags into something readable.
    */
-  private val modeNameMap = Map[Int, String](
+  private val modeNameMap = Map[Int, String]( // TODO why duplicate the bitmasks here, rather than just referring to this.EXPRmode etc?
     (1 << 0)  -> "EXPRmode",
     (1 << 1)  -> "PATTERNmode",
     (1 << 2)  -> "TYPEmode",
