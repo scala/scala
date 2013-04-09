@@ -91,10 +91,10 @@ trait Contexts { self: Analyzer =>
   def rootContext(unit: CompilationUnit, tree: Tree, erasedTypes: Boolean): Context = {
     var sc = startContext
     for (sym <- rootImports(unit)) {
-      sc = sc.makeNewImport(sym)
+      sc = sc.makeNewImport(gen.mkWildcardImport(sym))
       sc.depth += 1
     }
-    val c = sc.make(unit, tree, sc.owner, sc.scope, sc.imports)
+    val c = sc.make(tree, unit = unit)
     if (erasedTypes) c.setThrowErrors() else c.setReportErrors()
     c(EnrichmentEnabled | ImplicitsEnabled) = !erasedTypes
     c
@@ -245,8 +245,10 @@ trait Contexts { self: Analyzer =>
     def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
     def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
 
-    def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
-             scope: Scope, imports: List[ImportInfo]): Context = {
+    def make(tree: Tree = tree, owner: Symbol = owner,
+             scope: Scope = scope, imports: List[ImportInfo] = imports,
+             unit: CompilationUnit = unit): Context = {
+
       val c   = new Context
       c.unit  = unit
       c.tree  = tree
@@ -256,26 +258,25 @@ trait Contexts { self: Analyzer =>
 
       c.restoreState(this.state) // note: ConstructorSuffix conditionally overwritten below.
 
-      tree match {
-        case Template(_, _, _) | PackageDef(_, _) =>
-          c.enclClass = c
-          c.prefix = c.owner.thisType
-          c(ConstructorSuffix) = false
-        case _ =>
-          c.enclClass = this.enclClass
-          c.prefix =
-            if (c.owner != this.owner && c.owner.isTerm) NoPrefix
-            else this.prefix
+      val isTemplateOrPackage = tree match {
+        case _: Template | _: PackageDef => true
+        case _                           => false
       }
-      tree match {
-        case DefDef(_, _, _, _, _, _) =>
-          c.enclMethod = c
-        case _ =>
-          c.enclMethod = this.enclMethod
+      val isDefDef = tree match {
+        case _: DefDef => true
+        case _         => false
       }
 
+      c.prefix =
+        if (isTemplateOrPackage) c.owner.thisType
+        else if (c.owner != this.owner && c.owner.isTerm) NoPrefix
+        else prefix
+      c.enclClass = if (isTemplateOrPackage) c else enclClass
+      c(ConstructorSuffix) = !isTemplateOrPackage && c(ConstructorSuffix)
+      c.enclMethod = if (isDefDef) c else enclMethod
+
       c.variance = this.variance
-      c.depth = if (scope == this.scope) this.depth else this.depth + 1
+      c.depth = this.depth + (if (scope == this.scope) 0 else 1)
       c.imports = imports
       c.diagnostic = this.diagnostic
       c.typingIndentLevel = typingIndentLevel
@@ -287,33 +288,22 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    def makeNewImport(sym: Symbol): Context =
-      makeNewImport(gen.mkWildcardImport(sym))
-
     def makeNewImport(imp: Import): Context = {
       val impInfo = new ImportInfo(imp, depth)
       if (settings.lint && imp.pos.isDefined) // pos.isDefined excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= impInfo
 
-      make(unit, imp, owner, scope, impInfo :: imports)
+      make(imp, imports = impInfo :: imports)
     }
 
     def make(tree: Tree, owner: Symbol, scope: Scope): Context =
+      // TODO Moving this optimization into the main overload of `make` causes all tests to fail. Why?
       if (tree == this.tree && owner == this.owner && scope == this.scope) this
-      else make0(tree, owner, scope)
-
-    private def make0(tree: Tree, owner: Symbol, scope: Scope): Context =
-      make(unit, tree, owner, scope, imports)
+      else make(tree, owner, scope, imports, unit)
 
     def makeNewScope(tree: Tree, owner: Symbol): Context =
       make(tree, owner, newNestedScope(scope))
     // IDE stuff: distinguish between scopes created for typing and scopes created for naming.
-
-    def make(tree: Tree, owner: Symbol): Context =
-      make0(tree, owner, scope)
-
-    def make(tree: Tree): Context =
-      make(tree, owner)
 
     def makeSilent(reportAmbiguousErrors: Boolean, newtree: Tree = tree): Context = {
       val c = make(newtree)
