@@ -769,12 +769,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         if (macroDebugVerbose) println(s"typecheck #1 (against expectedTpe = $expectedTpe): $expanded")
         val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, expectedTpe))
         if (expanded1.isErrorTyped) {
-          if (macroDebugVerbose) println(s"typecheck #1 has failed: ${typer.context.errBuffer}")
+          if (macroDebugVerbose) println(s"typecheck #1 has failed: ${typer.context.reportBuffer.errors}")
           expanded1
         } else {
           if (macroDebugVerbose) println(s"typecheck #2 (against pt = $pt): $expanded1")
           val expanded2 = typer.context.withImplicitsEnabled(super.onSuccess(expanded1))
-          if (macroDebugVerbose && expanded2.isErrorTyped) println(s"typecheck #2 has failed: ${typer.context.errBuffer}")
+          if (macroDebugVerbose && expanded2.isErrorTyped) println(s"typecheck #2 has failed: ${typer.context.reportBuffer.errors}")
           expanded2
         }
       }

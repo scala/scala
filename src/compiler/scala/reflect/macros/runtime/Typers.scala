@@ -54,7 +54,10 @@ trait Typers {
     wrapper(universe.analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos)) match {
       case failure if failure.tree.isEmpty =>
         macroLogVerbose("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-        if (context.hasErrors) throw new TypecheckException(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
+        if (context.hasErrors) {
+          val err = context.firstError
+          throw new TypecheckException(err.errPos, err.errMsg)
+        }
         universe.EmptyTree
       case success =>
         success.tree

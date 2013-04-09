@@ -150,13 +150,13 @@ trait Typers extends Adaptations with Tags {
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.errBuffer.find(_.kind == ErrorKinds.Divergent) match {
+              context.reportBuffer.errors.find(_.kind == ErrorKinds.Divergent) match {
                 case Some(divergentImplicit) =>
                   // DivergentImplicit error has higher priority than "no implicit found"
                   // no need to issue the problem again if we are still in silent mode
                   if (context.reportErrors) {
                     context.issue(divergentImplicit)
-                    context.condBufferFlush(_.kind  == ErrorKinds.Divergent)
+                    context.reportBuffer.clearErrors(ErrorKinds.Divergent)
                   }
                 case None =>
                   NoImplicitFoundError(fun, param)
@@ -493,7 +493,7 @@ trait Typers extends Adaptations with Tags {
     final def typerReportAnyContextErrors[T](c: Context)(f: Typer => T): T = {
       val res = f(newTyper(c))
       if (c.hasErrors)
-        context.issue(c.errBuffer.head)
+        context.issue(c.firstError)
       res
     }
 
@@ -689,7 +689,7 @@ trait Typers extends Adaptations with Tags {
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
           if (context1.hasErrors) {
             stopStats()
-            SilentTypeError(context1.errBuffer.head)
+            SilentTypeError(context1.firstError)
           } else {
             // If we have a successful result, emit any warnings it created.
             if (context1.hasWarnings) {
@@ -1174,7 +1174,7 @@ trait Typers extends Adaptations with Tags {
                       val silentContext = context.makeImplicit(context.ambiguousErrors)
                       val res = newTyper(silentContext).typed(
                         new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
-                      if (silentContext.hasErrors) context.issue(silentContext.errBuffer.head) else return res
+                      if (silentContext.hasErrors) context.issue(silentContext.firstError) else return res
                     }
                   }
                 }

@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable
+import scala.collection.{ immutable, mutable }
 import scala.annotation.tailrec
 import scala.reflect.internal.util.shortClassOfInstance
 
@@ -173,8 +173,8 @@ trait Contexts { self: Analyzer =>
     var typingIndentLevel: Int = 0
     def typingIndent = "  " * typingIndentLevel
 
-    var buffer: mutable.Set[AbsTypeError] = _
-    var warningsBuffer: mutable.Set[(Position, String)] = _
+    var _reportBuffer: ReportBuffer = new ReportBuffer
+    def reportBuffer = _reportBuffer
 
     def enclClassOrMethod: Context =
       if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
@@ -193,9 +193,11 @@ trait Contexts { self: Analyzer =>
       tparams
     }
 
-    def errBuffer = buffer
-    def hasErrors = buffer.nonEmpty
-    def hasWarnings = warningsBuffer.nonEmpty
+    def errBuffer = reportBuffer.errors
+    // TODO use Option[Error] this rather then `if (c.hasErrors) c.firstError._`
+    def firstError: AbsTypeError = reportBuffer.firstError
+    def hasErrors = reportBuffer.hasErrors
+    def hasWarnings = reportBuffer.hasWarnings
 
     def state: ContextMode = mode
     def restoreState(state0: ContextMode) = mode = state0
@@ -212,23 +214,19 @@ trait Contexts { self: Analyzer =>
 
     private def warnIfBufferNotClean() {
       if (!bufferErrors && hasErrors)
-        devWarning("When entering the buffer state, context has to be clean. Current buffer: " + buffer)
+        devWarning("When entering the buffer state, context has to be clean. Current buffer: " + reportBuffer.errors)
     }
 
-    def updateBuffer(errors: mutable.Set[AbsTypeError]) = buffer ++= errors
-    def condBufferFlush(removeP: AbsTypeError => Boolean) {
-      val elems = buffer.filter(removeP)
-      buffer --= elems
-    }
-    def flushBuffer() { buffer.clear() }
-    def flushAndReturnBuffer(): mutable.Set[AbsTypeError] = {
-      val current = buffer.clone()
-      buffer.clear()
+    def updateBuffer(errors: Traversable[AbsTypeError]) = reportBuffer ++= errors
+    def flushBuffer() { reportBuffer.clearAllErrors() }
+    def flushAndReturnBuffer(): immutable.Seq[AbsTypeError] = {
+      val current = reportBuffer.errors
+      reportBuffer.clearAllErrors()
       current
     }
-    def flushAndReturnWarningsBuffer(): mutable.Set[(Position, String)] = {
-      val current = warningsBuffer.clone()
-      warningsBuffer.clear()
+    def flushAndReturnWarningsBuffer(): immutable.Seq[(Position, String)] = {
+      val current = reportBuffer.warnings
+      reportBuffer.clearAllWarnings()
       current
     }
 
@@ -281,8 +279,8 @@ trait Contexts { self: Analyzer =>
       c.diagnostic = this.diagnostic
       c.typingIndentLevel = typingIndentLevel
       c.openImplicits = this.openImplicits
-      c.buffer = if (this.buffer == null) mutable.LinkedHashSet[AbsTypeError]() else this.buffer // need to initialize
-      c.warningsBuffer = if (this.warningsBuffer == null) mutable.LinkedHashSet[(Position, String)]() else this.warningsBuffer
+      // Usually, the parent and child contexts share the report buffer. Exception: `makeSilent` will use a fresh buffer.
+      c._reportBuffer = this.reportBuffer
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
@@ -308,7 +306,7 @@ trait Contexts { self: Analyzer =>
       val c = make(newtree)
       c.setBufferErrors()
       c.setAmbiguousErrors(reportAmbiguousErrors)
-      c.buffer = mutable.LinkedHashSet[AbsTypeError]()
+      c._reportBuffer = new ReportBuffer // A fresh buffer so as not to leak errors/warnings into `this`.
       c
     }
 
@@ -367,7 +365,7 @@ trait Contexts { self: Analyzer =>
         (new Exception).printStackTrace()
       }
       if (pf isDefinedAt err) pf(err)
-      else if (bufferErrors) { buffer += err }
+      else if (bufferErrors) { reportBuffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
     }
 
@@ -402,7 +400,7 @@ trait Contexts { self: Analyzer =>
     def warning(pos: Position, msg: String): Unit = warning(pos, msg, force = false)
     def warning(pos: Position, msg: String, force: Boolean) {
       if (reportErrors || force) unit.warning(pos, msg)
-      else if (bufferErrors) warningsBuffer += ((pos, msg))
+      else if (bufferErrors) reportBuffer += (pos -> msg)
     }
 
     /** Is the owning symbol of this context a term? */
@@ -973,6 +971,58 @@ trait Contexts { self: Analyzer =>
     }
   } //class Context
 
+  /** A buffer for warnings and errors that are accumulated during speculative type checking. */
+  final class ReportBuffer {
+    type Error = AbsTypeError
+    type Warning = (Position, String)
+
+    private def newBuffer[A] = mutable.LinkedHashSet.empty[A] // Important to use LinkedHS for stable results.
+
+    // [JZ] Contexts, pre- the SI-7345 refactor, avoided allocating the buffers until needed. This
+    // is replicated here out of conservatism.
+    private var _errorBuffer: mutable.LinkedHashSet[Error] = _
+    private def errorBuffer = {if (_errorBuffer == null) _errorBuffer = newBuffer; _errorBuffer}
+    def errors: immutable.Seq[Error] = errorBuffer.toVector
+
+    private var _warningBuffer: mutable.LinkedHashSet[Warning] = _
+    private def warningBuffer = {if (_warningBuffer == null) _warningBuffer = newBuffer; _warningBuffer}
+    def warnings: immutable.Seq[Warning] = warningBuffer.toVector
+
+    def +=(error: AbsTypeError): this.type = {
+      errorBuffer += error
+      this
+    }
+    def ++=(errors: Traversable[AbsTypeError]): this.type = {
+      errorBuffer ++= errors
+      this
+    }
+    def +=(warning: Warning): this.type = {
+      warningBuffer += warning
+      this
+    }
+
+    def clearAllErrors(): this.type = {
+      errorBuffer.clear()
+      this
+    }
+    def clearErrors(kind: ErrorKinds.ErrorKind): this.type = {
+      errorBuffer.retain(_.kind != kind)
+      this
+    }
+    def retainErrors(kind: ErrorKinds.ErrorKind): this.type = {
+      errorBuffer.retain(_.kind == kind)
+      this
+    }
+    def clearAllWarnings(): this.type = {
+      warningBuffer.clear()
+      this
+    }
+
+    def hasErrors   = errorBuffer.nonEmpty
+    def hasWarnings = warningBuffer.nonEmpty
+    def firstError  = errorBuffer.head
+  }
+
   class ImportInfo(val tree: Import, val depth: Int) {
     def pos = tree.pos
     def posOf(sel: ImportSelector) = tree.pos withPoint sel.namePos
@@ -1130,3 +1180,4 @@ final class ContextMode private (val bits: Int) extends AnyVal {
     if (bits == 0) "NOmode"
     else (contextModeNameMap filterKeys inAll).values.toList.sorted mkString " "
 }
+
