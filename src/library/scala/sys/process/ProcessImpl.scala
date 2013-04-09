@@ -141,6 +141,8 @@ private[process] trait ProcessImpl {
           if (b.hasExitValue) exit2 else exit1
         } {
           first.destroy()
+          currentSource put None
+          currentSink put None
           second.destroy()
         }
       }
