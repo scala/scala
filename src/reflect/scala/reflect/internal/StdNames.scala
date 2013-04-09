@@ -359,8 +359,8 @@ trait StdNames {
      *  be sure to retain the extra dollars.
      */
     def unexpandedName(name: Name): Name = name lastIndexOf "$$" match {
-      case -1  => name
-      case idx0 =>
+      case 0 | -1 => name
+      case idx0   =>
         // Sketchville - We've found $$ but if it's part of $$$ or $$$$
         // or something we need to keep the bonus dollars, so e.g. foo$$$outer
         // has an original name of $outer.
