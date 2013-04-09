@@ -60,12 +60,6 @@ trait Trees { self: Universe =>
    */
   type Tree >: Null <: TreeApi
 
-  /** A tag that preserves the identity of the `Tree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TreeTag: ClassTag[Tree]
-
   /** The API that all trees support.
    *  The main source of information about trees is the [[scala.reflect.api.Trees]] page.
    *  @group API
@@ -230,12 +224,6 @@ trait Trees { self: Universe =>
    */
   type TermTree >: Null <: AnyRef with Tree with TermTreeApi
 
-  /** A tag that preserves the identity of the `TermTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TermTreeTag: ClassTag[TermTree]
-
   /** The API that all term trees support
    *  @group API
    */
@@ -249,12 +237,6 @@ trait Trees { self: Universe =>
    */
   type TypTree >: Null <: AnyRef with Tree with TypTreeApi
 
-  /** A tag that preserves the identity of the `TypTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypTreeTag: ClassTag[TypTree]
-
   /** The API that all typ trees support
    *  @group API
    */
@@ -266,12 +248,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type SymTree >: Null <: AnyRef with Tree with SymTreeApi
-
-  /** A tag that preserves the identity of the `SymTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SymTreeTag: ClassTag[SymTree]
 
   /** The API that all sym trees support
    *  @group API
@@ -286,12 +262,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type NameTree >: Null <: AnyRef with Tree with NameTreeApi
-
-  /** A tag that preserves the identity of the `NameTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val NameTreeTag: ClassTag[NameTree]
 
   /** The API that all name trees support
    *  @group API
@@ -310,12 +280,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type RefTree >: Null <: SymTree with NameTree with RefTreeApi
-
-  /** A tag that preserves the identity of the `RefTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val RefTreeTag: ClassTag[RefTree]
 
   /** The API that all ref trees support
    *  @group API
@@ -337,12 +301,6 @@ trait Trees { self: Universe =>
    */
   type DefTree >: Null <: SymTree with NameTree with DefTreeApi
 
-  /** A tag that preserves the identity of the `DefTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val DefTreeTag: ClassTag[DefTree]
-
   /** The API that all def trees support
    *  @group API
    */
@@ -358,12 +316,6 @@ trait Trees { self: Universe =>
    */
   type MemberDef >: Null <: DefTree with MemberDefApi
 
-  /** A tag that preserves the identity of the `MemberDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val MemberDefTag: ClassTag[MemberDef]
-
   /** The API that all member defs support
    *  @group API
    */
@@ -377,12 +329,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type PackageDef >: Null <: MemberDef with PackageDefApi
-
-  /** A tag that preserves the identity of the `PackageDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val PackageDefTag: ClassTag[PackageDef]
 
   /** The constructor/extractor for `PackageDef` instances.
    *  @group Extractors
@@ -417,12 +363,6 @@ trait Trees { self: Universe =>
    */
   type ImplDef >: Null <: MemberDef with ImplDefApi
 
-  /** A tag that preserves the identity of the `ImplDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ImplDefTag: ClassTag[ImplDef]
-
   /** The API that all impl defs support
    *  @group API
    */
@@ -436,12 +376,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type ClassDef >: Null <: ImplDef with ClassDefApi
-
-  /** A tag that preserves the identity of the `ClassDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ClassDefTag: ClassTag[ClassDef]
 
   /** The constructor/extractor for `ClassDef` instances.
    *  @group Extractors
@@ -488,12 +422,6 @@ trait Trees { self: Universe =>
    */
   type ModuleDef >: Null <: ImplDef with ModuleDefApi
 
-  /** A tag that preserves the identity of the `ModuleDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ModuleDefTag: ClassTag[ModuleDef]
-
   /** The constructor/extractor for `ModuleDef` instances.
    *  @group Extractors
    */
@@ -534,12 +462,6 @@ trait Trees { self: Universe =>
    */
   type ValOrDefDef >: Null <: MemberDef with ValOrDefDefApi
 
-  /** A tag that preserves the identity of the `ValOrDefDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ValOrDefDefTag: ClassTag[ValOrDefDef]
-
   /** The API that all val defs and def defs support
    *  @group API
    */
@@ -570,12 +492,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type ValDef >: Null <: ValOrDefDef with ValDefApi
-
-  /** A tag that preserves the identity of the `ValDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ValDefTag: ClassTag[ValDef]
 
   /** The constructor/extractor for `ValDef` instances.
    *  @group Extractors
@@ -626,12 +542,6 @@ trait Trees { self: Universe =>
    */
   type DefDef >: Null <: ValOrDefDef with DefDefApi
 
-  /** A tag that preserves the identity of the `DefDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val DefDefTag: ClassTag[DefDef]
-
   /** The constructor/extractor for `DefDef` instances.
    *  @group Extractors
    */
@@ -680,12 +590,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type TypeDef >: Null <: MemberDef with TypeDefApi
-
-  /** A tag that preserves the identity of the `TypeDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeDefTag: ClassTag[TypeDef]
 
   /** The constructor/extractor for `TypeDef` instances.
    *  @group Extractors
@@ -746,12 +650,6 @@ trait Trees { self: Universe =>
    */
   type LabelDef >: Null <: DefTree with TermTree with LabelDefApi
 
-  /** A tag that preserves the identity of the `LabelDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val LabelDefTag: ClassTag[LabelDef]
-
   /** The constructor/extractor for `LabelDef` instances.
    *  @group Extractors
    */
@@ -808,12 +706,6 @@ trait Trees { self: Universe =>
    */
   type ImportSelector >: Null <: AnyRef with ImportSelectorApi
 
-  /** A tag that preserves the identity of the `ImportSelector` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ImportSelectorTag: ClassTag[ImportSelector]
-
   /** The constructor/extractor for `ImportSelector` instances.
    *  @group Extractors
    */
@@ -859,12 +751,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Import >: Null <: SymTree with ImportApi
-
-  /** A tag that preserves the identity of the `Import` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ImportTag: ClassTag[Import]
 
   /** The constructor/extractor for `Import` instances.
    *  @group Extractors
@@ -918,12 +804,6 @@ trait Trees { self: Universe =>
    */
   type Template >: Null <: SymTree with TemplateApi
 
-  /** A tag that preserves the identity of the `Template` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TemplateTag: ClassTag[Template]
-
   /** The constructor/extractor for `Template` instances.
    *  @group Extractors
    */
@@ -976,12 +856,6 @@ trait Trees { self: Universe =>
    */
   type Block >: Null <: TermTree with BlockApi
 
-  /** A tag that preserves the identity of the `Block` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val BlockTag: ClassTag[Block]
-
   /** The constructor/extractor for `Block` instances.
    *  @group Extractors
    */
@@ -1020,12 +894,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type CaseDef >: Null <: AnyRef with Tree with CaseDefApi
-
-  /** A tag that preserves the identity of the `CaseDef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val CaseDefTag: ClassTag[CaseDef]
 
   /** The constructor/extractor for `CaseDef` instances.
    *  @group Extractors
@@ -1074,12 +942,6 @@ trait Trees { self: Universe =>
    */
   type Alternative >: Null <: TermTree with AlternativeApi
 
-  /** A tag that preserves the identity of the `Alternative` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AlternativeTag: ClassTag[Alternative]
-
   /** The constructor/extractor for `Alternative` instances.
    *  @group Extractors
    */
@@ -1111,12 +973,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Star >: Null <: TermTree with StarApi
-
-  /** A tag that preserves the identity of the `Star` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val StarTag: ClassTag[Star]
 
   /** The constructor/extractor for `Star` instances.
    *  @group Extractors
@@ -1152,12 +1008,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Bind >: Null <: DefTree with BindApi
-
-  /** A tag that preserves the identity of the `Bind` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val BindTag: ClassTag[Bind]
 
   /** The constructor/extractor for `Bind` instances.
    *  @group Extractors
@@ -1222,12 +1072,6 @@ trait Trees { self: Universe =>
    */
   type UnApply >: Null <: TermTree with UnApplyApi
 
-  /** A tag that preserves the identity of the `UnApply` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val UnApplyTag: ClassTag[UnApply]
-
   /** The constructor/extractor for `UnApply` instances.
    *  @group Extractors
    */
@@ -1263,12 +1107,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Function >: Null <: TermTree with SymTree with FunctionApi
-
-  /** A tag that preserves the identity of the `Function` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val FunctionTag: ClassTag[Function]
 
   /** The constructor/extractor for `Function` instances.
    *  @group Extractors
@@ -1308,12 +1146,6 @@ trait Trees { self: Universe =>
    */
   type Assign >: Null <: TermTree with AssignApi
 
-  /** A tag that preserves the identity of the `Assign` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AssignTag: ClassTag[Assign]
-
   /** The constructor/extractor for `Assign` instances.
    *  @group Extractors
    */
@@ -1349,12 +1181,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type AssignOrNamedArg >: Null <: TermTree with AssignOrNamedArgApi
-
-  /** A tag that preserves the identity of the `AssignOrNamedArg` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AssignOrNamedArgTag: ClassTag[AssignOrNamedArg]
 
   /** The constructor/extractor for `AssignOrNamedArg` instances.
    *  @group Extractors
@@ -1396,12 +1222,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type If >: Null <: TermTree with IfApi
-
-  /** A tag that preserves the identity of the `If` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val IfTag: ClassTag[If]
 
   /** The constructor/extractor for `If` instances.
    *  @group Extractors
@@ -1454,12 +1274,6 @@ trait Trees { self: Universe =>
    */
   type Match >: Null <: TermTree with MatchApi
 
-  /** A tag that preserves the identity of the `Match` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val MatchTag: ClassTag[Match]
-
   /** The constructor/extractor for `Match` instances.
    *  @group Extractors
    */
@@ -1495,12 +1309,6 @@ trait Trees { self: Universe =>
    */
   type Return >: Null <: TermTree with SymTree with ReturnApi
 
-  /** A tag that preserves the identity of the `Return` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ReturnTag: ClassTag[Return]
-
   /** The constructor/extractor for `Return` instances.
    *  @group Extractors
    */
@@ -1532,12 +1340,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Try >: Null <: TermTree with TryApi
-
-  /** A tag that preserves the identity of the `Try` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TryTag: ClassTag[Try]
 
   /** The constructor/extractor for `Try` instances.
    *  @group Extractors
@@ -1577,12 +1379,6 @@ trait Trees { self: Universe =>
    */
   type Throw >: Null <: TermTree with ThrowApi
 
-  /** A tag that preserves the identity of the `Throw` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ThrowTag: ClassTag[Throw]
-
   /** The constructor/extractor for `Throw` instances.
    *  @group Extractors
    */
@@ -1612,12 +1408,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type New >: Null <: TermTree with NewApi
-
-  /** A tag that preserves the identity of the `New` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val NewTag: ClassTag[New]
 
   /** The constructor/extractor for `New` instances.
    *  @group Extractors
@@ -1669,12 +1459,6 @@ trait Trees { self: Universe =>
    */
   type Typed >: Null <: TermTree with TypedApi
 
-  /** A tag that preserves the identity of the `Typed` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypedTag: ClassTag[Typed]
-
   /** The constructor/extractor for `Typed` instances.
    *  @group Extractors
    */
@@ -1708,12 +1492,6 @@ trait Trees { self: Universe =>
    */
   type GenericApply >: Null <: TermTree with GenericApplyApi
 
-  /** A tag that preserves the identity of the `GenericApply` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val GenericApplyTag: ClassTag[GenericApply]
-
   /** The API that all applies support
    *  @group API
    */
@@ -1734,12 +1512,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type TypeApply >: Null <: GenericApply with TypeApplyApi
-
-  /** A tag that preserves the identity of the `TypeApply` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeApplyTag: ClassTag[TypeApply]
 
   /** The constructor/extractor for `TypeApply` instances.
    *  @group Extractors
@@ -1779,12 +1551,6 @@ trait Trees { self: Universe =>
    */
   type Apply >: Null <: GenericApply with ApplyApi
 
-  /** A tag that preserves the identity of the `Apply` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ApplyTag: ClassTag[Apply]
-
   /** The constructor/extractor for `Apply` instances.
    *  @group Extractors
    */
@@ -1821,12 +1587,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Super >: Null <: TermTree with SuperApi
-
-  /** A tag that preserves the identity of the `Super` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SuperTag: ClassTag[Super]
 
   /** The constructor/extractor for `Super` instances.
    *  @group Extractors
@@ -1874,12 +1634,6 @@ trait Trees { self: Universe =>
    */
   type This >: Null <: TermTree with SymTree with ThisApi
 
-  /** A tag that preserves the identity of the `This` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ThisTag: ClassTag[This]
-
   /** The constructor/extractor for `This` instances.
    *  @group Extractors
    */
@@ -1914,12 +1668,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Select >: Null <: RefTree with SelectApi
-
-  /** A tag that preserves the identity of the `Select` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SelectTag: ClassTag[Select]
 
   /** The constructor/extractor for `Select` instances.
    *  @group Extractors
@@ -1960,12 +1708,6 @@ trait Trees { self: Universe =>
    */
   type Ident >: Null <: RefTree with IdentApi
 
-  /** A tag that preserves the identity of the `Ident` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val IdentTag: ClassTag[Ident]
-
   /** The constructor/extractor for `Ident` instances.
    *  @group Extractors
    */
@@ -2004,12 +1746,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type ReferenceToBoxed >: Null <: TermTree with ReferenceToBoxedApi
-
-  /** A tag that preserves the identity of the `ReferenceToBoxed` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ReferenceToBoxedTag: ClassTag[ReferenceToBoxed]
 
   /** The constructor/extractor for `ReferenceToBoxed` instances.
    *  @group Extractors
@@ -2055,12 +1791,6 @@ trait Trees { self: Universe =>
    */
   type Literal >: Null <: TermTree with LiteralApi
 
-  /** A tag that preserves the identity of the `Literal` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val LiteralTag: ClassTag[Literal]
-
   /** The constructor/extractor for `Literal` instances.
    *  @group Extractors
    */
@@ -2093,12 +1823,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type Annotated >: Null <: AnyRef with Tree with AnnotatedApi
-
-  /** A tag that preserves the identity of the `Annotated` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AnnotatedTag: ClassTag[Annotated]
 
   /** The constructor/extractor for `Annotated` instances.
    *  @group Extractors
@@ -2134,12 +1858,6 @@ trait Trees { self: Universe =>
    */
   type SingletonTypeTree >: Null <: TypTree with SingletonTypeTreeApi
 
-  /** A tag that preserves the identity of the `SingletonTypeTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SingletonTypeTreeTag: ClassTag[SingletonTypeTree]
-
   /** The constructor/extractor for `SingletonTypeTree` instances.
    *  @group Extractors
    */
@@ -2169,12 +1887,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type SelectFromTypeTree >: Null <: TypTree with RefTree with SelectFromTypeTreeApi
-
-  /** A tag that preserves the identity of the `SelectFromTypeTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SelectFromTypeTreeTag: ClassTag[SelectFromTypeTree]
 
   /** The constructor/extractor for `SelectFromTypeTree` instances.
    *  @group Extractors
@@ -2217,12 +1929,6 @@ trait Trees { self: Universe =>
    */
   type CompoundTypeTree >: Null <: TypTree with CompoundTypeTreeApi
 
-  /** A tag that preserves the identity of the `CompoundTypeTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val CompoundTypeTreeTag: ClassTag[CompoundTypeTree]
-
   /** The constructor/extractor for `CompoundTypeTree` instances.
    *  @group Extractors
    */
@@ -2252,12 +1958,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type AppliedTypeTree >: Null <: TypTree with AppliedTypeTreeApi
-
-  /** A tag that preserves the identity of the `AppliedTypeTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AppliedTypeTreeTag: ClassTag[AppliedTypeTree]
 
   /** The constructor/extractor for `AppliedTypeTree` instances.
    *  @group Extractors
@@ -2301,12 +2001,6 @@ trait Trees { self: Universe =>
    */
   type TypeBoundsTree >: Null <: TypTree with TypeBoundsTreeApi
 
-  /** A tag that preserves the identity of the `TypeBoundsTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeBoundsTreeTag: ClassTag[TypeBoundsTree]
-
   /** The constructor/extractor for `TypeBoundsTree` instances.
    *  @group Extractors
    */
@@ -2344,12 +2038,6 @@ trait Trees { self: Universe =>
    */
   type ExistentialTypeTree >: Null <: TypTree with ExistentialTypeTreeApi
 
-  /** A tag that preserves the identity of the `ExistentialTypeTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ExistentialTypeTreeTag: ClassTag[ExistentialTypeTree]
-
   /** The constructor/extractor for `ExistentialTypeTree` instances.
    *  @group Extractors
    */
@@ -2386,12 +2074,6 @@ trait Trees { self: Universe =>
    *  @template
    */
   type TypeTree >: Null <: TypTree with TypeTreeApi
-
-  /** A tag that preserves the identity of the `TypeTree` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeTreeTag: ClassTag[TypeTree]
 
   /** The constructor/extractor for `TypeTree` instances.
    *  @group Extractors
@@ -2989,12 +2671,6 @@ trait Trees { self: Universe =>
    *  @group Traversal
    */
   type Modifiers >: Null <: AnyRef with ModifiersApi
-
-  /** A tag that preserves the identity of the `Modifiers` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Traversal
-   */
-  implicit val ModifiersTag: ClassTag[Modifiers]
 
   /** The API that all Modifiers support
    *  @group API
