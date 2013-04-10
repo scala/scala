@@ -910,19 +910,28 @@ trait Infer extends Checkable {
       }
 
     /**
-     * Todo: Try to make isApplicable always safe (i.e. not cause TypeErrors).
-     * The chance of TypeErrors should be reduced through context errors
+     * Are arguments of the given types applicable to `ftpe`? Type argument inference
+     * is tried twice: firstly with the given expected type, and secondly with `WildcardType`.
      */
+    // Todo: Try to make isApplicable always safe (i.e. not cause TypeErrors).
+    // The chance of TypeErrors should be reduced through context errors
     private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type,
                                               argtpes0: List[Type], pt: Type): Boolean = {
-      val silentContext = context.makeSilent(reportAmbiguousErrors = false)
-      val typer0 = newTyper(silentContext)
-      val res1 = typer0.infer.isApplicable(undetparams, ftpe, argtpes0, pt)
-      if (pt != WildcardType && silentContext.hasErrors) {
-        silentContext.flushBuffer()
-        val res2 = typer0.infer.isApplicable(undetparams, ftpe, argtpes0, WildcardType)
-        if (silentContext.hasErrors) false else res2
-      } else res1
+      final case class Result(error: Boolean, applicable: Boolean)
+      def isApplicableWithExpectedType(pt0: Type): Result = {
+        val silentContext = context.makeSilent(reportAmbiguousErrors = false)
+        val applicable = newTyper(silentContext).infer.isApplicable(undetparams, ftpe, argtpes0, pt0)
+        Result(silentContext.hasErrors, applicable)
+      }
+      val canSecondTry = pt != WildcardType
+      val firstTry = isApplicableWithExpectedType(pt)
+      if (!firstTry.error || !canSecondTry)
+        firstTry.applicable
+      else {
+        val secondTry = isApplicableWithExpectedType(WildcardType)
+        // TODO `!secondTry.error &&` was faithfully replicated as part of the refactoring, but mayberedundant.
+        !secondTry.error && secondTry.applicable
+      }
     }
 
     /** Is type `ftpe1` strictly more specific than type `ftpe2`

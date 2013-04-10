@@ -261,11 +261,13 @@ trait Contexts { self: Analyzer =>
       reportBuffer.clearAllErrors()
       current
     }
-    /** Return and clear all warnings from the report buffer */
-    def flushAndReturnWarningsBuffer(): immutable.Seq[(Position, String)] = {
-      val current = reportBuffer.warnings
+
+    /** Issue and clear all warnings from the report buffer */
+    def flushAndIssueWarnings() {
+      reportBuffer.warnings foreach {
+        case (pos, msg) => unit.warning(pos, msg)
+      }
       reportBuffer.clearAllWarnings()
-      current
     }
 
     //

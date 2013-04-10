@@ -489,20 +489,9 @@ trait Typers extends Adaptations with Tags {
       res
     }
 
-    @inline
-    final def typerReportAnyContextErrors[T](c: Context)(f: Typer => T): T = {
-      val res = f(newTyper(c))
-      c.firstError match {
-        case Some(err) =>
-          context.issue(err)
-          c.reportBuffer.warnings foreach {
-            case (pos, msg) => context.warning(pos, msg)
-          }
-          // Seemingly we should perform `c.reportBuffer.clearAll()` here. But
-          // `context` might share the ReportBuffer with `c`.
-        case None =>
-      }
-      res
+    final def newImplTyper[T](impl: ImplDef, clazz: Symbol): Typer = {
+      val c = context.make(impl.impl, clazz, newScope)
+      newTyper(c)
     }
 
     @inline
@@ -701,11 +690,7 @@ trait Typers extends Adaptations with Tags {
               SilentTypeError(err)
             case None =>
               // If we have a successful result, emit any warnings it created.
-              if (context1.reportBuffer.hasWarnings) {
-                context1.flushAndReturnWarningsBuffer() foreach {
-                  case (pos, msg) => unit.warning(pos, msg)
-                }
-              }
+              context1.flushAndIssueWarnings()
               SilentResultValue(result)
           }
         } else {
@@ -1812,9 +1797,7 @@ trait Typers extends Adaptations with Tags {
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
-        _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
-      }
+      val impl1 = newImplTyper(cdef, clazz).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
@@ -1855,17 +1838,16 @@ trait Typers extends Adaptations with Tags {
         || !linkedClass.isSerializable
         || clazz.isSerializable
       )
-      val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
-        _.typedTemplate(mdef.impl, {
-          typedParentTypes(mdef.impl) ++ (
-            if (noSerializable) Nil
-            else {
-              clazz.makeSerializable()
-              List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
-            }
-          )
-        })
-      }
+      val impl1 = newImplTyper(mdef, clazz).typedTemplate(mdef.impl, {
+        typedParentTypes(mdef.impl) ++ (
+          if (noSerializable) Nil
+          else {
+            clazz.makeSerializable()
+            List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
+          }
+        )
+      })
+
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
       // SI-5954. On second compile of a companion class contained in a package object we end up
@@ -4360,11 +4342,9 @@ trait Typers extends Adaptations with Tags {
           case ex: CyclicReference =>
             throw ex
           case te: TypeError =>
-            // @H some of typer erros can still leak,
+            // @H some of typer errors can still leak,
             // for instance in continuations
             None
-        } finally {
-          c.flushBuffer()
         }
       }
 
