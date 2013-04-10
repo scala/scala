@@ -584,10 +584,11 @@ trait Implicits {
             )
           case _ => fallback
         }
-        if (context.hasErrors) {
-          val err = context.firstError
-          log("implicit adapt failed: " + err.errMsg)
-          return fail(err.errMsg)
+        context.firstError match { // using match rather than foreach to avoid non local return.
+          case Some(err) =>
+            log("implicit adapt failed: " + err.errMsg)
+            return fail(err.errMsg)
+          case None =>
         }
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
@@ -610,7 +611,7 @@ trait Implicits {
         }
 
         if (context.hasErrors)
-          fail("hasMatchingSymbol reported error: " + context.firstError.errMsg)
+          fail("hasMatchingSymbol reported error: " + context.firstError.get.errMsg)
         else if (isLocal && !hasMatchingSymbol(itree1))
           fail("candidate implicit %s is shadowed by %s".format(
             info.sym.fullLocationString, itree1.symbol.fullLocationString))
@@ -633,8 +634,11 @@ trait Implicits {
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree2, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
-            if (context.hasErrors)
-              return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + context.firstError.errMsg)
+            context.firstError match {
+              case Some(err) =>
+                return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
+              case None =>
+            }
 
             // filter out failures from type inference, don't want to remove them from undetParams!
             // we must be conservative in leaving type params in undetparams
@@ -669,13 +673,14 @@ trait Implicits {
               case t                              => t
             }
 
-            if (context.hasErrors)
-              fail("typing TypeApply reported errors for the implicit tree: " + context.firstError.errMsg)
-            else {
-              val result = new SearchResult(itree2, subst)
-              if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
-              printInference("[success] found %s for pt %s".format(result, ptInstantiated))
-              result
+            context.firstError match {
+              case Some(err) =>
+                fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
+              case None =>
+                val result = new SearchResult(itree2, subst)
+                if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
+                printInference("[success] found %s for pt %s".format(result, ptInstantiated))
+                result
             }
           }
           else fail("incompatible: %s does not match expected type %s".format(itree2.tpe, ptInstantiated))
@@ -1086,11 +1091,10 @@ trait Implicits {
 
         try {
           val tree1 = typedPos(pos.focus)(arg)
-          if (context.hasErrors) {
-            val err = context.firstError
-            processMacroExpansionError(err.errPos, err.errMsg)
+          context.firstError match {
+            case Some(err) => processMacroExpansionError(err.errPos, err.errMsg)
+            case None      => new SearchResult(tree1, EmptyTreeTypeSubstituter)
           }
-          else new SearchResult(tree1, EmptyTreeTypeSubstituter)
         } catch {
           case ex: TypeError =>
             processMacroExpansionError(ex.pos, ex.msg)

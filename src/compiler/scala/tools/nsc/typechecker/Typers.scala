@@ -492,8 +492,16 @@ trait Typers extends Adaptations with Tags {
     @inline
     final def typerReportAnyContextErrors[T](c: Context)(f: Typer => T): T = {
       val res = f(newTyper(c))
-      if (c.hasErrors)
-        context.issue(c.firstError)
+      c.firstError match {
+        case Some(err) =>
+          context.issue(err)
+          c.reportBuffer.warnings foreach {
+            case (pos, msg) => context.warning(pos, msg)
+          }
+          // Seemingly we should perform `c.reportBuffer.clearAll()` here. But
+          // `context` might share the ReportBuffer with `c`.
+        case None =>
+      }
       res
     }
 
@@ -687,17 +695,18 @@ trait Typers extends Adaptations with Tags {
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-          if (context1.hasErrors) {
-            stopStats()
-            SilentTypeError(context1.firstError)
-          } else {
-            // If we have a successful result, emit any warnings it created.
-            if (context1.hasWarnings) {
-              context1.flushAndReturnWarningsBuffer() foreach {
-                case (pos, msg) => unit.warning(pos, msg)
+          context1.firstError match {
+            case Some(err) =>
+              stopStats()
+              SilentTypeError(err)
+            case None =>
+              // If we have a successful result, emit any warnings it created.
+              if (context1.reportBuffer.hasWarnings) {
+                context1.flushAndReturnWarningsBuffer() foreach {
+                  case (pos, msg) => unit.warning(pos, msg)
+                }
               }
-            }
-            SilentResultValue(result)
+              SilentResultValue(result)
           }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
@@ -1174,7 +1183,10 @@ trait Typers extends Adaptations with Tags {
                       val silentContext = context.makeImplicit(context.ambiguousErrors)
                       val res = newTyper(silentContext).typed(
                         new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
-                      if (silentContext.hasErrors) context.issue(silentContext.firstError) else return res
+                      silentContext.firstError match {
+                        case Some(err) => context.issue(err)
+                        case None      => return res
+                      }
                     }
                   }
                 }

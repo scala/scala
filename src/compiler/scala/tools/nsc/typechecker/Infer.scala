@@ -1531,14 +1531,15 @@ trait Infer extends Checkable {
         }
       }
 
+    /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline private def inSilentMode(context: Context)(expr: => Boolean): Boolean = {
-      val oldState = context.state
+      val savedContextMode = context.contextMode
       context.setBufferErrors()
       val res = expr
-      val contextWithErrors = context.hasErrors
-      context.flushBuffer()
-      context.restoreState(oldState)
-      res && !contextWithErrors
+      val contextHadErrors = context.hasErrors
+      context.reportBuffer.clearAll()
+      context.contextMode = savedContextMode
+      res && !contextHadErrors
     }
 
     // Checks against the name of the parameter and also any @deprecatedName.
@@ -1636,7 +1637,7 @@ trait Infer extends Checkable {
      */
     def tryTwice(infer: Boolean => Unit): Unit = {
       if (context.implicitsEnabled) {
-        val saved = context.state
+        val savedContextMode = context.contextMode
         var fallback = false
         context.setBufferErrors()
         // We cache the current buffer because it is impossible to
@@ -1650,17 +1651,17 @@ trait Infer extends Checkable {
           context.withImplicitsDisabled(infer(false))
           if (context.hasErrors) {
             fallback = true
-            context.restoreState(saved)
+            context.contextMode = savedContextMode
             context.flushBuffer()
             infer(true)
           }
         } catch {
           case ex: CyclicReference  => throw ex
           case ex: TypeError        => // recoverable cyclic references
-            context.restoreState(saved)
+            context.contextMode = savedContextMode
             if (!fallback) infer(true) else ()
         } finally {
-          context.restoreState(saved)
+          context.contextMode = savedContextMode
           context.updateBuffer(errorsToRestore)
         }
       }
