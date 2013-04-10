@@ -510,7 +510,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         }
     }
 
-    class RegularSwitchMaker(scrutinee: Scrutinee, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
+    class RegularSwitchMaker(scrutinee: Scrutinee, defaultCaseOverride: Option[Tree], val unchecked: Boolean) extends SwitchMaker {
       val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
       val alternativesSupported = true
       val canJump = true
@@ -536,14 +536,14 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }
 
       def defaultSym: Symbol = scrutinee.sym
-      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(scrutinee.ref)) getOrElse MATCHERROR(scrutinee.ref) }
+      def defaultBody: Tree  = { import CODE._; defaultCaseOverride getOrElse MATCHERROR(scrutinee.ref) }
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}
     }
 
-    override def emitSwitch(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
-      val regularSwitchMaker = new RegularSwitchMaker(scrutinee, matchFailGenOverride, unchecked)
+    override def emitSwitch(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, defaultCaseOverride: Option[Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutinee, defaultCaseOverride, unchecked)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
       if ((scrutinee.sym != NoSymbol) && regularSwitchMaker.switchableTpe(dealiasWiden(scrutinee.info))) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutinee.sym, c)}, pt)
