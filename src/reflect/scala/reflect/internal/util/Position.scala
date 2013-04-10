@@ -20,18 +20,12 @@ object Position {
       else if (posIn.isDefined) posIn.inUltimateSource(posIn.source)
       else posIn
     )
-    def file   = pos.source.file
-    def prefix = if (shortenFile) file.name else file.path
+    val prefix = if (shortenFile) pos.sourceName else pos.sourcePath
 
     pos match {
       case FakePos(fmsg) => fmsg+" "+msg
       case NoPosition    => msg
-      case _             =>
-        List(
-          "%s:%s: %s".format(prefix, pos.line, msg),
-          pos.lineContent.stripLineEnd,
-          " " * (pos.column - 1) + "^"
-        ) mkString "\n"
+      case _             => "%s:%s: %s\n%s\n%s".format(prefix, pos.line, msg, pos.lineContent, pos.lineCarat)
     }
   }
 }
@@ -206,12 +200,39 @@ abstract class Position extends scala.reflect.api.Position { self =>
 
   def column: Int = throw new UnsupportedOperationException("Position.column")
 
+  /** A line with a ^ padded with the right number of spaces.
+   */
+  def lineCarat: String = " " * (column - 1) + "^"
+
+  /** The line of code and the corresponding carat pointing line, trimmed
+   *  to the maximum specified width, with the trimmed versions oriented
+   *  around the point to give maximum context.
+   */
+  def lineWithCarat(maxWidth: Int): (String, String) = {
+    val radius = maxWidth / 2
+    var start  = math.max(column - radius, 0)
+    var result = lineContent drop start take maxWidth
+
+    if (result.length < maxWidth) {
+      result = lineContent takeRight maxWidth
+      start = lineContent.length - result.length
+    }
+
+    (result, lineCarat drop start take maxWidth)
+  }
+
   /** Convert this to a position around `point` that spans a single source line */
   def toSingleLine: Position = this
 
-  def lineContent: String =
-    if (isDefined) source.lineToString(line - 1)
-    else "NO_LINE"
+  /** The source code corresponding to the range, if this is a range position.
+   *  Otherwise the empty string.
+   */
+  def sourceCode    = ""
+  def sourceName    = "<none>"
+  def sourcePath    = "<none>"
+  def lineContent   = "<none>"
+  def lengthInChars = 0
+  def lengthInLines = 0
 
   /** Map this position to a position in an original source
    * file.  If the SourceFile is a normal SourceFile, simply
@@ -240,7 +261,10 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
   override def withPoint(off: Int) = new OffsetPosition(source, off)
   override def withSource(source: SourceFile, shift: Int) = new OffsetPosition(source, point + shift)
 
-  override def line: Int = source.offsetToLine(point) + 1
+  override def line        = source.offsetToLine(point) + 1
+  override def sourceName  = source.file.name
+  override def sourcePath  = source.file.path
+  override def lineContent = source.lineToString(line - 1)
 
   override def column: Int = {
     var idx = source.lineToOffset(source.offsetToLine(point))

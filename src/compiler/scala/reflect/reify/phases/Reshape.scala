@@ -167,7 +167,7 @@ trait Reshape {
         // if this assumption fails, please, don't be quick to add postprocessing here (like I did before)
         // but rather try to fix this in Typer, so that it produces quality originals (like it's done for typedAnnotated)
         if (reifyDebug) println("TypeTree, essential: %s (%s)".format(tt.tpe, tt.tpe.kind))
-        if (reifyDebug) println("verdict: rolled back to original %s".format(tt.original))
+        if (reifyDebug) println("verdict: rolled back to original %s".format(tt.original.toString.replaceAll("\\s+", " ")))
         transform(tt.original)
       } else {
         // type is deemed to be non-essential
