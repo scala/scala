@@ -24,8 +24,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ConstructorTransformer(unit)
 
-  private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = perRunCaches.newMap[Symbol, List[Tree]]
-  private val ctorParams: mutable.Map[Symbol, List[Symbol]] = perRunCaches.newMap[Symbol, List[Symbol]]
+  private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = perRunCaches.newMap[Symbol, List[Tree]]()
+  private val ctorParams: mutable.Map[Symbol, List[Symbol]] = perRunCaches.newMap[Symbol, List[Symbol]]()
 
   class ConstructorTransformer(unit: CompilationUnit) extends Transformer {
 
@@ -34,6 +34,41 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val stats = impl.body          // the transformed template body
       val localTyper = typer.atOwner(impl, clazz)
 
+      // Inspect for obvious out-of-order initialization; concrete, eager vals or vars,
+      // declared in this class, for which a reference to the member precedes its definition.
+      def checkableForInit(sym: Symbol) = (
+           (sym ne null)
+        && (sym.isVal || sym.isVar)
+        && !(sym hasFlag LAZY | DEFERRED | SYNTHETIC)
+      )
+      val uninitializedVals = mutable.Set[Symbol](
+        stats collect { case vd: ValDef if checkableForInit(vd.symbol) => vd.symbol.accessedOrSelf }: _*
+      )
+      if (uninitializedVals.nonEmpty)
+        log("Checking constructor for init order issues among: " + uninitializedVals.map(_.name).mkString(", "))
+
+      for (stat <- stats) {
+        // Checking the qualifier symbol is necessary to prevent a selection on
+        // another instance of the same class from potentially appearing to be a forward
+        // reference on the member in the current class.
+        def check(tree: Tree) = {
+          for (t <- tree) t match {
+            case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
+              unit.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
+            case _ =>
+          }
+        }
+        stat match {
+          case vd: ValDef      =>
+            // doing this first allows self-referential vals, which to be a conservative
+            // warner we will do because it's possible though difficult for it to be useful.
+            uninitializedVals -= vd.symbol.accessedOrSelf
+            if (!vd.symbol.isLazy)
+              check(vd.rhs)
+          case _: MemberDef    => // skip other member defs
+          case t               => check(t) // constructor body statement
+        }
+      }
       val specializedFlag: Symbol = clazz.info.decl(nme.SPECIALIZED_INSTANCE)
       val shouldGuard = (specializedFlag != NoSymbol) && !clazz.hasFlag(SPECIALIZED)
 
@@ -59,8 +94,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val paramAccessors = clazz.constrParamAccessors
 
       // The constructor parameter corresponding to an accessor
-      def parameter(acc: Symbol): Symbol =
-        parameterNamed(nme.getterName(acc.originalName.toTermName))
+      def parameter(acc: Symbol): Symbol = parameterNamed(acc.unexpandedName.getterName)
 
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$` afterwards.
@@ -156,8 +190,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         stat match {
           case ValDef(mods, name, _, _) if (mods hasFlag PRESUPER) =>
             // stat is the constructor-local definition of the field value
-            val fields = presupers filter (
-              vdef => nme.localToGetter(vdef.name) == name)
+            val fields = presupers filter (_.getterName == name)
             assert(fields.length == 1)
             val to = fields.head.symbol
             if (!to.tpe.isInstanceOf[ConstantType])
@@ -188,7 +221,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           // Lazy vals don't get the assignment in the constructor.
           if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
             if (rhs != EmptyTree && !stat.symbol.isLazy) {
-              val rhs1 = intoConstructor(stat.symbol, rhs);
+              val rhs1 = intoConstructor(stat.symbol, rhs)
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
             }
@@ -268,10 +301,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         copyParam(acc, parameter(acc))
       }
 
-      /** Return a single list of statements, merging the generic class constructor with the
-       *  specialized stats. The original statements are retyped in the current class, and
-       *  assignments to generic fields that have a corresponding specialized assignment in
-       *  `specializedStats` are replaced by the specialized assignment.
+      /* Return a single list of statements, merging the generic class constructor with the
+       * specialized stats. The original statements are retyped in the current class, and
+       * assignments to generic fields that have a corresponding specialized assignment in
+       * `specializedStats` are replaced by the specialized assignment.
        */
       def mergeConstructors(genericClazz: Symbol, originalStats: List[Tree], specializedStats: List[Tree]): List[Tree] = {
         val specBuf = new ListBuffer[Tree]
@@ -279,17 +312,15 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         def specializedAssignFor(sym: Symbol): Option[Tree] =
           specializedStats find {
-            case Assign(sel @ Select(This(_), _), rhs) =>
-              (    (sel.symbol hasFlag SPECIALIZED)
-                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name.toTermName)) == nme.localToGetter(sym.name.toTermName))
-              )
+            case Assign(sel @ Select(This(_), _), _) =>
+              sel.symbol.isSpecialized && (nme.unspecializedName(sel.symbol.getterName) == sym.getterName)
             case _ => false
           }
 
-        /** Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
-         *  Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
-         *  variable, but after specialization this is a concrete primitive type, so it would
-         *  be an error to pass it to array_update(.., .., Object).
+        /* Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
+         * Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
+         * variable, but after specialization this is a concrete primitive type, so it would
+         * be an error to pass it to array_update(.., .., Object).
          */
         def rewriteArrayUpdate(tree: Tree): Tree = {
           val adapter = new Transformer {
@@ -338,14 +369,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         res
       }
 
-      /** Add an 'if' around the statements coming after the super constructor. This
-       *  guard is necessary if the code uses specialized fields. A specialized field is
-       *  initialized in the subclass constructor, but the accessors are (already) overridden
-       *  and pointing to the (empty) fields. To fix this, a class with specialized fields
-       *  will not run its constructor statements if the instance is specialized. The specialized
-       *  subclass includes a copy of those constructor statements, and runs them. To flag that a class
-       *  has specialized fields, and their initialization should be deferred to the subclass, method
-       *  'specInstance$' is added in phase specialize.
+      /* Add an 'if' around the statements coming after the super constructor. This
+       * guard is necessary if the code uses specialized fields. A specialized field is
+       * initialized in the subclass constructor, but the accessors are (already) overridden
+       * and pointing to the (empty) fields. To fix this, a class with specialized fields
+       * will not run its constructor statements if the instance is specialized. The specialized
+       * subclass includes a copy of those constructor statements, and runs them. To flag that a class
+       * has specialized fields, and their initialization should be deferred to the subclass, method
+       * 'specInstance$' is added in phase specialize.
        */
       def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
         // split the statements in presuper and postsuper
@@ -366,7 +397,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                 CODE.NOT (
                  Apply(gen.mkAttributedRef(specializedFlag), List())),
                 List()),
-              Block(stats, Literal(Constant())),
+              Block(stats, Literal(Constant(()))),
               EmptyTree)
 
           List(localTyper.typed(tree))
@@ -390,16 +421,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       }
 */
 
-      /** Create a getter or a setter and enter into `clazz` scope
-       */
+      /* Create a getter or a setter and enter into `clazz` scope */
       def addAccessor(sym: Symbol, name: TermName, flags: Long) = {
         val m = clazz.newMethod(name, sym.pos, flags & ~(LOCAL | PRIVATE)) setPrivateWithin clazz
         clazz.info.decls enter m
       }
 
       def addGetter(sym: Symbol): Symbol = {
-        val getr = addAccessor(
-          sym, nme.getterName(sym.name.toTermName), getterFlags(sym.flags))
+        val getr = addAccessor(sym, sym.getterName, getterFlags(sym.flags))
         getr setInfo MethodType(List(), sym.tpe)
         defBuf += localTyper.typedPos(sym.pos)(DefDef(getr, Select(This(clazz), sym)))
         getr
@@ -407,8 +436,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       def addSetter(sym: Symbol): Symbol = {
         sym setFlag MUTABLE
-        val setr = addAccessor(
-          sym, nme.getterToSetter(nme.getterName(sym.name.toTermName)), setterFlags(sym.flags))
+        val setr = addAccessor(sym, sym.setterName, setterFlags(sym.flags))
         setr setInfo MethodType(setr.newSyntheticValueParams(List(sym.tpe)), UnitClass.tpe)
         defBuf += localTyper.typed {
           //util.trace("adding setter def for "+setr) {
@@ -520,7 +548,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol.tpe, This(clazz))))
       }
 
-      /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
+      /* Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
       def splitAtSuper(stats: List[Tree]) = {
         def isConstr(tree: Tree) = (tree.symbol ne null) && tree.symbol.isConstructor
         val (pre, rest0) = stats span (!isConstr(_))
@@ -531,12 +559,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val (uptoSuperStats, remainingConstrStats0) = splitAtSuper(constrStatBuf.toList)
       var remainingConstrStats = remainingConstrStats0
 
-      /** XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
-       *  but excluding it includes too much.  The constructor sequence being mimicked
-       *  needs to be reproduced with total fidelity.
+      /* XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
+       * but excluding it includes too much.  The constructor sequence being mimicked
+       * needs to be reproduced with total fidelity.
        *
-       *  See test case files/run/bug4680.scala, the output of which is wrong in many
-       *  particulars.
+       * See test case files/run/bug4680.scala, the output of which is wrong in many
+       * particulars.
        */
       val needsDelayedInit =
         (clazz isSubClass DelayedInitClass) /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty

@@ -80,7 +80,7 @@ abstract class Document {
         fmt(k, (i + ii, b, d) :: z)
       case (i, true, DocBreak) :: z =>
         writer write "\n"
-        spaces(i);
+        spaces(i)
         fmt(i, z)
       case (i, false, DocBreak) :: z =>
         writer write " "

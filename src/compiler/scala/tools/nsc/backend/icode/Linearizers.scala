@@ -35,15 +35,15 @@ trait Linearizers {
     var blocks: List[BasicBlock] = Nil
 
     def linearize(m: IMethod): List[BasicBlock] = {
-      val b = m.startBlock;
-      blocks = Nil;
+      val b = m.startBlock
+      blocks = Nil
 
       run {
-        worklist pushAll (m.exh map (_.startBlock));
-        worklist.push(b);
+        worklist pushAll (m.exh map (_.startBlock))
+        worklist.push(b)
       }
 
-      blocks.reverse;
+      blocks.reverse
     }
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
@@ -55,30 +55,30 @@ trait Linearizers {
     /** Linearize another subtree and append it to the existing blocks. */
     def linearize(startBlock: BasicBlock): List[BasicBlock] = {
       //blocks = startBlock :: Nil;
-      run( { worklist.push(startBlock); } );
-      blocks.reverse;
+      run( { worklist.push(startBlock); } )
+      blocks.reverse
     }
 
     def processElement(b: BasicBlock) =
       if (b.nonEmpty) {
-        add(b);
+        add(b)
         b.lastInstruction match {
           case JUMP(whereto) =>
-            add(whereto);
+            add(whereto)
           case CJUMP(success, failure, _, _) =>
-            add(success);
-            add(failure);
+            add(success)
+            add(failure)
           case CZJUMP(success, failure, _, _) =>
-            add(success);
-            add(failure);
+            add(success)
+            add(failure)
           case SWITCH(_, labels) =>
-            add(labels);
-          case RETURN(_) => ();
-          case THROW(clasz) =>   ();
+            add(labels)
+          case RETURN(_) => ()
+          case THROW(clasz) =>   ()
         }
       }
 
-    def dequeue: Elem = worklist.pop;
+    def dequeue: Elem = worklist.pop()
 
     /**
      * Prepend b to the list, if not already scheduled.
@@ -88,25 +88,25 @@ trait Linearizers {
       if (blocks.contains(b))
         ()
       else {
-        blocks = b :: blocks;
-        worklist push b;
+        blocks = b :: blocks
+        worklist push b
       }
     }
 
-    def add(bs: List[BasicBlock]): Unit = bs foreach add;
+    def add(bs: List[BasicBlock]): Unit = bs foreach add
   }
 
   /**
    * Linearize code using a depth first traversal.
    */
   class DepthFirstLinerizer extends Linearizer {
-    var blocks: List[BasicBlock] = Nil;
+    var blocks: List[BasicBlock] = Nil
 
     def linearize(m: IMethod): List[BasicBlock] = {
-      blocks = Nil;
+      blocks = Nil
 
-      dfs(m.startBlock);
-      m.exh foreach (b => dfs(b.startBlock));
+      dfs(m.startBlock)
+      m.exh foreach (b => dfs(b.startBlock))
 
       blocks.reverse
     }
@@ -119,7 +119,7 @@ trait Linearizers {
 
     def dfs(b: BasicBlock): Unit =
       if (b.nonEmpty && add(b))
-        b.successors foreach dfs;
+        b.successors foreach dfs
 
     /**
      * Prepend b to the list, if not already scheduled.
@@ -128,7 +128,7 @@ trait Linearizers {
      */
     def add(b: BasicBlock): Boolean =
       !(blocks contains b) && {
-        blocks = b :: blocks;
+        blocks = b :: blocks
         true
       }
   }
@@ -144,12 +144,12 @@ trait Linearizers {
     val added = new mutable.BitSet
 
     def linearize(m: IMethod): List[BasicBlock] = {
-      blocks = Nil;
+      blocks = Nil
       visited.clear()
-      added.clear;
+      added.clear()
 
-      m.exh foreach (b => rpo(b.startBlock));
-      rpo(m.startBlock);
+      m.exh foreach (b => rpo(b.startBlock))
+      rpo(m.startBlock)
 
       // if the start block has predecessors, it won't be the first one
       // in the linearization, so we need to enforce it here
@@ -170,7 +170,7 @@ trait Linearizers {
 
     def rpo(b: BasicBlock): Unit =
       if (b.nonEmpty && !visited(b)) {
-        visited += b;
+        visited += b
         b.successors foreach rpo
         add(b)
       }
@@ -184,7 +184,7 @@ trait Linearizers {
 
       if (!added(b.label)) {
         added += b.label
-        blocks = b :: blocks;
+        blocks = b :: blocks
       }
     }
   }

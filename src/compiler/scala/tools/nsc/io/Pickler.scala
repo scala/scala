@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
  *  Subclasses of `Pickler` each can write and read individual classes
  *  of values.
  *
- *  @param  T   the type of values handled by this pickler.
+ *  @tparam  T   the type of values handled by this pickler.
  *
  *  These Picklers build on the work of Andrew Kennedy. They are most closely inspired by
  *  Iulian Dragos' picklers for Scala to XML. See:
@@ -71,8 +71,8 @@ abstract class Pickler[T] {
   def wrapped [U] (in: T => U)(out: U => T): Pickler[U] = wrappedPickler(this)(in)(out)
 
   /** A conditional pickler obtained from the current pickler.
-   *  @param   cond   the condition to test to find out whether pickler can handle
-   *                  some Scala value.
+   *  @param   p   the condition to test to find out whether pickler can handle
+   *               some Scala value.
    */
   def cond(p: Any => Boolean): CondPickler[T] = conditionalPickler(this, p)
 
@@ -87,7 +87,7 @@ object Pickler {
   /** A base class representing unpickler result. It has two subclasses:
    *  `UnpickleSucess` for successful unpicklings and `UnpickleFailure` for failures,
    *  where a value of the given type `T` could not be unpickled from input.
-   *  @param  T the type of unpickled values in case of success.
+   *  @tparam  T the type of unpickled values in case of success.
    */
   abstract class Unpickled[+T] {
     /** Transforms success values to success values using given function,
@@ -125,7 +125,7 @@ object Pickler {
   }
 
   /** A class representing successful unpicklings
-   *  @param T        the type of the unpickled value
+   *  @tparam T       the type of the unpickled value
    *  @param result   the unpickled value
    */
   case class UnpickleSuccess[+T](result: T) extends Unpickled[T]
@@ -167,7 +167,7 @@ object Pickler {
    */
   def labelledPickler[T](label: String, p: Pickler[T]): Pickler[T] = new Pickler[T] {
     def pickle(wr: Writer, x: T) = {
-      wr.write(quoted(label));
+      wr.write(quoted(label))
       wr.write("(")
       p.pickle(wr, x)
       wr.write(")")
@@ -327,6 +327,12 @@ object Pickler {
     }
   }
 
+  /** A pickler for pairs, represented as `~`-pairs */
+  implicit def tuple2Pickler[T1: Pickler, T2: Pickler]: Pickler[(T1, T2)] =
+    (pkl[T1] ~ pkl[T2])
+      .wrapped { case x1 ~ x2 => (x1, x2) } { case (x1, x2) => x1 ~ x2 }
+      .labelled ("tuple2")
+
   /** A pickler for 3-tuples, represented as `~`-tuples */
   implicit def tuple3Pickler[T1, T2, T3](implicit p1: Pickler[T1], p2: Pickler[T2], p3: Pickler[T3]): Pickler[(T1, T2, T3)] =
     (p1 ~ p2 ~ p3)
@@ -361,8 +367,8 @@ abstract class CondPickler[T](val canPickle: Any => Boolean) extends Pickler[T] 
    *  To unpickle a value, this unpickler is tried first. If it cannot read
    *  the input (as indicated by a `UnpickleFailure` result), then the
    *  alternative pickler is tried.
-   *  @param V    The handled type of the returned pickler.
-   *  @param U    The handled type of the alternative pickler.
+   *  @tparam V    The handled type of the returned pickler.
+   *  @tparam U    The handled type of the alternative pickler.
    *  @param that The alternative pickler.
    */
   def | [V >: T, U <: V] (that: => CondPickler[U]): CondPickler[V] =

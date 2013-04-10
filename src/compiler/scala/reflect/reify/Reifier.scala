@@ -6,9 +6,9 @@ import scala.reflect.macros.UnexpectedReificationException
 import scala.reflect.reify.utils.Utils
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.
- *  See more info in the comments to ``reify'' in scala.reflect.api.Universe.
+ *  See more info in the comments to `reify` in scala.reflect.api.Universe.
  *
- *  @author Martin Odersky
+ * @author Martin Odersky
  *  @version 2.10
  */
 abstract class Reifier extends States
@@ -32,7 +32,7 @@ abstract class Reifier extends States
   override def hasReifier = true
 
   /**
-   *  For ``reifee'' and other reification parameters, generate a tree of the form
+   *  For `reifee` and other reification parameters, generate a tree of the form
    *
    *    {
    *      val $u: universe.type = <[ universe ]>
@@ -57,7 +57,7 @@ abstract class Reifier extends States
 
       val result = reifee match {
         case tree: Tree =>
-          reifyTrace("reifying = ")(if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
+          reifyTrace("reifying = ")(if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
           reifyTrace("reifee is located at: ")(tree.pos)
           reifyTrace("universe = ")(universe)
           reifyTrace("mirror = ")(mirror)

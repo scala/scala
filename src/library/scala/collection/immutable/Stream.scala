@@ -998,7 +998,7 @@ final class StreamIterator[+A] private() extends AbstractIterator[A] with Iterat
 
   def hasNext: Boolean = these.v.nonEmpty
   def next(): A =
-    if (isEmpty) Iterator.empty.next
+    if (isEmpty) Iterator.empty.next()
     else {
       val cur    = these.v
       val result = cur.head

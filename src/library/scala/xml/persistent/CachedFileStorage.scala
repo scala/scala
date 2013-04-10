@@ -76,8 +76,8 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     log("[load]\nloading "+theFile)
     val src = Source.fromFile(theFile)
     log("parsing "+theFile)
-    val res = ConstructingParser.fromSource(src,false).document.docElem(0)
-    switch
+    val res = ConstructingParser.fromSource(src,preserveWS = false).document.docElem(0)
+    switch()
     log("[load done]")
     res.child.iterator
   }
@@ -94,7 +94,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     // @todo: optimize
     val storageNode = <nodes>{ nodes.toList }</nodes>
     val w = Channels.newWriter(c, "utf-8")
-    XML.write(w, storageNode, "utf-8", true, null)
+    XML.write(w, storageNode, "utf-8", xmlDecl = true, doctype = null)
 
     log("writing to "+theFile)
 
@@ -102,7 +102,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     c.close
     fos.close
     dirty = false
-    switch
+    switch()
     log("[save done]")
   }
 
@@ -112,7 +112,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     log("[run]\nstarting storage thread, checking every "+interval+" ms")
     while (true) {
       Thread.sleep( this.interval )
-      save
+      save()
     }
   }
 
@@ -120,6 +120,6 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     * update. */
   def flush() = {
     this.dirty = true
-    save
+    save()
   }
 }

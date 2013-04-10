@@ -52,7 +52,7 @@ abstract class Changes {
   private val changedTypeParams = new mutable.HashSet[String]
 
   private def sameParameterSymbolNames(sym1: Symbol, sym2: Symbol): Boolean =
-  	sameSymbol(sym1, sym2, true) || sym2.encodedName.startsWith(sym1.encodedName + nme.NAME_JOIN_STRING) // see #3140
+  	sameSymbol(sym1, sym2, simple = true) || sym2.encodedName.startsWith(sym1.encodedName + nme.NAME_JOIN_STRING) // see #3140
   private def sameSymbol(sym1: Symbol, sym2: Symbol, simple: Boolean = false): Boolean =
     if (simple) sym1.encodedName == sym2.encodedName else sym1.fullName == sym2.fullName
   private def sameFlags(sym1: Symbol, sym2: Symbol): Boolean =
@@ -90,11 +90,11 @@ abstract class Changes {
         } else
           !sym1.isTypeParameter || !changedTypeParams.contains(sym1.fullName)
 
+      // @M! normalize reduces higher-kinded case to PolyType's
       testSymbols && sameType(pre1, pre2) &&
         (sym1.variance == sym2.variance) &&
         ((tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize) ||
            sameTypes(args1, args2))
-         // @M! normalize reduces higher-kinded case to PolyType's
 
     case (RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
       def isSubScope(s1: Scope, s2: Scope): Boolean = s2.toList.forall {
@@ -121,7 +121,7 @@ abstract class Changes {
     case (NullaryMethodType(res1), NullaryMethodType(res2)) =>
       sameType(res1, res2)
     case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
-      sameTypeParams(tparams1, tparams2)(false) && sameType(res1, res2)(false)
+      sameTypeParams(tparams1, tparams2)(strict = false) && sameType(res1, res2)(strict = false)
     case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
       sameType(lo1, lo2) && sameType(hi1, hi2)
     case (BoundedWildcardType(bounds), _) =>
@@ -168,13 +168,13 @@ abstract class Changes {
     implicit val defaultStrictTypeRefTest = true
 
     val to = toSym.info
-    changedTypeParams.clear
+    changedTypeParams.clear()
     def omitSymbols(s: Symbol): Boolean = !s.hasFlag(LOCAL | LIFTED | PRIVATE | SYNTHETIC)
     val cs = new mutable.ListBuffer[Change]
 
     if ((from.parents zip to.parents) exists { case (t1, t2) => !sameType(t1, t2) })
       cs += Changed(toEntity(toSym))(from.parents.zip(to.parents).toString)
-    if (!sameTypeParams(from.typeParams, to.typeParams)(false))
+    if (!sameTypeParams(from.typeParams, to.typeParams)(strict = false))
       cs += Changed(toEntity(toSym))(" tparams: " + from.typeParams.zip(to.typeParams))
 
     // new members not yet visited

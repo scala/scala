@@ -5,6 +5,6 @@ object M {
   def m(a: Any, b: Any): Any = macro mImpl
   def mImpl(c: Context)(a: c.Expr[Any], b: c.Expr[Any]) = a
 
-  @reflect.macros.compileTimeOnly("cto may only be used as an argument to " + "m")
+  @reflect.internal.annotations.compileTimeOnly("cto may only be used as an argument to " + "m")
   def cto = 0
 }

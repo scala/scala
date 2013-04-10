@@ -52,7 +52,7 @@ trait Splitter[+T] extends Iterator[T] {
 object Splitter {
   def empty[T]: Splitter[T] = new Splitter[T] {
     def hasNext = false
-    def next = Iterator.empty.next
+    def next = Iterator.empty.next()
     def split = Seq(this)
   }
 }

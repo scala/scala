@@ -84,8 +84,8 @@ class ScriptRunner extends HasCompileSocket {
   {
     def mainClass = scriptMain(settings)
 
-    /** Compiles the script file, and returns the directory with the compiled
-     *  class files, if the compilation succeeded.
+    /* Compiles the script file, and returns the directory with the compiled
+     * class files, if the compilation succeeded.
      */
     def compile: Option[Directory] = {
       val compiledPath = Directory makeTemp "scalascript"
@@ -95,9 +95,9 @@ class ScriptRunner extends HasCompileSocket {
 
       settings.outdir.value = compiledPath.path
 
-      if (settings.nc.value) {
-        /** Setting settings.script.value informs the compiler this is not a
-         *  self contained compilation unit.
+      if (settings.nc) {
+        /* Setting settings.script.value informs the compiler this is not a
+         * self contained compilation unit.
          */
         settings.script.value = mainClass
         val reporter = new ConsoleReporter(settings)
@@ -110,11 +110,11 @@ class ScriptRunner extends HasCompileSocket {
       else None
     }
 
-    /** The script runner calls sys.exit to communicate a return value, but this must
-     *  not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
+    /* The script runner calls sys.exit to communicate a return value, but this must
+     * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     util.waitingForThreads {
-      if (settings.save.value) {
+      if (settings.save) {
         val jarFile = jarFileFor(scriptFile)
         def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 

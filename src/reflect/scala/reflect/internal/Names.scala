@@ -34,7 +34,7 @@ trait Names extends api.Names {
        cs(offset) * (41 * 41) +
        cs(offset + len - 1) * 41 +
        cs(offset + (len >> 1)))
-    else 0;
+    else 0
 
   /** Is (the ASCII representation of) name at given index equal to
    *  cs[offset..offset+len-1]?
@@ -42,7 +42,7 @@ trait Names extends api.Names {
   private def equals(index: Int, cs: Array[Char], offset: Int, len: Int): Boolean = {
     var i = 0
     while ((i < len) && (chrs(index + i) == cs(offset + i)))
-      i += 1;
+      i += 1
     i == len
   }
 
@@ -177,6 +177,12 @@ trait Names extends api.Names {
     /** @return the hash value of this name */
     final override def hashCode(): Int = index
 
+    /** @return true if the string value of this name is equal
+     *  to the string value of the given name or String.
+     */
+    def string_==(that: Name): Boolean   = (that ne null) && (toString == that.toString)
+    def string_==(that: String): Boolean = (that ne null) && (toString == that)
+
     /****
      *  This has been quite useful to find places where people are comparing
      *  a TermName and a TypeName, or a Name and a String.
@@ -210,14 +216,14 @@ trait Names extends api.Names {
     /** @return the index of first occurrence of char c in this name, length if not found */
     final def pos(c: Char): Int = pos(c, 0)
 
-    /** @return the index of first occurrence of char c in this name, length if not found */
+    /** @return the index of first occurrence of s in this name, length if not found */
     final def pos(s: String): Int = pos(s, 0)
 
     /** Returns the index of the first occurrence of character c in
      *  this name from start, length if not found.
      *
      *  @param c     the character
-     *  @param start ...
+     *  @param start the index from which to search
      *  @return      the index of the first occurrence of c
      */
     final def pos(c: Char, start: Int): Int = {
@@ -230,7 +236,7 @@ trait Names extends api.Names {
      *  in this name from start, length if not found.
      *
      *  @param s     the string
-     *  @param start ...
+     *  @param start the index from which to search
      *  @return      the index of the first occurrence of s
      */
     final def pos(s: String, start: Int): Int = {
@@ -258,7 +264,7 @@ trait Names extends api.Names {
      *  name from start, -1 if not found.
      *
      *  @param c     the character
-     *  @param start ...
+     *  @param start the index from which to search
      *  @return      the index of the last occurrence of c
      */
     final def lastPos(c: Char, start: Int): Int = {
@@ -275,7 +281,7 @@ trait Names extends api.Names {
       var i = 0
       while (i < prefix.length && start + i < len &&
              chrs(index + start + i) == chrs(prefix.start + i))
-        i += 1;
+        i += 1
       i == prefix.length
     }
 
@@ -287,7 +293,7 @@ trait Names extends api.Names {
       var i = 1
       while (i <= suffix.length && i <= end &&
              chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
-        i += 1;
+        i += 1
       i > suffix.length
     }
 
@@ -319,15 +325,18 @@ trait Names extends api.Names {
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
     final def endsWith(name: String): Boolean   = endsWith(newTermName(name))
 
-    def indexOf(ch: Char) = {
-      val idx = pos(ch)
-      if (idx == length) -1 else idx
-    }
-    def indexOf(ch: Char, fromIndex: Int) = {
-      val idx = pos(ch, fromIndex)
-      if (idx == length) -1 else idx
-    }
-    def lastIndexOf(ch: Char) = lastPos(ch)
+    /** Rewrite the confusing failure indication via result == length to
+     *  the normal failure indication via result == -1.
+     */
+    private def fixIndexOf(idx: Int): Int = if (idx == length) -1 else idx
+
+    def indexOf(ch: Char)                 = fixIndexOf(pos(ch))
+    def indexOf(ch: Char, fromIndex: Int) = fixIndexOf(pos(ch, fromIndex))
+    def indexOf(s: String)                = fixIndexOf(pos(s))
+
+    /** The lastPos methods already return -1 on failure. */
+    def lastIndexOf(ch: Char): Int  = lastPos(ch)
+    def lastIndexOf(s: String): Int = toString lastIndexOf s
 
     /** Replace all occurrences of `from` by `to` in
      *  name; result is always a term name.
@@ -392,9 +401,24 @@ trait Names extends api.Names {
    *  reap the benefits because an (unused) $outer pointer so it is not single-field.
    */
   final class NameOps[T <: Name](name: T) {
-    def stripSuffix(suffix: Name): T = if (name endsWith suffix) dropRight(suffix.length) else name
-    def dropRight(n: Int): T         = name.subName(0, name.length - n).asInstanceOf[T]
-    def drop(n: Int): T              = name.subName(n, name.length).asInstanceOf[T]
+    import NameTransformer._
+    def stripSuffix(suffix: String): T = stripSuffix(suffix: TermName)
+    def stripSuffix(suffix: Name): T   = if (name endsWith suffix) dropRight(suffix.length) else name
+    def take(n: Int): T                = name.subName(0, n).asInstanceOf[T]
+    def drop(n: Int): T                = name.subName(n, name.length).asInstanceOf[T]
+    def dropRight(n: Int): T           = name.subName(0, name.length - n).asInstanceOf[T]
+    def dropLocal: TermName            = name.toTermName stripSuffix LOCAL_SUFFIX_STRING
+    def dropSetter: TermName           = name.toTermName stripSuffix SETTER_SUFFIX_STRING
+    def dropModule: T                  = this stripSuffix MODULE_SUFFIX_STRING
+    def localName: TermName            = getterName append LOCAL_SUFFIX_STRING
+    def setterName: TermName           = getterName append SETTER_SUFFIX_STRING
+    def getterName: TermName           = dropTraitSetterSeparator.dropSetter.dropLocal
+
+    private def dropTraitSetterSeparator: TermName =
+      name indexOf TRAIT_SETTER_SEPARATOR_STRING match {
+        case -1  => name.toTermName
+        case idx => name.toTermName drop idx drop TRAIT_SETTER_SEPARATOR_STRING.length
+      }
   }
 
   implicit val NameTag = ClassTag[Name](classOf[Name])

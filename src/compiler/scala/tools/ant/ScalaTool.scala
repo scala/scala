@@ -190,13 +190,13 @@ class ScalaTool extends ScalaMatchingTask {
       val builder = new StringBuilder()
 
       while (chars.hasNext) {
-        val char = chars.next
+        val char = chars.next()
         if (char == '@') {
-          var char = chars.next
+          var char = chars.next()
           val token = new StringBuilder()
           while (chars.hasNext && char != '@') {
             token.append(char)
-            char = chars.next
+            char = chars.next()
           }
           if (token.toString == "")
             builder.append('@')
@@ -212,13 +212,13 @@ class ScalaTool extends ScalaMatchingTask {
       val builder = new StringBuilder()
 
       while (chars.hasNext) {
-        val char = chars.next
+        val char = chars.next()
         if (char == '@') {
-          var char = chars.next
+          var char = chars.next()
           val token = new StringBuilder()
           while (chars.hasNext && char != '@') {
             token.append(char)
-            char = chars.next
+            char = chars.next()
           }
           if (tokens.contains(token.toString))
             builder.append(tokens(token.toString))

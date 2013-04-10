@@ -164,7 +164,7 @@ object Try {
 
 }
 
-final case class Failure[+T](val exception: Throwable) extends Try[T] {
+final case class Failure[+T](exception: Throwable) extends Try[T] {
   def isFailure: Boolean = true
   def isSuccess: Boolean = false
   def recoverWith[U >: T](f: PartialFunction[Throwable, Try[U]]): Try[U] =

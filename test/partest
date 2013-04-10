@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
+#
 
 ##############################################################################
-# Scala test runner 2.8.0
+# Scala test runner 2.10.0
 ##############################################################################
 # (c) 2002-2013 LAMP/EPFL
 #
@@ -9,6 +10,16 @@
 # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 ##############################################################################
+
+# Use tput to detect color-capable terminal.
+term_colors=$(tput colors 2>/dev/null)
+if [[ $? == 0 ]] && [[ $term_colors -gt 2 ]]; then
+  git_diff_options="--color=always --word-diff"
+  color_opts="-Dpartest.colors=$term_colors"
+else
+  unset color_opts
+  git_diff_options="--nocolor"
+fi
 
 cygwin=false;
 darwin=false;
@@ -53,8 +64,8 @@ if [ -z "$EXT_CLASSPATH" ] ; then
             fi
         done
     elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
-        for lib in `echo "partest library reflect compiler"`; do
-            ext="$SCALA_HOME/build/pack/lib/scala-$lib.jar"
+        for lib in `echo "scala-partest scala-library scala-reflect scala-compiler diffutils"`; do
+            ext="$SCALA_HOME/build/pack/lib/$lib.jar"
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
             else
@@ -98,6 +109,7 @@ fi
 "${JAVACMD:=java}" \
   $JAVA_OPTS -cp "$EXT_CLASSPATH" \
   ${partestDebugStr} \
+  "$color_opts" \
   -Dscala.home="${SCALA_HOME}" \
   -Dpartest.javacmd="${JAVACMD}" \
   -Dpartest.java_opts="${JAVA_OPTS}" \

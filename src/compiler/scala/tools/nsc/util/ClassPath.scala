@@ -13,6 +13,7 @@ import io.{ File, Directory, Path, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
+import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 
@@ -28,7 +29,7 @@ object ClassPath {
   private def expandS(pattern: String): List[String] = {
     val wildSuffix = File.separator + "*"
 
-    /** Get all subdirectories, jars, zips out of a directory. */
+    /* Get all subdirectories, jars, zips out of a directory. */
     def lsDir(dir: Directory, filt: String => Boolean = _ => true) =
       dir.list filter (x => filt(x.name) && (x.isDirectory || isJarOrZip(x))) map (_.path) toList
 
@@ -105,23 +106,28 @@ object ClassPath {
     /** Creators for sub classpaths which preserve this context.
      */
     def sourcesInPath(path: String): List[ClassPath[T]] =
-      for (file <- expandPath(path, false) ; dir <- Option(AbstractFile getDirectory file)) yield
+      for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
 
     def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
-      for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
+      for (dir <- expandPath(path, expandStar = false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
         newClassPath(entry)
 
     def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
-      classesInPathImpl(path, true).toIndexedSeq
+      classesInPathImpl(path, expand = true).toIndexedSeq
 
-    def classesInPath(path: String) = classesInPathImpl(path, false)
+    def classesInPath(path: String) = classesInPathImpl(path, expand = false)
 
     // Internal
     private def classesInPathImpl(path: String, expand: Boolean) =
       for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
         newClassPath(dir)
+
+    def classesInManifest(used: Boolean) =
+      if (used) for (url <- manifests) yield newClassPath(AbstractFile getResources url) else Nil
   }
+
+  def manifests = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
 
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {
@@ -210,7 +216,7 @@ abstract class ClassPath[T] {
    * Does not support nested classes on .NET
    */
   def findClass(name: String): Option[AnyClassRep] =
-    splitWhere(name, _ == '.', true) match {
+    splitWhere(name, _ == '.', doDropIndex = true) match {
       case Some((pkg, rest)) =>
         val rep = packages find (_.name == pkg) flatMap (_ findClass rest)
         rep map {
@@ -254,7 +260,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
       else if (f.isDirectory && validPackage(f.name))
         packageBuf += new SourcePath[T](f, context)
     }
-    (packageBuf.result, classBuf.result)
+    (packageBuf.result(), classBuf.result())
   }
 
   lazy val (packages, classes) = traverse()
@@ -267,7 +273,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
 class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = if (dir.file == null) Nil else List(dir.toURL)
+  def asURLs = if (dir.file == null) List(new URL(name)) else List(dir.toURL)
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 
@@ -281,7 +287,7 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
       else if (f.isDirectory && validPackage(f.name))
         packageBuf += new DirectoryClassPath(f, context)
     }
-    (packageBuf.result, classBuf.result)
+    (packageBuf.result(), classBuf.result())
   }
 
   lazy val (packages, classes) = traverse()

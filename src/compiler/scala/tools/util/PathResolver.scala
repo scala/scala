@@ -135,18 +135,18 @@ object PathResolver {
     }
     else {
       val settings = new Settings()
-      val rest = settings.processArguments(args.toList, false)._2
+      val rest = settings.processArguments(args.toList, processAll = false)._2
       val pr = new PathResolver(settings)
       println(" COMMAND: 'scala %s'".format(args.mkString(" ")))
       println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
-      pr.result.show
+      pr.result.show()
     }
   }
 }
 import PathResolver.{ Defaults, Environment, ppcp }
 
 class PathResolver(settings: Settings, context: JavaContext) {
-  def this(settings: Settings) = this(settings, if (settings.inline.value) new JavaContext else DefaultJavaContext)
+  def this(settings: Settings) = this(settings, if (settings.inline) new JavaContext else DefaultJavaContext)
 
   private def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
@@ -170,6 +170,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
   object Calculated {
     def scalaHome           = Defaults.scalaHome
     def useJavaClassPath    = settings.usejavacp.value || Defaults.useJavaClassPath
+    def useManifestClassPath= settings.usemanifestcp.value
     def javaBootClassPath   = cmdLineOrElse("javabootclasspath", Defaults.javaBootClassPath)
     def javaExtDirs         = cmdLineOrElse("javaextdirs", Defaults.javaExtDirs)
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
@@ -209,6 +210,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
       classesInPath(scalaBootClassPath),            // 4. The Scala boot class path.
       contentsOfDirsInPath(scalaExtDirs),           // 5. The Scala extension class path.
       classesInExpandedPath(userClassPath),         // 6. The Scala application class path.
+      classesInManifest(useManifestClassPath),      // 8. The Manifest class path.
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
 
@@ -238,7 +240,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
 
   lazy val result = {
     val cp = new JavaClassPath(containers.toIndexedSeq, context)
-    if (settings.Ylogcp.value) {
+    if (settings.Ylogcp) {
       Console.println("Classpath built from " + settings.toConciseString)
       Console.println("Defaults: " + PathResolver.Defaults)
       Console.println("Calculated: " + Calculated)

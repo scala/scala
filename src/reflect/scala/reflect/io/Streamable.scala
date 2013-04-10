@@ -88,7 +88,7 @@ object Streamable {
 
     /** Obtains an InputStreamReader wrapped around a FileInputStream.
      */
-    def reader(codec: Codec): InputStreamReader = new InputStreamReader(inputStream, codec.charSet)
+    def reader(codec: Codec): InputStreamReader = new InputStreamReader(inputStream(), codec.charSet)
 
     /** Wraps a BufferedReader around the result of reader().
      */
@@ -106,7 +106,10 @@ object Streamable {
     /** Convenience function to import entire file into a String.
      */
     def slurp(): String = slurp(creationCodec)
-    def slurp(codec: Codec) = chars(codec).mkString
+    def slurp(codec: Codec) = {
+      val src = chars(codec)
+      try src.mkString finally src.close()  // Always Be Closing
+    }
   }
 
   /** Call a function on something Closeable, finally closing it. */
@@ -115,7 +118,9 @@ object Streamable {
     finally stream.close()
 
   def bytes(is: => InputStream): Array[Byte] =
-    (new Bytes { def inputStream() = is }).toByteArray
+    (new Bytes {
+      def inputStream() = is
+    }).toByteArray()
 
   def slurp(is: => InputStream)(implicit codec: Codec): String =
     new Chars { def inputStream() = is } slurp codec

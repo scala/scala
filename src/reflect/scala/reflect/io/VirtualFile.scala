@@ -39,9 +39,9 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Returns null. */
   def file: JFile = null
 
-  override def sizeOption: Option[Int] = Some(content.size)
+  override def sizeOption: Option[Int] = Some(content.length)
 
-  def input : InputStream = new ByteArrayInputStream(content);
+  def input : InputStream = new ByteArrayInputStream(content)
 
   override def output: OutputStream = {
     new ByteArrayOutputStream() {
@@ -71,10 +71,10 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   }
 
   /** Does this abstract file denote an existing file? */
-  def create() { unsupported }
+  def create() { unsupported() }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete() { unsupported }
+  def delete() { unsupported() }
 
   /**
    * Returns the abstract file in this abstract directory with the
@@ -90,5 +90,5 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
 }

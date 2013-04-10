@@ -20,11 +20,12 @@ import plugins.Plugins
 import ast._
 import ast.parser._
 import typechecker._
+import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, JavaPlatform }
 import backend.jvm.GenASM
-import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
+import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
 
@@ -41,6 +42,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // the mirror --------------------------------------------------
 
   override def isCompilerUniverse = true
+  override val useOffsetPositions = !currentSettings.Yrangepos.value
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
@@ -219,7 +221,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def inform(msg: String)               = reporter.echo(msg)
   override def globalError(msg: String) = reporter.error(NoPosition, msg)
   override def warning(msg: String)     =
-    if (settings.fatalWarnings.value) globalError(msg)
+    if (settings.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
   // Getting in front of Predef's asserts to supplement with more info.
@@ -250,7 +252,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   @inline final def ifDebug(body: => Unit) {
-    if (settings.debug.value)
+    if (settings.debug)
       body
   }
   /** This is for WARNINGS which should reach the ears of scala developers
@@ -260,15 +262,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  to make them visually distinct.
    */
   @inline final override def devWarning(msg: => String) {
-    if (settings.developer.value || settings.debug.value)
+    if (settings.developer || settings.debug)
       warning("!!! " + msg)
+    else
+      log("!!! " + msg) // such warnings always at least logged
   }
 
   private def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (currentTime - start) + "ms"
 
   def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
-  def informProgress(msg: String)          = if (settings.verbose.value) inform("[" + msg + "]")
+  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
@@ -283,7 +287,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   @inline final override def debuglog(msg: => String) {
-    if (settings.debug.value)
+    if (settings.debug)
       log(msg)
   }
 
@@ -328,7 +332,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  if (settings.verbose.value || settings.Ylogcp.value) {
+  if (settings.verbose || settings.Ylogcp) {
     // Uses the "do not truncate" inform
     informComplete("[search path for source files: " + classPath.sourcepaths.mkString(",") + "]")
     informComplete("[search path for class files: " + classPath.asClasspathString + "]")
@@ -398,7 +402,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
-      if (settings.debug.value && (settings.verbose.value || currentRun.size < 5))
+      if (settings.debug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
 
       val unit0 = currentUnit
@@ -408,7 +412,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           currentRun.informUnitStarting(this, unit)
           apply(unit)
         }
-        currentRun.advanceUnit
+        currentRun.advanceUnit()
       } finally {
         //assert(currentUnit == unit)
         currentRun.currentUnit = unit0
@@ -421,11 +425,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   val printInfers = settings.Yinferdebug.value
 
   // phaseName = "parser"
-  object syntaxAnalyzer extends {
+  lazy val syntaxAnalyzer = new {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]()
     val runsRightAfter = None
   } with SyntaxAnalyzer
+
+  import syntaxAnalyzer.{ UnitScanner, UnitParser }
 
   // !!! I think we're overdue for all these phase objects being lazy vals.
   // There's no way for a Global subclass to provide a custom typer
@@ -588,6 +594,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with ClosureElimination
 
+  // phaseName = "constopt"
+  object constantOptimization extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("closelim")
+    val runsRightAfter = None
+  } with ConstantOptimization
+
   // phaseName = "dce"
   object deadCode extends {
     val global: Global.this.type = Global.this
@@ -672,6 +685,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       inliner                 -> "optimization: do inlining",
       inlineExceptionHandlers -> "optimization: inline exception handlers",
       closureElimination      -> "optimization: eliminate uncalled closures",
+      constantOptimization    -> "optimization: optimize null and other constants",
       deadCode                -> "optimization: eliminate dead code",
       terminal                -> "The last phase in the compiler chain"
     )
@@ -722,7 +736,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val maxName = (0 /: phaseNames)(_ max _.length)
     val width   = maxName min Limit
     val maxDesc = MaxCol - (width + 6)  // descriptions not novels
-    val fmt     = if (settings.verbose.value) s"%${maxName}s  %2s  %s%n"
+    val fmt     = if (settings.verbose) s"%${maxName}s  %2s  %s%n"
                   else s"%${width}.${width}s  %2s  %.${maxDesc}s%n"
 
     val line1 = fmt.format("phase name", "id", "description")
@@ -789,8 +803,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     } reverse
   }
 
-  private def numberedPhase(ph: Phase) = "%2d/%s".format(ph.id, ph.name)
-
   // ------------ Invalidations ---------------------------------
 
   /** Is given package class a system package class that cannot be invalidated?
@@ -804,8 +816,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Invalidates packages that contain classes defined in a classpath entry, and
    *  rescans that entry.
-   *  @param path  A fully qualified name that refers to a directory or jar file that's
-   *               an entry on the classpath.
+   *  @param paths  Fully qualified names that refer to directories or jar files that are
+   *                a entries on the classpath.
    *  First, causes the classpath entry referred to by `path` to be rescanned, so that
    *  any new files or deleted files or changes in subpackages are picked up.
    *  Second, invalidates any packages for which one of the following considitions is met:
@@ -993,7 +1005,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   object typeDeconstruct extends {
     val global: Global.this.type = Global.this
-  } with interpreter.StructuredTypeStrings
+  } with typechecker.StructuredTypeStrings
 
   /** There are common error conditions where when the exception hits
    *  here, currentRun.currentUnit is null.  This robs us of the knowledge
@@ -1085,7 +1097,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       val info3: List[String] = (
            ( List("== Enclosing template or block ==", nodePrinters.nodeToString(enclosing).trim) )
         ++ ( if (tpe eq null) Nil else List("== Expanded type of tree ==", typeDeconstruct.show(tpe)) )
-        ++ ( if (!settings.debug.value) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
+        ++ ( if (!settings.debug) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
         ++ ( List(errorMessage) )
       )
 
@@ -1100,25 +1112,27 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   override def currentRunId = curRunId
 
   def echoPhaseSummary(ph: Phase) = {
-    /** Only output a summary message under debug if we aren't echoing each file. */
-    if (settings.debug.value && !(settings.verbose.value || currentRun.size < 5))
+    /* Only output a summary message under debug if we aren't echoing each file. */
+    if (settings.debug && !(settings.verbose || currentRun.size < 5))
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 
   /** Collects for certain classes of warnings during this run. */
   class ConditionalWarning(what: String, option: Settings#BooleanSetting) {
-    val warnings = new mutable.ListBuffer[(Position, String)]
+    val warnings = mutable.LinkedHashMap[Position, String]()
     def warn(pos: Position, msg: String) =
-      if (option.value) reporter.warning(pos, msg)
-      else warnings += ((pos, msg))
+      if (option) reporter.warning(pos, msg)
+      else if (!(warnings contains pos)) warnings += ((pos, msg))
     def summarize() =
-      if (option.isDefault && warnings.nonEmpty)
-        reporter.warning(NoPosition, "there were %d %s warnings; re-run with %s for details".format(warnings.size, what, option.name))
+      if (warnings.nonEmpty && (option.isDefault || settings.fatalWarnings))
+        warning("there were %d %s warning(s); re-run with %s for details".format(warnings.size, what, option.name))
   }
 
-  def newUnitParser(code: String)      = new syntaxAnalyzer.UnitParser(newCompilationUnit(code))
-  def newCompilationUnit(code: String) = new CompilationUnit(newSourceFile(code))
-  def newSourceFile(code: String)      = new BatchSourceFile("<console>", code)
+  def newCompilationUnit(code: String)                   = new CompilationUnit(newSourceFile(code))
+  def newSourceFile(code: String)                        = new BatchSourceFile("<console>", code)
+  def newUnitScanner(unit: CompilationUnit): UnitScanner = new UnitScanner(unit)
+  def newUnitParser(unit: CompilationUnit): UnitParser   = new UnitParser(unit)
+  def newUnitParser(code: String): UnitParser            = newUnitParser(newCompilationUnit(code))
 
   /** A Run is a single execution of the compiler on a sets of units
    */
@@ -1192,14 +1206,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       curRunId += 1
       curRun = this
 
-      /** Set phase to a newly created syntaxAnalyzer and call definitions.init. */
+      /* Set phase to a newly created syntaxAnalyzer and call definitions.init. */
       val parserPhase: Phase = syntaxAnalyzer.newPhase(NoPhase)
       phase = parserPhase
       definitions.init()
 
       // Flush the cache in the terminal phase: the chain could have been built
       // before without being used. (This happens in the interpreter.)
-      terminal.reset
+      terminal.reset()
 
       // Each subcomponent supplies a phase, which are chained together.
       //   If -Ystop:phase is given, neither that phase nor any beyond it is added.
@@ -1226,7 +1240,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def resetProjectClasses(root: Symbol): Unit = try {
       def unlink(sym: Symbol) =
         if (sym != NoSymbol) root.info.decls.unlink(sym)
-      if (settings.verbose.value) inform("[reset] recursing in "+root)
+      if (settings.verbose) inform("[reset] recursing in "+root)
       val toReload = mutable.Set[String]()
       for (sym <- root.info.decls) {
         if (sym.isInitialized && clearOnNextRun(sym))
@@ -1246,7 +1260,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       for (fullname <- toReload)
         classPath.findClass(fullname) match {
           case Some(classRep) =>
-            if (settings.verbose.value) inform("[reset] reinit "+fullname)
+            if (settings.verbose) inform("[reset] reinit "+fullname)
             loaders.initializeFromClassPath(root, classRep)
           case _ =>
         }
@@ -1255,8 +1269,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // this handler should not be nessasary, but it seems that `fsc`
         // eats exceptions if they appear here. Need to find out the cause for
         // this and fix it.
-        inform("[reset] exception happened: "+ex);
-        ex.printStackTrace();
+        inform("[reset] exception happened: "+ex)
+        ex.printStackTrace()
         throw ex
     }
 
@@ -1282,14 +1296,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def advancePhase() {
       unitc = 0
       phasec += 1
-      refreshProgress
+      refreshProgress()
     }
     /** take note that a phase on a unit is completed
      *  (for progress reporting)
      */
     def advanceUnit() {
       unitc += 1
-      refreshProgress
+      refreshProgress()
     }
 
     def cancel() { reporter.cancelled = true }
@@ -1399,8 +1413,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       if (canCheck) {
         phase = globalPhase
-        if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
-        else treeChecker.checkTrees
+        if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes()
+        else treeChecker.checkTrees()
       }
     }
 
@@ -1417,10 +1431,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         }
       }
       if (settings.Xshowcls.isSetByUser)
-        showDef(splitClassAndPhase(settings.Xshowcls.value, false), false, globalPhase)
+        showDef(splitClassAndPhase(settings.Xshowcls.value, term = false), declsOnly = false, globalPhase)
 
       if (settings.Xshowobj.isSetByUser)
-        showDef(splitClassAndPhase(settings.Xshowobj.value, true), false, globalPhase)
+        showDef(splitClassAndPhase(settings.Xshowobj.value, term = true), declsOnly = false, globalPhase)
     }
 
     // Similarly, this will only be created under -Yshow-syms.
@@ -1439,7 +1453,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
     def reportCompileErrors() {
-      if (!reporter.hasErrors && reporter.hasWarnings && settings.fatalWarnings.value)
+      if (!reporter.hasErrors && reporter.hasWarnings && settings.fatalWarnings)
         globalError("No warnings can be incurred under -Xfatal-warnings.")
 
       if (reporter.hasErrors) {
@@ -1450,7 +1464,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         }
       }
       else {
-        allConditionalWarnings foreach (_.summarize)
+        allConditionalWarnings foreach (_.summarize())
 
         if (seenMacroExpansionsFallingBack)
           warning("some macros could not be expanded and code fell back to overridden methods;"+
@@ -1478,7 +1492,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
       catch { case ex: Throwable =>
-        val shown = if (settings.verbose.value)
+        val shown = if (settings.verbose)
            stackTraceString(ex)
          else
            stackTraceHeadString(ex) // note that error stacktraces do not print in fsc
@@ -1501,7 +1515,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
      while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
-        globalPhase.run
+        globalPhase.run()
 
         // progress update
         informTime(globalPhase.description, startTime)
@@ -1512,14 +1526,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         if (shouldWriteIcode) {
           // Write *.icode files when -Xprint-icode or -Xprint:<some-optimiz-phase> was given.
           writeICode()
-        } else if ((settings.Xprint containsPhase globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
+        } else if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
           // print trees
-          if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) nodePrinters.printAll()
+          if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
           else printAllUnits()
         }
 
         // print the symbols presently attached to AST nodes
-        if (settings.Yshowsyms.value)
+        if (settings.Yshowsyms)
           trackerFactory.snapshot()
 
         // print members
@@ -1538,10 +1552,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           runCheckers()
 
         // output collected statistics
-        if (settings.Ystatistics.value)
+        if (settings.Ystatistics)
           statistics.print(phase)
 
-        advancePhase
+        advancePhase()
       }
 
       if (traceSymbolActivity)
@@ -1601,7 +1615,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         val maxId = math.max(globalPhase.id, typerPhase.id)
         firstPhase.iterator takeWhile (_.id < maxId) foreach (ph =>
           enteringPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit))
-        refreshProgress
+        refreshProgress()
       }
     }
 
@@ -1683,13 +1697,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         informProgress("wrote " + file)
       } catch {
         case ex: IOException =>
-          if (settings.debug.value) ex.printStackTrace()
+          if (settings.debug) ex.printStackTrace()
         globalError("could not write file " + file)
       }
     })
   }
-  def forInteractive   = false
-  def forScaladoc      = false
   def createJavadoc    = false
 }
 

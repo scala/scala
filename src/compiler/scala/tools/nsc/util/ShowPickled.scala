@@ -13,7 +13,6 @@ import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
 import scala.reflect.internal.{Flags, Names}
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import interpreter.ByteCode.scalaSigBytesForPath
 
 object ShowPickled extends Names {
   import PickleFormat._
@@ -164,7 +163,7 @@ object ShowPickled extends Names {
         out.print(" %s[%s]".format(toHexString(pflags), flagString))
       }
 
-      /** Might be info or privateWithin */
+      /* Might be info or privateWithin */
       val x = buf.readNat()
       if (buf.readIndex == end) {
         printFlags(None)
@@ -176,9 +175,9 @@ object ShowPickled extends Names {
       }
     }
 
-    /** Note: the entries which require some semantic analysis to be correctly
-     *  interpreted are for the most part going to tell you the wrong thing.
-     *  It's not so easy to duplicate the logic applied in the UnPickler.
+    /* Note: the entries which require some semantic analysis to be correctly
+     * interpreted are for the most part going to tell you the wrong thing.
+     * It's not so easy to duplicate the logic applied in the UnPickler.
      */
     def printEntry(i: Int) {
       buf.readIndex = index(i)
@@ -250,7 +249,7 @@ object ShowPickled extends Names {
         case SYMANNOT       =>
           printSymbolRef(); printTypeRef(); buf.until(end, printAnnotArgRef)
         case ANNOTATEDtpe   =>
-          printTypeRef(); buf.until(end, printAnnotInfoRef);
+          printTypeRef(); buf.until(end, printAnnotInfoRef)
         case ANNOTINFO      =>
           printTypeRef(); buf.until(end, printAnnotArgRef)
         case ANNOTARGARRAY  =>
@@ -271,8 +270,7 @@ object ShowPickled extends Names {
     for (i <- 0 until index.length) printEntry(i)
   }
 
-  def fromFile(path: String) = fromBytes(io.File(path).toByteArray)
-  def fromName(name: String) = fromBytes(scalaSigBytesForPath(name) getOrElse Array())
+  def fromFile(path: String) = fromBytes(io.File(path).toByteArray())
   def fromBytes(data: => Array[Byte]): Option[PickleBuffer] =
     try Some(new PickleBuffer(data, 0, data.length))
     catch { case _: Exception => None }
@@ -287,7 +285,7 @@ object ShowPickled extends Names {
 
   def main(args: Array[String]) {
     args foreach { arg =>
-      (fromFile(arg) orElse fromName(arg)) match {
+      fromFile(arg) match {
         case Some(pb) => show(arg + ":", pb)
         case _        => Console.println("Cannot read " + arg)
       }

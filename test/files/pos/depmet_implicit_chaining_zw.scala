@@ -3,7 +3,7 @@ trait Succ[N]
 
 trait ZipWith[N, S] {
   type T
-  val x: T = error("")
+  val x: T = sys.error("")
 }
 
 object ZipWith {
@@ -15,7 +15,7 @@ object ZipWith {
     type T = Stream[S] => zWith.T // dependent types replace the associated types functionality
   }
 
-  // can't use implicitly[ZipWith[Succ[Succ[Zero]], Int => String => Boolean]], 
+  // can't use implicitly[ZipWith[Succ[Succ[Zero]], Int => String => Boolean]],
   // since that will chop of the {type T = ... } refinement in adapt (pt = ZipWith[Succ[Succ[Zero]], Int => String => Boolean])
   // this works
   // def zipWith(implicit zw: ZipWith[Succ[Succ[Zero]], Int => String => Boolean]): zw.T = zw.x

@@ -24,13 +24,13 @@ import scala.annotation.meta.getter
  *
  *  @since 2.10
  */
-private[immutable]
+private[collection]
 object RedBlackTree {
 
   def isEmpty(tree: Tree[_, _]): Boolean = tree eq null
 
-  def contains[A](tree: Tree[A, _], x: A)(implicit ordering: Ordering[A]): Boolean = lookup(tree, x) ne null
-  def get[A, B](tree: Tree[A, B], x: A)(implicit ordering: Ordering[A]): Option[B] = lookup(tree, x) match {
+  def contains[A: Ordering](tree: Tree[A, _], x: A): Boolean = lookup(tree, x) ne null
+  def get[A: Ordering, B](tree: Tree[A, B], x: A): Option[B] = lookup(tree, x) match {
     case null => None
     case tree => Some(tree.value)
   }
@@ -44,8 +44,27 @@ object RedBlackTree {
   }
 
   def count(tree: Tree[_, _]) = if (tree eq null) 0 else tree.count
-  def update[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(tree, k, v, overwrite))
-  def delete[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = blacken(del(tree, k))
+  /**
+   * Count all the nodes with keys greater than or equal to the lower bound and less than the upper bound.
+   * The two bounds are optional.
+   */
+  def countInRange[A](tree: Tree[A, _], from: Option[A], to:Option[A])(implicit ordering: Ordering[A]) : Int =
+    if (tree eq null) 0 else
+    (from, to) match {
+      // with no bounds use this node's count
+      case (None, None) => tree.count
+      // if node is less than the lower bound, try the tree on the right, it might be in range
+      case (Some(lb), _) if ordering.lt(tree.key, lb) => countInRange(tree.right, from, to)
+      // if node is greater than or equal to the upper bound, try the tree on the left, it might be in range
+      case (_, Some(ub)) if ordering.gteq(tree.key, ub) => countInRange(tree.left, from, to)
+      // node is in range so the tree on the left will all be less than the upper bound and the tree on the
+      // right will all be greater than or equal to the lower bound. So 1 for this node plus
+      // count the subtrees by stripping off the bounds that we don't need any more
+      case _ => 1 + countInRange(tree.left, from, None) + countInRange(tree.right, None, to)
+
+    }
+  def update[A: Ordering, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean): Tree[A, B1] = blacken(upd(tree, k, v, overwrite))
+  def delete[A: Ordering, B](tree: Tree[A, B], k: A): Tree[A, B] = blacken(del(tree, k))
   def rangeImpl[A: Ordering, B](tree: Tree[A, B], from: Option[A], until: Option[A]): Tree[A, B] = (from, until) match {
     case (Some(from), Some(until)) => this.range(tree, from, until)
     case (Some(from), None)        => this.from(tree, from)
@@ -91,9 +110,9 @@ object RedBlackTree {
     if (tree.right ne null) _foreachKey(tree.right, f)
   }
 
-  def iterator[A, B](tree: Tree[A, B]): Iterator[(A, B)] = new EntriesIterator(tree)
-  def keysIterator[A, _](tree: Tree[A, _]): Iterator[A] = new KeysIterator(tree)
-  def valuesIterator[_, B](tree: Tree[_, B]): Iterator[B] = new ValuesIterator(tree)
+  def iterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): Iterator[(A, B)] = new EntriesIterator(tree, start)
+  def keysIterator[A: Ordering](tree: Tree[A, _], start: Option[A] = None): Iterator[A] = new KeysIterator(tree, start)
+  def valuesIterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): Iterator[B] = new ValuesIterator(tree, start)
 
   @tailrec
   def nth[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
@@ -233,7 +252,7 @@ object RedBlackTree {
     if (ordering.lt(tree.key, from)) return doFrom(tree.right, from)
     val newLeft = doFrom(tree.left, from)
     if (newLeft eq tree.left) tree
-    else if (newLeft eq null) upd(tree.right, tree.key, tree.value, false)
+    else if (newLeft eq null) upd(tree.right, tree.key, tree.value, overwrite = false)
     else rebalance(tree, newLeft, tree.right)
   }
   private[this] def doTo[A, B](tree: Tree[A, B], to: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -241,7 +260,7 @@ object RedBlackTree {
     if (ordering.lt(to, tree.key)) return doTo(tree.left, to)
     val newRight = doTo(tree.right, to)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value, false)
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value, overwrite = false)
     else rebalance(tree, tree.left, newRight)
   }
   private[this] def doUntil[A, B](tree: Tree[A, B], until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -249,18 +268,18 @@ object RedBlackTree {
     if (ordering.lteq(until, tree.key)) return doUntil(tree.left, until)
     val newRight = doUntil(tree.right, until)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value, false)
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value, overwrite = false)
     else rebalance(tree, tree.left, newRight)
   }
   private[this] def doRange[A, B](tree: Tree[A, B], from: A, until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
     if (tree eq null) return null
-    if (ordering.lt(tree.key, from)) return doRange(tree.right, from, until);
-    if (ordering.lteq(until, tree.key)) return doRange(tree.left, from, until);
+    if (ordering.lt(tree.key, from)) return doRange(tree.right, from, until)
+    if (ordering.lteq(until, tree.key)) return doRange(tree.left, from, until)
     val newLeft = doFrom(tree.left, from)
     val newRight = doUntil(tree.right, until)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
-    else if (newLeft eq null) upd(newRight, tree.key, tree.value, false);
-    else if (newRight eq null) upd(newLeft, tree.key, tree.value, false);
+    else if (newLeft eq null) upd(newRight, tree.key, tree.value, overwrite = false)
+    else if (newRight eq null) upd(newLeft, tree.key, tree.value, overwrite = false)
     else rebalance(tree, newLeft, newRight)
   }
 
@@ -271,7 +290,7 @@ object RedBlackTree {
     if (n > count) return doDrop(tree.right, n - count - 1)
     val newLeft = doDrop(tree.left, n)
     if (newLeft eq tree.left) tree
-    else if (newLeft eq null) updNth(tree.right, n - count - 1, tree.key, tree.value, false)
+    else if (newLeft eq null) updNth(tree.right, n - count - 1, tree.key, tree.value, overwrite = false)
     else rebalance(tree, newLeft, tree.right)
   }
   private[this] def doTake[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
@@ -281,7 +300,7 @@ object RedBlackTree {
     if (n <= count) return doTake(tree.left, n)
     val newRight = doTake(tree.right, n - count - 1)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) updNth(tree.left, n, tree.key, tree.value, false)
+    else if (newRight eq null) updNth(tree.left, n, tree.key, tree.value, overwrite = false)
     else rebalance(tree, tree.left, newRight)
   }
   private[this] def doSlice[A, B](tree: Tree[A, B], from: Int, until: Int): Tree[A, B] = {
@@ -292,8 +311,8 @@ object RedBlackTree {
     val newLeft = doDrop(tree.left, from)
     val newRight = doTake(tree.right, until - count - 1)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
-    else if (newLeft eq null) updNth(newRight, from - count - 1, tree.key, tree.value, false)
-    else if (newRight eq null) updNth(newLeft, until, tree.key, tree.value, false)
+    else if (newLeft eq null) updNth(newRight, from - count - 1, tree.key, tree.value, overwrite = false)
+    else if (newRight eq null) updNth(newLeft, until, tree.key, tree.value, overwrite = false)
     else rebalance(tree, newLeft, newRight)
   }
 
@@ -306,54 +325,56 @@ object RedBlackTree {
   // whether the zipper was traversed left-most or right-most.
 
   // If the trees were balanced, returns an empty zipper
-  private[this] def compareDepth[A, B](left: Tree[A, B], right: Tree[A, B]): (List[Tree[A, B]], Boolean, Boolean, Int) = {
+  private[this] def compareDepth[A, B](left: Tree[A, B], right: Tree[A, B]): (NList[Tree[A, B]], Boolean, Boolean, Int) = {
+    import NList.cons
     // Once a side is found to be deeper, unzip it to the bottom
-    def unzip(zipper: List[Tree[A, B]], leftMost: Boolean): List[Tree[A, B]] = {
+    def unzip(zipper: NList[Tree[A, B]], leftMost: Boolean): NList[Tree[A, B]] = {
       val next = if (leftMost) zipper.head.left else zipper.head.right
-      next match {
-        case null => zipper
-        case node => unzip(node :: zipper, leftMost)
-      }
+      if (next eq null) zipper
+      else unzip(cons(next, zipper), leftMost)
     }
 
     // Unzip left tree on the rightmost side and right tree on the leftmost side until one is
     // found to be deeper, or the bottom is reached
     def unzipBoth(left: Tree[A, B],
                   right: Tree[A, B],
-                  leftZipper: List[Tree[A, B]],
-                  rightZipper: List[Tree[A, B]],
-                  smallerDepth: Int): (List[Tree[A, B]], Boolean, Boolean, Int) = {
+                  leftZipper: NList[Tree[A, B]],
+                  rightZipper: NList[Tree[A, B]],
+                  smallerDepth: Int): (NList[Tree[A, B]], Boolean, Boolean, Int) = {
       if (isBlackTree(left) && isBlackTree(right)) {
-        unzipBoth(left.right, right.left, left :: leftZipper, right :: rightZipper, smallerDepth + 1)
+        unzipBoth(left.right, right.left, cons(left, leftZipper), cons(right, rightZipper), smallerDepth + 1)
       } else if (isRedTree(left) && isRedTree(right)) {
-        unzipBoth(left.right, right.left, left :: leftZipper, right :: rightZipper, smallerDepth)
+        unzipBoth(left.right, right.left, cons(left, leftZipper), cons(right, rightZipper), smallerDepth)
       } else if (isRedTree(right)) {
-        unzipBoth(left, right.left, leftZipper, right :: rightZipper, smallerDepth)
+        unzipBoth(left, right.left, leftZipper, cons(right, rightZipper), smallerDepth)
       } else if (isRedTree(left)) {
-        unzipBoth(left.right, right, left :: leftZipper, rightZipper, smallerDepth)
+        unzipBoth(left.right, right, cons(left, leftZipper), rightZipper, smallerDepth)
       } else if ((left eq null) && (right eq null)) {
-        (Nil, true, false, smallerDepth)
+        (null, true, false, smallerDepth)
       } else if ((left eq null) && isBlackTree(right)) {
         val leftMost = true
-        (unzip(right :: rightZipper, leftMost), false, leftMost, smallerDepth)
+        (unzip(cons(right, rightZipper), leftMost), false, leftMost, smallerDepth)
       } else if (isBlackTree(left) && (right eq null)) {
         val leftMost = false
-        (unzip(left :: leftZipper, leftMost), false, leftMost, smallerDepth)
+        (unzip(cons(left, leftZipper), leftMost), false, leftMost, smallerDepth)
       } else {
         sys.error("unmatched trees in unzip: " + left + ", " + right)
       }
     }
-    unzipBoth(left, right, Nil, Nil, 0)
+    unzipBoth(left, right, null, null, 0)
   }
 
   private[this] def rebalance[A, B](tree: Tree[A, B], newLeft: Tree[A, B], newRight: Tree[A, B]) = {
     // This is like drop(n-1), but only counting black nodes
-    def  findDepth(zipper: List[Tree[A, B]], depth: Int): List[Tree[A, B]] = zipper match {
-      case head :: tail if isBlackTree(head) =>
-        if (depth == 1) zipper else findDepth(tail, depth - 1)
-      case _ :: tail => findDepth(tail, depth)
-      case Nil => sys.error("Defect: unexpected empty zipper while computing range")
-    }
+    @tailrec
+    def  findDepth(zipper: NList[Tree[A, B]], depth: Int): NList[Tree[A, B]] = 
+      if (zipper eq null) {
+        sys.error("Defect: unexpected empty zipper while computing range")
+      } else if (isBlackTree(zipper.head)) {
+        if (depth == 1) zipper else findDepth(zipper.tail, depth - 1)
+      } else {
+        findDepth(zipper.tail, depth)
+      }
 
     // Blackening the smaller tree avoids balancing problems on union;
     // this can't be done later, though, or it would change the result of compareDepth
@@ -370,7 +391,7 @@ object RedBlackTree {
       } else {
         RedTree(tree.key, tree.value, zipFrom.head, blkNewRight)
       }
-      val zippedTree = zipFrom.tail.foldLeft(union: Tree[A, B]) { (tree, node) =>
+      val zippedTree = NList.foldLeft(zipFrom.tail, union: Tree[A, B]) { (tree, node) =>
         if (leftMost)
           balanceLeft(isBlackTree(node), node.key, node.value, tree, node.right)
         else
@@ -378,6 +399,25 @@ object RedBlackTree {
       }
       zippedTree
     }
+  }
+  
+  // Null optimized list implementation for tree rebalancing. null presents Nil.
+  private[this] final class NList[A](val head: A, val tail: NList[A])
+
+  private[this] final object NList {
+    
+    def cons[B](x: B, xs: NList[B]): NList[B] = new NList(x, xs)
+    
+    def foldLeft[A, B](xs: NList[A], z: B)(f: (B, A) => B): B = {
+      var acc = z
+      var these = xs
+      while (these ne null) {
+        acc = f(acc, these.head)
+        these = these.tail
+      }
+      acc
+    }
+    
   }
 
   /*
@@ -425,32 +465,28 @@ object RedBlackTree {
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
-  private[this] abstract class TreeIterator[A, B, R](tree: Tree[A, B]) extends Iterator[R] {
+  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(implicit ordering: Ordering[A]) extends Iterator[R] {
     protected[this] def nextResult(tree: Tree[A, B]): R
 
-    override def hasNext: Boolean = next ne null
+    override def hasNext: Boolean = lookahead ne null
 
-    override def next: R = next match {
+    override def next: R = lookahead match {
       case null =>
         throw new NoSuchElementException("next on empty iterator")
       case tree =>
-        next = findNext(tree.right)
+        lookahead = findLeftMostOrPopOnEmpty(goRight(tree))
         nextResult(tree)
     }
 
     @tailrec
-    private[this] def findNext(tree: Tree[A, B]): Tree[A, B] = {
-      if (tree eq null) popPath()
+    private[this] def findLeftMostOrPopOnEmpty(tree: Tree[A, B]): Tree[A, B] =
+      if (tree eq null) popNext()
       else if (tree.left eq null) tree
-      else {
-        pushPath(tree)
-        findNext(tree.left)
-      }
-    }
+      else findLeftMostOrPopOnEmpty(goLeft(tree))
 
-    private[this] def pushPath(tree: Tree[A, B]) {
+    private[this] def pushNext(tree: Tree[A, B]) {
       try {
-        path(index) = tree
+        stackOfNexts(index) = tree
         index += 1
       } catch {
         case _: ArrayIndexOutOfBoundsException =>
@@ -462,17 +498,17 @@ object RedBlackTree {
            * An exception handler is used instead of an if-condition to optimize the normal path.
            * This makes a large difference in iteration speed!
            */
-          assert(index >= path.length)
-          path :+= null
-          pushPath(tree)
+          assert(index >= stackOfNexts.length)
+          stackOfNexts :+= null
+          pushNext(tree)
       }
     }
-    private[this] def popPath(): Tree[A, B] = if (index == 0) null else {
+    private[this] def popNext(): Tree[A, B] = if (index == 0) null else {
       index -= 1
-      path(index)
+      stackOfNexts(index)
     }
 
-    private[this] var path = if (tree eq null) null else {
+    private[this] var stackOfNexts = if (root eq null) null else {
       /*
        * According to "Ralf Hinze. Constructing red-black trees" [http://www.cs.ox.ac.uk/ralf.hinze/publications/#P5]
        * the maximum height of a red-black tree is 2*log_2(n + 2) - 2.
@@ -481,22 +517,45 @@ object RedBlackTree {
        *
        * We also don't store the deepest nodes in the path so the maximum path length is further reduced by one.
        */
-      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(tree.count + 2 - 1)) - 2 - 1
+      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(root.count + 2 - 1)) - 2 - 1
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0
-    private[this] var next: Tree[A, B] = findNext(tree)
+    private[this] var lookahead: Tree[A, B] = start map startFrom getOrElse findLeftMostOrPopOnEmpty(root)
+
+    /**
+     * Find the leftmost subtree whose key is equal to the given key, or if no such thing,
+     * the leftmost subtree with the key that would be "next" after it according
+     * to the ordering. Along the way build up the iterator's path stack so that "next"
+     * functionality works.
+     */
+    private[this] def startFrom(key: A) : Tree[A,B] = if (root eq null) null else {
+      @tailrec def find(tree: Tree[A, B]): Tree[A, B] =
+        if (tree eq null) popNext()
+        else find(
+          if (ordering.lteq(key, tree.key)) goLeft(tree)
+          else goRight(tree)
+        )
+      find(root)
+    }
+
+    private[this] def goLeft(tree: Tree[A, B]) = {
+      pushNext(tree)
+      tree.left
+    }
+
+    private[this] def goRight(tree: Tree[A, B]) = tree.right
   }
 
-  private[this] class EntriesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, (A, B)](tree) {
+  private[this] class EntriesIterator[A: Ordering, B](tree: Tree[A, B], focus: Option[A]) extends TreeIterator[A, B, (A, B)](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = (tree.key, tree.value)
   }
 
-  private[this] class KeysIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, A](tree) {
+  private[this] class KeysIterator[A: Ordering, B](tree: Tree[A, B], focus: Option[A]) extends TreeIterator[A, B, A](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = tree.key
   }
 
-  private[this] class ValuesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, B](tree) {
+  private[this] class ValuesIterator[A: Ordering, B](tree: Tree[A, B], focus: Option[A]) extends TreeIterator[A, B, B](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = tree.value
   }
 }

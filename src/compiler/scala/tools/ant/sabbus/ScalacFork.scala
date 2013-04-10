@@ -114,12 +114,12 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
         mapper
       ) map (x => new File(sourceDir, x))
 
-    /** Nothing to do. */
+    /* Nothing to do. */
     if (includedFiles.isEmpty && argfile.isEmpty)
       return
 
     if (includedFiles.nonEmpty)
-      log("Compiling %d file%s to %s".format(includedFiles.size, plural(includedFiles.size), destinationDir))
+      log("Compiling %d file%s to %s".format(includedFiles.length, plural(includedFiles.length), destinationDir))
 
     argfile foreach (x => log("Using argfile file: @" + x))
 

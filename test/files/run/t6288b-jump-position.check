@@ -19,7 +19,7 @@ object Case3 extends Object {
   Exception handlers: 
     
   def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
-  locals: value args, value x1, value x2, value x
+  locals: value args, value x1, value x
   startBlock: 1
   blocks: [1,2,3,6,7]
   
@@ -35,10 +35,6 @@ object Case3 extends Object {
     5	CZJUMP (BOOL)NE ? 3 : 6
     
   3: 
-    5	LOAD_LOCAL(value x1)
-    5	CHECK_CAST REF(class String)
-    5	STORE_LOCAL(value x2)
-    5	SCOPE_ENTER value x2
     6	LOAD_MODULE object Predef
     6	CONSTANT("case 0")
     6	CALL_METHOD scala.Predef.println (dynamic)

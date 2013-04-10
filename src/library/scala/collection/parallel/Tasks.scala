@@ -54,13 +54,13 @@ trait Task[R, +Tp] {
         leaf(lastres)
         result = result // ensure that effects of `leaf` are visible to readers of `result`
       } catchBreak {
-        signalAbort
+        signalAbort()
       }
     } catch {
       case thr: Exception =>
         result = result // ensure that effects of `leaf` are visible
       throwable = thr
-      signalAbort
+      signalAbort()
     }
   }
 
@@ -191,7 +191,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
           last = t
           t.start()
         }
-      } while (head.body.shouldSplitFurther);
+      } while (head.body.shouldSplitFurther)
       head.next = last
       head
     }
@@ -214,6 +214,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
 
 /** An implementation of tasks objects based on the Java thread pooling API. */
+@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
 trait ThreadPoolTasks extends Tasks {
   import java.util.concurrent._
 
@@ -302,7 +303,7 @@ trait ThreadPoolTasks extends Tasks {
 
     () => {
       t.sync()
-      t.body.forwardThrowable
+      t.body.forwardThrowable()
       t.body.result
     }
   }
@@ -314,7 +315,7 @@ trait ThreadPoolTasks extends Tasks {
     t.start()
 
     t.sync()
-    t.body.forwardThrowable
+    t.body.forwardThrowable()
     t.body.result
   }
 
@@ -322,6 +323,7 @@ trait ThreadPoolTasks extends Tasks {
 
 }
 
+@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
 object ThreadPoolTasks {
   import java.util.concurrent._
 
@@ -402,8 +404,8 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
     }
 
     () => {
-      fjtask.sync
-      fjtask.body.forwardThrowable
+      fjtask.sync()
+      fjtask.body.forwardThrowable()
       fjtask.body.result
     }
   }
@@ -424,9 +426,9 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
       forkJoinPool.execute(fjtask)
     }
 
-    fjtask.sync
+    fjtask.sync()
     // if (fjtask.body.throwable != null) println("throwing: " + fjtask.body.throwable + " at " + fjtask.body)
-    fjtask.body.forwardThrowable
+    fjtask.body.forwardThrowable()
     fjtask.body.result
   }
 
@@ -455,7 +457,7 @@ trait AdaptiveWorkStealingForkJoinTasks extends ForkJoinTasks with AdaptiveWorkS
 
 }
 
-
+@deprecated("Use `AdaptiveWorkStealingForkJoinTasks` instead.", "2.11.0")
 trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveWorkStealingTasks {
 
   class WrappedTask[R, Tp](val body: Task[R, Tp])

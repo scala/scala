@@ -194,11 +194,11 @@ abstract class Source extends Iterator[Char] {
     lazy val iter: BufferedIterator[Char] = Source.this.iter.buffered
     def isNewline(ch: Char) = ch == '\r' || ch == '\n'
     def getc() = iter.hasNext && {
-      val ch = iter.next
+      val ch = iter.next()
       if (ch == '\n') false
       else if (ch == '\r') {
         if (iter.hasNext && iter.head == '\n')
-          iter.next
+          iter.next()
 
         false
       }
@@ -209,7 +209,7 @@ abstract class Source extends Iterator[Char] {
     }
     def hasNext = iter.hasNext
     def next = {
-      sb.clear
+      sb.clear()
       while (getc()) { }
       sb.toString
     }
@@ -227,7 +227,7 @@ abstract class Source extends Iterator[Char] {
 
   /** Returns next character.
    */
-  def next(): Char = positioner.next
+  def next(): Char = positioner.next()
 
   class Positioner(encoder: Position) {
     def this() = this(RelaxedPosition)
@@ -245,7 +245,7 @@ abstract class Source extends Iterator[Char] {
     var tabinc = 4
 
     def next(): Char = {
-      ch = iter.next
+      ch = iter.next()
       pos = encoder.encode(cline, ccol)
       ch match {
         case '\n' =>
@@ -267,7 +267,7 @@ abstract class Source extends Iterator[Char] {
   }
   object RelaxedPositioner extends Positioner(RelaxedPosition) { }
   object NoPositioner extends Positioner(Position) {
-    override def next(): Char = iter.next
+    override def next(): Char = iter.next()
   }
   def ch = positioner.ch
   def pos = positioner.pos

@@ -157,12 +157,14 @@ trait Printers { self: Universe =>
   }
 
   /** @group Printers */
-  case class BooleanFlag(val value: Option[Boolean])
+  case class BooleanFlag(value: Option[Boolean])
   /** @group Printers */
   object BooleanFlag {
     import scala.language.implicitConversions
     implicit def booleanToBooleanFlag(value: Boolean): BooleanFlag = BooleanFlag(Some(value))
     implicit def optionToBooleanFlag(value: Option[Boolean]): BooleanFlag = BooleanFlag(value)
+    import scala.reflect.internal.settings.MutableSettings
+    implicit def settingToBooleanFlag(setting: MutableSettings#BooleanSetting): BooleanFlag = BooleanFlag(Some(setting.value))
   }
 
   /** @group Printers */

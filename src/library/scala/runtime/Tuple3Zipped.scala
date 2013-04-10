@@ -34,11 +34,11 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
 
     for (el1 <- colls._1) {
       if (elems2.hasNext && elems3.hasNext)
-        b += f(el1, elems2.next, elems3.next)
+        b += f(el1, elems2.next(), elems3.next())
       else
-        return b.result
+        return b.result()
     }
-    b.result
+    b.result()
   }
 
   def flatMap[B, To](f: (El1, El2, El3) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
@@ -48,11 +48,11 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
 
     for (el1 <- colls._1) {
       if (elems2.hasNext && elems3.hasNext)
-        b ++= f(el1, elems2.next, elems3.next)
+        b ++= f(el1, elems2.next(), elems3.next())
       else
-        return b.result
+        return b.result()
     }
-    b.result
+    b.result()
   }
 
   def filter[To1, To2, To3](f: (El1, El2, El3) => Boolean)(
@@ -64,12 +64,12 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
     val b3 = cbf3(colls._3.repr)
     val elems2 = colls._2.iterator
     val elems3 = colls._3.iterator
-    def result = (b1.result, b2.result, b3.result)
+    def result = (b1.result(), b2.result(), b3.result())
 
     for (el1 <- colls._1) {
       if (elems2.hasNext && elems3.hasNext) {
-        val el2 = elems2.next
-        val el3 = elems3.next
+        val el2 = elems2.next()
+        val el3 = elems3.next()
 
         if (f(el1, el2, el3)) {
           b1 += el1
@@ -89,7 +89,7 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
 
     for (el1 <- colls._1) {
       if (elems2.hasNext && elems3.hasNext) {
-        if (f(el1, elems2.next, elems3.next))
+        if (f(el1, elems2.next(), elems3.next()))
           return true
       }
       else return false
@@ -106,7 +106,7 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
 
     for (el1 <- colls._1) {
       if (elems2.hasNext && elems3.hasNext)
-        f(el1, elems2.next, elems3.next)
+        f(el1, elems2.next(), elems3.next())
       else
         return
     }
@@ -126,9 +126,9 @@ object Tuple3Zipped {
         val it2 = x._2.toIterator
         val it3 = x._3.toIterator
         while (it1.hasNext && it2.hasNext && it3.hasNext)
-          buf += ((it1.next, it2.next, it3.next))
+          buf += ((it1.next(), it2.next(), it3.next()))
 
-        buf.result
+        buf.result()
       }
 
     def zipped[El1, Repr1, El2, Repr2, El3, Repr3]

@@ -37,12 +37,12 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 
     for (el1 <- colls._1) {
       if (elems2.hasNext)
-        b += f(el1, elems2.next)
+        b += f(el1, elems2.next())
       else
-        return b.result
+        return b.result()
     }
 
-    b.result
+    b.result()
   }
 
   def flatMap[B, To](f: (El1, El2) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
@@ -51,12 +51,12 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 
     for (el1 <- colls._1) {
       if (elems2.hasNext)
-        b ++= f(el1, elems2.next)
+        b ++= f(el1, elems2.next())
       else
-        return b.result
+        return b.result()
     }
 
-    b.result
+    b.result()
   }
 
   def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CBF[Repr1, El1, To1], cbf2: CBF[Repr2, El2, To2]): (To1, To2) = {
@@ -66,16 +66,16 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 
     for (el1 <- colls._1) {
       if (elems2.hasNext) {
-        val el2 = elems2.next
+        val el2 = elems2.next()
         if (f(el1, el2)) {
           b1 += el1
           b2 += el2
         }
       }
-      else return (b1.result, b2.result)
+      else return (b1.result(), b2.result())
     }
 
-    (b1.result, b2.result)
+    (b1.result(), b2.result())
   }
 
   def exists(f: (El1, El2) => Boolean): Boolean = {
@@ -83,7 +83,7 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 
     for (el1 <- colls._1) {
       if (elems2.hasNext) {
-        if (f(el1, elems2.next))
+        if (f(el1, elems2.next()))
           return true
       }
       else return false
@@ -99,7 +99,7 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 
     for (el1 <- colls._1) {
       if (elems2.hasNext)
-        f(el1, elems2.next)
+        f(el1, elems2.next())
       else
         return
     }
@@ -117,9 +117,9 @@ object Tuple2Zipped {
         val it1 = x._1.toIterator
         val it2 = x._2.toIterator
         while (it1.hasNext && it2.hasNext)
-          buf += ((it1.next, it2.next))
+          buf += ((it1.next(), it2.next()))
 
-        buf.result
+        buf.result()
       }
 
     def zipped[El1, Repr1, El2, Repr2]

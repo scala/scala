@@ -101,14 +101,9 @@ trait TypeDiagnostics {
       "\n(Note that variables need to be initialized to be defined)"
     else ""
 
-  /** Only prints the parameter names if they're not synthetic,
-   *  since "x$1: Int" does not offer any more information than "Int".
-   */
   private def methodTypeErrorString(tp: Type) = tp match {
     case mt @ MethodType(params, resultType)  =>
-      def forString =
-        if (params exists (_.isSynthetic)) params map (_.tpe)
-        else params map (_.defString)
+      def forString = params map (_.defString)
 
        forString.mkString("(", ",", ")") + resultType
     case x                                    => x.toString
@@ -213,7 +208,7 @@ trait TypeDiagnostics {
                   // force measures than comparing normalized Strings were producing error messages
                   // like "and java.util.ArrayList[String] <: java.util.ArrayList[String]" but there
                   // should be a cleaner way to do this.
-                  if (found.normalize.toString == tp.normalize.toString) ""
+                  if (found.dealiasWiden.toString == tp.dealiasWiden.toString) ""
                   else " (and %s <: %s)".format(found, tp)
                 )
                 val explainDef = {
@@ -241,8 +236,8 @@ trait TypeDiagnostics {
               val invariant = param.variance.isInvariant
 
               if (conforms)                             Some("")
-              else if ((arg <:< reqArg) && invariant)   mkMsg(true)   // covariant relationship
-              else if ((reqArg <:< arg) && invariant)   mkMsg(false)  // contravariant relationship
+              else if ((arg <:< reqArg) && invariant)   mkMsg(isSubtype = true)   // covariant relationship
+              else if ((reqArg <:< arg) && invariant)   mkMsg(isSubtype = false)  // contravariant relationship
               else None // we assume in other cases our ham-fisted advice will merely serve to confuse
           }
           val messages = relationships.flatten
@@ -486,6 +481,8 @@ trait TypeDiagnostics {
       }
 
       def apply(unit: CompilationUnit) = {
+        warnUnusedImports(unit)
+
         val p = new UnusedPrivates
         p traverse unit.body
         val unused = p.unusedTerms
@@ -525,24 +522,31 @@ trait TypeDiagnostics {
     }
 
     object checkDead {
-      private var expr: Symbol = NoSymbol
+      private val exprStack: mutable.Stack[Symbol] = mutable.Stack(NoSymbol)
+      // The method being applied to `tree` when `apply` is called.
+      private def expr = exprStack.top
 
       private def exprOK =
         (expr != Object_synchronized) &&
         !(expr.isLabel && treeInfo.isSynthCaseSymbol(expr)) // it's okay to jump to matchEnd (or another case) with an argument of type nothing
 
-      private def treeOK(tree: Tree) = tree.tpe != null && tree.tpe.typeSymbol == NothingClass
+      private def treeOK(tree: Tree) = {
+        val isLabelDef = tree match { case _: LabelDef => true; case _ => false}
+        tree.tpe != null && tree.tpe.typeSymbol == NothingClass && !isLabelDef
+      }
 
-      def updateExpr(fn: Tree) = {
-        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor)
-          checkDead.expr = fn.symbol
+      @inline def updateExpr[A](fn: Tree)(f: => A) = {
+        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor) {
+          exprStack push fn.symbol
+          try f finally exprStack.pop()
+        } else f
       }
       def apply(tree: Tree): Tree = {
         // Error suppression will squash some of these warnings unless we circumvent it.
         // It is presumed if you are using a -Y option you would really like to hear
         // the warnings you've requested.
-        if (settings.warnDeadCode.value && context.unit.exists && treeOK(tree) && exprOK)
-          context.warning(tree.pos, "dead code following this construct", true)
+        if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
+          context.warning(tree.pos, "dead code following this construct", force = true)
         tree
       }
 
@@ -572,7 +576,7 @@ trait TypeDiagnostics {
 
     /** Report a type error.
      *
-     *  @param pos0   The position where to report the error
+     *  @param pos    The position where to report the error
      *  @param ex     The exception that caused the error
      */
     def reportTypeError(context0: Context, pos: Position, ex: TypeError) {
@@ -581,7 +585,7 @@ trait TypeDiagnostics {
       // but it seems that throwErrors excludes some of the errors that should actually be
       // buffered, causing TypeErrors to fly around again. This needs some more investigation.
       if (!context0.reportErrors) throw ex
-      if (settings.debug.value) ex.printStackTrace()
+      if (settings.debug) ex.printStackTrace()
 
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>

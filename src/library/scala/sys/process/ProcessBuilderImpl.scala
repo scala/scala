@@ -69,7 +69,7 @@ private[process] trait ProcessBuilderImpl {
       import io._
 
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
-      val inThread  = Spawn(writeInput(process.getOutputStream), true)
+      val inThread  = Spawn(writeInput(process.getOutputStream), daemon = true)
       val outThread = Spawn(processOutput(process.getInputStream), daemonizeThreads)
       val errorThread =
         if (p.redirectErrorStream) Nil
@@ -93,26 +93,26 @@ private[process] trait ProcessBuilderImpl {
     def #&&(other: ProcessBuilder): ProcessBuilder = new AndBuilder(this, other)
     def ###(other: ProcessBuilder): ProcessBuilder = new SequenceBuilder(this, other)
 
-    def run(): Process                                          = run(false)
+    def run(): Process                                          = run(connectInput = false)
     def run(connectInput: Boolean): Process                     = run(BasicIO.standard(connectInput))
-    def run(log: ProcessLogger): Process                        = run(log, false)
+    def run(log: ProcessLogger): Process                        = run(log, connectInput = false)
     def run(log: ProcessLogger, connectInput: Boolean): Process = run(BasicIO(connectInput, log))
 
-    def !!                      = slurp(None, false)
-    def !!(log: ProcessLogger)  = slurp(Some(log), false)
-    def !!<                     = slurp(None, true)
-    def !!<(log: ProcessLogger) = slurp(Some(log), true)
+    def !!                      = slurp(None, withIn = false)
+    def !!(log: ProcessLogger)  = slurp(Some(log), withIn = false)
+    def !!<                     = slurp(None, withIn = true)
+    def !!<(log: ProcessLogger) = slurp(Some(log), withIn = true)
 
-    def lines: Stream[String]                       = lines(false, true, None)
-    def lines(log: ProcessLogger): Stream[String]   = lines(false, true, Some(log))
-    def lines_! : Stream[String]                    = lines(false, false, None)
-    def lines_!(log: ProcessLogger): Stream[String] = lines(false, false, Some(log))
+    def lines: Stream[String]                       = lines(withInput = false, nonZeroException = true, None)
+    def lines(log: ProcessLogger): Stream[String]   = lines(withInput = false, nonZeroException = true, Some(log))
+    def lines_! : Stream[String]                    = lines(withInput = false, nonZeroException = false, None)
+    def lines_!(log: ProcessLogger): Stream[String] = lines(withInput = false, nonZeroException = false, Some(log))
 
-    def !                      = run(false).exitValue()
+    def !                      = run(connectInput = false).exitValue()
     def !(io: ProcessIO)       = run(io).exitValue()
-    def !(log: ProcessLogger)  = runBuffered(log, false)
-    def !<                     = run(true).exitValue()
-    def !<(log: ProcessLogger) = runBuffered(log, true)
+    def !(log: ProcessLogger)  = runBuffered(log, connectInput = false)
+    def !<                     = run(connectInput = true).exitValue()
+    def !<(log: ProcessLogger) = runBuffered(log, connectInput = true)
 
     /** Constructs a new builder which runs this command with all input/output threads marked
      *  as daemon threads.  This allows the creation of a long running process while still

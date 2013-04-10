@@ -20,7 +20,6 @@ trait ContextErrors {
 
   import global._
   import definitions._
-  import treeInfo._
 
   object ErrorKinds extends Enumeration {
     type ErrorKind = Value
@@ -153,7 +152,7 @@ trait ContextErrors {
         // members present, then display along with the expected members. This is done here because
         // this is the last point where we still have access to the original tree, rather than just
         // the found/req types.
-        val foundType: Type = req.normalize match {
+        val foundType: Type = req.dealiasWiden match {
           case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
             val retyped    = typed (tree.duplicate.clearType())
             val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
@@ -173,8 +172,7 @@ trait ContextErrors {
         assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
 
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req, infer.isPossiblyMissingArgs(foundType, req))) )
-        if (settings.explaintypes.value)
-          explainTypes(foundType, req)
+        infer.explainTypes(foundType, req)
       }
 
       def WithFilterError(tree: Tree, ex: AbsTypeError) = {
@@ -302,7 +300,7 @@ trait ContextErrors {
           val target           = qual.tpe.widen
           def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
           def nameString       = decodeWithKind(name, owner)
-          /** Illuminating some common situations and errors a bit further. */
+          /* Illuminating some common situations and errors a bit further. */
           def addendum         = {
             val companion = {
               if (name.isTermName && owner.isPackageClass) {
@@ -683,7 +681,7 @@ trait ContextErrors {
       // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
-      private def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
+      protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
         if (msg != null) context.error(pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
@@ -773,10 +771,14 @@ trait ContextErrors {
       }
 
       def MacroImplementationNotFoundError(expandee: Tree) =
-        macroExpansionError(expandee,
-          "macro implementation not found: " + expandee.symbol.name + " " +
-          "(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)")
+        macroExpansionError(expandee, macroImplementationNotFoundMessage(expandee.symbol.name))
     }
+
+    /** This file will be the death of me. */
+    protected def macroImplementationNotFoundMessage(name: Name): String = (
+      s"""|macro implementation not found: $name
+          |(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)""".stripMargin
+    )
   }
 
   trait InferencerContextErrors {
@@ -917,7 +919,7 @@ trait ContextErrors {
       def NotWithinBounds(tree: Tree, prefix: String, targs: List[Type],
                           tparams: List[Symbol], kindErrors: List[String]) =
         issueNormalTypeError(tree,
-          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes.value))
+          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes))
 
       //substExpr
       def PolymorphicExpressionInstantiationError(tree: Tree, undetparams: List[Symbol], pt: Type) =
@@ -1055,9 +1057,6 @@ trait ContextErrors {
 
         issueSymbolTypeError(currentSym, prevSym.name + " is already defined as " + s2 + s3 + where)
       }
-
-      def MaxParametersCaseClassError(tree: Tree) =
-        issueNormalTypeError(tree, "Implementation restriction: case classes cannot have more than " + definitions.MaxFunctionArity + " parameters.")
 
       def MissingParameterOrValTypeError(vparam: Tree) =
         issueNormalTypeError(vparam, "missing parameter type")
@@ -1270,11 +1269,12 @@ trait ContextErrors {
     // not exactly an error generator, but very related
     // and I dearly wanted to push it away from Macros.scala
     private def checkSubType(slot: String, rtpe: Type, atpe: Type) = {
-      val ok = if (macroDebugVerbose || settings.explaintypes.value) {
-        if (rtpe eq atpe) println(rtpe + " <: " + atpe + "?" + EOL + "true")
+      val ok = if (macroDebugVerbose) {
         withTypesExplained(rtpe <:< atpe)
       } else rtpe <:< atpe
       if (!ok) {
+        if (!macroDebugVerbose)
+          explainTypes(rtpe, atpe)
         compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, abbreviateCoreAliases(rtpe.toString), abbreviateCoreAliases(atpe.toString)))
       }
     }
@@ -1361,7 +1361,7 @@ trait ContextErrors {
     }
 
     def MacroImplTargMismatchError(atargs: List[Type], atparams: List[Symbol]) =
-      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes.value))
+      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes))
 
     def MacroImplTparamInstantiationError(atparams: List[Symbol], ex: NoInstance) =
       compatibilityError(

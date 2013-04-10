@@ -41,7 +41,7 @@ extends AbstractIterable[(Pub, Evt)]
    */
   def notify(pub: Pub, event: Evt) {
     if (log.length >= maxHistory)
-      log.dequeue
+      log.dequeue()
 
     log.enqueue((pub, event))
   }
@@ -50,7 +50,7 @@ extends AbstractIterable[(Pub, Evt)]
   def iterator: Iterator[(Pub, Evt)] = log.iterator
   def events: Iterator[Evt] = log.iterator map (_._2)
 
-  def clear() { log.clear }
+  def clear() { log.clear() }
 
   /** Checks if two history objects are structurally identical.
    *
@@ -60,5 +60,5 @@ extends AbstractIterable[(Pub, Evt)]
     case that: History[_, _] => this.log equals that.log
     case _                   => false
   }
-  override def hashCode = log.hashCode
+  override def hashCode = log.hashCode()
 }

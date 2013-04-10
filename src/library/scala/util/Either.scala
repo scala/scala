@@ -21,7 +21,7 @@ import scala.language.implicitConversions
  *  [[scala.util.Right]] takes the place of [[scala.Some]].  Convention dictates
  *  that Left is used for failure and Right is used for success.
  *
- *  For example, you could use ``Either[String, Int]`` to detect whether a
+ *  For example, you could use `Either[String, Int]` to detect whether a
  *  received input is a String or an Int.
  *
  *  {{{
@@ -205,7 +205,7 @@ final case class Right[+A, +B](b: B) extends Either[A, B] {
 object Either {
 
   /**
-   * Allows use of a ``merge`` method to extract values from Either instances
+   * Allows use of a `merge` method to extract values from Either instances
    * regardless of whether they are Left or Right.
    *
    * {{{

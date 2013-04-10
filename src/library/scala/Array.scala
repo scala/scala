@@ -240,9 +240,9 @@ object Array extends FallbackArrayBuilding {
    */
   def concat[T: ClassTag](xss: Array[T]*): Array[T] = {
     val b = newBuilder[T]
-    b.sizeHint(xss.map(_.size).sum)
+    b.sizeHint(xss.map(_.length).sum)
     for (xs <- xss) b ++= xs
-    b.result
+    b.result()
   }
 
   /** Returns an array that contains the results of some element computation a number
@@ -267,7 +267,7 @@ object Array extends FallbackArrayBuilding {
       b += elem
       i += 1
     }
-    b.result
+    b.result()
   }
 
   /** Returns a two-dimensional array that contains the results of some element
@@ -331,7 +331,7 @@ object Array extends FallbackArrayBuilding {
       b += f(i)
       i += 1
     }
-    b.result
+    b.result()
   }
 
   /** Returns a two-dimensional array containing values of a given function
@@ -399,14 +399,14 @@ object Array extends FallbackArrayBuilding {
   def range(start: Int, end: Int, step: Int): Array[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
     val b = newBuilder[Int]
-    b.sizeHint(immutable.Range.count(start, end, step, false))
+    b.sizeHint(immutable.Range.count(start, end, step, isInclusive = false))
 
     var i = start
     while (if (step < 0) end < i else i < end) {
       b += i
       i += step
     }
-    b.result
+    b.result()
   }
 
   /** Returns an array containing repeated applications of a function to a start value.
@@ -431,7 +431,7 @@ object Array extends FallbackArrayBuilding {
         b += acc
       }
     }
-    b.result
+    b.result()
   }
 
   /** Called in a pattern match like `{ case Array(x,y,z) => println('3 elements')}`.
