@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2013 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -16,22 +16,119 @@ object Test {
   import Prop.FM
   import util.CmdLineParser
 
-  /** Test parameters */
+  /** Test parameters used by the `Test.check` method.
+   */
+  trait Parameters {
+    /** The minimum number of tests that must succeed for ScalaCheck to
+     *  consider a property passed. */
+    def minSuccessfulTests: Int
+
+    /** The starting size given as parameter to the generators. */
+    def minSize: Int
+
+    /** The maximum size given as parameter to the generators. */
+    def maxSize: Int
+
+    /** The random numbe generator used. */
+    def rng: java.util.Random
+
+    /** The number of tests run in parallell. */
+    def workers: Int
+
+    /** A callback that ScalaCheck calls each time a test is executed. */
+    def testCallback: TestCallback
+
+    /** The maximum ratio between discarded and passed tests allowed before
+     *  ScalaCheck gives up and discards the property. At least
+     *  `minSuccesfulTests` will always be run, though. */
+    def maxDiscardRatio: Float
+
+    /** A custom class loader that should be used during test execution. */
+    def customClassLoader: Option[ClassLoader]
+
+    // private since we can't guarantee binary compatibility for this one
+    private[scalacheck] def copy(
+      _minSuccessfulTests: Int = Parameters.this.minSuccessfulTests,
+      _minSize: Int = Parameters.this.minSize,
+      _maxSize: Int = Parameters.this.maxSize,
+      _rng: java.util.Random = Parameters.this.rng,
+      _workers: Int = Parameters.this.workers,
+      _testCallback: TestCallback = Parameters.this.testCallback,
+      _maxDiscardRatio: Float = Parameters.this.maxDiscardRatio,
+      _customClassLoader: Option[ClassLoader] = Parameters.this.customClassLoader
+    ): Parameters = new Parameters {
+      val minSuccessfulTests: Int = _minSuccessfulTests
+      val minSize: Int = _minSize
+      val maxSize: Int = _maxSize
+      val rng: java.util.Random = _rng
+      val workers: Int = _workers
+      val testCallback: TestCallback = _testCallback
+      val maxDiscardRatio: Float = _maxDiscardRatio
+      val customClassLoader: Option[ClassLoader] = _customClassLoader
+    }
+  }
+
+  /** Test parameters used by the `Test.check` method.
+   *
+   *  To override default values, extend the
+   *  [[org.scalacheck.Test.Parameters.Default]] trait:
+   *
+   *  {{{
+   *  val myParams = new Parameters.Default {
+   *    override val minSuccesfulTests = 600
+   *    override val maxDiscardRatio = 8
+   *  }
+   *  }}}
+   */
+  object Parameters {
+    /** Default test parameters trait. This can be overriden if you need to
+     *  tweak the parameters. */
+    trait Default extends Parameters {
+      val minSuccessfulTests: Int = 100
+      val minSize: Int = 0
+      val maxSize: Int = Gen.Params().size
+      val rng: java.util.Random = Gen.Params().rng
+      val workers: Int = 1
+      val testCallback: TestCallback = new TestCallback {}
+      val maxDiscardRatio: Float = 5
+      val customClassLoader: Option[ClassLoader] = None
+    }
+
+    /** Default test parameters instance. */
+    val default: Parameters = new Default {}
+  }
+
+  /** Test parameters
+   *  @deprecated (in 1.10.0) Use [[org.scalacheck.Test.Parameters]] instead.
+   */
+  @deprecated("Use [[org.scalacheck.Test.Parameters]] instead", "1.10.0")
   case class Params(
     minSuccessfulTests: Int = 100,
-
-    /** @deprecated Use maxDiscardRatio instead. */
-    @deprecated("Use maxDiscardRatio instead.", "1.10")
     maxDiscardedTests: Int = -1,
-
     minSize: Int = 0,
     maxSize: Int = Gen.Params().size,
     rng: java.util.Random = Gen.Params().rng,
     workers: Int = 1,
-    testCallback: TestCallback = new TestCallback {},
-    maxDiscardRatio: Float = 5,
-    customClassLoader: Option[ClassLoader] = None
+    testCallback: TestCallback = new TestCallback {}
   )
+
+  @deprecated("Use [[org.scalacheck.Test.Parameters]] instead", "1.10.0")
+  private def paramsToParameters(params: Params) = new Parameters {
+    val minSuccessfulTests = params.minSuccessfulTests
+    val minSize = params.minSize
+    val maxSize = params.maxSize
+    val rng = params.rng
+    val workers = params.workers
+    val testCallback = params.testCallback
+
+    // maxDiscardedTests is deprecated, but if someone
+    // uses it let it override maxDiscardRatio
+    val maxDiscardRatio =
+      if(params.maxDiscardedTests < 0) Parameters.default.maxDiscardRatio
+      else (params.maxDiscardedTests: Float)/(params.minSuccessfulTests: Float)
+
+    val customClassLoader = Parameters.default.customClassLoader
+  }
 
   /** Test statistics */
   case class Result(status: Status, succeeded: Int, discarded: Int, freqMap: FM, time: Long = 0) {
@@ -92,7 +189,7 @@ object Test {
     }
   }
 
-  private def assertParams(prms: Params) = {
+  private def assertParams(prms: Parameters) = {
     import prms._
     if(
       minSuccessfulTests <= 0 ||
@@ -104,16 +201,24 @@ object Test {
   }
 
   private def secure[T](x: => T): Either[T,Throwable] =
-    try { Left(x) } catch { case e => Right(e) }
+    try { Left(x) } catch { case e: Throwable => Right(e) }
 
   private[scalacheck] lazy val cmdLineParser = new CmdLineParser {
     object OptMinSuccess extends IntOpt {
-      val default = Test.Params().minSuccessfulTests
+      val default = Parameters.default.minSuccessfulTests
       val names = Set("minSuccessfulTests", "s")
       val help = "Number of tests that must succeed in order to pass a property"
     }
+    object OptMaxDiscarded extends IntOpt {
+      val default = -1
+      val names = Set("maxDiscardedTests", "d")
+      val help =
+        "Number of tests that can be discarded before ScalaCheck stops " +
+        "testing a property. NOTE: this option is deprecated, please use " +
+        "the option maxDiscardRatio (-r) instead."
+    }
     object OptMaxDiscardRatio extends FloatOpt {
-      val default = Test.Params().maxDiscardRatio
+      val default = Parameters.default.maxDiscardRatio
       val names = Set("maxDiscardRatio", "r")
       val help =
         "The maximum ratio between discarded and succeeded tests " +
@@ -121,17 +226,17 @@ object Test {
         "least minSuccessfulTests will always be tested, though."
     }
     object OptMinSize extends IntOpt {
-      val default = Test.Params().minSize
+      val default = Parameters.default.minSize
       val names = Set("minSize", "n")
       val help = "Minimum data generation size"
     }
     object OptMaxSize extends IntOpt {
-      val default = Test.Params().maxSize
+      val default = Parameters.default.maxSize
       val names = Set("maxSize", "x")
       val help = "Maximum data generation size"
     }
     object OptWorkers extends IntOpt {
-      val default = Test.Params().workers
+      val default = Parameters.default.workers
       val names = Set("workers", "w")
       val help = "Number of threads to execute in parallel for testing"
     }
@@ -142,54 +247,63 @@ object Test {
     }
 
     val opts = Set[Opt[_]](
-      OptMinSuccess, OptMaxDiscardRatio, OptMinSize,
+      OptMinSuccess, OptMaxDiscarded, OptMaxDiscardRatio, OptMinSize,
       OptMaxSize, OptWorkers, OptVerbosity
     )
 
     def parseParams(args: Array[String]) = parseArgs(args) {
-      optMap => Test.Params(
-        minSuccessfulTests = optMap(OptMinSuccess),
-        maxDiscardRatio = optMap(OptMaxDiscardRatio),
-        minSize = optMap(OptMinSize),
-        maxSize = optMap(OptMaxSize),
-        rng = Test.Params().rng,
-        workers = optMap(OptWorkers),
-        testCallback = ConsoleReporter(optMap(OptVerbosity))
+      optMap => Parameters.default.copy(
+        _minSuccessfulTests = optMap(OptMinSuccess),
+        _maxDiscardRatio =
+          if (optMap(OptMaxDiscarded) < 0) optMap(OptMaxDiscardRatio)
+          else optMap(OptMaxDiscarded).toFloat / optMap(OptMinSuccess),
+        _minSize = optMap(OptMinSize),
+        _maxSize = optMap(OptMaxSize),
+        _workers = optMap(OptWorkers),
+        _testCallback = ConsoleReporter(optMap(OptVerbosity))
       )
     }
   }
 
   /** Tests a property with the given testing parameters, and returns
-   *  the test results. */
+   *  the test results.
+   *  @deprecated (in 1.10.0) Use
+   *  `check(Parameters, Properties)` instead.
+   */
+  @deprecated("Use 'checkProperties(Parameters, Properties)' instead", "1.10.0")
   def check(params: Params, p: Prop): Result = {
+    check(paramsToParameters(params), p)
+  }
 
-    // maxDiscardedTests is deprecated, but if someone
-    // uses it let it override maxDiscardRatio
-    val mdr =
-      if(params.maxDiscardedTests < 0) params.maxDiscardRatio
-      else (params.maxDiscardedTests: Float)/(params.minSuccessfulTests: Float)
-    val prms = params.copy( maxDiscardRatio = mdr)
+  /** Tests a property with the given testing parameters, and returns
+   *  the test results. */
+  def check(params: Parameters, p: Prop): Result = {
+    import params._
 
-    import prms._
-    import scala.actors.Futures.future
-
-    assertParams(prms)
-    if(workers > 1)
+    assertParams(params)
+    if(workers > 1) {
       assert(!p.isInstanceOf[Commands], "Commands cannot be checked multi-threaded")
+    }
 
     val iterations = math.ceil(minSuccessfulTests / (workers: Double))
     val sizeStep = (maxSize-minSize) / (iterations*workers)
     var stop = false
 
-    def worker(workerIdx: Int) = future {
-      params.customClassLoader.map(Thread.currentThread.setContextClassLoader(_))
+    def worker(workerIdx: Int) =
+      if (workers < 2) () => workerFun(workerIdx) 
+      else actors.Futures.future {
+        params.customClassLoader.map(Thread.currentThread.setContextClassLoader(_))
+        workerFun(workerIdx)
+      }
+
+    def workerFun(workerIdx: Int) = {
       var n = 0  // passed tests
       var d = 0  // discarded tests
       var res: Result = null
       var fm = FreqMap.empty[immutable.Set[Any]]
       while(!stop && res == null && n < iterations) {
         val size = (minSize: Double) + (sizeStep * (workerIdx + (workers*(n+d))))
-        val propPrms = Prop.Params(Gen.Params(size.round.toInt, prms.rng), fm)
+        val propPrms = Prop.Params(Gen.Params(size.round.toInt, params.rng), fm)
         secure(p(propPrms)) match {
           case Right(e) => res =
             Result(GenException(e), n, d, FreqMap.empty[immutable.Set[Any]])
@@ -250,11 +364,20 @@ object Test {
     stop = true
     results foreach (_.apply())
     val timedRes = r.copy(time = System.currentTimeMillis-start)
-    prms.testCallback.onTestResult("", timedRes)
+    params.testCallback.onTestResult("", timedRes)
     timedRes
   }
 
+  /** Check a set of properties.
+   *  @deprecated (in 1.10.0) Use
+   *  `checkProperties(Parameters, Properties)` instead.
+   */
+  @deprecated("Use 'checkProperties(Parameters, Properties)' instead", "1.10.0")
   def checkProperties(prms: Params, ps: Properties): Seq[(String,Result)] =
+    checkProperties(paramsToParameters(prms), ps)
+
+  /** Check a set of properties. */
+  def checkProperties(prms: Parameters, ps: Properties): Seq[(String,Result)] =
     ps.properties.map { case (name,p) =>
       val testCallback = new TestCallback {
         override def onPropEval(n: String, t: Int, s: Int, d: Int) =
@@ -262,7 +385,7 @@ object Test {
         override def onTestResult(n: String, r: Result) =
           prms.testCallback.onTestResult(name,r)
       }
-      val res = check(prms copy (testCallback = testCallback), p)
+      val res = check(prms copy (_testCallback = testCallback), p)
       (name,res)
     }
 
