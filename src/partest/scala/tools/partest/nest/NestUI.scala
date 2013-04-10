@@ -62,7 +62,7 @@ object NestUI {
       else if (isOk) green("ok")
       else red("!!")
     )
-    word + f" $testNumber%3s - $testIdent%-40s$reasonString"
+    word + f" $testNumber%4s - $testIdent%-40s$reasonString"
   }
 
   def reportTest(state: TestState) = {
