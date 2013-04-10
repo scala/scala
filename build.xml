@@ -224,6 +224,7 @@ TODO:
 
       <artifact:dependencies pathId="partest.extras.classpath" filesetId="partest.extras.fileset" versionsId="partest.extras.versions">
         <dependency groupId="com.googlecode.java-diff-utils" artifactId="diffutils" version="1.3.0"/>
+        <dependency groupId="org.scala-tools.testing" artifactId="test-interface" version="0.5" />
       </artifact:dependencies>
 
       <!-- BND support -->
@@ -530,6 +531,7 @@ TODO:
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/actors"/>
       <pathelement location="${build-quick.dir}/classes/scalacheck"/>
+      <path refid="partest.extras.classpath"/>
     </path>
 
     <path id="quick.scalap.build.path">
