@@ -27,9 +27,14 @@ class Colors(enabled: => Boolean) {
 
 object NestUI {
   private val testNum = new java.util.concurrent.atomic.AtomicInteger(1)
+  @volatile private var testNumberFmt = "%3d"
   // @volatile private var testNumber = 1
-  private def testNumber = "%3d" format testNum.getAndIncrement()
-  def resetTestNumber() = testNum set 1
+  private def testNumber = testNumberFmt format testNum.getAndIncrement()
+  def resetTestNumber(max: Int = -1) {
+    testNum set 1
+    val width = if (max > 0) max.toString.length else 3
+    testNumberFmt = s"%${width}d"
+  }
 
   var colorEnabled = sys.props contains "partest.colors"
   val color = new Colors(colorEnabled)
@@ -62,7 +67,7 @@ object NestUI {
       else if (isOk) green("ok")
       else red("!!")
     )
-    word + f" $testNumber%3s - $testIdent%-40s$reasonString"
+    f"$word $testNumber - $testIdent%-40s$reasonString"
   }
 
   def reportTest(state: TestState) = {
