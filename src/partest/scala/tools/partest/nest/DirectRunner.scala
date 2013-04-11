@@ -31,7 +31,7 @@ trait DirectRunner {
   )
   def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
 
-    NestUI.resetTestNumber()
+    NestUI.resetTestNumber(kindFiles.size)
 
     val allUrls           = PathSettings.scalaCheck.toURL :: fileManager.latestUrls
     val parentClassLoader = ScalaClassLoader fromURLs allUrls
