@@ -495,24 +495,28 @@ class Runner(val testFile: File, fileManager: FileManager) {
   }
 
   def runScalacheckTest() = runTestCommon {
-    NestUI.verbose("compilation of "+testFile+" succeeded\n")
+    def runScalacheckTest0() = {
+      NestUI.verbose("compilation of "+testFile+" succeeded\n")
 
-    val outURL    = outDir.getAbsoluteFile.toURI.toURL
-    val logWriter = new PrintStream(new FileOutputStream(logFile), true)
+      val outURL    = outDir.getAbsoluteFile.toURI.toURL
+      val logWriter = new PrintStream(new FileOutputStream(logFile), true)
 
-    Output.withRedirected(logWriter) {
-      // this classloader is test specific: its parent contains library classes and others
-      ScalaClassLoader.fromURLs(List(outURL), testRunParams.scalaCheckParentClassLoader).run("Test", Nil)
+      try Output.withRedirected(logWriter) {
+        // this classloader is test specific: its parent contains library classes and others
+        ScalaClassLoader.fromURLs(List(outURL), testRunParams.scalaCheckParentClassLoader).run("Test", Nil)
+      } finally logWriter.close()
+      true  // succeeds trivially
     }
-
-    NestUI.verbose(file2String(logFile))
-    // obviously this must be improved upon
-    val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
-    lines.forall(x => !x.startsWith("!")) || {
-      NestUI.normal("ScalaCheck test failed. Output:\n")
-      lines foreach (x => NestUI.normal(x + "\n"))
-      false
+    def checkScalacheckLog = {
+      NestUI.verbose(file2String(logFile))
+      // obviously this must be improved upon
+      val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
+      lines.forall(x => !x.startsWith("!")) || {
+        _transcript append logFile.fileContents
+        false
+      }
     }
+    (runScalacheckTest0() && nextTestActionExpectTrue("ScalaCheck test failed", checkScalacheckLog))
   }
 
   def runResidentTest() = {
