@@ -687,7 +687,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           (if (jModifier.isStatic(mods)) module.moduleClass else clazz).info.decls enter sym
 
         for (jinner <- jclazz.getDeclaredClasses) {
-          enter(jclassAsScala(jinner, clazz), jinner.getModifiers)
+          jclassAsScala(jinner) // inner class is entered as a side-effect
+                                // no need to call enter explicitly
         }
 
         pendingLoadActions = { () =>
@@ -1046,13 +1047,17 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      *  @param jclazz  The Java class
      *  @return A Scala class symbol that wraps all reflection info of `jclazz`
      */
-    private def jclassAsScala(jclazz: jClass[_]): Symbol = jclassAsScala(jclazz, sOwner(jclazz))
+    private def jclassAsScala(jclazz: jClass[_]): Symbol = {
+      val clazz = sOwner(jclazz) // sOwner called outside of closure for binary compatibility
+      toScala(classCache, jclazz){ (mirror, jclazz) =>
+        mirror.jclassAsScala(jclazz, clazz)
+      }
+    }
 
     private def jclassAsScala(jclazz: jClass[_], owner: Symbol): ClassSymbol = {
-      val name = scalaSimpleName(jclazz)
-      val completer = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
-      val (clazz, module) = createClassModule(owner, name, completer)
-      classCache enter (jclazz, clazz)
+      val name       = scalaSimpleName(jclazz)
+      val completer  = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
+      val (clazz, _) = createClassModule(owner, name, completer)
       clazz
     }
 
