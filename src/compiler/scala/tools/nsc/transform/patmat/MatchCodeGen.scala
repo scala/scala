@@ -8,7 +8,6 @@ package scala.tools.nsc.transform.patmat
 
 import scala.tools.nsc.symtab.Flags.SYNTHETIC
 import scala.language.postfixOps
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 /** Factory methods used by TreeMakers to make the actual trees.

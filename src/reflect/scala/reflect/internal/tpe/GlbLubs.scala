@@ -3,13 +3,11 @@ package internal
 package tpe
 
 import scala.collection.{ mutable }
-import util.Statistics
 import Variance._
 
 private[internal] trait GlbLubs {
   self: SymbolTable =>
   import definitions._
-  import TypesStats._
 
   private final val printLubs = sys.props contains "scalac.debug.lub"
 
@@ -250,8 +248,6 @@ private[internal] trait GlbLubs {
     case List() => NothingClass.tpe
     case List(t) => t
     case _ =>
-      if (Statistics.canEnable) Statistics.incCounter(lubCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {
         val res = lub(ts, lubDepth(ts))
         // If the number of unapplied type parameters in all incoming
@@ -269,7 +265,6 @@ private[internal] trait GlbLubs {
       finally {
         lubResults.clear()
         glbResults.clear()
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
       }
   }
 
@@ -390,7 +385,6 @@ private[internal] trait GlbLubs {
       indent = indent + "  "
       assert(indent.length <= 100)
     }
-    if (Statistics.canEnable) Statistics.incCounter(nestedLubCount)
     val res = lub0(ts)
     if (printLubs) {
       indent = indent stripSuffix "  "
@@ -415,14 +409,11 @@ private[internal] trait GlbLubs {
     case List() => AnyClass.tpe
     case List(t) => t
     case ts0 =>
-      if (Statistics.canEnable) Statistics.incCounter(lubCount)
-      val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {
         glbNorm(ts0, lubDepth(ts0))
       } finally {
         lubResults.clear()
         glbResults.clear()
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
       }
   }
 
@@ -535,10 +526,7 @@ private[internal] trait GlbLubs {
           else NothingClass.tpe
       }
     }
-    // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
-    if (Statistics.canEnable) Statistics.incCounter(nestedLubCount)
     glb0(ts)
-    // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
   }
 
   /** All types in list must be polytypes with type parameter lists of

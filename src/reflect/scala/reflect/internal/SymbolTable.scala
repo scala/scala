@@ -155,11 +155,7 @@ abstract class SymbolTable extends macros.Universe
   private[this] var per = NoPeriod
 
   final def atPhaseStack: List[Phase] = phStack
-  final def phase: Phase = {
-    if (Statistics.hotEnabled)
-      Statistics.incCounter(SymbolTableStats.phaseCounter)
-    ph
-  }
+  final def phase: Phase = ph
 
   def atPhaseStackMessage = atPhaseStack match {
     case Nil    => ""
@@ -355,8 +351,4 @@ abstract class SymbolTable extends macros.Universe
    * Adds the `sm` String interpolator to a [[scala.StringContext]].
    */
   implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
-}
-
-object SymbolTableStats {
-  val phaseCounter = Statistics.newCounter("#phase calls")
 }

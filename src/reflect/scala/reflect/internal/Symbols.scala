@@ -8,7 +8,7 @@ package internal
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
-import util.{ Statistics, shortClassOfInstance }
+import util.{ shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
@@ -16,7 +16,6 @@ import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
-  import SymbolsStats._
 
   protected var ids = 0
 
@@ -650,7 +649,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
-      if (Statistics.hotEnabled) Statistics.incCounter(flagsCount)
       val fs = _rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
     }
@@ -946,11 +944,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ------ owner attribute --------------------------------------------------------------
 
-    def owner: Symbol = {
-      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
-      rawowner
-    }
-
+    def owner: Symbol = rawowner
     // Like owner, but NoSymbol.owner == NoSymbol instead of throwing an exception.
     final def safeOwner: Symbol = if (this eq NoSymbol) NoSymbol else owner
 
@@ -2499,10 +2493,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private[this] var _rawname: TermName = initName
     def rawname = _rawname
-    def name = {
-      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
-      _rawname
-    }
+    def name = _rawname
+
     override def name_=(name: Name) {
       if (name != rawname) {
         super.name_=(name)   // logging
@@ -2664,12 +2656,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       flatOwnerInfo.decl(name.toTypeName).suchThat(sym => sym.isClass && (sym isCoDefinedWith this))
 
     override def owner = {
-      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }
     override def name: TermName = {
-      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
           flatname = nme.flattenedName(rawowner.name, rawname)
@@ -2777,10 +2767,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // cloneSymbolImpl still abstract in TypeSymbol.
 
     def rawname = _rawname
-    def name = {
-      if (Statistics.hotEnabled) Statistics.incCounter(nameCount)
-      _rawname
-    }
+    def name = _rawname
     final def asNameType(n: Name) = n.toTypeName
 
     override def isNonClassType = true
@@ -2898,8 +2885,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * public class Test1<T extends Test3> {}
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
-
-    if (Statistics.hotEnabled) Statistics.incCounter(typeSymbolCount)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -3066,13 +3051,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       thisTypeCache
     }
 
-    override def owner: Symbol = {
-      if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
+    override def owner: Symbol = (
       if (needsFlatClasses) rawowner.owner else rawowner
-    }
+    )
 
     override def name: TypeName = {
-      if (Statistics.canEnable) Statistics.incCounter(nameCount)
       if (needsFlatClasses) {
         if (flatname eq null)
           flatname = tpnme.flattenedName(rawowner.name, rawname)
@@ -3108,8 +3091,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var childSet: Set[Symbol] = Set()
     override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
-
-    if (Statistics.hotEnabled) Statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
@@ -3406,18 +3387,4 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     case sym :: rest => sym.owner == owner && allSymbolsHaveOwner(rest, owner)
     case _ => true
   }
-
-
-// -------------- Statistics --------------------------------------------------------
-
-  Statistics.newView("#symbols")(ids)
-
-}
-
-object SymbolsStats {
-  val typeSymbolCount     = Statistics.newCounter("#type symbols")
-  val classSymbolCount    = Statistics.newCounter("#class symbols")
-  val flagsCount          = Statistics.newCounter("#flags ops")
-  val ownerCount          = Statistics.newCounter("#owner ops")
-  val nameCount           = Statistics.newCounter("#name ops")
 }

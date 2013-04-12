@@ -7,11 +7,10 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 
 // naive CNF translation and simple DPLL solver
 trait Solving extends Logic {
-  import PatternMatchingStats._
+
   trait CNF extends PropositionalLogic {
     import scala.collection.mutable.ArrayBuffer
     type FormulaBuilder = ArrayBuffer[Clause]
@@ -101,16 +100,7 @@ trait Solving extends Logic {
         }
       }
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatCNF) else null
-      val res   = conjunctiveNormalForm(negationNormalForm(p))
-
-      if (Statistics.canEnable) Statistics.stopTimer(patmatCNF, start)
-
-      //
-      if (Statistics.canEnable) patmatCNFSizes(res.size).value += 1
-
-//      debug.patmat("cnf for\n"+ p +"\nis:\n"+cnfString(res))
-      res
+      conjunctiveNormalForm(negationNormalForm(p))
     }
   }
 
@@ -189,8 +179,6 @@ trait Solving extends Logic {
 
       debug.patmat("DPLL\n"+ cnfString(f))
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaDPLL) else null
-
       val satisfiableWithModel: Model =
         if (f isEmpty) EmptyModel
         else if(f exists (_.isEmpty)) NoModel
@@ -226,8 +214,6 @@ trait Solving extends Logic {
               orElse(findModelFor(f :+ clause(split)), findModelFor(f :+ clause(-split)))
             }
         }
-
-        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaDPLL, start)
 
         satisfiableWithModel
     }

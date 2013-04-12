@@ -8,14 +8,11 @@ package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.HashSet
 
 
 trait Logic extends Debugging  {
-  import PatternMatchingStats._
-
   private def max(xs: Seq[Int]) = if (xs isEmpty) 0 else xs max
   private def alignedColumns(cols: Seq[AnyRef]): Seq[String] = {
     def toString(x: AnyRef) = if (x eq null) "" else x.toString
@@ -190,8 +187,6 @@ trait Logic extends Debugging  {
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     // may throw an AnalysisBudget.Exception
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Formula, List[Formula]) = {
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
-
       val vars = new scala.collection.mutable.HashSet[Var]
 
       object gatherEqualities extends PropTraverser {
@@ -244,8 +239,6 @@ trait Logic extends Debugging  {
 
       debug.patmat("eqAxioms:\n"+ cnfString(toFormula(eqAxioms)))
       debug.patmat("pure:"+ pure.map(p => cnfString(p)).mkString("\n"))
-
-      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
       (toFormula(eqAxioms), pure)
     }

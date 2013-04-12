@@ -8,7 +8,6 @@ package internal
 // todo implement in terms of BitSet
 import scala.collection.{ mutable, immutable }
 import scala.math.max
-import util.Statistics
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
  *  of a type. It characterized by the following two laws:
@@ -28,7 +27,6 @@ import util.Statistics
 trait BaseTypeSeqs {
   this: SymbolTable =>
   import definitions._
-  import BaseTypeSeqsStats._
 
   protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
     new BaseTypeSeq(parents, elems)
@@ -38,9 +36,7 @@ trait BaseTypeSeqs {
    *  SynchronizedBaseTypeSeq as mixin.
    */
   class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
-  self =>
-    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
-    if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
+    self =>
 
     /** The number of types in the sequence */
     def length: Int = elems.length
@@ -239,9 +235,4 @@ trait BaseTypeSeqs {
   }
 
   val CyclicInheritance = new Throwable
-}
-
-object BaseTypeSeqsStats {
-  val baseTypeSeqCount = Statistics.newCounter("#base type seqs")
-  val baseTypeSeqLenTotal = Statistics.newRelCounter("avg base type seq length", baseTypeSeqCount)
 }
