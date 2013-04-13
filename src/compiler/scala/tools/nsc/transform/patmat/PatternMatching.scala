@@ -13,7 +13,7 @@ import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.Types
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{Position, NoPosition}
 
 /** Translate pattern matching.
   *
@@ -80,8 +80,8 @@ trait PatternMatching extends Transform with TypingTransformers
   }
 
   class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with PureCodegen {
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
+    def optimizeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
+    def analyzeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
   }
 
   class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
@@ -101,7 +101,7 @@ trait Debugging {
 }
 
 trait Interface extends ast.TreeDSL {
-  import global.{newTermName, analyzer, Type, ErrorType, Symbol, Tree}
+  import global.{abort, gen, newTermName, analyzer, Type, NoType, ErrorType, Symbol, NoSymbol, Tree, EmptyTree, treeInfo}
   import analyzer.Typer
 
   // 2.10/2.11 compatibility
@@ -125,6 +125,69 @@ trait Interface extends ast.TreeDSL {
     val _match    = newTermName("__match") // don't call the val __match, since that will trigger virtual pattern matching...
 
     def counted(str: String, i: Int) = newTermName(str + i)
+  }
+
+
+  /** Abstract over single-scrutinee and multi-scrutinee (packed in a tuple) matches.
+   */
+  sealed abstract class Scrutinee {
+    def selector: Tree
+    def sym: Symbol
+    def info: Type
+    def setInfo(tp: Type): Symbol
+
+    def defs: List[Tree]
+    // for MatchError thrown by default case
+    def ref: Tree
+    def pos = selector.pos
+  }
+
+  // standard match
+  case class SingleScrutinee(selector: Tree, sym: Symbol) extends Scrutinee {
+    assert(sym ne NoSymbol, "Use NoScrutinee for no-symbol scrutinee "+ selector)
+
+    def info: Type = sym.info
+    def setInfo(tp: Type): Symbol = sym.setInfo(tp)
+
+    def defs = List(CODE.VAL(sym)  === selector)
+    def ref  = CODE.REF(sym)
+  }
+
+  // for an optimized match that unrolls the tuple that is the selector
+  case class TupleScrutinee(selector: Tree, defs: List[Tree]) extends Scrutinee {
+    def sym: Symbol               = NoSymbol
+    def setInfo(tp: Type): Symbol = NoSymbol
+
+    def info: Type = selector.tpe
+
+    lazy val rootSyms = defs map (_.symbol)
+    def elemRefs      = rootSyms map (CODE.REF(_))
+    def ref           = gen.mkTuple(elemRefs)
+  }
+
+  // not meant to emit a match, for try/catch translation
+  case class SymbolScrutinee(sym: Symbol) extends Scrutinee {
+    assert(sym ne NoSymbol, "Use NoScrutinee for no-symbol scrutinee "+ selector)
+
+    def info: Type = sym.info
+    def setInfo(tp: Type): Symbol = sym.setInfo(tp)
+
+    def ref = CODE.REF(sym)
+
+    def selector: Tree   = abort("SymbolScrutinee does not have a selector.")
+    def defs: List[Tree] = abort("SymbolScrutinee cannot emit a match. Use SingleScrutinee.")
+  }
+
+  // for alternatives
+  case object NoScrutinee extends Scrutinee {
+    def sym: Symbol               = NoSymbol
+    def info: Type                = NoType
+    def setInfo(tp: Type): Symbol = NoSymbol
+    def ref: Tree                 = EmptyTree
+    def defs: List[Tree]          = Nil
+    override def pos              = NoPosition
+
+    def selector: Tree            = abort("NoScrutinee does not have a selector.")
   }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

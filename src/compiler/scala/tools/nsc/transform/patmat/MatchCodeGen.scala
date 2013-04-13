@@ -40,7 +40,7 @@ trait MatchCodeGen extends Interface {
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree
+      def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
@@ -114,8 +114,8 @@ trait MatchCodeGen extends Interface {
       //// methods in MatchingStrategy (the monad companion) -- used directly in translation
       // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
       // TODO: consider catchAll, or virtualized matching will break in exception handlers
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
-        _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, cases map (f => f(this)) reduceLeft typedOrElse))
+      def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
+        _match(vpmName.runOrElse) APPLY (scrutinee.selector) APPLY (fun(scrutinee.sym, cases map (f => f(this)) reduceLeft typedOrElse))
 
       // __match.one(`res`)
       def one(res: Tree): Tree = (_match(vpmName.one)) (res)
@@ -157,7 +157,7 @@ trait MatchCodeGen extends Interface {
        * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
+      def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
         val matchEnd = newSynthCaseLabel("matchEnd")
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, newFlags = SYNTHETIC) setInfo restpe.withoutAnnotations
         matchEnd setInfo MethodType(List(matchRes), restpe)
@@ -177,27 +177,22 @@ trait MatchCodeGen extends Interface {
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
         val catchAllDef = matchFailGen map { matchFailGen =>
-          val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
-
-          LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
+          LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutinee.ref)))
         } toList // at most 1 element
-
-        // scrutSym == NoSymbol when generating an alternatives matcher
-        val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
           // the assumption is once we encounter a case, the remainder of the block will consist of cases
           // the prologue may be empty, usually it is the valdef that stores the scrut
           // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
         Block(
-          scrutDef ++ caseDefs ++ catchAllDef,
+          scrutinee.defs ++ caseDefs ++ catchAllDef,
           LabelDef(matchEnd, List(matchRes), REF(matchRes))
         )
       }
 
       class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
-        def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
-          optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
+        def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
+          optimizedCodegen.matcher(scrutinee, restpe)(cases, matchFailGen)
 
         // only used to wrap the RHS of a body
         // res: T
