@@ -34,9 +34,39 @@ trait MatchCodeGen extends Interface {
     def newSynthCaseLabel(name: String) =
       NoSymbol.newLabel(freshName(name), NoPosition) setFlag treeInfo.SYNTH_CASE_FLAGS
 
+
+    trait MatchScrutinee extends Scrutinee {
+      protected def selector: Tree
+
+      def info = pureType(definitions.repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations)))
+
+      lazy val typeAscribed = selector match { case Typed(tree, tpt) => Some(tree, tpt.tpe) case _ => None }
+
+      private def ascribedTree = typeAscribed.map(_._1).getOrElse(EmptyTree)
+      private def ascribedType = typeAscribed.map(_._2).getOrElse(NoType)
+
+      lazy val suppressExhaustive  = treeInfo isUncheckedAnnotation ascribedType
+      lazy val hasSwitchAnnotation = treeInfo isSwitchAnnotation ascribedType
+      lazy val supressUnreachable  = ascribedTree match {
+        case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // SI-7183 don't warn for withFilter's that turn out to be irrefutable.
+        case _                                                            => false
+      }
+
+      def pos = selector.pos
+    }
+
+    // standard match
+    case class SimpleMatchScrutinee(selector: Tree) extends MatchScrutinee {
+      lazy val sym: Symbol = freshSym(pos, info) setFlag treeInfo.SYNTH_CASE_FLAGS
+
+      def ref  = CODE.REF(sym)
+
+      override def defs = List(ValDef(sym, selector))
+    }
+
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree
+      def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
@@ -109,8 +139,8 @@ trait MatchCodeGen extends Interface {
       //// methods in MatchingStrategy (the monad companion) -- used directly in translation
       // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
       // TODO: consider catchAll, or virtualized matching will break in exception handlers
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree =
-        _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, cases map (f => f(this)) reduceLeft typedOrElse))
+      def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree =
+        _match(vpmName.runOrElse) APPLY (scrutinee.asInstanceOf[SimpleMatchScrutinee].selector) APPLY (fun(scrutinee.sym, cases map (f => f(this)) reduceLeft typedOrElse))
 
       // __match.one(`res`)
       def one(res: Tree): Tree = (_match(vpmName.one)) (res)
@@ -146,7 +176,7 @@ trait MatchCodeGen extends Interface {
        * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree = {
+      def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree = {
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, newFlags = SYNTHETIC) setInfo restpe.withoutAnnotations
         val matchEnd = newSynthCaseLabel("matchEnd") setInfo MethodType(List(matchRes), restpe)
 
@@ -164,27 +194,24 @@ trait MatchCodeGen extends Interface {
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
         val catchAllDef = defaultCase map { defaultCase =>
-          val scrutRef = scrutSym.fold(EmptyTree: Tree)(REF) // for alternatives
+          // val scrutRef = scrutSym.fold(EmptyTree: Tree)(REF) // for alternatives
 
           LabelDef(_currCase, Nil, matchEnd APPLY (defaultCase))
         } toList // at most 1 element
-
-        // scrutSym == NoSymbol when generating an alternatives matcher
-        val scrutDef = scrutSym.fold(List[Tree]())(ValDef(_, scrut) :: Nil) // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
         // the assumption is once we encounter a case, the remainder of the block will consist of cases
         // the prologue may be empty, usually it is the valdef that stores the scrut
         // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
         Block(
-          scrutDef ++ caseDefs ++ catchAllDef,
+          scrutinee.defs ++ caseDefs ++ catchAllDef,
           LabelDef(matchEnd, List(matchRes), REF(matchRes))
         )
       }
 
       class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
-        def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree =
-          optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, defaultCase)
+        def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree =
+          optimizedCodegen.matcher(scrutinee, restpe)(cases, defaultCase)
 
         // only used to wrap the RHS of a body
         // res: T

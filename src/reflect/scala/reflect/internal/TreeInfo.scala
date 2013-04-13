@@ -530,6 +530,8 @@ abstract class TreeInfo {
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass
 
+  def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation definitions.UncheckedClass
+
   /** can this type be a type pattern */
   def mayBeTypePat(tree: Tree): Boolean = tree match {
     case CompoundTypeTree(Template(tps, _, Nil)) => tps exists mayBeTypePat

@@ -31,11 +31,11 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
      * the variable is floated up so that its scope includes all of the program that shares it
      * we generalize sharing to implication, where b reuses a if a => b and priors(a) => priors(b) (the priors of a sub expression form the path through the decision tree)
      */
-    def doCSE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
+    def doCSE(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
       debug.patmat("before CSE:")
       showTreeMakers(cases)
 
-      val testss = approximateMatchConservative(prevBinder, cases)
+      val testss = approximateMatchConservative(scrutinee, cases)
 
       // interpret:
       val dependencies = new mutable.LinkedHashMap[Test, Set[Prop]]
@@ -491,7 +491,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         }
     }
 
-    class RegularSwitchMaker(scrutSym: Symbol, defaultCaseOverride: Option[Tree], val unchecked: Boolean) extends SwitchMaker {
+    class RegularSwitchMaker(scrutinee: Scrutinee, defaultCaseOverride: Option[Tree], val unchecked: Boolean) extends SwitchMaker {
       val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe)
       val alternativesSupported = true
       val canJump = true
@@ -516,26 +516,26 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         case _ => false
       }
 
-      def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { import CODE._; defaultCaseOverride getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
+      def defaultSym: Symbol = scrutinee.sym
+      def defaultBody: Tree  = { import CODE._; defaultCaseOverride getOrElse Throw(MatchErrorClass.tpe, scrutinee.ref) }
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}
     }
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, defaultCaseOverride: Option[Tree], unchecked: Boolean): Option[Tree] = { import CODE._
-      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, defaultCaseOverride, unchecked)
+    override def emitSwitch(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, defaultCaseOverride: Option[Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutinee, defaultCaseOverride, unchecked)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
-      if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
-        val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
+      if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutinee.info))) {
+        val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutinee.sym, c)}, pt)
         if (caseDefsWithDefault isEmpty) None // not worth emitting a switch.
         else {
-          // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
+          // match on scrutinee.sym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
           val scrutToInt: Tree =
-            if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
-            else (REF(scrutSym) DOT (nme.toInt))
-          Some(BLOCK(
-            ValDef(scrutSym, scrut),
+            if (scrutinee.info =:= IntTpe) scrutinee.ref
+            else (scrutinee.ref DOT (nme.toInt))
+          Some(Block(
+            scrutinee.defs,
             Match(scrutToInt, caseDefsWithDefault) // a switch
           ))
         }
@@ -584,9 +584,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   trait MatchOptimizer extends OptimizedCodegen
                           with SwitchEmission
                           with CommonSubconditionElimination {
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
+    override def optimizeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
-      val optCases = doCSE(prevBinder, cases, pt)
+      val optCases = doCSE(scrutinee, cases, pt)
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}

@@ -13,7 +13,6 @@ import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.{Mode, Types}
-import scala.reflect.internal.util.Position
 
 /** Translate pattern matching.
   *
@@ -82,8 +81,8 @@ trait PatternMatching extends Transform
   }
 
   class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with PureCodegen {
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
+    def optimizeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
+    def analyzeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
   }
 
   class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
@@ -129,6 +128,42 @@ trait Interface extends ast.TreeDSL {
     val _match    = newTermName("__match") // don't call the val __match, since that will trigger virtual pattern matching...
 
     def counted(str: String, i: Int) = newTermName(str + i)
+  }
+
+  /** Encapsulate a reference (and potentially, corresponding definitions)
+   * to the value being matched on.
+   */
+  trait Scrutinee {
+    // type of the selector that's being deconstructed
+    def info: Type
+
+    // if there's a single symbol to represent this scrutinee, otherwise NoSymbol
+    def sym: Symbol
+
+    // a way to refer to the scrutinee definition
+    def ref: Tree
+
+    // definitions, if any that introduce the symbol referred to by `sym`
+    def defs: List[Tree]
+
+    def pos: Position
+  }
+
+  // for patterns and try/catch translation
+  case class SubScrutinee(sym: Symbol) extends Scrutinee { // assert(sym ne NoSymbol, "Use NoScrutinee for no-symbol scrutinee ")
+    def info = sym.info
+    def ref  = CODE.REF(sym)
+    def pos  = sym.pos
+    def defs = Nil
+  }
+
+  // for alternatives
+  case object NoScrutinee extends Scrutinee {
+    def sym: Symbol      = NoSymbol
+    def info: Type       = NoType
+    def ref: Tree        = EmptyTree
+    def defs: List[Tree] = Nil
+    def pos              = NoPosition
   }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
