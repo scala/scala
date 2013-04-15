@@ -67,7 +67,7 @@ import scala.collection.{ mutable, immutable }
 // 50:
 // 51:    lateDEFERRED
 // 52:       lateFINAL
-// 53:      lateMETHOD
+// 53:
 // 54:   lateINTERFACE
 // 55:      lateMODULE
 // 56:    notPROTECTED
@@ -201,13 +201,11 @@ class Flags extends ModifierFlags {
   // Summary of when these are claimed to be first used.
   // You can get this output with scalac -Xshow-phases -Ydebug.
   //
-  //     refchecks   7  [START] <latemethod>
   //    specialize  13  [START] <latefinal> <notprivate>
   // explicitouter  14  [START] <notprotected>
   //       erasure  15  [START] <latedeferred> <lateinterface>
   //         mixin  20  [START] <latemodule> <notoverride>
   //
-  // lateMETHOD set in RefChecks#transformInfo.
   // lateFINAL set in Symbols#makeNotPrivate.
   // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
   // notPROTECTED set in ExplicitOuter#transform.
@@ -219,7 +217,6 @@ class Flags extends ModifierFlags {
   final val lateDEFERRED  = (DEFERRED: Long) << LateShift
   final val lateFINAL     = (FINAL: Long) << LateShift
   final val lateINTERFACE = (INTERFACE: Long) << LateShift
-  final val lateMETHOD    = (METHOD: Long) << LateShift
   final val lateMODULE    = (MODULE: Long) << LateShift
 
   final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
@@ -444,7 +441,6 @@ class Flags extends ModifierFlags {
     case    0x4000000000000L => ""                                    // (1L << 50)
     case      `lateDEFERRED` => "<latedeferred>"                      // (1L << 51)
     case         `lateFINAL` => "<latefinal>"                         // (1L << 52)
-    case        `lateMETHOD` => "<latemethod>"                        // (1L << 53)
     case     `lateINTERFACE` => "<lateinterface>"                     // (1L << 54)
     case        `lateMODULE` => "<latemodule>"                        // (1L << 55)
     case      `notPROTECTED` => "<notprotected>"                      // (1L << 56)
