@@ -1105,7 +1105,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       ("\n" + info1) :: info2 :: info3 mkString "\n\n"
     }
-    catch { case x: Exception => errorMessage }
+    catch { case _: Exception | _: TypeError => errorMessage }
 
   /** The id of the currently active run
    */

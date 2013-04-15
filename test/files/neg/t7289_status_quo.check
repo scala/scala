@@ -1,0 +1,22 @@
+t7289_status_quo.scala:9: error: could not find implicit value for parameter e: Test1.Ext[List[Int]]
+  implicitly[Ext[List[Int]]]                    // fails - not found
+            ^
+t7289_status_quo.scala:11: error: could not find implicit value for parameter e: Test1.Ext[List[List[List[Int]]]]
+  implicitly[Ext[List[List[List[Int]]]]]        // fails - not found
+            ^
+t7289_status_quo.scala:15: error: ambiguous implicit values:
+ both method f in object Test1 of type [A, Coll <: CC[A], CC[X] <: Traversable[X]](implicit xi: Test1.Ext[A])Test1.Ext[Coll]
+ and value m in object Test1 of type => Test1.Ext[List[List[Int]]]
+ match expected type Test1.Ext[_ <: List[List[Int]]]
+  implicitly[Ext[_ <: List[List[Int]]]]         // fails - ambiguous
+            ^
+t7289_status_quo.scala:20: error: could not find implicit value for parameter e: Test1.ExtCov[List[Int]]
+  implicitly[ExtCov[List[Int]]]                 // fails - not found
+            ^
+t7289_status_quo.scala:21: error: could not find implicit value for parameter e: Test1.ExtCov[List[List[Int]]]
+  implicitly[ExtCov[List[List[Int]]]]           // fails - not found
+            ^
+t7289_status_quo.scala:22: error: could not find implicit value for parameter e: Test1.ExtCov[List[List[List[Int]]]]
+  implicitly[ExtCov[List[List[List[Int]]]]]     // fails - not found
+            ^
+6 errors found
