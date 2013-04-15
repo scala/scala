@@ -228,9 +228,7 @@ trait Contexts { self: Analyzer =>
     def restoreReportBuffer(other: ReportBuffer) = _reportBuffer = other
 
     /** The first error, if any, in the report buffer */
-    def firstError: Option[AbsTypeError] = reportBuffer.firstErrorOpt
-    /** The first warning, if any, in the report buffer */
-    def firstWarning: Option[(Position, String)] = reportBuffer.firstWarningOpt
+    def firstError: Option[AbsTypeError] = reportBuffer.firstError
     /** Does the report buffer contain any errors? */
     def hasErrors = reportBuffer.hasErrors
 
@@ -248,8 +246,6 @@ trait Contexts { self: Analyzer =>
       if (!bufferErrors && hasErrors)
         devWarning("When entering the buffer state, context has to be clean. Current buffer: " + reportBuffer.errors)
     }
-
-    // TODO SI-7345 refactor this part of the API.
 
     /** Append the given errors to the report buffer */
     def updateBuffer(errors: Traversable[AbsTypeError]) = reportBuffer ++= errors
@@ -1106,11 +1102,8 @@ trait Contexts { self: Analyzer =>
       this
     }
 
-    def hasErrors        = errorBuffer.nonEmpty
-    def hasWarnings      = warningBuffer.nonEmpty
-    def firstError       = errorBuffer.head
-    def firstErrorOpt    = errorBuffer.headOption
-    def firstWarningOpt  = warningBuffer.headOption
+    def hasErrors     = errorBuffer.nonEmpty
+    def firstError    = errorBuffer.headOption
   }
 
   class ImportInfo(val tree: Import, val depth: Int) {
