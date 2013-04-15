@@ -95,9 +95,10 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // then, collapse these contiguous sequences of reusing tests
       // store the result of the final test and the intermediate results in hoisted mutable variables (TODO: optimize: don't store intermediate results that aren't used)
       // replace each reference to a variable originally bound by a collapsed test by a reference to the hoisted variable
-      val reused = new mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
+      // NOTE: using identity-style hashmap, undo and compile pos/patmat_cse_nested to see what goes wrong otherwise
+      val reused = new mutable.HashMap[Int, ReusedCondTreeMaker]
       var okToCall = false
-      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(tm, tm)}
+      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(System.identityHashCode(tm), tm)}
 
       // maybe collapse: replace shared prefix of tree makers by a ReusingCondTreeMaker
       // once this has been computed, we'll know which tree makers are reused,
@@ -119,7 +120,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
           if (sharedPrefix.isEmpty) None
           else { // even sharing prefixes of length 1 brings some benefit (overhead-percentage for compiler: 26->24%, lib: 19->16%)
             for (test <- sharedPrefix; reusedTest <- test.reuses) reusedTest.treeMaker match {
-              case reusedCTM: CondTreeMaker => reused(reusedCTM) = ReusedCondTreeMaker(reusedCTM)
+              case reusedCTM: CondTreeMaker => reused(System.identityHashCode(reusedCTM)) = ReusedCondTreeMaker(reusedCTM)
               case _ =>
             }
 
