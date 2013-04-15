@@ -807,7 +807,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
       }
 
-      /** return a 'lazified' version of rhs. It uses double-checked locking to ensure
+      /* return a 'lazified' version of rhs. It uses double-checked locking to ensure
        *  initialization is performed at most once. For performance reasons the double-checked
        *  locking is split into two parts, the first (fast) path checks the bitmap without
        *  synchronizing, and if that fails it initializes the lazy val within the
@@ -1145,7 +1145,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           qual
 
         case Apply(Select(qual, _), args) =>
-          /** Changes `qual.m(args)` where m refers to an implementation
+          /* Changes `qual.m(args)` where m refers to an implementation
            *  class method to Q.m(S, args) where Q is the implementation module of
            *  `m` and S is the self parameter for the call, which
            *  is determined as follows:
