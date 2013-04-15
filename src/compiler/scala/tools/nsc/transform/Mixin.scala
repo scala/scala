@@ -1037,7 +1037,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else if (!clazz.isTrait) {
           // This needs to be a def to avoid sharing trees
           def accessedRef = accessedReference(sym)
-          if (sym.hasAccessorFlag && (!sym.isDeferred || sym.hasFlag(lateDEFERRED))) {
+          if (isConcreteAccessor(sym)) {
             // add accessor definitions
             addDefDef(sym, {
               if (sym.isSetter) {
