@@ -3799,8 +3799,16 @@ trait Typers extends Adaptations with Tags {
         if (vd.symbol.tpe.isVolatile)
           AbstractionFromVolatileTypeError(vd)
       val tpt1 = typedType(tree.tpt, mode)
-      existentialTransform(whereClauses1 map (_.symbol), tpt1.tpe)((tparams, tp) =>
-        TypeTree(newExistentialType(tparams, tp)) setOriginal tree
+      existentialTransform(whereClauses1 map (_.symbol), tpt1.tpe)((tparams, tp) => {
+        val original = tpt1 match {
+          case tpt : TypeTree => atPos(tree.pos)(ExistentialTypeTree(tpt.original, tree.whereClauses))
+          case _ => {
+            debuglog(s"cannot reconstruct the original for $tree, because $tpt1 is not a TypeTree")
+            tree
+          }
+        }
+        TypeTree(newExistentialType(tparams, tp)) setOriginal original
+      }
       )
     }
 
