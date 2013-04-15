@@ -49,6 +49,29 @@ object Test extends DirectTest {
         case _ =>
           false
       }
+
+      def test5 {
+        /** @martin is this right? It shouldn't flag me as scaladoc. */
+        if (true) ???
+      }
+
+      def test6 = {
+        /** Document this crucial constant for posterity.
+         *  Don't forget to dedoc this comment if you refactor to a local.
+         *  @author Paul Phillips
+         */
+        val u = 4
+        for (i <- 0 to u)
+          println(i)
+      }
+      def test7 = {
+        /** Some standard tags are tolerated locally and shouldn't trigger a warning.
+         *  @note Don't change this unless you know what you're doing. This means you.
+         */
+        val u = 4
+        for (i <- 0 to u)
+          println(i)
+      }
     }
 
     /** comments that we should keep */

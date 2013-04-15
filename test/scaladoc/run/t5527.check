@@ -1,11 +1,5 @@
-newSource1:17: warning: discarding unmoored doc comment
-          /** Testing 123 */
-          ^
-newSource1:27: warning: discarding unmoored doc comment
-        /** Calculate this result. */
-        ^
-newSource1:34: warning: discarding unmoored doc comment
-        /** Another digit is a giveaway. */
+newSource1:47: warning: discarding unmoored doc comment
+        /** Document this crucial constant for posterity.
         ^
 [[syntax trees at end of                    parser]] // newSource1
 package <empty> {
@@ -48,6 +42,18 @@ package <empty> {
     val test4 = 'a' match {
       case ('0'| '1'| '2'| '3'| '4'| '5'| '6'| '7'| '8'| '9') => true
       case _ => false
+    };
+    def test5: scala.Unit = if (true)
+      $qmark$qmark$qmark
+    else
+      ();
+    def test6 = {
+      val u = 4;
+      0.to(u).foreach(((i) => println(i)))
+    };
+    def test7 = {
+      val u = 4;
+      0.to(u).foreach(((i) => println(i)))
     }
   };
   /** comments that we should keep */
