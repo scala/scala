@@ -605,10 +605,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
       val optCases = doCSE(prevBinder, cases, pt)
-      val toHoist = (
-        for (treeMakers <- optCases)
-          yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
-        ).flatten.flatten.toList
+      val toHoist  = distinctBy(optCases.flatMap(treeMakers => treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}.flatten))(_.symbol)
       (optCases, toHoist)
     }
   }
