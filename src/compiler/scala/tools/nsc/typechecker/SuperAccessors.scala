@@ -64,8 +64,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         debuglog(s"add super acc ${sym.fullLocationString} to $clazz")
         val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | ARTIFACT) setAlias sym
         val tpe = clazz.thisType memberType sym match {
-          case t if sym.isModule && !sym.isMethod => NullaryMethodType(t)
-          case t                                  => t
+          case t if sym.isModuleNotMethod => NullaryMethodType(t)
+          case t                          => t
         }
         acc setInfoAndEnter (tpe cloneInfo acc)
         // Diagnostic for SI-7091

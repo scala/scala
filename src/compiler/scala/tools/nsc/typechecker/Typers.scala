@@ -599,7 +599,7 @@ trait Typers extends Adaptations with Tags {
         if (sym.isValue) {
           val tree1 = checkStable(tree)
           // A module reference in a pattern has type Foo.type, not "object Foo"
-          if (sym.isModule && !sym.isMethod) tree1 setType singleType(pre, sym)
+          if (sym.isModuleNotMethod) tree1 setType singleType(pre, sym)
           else tree1
         }
         else fail()
@@ -607,7 +607,7 @@ trait Typers extends Adaptations with Tags {
         fail()
       } else {
         if (sym.isStable && pre.isStable && !isByNameParamType(tree.tpe) &&
-            (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))
+            (isStableContext(tree, mode, pt) || sym.isModuleNotMethod))
           tree.setType(singleType(pre, sym))
         // To fully benefit from special casing the return type of
         // getClass, we have to catch it immediately so expressions

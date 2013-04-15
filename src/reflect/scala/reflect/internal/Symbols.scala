@@ -659,8 +659,29 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def hasGetter = isTerm && nme.isLocalName(name)
 
+    /** A little explanation for this confusing situation.
+     *  Nested modules which have no static owner when ModuleDefs
+     *  are eliminated (refchecks) are given the lateMETHOD flag,
+     *  which makes them appear as methods after refchecks.
+     *  Here's an example where one can see all four of FF FT TF TT
+     *  for (isStatic, isMethod) at various phases.
+     *
+     *    trait A1 { case class Quux() }
+     *    object A2 extends A1 { object Flax }
+     *    // --  namer         object Quux in trait A1
+     *    // -M  flatten       object Quux in trait A1
+     *    // S-  flatten       object Flax in object A2
+     *    // -M  posterasure   object Quux in trait A1
+     *    // -M  jvm           object Quux in trait A1
+     *    // SM  jvm           object Quux in object A2
+     *
+     *  So "isModuleNotMethod" exists not for its achievement in
+     *  brevity, but to encapsulate the relevant condition.
+     */
+    def isModuleNotMethod = isModule && !isMethod
+    def isStaticModule    = isModuleNotMethod && isStatic
+
     final def isInitializedToDefault = !isType && hasAllFlags(DEFAULTINIT | ACCESSOR)
-    final def isStaticModule = isModule && isStatic && !isMethod
     final def isThisSym = isTerm && owner.thisSym == this
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe_*.isErroneous
@@ -1110,12 +1131,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       new TermSymbol(this, pos, name) initFlags newFlags
 
     final def newTermSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): TermSymbol = {
-      if ((newFlags & METHOD) != 0)
-        createMethodSymbol(name, pos, newFlags)
-      else if ((newFlags & PACKAGE) != 0)
+      // Package before Module, Module before Method, or we might grab the wrong guy.
+      if ((newFlags & PACKAGE) != 0)
         createPackageSymbol(name, pos, newFlags | PackageFlags)
       else if ((newFlags & MODULE) != 0)
         createModuleSymbol(name, pos, newFlags)
+      else if ((newFlags & METHOD) != 0)
+        createMethodSymbol(name, pos, newFlags)
       else if ((newFlags & PARAM) != 0)
         createValueParameterSymbol(name, pos, newFlags)
       else
@@ -3027,8 +3049,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  returned, otherwise, `NoSymbol` is returned.
      */
     protected final def companionModule0: Symbol =
-      flatOwnerInfo.decl(name.toTermName).suchThat(
-        sym => sym.isModule && (sym isCoDefinedWith this) && !sym.isMethod)
+      flatOwnerInfo.decl(name.toTermName).suchThat(sym => sym.isModuleNotMethod && (sym isCoDefinedWith this))
 
     override def companionModule    = companionModule0
     override def companionSymbol    = companionModule0
