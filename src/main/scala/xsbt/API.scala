@@ -278,8 +278,10 @@ final class API(val global: CallbackGlobal) extends Compat
 	private def getModifiers(s: Symbol): xsbti.api.Modifiers =
 	{
 		import Flags._
-		new xsbti.api.Modifiers(s.hasFlag(ABSTRACT) || s.hasFlag(DEFERRED), s.hasFlag(OVERRIDE),
-			s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), hasMacro(s))
+		val absOver = s.hasFlag(ABSOVERRIDE)
+		val abs = s.hasFlag(ABSTRACT) || s.hasFlag(DEFERRED) || absOver
+		val over = s.hasFlag(OVERRIDE) || absOver
+		new xsbti.api.Modifiers(abs, over, s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), hasMacro(s))
 	}
 
 	private def isImplicit(s: Symbol) = s.hasFlag(Flags.IMPLICIT)
