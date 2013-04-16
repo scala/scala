@@ -451,6 +451,7 @@ trait NamesDefaults { self: Analyzer =>
     } else NoSymbol
   }
 
+  // TODO SI-7345 Use a method in Context for this.
   private def savingUndeterminedTParams[T](context: Context)(fn: List[Symbol] => T): T = {
     val savedParams    = context.extractUndetparams()
     val savedReporting = context.ambiguousErrors

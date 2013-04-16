@@ -114,6 +114,49 @@ trait Contexts { self: Analyzer =>
   }
 
   /**
+   * A motley collection of the state and loosely associated behaviour of the type checker.
+   * Each `Typer` has an associated context, and as it descends into the tree new `(Typer, Context)`
+   * pairs are spawned.
+   *
+   * Meet the crew; first the state:
+   *
+   *   - A tree, symbol, and scope representing the focus of the typechecker
+   *   - An enclosing context, `outer`.
+   *   - The current compilation unit.
+   *   - A variety of bits that track the current error reporting policy (more on this later);
+   *     whether or not implicits/macros are enabled, whether we are in a self or super call or
+   *     in a constructor suffix. These are represented as bits in the mask `contextMode`.
+   *   - Some odds and ends: undetermined type pararameters of the current line of type inference;
+   *     contextual augmentation for error messages, tracking of the nesting depth.
+   *
+   * And behaviour:
+   *
+   *   - The central point for issuing errors and warnings from the typechecker, with a means
+   *     to buffer these for use in 'silent' type checking, when some recovery might be possible.
+   *  -  `Context` is something of a Zipper for the tree were are typechecking: it `enclosingContextChain`
+   *     is the path back to the root. This is exactly what we need to resolve names (`lookupSymbol`)
+   *     and to collect in-scope implicit defintions (`implicitss`)
+   *     Supporting these are `imports`, which represents all `Import` trees in in the enclosing context chain.
+   *  -  In a similar vein, we can assess accessiblity (`isAccessible`.)
+   *
+   * More on error buffering:
+   *     When are type errors recoverable? In quite a few places, it turns out. Some examples:
+   *     trying to type an application with/without the expected type, or with.without implicit views
+   *     enabled. This is usually mediated by in `Typer.silent`, `Inferencer#tryTwice`.
+   *
+   *     Intially, starting from the `typer` phase, the contexts either either buffer or report errors;
+   *     from `erasure` errors are thrown. This is configured in `rootContext`. Additionally, more
+   *     fine grained control is needed based on the kind of error; ambiguity errors are often
+   *     suppressed during exploraratory typing, such as determining whether `a == b` in an argument
+   *     position is an assignment or a named argument, when `Infererencer#isApplicableSafe` type checks
+   *     applications with and without an expected type, or whtn `Typer#tryTypedApply` tries to fit arguments to
+   *     a function type with/without implicit views.
+   *
+   *     When the error policies entails error/warning buffering, the mutable [[ReportBuffer]] records
+   *     everything that is issued. It is important to note, that child Contexts created with `make`
+   *     "inherit" the very same `ReportBuffer` instance, whereas children spawned through `makeSilent`
+   *     receive an separate, fresh buffer.
+   *
    * @param tree  Tree associated with this context
    * @param owner The current owner
    * @param scope The current scope
@@ -246,6 +289,7 @@ trait Contexts { self: Analyzer =>
     def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
     def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
 
+    // TODO SI-7345 According to Hubert, this warning will be noisy and is unneccessary.
     private def warnIfBufferNotClean() {
       if (!bufferErrors && hasErrors)
         devWarning("When entering the buffer state, context has to be clean. Current buffer: " + reportBuffer.errors)
@@ -1288,4 +1332,3 @@ final class ContextMode private (val bits: Int) extends AnyVal {
     if (bits == 0) "NOmode"
     else (contextModeNameMap filterKeys inAll).values.toList.sorted mkString " "
 }
-
