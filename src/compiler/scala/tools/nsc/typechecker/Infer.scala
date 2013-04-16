@@ -1540,17 +1540,6 @@ trait Infer extends Checkable {
         }
       }
 
-    /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
-    @inline private def inSilentMode(context: Context)(expr: => Boolean): Boolean = {
-      val savedContextMode = context.contextMode
-      context.setBufferErrors()
-      val res = expr
-      val contextHadErrors = context.hasErrors
-      context.reportBuffer.clearAll()
-      context.contextMode = savedContextMode
-      res && !contextHadErrors
-    }
-
     // Checks against the name of the parameter and also any @deprecatedName.
     private def paramMatchesName(param: Symbol, name: Name) =
       param.name == name || param.deprecatedParamName.exists(_ == name)
@@ -1619,7 +1608,7 @@ trait Infer extends Checkable {
             }
       def followType(sym: Symbol) = followApply(pre memberType sym)
       def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
-        val applicable0 = alts filter (alt => inSilentMode(context)(isApplicable(undetparams, followType(alt), argtpes, pt)))
+        val applicable0 = alts filter (alt => context inSilentMode (isApplicable(undetparams, followType(alt), argtpes, pt)))
         val applicable  = overloadsToConsiderBySpecificity(applicable0, argtpes, varargsStar)
         val ranked      = bestAlternatives(applicable)((sym1, sym2) =>
           isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
@@ -1629,8 +1618,8 @@ trait Infer extends Checkable {
           case best :: Nil               => tree setSymbol best setType (pre memberType best)           // success
           case Nil if pt eq WildcardType => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
           case Nil                       => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
-          }
-          }
+        }
+      }
       // This potentially makes up to four attempts: tryTwice may execute
       // with and without views enabled, and bestForExpectedType will try again
       // with pt = WildcardType if it fails with pt != WildcardType.

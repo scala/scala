@@ -270,7 +270,7 @@ trait Contexts { self: Analyzer =>
     // Temporary mode adjustment
     //
 
-    private def withMode[T](enabled: ContextMode = NOmode, disabled: ContextMode = NOmode)(op: => T): T = {
+    @inline def withMode[T](enabled: ContextMode = NOmode, disabled: ContextMode = NOmode)(op: => T): T = {
       val saved = contextMode
       set(enabled, disabled)
       try op
@@ -282,6 +282,15 @@ trait Contexts { self: Analyzer =>
     def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
     def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
     def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
+
+    /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
+    @inline final def inSilentMode(expr: => Boolean): Boolean = {
+      withMode() { // withMode with no arguments to restore the mode mutated by `setBufferErrors`.
+        setBufferErrors()
+        try expr && !hasErrors
+        finally reportBuffer.clearAll()
+      }
+    }
 
     //
     // Child Context Creation
@@ -358,7 +367,7 @@ trait Contexts { self: Analyzer =>
       make(tree, owner, newNestedScope(scope))
 
     /** Make a child context that buffers errors and warnings into a fresh report buffer. */
-    def makeSilent(reportAmbiguousErrors: Boolean, newtree: Tree = tree): Context = {
+    def makeSilent(reportAmbiguousErrors: Boolean = ambiguousErrors, newtree: Tree = tree): Context = {
       val c = make(newtree)
       c.setBufferErrors()
       c.setAmbiguousErrors(reportAmbiguousErrors)
