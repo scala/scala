@@ -99,13 +99,11 @@ trait Contexts { self: Analyzer =>
   }
 
   def resetContexts() {
-    var sc = startContext
-    while (sc != NoContext) {
-      sc.tree match {
+    startContext.enclosingContextChain foreach { context =>
+      context.tree match {
         case Import(qual, _) => qual setType singleType(qual.symbol.owner.thisType, qual.symbol)
         case _               =>
       }
-      sc = sc.outer
     }
   }
 
