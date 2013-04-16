@@ -1,0 +1,7 @@
+t7373.scala:4: error: constructor Vector in class Vector cannot be accessed in object Test
+  val v = new Vector(1,2,3)
+          ^
+t7373.scala:5: error: constructor VectorIterator in class VectorIterator cannot be accessed in object Test
+  val it = new VectorIterator(1,2)
+           ^
+two errors found
