@@ -1,5 +1,5 @@
-A = TypeTag[Int]
-B = TypeTag[Nothing]
+A = WeakTypeTag[Int]
+B = WeakTypeTag[Nothing]
 List(1)
-A = TypeTag[Any]
+A = WeakTypeTag[Any]
 List(abc, 1)

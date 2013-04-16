@@ -1008,27 +1008,25 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (overriding.isAbstractOverride) om.setFlag(ABSOVERRIDE)
           typeEnv(om) = env
           addConcreteSpecMethod(overriding)
-          info(om) = (
-            if (overriding.isDeferred) { // abstract override
-              debuglog("abstract override " + overriding.fullName + " with specialized " + om.fullName)
-              Forward(overriding)
+          if (overriding.isDeferred) { // abstract override
+            debuglog("abstract override " + overriding.fullName + " with specialized " + om.fullName)
+            info(om) = Forward(overriding)
+          }
+          else {
+            // if the override is a normalized member, 'om' gets the
+            // implementation from its original target, and adds the
+            // environment of the normalized member (that is, any
+            // specialized /method/ type parameter bindings)
+            info get overriding match {
+              case Some(NormalizedMember(target)) =>
+                typeEnv(om) = env ++ typeEnv(overriding)
+                info(om) = Forward(target)
+              case _ =>
+                info(om) = SpecialOverride(overriding)
             }
-            else {
-              // if the override is a normalized member, 'om' gets the
-              // implementation from its original target, and adds the
-              // environment of the normalized member (that is, any
-              // specialized /method/ type parameter bindings)
-              val impl = info get overriding match {
-                case Some(NormalizedMember(target)) =>
-                  typeEnv(om) = env ++ typeEnv(overriding)
-                  target
-                case _ =>
-                  overriding
-              }
-              info(overriding) = Forward(om setPos overriding.pos)
-              SpecialOverride(impl)
-            }
-          )
+            info(overriding) = Forward(om setPos overriding.pos)
+          }
+
           newOverload(overriding, om, env)
           ifDebug(exitingSpecialize(assert(
             overridden.owner.info.decl(om.name) != NoSymbol,
@@ -1851,6 +1849,5 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
 
       resultTree
-    }
-  }
+    }  }
 }
