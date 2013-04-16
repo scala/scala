@@ -3101,7 +3101,7 @@ trait Typers extends Adaptations with Tags {
                   // the assign is untyped; that's ok because we call doTypedApply
                   val arg1 = treeCopy.AssignOrNamedArg(arg, arg.lhs, rhs1)
                   (arg1, NamedType(name, rhs1.tpe.deconst))
-                case arg @ Typed(repeated, Ident(tpnme.WILDCARD_STAR)) =>
+                case arg @ treeInfo.WildcardStarArg(repeated) =>
                   val arg1 = typedArg0(arg)
                   (arg1, RepeatedType(arg1.tpe.deconst))
                 case arg =>
@@ -4986,7 +4986,7 @@ trait Typers extends Adaptations with Tags {
                 typedEta(checkDead(exprTyped))
             }
 
-          case Ident(tpnme.WILDCARD_STAR) =>
+          case t if treeInfo isWildcardStarType t =>
             val exprTyped = typed(expr, mode.onlySticky, WildcardType)
             def subArrayType(pt: Type) =
               if (isPrimitiveValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)

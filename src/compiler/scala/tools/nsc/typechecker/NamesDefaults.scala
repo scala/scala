@@ -19,6 +19,7 @@ trait NamesDefaults { self: Analyzer =>
   import global._
   import definitions._
   import NamesDefaultsErrorsGen._
+  import treeInfo.WildcardStarArg
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -278,8 +279,8 @@ trait NamesDefaults { self: Analyzer =>
           val repeated = isScalaRepeatedParamType(paramTpe)
           val argTpe = (
             if (repeated) arg match {
-              case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
-              case _                                       => seqType(arg.tpe)
+              case WildcardStarArg(expr) => expr.tpe
+              case _                     => seqType(arg.tpe)
             }
             else
               // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
@@ -302,11 +303,8 @@ trait NamesDefaults { self: Analyzer =>
             } else {
               new ChangeOwnerTraverser(context.owner, sym) traverse arg // fixes #4502
               if (repeated) arg match {
-                case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
-                  expr
-                case _ =>
-                  val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
-                  blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
+                case WildcardStarArg(expr) => expr
+                case _                     => blockTyper typed gen.mkSeqApply(resetLocalAttrs(arg))
               } else arg
             }
           Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))
