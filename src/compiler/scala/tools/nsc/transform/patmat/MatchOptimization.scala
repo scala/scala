@@ -21,7 +21,7 @@ import scala.reflect.internal.util.NoPosition
 // TODO: split out match analysis
 trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   import PatternMatchingStats._
-  import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
+  import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos, Block,
     ConstantType, Literal, Constant, gen, EmptyTree, distinctBy,
     Typed, treeInfo, nme, Ident,
     Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw}
@@ -38,11 +38,11 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
      * the variable is floated up so that its scope includes all of the program that shares it
      * we generalize sharing to implication, where b reuses a if a => b and priors(a) => priors(b) (the priors of a sub expression form the path through the decision tree)
      */
-    def doCSE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
+    def doCSE(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
       debug.patmat("before CSE:")
       showTreeMakers(cases)
 
-      val testss = approximateMatchConservative(prevBinder, cases)
+      val testss = approximateMatchConservative(scrutinee, cases)
 
       // interpret:
       val dependencies = new mutable.LinkedHashMap[Test, Set[Prop]]
@@ -95,9 +95,10 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // then, collapse these contiguous sequences of reusing tests
       // store the result of the final test and the intermediate results in hoisted mutable variables (TODO: optimize: don't store intermediate results that aren't used)
       // replace each reference to a variable originally bound by a collapsed test by a reference to the hoisted variable
-      val reused = new mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
+      // NOTE: using identity-style hashmap, undo and compile pos/patmat_cse_nested to see what goes wrong otherwise
+      val reused = new mutable.HashMap[Int, ReusedCondTreeMaker]
       var okToCall = false
-      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(tm, tm)}
+      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(System.identityHashCode(tm), tm)}
 
       // maybe collapse: replace shared prefix of tree makers by a ReusingCondTreeMaker
       // once this has been computed, we'll know which tree makers are reused,
@@ -119,7 +120,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
           if (sharedPrefix.isEmpty) None
           else { // even sharing prefixes of length 1 brings some benefit (overhead-percentage for compiler: 26->24%, lib: 19->16%)
             for (test <- sharedPrefix; reusedTest <- test.reuses) reusedTest.treeMaker match {
-              case reusedCTM: CondTreeMaker => reused(reusedCTM) = ReusedCondTreeMaker(reusedCTM)
+              case reusedCTM: CondTreeMaker => reused(System.identityHashCode(reusedCTM)) = ReusedCondTreeMaker(reusedCTM)
               case _ =>
             }
 
@@ -509,8 +510,12 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         }
     }
 
-    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
-      val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
+    class RegularSwitchMaker(scrutinee: Scrutinee, defaultCaseOverride: Option[Tree], val unchecked: Boolean) extends SwitchMaker {
+      private val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
+      def switchable(scrutinee: Scrutinee) = scrutinee match {
+        case scrutinee: SingleScrutinee => switchableTpe(dealiasWiden(scrutinee.info))
+        case _ => false
+      }
       val alternativesSupported = true
       val canJump = true
 
@@ -534,28 +539,25 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         case _ => false
       }
 
-      def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse MATCHERROR(REF(scrutSym)) }
+      def defaultSym: Symbol = scrutinee.sym
+      def defaultBody: Tree  = { import CODE._; defaultCaseOverride getOrElse MATCHERROR(scrutinee.ref) }
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}
     }
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
-      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride, unchecked)
+    override def emitSwitch(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, defaultCaseOverride: Option[Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutinee, defaultCaseOverride, unchecked)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
-      if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
-        val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
+      if (regularSwitchMaker.switchable(scrutinee)) {
+        val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutinee.sym, c)}, pt)
         if (caseDefsWithDefault isEmpty) None // not worth emitting a switch.
         else {
-          // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
+          // match on scrutinee.sym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
           val scrutToInt: Tree =
-            if (scrutSym.tpe =:= IntClass.tpe) REF(scrutSym)
-            else (REF(scrutSym) DOT (nme.toInt))
-          Some(BLOCK(
-            VAL(scrutSym) === scrut,
-            Match(scrutToInt, caseDefsWithDefault) // a switch
-          ))
+            if (scrutinee.info =:= IntClass.tpe) scrutinee.ref
+            else (scrutinee.ref DOT (nme.toInt))
+          Some(Block(scrutinee.defs, Match(scrutToInt, caseDefsWithDefault))) // a switch
         }
       } else None
     }
@@ -602,13 +604,10 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   trait MatchOptimizer extends OptimizedCodegen
                           with SwitchEmission
                           with CommonSubconditionElimination {
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
+    override def optimizeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
-      val optCases = doCSE(prevBinder, cases, pt)
-      val toHoist = (
-        for (treeMakers <- optCases)
-          yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
-        ).flatten.flatten.toList
+      val optCases = doCSE(scrutinee, cases, pt)
+      val toHoist  = distinctBy(optCases.flatMap(treeMakers => treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}.flatten))(_.symbol)
       (optCases, toHoist)
     }
   }
