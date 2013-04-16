@@ -361,7 +361,7 @@ self =>
       if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain))
         searchForMain() foreach { return _ }
 
-      /** Here we are building an AST representing the following source fiction,
+      /* Here we are building an AST representing the following source fiction,
        *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
        *  the result of parsing the script file.
        *
