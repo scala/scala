@@ -262,6 +262,20 @@ trait Contexts { self: Analyzer =>
       tparams
     }
 
+    /** Run `body` with this context with no undetermined type parameters, restore the original
+     *  the original list afterwards.
+     *  @param reportAmbiguous Should ambiguous errors be reported during evaluation of `body`?
+     */
+    def savingUndeterminedTypeParams[A](reportAmbiguous: Boolean = ambiguousErrors)(body: => A): A = {
+      withMode() {
+        this(AmbiguousErrors) = reportAmbiguous
+        val savedParams = extractUndetparams()
+        try body
+        finally {
+          undetparams = savedParams
+        }
+      }
+    }
     //
     // Error reporting policies and buffer.
     //

@@ -451,21 +451,6 @@ trait NamesDefaults { self: Analyzer =>
     } else NoSymbol
   }
 
-  // TODO SI-7345 Use a method in Context for this.
-  private def savingUndeterminedTParams[T](context: Context)(fn: List[Symbol] => T): T = {
-    val savedParams    = context.extractUndetparams()
-    val savedReporting = context.ambiguousErrors
-
-    context.setAmbiguousErrors(false)
-    try fn(savedParams)
-    finally {
-      context.setAmbiguousErrors(savedReporting)
-      //@M note that we don't get here when an ambiguity was detected (during the computation of res),
-      // as errorTree throws an exception
-      context.undetparams = savedParams
-    }
-  }
-
   /** A full type check is very expensive; let's make sure there's a name
    *  somewhere which could potentially be ambiguous before we go that route.
    */
@@ -480,7 +465,8 @@ trait NamesDefaults { self: Analyzer =>
       //   def f[T](x: T) = x
       //   var x = 0
       //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
-      savingUndeterminedTParams(context) { udp =>
+      val udp = context.undetparams
+      context.savingUndeterminedTypeParams(reportAmbiguous = false) {
         val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
           override def apply(tp: Type): Type = super.apply(tp match {
             case TypeRef(_, ByNameParamClass, x :: Nil) => x
