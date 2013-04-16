@@ -1179,7 +1179,7 @@ abstract class ClassfileParser {
         else enclosing.info member name
       )
       enteringTyperIfPossible(getMember)
-      /** There used to be an assertion that this result is not NoSymbol; changing it to an error
+      /*  There used to be an assertion that this result is not NoSymbol; changing it to an error
        *  revealed it had been going off all the time, but has been swallowed by a catch t: Throwable
        *  in Repository.scala. Since it has been accomplishing nothing except misleading anyone who
        *  thought it wasn't triggering, I removed it entirely.

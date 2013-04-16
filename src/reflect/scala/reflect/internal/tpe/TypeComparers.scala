@@ -186,7 +186,7 @@ trait TypeComparers {
   }
 
   def isSameType2(tp1: Type, tp2: Type): Boolean = {
-    /** Here we highlight those unfortunate type-like constructs which
+    /*  Here we highlight those unfortunate type-like constructs which
      *  are hidden bundles of mutable state, cruising the type system picking
      *  up any type constraints naive enough to get into their hot rods.
      */
@@ -215,7 +215,7 @@ trait TypeComparers {
       }
       case _ => false
     }
-    /** Those false cases certainly are ugly. There's a proposed SIP to deuglify it.
+    /*  Those false cases certainly are ugly. There's a proposed SIP to deuglify it.
      *    https://docs.google.com/a/improving.org/document/d/1onPrzSqyDpHScc9PS_hpxJwa3FlPtthxw-bAuuEe8uA
      */
     def sameTypeAndSameCaseClass = tp1 match {

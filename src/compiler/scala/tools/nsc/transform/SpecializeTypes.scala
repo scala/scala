@@ -1387,7 +1387,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     def transform1(tree: Tree) = {
       val symbol = tree.symbol
-      /** The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
+      /* The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
       def specSym(qual: Tree): Symbol = {
         val env = unify(symbol.tpe, tree.tpe, emptyEnv, false)
         def isMatch(member: Symbol) = (
