@@ -285,15 +285,9 @@ trait Contexts { self: Analyzer =>
     def throwErrors     = contextMode.inNone(ReportErrors | BufferErrors)
 
     def setReportErrors(): Unit                   = set(enable = ReportErrors | AmbiguousErrors, disable = BufferErrors)
-    def setBufferErrors(): Unit                   = {set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors); warnIfBufferNotClean()}
+    def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors)
     def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
     def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
-
-    // TODO SI-7345 According to Hubert, this warning will be noisy and is unneccessary.
-    private def warnIfBufferNotClean() {
-      if (!bufferErrors && hasErrors)
-        devWarning("When entering the buffer state, context has to be clean. Current buffer: " + reportBuffer.errors)
-    }
 
     /** Append the given errors to the report buffer */
     def updateBuffer(errors: Traversable[AbsTypeError]) = reportBuffer ++= errors
