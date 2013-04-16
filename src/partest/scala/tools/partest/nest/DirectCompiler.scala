@@ -48,7 +48,7 @@ class DirectCompiler(val fileManager: FileManager) {
   }
 
   def compile(runner: Runner, opts0: List[String], sources: List[File]): TestState = {
-    import runner._
+    import runner.{ sources => _, _ }
 
     val testSettings = new TestSettings(ClassPath.join(fileManager.LATEST_LIB, outDir.getPath))
     val logWriter    = new FileWriter(logFile)
