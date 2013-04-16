@@ -19,14 +19,20 @@ trait Contexts { self: Analyzer =>
   import definitions.{ JavaLangPackage, ScalaPackage, PredefModule }
   import ContextMode._
 
-  object NoContext extends Context {
-    outer      = this
+  object NoContext
+    extends Context(EmptyTree, NoSymbol, EmptyScope, NoCompilationUnit,
+                    outer = null /*We can't pass NoContext here, overriden below*/) {
+
+    override val outer = this
+
     enclClass  = this
     enclMethod = this
 
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
+    override def imports: List[ImportInfo] = Nil
+    override def firstImport: Option[ImportInfo] = None
     override def toString = "NoContext"
   }
   private object RootImports {
@@ -89,7 +95,7 @@ trait Contexts { self: Analyzer =>
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, erasedTypes: Boolean = false): Context = {
     var sc = startContext
     for (sym <- rootImports(unit)) {
-      sc = sc.makeNewImport(gen.mkWildcardImport(sym))
+      sc = sc.make(gen.mkWildcardImport(sym))
       sc.depth += 1
     }
     val c = sc.make(tree, unit = unit)
@@ -107,16 +113,14 @@ trait Contexts { self: Analyzer =>
     }
   }
 
-  class Context private[typechecker] {
-    var unit: CompilationUnit = NoCompilationUnit
-    /** Tree associated with this context */
-    var tree: Tree = _
-    /** The current owner */
-    var owner: Symbol = NoSymbol
-    /** The current scope */
-    var scope: Scope = _
-    /** The next outer context */
-    var outer: Context = _
+  /**
+   * @param tree  Tree associated with this context
+   * @param owner The current owner
+   * @param scope The current scope
+   * @param outer The next outer context.
+   */
+  class Context private[typechecker](val tree: Tree, val owner: Symbol, val scope: Scope,
+                                     val unit: CompilationUnit, val outer: Context) {
     /** The next outer context whose tree is a template or package definition */
     var enclClass: Context = _
 
@@ -155,7 +159,9 @@ trait Contexts { self: Analyzer =>
     var depth: Int = 0
 
     /** The currently visible imports */
-    var imports: List[ImportInfo] = List()
+    def imports: List[ImportInfo] = outer.imports
+    /** Equivalent to `imports.headOption`, but more efficient */
+    def firstImport: Option[ImportInfo] = outer.firstImport
 
     /** Types for which implicit arguments are currently searched */
     var openImplicits: List[(Type,Tree)] = List()
@@ -297,16 +303,22 @@ trait Contexts { self: Analyzer =>
     /**
      * Construct a child context. The parent and child will share the report buffer.
      * Compare with `makeSilent`, in which the child has a fresh report buffer.
+     *
+     * If `tree` is an `Import`, that import will be avaiable at the head of
+     * `Context#imports`.
      */
     def make(tree: Tree = tree, owner: Symbol = owner,
-             scope: Scope = scope, imports: List[ImportInfo] = imports,
-             unit: CompilationUnit = unit): Context = {
+             scope: Scope = scope, unit: CompilationUnit = unit): Context = {
       val isTemplateOrPackage = tree match {
         case _: Template | _: PackageDef => true
         case _                           => false
       }
       val isDefDef = tree match {
         case _: DefDef => true
+        case _         => false
+      }
+      val isImport = tree match {
+        case _: Import => true
         case _         => false
       }
       val sameOwner = owner == this.owner
@@ -317,15 +329,13 @@ trait Contexts { self: Analyzer =>
         else prefix
 
       // The blank canvas
-      val c = new Context
+      val c = if (isImport)
+        new Context(tree, owner, scope, unit, this) with ImportContext
+      else
+        new Context(tree, owner, scope, unit, this)
 
       // Fields that are directly propagated
-      c.unit               = unit
-      c.tree               = tree
-      c.owner              = owner
-      c.scope              = scope
       c.variance           = variance
-      c.imports            = imports
       c.diagnostic         = diagnostic
       c.typingIndentLevel  = typingIndentLevel
       c.openImplicits      = openImplicits
@@ -333,7 +343,6 @@ trait Contexts { self: Analyzer =>
       c._reportBuffer      = reportBuffer
 
       // Fields that may take on a different value in the child
-      c.outer              = this
       c.prefix             = prefixInChild
       c.enclClass          = if (isTemplateOrPackage) c else enclClass
       c(ConstructorSuffix) = !isTemplateOrPackage && c(ConstructorSuffix)
@@ -349,16 +358,7 @@ trait Contexts { self: Analyzer =>
       // TODO SI-7345 Moving this optimization into the main overload of `make` causes all tests to fail.
       //              even if it is extened to check that `unit == this.unit`. Why is this?
       if (tree == this.tree && owner == this.owner && scope == this.scope) this
-      else make(tree, owner, scope, imports, unit)
-
-    /** Make a child context that includes `imp` in the list of visible imports */
-    def makeNewImport(imp: Import): Context = {
-      val impInfo = new ImportInfo(imp, depth)
-      if (settings.lint && imp.pos.isDefined) // pos.isDefined excludes java.lang/scala/Predef imports
-        allImportInfos(unit) ::= impInfo
-
-      make(imp, imports = impInfo :: imports)
-    }
+      else make(tree, owner, scope, unit)
 
     /** Make a child context that represents a new nested scope */
     def makeNewScope(tree: Tree, owner: Symbol): Context =
@@ -708,6 +708,8 @@ trait Contexts { self: Analyzer =>
      * filtered out later by `eligibleInfos` (SI-4270 / 9129cfe9), as they don't type-check.
      */
     def implicitss: List[List[ImplicitInfo]] = {
+      val imports = this.imports
+      val nextOuter = this.nextOuter
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
@@ -724,8 +726,8 @@ trait Contexts { self: Analyzer =>
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
             debuglog("collect local implicits " + scope.toList)//DEBUG
             collectImplicits(scope, NoPrefix)
-          } else if (imports != nextOuter.imports) {
-            assert(imports.tail == nextOuter.imports, (imports, nextOuter.imports))
+          } else if (firstImport != nextOuter.firstImport) {
+            assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
             collectImplicitImports(imports.head)
           } else if (owner.isPackageClass) {
             // the corresponding package object may contain implicit members.
@@ -1057,6 +1059,22 @@ trait Contexts { self: Analyzer =>
       res
     }
   } //class Context
+
+  trait ImportContext extends Context {
+    private def imp = tree.asInstanceOf[Import]
+    final def isRootImport = !imp.pos.isDefined  // excludes java.lang/scala/Predef imports
+
+    private val impInfo = {
+      val info = new ImportInfo(imp, outer.depth)
+      if (settings.lint && !isRootImport)
+        allImportInfos(unit) ::= info
+      info
+    }
+
+    override final def imports = impInfo :: super.imports
+    override final def firstImport = Some(impInfo)
+    override final def toString = "<import>"
+  }
 
   /** A buffer for warnings and errors that are accumulated during speculative type checking. */
   final class ReportBuffer {

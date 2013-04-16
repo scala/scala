@@ -2837,7 +2837,7 @@ trait Typers extends Adaptations with Tags {
             case imp @ Import(_, _) =>
               imp.symbol.initialize
               if (!imp.symbol.isError) {
-                context = context.makeNewImport(imp)
+                context = context.make(imp)
                 typedImport(imp)
               } else EmptyTree
             case _ =>
