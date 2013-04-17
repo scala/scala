@@ -1,0 +1,26 @@
+[[syntax trees at end of                specialize]] // newSource1
+package <empty> {
+  abstract trait Counter[@specialized(scala.Int) T >: Nothing <: Any] extends Object {
+    def apply(): T;
+    <specialized> def apply$mcI$sp(): Int = Counter.this.apply().asInstanceOf[Int]()
+  };
+  class IntCounter extends Object with Counter$mcI$sp {
+    <paramaccessor> private[this] var state: Int = _;
+    <accessor> <paramaccessor> def state(): Int = IntCounter.this.state;
+    <accessor> <paramaccessor> def state_=(x$1: Int): Unit = IntCounter.this.state = x$1;
+    def <init>(state: Int): IntCounter = {
+      IntCounter.super.<init>();
+      ()
+    };
+    <synchronized> def apply(): Int = IntCounter.this.apply$mcI$sp();
+    <specialized> <synchronized> def apply$mcI$sp(): Int = {
+      val n: Int = IntCounter.this.state();
+      IntCounter.this.state_=(IntCounter.this.state().+(1));
+      n
+    }
+  };
+  abstract <specialized> trait Counter$mcI$sp extends AnyRef with Counter[Int] {
+    <specialized> def apply(): Int
+  }
+}
+

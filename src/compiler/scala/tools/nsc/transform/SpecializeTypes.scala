@@ -997,13 +997,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
           } else None
         case (overridden, env) =>
-          val om = specializedOverload(clazz, overridden, env)
-          clazz.info.decls.enter(om)
-          foreachWithIndex(om.paramss) { (params, i) =>
-            foreachWithIndex(params) { (param, j) =>
-              param.name = overriding.paramss(i)(j).name // SI-6555 Retain the parameter names from the subclass.
-            }
-          }
+          val newFlags = (overriding.flags | SPECIALIZED) & ~CASEACCESSOR
+          val om = overriding.cloneSymbol(clazz, newFlags, specializedName(overridden, env))
           debuglog("specialized overload %s for %s in %s: %s".format(om, overriding.name.decode, pp(env), om.info))
           if (overriding.isAbstractOverride) om.setFlag(ABSOVERRIDE)
           typeEnv(om) = env
