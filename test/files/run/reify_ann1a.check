@@ -1,5 +1,5 @@
 {
-  @new ann(List.apply("1a")) @new ann(List.apply("1b")) class C[@new ann(List.apply("2a")) @new ann(List.apply("2b")) T >: Nothing <: Any] extends AnyRef {
+  @new ann(List.apply("1a")) @new ann(List.apply("1b")) class C[@new ann(List.apply("2a")) @new ann(List.apply("2b")) T] extends AnyRef {
     @new ann(List.apply("3a")) @new ann(List.apply("3b")) <paramaccessor> private[this] val x: T @ann(List.apply("4a")) @ann(List.apply("4b")) = _;
     def <init>(@new ann(List.apply("3a")) @new ann(List.apply("3b")) x: T @ann(List.apply("4a")) @ann(List.apply("4b"))) = {
       super.<init>();
