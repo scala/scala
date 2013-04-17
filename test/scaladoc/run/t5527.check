@@ -1,6 +1,12 @@
 newSource1:47: warning: discarding unmoored doc comment
         /** Document this crucial constant for posterity.
         ^
+newSource1:64: warning: discarding unmoored doc comment
+        /*************************\
+        ^
+newSource1:73: warning: discarding unmoored doc comment
+        val i = 10 */** Important!
+                   ^
 [[syntax trees at end of                    parser]] // newSource1
 package <empty> {
   object UselessComments extends scala.AnyRef {
@@ -54,6 +60,14 @@ package <empty> {
     def test7 = {
       val u = 4;
       0.to(u).foreach(((i) => println(i)))
+    };
+    def test8 = {
+      val z = "fancy";
+      z.replace("fanc", "arts")
+    };
+    def test9 = {
+      val i = 10.$times(10);
+      assert(i.$eq$eq(100))
     }
   };
   /** comments that we should keep */
@@ -108,7 +122,11 @@ package <empty> {
         super.<init>();
         ()
       }
-    }
+    };
+    /** Get the simple value.
+       *  @return the default value
+       */
+    def value: Int = 7
   }
 }
 

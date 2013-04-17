@@ -149,9 +149,9 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
 
   class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
 
-    private var docBuffer: StringBuilder = null        // buffer for comments
-    private var docPos: Position         = NoPosition  // last doc comment position
-    private var inDocComment             = false
+    private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
+    private var inDocComment             = false       // if buffer contains double-star doc comment
+    private var lastDoc: DocComment      = null        // last comment if it was double-star doc 
 
     private lazy val unmooredParser = {                // minimalist comment parser
       import scala.tools.nsc.doc.base.{comment => _, _}
@@ -180,7 +180,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
      * Also warn under -Xlint, but otherwise only warn in the presence of suspicious
      * tags that appear to be documenting API.  Warnings are suppressed while parsing
      * the local comment so that comments of the form `[at] Martin` will not trigger a warning.
-     * In addition, tags for `todo`, `note` and `example` are ignored.
+     * By omission, tags for `see`, `todo`, `note` and `example` are ignored.
      */
     override def discardDocBuffer() = {
       import scala.tools.nsc.doc.base.comment.Comment
@@ -193,13 +193,10 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       }
       def isDirty = unclean(unmooredParser parseComment doc)
       if ((doc ne null) && (settings.lint || isDirty))
-        unit.warning(docPos, "discarding unmoored doc comment")
+        unit.warning(doc.pos, "discarding unmoored doc comment")
     }
 
-    override def flushDoc(): DocComment = {
-      if (docBuffer eq null) null
-      else try DocComment(docBuffer.toString, docPos) finally docBuffer = null
-    }
+    override def flushDoc(): DocComment = (try lastDoc finally lastDoc = null)
 
     override protected def putCommentChar() {
       if (inDocComment)
@@ -218,23 +215,19 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       super.skipBlockComment()
     }
     override def skipComment(): Boolean = {
-      super.skipComment() && {
-        if (docBuffer ne null) {
-          if (inDocComment)
-            foundDocComment(docBuffer.toString, offset, charOffset - 2)
-          else
-            try foundComment(docBuffer.toString, offset, charOffset - 2) finally docBuffer = null
-        }
+      // emit a block comment; if it's double-star, make Doc at this pos
+      def foundStarComment(start: Int, end: Int) = try {
+        val str = docBuffer.toString
+        val pos = new RangePosition(unit.source, start, start, end)
+        unit.comment(pos, str)
+        if (inDocComment)
+          lastDoc = DocComment(str, pos)
         true
+      } finally {
+        docBuffer    = null
+        inDocComment = false
       }
-    }
-    def foundComment(value: String, start: Int, end: Int) {
-      val pos = new RangePosition(unit.source, start, start, end)
-      unit.comment(pos, value)
-    }
-    def foundDocComment(value: String, start: Int, end: Int) {
-      docPos = new RangePosition(unit.source, start, start, end)
-      unit.comment(docPos, value)
+      super.skipComment() && ((docBuffer eq null) || foundStarComment(offset, charOffset - 2))
     }
   }
   class ScaladocUnitParser(unit: CompilationUnit, patches: List[BracePatch]) extends UnitParser(unit, patches) {
