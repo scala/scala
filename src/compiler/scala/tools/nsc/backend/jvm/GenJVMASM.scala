@@ -8,11 +8,11 @@ package backend.jvm
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
 
-/** Code shared between the legagy backend [[scala.tools.nsc.backend.jvm.GenJVM]]
-  * and the new backend [[scala.tools.nsc.backend.jvm.GenASM]]. There should be
-  * more here, but for now I'm starting with the refactorings that are either
-  * straightforward to review or necessary for maintenance.
-  */
+/** Code shared between the erstwhile legacy backend (aka GenJVM)
+ *  and the new backend [[scala.tools.nsc.backend.jvm.GenASM]]. There should be
+ *  more here, but for now I'm starting with the refactorings that are either
+ *  straightforward to review or necessary for maintenance.
+ */
 trait GenJVMASM {
   val global: Global
   import global._
