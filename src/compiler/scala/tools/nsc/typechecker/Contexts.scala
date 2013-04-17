@@ -557,9 +557,25 @@ trait Contexts { self: Analyzer =>
 
     def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
 
-    override def toString = "Context(%s@%s unit=%s scope=%s errors=%b, reportErrors=%b, throwErrors=%b)".format(
-      owner.fullName, tree.shortClass, unit, scope.##, hasErrors, reportErrors, throwErrors
-    )
+    private def treeTruncated       = tree.toString.replaceAll("\\s+", " ").lines.mkString("\\n").take(70)
+    private def treeIdString        = if (settings.uniqid.value) "#" + System.identityHashCode(tree).toString.takeRight(3) else ""
+    private def treeString          = tree match {
+      case x: Import => "" + x
+      case Template(parents, `emptyValDef`, body) =>
+        val pstr = if ((parents eq null) || parents.isEmpty) "Nil" else parents mkString " "
+        val bstr = if (body eq null) "" else body.length + " stats"
+        s"""Template($pstr, _, $bstr)"""
+      case x => s"${tree.shortClass}${treeIdString}:${treeTruncated}"
+    }
+
+    override def toString =
+      sm"""|Context($unit) {
+           |   owner       = $owner
+           |   tree        = $treeString
+           |   scope       = ${scope.size} decls
+           |   contextMode = $contextMode
+           |   outer.owner = ${outer.owner}
+           |}"""
 
     //
     // Accessibility checking
@@ -1133,7 +1149,7 @@ trait Contexts { self: Analyzer =>
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
     override final def isRootImport = impInfo.isRootImport
-    override final def toString     = "<import>"
+    override final def toString     = s"ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
 
   /** A buffer for warnings and errors that are accumulated during speculative type checking. */
