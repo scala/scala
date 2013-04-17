@@ -12,7 +12,7 @@ package <empty> {
           ()
         };
         final def apply(param: Int): Int = $anonfun.this.apply$mcII$sp(param);
-        <specialized> def apply$mcII$sp(param: Int): Int = param
+        final <specialized> def apply$mcII$sp(param: Int): Int = param
       };
       (new anonymous class $anonfun(): Int => Int)
     };
