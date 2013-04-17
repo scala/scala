@@ -28,6 +28,7 @@ trait Contexts { self: Analyzer =>
     enclClass  = this
     enclMethod = this
 
+    override val depth = 0
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
@@ -93,12 +94,8 @@ trait Contexts { self: Analyzer =>
   }
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, erasedTypes: Boolean = false): Context = {
-    var sc = startContext
-    for (sym <- rootImports(unit)) {
-      sc = sc.make(gen.mkWildcardImport(sym))
-      sc.depth += 1
-    }
-    val c = sc.make(tree, unit = unit)
+    val rootImportsContext = (startContext /: rootImports(unit))((c, sym) => c.make(gen.mkWildcardImport(sym)))
+    val c = rootImportsContext.make(tree, unit = unit)
     if (erasedTypes) c.setThrowErrors() else c.setReportErrors()
     c(EnrichmentEnabled | ImplicitsEnabled) = !erasedTypes
     c
@@ -196,15 +193,19 @@ trait Contexts { self: Analyzer =>
     /** Variance relative to enclosing class */
     var variance: Variance = Variance.Invariant
 
-    /** Undetermined type parameters. Not inherited to child contexts */
     private var _undetparams: List[Symbol] = List()
 
-    var depth: Int = 0
+    val depth: Int = {
+      val increasesDepth = isRootImport || (outer eq null) || (outer.scope != scope)
+      def outerDepth = if (outer eq null) 0 else outer.depth
+      ( if (increasesDepth) 1 else 0 ) + outerDepth
+    }
 
     /** The currently visible imports */
     def imports: List[ImportInfo] = outer.imports
     /** Equivalent to `imports.headOption`, but more efficient */
     def firstImport: Option[ImportInfo] = outer.firstImport
+    def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
     var openImplicits: List[(Type,Tree)] = List()
@@ -248,10 +249,13 @@ trait Contexts { self: Analyzer =>
     /** The next enclosing context (potentially `this`) that has a `CaseDef` as a tree */
     def enclosingCaseDef = nextEnclosing(_.tree.isInstanceOf[CaseDef])
 
+    //
+    // Tracking undetermined type parameters for type argument inference.
+    //
     def undetparamsString =
       if (undetparams.isEmpty) ""
       else undetparams.mkString("undetparams=", ", ", "")
-    /** Undetermined type parameters. See `Infer#{inferExprInstance, adjustTypeArgs}`. */
+    /** Undetermined type parameters. See `Infer#{inferExprInstance, adjustTypeArgs}`. Not inherited to child contexts */
     def undetparams: List[Symbol] = _undetparams
     def undetparams_=(ps: List[Symbol]) = { _undetparams = ps }
 
@@ -276,6 +280,7 @@ trait Contexts { self: Analyzer =>
         }
       }
     }
+
     //
     // Error reporting policies and buffer.
     //
@@ -374,7 +379,6 @@ trait Contexts { self: Analyzer =>
         case _         => false
       }
       val sameOwner = owner == this.owner
-      val sameScope = scope == this.scope
       val prefixInChild =
         if (isTemplateOrPackage) owner.thisType
         else if (!sameOwner && owner.isTerm) NoPrefix
@@ -399,7 +403,6 @@ trait Contexts { self: Analyzer =>
       c.enclClass          = if (isTemplateOrPackage) c else enclClass
       c(ConstructorSuffix) = !isTemplateOrPackage && c(ConstructorSuffix)
       c.enclMethod         = if (isDefDef) c else enclMethod
-      c.depth              = depth + (if (sameScope) 0 else 1)
 
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
@@ -1112,20 +1115,25 @@ trait Contexts { self: Analyzer =>
     }
   } //class Context
 
+  /** A `Context` focussed on an `Import` tree */
   trait ImportContext extends Context {
-    private def imp = tree.asInstanceOf[Import]
-    final def isRootImport = !imp.pos.isDefined  // excludes java.lang/scala/Predef imports
-
-    private val impInfo = {
-      val info = new ImportInfo(imp, outer.depth)
-      if (settings.lint && !isRootImport)
+    private def makeImpInfo = {
+      val info = new ImportInfo(tree.asInstanceOf[Import], outer.depth)
+      if (settings.lint && !info.isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
       info
     }
 
-    override final def imports = impInfo :: super.imports
-    override final def firstImport = Some(impInfo)
-    override final def toString = "<import>"
+    private var _impInfo: ImportInfo = null // hand rolled lazy val, we don't need/want synchronization.
+    private def impInfo: ImportInfo = {
+      if (_impInfo eq null) _impInfo = makeImpInfo
+      _impInfo
+    }
+
+    override final def imports      = impInfo :: super.imports
+    override final def firstImport  = Some(impInfo)
+    override final def isRootImport = impInfo.isRootImport
+    override final def toString     = "<import>"
   }
 
   /** A buffer for warnings and errors that are accumulated during speculative type checking. */
@@ -1197,6 +1205,8 @@ trait Contexts { self: Analyzer =>
     /** Is name imported explicitly, not via wildcard? */
     def isExplicitImport(name: Name): Boolean =
       tree.selectors exists (_.rename == name.toTermName)
+
+    final def isRootImport: Boolean = !tree.pos.isDefined
 
     /** The symbol with name `name` imported from import clause `tree`.
      */
