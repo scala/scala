@@ -135,7 +135,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
       if (settings.lint.value) {
         clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
-          val alts = clazz.info.decl(sym.name).alternatives
+          // implicit classes leave both a module symbol and a method symbol as residue
+          val alts = clazz.info.decl(sym.name).alternatives filterNot (_.isModule)
           if (alts.size > 1)
             alts foreach (x => unit.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
         }
@@ -1373,12 +1374,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
      */
     private def checkMigration(sym: Symbol, pos: Position) = {
       if (sym.hasMigrationAnnotation) {
-        val changed = try 
+        val changed = try
           settings.Xmigration.value < ScalaVersion(sym.migrationVersion.get)
         catch {
-          case e : NumberFormatException => 
+          case e : NumberFormatException =>
             unit.warning(pos, s"${sym.fullLocationString} has an unparsable version number: ${e.getMessage()}")
-            // if we can't parse the format on the migration annotation just conservatively assume it changed         
+            // if we can't parse the format on the migration annotation just conservatively assume it changed
             true
         }
         if (changed)
