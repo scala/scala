@@ -86,7 +86,7 @@ class ConsoleRunner extends DirectRunner {
   ) ::: standardArgs
 
   private val binaryArgs = List(
-    "--grep", "--srcpath", "--buildpath", "--classpath"
+    "--grep", "--srcpath", "--buildpath", "--classpath", "--timeout"
   )
 
   def main(argstr: String) {
@@ -109,6 +109,7 @@ class ConsoleRunner extends DirectRunner {
     }
 
     parsed get "--srcpath" foreach (x => setProp("partest.srcdir", x))
+    parsed get "--timeout" foreach (x => setProp("partest.timeout", x))
 
     fileManager =
       if (parsed isSet "--buildpath") new ConsoleFileManager(parsed("--buildpath"))
