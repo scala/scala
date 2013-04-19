@@ -473,18 +473,18 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        * */
       def delayedEndpointDef(stats: List[Tree]): DefDef = {
 
-        val dlydEpMethodName = currentUnit.freshTermName(
+        val methodName = currentUnit.freshTermName(
           "delayedEndpoint$" + currentClass.name     + "$" +
           currentClass.fullName.hashCode.toHexString + "$" +
           currentSource.file.toString().hashCode.toHexString
         )
-        val dlydEpMethodSym  = clazz.newMethod(dlydEpMethodName, impl.pos, SYNTHETIC | FINAL)
-        dlydEpMethodSym setInfoAndEnter MethodType(Nil, UnitClass.tpe)
+        val methodSym  = clazz.newMethod(methodName, impl.pos, SYNTHETIC | FINAL)
+        methodSym setInfoAndEnter MethodType(Nil, UnitClass.tpe)
 
         val res0 = localTyper typed {
-          DefDef(dlydEpMethodSym, Nil, Block(stats, gen.mkZero(UnitClass.tpe)))
+          DefDef(methodSym, Nil, Block(stats, gen.mkZero(UnitClass.tpe)))
         }
-        val res  = res0.changeOwner(impl.symbol -> dlydEpMethodSym)
+        val res  = res0.changeOwner(impl.symbol -> methodSym)
 
         res.asInstanceOf[DefDef]
       }
