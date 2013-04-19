@@ -4526,8 +4526,13 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
-        if (stableApplication && isPatternMode) {
+        if (args.isEmpty && stableApplication && isPatternMode) {
           // treat stable function applications f() as expressions.
+          //
+          // [JZ] According to Martin, this is related to the old pattern matcher, which
+          //      needs to typecheck after a the translation of `x.f` to `x.f()` in a prior
+          //      compilation phase. As part of SI-7377, this has been tightened with `args.isEmpty`,
+          //      but we should remove it altogether in Scala 2.11.
           typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
         } else {
           val funpt = if (isPatternMode) pt else WildcardType
