@@ -481,12 +481,11 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         val methodSym  = clazz.newMethod(methodName, impl.pos, SYNTHETIC | FINAL)
         methodSym setInfoAndEnter MethodType(Nil, UnitClass.tpe)
 
-        val res0 = localTyper typed {
-          DefDef(methodSym, Nil, Block(stats, gen.mkZero(UnitClass.tpe)))
-        }
-        val res  = res0.changeOwner(impl.symbol -> methodSym)
+        // changeOwner needed because the `stats` contained in the DefDef were owned by the template, not long ago.
+        val blk       = Block(stats, gen.mkZero(UnitClass.tpe)).changeOwner(impl.symbol -> methodSym)
+        val delayedDD = localTyper typed { DefDef(methodSym, Nil, blk) }
 
-        res.asInstanceOf[DefDef]
+        delayedDD.asInstanceOf[DefDef]
       }
 
       /* @see overview at `delayedEndpointDef()` of the translation scheme for DelayedInit */
