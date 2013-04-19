@@ -4,13 +4,12 @@ package tpe
 
 import scala.collection.{ mutable }
 import Flags._
-import util.Statistics
 import scala.annotation.tailrec
 
 trait TypeComparers {
   self: SymbolTable =>
+
   import definitions._
-  import TypesStats._
 
   private final val LogPendingSubTypesThreshold = DefaultLogThreshhold
 
@@ -91,7 +90,6 @@ trait TypeComparers {
 
   /** Do `tp1` and `tp2` denote equivalent types? */
   def isSameType(tp1: Type, tp2: Type): Boolean = try {
-    if (Statistics.canEnable) Statistics.incCounter(sametypeCount)
     subsametypeRecursions += 1
     //OPT cutdown on Function0 allocation
     //was:

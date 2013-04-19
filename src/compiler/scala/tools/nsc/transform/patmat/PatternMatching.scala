@@ -11,7 +11,6 @@ import scala.tools.nsc.ast
 import scala.language.postfixOps
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.Types
 import scala.reflect.internal.util.Position
 
@@ -240,14 +239,4 @@ trait Interface extends ast.TreeDSL {
       override def >>(other: Substitution): Substitution = other
     }
   }
-}
-
-object PatternMatchingStats {
-  val patmatNanos         = Statistics.newTimer     ("time spent in patmat", "patmat")
-  val patmatAnaDPLL       = Statistics.newSubTimer  ("  of which DPLL", patmatNanos)
-  val patmatCNF           = Statistics.newSubTimer  ("  of which in CNF conversion", patmatNanos)
-  val patmatCNFSizes      = Statistics.newQuantMap[Int, Statistics.Counter]("  CNF size counts", "patmat")(Statistics.newCounter(""))
-  val patmatAnaVarEq      = Statistics.newSubTimer  ("  of which variable equality", patmatNanos)
-  val patmatAnaExhaust    = Statistics.newSubTimer  ("  of which in exhaustivity", patmatNanos)
-  val patmatAnaReach      = Statistics.newSubTimer  ("  of which in unreachability", patmatNanos)
 }

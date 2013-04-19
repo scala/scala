@@ -8,12 +8,10 @@ package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
 trait MatchTranslation { self: PatternMatching  =>
-  import PatternMatchingStats._
   import global.{phase, currentRun, Symbol,
     Apply, Bind, CaseDef, ClassInfoType, Ident, Literal, Match,
     Alternative, Constant, EmptyTree, Select, Star, This, Throw, Typed, UnApply,
@@ -129,8 +127,6 @@ trait MatchTranslation { self: PatternMatching  =>
 
       debug.patmat("translating "+ cases.mkString("{", "\n", "}"))
 
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
-
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
       val origPt  = match_.tpe
@@ -150,10 +146,7 @@ trait MatchTranslation { self: PatternMatching  =>
       val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)
-
-      if (Statistics.canEnable) Statistics.stopTimer(patmatNanos, start)
-      combined
+      combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)
     }
 
     // return list of typed CaseDefs that are supported by the backend (typed/bind/wildcard)

@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.reflect.internal.util.Statistics
-
 /** The main attribution phase.
  */
 trait Analyzer extends AnyRef
@@ -72,7 +70,6 @@ trait Analyzer extends AnyRef
   }
 
   object typerFactory extends SubComponent {
-    import scala.reflect.internal.TypesStats.typerNanos
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
     val runsAfter = List[String]()
@@ -85,13 +82,11 @@ trait Analyzer extends AnyRef
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
       override def run() {
-        val start = if (Statistics.canEnable) Statistics.startTimer(typerNanos) else null
         global.echoPhaseSummary(this)
         for (unit <- currentRun.units) {
           applyPhase(unit)
           undoLog.clear()
         }
-        if (Statistics.canEnable) Statistics.stopTimer(typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
         try {

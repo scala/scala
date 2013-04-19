@@ -8,7 +8,6 @@ package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 trait TreeAndTypeAnalysis extends Debugging {
@@ -339,7 +338,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 }
 
 trait MatchAnalysis extends MatchApproximation {
-  import PatternMatchingStats._
   import global._
   import global.definitions._
 
@@ -362,8 +360,6 @@ trait MatchAnalysis extends MatchApproximation {
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
-
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
       // don't rewrite List-like patterns, as List() and Nil need to distinguished for unreachability
@@ -410,8 +406,6 @@ trait MatchAnalysis extends MatchApproximation {
           }
         }
 
-        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
-
         if (reachable) None else Some(caseIndex)
       } catch {
         case ex: AnalysisBudget.Exception =>
@@ -429,7 +423,6 @@ trait MatchAnalysis extends MatchApproximation {
       // - back off (to avoid crying exhaustive too often) when:
       //    - there are guards -->
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
-      val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
       var backoff = false
 
       val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
@@ -473,8 +466,6 @@ trait MatchAnalysis extends MatchApproximation {
           val counterExamples = matchFailModels.map(modelToCounterExample(scrutVar))
 
           val pruned = CounterExample.prune(counterExamples).map(_.toString).sorted
-
-          if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
           pruned
         } catch {
           case ex : AnalysisBudget.Exception =>

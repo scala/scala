@@ -11,7 +11,7 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
+import util.{ ClassPath, MergedClassPath, returning, stackTraceString, stackTraceHeadString }
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -142,11 +142,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } with CopyPropagation
 
   // Components for collecting and generating output
-
-  /** Some statistics (normally disabled) set with -Ystatistics */
-  object statistics extends {
-    val global: Global.this.type = Global.this
-  } with StatisticsInfo
 
   /** Print tree in detailed form */
   object nodePrinters extends {
@@ -1550,10 +1545,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // run tree/icode checkers
         if (settings.check containsPhase globalPhase.prev)
           runCheckers()
-
-        // output collected statistics
-        if (settings.Ystatistics)
-          statistics.print(phase)
 
         advancePhase()
       }

@@ -8,7 +8,6 @@ package internal
 
 import Flags._
 import scala.collection.mutable.{ListBuffer, LinkedHashSet}
-import util.Statistics
 
 trait Trees extends api.Trees { self: SymbolTable =>
 
@@ -34,8 +33,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   abstract class Tree extends TreeContextApiImpl with Attachable with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
-
-    if (Statistics.canEnable) Statistics.incCounter(TreesStats.nodeByType, getClass)
 
     final override def pos: Position = rawatt.pos
 
@@ -1747,11 +1744,4 @@ trait Trees extends api.Trees { self: SymbolTable =>
   implicit val TypeBoundsTreeTag = ClassTag[TypeBoundsTree](classOf[TypeBoundsTree])
   implicit val ExistentialTypeTreeTag = ClassTag[ExistentialTypeTree](classOf[ExistentialTypeTree])
   implicit val TypeTreeTag = ClassTag[TypeTree](classOf[TypeTree])
-
-  val treeNodeCount = Statistics.newView("#created tree nodes")(nodeCount)
-}
-
-object TreesStats {
-  // statistics
-  val nodeByType = Statistics.newByClass("#created tree nodes by type")(Statistics.newCounter(""))
 }

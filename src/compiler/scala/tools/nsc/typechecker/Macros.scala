@@ -6,7 +6,6 @@ import scala.tools.nsc.util._
 import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.macros.runtime.AbortMacroException
@@ -42,7 +41,6 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   import global._
   import definitions._
   import treeInfo.{isRepeatedParamType => _, _}
-  import MacrosStats._
 
   def globalSettings = global.settings
 
@@ -715,29 +713,22 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
       def summary() = s"expander = $this, expandee = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
       assert(allowExpandee(expandee), summary())
-
-      val start = if (Statistics.canEnable) Statistics.startTimer(macroExpandNanos) else null
-      if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
-      try {
-        linkExpandeeAndDesugared(expandee, desugared, role)
-        macroExpand1(typer, desugared) match {
-          case Success(expanded) =>
-            if (allowExpanded(expanded)) {
-              // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
-              val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
-              if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
-              if (allowResult(expanded1)) expanded1 else onFailure(expanded)
-            } else {
-              typer.TyperErrorGen.MacroInvalidExpansionError(expandee, roleNames(role), allowedExpansions)
-              onFailure(expanded)
-            }
-          case Fallback(fallback) => onFallback(fallback)
-          case Delayed(delayed) => onDelayed(delayed)
-          case Skipped(skipped) => onSkipped(skipped)
-          case Failure(failure) => onFailure(failure)
-        }
-      } finally {
-        if (Statistics.canEnable) Statistics.stopTimer(macroExpandNanos, start)
+      linkExpandeeAndDesugared(expandee, desugared, role)
+      macroExpand1(typer, desugared) match {
+        case Success(expanded) =>
+          if (allowExpanded(expanded)) {
+            // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
+            val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
+            if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
+            if (allowResult(expanded1)) expanded1 else onFailure(expanded)
+          } else {
+            typer.TyperErrorGen.MacroInvalidExpansionError(expandee, roleNames(role), allowedExpansions)
+            onFailure(expanded)
+          }
+        case Fallback(fallback) => onFallback(fallback)
+        case Delayed(delayed) => onDelayed(delayed)
+        case Skipped(skipped) => onSkipped(skipped)
+        case Failure(failure) => onFailure(failure)
       }
     }
   }
@@ -955,10 +946,4 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           tree
       })
     }.transform(expandee)
-}
-
-object MacrosStats {
-  import scala.reflect.internal.TypesStats.typerNanos
-  val macroExpandCount    = Statistics.newCounter ("#macro expansions", "typer")
-  val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
 }
