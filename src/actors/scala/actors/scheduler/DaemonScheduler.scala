@@ -18,15 +18,8 @@ package scheduler
 object DaemonScheduler extends DelegatingScheduler {
 
   protected def makeNewScheduler(): IScheduler = {
-    val sched = if (!ThreadPoolConfig.useForkJoin) {
-      val s = new ResizableThreadPoolScheduler(true)
-      s.start()
-      s
-    } else {
-      val s = new ForkJoinScheduler(true)
-      s.start()
-      s
-    }
+    val sched = new ForkJoinScheduler(true)
+    sched.start()
     Debug.info(this+": starting new "+sched+" ["+sched.getClass+"]")
     sched
   }
