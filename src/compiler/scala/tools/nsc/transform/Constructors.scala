@@ -81,7 +81,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val constrInfo: ConstrInfo = {
         stats find (_.symbol.isPrimaryConstructor) match {
           case Some(ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, _))) =>
-        ConstrInfo(ddef, vparams map (_.symbol), rhs)
+            ConstrInfo(ddef, vparams map (_.symbol), rhs)
           case x =>
             // AnyVal constructor is OK
             assert(clazz eq AnyValClass, "no constructor in template: impl = " + impl)
@@ -382,12 +382,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        * 'specInstance$' is added in phase specialize.
        */
       def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
-        // split the statements in presuper and postsuper
-    //    var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
-      //  if (postfix.nonEmpty) {
-        //  prefix = prefix :+ postfix.head
-          //postfix = postfix.tail
-        //}
+        // // split the statements in presuper and postsuper
+        // var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
+        // if (postfix.nonEmpty) {
+        //   prefix = prefix :+ postfix.head
+        //   postfix = postfix.tail
+        // }
 
         if (usesSpecializedField && shouldGuard && stats.nonEmpty) {
           // save them for duplication in the specialized subclass
@@ -417,12 +417,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
         } else stats
       }
-/*
-      def isInitDef(stat: Tree) = stat match {
-        case dd: DefDef => dd.symbol == delayedInitMethod
-        case _ => false
-      }
-*/
+
+      // def isInitDef(stat: Tree) = stat match {
+      //   case dd: DefDef => dd.symbol == delayedInitMethod
+      //   case _ => false
+      // }
+
 
       /*
        *  Translation scheme for DelayedInit
@@ -487,7 +487,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         val res  = res0.changeOwner(impl.symbol -> dlydEpMethodSym)
 
         res.asInstanceOf[DefDef]
-        }
+      }
 
       /* @see overview at `delayedEndpointDef()` of the translation scheme for DelayedInit */
       def delayedInitClosure(delayedEndPointSym: MethodSymbol): ClassDef = {
@@ -594,12 +594,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       deriveTemplate(impl)(_ => defBuf.toList filter (stat => mustbeKept(stat.symbol)))
     } // transformClassTemplate
 
-    override def transform(tree: Tree): Tree =
+    override def transform(tree: Tree): Tree = {
       tree match {
         case ClassDef(_,_,_,_) if !tree.symbol.isInterface && !isPrimitiveValueClass(tree.symbol) =>
           deriveClassDef(tree)(transformClassTemplate)
         case _ =>
           super.transform(tree)
       }
+    }
+
   } // ConstructorTransformer
 }
