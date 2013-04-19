@@ -4,8 +4,9 @@
 
 package scala.tools
 
+import java.util.concurrent.{ Callable, ExecutorService }
+import scala.concurrent.duration.Duration
 import scala.sys.process.javaVmArguments
-import java.util.concurrent.Callable
 import scala.tools.partest.nest.NestUI
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 
@@ -96,6 +97,13 @@ package object partest {
     def instantiate[A >: Null](name: String): A = (
       catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
       (loader loadClass name).newInstance.asInstanceOf[A] orNull
+    )
+  }
+
+  implicit class ExecutorOps(val executor: ExecutorService) {
+    def awaitTermination[A](wait: Duration)(failing: => A = ()): Option[A] = (
+      if (executor awaitTermination (wait.length, wait.unit)) None
+      else Some(failing)
     )
   }
 
