@@ -84,6 +84,8 @@ trait Contexts { self: Analyzer =>
         case Import(qual, _) => qual.tpe = singleType(qual.symbol.owner.thisType, qual.symbol)
         case _ =>
       }
+      sc.flushAndReturnBuffer()
+      sc.flushAndReturnWarningsBuffer()
       sc = sc.outer
     }
   }

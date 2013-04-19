@@ -1,0 +1,38 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> class M[A]
+defined class M
+
+scala> implicit def ma0[A](a: A): M[A] = null
+warning: there were 1 feature warning(s); re-run with -feature for details
+ma0: [A](a: A)M[A]
+
+scala> implicit def ma1[A](a: A): M[A] = null
+warning: there were 1 feature warning(s); re-run with -feature for details
+ma1: [A](a: A)M[A]
+
+scala> def convert[F[X <: F[X]]](builder: F[_ <: F[_]]) = 0
+warning: there were 1 feature warning(s); re-run with -feature for details
+convert: [F[X <: F[X]]](builder: F[_ <: F[_]])Int
+
+scala> convert(Some[Int](0))
+<console>:12: error: no type parameters for method convert: (builder: F[_ <: F[_]])Int exist so that it can be applied to arguments (Some[Int])
+ --- because ---
+argument expression's type is not compatible with formal parameter type;
+ found   : Some[Int]
+ required: ?F forSome { type _$1 <: ?F forSome { type _$2 } }
+              convert(Some[Int](0))
+              ^
+<console>:12: error: type mismatch;
+ found   : Some[Int]
+ required: F[_ <: F[_]]
+              convert(Some[Int](0))
+                               ^
+
+scala> 0
+res1: Int = 0
+
+scala> 
