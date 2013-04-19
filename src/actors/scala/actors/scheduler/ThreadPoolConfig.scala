@@ -39,14 +39,7 @@ private[actors] object ThreadPoolConfig {
 
   private[actors] def useForkJoin: Boolean =
     try !propIsSetTo("actors.enableForkJoin", "false") &&
-      (propIsSetTo("actors.enableForkJoin", "true") || {
-        Debug.info(this+": java.version = "+javaVersion)
-        Debug.info(this+": java.vm.vendor = "+javaVmVendor)
-
-        // on IBM J9 1.6 do not use ForkJoinPool
-        // XXX this all needs to go into Properties.
-        isJavaAtLeast("1.6") && ((javaVmVendor contains "Oracle") || (javaVmVendor contains "Sun") || (javaVmVendor contains "Apple"))
-      })
+      (propIsSetTo("actors.enableForkJoin", "true") || isJavaAtLeast("1.6"))
     catch {
       case _: SecurityException => false
     }
