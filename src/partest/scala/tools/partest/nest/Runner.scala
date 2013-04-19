@@ -8,8 +8,10 @@ package nest
 import java.io.{ Console => _, _ }
 import java.net.URL
 import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
-import java.util.concurrent.{ Executors, TimeUnit }
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.sys.process.Process
 import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
@@ -19,6 +21,7 @@ import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
 import scala.tools.scalap.scalax.rules.scalasig.ByteCode
+import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import PartestDefaults.{ javaCmd, javacCmd }
 
@@ -682,7 +685,7 @@ case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
 trait DirectRunner {
   def fileManager: FileManager
 
-  import PartestDefaults.numThreads
+  import PartestDefaults.{ numThreads, waitTime }
 
   Thread.setDefaultUncaughtExceptionHandler(
     new Thread.UncaughtExceptionHandler {
@@ -708,16 +711,33 @@ trait DirectRunner {
     val futures           = kindFiles map (f => pool submit callable(manager runTest f))
 
     pool.shutdown()
-    try if (!pool.awaitTermination(4, TimeUnit.HOURS))
-      NestUI warning "Thread pool timeout elapsed before all tests were complete!"
-    catch { case t: InterruptedException =>
-      NestUI warning "Thread pool was interrupted"
-      t.printStackTrace()
+    Try (pool.awaitTermination(waitTime) {
+      throw TimeoutException(waitTime)
+    }) match {
+      case Success(_) => futures map (_.get)
+      case Failure(e) =>
+        e match {
+          case TimeoutException(d)      =>
+            NestUI warning "Thread pool timeout elapsed before all tests were complete!"
+          case ie: InterruptedException =>
+            NestUI warning "Thread pool was interrupted"
+            ie.printStackTrace()
+        }
+        pool.shutdownNow()     // little point in continuing
+        // try to get as many completions as possible, in case someone cares
+        val results = for (f <- futures) yield {
+          try {
+            Some(f.get(0, NANOSECONDS))
+          } catch {
+            case _: Throwable => None
+          }
+        }
+        results.flatten
     }
-
-    futures map (_.get)
   }
 }
+
+case class TimeoutException(duration: Duration) extends RuntimeException
 
 class LogContext(val file: File, val writers: Option[(StringWriter, PrintWriter)])
 
