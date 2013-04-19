@@ -69,13 +69,13 @@ retrieved 63 members
 askType at CallccInterpreter.scala(14,21)
 ================================================================================
 [response] askTypeAt at (14,21)
-def unitM[A >: Nothing <: Any](a: A): callccInterpreter.M[A] = callccInterpreter.this.M.apply[A](((c: A => callccInterpreter.Answer) => c.apply(a)))
+def unitM[A](a: A): callccInterpreter.M[A] = callccInterpreter.this.M.apply[A](((c: A => callccInterpreter.Answer) => c.apply(a)))
 ================================================================================
 
 askType at CallccInterpreter.scala(16,12)
 ================================================================================
 [response] askTypeAt at (16,12)
-def id[A >: Nothing <: Any]: A => A = ((x: A) => x)
+def id[A]: A => A = ((x: A) => x)
 ================================================================================
 
 askType at CallccInterpreter.scala(17,25)

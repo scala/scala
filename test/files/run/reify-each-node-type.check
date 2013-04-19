@@ -15,7 +15,7 @@
 15                              { def f(x: Any): Unit = (); () }  EmptyTree
 16                                          (null: r.D with r.E)  CompoundTypeTree
 17                                          { type T = Int; () }  TypeDef
-18                 { type CC[T >: Nothing <: r.D] = r.C[T]; () }  TypeBoundsTree
+18                            { type CC[T <: r.D] = r.C[T]; () }  TypeBoundsTree
 19                          try { 0 } finally Predef.println("")  Try
 20                                               ((x: Int) => x)  Function
 21                                          { var v = 1; v = 2 }  Assign
@@ -24,7 +24,7 @@
 24                                                 0: @unchecked  Annotated
 25                                         (null: r.Outer#Inner)  SelectFromTypeTree
 26                                              (null: Nil.type)  SingletonTypeTree
-27                (null: T forSome { type T >: Nothing <: Any })  ExistentialTypeTree
+27                                  (null: T forSome { type T })  ExistentialTypeTree
 28                                    { import r.{A, B=>C}; () }  Import
 29                                 { def f: Int = return 0; () }  Return
 30  { object x extends AnyRef { def <init>() = { super.<init>();  ModuleDef

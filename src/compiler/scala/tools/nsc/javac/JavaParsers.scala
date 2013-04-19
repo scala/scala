@@ -293,15 +293,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         if (in.token == QMARK) {
           val pos = in.currentPos
           in.nextToken()
-          var lo: Tree = TypeTree(NothingClass.tpe)
-          var hi: Tree = TypeTree(AnyClass.tpe)
-          if (in.token == EXTENDS) {
-            in.nextToken()
-            hi = typ()
-          } else if (in.token == SUPER) {
-            in.nextToken()
-            lo = typ()
-          }
+          val hi = if (in.token == EXTENDS) { in.nextToken() ; typ() } else EmptyTree
+          val lo = if (in.token == SUPER)   { in.nextToken() ; typ() } else EmptyTree
           val tdef = atPos(pos) {
             TypeDef(
               Modifiers(Flags.JAVA | Flags.DEFERRED),
@@ -408,15 +401,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def typeParam(): TypeDef =
       atPos(in.currentPos) {
         val name = identForType()
-        val hi =
-          if (in.token == EXTENDS) {
-            in.nextToken()
-            bound()
-          } else {
-            scalaDot(tpnme.Any)
-          }
-        TypeDef(Modifiers(Flags.JAVA | Flags.DEFERRED | Flags.PARAM), name, List(),
-                TypeBoundsTree(scalaDot(tpnme.Nothing), hi))
+        val hi = if (in.token == EXTENDS) { in.nextToken() ; bound() } else EmptyTree
+        TypeDef(Modifiers(Flags.JAVA | Flags.DEFERRED | Flags.PARAM), name, Nil, TypeBoundsTree(EmptyTree, hi))
       }
 
     def bound(): Tree =
