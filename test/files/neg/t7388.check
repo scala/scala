@@ -1,0 +1,4 @@
+t7388.scala:1: error: doesnotexist is not an enclosing class
+class Test private[doesnotexist]()
+           ^
+one error found
