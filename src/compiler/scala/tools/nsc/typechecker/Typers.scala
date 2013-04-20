@@ -490,11 +490,6 @@ trait Typers extends Adaptations with Tags {
     }
 
     @inline
-    final def typerReportAnyContextErrors[T](c: Context)(f: Typer => T): T = {
-      f(newTyper(c))
-    }
-
-    @inline
     final def withSavedContext[T](c: Context)(f: => T) = {
       val savedErrors = c.flushAndReturnBuffer()
       val res = f
