@@ -34,12 +34,13 @@ trait Unapplies extends ast.TreeDSL
   /** returns type list for return type of the extraction
    * @see extractorFormalTypes
    */
-  def unapplyTypeList(pos: Position, ufn: Symbol, ufntpe: Type, nbSubPats: Int) = {
+  def unapplyTypeList(pos: Position, ufn: Symbol, ufntpe: Type, args: List[Tree]) = {
     assert(ufn.isMethod, ufn)
+    val nbSubPats = args.length
     //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
     ufn.name match {
       case nme.unapply | nme.unapplySeq =>
-        val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn)
+        val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn, treeInfo.effectivePatternArity(args))
         if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
         else formals
       case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
