@@ -491,10 +491,7 @@ trait Typers extends Adaptations with Tags {
 
     @inline
     final def typerReportAnyContextErrors[T](c: Context)(f: Typer => T): T = {
-      val res = f(newTyper(c))
-      if (c.hasErrors)
-        context.issue(c.errBuffer.head)
-      res
+      f(newTyper(c))
     }
 
     @inline
@@ -740,16 +737,19 @@ trait Typers extends Adaptations with Tags {
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
-            val req = if (required) "needs to" else "should"
-            var raw = featureDesc + " " + req + " be enabled\n" +
-              "by making the implicit value language." + featureName + " visible."
-            if (!(currentRun.reportedFeature contains featureTrait))
-              raw += "\nThis can be achieved by adding the import clause 'import scala.language." + featureName + "'\n" +
-                "or by setting the compiler option -language:" + featureName + ".\n" +
-                "See the Scala docs for value scala.language." + featureName + " for a discussion\n" +
-                "why the feature " + req + " be explicitly enabled."
+            val req     = if (required) "needs to" else "should"
+            val fqname  = "scala.language." + featureName
+            val explain = (
+              if (currentRun.reportedFeature contains featureTrait) "" else
+              s"""|
+                  |This can be achieved by adding the import clause 'import $fqname'
+                  |or by setting the compiler option -language:$featureName.
+                  |See the Scala docs for value $fqname for a discussion
+                  |why the feature $req be explicitly enabled.""".stripMargin
+            )
             currentRun.reportedFeature += featureTrait
-            val msg = raw replace ("#", construct)
+
+            val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
             if (required) unit.error(pos, msg)
             else currentRun.featureWarnings.warn(pos, msg)
           }
@@ -1802,9 +1802,7 @@ trait Typers extends Adaptations with Tags {
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
-        _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
-      }
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
@@ -1845,17 +1843,16 @@ trait Typers extends Adaptations with Tags {
         || !linkedClass.isSerializable
         || clazz.isSerializable
       )
-      val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
-        _.typedTemplate(mdef.impl, {
-          typedParentTypes(mdef.impl) ++ (
-            if (noSerializable) Nil
-            else {
-              clazz.makeSerializable()
-              List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
-            }
-          )
-        })
-      }
+      val impl1 = newTyper(context.make(mdef.impl, clazz, newScope)).typedTemplate(mdef.impl, {
+        typedParentTypes(mdef.impl) ++ (
+          if (noSerializable) Nil
+          else {
+            clazz.makeSerializable()
+            List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
+          }
+        )
+      })
+
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
       if (mdef.symbol == PredefModule)
@@ -4435,9 +4432,14 @@ trait Typers extends Adaptations with Tags {
 
       def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
-        if (stableApplication && isPatternMode) {
+        if (args.isEmpty && stableApplication && isPatternMode) {
           // treat stable function applications f() as expressions.
-          typed1(tree, (mode &~ PATTERNmode) | EXPRmode, pt)
+          //
+          // [JZ] According to Martin, this is related to the old pattern matcher, which
+          //      needs to typecheck after a the translation of `x.f` to `x.f()` in a prior
+          //      compilation phase. As part of SI-7377, this has been tightened with `args.isEmpty`,
+          //      but we should remove it altogether in Scala 2.11.
+          typed1(tree, mode &~ PATTERNmode | EXPRmode, pt)
         } else {
           val funpt = if (isPatternMode) pt else WildcardType
           val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null

@@ -808,7 +808,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     sym :: (
       if (!sym.isMethod || enteringTyper(sym.typeParams.isEmpty)) Nil
-      else {
+      else if (sym.hasDefault) {
+        /* Specializing default getters is useless, also see SI-7329 . */
+        sym.resetFlag(SPECIALIZED)
+        Nil
+      } else {
         // debuglog("normalizeMember: " + sym.fullNameAsName('.').decode)
         var specializingOn = specializedParams(sym)
         val unusedStvars   = specializingOn filterNot specializedTypeVars(sym.info)
