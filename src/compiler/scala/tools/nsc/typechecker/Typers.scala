@@ -490,14 +490,6 @@ trait Typers extends Adaptations with Tags {
     }
 
     @inline
-    final def typerReportAnyContextErrors[T](c: Context)(f: Typer => T): T = {
-      val res = f(newTyper(c))
-      if (c.hasErrors)
-        context.issue(c.errBuffer.head)
-      res
-    }
-
-    @inline
     final def withSavedContext[T](c: Context)(f: => T) = {
       val savedErrors = c.flushAndReturnBuffer()
       val res = f
@@ -740,16 +732,19 @@ trait Typers extends Adaptations with Tags {
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
-            val req = if (required) "needs to" else "should"
-            var raw = featureDesc + " " + req + " be enabled\n" +
-              "by making the implicit value language." + featureName + " visible."
-            if (!(currentRun.reportedFeature contains featureTrait))
-              raw += "\nThis can be achieved by adding the import clause 'import scala.language." + featureName + "'\n" +
-                "or by setting the compiler option -language:" + featureName + ".\n" +
-                "See the Scala docs for value scala.language." + featureName + " for a discussion\n" +
-                "why the feature " + req + " be explicitly enabled."
+            val req     = if (required) "needs to" else "should"
+            val fqname  = "scala.language." + featureName
+            val explain = (
+              if (currentRun.reportedFeature contains featureTrait) "" else
+              s"""|
+                  |This can be achieved by adding the import clause 'import $fqname'
+                  |or by setting the compiler option -language:$featureName.
+                  |See the Scala docs for value $fqname for a discussion
+                  |why the feature $req be explicitly enabled.""".stripMargin
+            )
             currentRun.reportedFeature += featureTrait
-            val msg = raw replace ("#", construct)
+
+            val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
             if (required) unit.error(pos, msg)
             else currentRun.featureWarnings.warn(pos, msg)
           }
@@ -1802,9 +1797,7 @@ trait Typers extends Adaptations with Tags {
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
-        _.typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
-      }
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
@@ -1845,17 +1838,16 @@ trait Typers extends Adaptations with Tags {
         || !linkedClass.isSerializable
         || clazz.isSerializable
       )
-      val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
-        _.typedTemplate(mdef.impl, {
-          typedParentTypes(mdef.impl) ++ (
-            if (noSerializable) Nil
-            else {
-              clazz.makeSerializable()
-              List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
-            }
-          )
-        })
-      }
+      val impl1 = newTyper(context.make(mdef.impl, clazz, newScope)).typedTemplate(mdef.impl, {
+        typedParentTypes(mdef.impl) ++ (
+          if (noSerializable) Nil
+          else {
+            clazz.makeSerializable()
+            List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
+          }
+        )
+      })
+
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
       if (mdef.symbol == PredefModule)
@@ -4435,63 +4427,58 @@ trait Typers extends Adaptations with Tags {
 
       def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
-        if (stableApplication && isPatternMode) {
-          // treat stable function applications f() as expressions.
-          typed1(tree, (mode &~ PATTERNmode) | EXPRmode, pt)
-        } else {
-          val funpt = if (isPatternMode) pt else WildcardType
-          val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
-          val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
+        val funpt = if (isPatternMode) pt else WildcardType
+        val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
+        val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
 
-          def onError(reportError: => Tree): Tree = {
-              fun match {
-                case Select(qual, name)
-                if !isPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
-                  val qual1 = typedQualifier(qual)
-                  if (treeInfo.isVariableOrGetter(qual1)) {
-                    if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
-                    convertToAssignment(fun, qual1, name, args)
-                  } else {
-                    if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
-                      reportError
-                  }
-                case _ =>
+        def onError(reportError: => Tree): Tree = {
+            fun match {
+              case Select(qual, name)
+              if !isPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
+                val qual1 = typedQualifier(qual)
+                if (treeInfo.isVariableOrGetter(qual1)) {
+                  if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
+                  convertToAssignment(fun, qual1, name, args)
+                } else {
                   if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
-                  reportError
-              }
-          }
-          val silentResult = silent(
-            op                    = _.typed(fun, mode.forFunMode, funpt),
-            reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
-            newtree               = if (mode.inExprMode) tree else context.tree
-          )
-          silentResult match {
-            case SilentResultValue(fun1) =>
-              val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-              if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
-              val noSecondTry = (
-                   isPastTyper
-                || (fun2.symbol ne null) && fun2.symbol.isConstructor
-                || (fun2.tpe match { case mt: MethodType => mt.isImplicit case _ => false })
-              )
-              val isFirstTry = !noSecondTry && (
-                fun2 match {
-                  case Select(_, _) => mode inExprModeButNot SNDTRYmode
-                  case _            => false
+                    reportError
                 }
-              )
-              if (isFirstTry)
-                tryTypedApply(fun2, args)
-              else
-                doTypedApply(tree, fun2, args, mode, pt)
+              case _ =>
+                if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+                reportError
+            }
+        }
+        val silentResult = silent(
+          op                    = _.typed(fun, mode.forFunMode, funpt),
+          reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
+          newtree               = if (mode.inExprMode) tree else context.tree
+        )
+        silentResult match {
+          case SilentResultValue(fun1) =>
+            val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
+            if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
+            val noSecondTry = (
+                 isPastTyper
+              || (fun2.symbol ne null) && fun2.symbol.isConstructor
+              || (fun2.tpe match { case mt: MethodType => mt.isImplicit case _ => false })
+            )
+            val isFirstTry = !noSecondTry && (
+              fun2 match {
+                case Select(_, _) => mode inExprModeButNot SNDTRYmode
+                case _            => false
+              }
+            )
+            if (isFirstTry)
+              tryTypedApply(fun2, args)
+            else
+              doTypedApply(tree, fun2, args, mode, pt)
 
-            case SilentTypeError(err) =>
-              onError({issue(err); setError(tree)})
-          }
+          case SilentTypeError(err) =>
+            onError({issue(err); setError(tree)})
         }
       }
 
-                // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
+      // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
       // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len)
       // where Array HK gets applied (N-1) times
       object ArrayInstantiation {
