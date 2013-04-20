@@ -251,8 +251,7 @@ class MutableSettings(val errorFn: String => Unit)
       else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
         new PlainFile(Path(name))
       else
-//      throw new FatalError(name + " does not exist or is not a directory")
-        dir
+        throw new FatalError(name + " does not exist or is not a directory")
     )
 
     /** Set the single output directory. From now on, all files will
