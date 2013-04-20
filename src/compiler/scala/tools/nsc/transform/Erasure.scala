@@ -686,32 +686,26 @@ abstract class Erasure extends AddInterfaces
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
       tree match {
-        case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
-        if tree.symbol == Any_asInstanceOf =>
-          val qual1 = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
-
-          if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
-            val noNullCheckNeeded = targ.tpe match {
-              case ErasedValueType(tref) =>
-                enteringPhase(currentRun.erasurePhase) {
-                  isPrimitiveValueClass(erasedValueClassArg(tref).typeSymbol)
-                }
-              case _ =>
-                true
+        case Apply(treeInfo.TypeApplyOp(Literal(Constant(null)), Any_asInstanceOf, targ :: Nil), Nil) =>
+          // A literal null.asInstanceOf[Type] has to be adapted to the correct type
+          // so the actual null does not survive any longer
+          typed(gen.mkZero(targ))
+        case Apply(treeInfo.TypeApplyOp(sel @ Select(qual, name), Any_asInstanceOf, targ :: Nil), Nil) =>
+          def qual1             = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
+          def mayInvolveBoxing  = isPrimitiveValueType(targ) || isErasedValueType(targ)
+          def noNullCheckNeeded = targ match {
+            case ErasedValueType(tref) => enteringErasure(isPrimitiveValueType(erasedValueClassArg(tref)))
+            case _                     => true
+          }
+          if (!mayInvolveBoxing) tree
+          else if (noNullCheckNeeded) unbox(qual1, targ)
+          else typed {
+            gen.evalOnce(qual1, context.owner, context.unit) { qual =>
+              If(Apply(Select(qual(), nme.eq), List(Literal(Constant(null)) setType NullClass.tpe)),
+                 Literal(Constant(null)) setType targ,
+                 unbox(qual(), targ))
             }
-            if (noNullCheckNeeded) unbox(qual1, targ.tpe)
-            else {
-              val untyped =
-//                util.trace("new asinstanceof test") {
-                  gen.evalOnce(qual1, context.owner, context.unit) { qual =>
-                    If(Apply(Select(qual(), nme.eq), List(Literal(Constant(null)) setType NullClass.tpe)),
-                       Literal(Constant(null)) setType targ.tpe,
-                       unbox(qual(), targ.tpe))
-                  }
-//                }
-              typed(untyped)
-            }
-          } else tree
+          }
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
