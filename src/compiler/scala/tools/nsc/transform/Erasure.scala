@@ -686,6 +686,10 @@ abstract class Erasure extends AddInterfaces
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
       tree match {
+        case Apply(treeInfo.TypeApplyOp(Literal(Constant(null)), Any_asInstanceOf, targ :: Nil), Nil) =>
+          // A literal null.asInstanceOf[Type] has to be adapted to the correct type
+          // so the actual null does not survive any longer
+          typed(gen.mkZero(targ))
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
