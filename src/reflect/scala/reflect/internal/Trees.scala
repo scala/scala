@@ -1650,6 +1650,21 @@ trait Trees extends api.Trees { self: SymbolTable =>
       sys.error("Not a ClassDef: " + t + "/" + t.getClass)
   }
 
+  def copyModuleDef(tree: Tree)(
+    mods: Modifiers        = null,
+    name: Name             = null,
+    impl: Template         = null
+  ): ModuleDef = tree match {
+    case ModuleDef(mods0, name0, impl0) =>
+      treeCopy.ModuleDef(tree,
+        if (mods eq null) mods0 else mods,
+        if (name eq null) name0 else name,
+        if (impl eq null) impl0 else impl
+      )
+    case t =>
+      sys.error("Not a ModuleDef: " + t + "/" + t.getClass)
+  }
+
   def deriveDefDef(ddef: Tree)(applyToRhs: Tree => Tree): DefDef = ddef match {
     case DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0) =>
       treeCopy.DefDef(ddef, mods0, name0, tparams0, vparamss0, tpt0, applyToRhs(rhs0))
