@@ -333,21 +333,21 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
   override def byteValue   = intValue.toByte
 
   /** Converts this BigDecimal to a Short.
-   *  If the BigDecimal is too big to fit in a Byte, only the low-order 16 bits are returned.
+   *  If the BigDecimal is too big to fit in a Short, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigDecimal value as well as return a result with the opposite sign.
    */
   override def shortValue  = intValue.toShort
 
   /** Converts this BigDecimal to a Char.
-   *  If the BigDecimal is too big to fit in a char, only the low-order 16 bits are returned.
+   *  If the BigDecimal is too big to fit in a Char, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigDecimal value and that it always returns a positive result.
    */
   def charValue   = intValue.toChar
 
   /** Converts this BigDecimal to an Int.
-   *  If the BigDecimal is too big to fit in a char, only the low-order 32 bits
+   *  If the BigDecimal is too big to fit in an Int, only the low-order 32 bits
    *  are returned. Note that this conversion can lose information about the
    *  overall magnitude of the BigDecimal value as well as return a result with
    *  the opposite sign.
@@ -355,7 +355,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
   def intValue    = this.bigDecimal.intValue
 
   /** Converts this BigDecimal to a Long.
-   *  If the BigDecimal is too big to fit in a char, only the low-order 64 bits
+   *  If the BigDecimal is too big to fit in a Long, only the low-order 64 bits
    *  are returned. Note that this conversion can lose information about the
    *  overall magnitude of the BigDecimal value as well as return a result with
    *  the opposite sign.
