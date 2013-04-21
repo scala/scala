@@ -138,11 +138,11 @@ trait Contexts { self: Analyzer =>
    *
    * More on error buffering:
    *     When are type errors recoverable? In quite a few places, it turns out. Some examples:
-   *     trying to type an application with/without the expected type, or with.without implicit views
-   *     enabled. This is usually mediated by in `Typer.silent`, `Inferencer#tryTwice`.
+   *     trying to type an application with/without the expected type, or with/without implicit views
+   *     enabled. This is usually mediated by `Typer.silent`, `Inferencer#tryTwice`.
    *
-   *     Intially, starting from the `typer` phase, the contexts either either buffer or report errors;
-   *     from `erasure` errors are thrown. This is configured in `rootContext`. Additionally, more
+   *     Intially, starting from the `typer` phase, the contexts either buffer or report errors;
+   *     afterwards errors are thrown. This is configured in `rootContext`. Additionally, more
    *     fine grained control is needed based on the kind of error; ambiguity errors are often
    *     suppressed during exploraratory typing, such as determining whether `a == b` in an argument
    *     position is an assignment or a named argument, when `Infererencer#isApplicableSafe` type checks
@@ -273,11 +273,9 @@ trait Contexts { self: Analyzer =>
     def savingUndeterminedTypeParams[A](reportAmbiguous: Boolean = ambiguousErrors)(body: => A): A = {
       withMode() {
         this(AmbiguousErrors) = reportAmbiguous
-        val savedParams = extractUndetparams()
+        val saved = extractUndetparams()
         try body
-        finally {
-          undetparams = savedParams
-        }
+        finally undetparams = saved
       }
     }
 
@@ -1328,7 +1326,8 @@ object ContextMode {
   /** Are we in a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
   final val Checking: ContextMode                 = 1 << 9
 
-  // TODO harvest documentation for this
+  /** Are we retypechecking arguments independently from the function applied to them? See `Typer.tryTypedApply` */
+  // TODO This seems to directly overlap with Mode.SNDTRYmode
   final val ReTyping: ContextMode                 = 1 << 10
 
   final val DefaultMode: ContextMode      = MacrosEnabled
