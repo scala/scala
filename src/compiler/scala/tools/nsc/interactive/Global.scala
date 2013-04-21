@@ -856,9 +856,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** Implements CompilerControl.askDocComment */
   private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol, fragments: List[(Symbol,SourceFile)],
                                          response: Response[(String, String, Position)]) {
-    informIDE(s"getDocComment $sym at $source site $site")
+    informIDE(s"getDocComment $sym at $source, site $site")
     respond(response) {
-      withTempUnits(fragments.toList.unzip._2){ units =>
+      withTempUnits(fragments.unzip._2){ units =>
         for((sym, src) <- fragments) {
           val mirror = findMirrorSymbol(sym, units(src))
           if (mirror ne NoSymbol) forceDocComment(mirror, units(src))
@@ -871,6 +871,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
       }
     }
+    // New typer run to remove temp units and drop per-run caches that might refer to symbols entered from temp units.
+    newTyperRun()
   }
 
   def stabilizedType(tree: Tree): Type = tree match {
