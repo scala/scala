@@ -887,9 +887,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
 
-    // Does not always work if the rawInfo is a SourcefileLoader, see comment
-    // in "def coreClassesFirst" in Global.
-    def exists = !isTopLevel || { rawInfo.load(this); rawInfo != NoType }
+    def exists: Boolean = !isTopLevel || {
+      val isSourceLoader = rawInfo match {
+        case sl: SymLoader => sl.fromSource
+        case _             => false
+      }
+      def warnIfSourceLoader() {
+        if (isSourceLoader)
+          // Predef is completed early due to its autoimport; we used to get here when type checking its
+          // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
+          // Since the fix for SI-7335 Predef parents must be defined in Predef.scala, and we should not
+          // get here anymore.
+          devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.");
+      }
+
+      rawInfo load this
+      rawInfo != NoType || { warnIfSourceLoader(); false }
+    }
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
@@ -2621,32 +2635,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** change name by appending $$<fully-qualified-name-of-class `base`>
-     *  Do the same for any accessed symbols or setters/getters.
-     *  If the accessor to be renamed is overriding a base symbol, enter
-     *  a cloned symbol with the original name but without ACCESSOR flag.
+     *  Do the same for any accessed symbols or setters/getters
      */
     override def expandName(base: Symbol) {
-      def expand(sym: Symbol) {
-        if ((sym eq NoSymbol) || (sym hasFlag EXPANDEDNAME)) () // skip
-        else sym setFlag EXPANDEDNAME setName nme.expandedName(sym.name.toTermName, base)
+      if (!hasFlag(EXPANDEDNAME)) {
+        setFlag(EXPANDEDNAME)
+        if (hasAccessorFlag && !isDeferred) {
+          accessed.expandName(base)
+        }
+        else if (hasGetter) {
+          getter(owner).expandName(base)
+          setter(owner).expandName(base)
+        }
+        name = nme.expandedName(name.toTermName, base)
       }
-      def cloneAndExpand(accessor: Symbol) {
-        val clone = accessor.cloneSymbol(accessor.owner, (accessor.flags | ARTIFACT) & ~ACCESSOR)
-        expand(accessor)
-        log(s"Expanded overriding accessor to $accessor, but cloned $clone to preserve override")
-        accessor.owner.info.decls enter clone
-      }
-      def expandAccessor(accessor: Symbol) {
-        if (accessor.isOverridingSymbol) cloneAndExpand(accessor) else expand(accessor)
-      }
-      if (hasAccessorFlag && !isDeferred) {
-        expand(accessed)
-      }
-      else if (hasGetter) {
-        expandAccessor(getter(owner))
-        expandAccessor(setter(owner))
-      }
-      expand(this)
     }
   }
   implicit val TermSymbolTag = ClassTag[TermSymbol](classOf[TermSymbol])

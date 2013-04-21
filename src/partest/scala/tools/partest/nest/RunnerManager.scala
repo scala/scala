@@ -74,8 +74,10 @@ object Output {
 
 class RunnerManager(kind: String, val fileManager: FileManager, params: TestRunParams) {
   import fileManager._
+
   fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
   fileManager.CLASSPATH += File.pathSeparator + PathSettings.diffUtils // needed to put diffutils on test/partest's classpath
+  PathSettings.platformTools foreach (fileManager.CLASSPATH += File.pathSeparator + _)
 
   def runTest(testFile: File): TestState = {
     val runner = new Runner(testFile, fileManager) {

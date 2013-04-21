@@ -199,12 +199,6 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
   )
 
-  val docExternalUrls = MultiStringSetting (
-    "-external-urls",
-    "externalUrl(s)",
-    "(deprecated) comma-separated list of package_names=doc_URL for external dependencies, where package names are ':'-separated"
-  )
-
   val docGroups = BooleanSetting (
     "-groups",
     "Group similar functions together (based on the @group annotation)"
@@ -252,15 +246,6 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   def appendIndex(url: String): String = {
     val index = "/index.html"
     if (url.endsWith(index)) url else url + index
-  }
-
-  // Deprecated together with 'docExternalUrls' option.
-  lazy val extUrlPackageMapping: Map[String, String] = (Map.empty[String, String] /: docExternalUrls.value) {
-    case (map, binding) =>
-      val idx = binding indexOf "="
-      val pkgs = binding substring (0, idx) split ":"
-      val url = appendIndex(binding substring (idx + 1))
-      map ++ (pkgs map (_ -> url))
   }
 
   lazy val extUrlMapping: Map[String, String] = docExternalDoc.value flatMap { s =>

@@ -287,7 +287,11 @@ trait Infer extends Checkable {
       //   println("set error: "+tree);
       //   throw new Error()
       // }
-      def name        = newTermName("<error: " + tree.symbol + ">")
+      def name = {
+        val sym = tree.symbol
+        val nameStr = try sym.toString catch { case _: CyclicReference => sym.nameString }
+        newTermName(s"<error: $nameStr>")
+      }
       def errorClass  = if (context.reportErrors) context.owner.newErrorClass(name.toTypeName) else stdErrorClass
       def errorValue  = if (context.reportErrors) context.owner.newErrorValue(name) else stdErrorValue
       def errorSym    = if (tree.isType) errorClass else errorValue
