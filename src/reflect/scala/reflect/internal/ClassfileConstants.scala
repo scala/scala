@@ -9,7 +9,6 @@ package internal
 import scala.annotation.switch
 
 object ClassfileConstants {
-
   final val JAVA_MAGIC = 0xCAFEBABE
   final val JAVA_MAJOR_VERSION = 45
   final val JAVA_MINOR_VERSION = 3

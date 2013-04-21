@@ -25,6 +25,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
   import icodes.opcodes._
   import definitions._
 
+  // Strangely I can't find this in the asm code
+  // 255, but reserving 1 for "this"
+  final val MaximumJvmParameters = 254
+
   val phaseName = "jvm"
 
   /** Create a new phase */
@@ -1479,6 +1483,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
 
       if (m.symbol.isStaticConstructor || definitions.isGetClass(m.symbol)) return
+
+      if (m.params.size > MaximumJvmParameters) {
+        getCurrentCUnit().error(m.symbol.pos, s"Platform restriction: a parameter list's length cannot exceed $MaximumJvmParameters.")
+        return
+      }
 
       debuglog("Generating method " + m.symbol.fullName)
       method = m
