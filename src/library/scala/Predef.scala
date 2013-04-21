@@ -8,11 +8,11 @@
 
 package scala
 
-import scala.collection.{ mutable, immutable, generic }
+import scala.collection.{mutable, immutable, generic}
 import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
-import scala.annotation.{ elidable, implicitNotFound }
+import scala.annotation.{elidable, implicitNotFound}
 import scala.annotation.elidable.ASSERTION
 import scala.language.{implicitConversions, existentials}
 import scala.io.ReadStdin
