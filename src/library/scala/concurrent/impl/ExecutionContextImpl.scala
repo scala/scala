@@ -57,19 +57,19 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
 
   def createExecutorService: ExecutorService = {
 
-    def getInt(name: String, f: String => Int): Int =
-        try f(System.getProperty(name)) catch { case e: Exception => Runtime.getRuntime.availableProcessors }
-    def range(floor: Int, desired: Int, ceiling: Int): Int =
-      if (ceiling < floor) range(ceiling, desired, floor) else scala.math.min(scala.math.max(desired, floor), ceiling)
+    def getInt(name: String, default: String) = (try System.getProperty(name, default) catch {
+      case e: SecurityException => default
+    }) match {
+      case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
+      case other => other.toInt
+    }
+
+    def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
 
     val desiredParallelism = range(
-      getInt("scala.concurrent.context.minThreads", _.toInt),
-      getInt("scala.concurrent.context.numThreads", {
-        case null | "" => Runtime.getRuntime.availableProcessors
-        case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
-        case other => other.toInt
-      }),
-      getInt("scala.concurrent.context.maxThreads", _.toInt))
+      getInt("scala.concurrent.context.minThreads", "1"),
+      getInt("scala.concurrent.context.numThreads", "x1"),
+      getInt("scala.concurrent.context.maxThreads", "x1"))
 
     val threadFactory = new DefaultThreadFactory(daemonic = true)
 
