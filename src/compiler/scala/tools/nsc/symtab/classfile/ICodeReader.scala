@@ -73,7 +73,7 @@ abstract class ICodeReader extends ClassfileParser {
   private def parseMember(field: Boolean): (JavaAccFlags, Symbol) = {
     val jflags   = JavaAccFlags(u2)
     val name     = pool getName u2
-    /** If we're parsing a scala module, the owner of members is always
+    /*  If we're parsing a scala module, the owner of members is always
      *  the module symbol.
      */
     val owner = (

@@ -3062,7 +3062,7 @@ trait Types
         else lhs <:< rhs
       }
 
-      /** Simple case: type arguments can be ignored, because either this typevar has
+      /*  Simple case: type arguments can be ignored, because either this typevar has
        *  no type parameters, or we are comparing to Any/Nothing.
        *
        *  The latter condition is needed because HK unification is limited to constraints of the shape
@@ -3089,7 +3089,7 @@ trait Types
         } else false
       }
 
-      /** Full case: involving a check of the form
+      /*  Full case: involving a check of the form
        *  {{{
        *    TC1[T1,..., TN] <: TC2[T'1,...,T'N]
        *  }}}
