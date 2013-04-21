@@ -72,9 +72,9 @@ final class API(val global: CallbackGlobal) extends Compat
 
 	// call back to the xsbti.SafeLazy class in main sbt code to construct a SafeLazy instance
 	//   we pass a thunk, whose class is loaded by the interface class loader (this class's loader)
-	//   SafeLazy ensures that once the value is forced, the thunk is nulled out and so 
+	//   SafeLazy ensures that once the value is forced, the thunk is nulled out and so
 	//   references to the thunk's classes are not retained.  Specifically, it allows the interface classes
-	//   (those in this subproject) to be garbage collected after compilation. 
+	//   (those in this subproject) to be garbage collected after compilation.
 	private[this] val safeLazy = Class.forName("xsbti.SafeLazy").getMethod("apply", classOf[xsbti.F0[_]])
 	private def lzy[S <: AnyRef](s: => S): xsbti.api.Lazy[S] =
 	{
@@ -196,7 +196,7 @@ final class API(val global: CallbackGlobal) extends Compat
 		case Nullary(un) => un
 		case _ => t
 	}
-		
+
 	private def typeDef(in: Symbol, s: Symbol): xsbti.api.TypeMember =
 	{
 		val (typeParams, tpe) =
