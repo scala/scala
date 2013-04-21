@@ -378,7 +378,7 @@ abstract class ExplicitOuter extends InfoTransform
         if (outerAcc.isDeferred) EmptyTree
         else This(currentClass) DOT outerField(currentClass)
 
-      /** If we don't re-type the tree, we see self-type related crashes like #266.
+      /*  If we don't re-type the tree, we see self-type related crashes like #266.
        */
       localTyper typed {
         (DEF(outerAcc) withPos currentClass.pos withType null) === rhs

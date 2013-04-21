@@ -47,7 +47,7 @@ trait Map[A, B]
    */
   def withDefaultValue(d: B): mutable.Map[A, B] = new Map.WithDefault[A, B](this, x => d)
 
-  /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
+  /*  Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
   def readOnly : scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
     override def size = self.size
     override def update(key: A, value: B) = self.update(key, value)

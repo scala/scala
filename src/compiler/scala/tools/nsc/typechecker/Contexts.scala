@@ -520,7 +520,7 @@ trait Contexts { self: Analyzer =>
         (linked ne NoSymbol) && accessWithin(linked)
       }
 
-      /** Are we inside definition of `ab`? */
+      /* Are we inside definition of `ab`? */
       def accessWithin(ab: Symbol) = {
         // #3663: we must disregard package nesting if sym isJavaDefined
         if (sym.isJavaDefined) {
