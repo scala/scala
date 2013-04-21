@@ -1,0 +1,5 @@
+t7330.scala:4: error: pattern must be a value: Y[_]
+Note: if you intended to match against the class, try `case _: Y[_]`
+  0 match { case Y[_] => }
+                  ^
+one error found
