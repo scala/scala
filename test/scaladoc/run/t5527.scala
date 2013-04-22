@@ -49,6 +49,47 @@ object Test extends DirectTest {
         case _ =>
           false
       }
+
+      def test5 {
+        /** @martin is this right? It shouldn't flag me as scaladoc. */
+        if (true) ???
+      }
+
+      def test6 = {
+        /** Document this crucial constant for posterity.
+         *  Don't forget to dedoc this comment if you refactor to a local.
+         *  @author Paul Phillips
+         */
+        val u = 4
+        for (i <- 0 to u)
+          println(i)
+      }
+      def test7 = {
+        /** Some standard tags are tolerated locally and shouldn't trigger a warning.
+         *  @note Don't change this unless you know what you're doing. This means you.
+         */
+        val u = 4
+        for (i <- 0 to u)
+          println(i)
+      }
+      def test8 = {
+        /*************************\
+         * Fancy ASCII Art Block *
+         *   @author som-snytt   *
+        \*************************/
+        // this is just a local
+        val z = "fancy"
+        z replace ("fanc", "arts")
+      }
+      def test9 = {
+        val i = 10 */** Important!
+                     *  We have to multiply here!
+                     *  @author community
+                     *  @see SI-1234
+                     */
+                10
+        assert(i == 100)
+      }
     }
 
     /** comments that we should keep */
@@ -85,6 +126,13 @@ object Test extends DirectTest {
       /** class D */
       @deprecated("use ... instead", "2.10.0")
       class D
+
+      /** Get the simple value.
+       *  @return the default value
+       */
+      // an intervening line comment
+      /* I had more to say, but didn't want to pollute the scaladoc. */
+      def value: Int = 7
     }
   """.trim
 
