@@ -13,9 +13,9 @@ setlocal enableextensions enabledelayedexpansion
 set _LINE_TOOLCP=
 
 :another_param
-
-if "%1%"=="-toolcp" (
-    set _LINE_TOOLCP=%2%
+rem fix ~ according to http://ss64.com/nt/syntax-args.html
+if "%~1"=="-toolcp" (
+    set _LINE_TOOLCP=%~2
 	shift
 	shift
 	goto another_param
