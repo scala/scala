@@ -11,7 +11,7 @@ trait Typers {
   def openImplicits: List[(Type, Tree)] = callsiteTyper.context.openImplicits
 
   /**
-   * @see [[scala.tools.reflect.Toolbox.typeCheck]]
+   * @see [[scala.tools.reflect.ToolBox.typeCheck]]
    */
   def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
     macroLogVerbose("typechecking %s with expected type %s, implicit views = %s, macros = %s".format(tree, pt, !withImplicitViewsDisabled, !withMacrosDisabled))

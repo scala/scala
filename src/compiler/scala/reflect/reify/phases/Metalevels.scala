@@ -11,7 +11,7 @@ trait Metalevels {
   /**
    *  Makes sense of cross-stage bindings.
    *
-   *  ================
+   *  ----------------
    *
    *  Analysis of cross-stage bindings becomes convenient if we introduce the notion of metalevels.
    *  Metalevel of a tree is a number that gets incremented every time you reify something and gets decremented when you splice something.
@@ -53,7 +53,7 @@ trait Metalevels {
    *  1) Runtime eval that services dynamic splices requires scala-compiler.jar, which might not be on library classpath
    *  2) Runtime eval incurs a severe performance penalty, so it'd better to be explicit about it
    *
-   *  ================
+   *  ----------------
    *
    *  As we can see, the only problem is the fact that lhs'es of `splice` can be code blocks that can capture variables from the outside.
    *  Code inside the lhs of an `splice` is not reified, while the code from the enclosing reify is.
