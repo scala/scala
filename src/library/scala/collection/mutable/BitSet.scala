@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import BitSetLike.{LogWL, updateArray}
+import BitSetLike.{LogWL, MaxSize, updateArray}
 
 /** A class for mutable bitsets.
  *
@@ -63,9 +63,10 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
   }
 
   private def ensureCapacity(idx: Int) {
+    require(idx < MaxSize)
     if (idx >= nwords) {
       var newlen = nwords
-      while (idx >= newlen) newlen = newlen * 2
+      while (idx >= newlen) newlen = (newlen * 2) min MaxSize
       val elems1 = new Array[Long](newlen)
       Array.copy(elems, 0, elems1, 0, nwords)
       elems = elems1
