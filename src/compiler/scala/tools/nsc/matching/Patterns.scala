@@ -402,7 +402,7 @@ trait Patterns extends ast.TreeDSL {
       case _                                => toPats(args)
     }
 
-    def resTypes = analyzer.unapplyTypeList(unfn.pos, unfn.symbol, unfn.tpe, args.length)
+    def resTypes = analyzer.unapplyTypeList(unfn.pos, unfn.symbol, unfn.tpe, args)
     def resTypesString = resTypes match {
       case Nil  => "Boolean"
       case xs   => xs.mkString(", ")

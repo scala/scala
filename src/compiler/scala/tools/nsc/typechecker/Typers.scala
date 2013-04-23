@@ -3477,8 +3477,8 @@ trait Typers extends Modes with Adaptations with Tags {
       else {
         val resTp     = fun1.tpe.finalResultType.normalize
         val nbSubPats = args.length
-
-        val (formals, formalsExpanded) = extractorFormalTypes(fun0.pos, resTp, nbSubPats, fun1.symbol)
+        val (formals, formalsExpanded) =
+          extractorFormalTypes(fun0.pos, resTp, nbSubPats, fun1.symbol, treeInfo.effectivePatternArity(args))
         if (formals == null) duplErrorTree(WrongNumberOfArgsError(tree, fun))
         else {
           val args1 = typedArgs(args, mode, formals, formalsExpanded)
@@ -5299,7 +5299,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       def typedUnApply(tree: UnApply) = {
         val fun1 = typed(tree.fun)
-        val tpes = formalTypes(unapplyTypeList(tree.fun.pos, tree.fun.symbol, fun1.tpe, tree.args.length), tree.args.length)
+        val tpes = formalTypes(unapplyTypeList(tree.fun.pos, tree.fun.symbol, fun1.tpe, tree.args), tree.args.length)
         val args1 = map2(tree.args, tpes)(typedPattern)
         treeCopy.UnApply(tree, fun1, args1) setType pt
       }
