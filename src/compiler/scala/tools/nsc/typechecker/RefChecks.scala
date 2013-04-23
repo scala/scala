@@ -1511,10 +1511,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
     // Verify classes extending AnyVal meet the requirements
     private def checkAnyValSubclass(clazz: Symbol) = {
-      if ((clazz isSubClass AnyValClass) && !isPrimitiveValueClass(clazz)) {
+      if (clazz.isDerivedValueClass) {
         if (clazz.isTrait)
           unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
-        else if ((clazz != AnyValClass) && clazz.hasFlag(ABSTRACT))
+        else if (clazz.hasAbstractFlag)
           unit.error(clazz.pos, "`abstract' modifier cannot be used with value classes")
       }
     }
