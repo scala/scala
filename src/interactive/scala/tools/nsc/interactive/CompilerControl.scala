@@ -43,8 +43,6 @@ import scala.tools.nsc.util.InterruptReq
  */
 trait CompilerControl { self: Global =>
 
-  import syntaxAnalyzer.UnitParser
-
   type Response[T] = scala.tools.nsc.interactive.Response[T]
 
   /** The scheduler by which client and compiler communicate

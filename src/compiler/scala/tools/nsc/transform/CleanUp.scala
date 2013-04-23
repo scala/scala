@@ -32,19 +32,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       newStaticInits.clear()
       symbolsStoredAsStatic.clear()
     }
-    private def savingStatics[T](body: => T): T = {
-      val savedNewStaticMembers : mutable.Buffer[Tree] = newStaticMembers.clone()
-      val savedNewStaticInits   : mutable.Buffer[Tree] = newStaticInits.clone()
-      val savedSymbolsStoredAsStatic : mutable.Map[String, Symbol] = symbolsStoredAsStatic.clone()
-      val result = body
-
-      clearStatics()
-      newStaticMembers      ++= savedNewStaticMembers
-      newStaticInits        ++= savedNewStaticInits
-      symbolsStoredAsStatic ++= savedSymbolsStoredAsStatic
-
-      result
-    }
     private def transformTemplate(tree: Tree) = {
       val Template(_, _, body) = tree
       clearStatics()

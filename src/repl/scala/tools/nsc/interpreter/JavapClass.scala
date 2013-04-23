@@ -234,8 +234,6 @@ class JavapClass(
   }
 
   class JavapTool7 extends JavapTool {
-
-    import JavapTool._
     type Task = {
       def call(): Boolean                             // true = ok
       //def run(args: Array[String]): Int             // all args
@@ -606,7 +604,7 @@ object JavapClass {
       // s = "f" and $line.$read$$etc$#f is what we're after,
       // ignoring any #member (except take # as filter on #apply)
       orElse (intp flatMap (_ translateEnclosingClass k) map ((_, Some(k), filter, true)))
-      getOrElse (k, member, filter, false))
+      getOrElse ((k, member, filter, false)))
     }
     /** Find the classnames of anonfuns associated with k,
      *  where k may be an available class or a symbol in scope.

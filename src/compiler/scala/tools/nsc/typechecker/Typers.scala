@@ -1512,7 +1512,7 @@ trait Typers extends Adaptations with Tags {
      */
     private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean): Tree = {
       val app = treeInfo.dissectApplied(encodedtpt)
-      val (treeInfo.Applied(core, targs, argss), decodedtpt) = ((app, app.callee))
+      val (treeInfo.Applied(core, _, argss), decodedtpt) = ((app, app.callee))
       val argssAreTrivial = argss == Nil || argss == ListOfNil
 
       // we cannot avoid cyclic references with `initialize` here, because when type macros arrive,

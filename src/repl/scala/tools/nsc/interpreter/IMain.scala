@@ -555,7 +555,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   @throws(classOf[ScriptException])
   def compile(script: String): CompiledScript = {
     if (!bound) {
-      quietBind("engine", this.asInstanceOf[ScriptEngine])
+      quietBind("engine" -> this.asInstanceOf[ScriptEngine])
       bound = true
     }
     val cat = code + script
