@@ -2222,16 +2222,18 @@ self =>
      *  }}}
      */
     def typeBounds(): TypeBoundsTree = {
-      val t = TypeBoundsTree(
-        bound(SUPERTYPE, tpnme.Nothing),
-        bound(SUBTYPE, tpnme.Any)
-      )
-      t setPos wrappingPos(List(t.hi, t.lo))
+      val lo      = bound(SUPERTYPE)
+      val hi      = bound(SUBTYPE)
+      val t       = TypeBoundsTree(lo, hi)
+      val defined = List(t.hi, t.lo) filter (_.pos.isDefined)
+
+      if (defined.nonEmpty)
+        t setPos wrappingPos(defined)
+      else
+        t setPos o2p(in.offset)
     }
 
-    def bound(tok: Int, default: TypeName): Tree =
-      if (in.token == tok) { in.nextToken(); typ() }
-      else atPos(o2p(in.lastOffset)) { rootScalaDot(default) }
+    def bound(tok: Int): Tree = if (in.token == tok) { in.nextToken(); typ() } else EmptyTree
 
 /* -------- DEFS ------------------------------------------- */
 
