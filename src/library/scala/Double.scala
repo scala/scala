@@ -10,6 +10,8 @@
 
 package scala
 
+import scala.language.implicitConversions
+
 /** `Double`, a 64-bit IEEE-754 floating point number (equivalent to Java's `double` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Double` are not
  *  represented by an object in the underlying runtime system.
@@ -380,6 +382,8 @@ object Double extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxToDouble`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+   *
    *  @param  x   the Double to be boxed
    *  @return     a java.lang.Double offering `x` as its underlying value.
    */
@@ -388,6 +392,8 @@ object Double extends AnyValCompanion {
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Double.
+   *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxToDouble`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
    *
    *  @param  x   the java.lang.Double to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Double

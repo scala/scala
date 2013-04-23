@@ -22,8 +22,8 @@ trait AnyValReps {
     }
     def coercionCommentExtra = ""
     def coercionComment = """
-  /** Language mandated coercions from @name@ to "wider" types.%s
-   */""".format(coercionCommentExtra)
+/** Language mandated coercions from @name@ to "wider" types.%s
+ */""".format(coercionCommentExtra)
 
     def implicitCoercions: List[String] = {
       val coercions = this match {
@@ -35,7 +35,7 @@ trait AnyValReps {
         case _     => Nil
       }
       if (coercions.isEmpty) Nil
-      else coercionComment :: coercions
+      else coercionComment.lines.toList ++ coercions
     }
 
     def isCardinal: Boolean = isIntegerType(this)
@@ -183,7 +183,7 @@ trait AnyValReps {
     }
     def objectLines = {
       val comp = if (isCardinal) cardinalCompanion else floatingCompanion
-      (comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ implicitCoercions map interpolate
+      interpolate(comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ (implicitCoercions map interpolate)
     }
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.
@@ -209,11 +209,14 @@ trait AnyValReps {
     )
 
     def lcname = name.toLowerCase
+    def boxedSimpleName = this match {
+      case C => "Character"
+      case I => "Integer"
+      case _ => name
+    }
     def boxedName = this match {
       case U => "scala.runtime.BoxedUnit"
-      case C => "java.lang.Character"
-      case I => "java.lang.Integer"
-      case _ => "java.lang." + name
+      case _ => "java.lang." + boxedSimpleName
     }
     def zeroRep = this match {
       case L => "0L"
@@ -228,7 +231,13 @@ trait AnyValReps {
     def indentN(s: String) = s.lines map indent mkString "\n"
 
     def boxUnboxImpls = Map(
+      "@boxRunTimeDoc@" -> """
+ *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+ *""".format(boxedSimpleName),
       "@boxImpl@"   -> "%s.valueOf(x)".format(boxedName),
+      "@unboxRunTimeDoc@" -> """
+ *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+ *""".format(name),
       "@unboxImpl@" -> "x.asInstanceOf[%s].%sValue()".format(boxedName, lcname),
       "@unboxDoc@"  -> "the %s resulting from calling %sValue() on `x`".format(name, lcname)
     )
@@ -299,7 +308,7 @@ import scala.language.implicitConversions
 
   def allCompanions = """
 /** Transform a value type into a boxed reference type.
- *
+ *@boxRunTimeDoc@
  *  @param  x   the @name@ to be boxed
  *  @return     a @boxed@ offering `x` as its underlying value.
  */
@@ -308,7 +317,7 @@ def box(x: @name@): @boxed@ = @boxImpl@
 /** Transform a boxed type into a value type.  Note that this
  *  method is not typesafe: it accepts any Object, but will throw
  *  an exception if the argument is not a @boxed@.
- *
+ *@unboxRunTimeDoc@
  *  @param  x   the @boxed@ to be unboxed.
  *  @throws     ClassCastException  if the argument is not a @boxed@
  *  @return     @unboxDoc@
@@ -471,7 +480,9 @@ override def getClass(): Class[Boolean] = null
     def objectLines = interpolate(allCompanions).lines.toList
 
     override def boxUnboxImpls = Map(
+      "@boxRunTimeDoc@" -> "",
       "@boxImpl@"   -> "scala.runtime.BoxedUnit.UNIT",
+      "@unboxRunTimeDoc@" -> "",
       "@unboxImpl@" -> "()",
       "@unboxDoc@"  -> "the Unit value ()"
     )

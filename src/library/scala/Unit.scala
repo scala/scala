@@ -10,6 +10,9 @@
 
 package scala
 
+import scala.language.implicitConversions
+
+
 /** `Unit` is a subtype of [[scala.AnyVal]]. There is only one value of type
  *  `Unit`, `()`, and it is not represented by any object in the underlying
  *  runtime system. A method with return type `Unit` is analogous to a Java
