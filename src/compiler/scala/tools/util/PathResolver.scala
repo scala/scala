@@ -39,7 +39,7 @@ object PathResolver {
     /** Environment variables which java pays attention to so it
      *  seems we do as well.
      */
-    def sourcePathEnv       =  envOrElse("SOURCEPATH", "")
+    def sourcePathEnv       = envOrElse("SOURCEPATH", "")
 
     def javaBootClassPath   = propOrElse("sun.boot.class.path", searchForBootClasspath)
     def javaExtDirs         = propOrEmpty("java.ext.dirs")
@@ -117,6 +117,50 @@ object PathResolver {
         scalaLibDirFound, scalaLibFound,
         ppcp(scalaBootClassPath), ppcp(scalaPluginPath)
       )
+  }
+
+  /** Locations discovered by supplemental heuristics.
+   */
+  object SupplementalLocations {
+
+    /** The platform-specific support jar.
+     *
+     *  Usually this is `tools.jar` in the jdk/lib directory of the platform distribution.
+     *
+     *  The file location is determined by probing the lib directory under JDK_HOME or JAVA_HOME,
+     *  if one of those environment variables is set, then the lib directory under java.home,
+     *  and finally the lib directory under the parent of java.home. Or, as a last resort,
+     *  search deeply under those locations (except for the parent of java.home, on the notion
+     *  that if this is not a canonical installation, then that search would have little
+     *  chance of succeeding).
+     */
+    def platformTools: Option[File] = {
+      val jarName = "tools.jar"
+      def jarPath(path: Path) = (path / "lib" / jarName).toFile
+      def jarAt(path: Path) = {
+        val f = jarPath(path)
+        if (f.isFile) Some(f) else None
+      }
+      val jdkDir = {
+        val d = Directory(jdkHome)
+        if (d.isDirectory) Some(d) else None
+      }
+      def deeply(dir: Directory) = dir.deepFiles find (_.name == jarName)
+
+      val home    = envOrSome("JDK_HOME", envOrNone("JAVA_HOME")) map (p => Path(p))
+      val install = Some(Path(javaHome))
+
+      (home flatMap jarAt) orElse (install flatMap jarAt) orElse (install map (_.parent) flatMap jarAt) orElse
+        (jdkDir flatMap deeply)
+    }
+    private def vals = List(
+      s"platformTools        = $platformTools"
+    )
+    override def toString = vals mkString (
+      f"object SupplementalLocations {%n  ",
+      f"%n  ",
+      f"%n}"
+    )
   }
 
   def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = { // called from scalap

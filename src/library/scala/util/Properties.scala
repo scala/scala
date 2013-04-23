@@ -60,6 +60,8 @@ private[scala] trait PropertiesTrait {
   def envOrElse(name: String, alt: String)      = Option(System getenv name) getOrElse alt
   def envOrNone(name: String)                   = Option(System getenv name)
 
+  def envOrSome(name: String, alt: Option[String])       = envOrNone(name) orElse alt
+
   // for values based on propFilename
   def scalaPropOrElse(name: String, alt: String): String = scalaProps.getProperty(name, alt)
   def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
