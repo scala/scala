@@ -5100,24 +5100,38 @@ trait Typers extends Adaptations with Tags {
         treeCopy.ReferenceToBoxed(tree, id1) setType tpe
       }
 
-      def typedLiteral(tree: Literal) = {
-        val value = tree.value
-        // Warn about likely interpolated strings which are missing their interpolators
-        if (settings.lint) value match {
+      // Warn about likely interpolated strings which are missing their interpolators
+      def warnMissingInterpolator(tree: Literal) {
+        // Unfortunately implicit not found strings looks for all the world like
+        // missing interpolators.
+        def isArgToImplicitNotFound = context.enclosingApply.tree match {
+          case Apply(fn, _) => fn.symbol.enclClass == ImplicitNotFoundClass
+          case _            => false
+        }
+        tree.value match {
           case Constant(s: String) =>
             def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
-            val shouldWarn = (
+            def suspicious = (
                  (InterpolatorCodeRegex findFirstIn s).nonEmpty
               || (names exists (n => context.lookupSymbol(n, _ => true).symbol.exists))
             )
-            if (shouldWarn)
+            val noWarn = (
+                 isArgToImplicitNotFound
+              || !(s contains ' ') // another heuristic - e.g. a string with only "$asInstanceOf"
+            )
+            if (!noWarn && suspicious)
               unit.warning(tree.pos, "looks like an interpolated String; did you forget the interpolator?")
           case _ =>
         }
+      }
+
+      def typedLiteral(tree: Literal) = {
+        if (settings.lint)
+          warnMissingInterpolator(tree)
 
         tree setType (
-          if (value.tag == UnitTag) UnitClass.tpe
-          else ConstantType(value))
+          if (tree.value.tag == UnitTag) UnitClass.tpe
+          else ConstantType(tree.value))
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {

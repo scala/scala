@@ -178,6 +178,7 @@ trait Contexts { self: Analyzer =>
       if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
       else outer.enclClassOrMethod
 
+    def enclosingApply = nextEnclosing(_.tree.isInstanceOf[Apply])
     def enclosingCaseDef = nextEnclosing(_.tree.isInstanceOf[CaseDef])
     def undetparamsString =
       if (undetparams.isEmpty) ""
