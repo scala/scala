@@ -130,7 +130,7 @@ sealed abstract class Either[+A, +B] {
    *
    * This method, and `joinLeft`, are analogous to `Option#flatten`
    */
-  def joinRight[A1 >: A, B1 >: B, C](implicit ev: B1 <:< Either[A1, C]): Either[A1, C] = this match {
+  def joinRight[A1 >: A, C](implicit ev: B <:< Either[A1, C]): Either[A1, C] = this match {
     case Left(a)  => Left(a)
     case Right(b) => b
   }
@@ -154,7 +154,7 @@ sealed abstract class Either[+A, +B] {
    *
    * This method, and `joinRight`, are analogous to `Option#flatten`
    */
-  def joinLeft[A1 >: A, B1 >: B, C](implicit ev: A1 <:< Either[C, B1]): Either[C, B1] = this match {
+  def joinLeft[B1 >: B, C](implicit ev: A <:< Either[C, B1]): Either[C, B1] = this match {
     case Left(a)  => a
     case Right(b) => Right(b)
   }
