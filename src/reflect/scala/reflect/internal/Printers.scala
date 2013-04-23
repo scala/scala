@@ -421,7 +421,14 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(tp); printRow(args, "[", ", ", "]")
 
         case TypeBoundsTree(lo, hi) =>
-          printOpt(" >: ", lo); printOpt(" <: ", hi)
+          // Avoid printing noisy empty typebounds everywhere
+          // Untyped empty bounds are not printed by printOpt,
+          // but after they are typed we have to exclude Nothing/Any.
+          if ((lo.tpe eq null) || !(lo.tpe =:= definitions.NothingTpe))
+            printOpt(" >: ", lo)
+
+          if ((hi.tpe eq null) || !(hi.tpe =:= definitions.AnyTpe))
+            printOpt(" <: ", hi)
 
         case ExistentialTypeTree(tpt, whereClauses) =>
           print(tpt)
