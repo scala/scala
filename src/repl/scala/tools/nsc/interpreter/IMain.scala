@@ -29,6 +29,7 @@ import java.util.concurrent.Future
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import StdReplTags._
+import scala.language.implicitConversions
 
 /** An interpreter for Scala code.
  *

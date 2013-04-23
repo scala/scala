@@ -5,6 +5,8 @@
 package scala.tools
 package nsc
 
+import scala.language.postfixOps
+
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */

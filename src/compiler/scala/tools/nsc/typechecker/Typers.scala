@@ -3963,7 +3963,7 @@ trait Typers extends Adaptations with Tags {
             case Apply(fn, args) if matches(fn)   => Some((applyOp(args), fn))
             case Assign(lhs, _) if matches(lhs)   => Some((nme.updateDynamic, lhs))
             case _ if matches(t)                  => Some((nme.selectDynamic, t))
-            case _                                => t.children flatMap findSelection headOption
+            case _                                => (t.children flatMap findSelection).headOption
           }
           findSelection(cxTree) match {
             case Some((opName, treeInfo.Applied(_, targs, _))) =>

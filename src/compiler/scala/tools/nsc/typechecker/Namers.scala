@@ -9,6 +9,7 @@ package typechecker
 import scala.collection.mutable
 import scala.annotation.tailrec
 import symtab.Flags._
+import scala.language.postfixOps
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
