@@ -3403,8 +3403,7 @@ trait Typers extends Adaptations with Tags {
         if (formals == null) duplErrorTree(WrongNumberOfArgsError(tree, fun))
         else {
           val args1 = typedArgs(args, mode, formals, formalsExpanded)
-          val pt1 = if (isFullyDefined(pt)) pt else makeFullyDefined(pt) // SI-1048
-
+          val pt1   = ensureFullyDefined(pt) // SI-1048
           val itype = glb(List(pt1, arg.tpe))
           arg setType pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
           val unapply = UnApply(fun1, args1) setPos tree.pos setType itype
@@ -5028,9 +5027,8 @@ trait Typers extends Adaptations with Tags {
 
             if (isPatternMode) {
               val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
-
               // make fully defined to avoid bounded wildcard types that may be in pt from calling dropExistential (SI-2038)
-              val ptDefined = if (isFullyDefined(pt)) pt else makeFullyDefined(pt)
+              val ptDefined = ensureFullyDefined(pt)
               val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, ptDefined, canRemedy = uncheckedTypeExtractor.nonEmpty)
               treeTyped setType ownType
 
