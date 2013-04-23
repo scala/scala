@@ -21,39 +21,39 @@ trait ContextErrors {
   import global._
   import definitions._
 
-  object ErrorKinds extends Enumeration {
-    type ErrorKind = Value
-    val Normal, Access, Ambiguous, Divergent = Value
-  }
-
-  import ErrorKinds.ErrorKind
-
-  trait AbsTypeError extends Throwable {
+  abstract class AbsTypeError extends Throwable {
     def errPos: Position
     def errMsg: String
-    def kind: ErrorKind
+    override def toString() = "[Type error at:" + errPos + "] " + errMsg
   }
 
-  case class NormalTypeError(underlyingTree: Tree, errMsg: String, kind: ErrorKind = ErrorKinds.Normal)
-    extends AbsTypeError {
-
-    def errPos:Position = underlyingTree.pos
-    override def toString() = "[Type error at:" + underlyingTree.pos + "] " + errMsg
+  abstract class TreeTypeError extends AbsTypeError {
+    def underlyingTree: Tree
+    def errPos = underlyingTree.pos
   }
 
-  case class SymbolTypeError(underlyingSym: Symbol, errMsg: String, kind: ErrorKind = ErrorKinds.Normal)
+  case class NormalTypeError(underlyingTree: Tree, errMsg: String)
+    extends TreeTypeError
+
+  case class AccessTypeError(underlyingTree: Tree, errMsg: String)
+    extends TreeTypeError
+
+  case class AmbiguousTypeError(errPos: Position, errMsg: String)
+    extends AbsTypeError
+
+  case class SymbolTypeError(underlyingSym: Symbol, errMsg: String)
     extends AbsTypeError {
 
     def errPos = underlyingSym.pos
   }
 
-  case class TypeErrorWrapper(ex: TypeError, kind: ErrorKind = ErrorKinds.Normal)
+  case class TypeErrorWrapper(ex: TypeError)
     extends AbsTypeError {
     def errMsg = ex.msg
     def errPos = ex.pos
   }
 
-  case class TypeErrorWithUnderlyingTree(tree: Tree, ex: TypeError, kind: ErrorKind = ErrorKinds.Normal)
+  case class TypeErrorWithUnderlyingTree(tree: Tree, ex: TypeError)
     extends AbsTypeError {
     def errMsg = ex.msg
     def errPos = tree.pos
@@ -67,18 +67,19 @@ trait ContextErrors {
   //    (pt at the point of divergence gives less information to the user)
   // Note: it is safe to delay error message generation in this case
   // becasue we don't modify implicits' infos.
-  case class DivergentImplicitTypeError(tree: Tree, pt0: Type, sym: Symbol) extends AbsTypeError {
-    def errPos: Position = tree.pos
+  case class DivergentImplicitTypeError(underlyingTree: Tree, pt0: Type, sym: Symbol)
+    extends TreeTypeError {
     def errMsg: String   = errMsgForPt(pt0)
-    def kind = ErrorKinds.Divergent
-    def withPt(pt: Type): AbsTypeError = NormalTypeError(tree, errMsgForPt(pt), kind)
+    def withPt(pt: Type): AbsTypeError = this.copy(pt0 = pt)
     private def errMsgForPt(pt: Type) = 
       s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
   }
 
-  case class AmbiguousTypeError(underlyingTree: Tree, errPos: Position, errMsg: String, kind: ErrorKind = ErrorKinds.Ambiguous) extends AbsTypeError
+  case class AmbiguousImplicitTypeError(underlyingTree: Tree, errMsg: String)
+    extends TreeTypeError
 
-  case class PosAndMsgTypeError(errPos: Position, errMsg: String, kind: ErrorKind = ErrorKinds.Normal) extends AbsTypeError
+  case class PosAndMsgTypeError(errPos: Position, errMsg: String)
+    extends AbsTypeError
 
   object ErrorUtils {
     def issueNormalTypeError(tree: Tree, msg: String)(implicit context: Context) {
@@ -88,7 +89,6 @@ trait ContextErrors {
     def issueSymbolTypeError(sym: Symbol, msg: String)(implicit context: Context) {
       issueTypeError(SymbolTypeError(sym, msg))
     }
-
 
     def issueAmbiguousTypeError(pre: Type, sym1: Symbol, sym2: Symbol, err: AmbiguousTypeError)(implicit context: Context) {
       context.issueAmbiguousError(pre, sym1, sym2, err)
@@ -844,7 +844,7 @@ trait ContextErrors {
           underlyingSymbol(sym).fullLocationString + " cannot be accessed in " +
           location + explanation
         }
-        NormalTypeError(tree, errMsg, ErrorKinds.Access)
+        AccessTypeError(tree, errMsg)
       }
 
       def NoMethodInstanceError(fn: Tree, args: List[Tree], msg: String) =
@@ -889,7 +889,7 @@ trait ContextErrors {
             "argument types " + argtpes.mkString("(", ",", ")") +
            (if (pt == WildcardType) "" else " and expected result type " + pt)
           val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
-          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(pos, msg))
           setErrorOnLastTry(lastTry, tree)
         } else setError(tree) // do not even try further attempts because they should all fail
                               // even if this is not the last attempt (because of the SO's possibility on the horizon)
@@ -903,7 +903,7 @@ trait ContextErrors {
 
       def AmbiguousExprAlternativeError(tree: Tree, pre: Type, best: Symbol, firstCompeting: Symbol, pt: Type, lastTry: Boolean) = {
         val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, "expected type " + pt)
-        issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+        issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(pos, msg))
         setErrorOnLastTry(lastTry, tree)
       }
 
@@ -1188,7 +1188,7 @@ trait ContextErrors {
             if (explanation == "") "" else "\n" + explanation
           )
         }
-        context.issueAmbiguousError(AmbiguousTypeError(tree, tree.pos,
+        context.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
           if (isView) viewMsg
           else s"ambiguous implicit values:\n${coreMsg}match expected type $pt")
         )

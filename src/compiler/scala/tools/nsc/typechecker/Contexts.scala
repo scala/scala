@@ -1195,12 +1195,12 @@ trait Contexts { self: Analyzer =>
       errorBuffer.clear()
       this
     }
-    def clearErrors(kind: ErrorKinds.ErrorKind): this.type = {
-      errorBuffer.retain(_.kind != kind)
+    def clearErrors(removeF: PartialFunction[AbsTypeError, Boolean]): this.type = {
+      errorBuffer.retain(!PartialFunction.cond(_)(removeF))
       this
     }
-    def retainErrors(kind: ErrorKinds.ErrorKind): this.type = {
-      errorBuffer.retain(_.kind == kind)
+    def retainErrors(leaveF: PartialFunction[AbsTypeError, Boolean]): this.type = {
+      errorBuffer.retain(PartialFunction.cond(_)(leaveF))
       this
     }
     def clearAllWarnings(): this.type = {

@@ -150,15 +150,19 @@ trait Typers extends Adaptations with Tags {
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.reportBuffer.errors.find(_.kind == ErrorKinds.Divergent) match {
-                case Some(divergent: DivergentImplicitTypeError) =>
+              context.reportBuffer.errors.collectFirst {
+                case dte: DivergentImplicitTypeError => dte
+              } match {
+                case Some(divergent) =>
                   // DivergentImplicit error has higher priority than "no implicit found"
                   // no need to issue the problem again if we are still in silent mode
                   if (context.reportErrors) {
                     context.issue(divergent.withPt(paramTp))
-                    context.reportBuffer.clearErrors(ErrorKinds.Divergent)
+                    context.reportBuffer.clearErrors {
+                      case dte: DivergentImplicitTypeError => true
+                    }
                   }
-                case None =>
+                case _ =>
                   NoImplicitFoundError(fun, param)
               }
               paramFailed = true
@@ -4688,12 +4692,11 @@ trait Typers extends Adaptations with Tags {
             case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
           }
           val (result, accessibleError) = silent(_.makeAccessible(tree1, sym, qual.tpe, qual)) match {
+            case SilentTypeError(err: AccessTypeError) =>
+              (tree1, Some(err))
             case SilentTypeError(err) =>
-              if (err.kind != ErrorKinds.Access) {
-                context issue err
-                return setError(tree)
-              }
-              else (tree1, Some(err))
+              context issue err
+              return setError(tree)
             case SilentResultValue(treeAndPre) =>
               (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
           }

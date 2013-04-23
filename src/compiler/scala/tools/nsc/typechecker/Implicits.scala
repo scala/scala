@@ -81,7 +81,10 @@ trait Implicits {
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
-      context.updateBuffer(implicitSearchContext.reportBuffer.errors.filter(err => err.kind == ErrorKinds.Ambiguous || err.kind == ErrorKinds.Divergent))
+      context.updateBuffer(implicitSearchContext.reportBuffer.errors.collect {
+        case dte: DivergentImplicitTypeError => dte
+        case ate: AmbiguousImplicitTypeError => ate
+      })
       debuglog("update buffer: " + implicitSearchContext.reportBuffer.errors)
     }
     printInference("[infer implicit] inferred " + result)
@@ -590,7 +593,7 @@ trait Implicits {
           case Some(err) =>
             log("implicit adapt failed: " + err.errMsg)
             return fail(err.errMsg)
-          case None =>
+          case None      =>
         }
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
@@ -639,7 +642,7 @@ trait Implicits {
             context.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
-              case None =>
+              case None      =>
             }
 
             // filter out failures from type inference, don't want to remove them from undetParams!
@@ -678,7 +681,7 @@ trait Implicits {
             context.firstError match {
               case Some(err) =>
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
-              case None =>
+              case None      =>
                 val result = new SearchResult(itree2, subst)
                 if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
                 printInference("[success] found %s for pt %s".format(result, ptInstantiated))
@@ -839,7 +842,9 @@ trait Implicits {
             case sr if sr.isFailure =>
               // We don't want errors that occur during checking implicit info
               // to influence the check of further infos.
-              context.reportBuffer.retainErrors(ErrorKinds.Divergent)
+              context.reportBuffer.retainErrors {
+                case err: DivergentImplicitTypeError => true
+              }
               rankImplicits(is, acc)
             case newBest        =>
               best = newBest
