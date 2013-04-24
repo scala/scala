@@ -129,6 +129,7 @@ fi
   $JAVA_OPTS -cp "$EXT_CLASSPATH" \
   ${partestDebugStr} \
   "$color_opts" \
+  -Dfile.encoding=UTF-8 \
   -Dscala.home="${SCALA_HOME}" \
   -Dpartest.javacmd="${JAVACMD}" \
   -Dpartest.java_opts="${JAVA_OPTS}" \

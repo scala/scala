@@ -31,6 +31,8 @@ package object partest {
   def ojoin(xs: String*): String  = oempty(xs: _*) mkString space
   def nljoin(xs: String*): String = oempty(xs: _*) mkString EOL
 
+  implicit val codec = scala.io.Codec.UTF8
+
   def setUncaughtHandler() = {
     Thread.setDefaultUncaughtExceptionHandler(
       new Thread.UncaughtExceptionHandler {
@@ -83,6 +85,18 @@ package object partest {
 
   implicit class Copier(val f: SFile) extends AnyVal {
     def copyTo(dest: Path): Unit = dest.toFile writeAll f.slurp(scala.io.Codec.UTF8)
+  }
+
+  implicit class LoaderOps(val loader: ClassLoader) extends AnyVal {
+    import scala.util.control.Exception.catching
+    /** Like ScalaClassLoader.create for the case where the result type is
+     *  available to the current class loader, implying that the current
+     *  loader is a parent of `loader`.
+     */
+    def instantiate[A >: Null](name: String): A = (
+      catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
+      (loader loadClass name).newInstance.asInstanceOf[A] orNull
+    )
   }
 
   implicit def temporaryPath2File(x: Path): File = x.jfile

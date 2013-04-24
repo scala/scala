@@ -7,19 +7,20 @@ package nest
 
 import java.io.{ Console => _, _ }
 import java.net.URL
-import scala.tools.nsc.Properties.{ jdkHome, javaHome, propOrElse, propOrEmpty }
-import scala.util.Properties.{ envOrElse, isWin }
-import scala.tools.nsc.{ Settings, CompilerCommand, Global }
-import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
-import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.util.{ ClassPath, FakePos, ScalaClassLoader, stackTraceString }
-import ClassPath.{ join, split }
-import scala.tools.scalap.scalax.rules.scalasig.ByteCode
-import scala.collection.{ mutable, immutable }
+import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
+import java.util.concurrent.{ Executors, TimeUnit }
+import scala.collection.mutable.ListBuffer
+import scala.io.Codec
 import scala.sys.process.Process
-import java.util.concurrent.{ Executors, TimeUnit, TimeoutException }
-import PartestDefaults.{ javaCmd, javacCmd }
+import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
+import scala.tools.nsc.{ Settings, CompilerCommand, Global }
+import scala.tools.nsc.io.{ AbstractFile, PlainFile }
+import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
+import scala.tools.scalap.scalax.rules.scalasig.ByteCode
+import ClassPath.{ join, split }
+import PartestDefaults.{ javaCmd, javacCmd }
 
 trait PartestRunSettings {
   def gitPath: Path
@@ -35,7 +36,7 @@ trait PartestRunSettings {
 
 class TestTranscript {
   import NestUI.color._
-  private val buf = mutable.ListBuffer[String]()
+  private val buf = ListBuffer[String]()
   private def pass(s: String) = bold(green("% ")) + s
   private def fail(s: String) = bold(red("% ")) + s
 
@@ -49,15 +50,14 @@ class TestTranscript {
   }
 }
 
-class Runner(val testFile: File, fileManager: FileManager) {
+/** Run a single test. Rubber meets road. */
+class Runner(val testFile: File, fileManager: FileManager, val testRunParams: TestRunParams) {
   import fileManager._
 
   // Override to true to have the outcome of this test displayed
   // whether it passes or not; in general only failures are reported,
   // except for a . per passing test to show progress.
   def isEnumeratedTest = false
-
-  def testRunParams: TestRunParams = ???
 
   private var _lastState: TestState = null
   private var _transcript = new TestTranscript
@@ -227,6 +227,7 @@ class Runner(val testFile: File, fileManager: FileManager) {
 
   override def toString = s"""Test($testIdent, lastState = $lastState)"""
 
+  // result is unused
   def newTestWriters() = {
     val swr = new StringWriter
     val wr  = new PrintWriter(swr, true)
@@ -348,6 +349,7 @@ class Runner(val testFile: File, fileManager: FileManager) {
 
   /** 1. Creates log file and output directory.
    *  2. Runs script function, providing log file and output directory as arguments.
+   *     2b. or, just run the script without context and return a new context
    */
   def runInContext(body: => Boolean): (Boolean, LogContext) = {
     val (swr, wr) = newTestWriters()
@@ -356,11 +358,16 @@ class Runner(val testFile: File, fileManager: FileManager) {
   }
 
   /** Grouped files in group order, and lex order within each group. */
-  def groupedFiles(dir: File): List[List[File]] = {
-    val testFiles = dir.listFiles.toList filter (_.isJavaOrScala)
-    val grouped   = testFiles groupBy (_.group)
-    grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
-  }
+  def groupedFiles(files: List[File]): List[List[File]] = (
+    if (files.tail.nonEmpty) {
+      val grouped = files filter (_.isJavaOrScala) groupBy (_.group)
+      grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
+    }
+    else List(files)
+  )
+
+  /** Source files for the given test file. */
+  def sources(file: File): List[File] = if (file.isDirectory) file.listFiles.toList else List(file)
 
   def newCompiler = new DirectCompiler(fileManager)
 
@@ -411,11 +418,9 @@ class Runner(val testFile: File, fileManager: FileManager) {
     lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
   }
 
-  def compilationRounds(file: File): List[CompileRound] = {
-    val grouped = if (file.isDirectory) groupedFiles(file) else List(List(file))
-
-    (grouped map mixedCompileGroup).flatten
-  }
+  def compilationRounds(file: File): List[CompileRound] = (
+    (groupedFiles(sources(file)) map mixedCompileGroup).flatten
+  )
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
     val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
     val isMixed                 = javaFiles.nonEmpty && scalaFiles.nonEmpty
@@ -495,28 +500,68 @@ class Runner(val testFile: File, fileManager: FileManager) {
   }
 
   def runScalacheckTest() = runTestCommon {
-    def runScalacheckTest0() = {
-      NestUI.verbose("compilation of "+testFile+" succeeded\n")
+    NestUI verbose f"compilation of $testFile succeeded%n"
 
-      val outURL    = outDir.getAbsoluteFile.toURI.toURL
-      val logWriter = new PrintStream(new FileOutputStream(logFile), true)
-
-      try Output.withRedirected(logWriter) {
-        // this classloader is test specific: its parent contains library classes and others
-        ScalaClassLoader.fromURLs(List(outURL), testRunParams.scalaCheckParentClassLoader).run("Test", Nil)
-      } finally logWriter.close()
-      true  // succeeds trivially
+    // this classloader is test specific: its parent contains library classes and others
+    val loader = {
+      import PathSettings.scalaCheck
+      val locations = List(outDir, scalaCheck.jfile) map (_.getAbsoluteFile.toURI.toURL)
+      ScalaClassLoader.fromURLs(locations, getClass.getClassLoader)
     }
-    def checkScalacheckLog = {
-      NestUI.verbose(file2String(logFile))
-      // obviously this must be improved upon
-      val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
-      lines.forall(x => !x.startsWith("!")) || {
-        _transcript append logFile.fileContents
-        false
+    val logWriter = new PrintStream(new FileOutputStream(logFile), true)
+
+    def toolArgs(tool: String): List[String] = {
+      def argsplitter(s: String) = words(s) filter (_.nonEmpty)
+      def argsFor(f: File): List[String] = {
+        import scala.util.matching.Regex
+        val p    = new Regex(s"(?:.*\\s)?${tool}:(.*)?", "args")
+        val max  = 10
+        val src  = Path(f).toFile.chars(codec)
+        val args = try {
+          src.getLines take max collectFirst {
+            case s if (p findFirstIn s).nonEmpty => for (m <- p findFirstMatchIn s) yield m group "args"
+          }
+        } finally src.close()
+        args.flatten map argsplitter getOrElse Nil
       }
+      sources(testFile) flatMap argsFor
     }
-    (runScalacheckTest0() && nextTestActionExpectTrue("ScalaCheck test failed", checkScalacheckLog))
+    def runInFramework(): Boolean = {
+      import org.scalatools.testing._
+      val f: Framework = loader.instantiate[Framework]("org.scalacheck.ScalaCheckFramework")
+      val logger = new Logger {
+        def ansiCodesSupported  = false //params.env.isSet("colors")
+        def error(msg: String)  = logWriter println msg
+        def warn(msg: String)   = logWriter println msg
+        def info(msg: String)   = logWriter println msg
+        def debug(msg: String)  = logWriter println msg
+        def trace(t: Throwable) = t printStackTrace logWriter
+      }
+      var bad = 0
+      val handler = new EventHandler {
+        // testName, description, result, error
+        // Result =  Success, Failure, Error, Skipped
+        def handle(event: Event): Unit = event.result match {
+          case Result.Success =>
+          //case Result.Skipped =>   // an exhausted test is skipped, therefore bad
+          case _ => bad += 1
+        }
+      }
+      val loggers     = Array(logger)
+      val r           = f.testRunner(loader, loggers).asInstanceOf[Runner2]  // why?
+      val claas       = "Test"
+      val fingerprint = f.tests collectFirst { case x: SubclassFingerprint if x.isModule => x }
+      val args        = toolArgs("scalacheck")
+      vlog(s"Run $testFile with args $args")
+      // set the context class loader for scaladoc/scalacheck tests (FIX ME)
+      ScalaClassLoader(testRunParams.scalaCheckParentClassLoader).asContext {
+        r.run(claas, fingerprint.get, handler, args.toArray)    // synchronous?
+      }
+      val ok = (bad == 0)
+      if (!ok) _transcript append logFile.fileContents
+      ok
+    }
+    try nextTestActionExpectTrue("ScalaCheck test failed", runInFramework()) finally logWriter.close()
   }
 
   def runResidentTest() = {
@@ -628,5 +673,124 @@ class Runner(val testFile: File, fileManager: FileManager) {
       logFile.delete()
     if (!isPartestDebug)
       Directory(outDir).deleteRecursively()
+  }
+}
+
+case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
+
+/** Extended by Ant- and ConsoleRunner for running a set of tests. */
+trait DirectRunner {
+  def fileManager: FileManager
+
+  import PartestDefaults.numThreads
+
+  Thread.setDefaultUncaughtExceptionHandler(
+    new Thread.UncaughtExceptionHandler {
+      def uncaughtException(thread: Thread, t: Throwable) {
+        val t1 = Exceptional unwrap t
+        System.err.println(s"Uncaught exception on thread $thread: $t1")
+        t1.printStackTrace()
+      }
+    }
+  )
+  def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
+
+    NestUI.resetTestNumber(kindFiles.size)
+
+    // this special class loader is for the benefit of scaladoc tests, which need a class path
+    import PathSettings.{ testInterface, scalaCheck }
+    val allUrls           = scalaCheck.toURL :: testInterface.toURL :: fileManager.latestUrls
+    val parentClassLoader = ScalaClassLoader fromURLs allUrls
+    // add scalacheck.jar to a special classloader, but use our loader as parent with test-interface
+    //val parentClassLoader = ScalaClassLoader fromURLs (List(scalaCheck.toURL), getClass().getClassLoader)
+    val pool              = Executors newFixedThreadPool numThreads
+    val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
+    val futures           = kindFiles map (f => pool submit callable(manager runTest f))
+
+    pool.shutdown()
+    try if (!pool.awaitTermination(4, TimeUnit.HOURS))
+      NestUI warning "Thread pool timeout elapsed before all tests were complete!"
+    catch { case t: InterruptedException =>
+      NestUI warning "Thread pool was interrupted"
+      t.printStackTrace()
+    }
+
+    futures map (_.get)
+  }
+}
+
+class LogContext(val file: File, val writers: Option[(StringWriter, PrintWriter)])
+
+object LogContext {
+  def apply(file: File, swr: StringWriter, wr: PrintWriter): LogContext = {
+    require (file != null)
+    new LogContext(file, Some((swr, wr)))
+  }
+  def apply(file: File): LogContext = new LogContext(file, None)
+}
+
+object Output {
+  object outRedirect extends Redirecter(out)
+  object errRedirect extends Redirecter(err)
+
+  System.setOut(outRedirect)
+  System.setErr(errRedirect)
+
+  import scala.util.DynamicVariable
+  private def out = java.lang.System.out
+  private def err = java.lang.System.err
+  private val redirVar = new DynamicVariable[Option[PrintStream]](None)
+
+  class Redirecter(stream: PrintStream) extends PrintStream(new OutputStream {
+    def write(b: Int) = withStream(_ write b)
+
+    private def withStream(f: PrintStream => Unit) = f(redirVar.value getOrElse stream)
+
+    override def write(b: Array[Byte]) = withStream(_ write b)
+    override def write(b: Array[Byte], off: Int, len: Int) = withStream(_.write(b, off, len))
+    override def flush = withStream(_.flush)
+    override def close = withStream(_.close)
+  })
+
+  // this supports thread-safe nested output redirects
+  def withRedirected[T](newstream: PrintStream)(func: => T): T = {
+    // note down old redirect destination
+    // this may be None in which case outRedirect and errRedirect print to stdout and stderr
+    val saved = redirVar.value
+    // set new redirecter
+    // this one will redirect both out and err to newstream
+    redirVar.value = Some(newstream)
+
+    try func
+    finally {
+      newstream.flush()
+      redirVar.value = saved
+    }
+  }
+}
+
+/** Use a Runner to run a test. */
+class RunnerManager(kind: String, fileManager: FileManager, params: TestRunParams) {
+  import fileManager._
+  fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
+  fileManager.CLASSPATH += File.pathSeparator + PathSettings.diffUtils // needed to put diffutils on test/partest's classpath
+
+  def runTest(testFile: File): TestState = {
+    val runner = new Runner(testFile, fileManager, params)
+
+    // when option "--failed" is provided execute test only if log
+    // is present (which means it failed before)
+    if (fileManager.failed && !runner.logFile.canRead)
+      runner.genPass()
+    else {
+      val (state, elapsed) =
+        try timed(runner.run())
+        catch {
+          case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
+        }
+      NestUI.reportTest(state)
+      runner.cleanup()
+      state
+    }
   }
 }
