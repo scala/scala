@@ -115,6 +115,10 @@ object TestMutable3 {
   println(s"b0:$b0")
 }
 
+/***
+The memory requirements here are way beyond
+what a test should exercise.
+
 object TestMutable4 {
   import scala.collection.mutable.BitSet
 
@@ -127,6 +131,7 @@ object TestMutable4 {
 
   println(bMax == bLarge)
 }
+***/
 
 object TestImmutable {
   import scala.collection.immutable.BitSet
@@ -203,7 +208,7 @@ object Test extends App {
   TestMutable
   TestMutable2
   TestMutable3
-  TestMutable4
+  // TestMutable4
   TestImmutable
   TestImmutable2
 }

@@ -150,13 +150,13 @@ trait Typers extends Adaptations with Tags {
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.errBuffer.find(_.kind == ErrorKinds.Divergent) match {
+              context.reportBuffer.errors.find(_.kind == ErrorKinds.Divergent) match {
                 case Some(divergentImplicit) =>
                   // DivergentImplicit error has higher priority than "no implicit found"
                   // no need to issue the problem again if we are still in silent mode
                   if (context.reportErrors) {
                     context.issue(divergentImplicit)
-                    context.condBufferFlush(_.kind  == ErrorKinds.Divergent)
+                    context.reportBuffer.clearErrors(ErrorKinds.Divergent)
                   }
                 case None =>
                   NoImplicitFoundError(fun, param)
@@ -679,17 +679,14 @@ trait Typers extends Adaptations with Tags {
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-          if (context1.hasErrors) {
-            stopStats()
-            SilentTypeError(context1.errBuffer.head)
-          } else {
-            // If we have a successful result, emit any warnings it created.
-            if (context1.hasWarnings) {
-              context1.flushAndReturnWarningsBuffer() foreach {
-                case (pos, msg) => unit.warning(pos, msg)
-              }
-            }
-            SilentResultValue(result)
+          context1.firstError match {
+            case Some(err) =>
+              stopStats()
+              SilentTypeError(err)
+            case None =>
+              // If we have a successful result, emit any warnings it created.
+              context1.flushAndIssueWarnings()
+              SilentResultValue(result)
           }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
@@ -1169,7 +1166,10 @@ trait Typers extends Adaptations with Tags {
                       val silentContext = context.makeImplicit(context.ambiguousErrors)
                       val res = newTyper(silentContext).typed(
                         new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
-                      if (silentContext.hasErrors) context.issue(silentContext.errBuffer.head) else return res
+                      silentContext.firstError match {
+                        case Some(err) => context.issue(err)
+                        case None      => return res
+                      }
                     }
                   }
                 }
@@ -2846,7 +2846,7 @@ trait Typers extends Adaptations with Tags {
             case imp @ Import(_, _) =>
               imp.symbol.initialize
               if (!imp.symbol.isError) {
-                context = context.makeNewImport(imp)
+                context = context.make(imp)
                 typedImport(imp)
               } else EmptyTree
             case _ =>
@@ -3099,30 +3099,29 @@ trait Typers extends Adaptations with Tags {
       fun.tpe match {
         case OverloadedType(pre, alts) =>
           def handleOverloaded = {
-            val undetparams = context.extractUndetparams()
-            val argtpes = new ListBuffer[Type]
-            val amode = forArgMode(fun, mode)
-            val args1 = args map {
-              case arg @ AssignOrNamedArg(Ident(name), rhs) =>
-                // named args: only type the righthand sides ("unknown identifier" errors otherwise)
-                val rhs1 = typedArg(rhs, amode, BYVALmode, WildcardType)
-                argtpes += NamedType(name, rhs1.tpe.deconst)
-                // the assign is untyped; that's ok because we call doTypedApply
-                treeCopy.AssignOrNamedArg(arg, arg.lhs, rhs1)
-              case arg @ Typed(repeated, Ident(tpnme.WILDCARD_STAR)) =>
-                val arg1 = typedArg(arg, amode, BYVALmode, WildcardType)
-                argtpes += RepeatedType(arg1.tpe.deconst)
-                arg1
-              case arg =>
-                val arg1 = typedArg(arg, amode, BYVALmode, WildcardType)
-                argtpes += arg1.tpe.deconst
-                arg1
+            val undetparams = context.undetparams
+            val (args1, argTpes) = context.savingUndeterminedTypeParams() {
+              val amode = forArgMode(fun, mode)
+              def typedArg0(tree: Tree) = typedArg(tree, amode, BYVALmode, WildcardType)
+              args.map {
+                case arg @ AssignOrNamedArg(Ident(name), rhs) =>
+                  // named args: only type the righthand sides ("unknown identifier" errors otherwise)
+                  val rhs1 = typedArg0(rhs)
+                  // the assign is untyped; that's ok because we call doTypedApply
+                  val arg1 = treeCopy.AssignOrNamedArg(arg, arg.lhs, rhs1)
+                  (arg1, NamedType(name, rhs1.tpe.deconst))
+                case arg @ treeInfo.WildcardStarArg(repeated) =>
+                  val arg1 = typedArg0(arg)
+                  (arg1, RepeatedType(arg1.tpe.deconst))
+                case arg =>
+                  val arg1 = typedArg0(arg)
+                  (arg1, arg1.tpe.deconst)
+              }.unzip
             }
-            context.undetparams = undetparams
             if (context.hasErrors)
               setError(tree)
             else {
-              inferMethodAlternative(fun, undetparams, argtpes.toList, pt)
+              inferMethodAlternative(fun, undetparams, argTpes, pt)
               doTypedApply(tree, adapt(fun, mode.forFunMode, WildcardType), args1, mode, pt)
             }
           }
@@ -4359,11 +4358,9 @@ trait Typers extends Adaptations with Tags {
           case ex: CyclicReference =>
             throw ex
           case te: TypeError =>
-            // @H some of typer erros can still leak,
+            // @H some of typer errors can still leak,
             // for instance in continuations
             None
-        } finally {
-          c.flushBuffer()
         }
       }
 
@@ -5001,7 +4998,7 @@ trait Typers extends Adaptations with Tags {
                 typedEta(checkDead(exprTyped))
             }
 
-          case Ident(tpnme.WILDCARD_STAR) =>
+          case t if treeInfo isWildcardStarType t =>
             val exprTyped = typed(expr, mode.onlySticky, WildcardType)
             def subArrayType(pt: Type) =
               if (isPrimitiveValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
@@ -5312,7 +5309,7 @@ trait Typers extends Adaptations with Tags {
     }
 
     def atOwner(owner: Symbol): Typer =
-      newTyper(context.make(context.tree, owner))
+      newTyper(context.make(owner = owner))
 
     def atOwner(tree: Tree, owner: Symbol): Typer =
       newTyper(context.make(tree, owner))
