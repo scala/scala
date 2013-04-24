@@ -1102,12 +1102,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           val s = fn.symbol
           (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=)
         }
+        def haveSubclassRelationship = (actual isSubClass receiver) || (receiver isSubClass actual)
+
         // Whether the operands+operator represent a warnable combo (assuming anyrefs)
         // Looking for comparisons performed with ==/!= in combination with either an
         // equals method inherited from Object or a case class synthetic equals (for
         // which we know the logic.)
         def isWarnable           = isReferenceOp || (isUsingDefaultScalaOp && isUsingWarnableEquals)
         def isEitherNullable     = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+        def isEitherValueClass   = actual.isDerivedValueClass || receiver.isDerivedValueClass
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
@@ -1122,6 +1125,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // unused
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
+        def isNonsenseValueClassCompare = (
+             !haveSubclassRelationship
+          && isUsingDefaultScalaOp
+          && isEitherValueClass
+          && !isCaseEquals
+        )
 
         def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
           val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
@@ -1133,10 +1142,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def nonSensiblyNeq() = nonSensible("", false)
         def nonSensiblyNew() = nonSensibleWarning("a fresh object", false)
 
+        def unrelatedMsg = name match {
+          case nme.EQ | nme.eq => "never compare equal"
+          case _               => "always compare unequal"
+        }
         def unrelatedTypes() = {
-          val msg = if (name == nme.EQ || name == nme.eq)
-                      "never compare equal" else "always compare unequal"
-          unit.warning(pos, typesString + " are unrelated: they will most likely " + msg)
+          val weaselWord = if (isEitherValueClass) "" else " most likely"
+          unit.warning(pos, s"$typesString are unrelated: they will$weaselWord $unrelatedMsg")
         }
 
         if (nullCount == 2) // null == null
@@ -1175,15 +1187,19 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
         }
 
+        // warn if one but not the other is a derived value class
+        // this is especially important to enable transitioning from
+        // regular to value classes without silent failures.
+        if (isNonsenseValueClassCompare)
+          unrelatedTypes()
         // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
-        if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
+        else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           // better to have lubbed and lost
           def warnIfLubless(): Unit = {
             val common = global.lub(List(actual.tpe, receiver.tpe))
             if (ObjectClass.tpe <:< common)
               unrelatedTypes()
           }
-          def eitherSubclasses = (actual isSubClass receiver) || (receiver isSubClass actual)
           // warn if actual has a case parent that is not same as receiver's;
           // if actual is not a case, then warn if no common supertype, as below
           if (isCaseEquals) {
@@ -1196,14 +1212,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
                 //else
                 // if a class, it must be super to thisCase (and receiver) since not <: thisCase
                 if (!actual.isTrait && !(receiver isSubClass actual)) nonSensiblyNeq()
-                else if (!eitherSubclasses) warnIfLubless()
+                else if (!haveSubclassRelationship) warnIfLubless()
               case _ =>
             }
           }
-          else if (actual isSubClass receiver) ()
-          else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object
-          else {
+          else if (!haveSubclassRelationship) {
             warnIfLubless()
           }
         }
