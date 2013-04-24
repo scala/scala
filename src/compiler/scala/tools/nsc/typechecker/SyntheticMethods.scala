@@ -9,6 +9,7 @@ package typechecker
 import scala.collection.{ mutable, immutable }
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 /** Synthetic method implementations for case classes and case objects.
  *
@@ -336,11 +337,13 @@ trait SyntheticMethods extends ast.TreeDSL {
         def shouldGenerate(m: Symbol) = {
           !hasOverridingImplementation(m) || {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
-              if (settings.lint) {
-                (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
-                  currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
-                }
-              }
+              // Without a means to suppress this warning, I've thought better of it.
+              //
+              // if (settings.lint) {
+              //   (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
+              //     currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+              //   }
+              // }
               true
             }
           }

@@ -13,9 +13,7 @@ import java.lang.reflect.{
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
 import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags, JMethodOrConstructor }
-import JavaAccFlags._
 import internal.pickling.ByteCodecs
-import internal.ClassfileConstants._
 import internal.pickling.UnPickler
 import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
@@ -1280,14 +1278,12 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      syntheticCoreClasses get (owner.fullName, name) match {
-        case Some(tsym) =>
-          // synthetic core classes are only present in root mirrors
-          // because Definitions.scala, which initializes and enters them, only affects rootMirror
-          // therefore we need to enter them manually for non-root mirrors
-          if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
-          return tsym
-        case None =>
+      syntheticCoreClasses get ((owner.fullName, name)) foreach { tsym =>
+        // synthetic core classes are only present in root mirrors
+        // because Definitions.scala, which initializes and enters them, only affects rootMirror
+        // therefore we need to enter them manually for non-root mirrors
+        if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
+        return tsym
       }
     }
     info("*** missing: "+name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)

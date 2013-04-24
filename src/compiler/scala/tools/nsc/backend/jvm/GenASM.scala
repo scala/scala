@@ -2245,13 +2245,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
       }
 
-      def isAccessibleFrom(target: Symbol, site: Symbol): Boolean = {
-        target.isPublic || target.isProtected && {
-          (site.enclClass isSubClass target.enclClass) ||
-          (site.enclosingPackage == target.privateWithin)
-        }
-      } // end of genCode()'s isAccessibleFrom()
-
       def genCallMethod(call: CALL_METHOD) {
         val CALL_METHOD(method, style) = call
         val siteSymbol  = clasz.symbol

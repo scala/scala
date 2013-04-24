@@ -253,6 +253,9 @@ trait Contexts { self: Analyzer =>
     /** The next enclosing context (potentially `this`) that has a `CaseDef` as a tree */
     def enclosingCaseDef = nextEnclosing(_.tree.isInstanceOf[CaseDef])
 
+    /** ...or an Apply. */
+    def enclosingApply = nextEnclosing(_.tree.isInstanceOf[Apply])
+
     //
     // Tracking undetermined type parameters for type argument inference.
     //

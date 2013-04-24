@@ -3,7 +3,7 @@ package scala.tools.util
 import scala.tools.nsc.io._
 import java.net.URLClassLoader
 import scala.collection.JavaConverters._
-
+import scala.language.postfixOps
 
 object VerifyClass {
 

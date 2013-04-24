@@ -1,6 +1,8 @@
 package scala.reflect
 package api
 
+import scala.language.implicitConversions
+
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *

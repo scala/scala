@@ -11,6 +11,8 @@ import scala.reflect.internal.Chars._
 import symtab._
 import typechecker.Analyzer
 import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
+import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo, LinkToExternal }
+import scala.language.postfixOps
 
 trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
@@ -151,27 +153,25 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
 
     private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
     private var inDocComment             = false       // if buffer contains double-star doc comment
-    private var lastDoc: DocComment      = null        // last comment if it was double-star doc 
+    private var lastDoc: DocComment      = null        // last comment if it was double-star doc
 
-    private lazy val unmooredParser = {                // minimalist comment parser
-      import scala.tools.nsc.doc.base.{comment => _, _}
-      new {
-        val global: Global = ScaladocSyntaxAnalyzer.this.global
-      } with CommentFactoryBase with MemberLookupBase {
-        import global.{ settings, Symbol }
-        def parseComment(comment: DocComment) = {
-          val nowarnings = settings.nowarn.value
-          settings.nowarn.value = true
-          try parseAtSymbol(comment.raw, comment.raw, comment.pos)
-          finally settings.nowarn.value = nowarnings
-        }
-
-        override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] = None
-        override def chooseLink(links: List[LinkTo]): LinkTo = links.headOption orNull
-        override def toString(link: LinkTo): String = "No link"
-        override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = None
-        override def warnNoLink: Boolean = false
+    private object unmooredParser extends {                // minimalist comment parser
+      val global: Global = ScaladocSyntaxAnalyzer.this.global
+    }
+    with CommentFactoryBase with MemberLookupBase {
+      import global.{ settings, Symbol }
+      def parseComment(comment: DocComment) = {
+        val nowarnings = settings.nowarn.value
+        settings.nowarn.value = true
+        try parseAtSymbol(comment.raw, comment.raw, comment.pos)
+        finally settings.nowarn.value = nowarnings
       }
+
+      override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] = None
+      override def chooseLink(links: List[LinkTo]): LinkTo = links.headOption orNull
+      override def toString(link: LinkTo): String = "No link"
+      override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = None
+      override def warnNoLink: Boolean = false
     }
 
     /**

@@ -22,7 +22,6 @@ import scala.language.implicitConversions
 
 trait InteractiveScaladocAnalyzer extends InteractiveAnalyzer with ScaladocAnalyzer {
   val global : Global
-  import global._
   override def newTyper(context: Context) = new Typer(context) with InteractiveTyper with ScaladocTyper {
     override def canAdaptConstantTypeToLiteral = false
   }

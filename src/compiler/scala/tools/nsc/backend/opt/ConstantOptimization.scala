@@ -17,7 +17,7 @@ import scala.annotation.tailrec
  * null checks.
  *
  * With some more work it could be extended to
- * - cache stable values (final fields, modules) in locals 
+ * - cache stable values (final fields, modules) in locals
  * - replace the copy propagation in ClosureElilmination
  * - fold constants
  * - eliminate unnecessary stores and loads
@@ -118,18 +118,18 @@ abstract class ConstantOptimization extends SubComponent {
      *
      * // left must be 1 or 2, right must be 2 or 3 then we must have a 1, 2 or 3
      * Possible(xs) merge Possible(ys) => Possible(xs union ys)
-     * 
+     *
      * // Left says can't be 2 or 3, right says can't be 3 or 4
      * // then it's not 3 (it could be 2 from the right or 4 from the left)
      * Impossible(xs) merge Impossible(ys) => Impossible(xs intersect ys)
-     * 
+     *
      * // Left says it can't be 2 or 3, right says it must be 3 or 4, then
      * // it can't be 2 (left rules out 4 and right says 3 is possible)
      * Impossible(xs) merge Possible(ys) => Impossible(xs -- ys)
-     * 
+     *
      * Intuitively, Possible(empty) says that a location can't hold anything,
      * it's uninitialized. However, Possible(empty) never appears in the code.
-     * 
+     *
      * Conversely, Impossible(empty) says nothing is impossible, it could be
      * anything. Impossible(empty) is given a synonym UNKNOWN and is used
      * for, e.g., the result of an arbitrary method call.
@@ -155,7 +155,7 @@ abstract class ConstantOptimization extends SubComponent {
       def mightNotEqual(other: Contents): Boolean
     }
     private def SingleImpossible(x: Datum) = new Impossible(Set(x))
-    
+
     /**
      * The location is known to have one of a set of values.
      */
@@ -299,32 +299,32 @@ abstract class ConstantOptimization extends SubComponent {
     private def interpretInst(in: State, inst: Instruction): State = {
       // pop the consumed number of values off the `in` state's stack, producing a new state
       def dropConsumed: State = in drop inst.consumed
-      
+
       inst match {
         case THIS(_) =>
           in load THIS_LOCAL
-  
+
         case CONSTANT(k) =>
           // treat NaN as UNKNOWN because NaN must never equal NaN
           val const = if (k.isNaN) UNKNOWN
           else SinglePossible(Const(k))
           in push const
-  
+
         case LOAD_ARRAY_ITEM(_) | LOAD_FIELD(_, _) | CALL_PRIMITIVE(_) =>
           dropConsumed push UNKNOWN
 
         case LOAD_LOCAL(local) =>
           // TODO if a local is known to hold a constant then we can replace this instruction with a push of that constant
           in load local
-  
+
         case STORE_LOCAL(local) =>
           in store local
-  
+
         case STORE_THIS(_) =>
           // if a local is already known to have a constant and we're replacing with the same constant then we can
           // replace this with a drop
           in store THIS_LOCAL
-    
+
         case CALL_METHOD(_, _) =>
           // TODO we could special case implementations of equals that are known, e.g. String#equals
           // We could turn Possible(string constants).equals(Possible(string constants) into an eq check
@@ -332,7 +332,7 @@ abstract class ConstantOptimization extends SubComponent {
           //  and eliminate the null check that likely precedes this call
           val initial = dropConsumed
           (0 until inst.produced).foldLeft(initial) { case (know, _) => know push UNKNOWN }
-  
+
         case BOX(_) =>
           val value = in peek 0
           // we simulate boxing by, um, boxing the possible/impossible contents
@@ -345,7 +345,7 @@ abstract class ConstantOptimization extends SubComponent {
             case Impossible(values) => Impossible(values map Boxed)
           }
           dropConsumed push newValue
-  
+
         case UNBOX(_) =>
           val value = in peek 0
           val newValue = value match {
@@ -373,42 +373,42 @@ abstract class ConstantOptimization extends SubComponent {
               }
           }
           dropConsumed push newValue
-  
+
         case LOAD_MODULE(_) | NEW(_) | LOAD_EXCEPTION(_) =>
           in push NOT_NULL
 
         case CREATE_ARRAY(_, _) =>
           dropConsumed push NOT_NULL
-    
+
         case IS_INSTANCE(_) =>
           // TODO IS_INSTANCE is going to be followed by a C(Z)JUMP
           // and if IS_INSTANCE/C(Z)JUMP the branch for "true" can
           // know that whatever was checked was not a null
           // see the TODO on CJUMP for more information about propagating null
           // information
-          // TODO if the top of stack is guaranteed null then we can eliminate this IS_INSTANCE check and 
+          // TODO if the top of stack is guaranteed null then we can eliminate this IS_INSTANCE check and
           // replace with a constant false, but how often is a knowable null checked for instanceof?
           // TODO we could track type information and statically know to eliminate IS_INSTANCE
           // which might be a nice win under specialization
           dropConsumed push UNKNOWN // it's actually a Possible(true, false) but since the following instruction
         // will be a conditional jump comparing to true or false there
         // nothing to be gained by being more precise
-  
+
         case CHECK_CAST(_) =>
           // TODO we could track type information and statically know to eliminate CHECK_CAST
           // but that's probably not a huge win
           in
-  
+
         case DUP(_) =>
           val value = in peek 0
           in push value
-  
+
         case DROP(_) | MONITOR_ENTER() | MONITOR_EXIT() | STORE_ARRAY_ITEM(_) | STORE_FIELD(_, _) =>
           dropConsumed
 
         case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
           in
-  
+
         case JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | RETURN(_) | THROW(_) | SWITCH(_, _) =>
           dumpClassesAndAbort("Unexpected block ending instruction: " + inst)
       }
@@ -468,7 +468,7 @@ abstract class ConstantOptimization extends SubComponent {
 
         val replacements = if (result.size == 1) List.fill(inst.consumed)(DROP(kind)) :+ JUMP(result.keySet.head)
         else inst :: Nil
-        
+
         (result, replacements)
       }
 
@@ -488,8 +488,7 @@ abstract class ConstantOptimization extends SubComponent {
 
         case SWITCH(tags, labels) =>
           val in1 = in peek 0
-          val newStuff = tags zip labels filter { case (tagSet, _) => canSwitch(in1, tagSet) }
-          val (reachableTags, reachableNormalLabels) = (tags zip labels filter { case (tagSet, _) => canSwitch(in1, tagSet) }).unzip
+          val reachableNormalLabels = tags zip labels collect { case (tagSet, label) if canSwitch(in1, tagSet) => label }
           val reachableLabels = if (labels.lengthCompare(tags.length) > 0) {
             // if we've got an extra label then it's the default
             val defaultLabel = labels.last
@@ -533,7 +532,7 @@ abstract class ConstantOptimization extends SubComponent {
       // number of instructions excluding the last one
       val normalCount = block.size - 1
 
-      var exceptionState = in.cleanStack
+      val exceptionState = in.cleanStack
       var normalExitState = in
       var idx = 0
       while (idx < normalCount) {
@@ -569,7 +568,7 @@ abstract class ConstantOptimization extends SubComponent {
 
       // worklist of basic blocks to process, initially the start block
       val worklist = MSet(m.startBlock)
-      // worklist of exception basic blocks. They're kept in a separate set so they can be 
+      // worklist of exception basic blocks. They're kept in a separate set so they can be
       // processed after normal flow basic blocks. That's because exception basic blocks
       // are more likely to have multiple predecessors and queueing them for later
       // increases the chances that they'll only need to be interpreted once
