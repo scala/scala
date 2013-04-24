@@ -85,7 +85,6 @@ trait FileManager extends FileUtil {
 
   var SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
   var JAVA_OPTS   = PartestDefaults.javaOpts
-  var timeout     = PartestDefaults.timeout
 
   /** Only when --debug is given. */
   lazy val testTimings = new mutable.HashMap[String, Long]
