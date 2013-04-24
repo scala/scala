@@ -1,11 +1,10 @@
-
-
-
+/*
+ * scalac: -deprecation
+ * scalacheck: -workers 1 -minSize 0 -maxSize 4000 -minSuccessfulTests 5
+ */
 
 import org.scalacheck._
-
 import scala.collection.parallel._
-
 
 class ParCollProperties extends Properties("Parallel collections") {
   /*   Collections   */
@@ -35,8 +34,8 @@ class ParCollProperties extends Properties("Parallel collections") {
   include(immutable.IntParallelVectorCheck)
 }
 
-
-object Test {
+object Test extends ParCollProperties {
+  /*
   def main(args: Array[String]) {
     val pc = new ParCollProperties
     org.scalacheck.Test.checkProperties(
@@ -51,4 +50,5 @@ object Test {
       pc
     )
   }
+  */
 }

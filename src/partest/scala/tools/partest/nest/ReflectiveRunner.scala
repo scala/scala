@@ -55,7 +55,7 @@ class ReflectiveRunner {
     // we hack into the classloader that will become parent classloader for scalac
     // this way we ensure that reflective macro lookup will pick correct Code.lift
     // it's also used to inject diffutils into the classpath when running partest from the test/partest script    
-    val srcCodeLibAndDiff = List(PathSettings.srcCodeLib, PathSettings.diffUtils) 
+    val srcCodeLibAndDiff = List(PathSettings.srcCodeLib, PathSettings.diffUtils, PathSettings.testInterface) 
     val sepUrls   = srcCodeLibAndDiff.map(_.toURI.toURL) ::: fileManager.latestUrls
     // this seems to be the core classloader that determines which classes can be found when running partest from the test/partest script    
     val sepLoader = new URLClassLoader(sepUrls.toArray, null)
