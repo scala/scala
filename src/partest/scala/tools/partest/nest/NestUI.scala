@@ -62,11 +62,14 @@ object NestUI {
 
   def statusLine(state: TestState) = {
     import state._
-    val word = bold(
-      if (isSkipped) yellow("--")
-      else if (isOk) green("ok")
-      else red("!!")
-    )
+    import TestState._
+    val colorizer = state match {
+      case _: Skip     => yellow
+      case _: Updated  => cyan
+      case s if s.isOk => green
+      case _           => red
+    }
+    val word = bold(colorizer(state.shortStatus))
     f"$word $testNumber - $testIdent%-40s$reasonString"
   }
 
