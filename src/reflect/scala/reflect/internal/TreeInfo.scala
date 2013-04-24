@@ -401,8 +401,15 @@ abstract class TreeInfo {
   /** Is this argument node of the form <expr> : _* ?
    */
   def isWildcardStarArg(tree: Tree): Boolean = tree match {
-    case Typed(_, Ident(tpnme.WILDCARD_STAR)) => true
-    case _                                  => false
+    case WildcardStarArg(_) => true
+    case _                  => false
+  }
+
+  object WildcardStarArg {
+    def unapply(tree: Typed): Option[Tree] = tree match {
+      case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => Some(expr)
+      case _                                       => None
+    }
   }
 
   /** If this tree has type parameters, those.  Otherwise Nil.

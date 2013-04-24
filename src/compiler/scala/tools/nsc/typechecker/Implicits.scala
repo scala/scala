@@ -81,8 +81,8 @@ trait Implicits {
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
     if (saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
-      context.updateBuffer(implicitSearchContext.errBuffer.filter(err => err.kind == ErrorKinds.Ambiguous || err.kind == ErrorKinds.Divergent))
-      debuglog("update buffer: " + implicitSearchContext.errBuffer)
+      context.updateBuffer(implicitSearchContext.reportBuffer.errors.filter(err => err.kind == ErrorKinds.Ambiguous || err.kind == ErrorKinds.Divergent))
+      debuglog("update buffer: " + implicitSearchContext.reportBuffer.errors)
     }
     printInference("[infer implicit] inferred " + result)
     context.undetparams = context.undetparams filterNot result.subst.from.contains
@@ -584,9 +584,11 @@ trait Implicits {
             )
           case _ => fallback
         }
-        if (context.hasErrors) {
-          log("implicit adapt failed: " + context.errBuffer.head.errMsg)
-          return fail(context.errBuffer.head.errMsg)
+        context.firstError match { // using match rather than foreach to avoid non local return.
+          case Some(err) =>
+            log("implicit adapt failed: " + err.errMsg)
+            return fail(err.errMsg)
+          case None =>
         }
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
@@ -609,7 +611,7 @@ trait Implicits {
         }
 
         if (context.hasErrors)
-          fail("hasMatchingSymbol reported error: " + context.errBuffer.head.errMsg)
+          fail("hasMatchingSymbol reported error: " + context.firstError.get.errMsg)
         else if (isLocal && !hasMatchingSymbol(itree1))
           fail("candidate implicit %s is shadowed by %s".format(
             info.sym.fullLocationString, itree1.symbol.fullLocationString))
@@ -632,8 +634,11 @@ trait Implicits {
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree2, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
-            if (context.hasErrors)
-              return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + context.errBuffer.head.errMsg)
+            context.firstError match {
+              case Some(err) =>
+                return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
+              case None =>
+            }
 
             // filter out failures from type inference, don't want to remove them from undetParams!
             // we must be conservative in leaving type params in undetparams
@@ -668,13 +673,14 @@ trait Implicits {
               case t                              => t
             }
 
-            if (context.hasErrors)
-              fail("typing TypeApply reported errors for the implicit tree: " + context.errBuffer.head.errMsg)
-            else {
-              val result = new SearchResult(itree2, subst)
-              if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
-              printInference("[success] found %s for pt %s".format(result, ptInstantiated))
-              result
+            context.firstError match {
+              case Some(err) =>
+                fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
+              case None =>
+                val result = new SearchResult(itree2, subst)
+                if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
+                printInference("[success] found %s for pt %s".format(result, ptInstantiated))
+                result
             }
           }
           else fail("incompatible: %s does not match expected type %s".format(itree2.tpe, ptInstantiated))
@@ -828,7 +834,7 @@ trait Implicits {
             case sr if sr.isFailure =>
               // We don't want errors that occur during checking implicit info
               // to influence the check of further infos.
-              context.condBufferFlush(_.kind != ErrorKinds.Divergent)
+              context.reportBuffer.retainErrors(ErrorKinds.Divergent)
               rankImplicits(is, acc)
             case newBest        =>
               best = newBest
@@ -1085,8 +1091,10 @@ trait Implicits {
 
         try {
           val tree1 = typedPos(pos.focus)(arg)
-          if (context.hasErrors) processMacroExpansionError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
-          else new SearchResult(tree1, EmptyTreeTypeSubstituter)
+          context.firstError match {
+            case Some(err) => processMacroExpansionError(err.errPos, err.errMsg)
+            case None      => new SearchResult(tree1, EmptyTreeTypeSubstituter)
+          }
         } catch {
           case ex: TypeError =>
             processMacroExpansionError(ex.pos, ex.msg)
