@@ -12,12 +12,14 @@ sealed abstract class TestState {
   def isOk             = false
   def isSkipped        = false
   def testIdent        = testFile.testIdent
-  def transcriptString = transcript.mkString("\n")
+  def transcriptString = transcript mkString EOL
 
   def identAndReason = testIdent + reasonString
   def status         = s"$what - $identAndReason"
   def longStatus     = status + transcriptString
   def reasonString   = if (reason == "") "" else s"  [$reason]"
+
+  def shortStatus    = if (isOk) "ok" else "!!"
 
   override def toString = status
 }
@@ -27,18 +29,27 @@ object TestState {
     def what = "uninitialized"
     def reason = what
     def transcript = Nil
+    override def shortStatus = "??"
   }
   case class Pass(testFile: File) extends TestState {
-    final override def isOk = true
     def what = "pass"
+    override def isOk = true
     def transcript: List[String] = Nil
     def reason = ""
   }
-  case class Skip(testFile: File, reason: String) extends TestState {
+  case class Updated(testFile: File) extends TestState {
+    def what = "updated"
     override def isOk = true
-    final override def isSkipped = true
     def transcript: List[String] = Nil
+    def reason = "updated check file"
+    override def shortStatus = "++"
+  }
+  case class Skip(testFile: File, reason: String) extends TestState {
     def what = "skip"
+    override def isOk = true
+    override def isSkipped = true
+    def transcript: List[String] = Nil
+    override def shortStatus = "--"
   }
   case class Fail(testFile: File, reason: String, transcript: List[String]) extends TestState {
     def what = "fail"
