@@ -27,8 +27,8 @@ object PathSettings {
     candidates find isPartestDir getOrElse sys.error("Directory 'test' not found.")
   }
 
-  // Directory <root>/test/files
-  lazy val srcDir = Directory(testRoot / srcDirName toCanonical)
+  // Directory <root>/test/files or .../scaladoc
+  def srcDir = Directory(testRoot / srcDirName toCanonical)
 
   // Directory <root>/test/files/lib
   lazy val srcLibDir = Directory(srcDir / "lib")
@@ -82,7 +82,7 @@ object PathSettings {
    *  if one of those environment variables is set, then the lib directory under java.home,
    *  and finally the lib directory under the parent of java.home. Or, as a last resort,
    *  search deeply under those locations (except for the parent of java.home, on the notion
-   *  that if this is not a canonical installation, then that search would have litte
+   *  that if this is not a canonical installation, then that search would have little
    *  chance of succeeding).
    */
   lazy val platformTools: Option[File] = {
