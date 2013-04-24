@@ -10,23 +10,38 @@ package util
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.{ Settings, GenericRunnerSettings }
 import scala.tools.nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
-import scala.tools.nsc.io.{ File, Directory, Path, AbstractFile }
+import scala.reflect.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
 
 // Loosely based on the draft specification at:
-// https://wiki.scala-lang.org/display/SW/Classpath
+// https://wiki.scala-lang.org/display/SIW/Classpath
 
 object PathResolver {
   // Imports property/environment functions which suppress security exceptions.
   import AccessControl._
+  import scala.compat.Platform.EOL
+
+  implicit class MkLines(val t: TraversableOnce[_]) extends AnyVal {
+    def mkLines: String = t.mkString("", EOL, EOL)
+    def mkLines(header: String, indented: Boolean = false, embraced: Boolean = false): String = {
+      val space = "\u0020"
+      val sep = if (indented) EOL + space * 2 else EOL
+      val (lbrace, rbrace) = if (embraced) (space + "{", EOL + "}") else ("", "")
+      t.mkString(header + lbrace + sep, sep, rbrace + EOL)
+    }
+  }
+  implicit class AsLines(val s: String) extends AnyVal {
+    // sm"""...""" could do this in one pass
+    def asLines = s.trim.stripMargin.lines.mkLines
+  }
 
   /** pretty print class path */
   def ppcp(s: String) = split(s) match {
     case Nil      => ""
     case Seq(x)   => x
-    case xs       => xs map ("\n" + _) mkString
+    case xs       => xs.mkString(EOL, EOL, "")
   }
 
   /** Values found solely by inspecting environment or property variables.
@@ -50,20 +65,14 @@ object PathResolver {
     def javaUserClassPath   = propOrElse("java.class.path", "")
     def useJavaClassPath    = propOrFalse("scala.usejavacp")
 
-    override def toString = """
+    override def toString = s"""
       |object Environment {
-      |  scalaHome          = %s (useJavaClassPath = %s)
-      |  javaBootClassPath  = <%d chars>
-      |  javaExtDirs        = %s
-      |  javaUserClassPath  = %s
-      |  scalaExtDirs       = %s
-      |}""".trim.stripMargin.format(
-        scalaHome, useJavaClassPath,
-        javaBootClassPath.length,
-        ppcp(javaExtDirs),
-        ppcp(javaUserClassPath),
-        ppcp(scalaExtDirs)
-      )
+      |  scalaHome          = $scalaHome (useJavaClassPath = $useJavaClassPath)
+      |  javaBootClassPath  = <${javaBootClassPath.length} chars>
+      |  javaExtDirs        = ${ppcp(javaExtDirs)}
+      |  javaUserClassPath  = ${ppcp(javaUserClassPath)}
+      |  scalaExtDirs       = ${ppcp(scalaExtDirs)}
+      |}""".asLines
   }
 
   /** Default values based on those in Environment as interpreted according
@@ -103,20 +112,15 @@ object PathResolver {
     def scalaExtDirs = Environment.scalaExtDirs
     def scalaPluginPath = (scalaHomeDir / "misc" / "scala-devel" / "plugins").path
 
-    override def toString = """
+    override def toString = s"""
       |object Defaults {
-      |  scalaHome            = %s
-      |  javaBootClassPath    = %s
-      |  scalaLibDirFound     = %s
-      |  scalaLibFound        = %s
-      |  scalaBootClassPath   = %s
-      |  scalaPluginPath      = %s
-      |}""".trim.stripMargin.format(
-        scalaHome,
-        ppcp(javaBootClassPath),
-        scalaLibDirFound, scalaLibFound,
-        ppcp(scalaBootClassPath), ppcp(scalaPluginPath)
-      )
+      |  scalaHome            = $scalaHome
+      |  javaBootClassPath    = ${ppcp(javaBootClassPath)}
+      |  scalaLibDirFound     = $scalaLibDirFound
+      |  scalaLibFound        = $scalaLibFound
+      |  scalaBootClassPath   = ${ppcp(scalaBootClassPath)}
+      |  scalaPluginPath      = ${ppcp(scalaPluginPath)}
+      |}""".asLines
   }
 
   /** Locations discovered by supplemental heuristics.
@@ -153,17 +157,14 @@ object PathResolver {
       (home flatMap jarAt) orElse (install flatMap jarAt) orElse (install map (_.parent) flatMap jarAt) orElse
         (jdkDir flatMap deeply)
     }
-    private def vals = List(
-      s"platformTools        = $platformTools"
-    )
-    override def toString = vals mkString (
-      f"object SupplementalLocations {%n  ",
-      f"%n  ",
-      f"%n}"
-    )
+    override def toString = s"""
+      |object SupplementalLocations {
+      |  platformTools        = $platformTools
+      |}""".asLines
   }
 
-  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = { // called from scalap
+  // called from scalap
+  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
     val s = new Settings()
     s.classpath.value = path
     new PathResolver(s, context) result
@@ -188,9 +189,10 @@ object PathResolver {
     }
   }
 }
-import PathResolver.{ Defaults, Environment, ppcp }
 
 class PathResolver(settings: Settings, context: JavaContext) {
+  import PathResolver.{ Defaults, Environment, AsLines, MkLines, ppcp }
+
   def this(settings: Settings) = this(settings, if (settings.inline) new JavaContext else DefaultJavaContext)
 
   private def cmdLineOrElse(name: String, alt: String) = {
@@ -261,24 +263,18 @@ class PathResolver(settings: Settings, context: JavaContext) {
 
     lazy val containers = basis.flatten.distinct
 
-    override def toString = """
+    override def toString = s"""
       |object Calculated {
-      |  scalaHome            = %s
-      |  javaBootClassPath    = %s
-      |  javaExtDirs          = %s
-      |  javaUserClassPath    = %s
-      |    useJavaClassPath   = %s
-      |  scalaBootClassPath   = %s
-      |  scalaExtDirs         = %s
-      |  userClassPath        = %s
-      |  sourcePath           = %s
-      |}""".trim.stripMargin.format(
-        scalaHome,
-        ppcp(javaBootClassPath), ppcp(javaExtDirs), ppcp(javaUserClassPath),
-        useJavaClassPath,
-        ppcp(scalaBootClassPath), ppcp(scalaExtDirs), ppcp(userClassPath),
-        ppcp(sourcePath)
-      )
+      |  scalaHome            = $scalaHome
+      |  javaBootClassPath    = ${ppcp(javaBootClassPath)}
+      |  javaExtDirs          = ${ppcp(javaExtDirs)}
+      |  javaUserClassPath    = ${ppcp(javaUserClassPath)}
+      |    useJavaClassPath   = $useJavaClassPath
+      |  scalaBootClassPath   = ${ppcp(scalaBootClassPath)}
+      |  scalaExtDirs         = ${ppcp(scalaExtDirs)}
+      |  userClassPath        = ${ppcp(userClassPath)}
+      |  sourcePath           = ${ppcp(sourcePath)}
+      |}""".asLines
   }
 
   def containers = Calculated.containers
@@ -286,13 +282,12 @@ class PathResolver(settings: Settings, context: JavaContext) {
   lazy val result = {
     val cp = new JavaClassPath(containers.toIndexedSeq, context)
     if (settings.Ylogcp) {
-      Console.println("Classpath built from " + settings.toConciseString)
-      Console.println("Defaults: " + PathResolver.Defaults)
-      Console.println("Calculated: " + Calculated)
+      Console print f"Classpath built from ${settings.toConciseString} %n"
+      Console print s"Defaults: ${PathResolver.Defaults}"
+      Console print s"Calculated: $Calculated"
 
       val xs = (Calculated.basis drop 2).flatten.distinct
-      println("After java boot/extdirs classpath has %d entries:" format xs.size)
-      xs foreach (x => println("  " + x))
+      Console print (xs mkLines (s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
     }
     cp
   }
