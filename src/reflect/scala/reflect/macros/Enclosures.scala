@@ -1,6 +1,8 @@
 package scala.reflect
 package macros
 
+import scala.language.existentials // SI-6541
+
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *

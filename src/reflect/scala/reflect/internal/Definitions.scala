@@ -6,6 +6,7 @@
 package scala.reflect
 package internal
 
+import scala.language.postfixOps
 import scala.annotation.{ switch, meta }
 import scala.collection.{ mutable, immutable }
 import Flags._

@@ -14,7 +14,7 @@ import java.io.{ File => JFile }
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object Directory {
-  import scala.util.Properties.{ userHome, userDir }
+  import scala.util.Properties.userDir
 
   private def normalizePath(s: String) = Some(apply(Path(s).normalize))
   def Current: Option[Directory]  = if (userDir == "") None else normalizePath(userDir)

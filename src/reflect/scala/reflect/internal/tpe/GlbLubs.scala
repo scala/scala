@@ -291,7 +291,7 @@ private[internal] trait GlbLubs {
       case ts @ AnnotatedType(annots, tpe, _) :: rest =>
         annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
-        lubResults get (depth, ts) match {
+        lubResults get ((depth, ts)) match {
           case Some(lubType) =>
             lubType
           case None =>
@@ -449,7 +449,7 @@ private[internal] trait GlbLubs {
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
       case ts =>
-        glbResults get (depth, ts) match {
+        glbResults get ((depth, ts)) match {
           case Some(glbType) =>
             glbType
           case _ =>

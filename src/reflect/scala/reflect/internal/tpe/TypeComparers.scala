@@ -3,7 +3,6 @@ package internal
 package tpe
 
 import scala.collection.{ mutable }
-import Flags._
 import util.Statistics
 import scala.annotation.tailrec
 

@@ -289,9 +289,9 @@ abstract class ClassfileParser {
      */
     private def getNameAndType(index: Int, ownerTpe: Type): (Name, Type) = {
       if (index <= 0 || len <= index) errorBadIndex(index)
-      (values(index): @unchecked) match {
-        case p: ((Name, Type)) => p
-        case _                 =>
+      values(index) match {
+        case p: ((Name @unchecked, Type @unchecked)) => p
+        case _                                       =>
           val start = firstExpecting(index, CONSTANT_NAMEANDTYPE)
           val name = getName(in.getChar(start).toInt)
           // create a dummy symbol for method types

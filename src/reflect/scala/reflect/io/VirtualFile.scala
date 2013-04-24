@@ -60,9 +60,13 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** @inheritdoc */
   override def isVirtual: Boolean = true
 
+  // private var _lastModified: Long = 0
+  // _lastModified
+
   /** Returns the time that this abstract file was last modified. */
-  private var _lastModified: Long = 0
-  def lastModified: Long = _lastModified
+  // !!! Except it doesn't - it's private and never set - so I replaced it
+  // with constant 0 to save the field.
+  def lastModified: Long = 0
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {

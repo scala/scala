@@ -10,6 +10,7 @@ package scala.concurrent.duration
 
 import java.lang.{ Double => JDouble, Long => JLong }
 import scala.language.implicitConversions
+import scala.language.postfixOps
 
 object Duration {
 

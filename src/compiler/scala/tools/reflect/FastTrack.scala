@@ -26,7 +26,7 @@ trait FastTrack {
 
   final class FastTrackEntry(pf: PartialFunction[Applied, MacroContext => Tree]) extends (MacroArgs => Any) {
     def validate(tree: Tree) = pf isDefinedAt Applied(tree)
-    def apply(margs: MacroArgs) = {
+    def apply(margs: MacroArgs): margs.c.Expr[Nothing] = {
       val MacroArgs(c, _) = margs
       // Macros validated that the pf is defined here - and there's not much we could do if it weren't.
       c.Expr[Nothing](pf(Applied(c.expandee))(c))(c.WeakTypeTag.Nothing)
