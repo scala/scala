@@ -214,11 +214,34 @@ private[internal] trait GlbLubs {
     (strippedTypes, quantified)
   }
 
-  def weakLub(ts: List[Type]) =
-    if (ts.nonEmpty && (ts forall isNumericValueType)) (numericLub(ts), true)
-    else if (ts exists typeHasAnnotations)
-      (annotationsLub(lub(ts map (_.withoutAnnotations)), ts), true)
-    else (lub(ts), false)
+  /** Does this set of types have the same weak lub as
+   *  it does regular lub? This is exposed so lub callers
+   *  can discover whether the trees they are typing will
+   *  may require further adaptation. It may return false
+   *  negatives, but it will not return false positives.
+   */
+  def sameWeakLubAsLub(tps: List[Type]) = tps match {
+    case Nil       => true
+    case tp :: Nil => !typeHasAnnotations(tp)
+    case tps       => !(tps exists typeHasAnnotations) && !(tps forall isNumericValueType)
+  }
+
+  /** If the arguments are all numeric value types, the numeric
+   *  lub according to the weak conformance spec. If any argument
+   *  has type annotations, take the lub of the unannotated type
+   *  and call the analyzerPlugin method annotationsLub so it can
+   *  be further altered. Otherwise, the regular lub.
+   */
+  def weakLub(tps: List[Type]): Type = (
+    if (tps.isEmpty)
+      NothingClass.tpe
+    else if (tps forall isNumericValueType)
+      numericLub(tps)
+    else if (tps exists typeHasAnnotations)
+      annotationsLub(lub(tps map (_.withoutAnnotations)), tps)
+    else
+      lub(tps)
+  )
 
   def numericLub(ts: List[Type]) =
     ts reduceLeft ((t1, t2) =>
@@ -247,9 +270,9 @@ private[internal] trait GlbLubs {
   }
 
   def lub(ts: List[Type]): Type = ts match {
-    case List() => NothingClass.tpe
-    case List(t) => t
-    case _ =>
+    case Nil      => NothingClass.tpe
+    case t :: Nil => t
+    case _        =>
       if (Statistics.canEnable) Statistics.incCounter(lubCount)
       val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {

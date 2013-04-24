@@ -209,6 +209,12 @@ trait Types {
 
     /******************* helpers *******************/
 
+    /** Provides an alternate if type is NoType.
+     *
+     *  @group Helpers
+     */
+    def orElse(alt: => Type): Type
+
     /** Substitute symbols in `to` for corresponding occurrences of references to
      *  symbols `from` in this type.
      */
