@@ -24,6 +24,7 @@ import scala.tools.scalap.scalax.rules.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import PartestDefaults.{ javaCmd, javacCmd }
+import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
 trait PartestRunSettings {
   def gitPath: Path
@@ -65,7 +66,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   private var _lastState: TestState = null
   private var _transcript = new TestTranscript
 
-  def lastState                   = if (_lastState == null) TestState.Uninitialized(testFile) else _lastState
+  def lastState                   = if (_lastState == null) Uninitialized(testFile) else _lastState
   def setLastState(s: TestState)  = _lastState = s
   def transcript: List[String]    = _transcript.fail ++ logFile.fileLines
   def pushTranscript(msg: String) = _transcript add msg
@@ -97,10 +98,11 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       genCrash(t)
   }
 
-  def genPass()                   = TestState.Pass(testFile)
-  def genFail(reason: String)     = TestState.Fail(testFile, reason, _transcript.fail)
-  def genTimeout()                = TestState.Fail(testFile, "timed out", _transcript.fail)
-  def genCrash(caught: Throwable) = TestState.Crash(testFile, caught, _transcript.fail)
+  def genPass()                   = Pass(testFile)
+  def genFail(reason: String)     = Fail(testFile, reason, _transcript.fail)
+  def genTimeout()                = Fail(testFile, "timed out", _transcript.fail)
+  def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail)
+  def genUpdated()                = Updated(testFile)
 
   def speclib = PathSettings.srcSpecLib.toString  // specialization lib
   def codelib = PathSettings.srcCodeLib.toString  // reify lib
@@ -154,14 +156,18 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     case _      => "% "
   }
 
+  /** Evaluate an action body and update the test state.
+   *  @param failFn optionally map a result to a test state.
+   */
   def nextTestAction[T](body: => T)(failFn: PartialFunction[T, TestState]): T = {
     val result = body
     setLastState( if (failFn isDefinedAt result) failFn(result) else genPass() )
     result
   }
-  def nextTestActionExpectTrue[T](reason: String, body: => Boolean): Boolean = {
+  def nextTestActionExpectTrue(reason: String, body: => Boolean): Boolean = (
     nextTestAction(body) { case false => genFail(reason) }
-  }
+  )
+  def nextTestActionFailing(reason: String): Boolean = nextTestActionExpectTrue(reason, false)
 
   private def assembleTestCommand(outDir: File, logFile: File): List[String] = {
     // check whether there is a ".javaopts" file
@@ -324,18 +330,20 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
 
   def diffIsOk: Boolean = {
     val diff = currentDiff
-    val ok: Boolean = (diff == "") || {
-      fileManager.updateCheck && {
+    // if diff is not empty, is update needed?
+    val updating: Option[Boolean] = (
+      if (diff == "") None
+      else Some(fileManager.updateCheck)
+    )
+    pushTranscript(s"diff $logFile $checkFile")
+    nextTestAction(updating) {
+      case Some(true)  =>
         NestUI.verbose("Updating checkfile " + checkFile)
         checkFile writeAll file2String(logFile)
-        true
-      }
-    }
-    pushTranscript(s"diff $logFile $checkFile")
-    nextTestAction(ok) {
-      case false =>
+        genUpdated()
+      case Some(false) =>
         // Get a word-highlighted diff from git if we can find it
-        val bestDiff = if (ok) "" else {
+        val bestDiff = if (updating.isEmpty) "" else {
           if (checkFile.canRead)
             gitDiff(logFile, checkFile) getOrElse {
               s"diff $logFile $checkFile\n$diff"
@@ -347,7 +355,8 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
         // TestState.fail("output differs", "output differs",
         // genFail("output differs")
         // TestState.Fail("output differs", bestDiff)
-    }
+      case None        => genPass()  // redundant default case
+    } getOrElse true
   }
 
   /** 1. Creates log file and output directory.
@@ -437,12 +446,16 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   def runNegTest() = runInContext {
     val rounds = compilationRounds(testFile)
 
-    if (rounds forall (x => nextTestActionExpectTrue("compilation failed", x.isOk)))
-      nextTestActionExpectTrue("expected compilation failure", false)
-    else {
-      normalizeLog     // put errors in a normal form
-      diffIsOk
+    // failing means Does Not Compile
+    val failing = rounds find (x => nextTestActionExpectTrue("compilation failed", x.isOk) == false)
+
+    // which means passing if it checks and didn't crash the compiler
+    def checked(r: CompileRound) = r.result match {
+      case f: Crash => false
+      case f        => normalizeLog(); diffIsOk
     }
+
+    failing map (checked) getOrElse nextTestActionFailing("expected compilation failure")
   }
 
   def runTestCommon(andAlso: => Boolean): (Boolean, LogContext) = runInContext {
