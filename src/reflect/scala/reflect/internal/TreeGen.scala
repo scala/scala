@@ -298,4 +298,9 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkPackageDef(packageName: String, stats: List[Tree]): PackageDef = {
     PackageDef(mkUnattributedRef(newTermName(packageName)), stats)
   }
+
+  def mkSeqApply(arg: Tree): Apply = {
+    val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
+    Apply(factory, List(arg))
+  }
 }

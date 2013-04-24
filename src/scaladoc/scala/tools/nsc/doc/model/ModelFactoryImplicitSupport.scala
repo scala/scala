@@ -226,12 +226,9 @@ trait ModelFactoryImplicitSupport {
       // look for type variables in the type. If there are none, we can decide if the implicit is there or not
       if (implType.isTrivial) {
         try {
-          context.flushBuffer() /* any errors here should not prevent future findings */
-          // TODO: Not sure this is the right thing to do -- seems similar to what scalac should be doing
-          val context2 = context.make(context.unit, context.tree, sym.owner, context.scope, context.imports)
-          val search = inferImplicit(EmptyTree, tpe, false, false, context2, false)
-          context.flushBuffer() /* any errors here should not prevent future findings */
-
+          // TODO: Not sure if `owner = sym.owner` is the right thing to do -- seems similar to what scalac should be doing
+          val silentContext = context.make(owner = sym.owner).makeSilent(reportAmbiguousErrors = false)
+          val search = inferImplicit(EmptyTree, tpe, false, false, silentContext, false)
           available = Some(search.tree != EmptyTree)
         } catch {
           case _: TypeError =>
