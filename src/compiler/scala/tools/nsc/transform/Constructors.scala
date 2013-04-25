@@ -418,12 +418,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         } else stats
       }
 
-      // def isInitDef(stat: Tree) = stat match {
-      //   case dd: DefDef => dd.symbol == delayedInitMethod
-      //   case _ => false
-      // }
-
-
       /*
        *  Translation scheme for DelayedInit
        *  ----------------------------------
@@ -486,7 +480,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       /* @see overview at `delayedEndpointDef()` of the translation scheme for DelayedInit */
       def delayedInitClosure(delayedEndPointSym: MethodSymbol): ClassDef = {
-        val dicl = localTyper.typed {
+        val satelliteClass = localTyper.typed {
           atPos(impl.pos) {
             val closureClass   = clazz.newClass(nme.delayedInitArg.toTypeName, impl.pos, SYNTHETIC | FINAL)
             val closureParents = List(AbstractFunctionClass(0).tpe)
@@ -529,7 +523,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
         }
 
-        dicl.asInstanceOf[ClassDef]
+        satelliteClass.asInstanceOf[ClassDef]
       }
 
       /* @see overview at `delayedEndpointDef()` of the translation scheme for DelayedInit */
@@ -555,19 +549,18 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        * See test case files/run/bug4680.scala, the output of which is wrong in many
        * particulars.
        */
-      val needsDelayedInit =
-        isDelayedInitSubclass /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty
+      val needsDelayedInit = (isDelayedInitSubclass && remainingConstrStats.nonEmpty)
 
       if (needsDelayedInit) {
-        val dlydEpDef: DefDef = delayedEndpointDef(remainingConstrStats)
-        defBuf += dlydEpDef
-        val dicl = {
+        val delayedHook: DefDef = delayedEndpointDef(remainingConstrStats)
+        defBuf += delayedHook
+        val hookCallerClass = {
           // transform to make the closure-class' default constructor assign the the outer instance to its param-accessor field.
-          val diclx = new ConstructorTransformer(unit)
-          diclx transform delayedInitClosure(dlydEpDef.symbol.asInstanceOf[MethodSymbol])
+          val drillDown = new ConstructorTransformer(unit)
+          drillDown transform delayedInitClosure(delayedHook.symbol.asInstanceOf[MethodSymbol])
         }
-        defBuf += dicl
-        remainingConstrStats = delayedInitCall(dicl) :: Nil
+        defBuf += hookCallerClass
+        remainingConstrStats = delayedInitCall(hookCallerClass) :: Nil
       }
 
       // Assemble final constructor
