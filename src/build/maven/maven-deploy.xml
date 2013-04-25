@@ -164,11 +164,7 @@
       <attribute name="repository" />
       <attribute name="version" />
       <sequential>
-        <deploy-remote name="scala-library" version="@{version}" repository="@{repository}">
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-remote>
+        <deploy-remote name="scala-library" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="jline" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-reflect" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
