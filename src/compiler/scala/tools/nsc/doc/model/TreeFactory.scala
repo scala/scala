@@ -19,7 +19,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
   val global: Global
   import global._
 
-  def makeTree(rhs: Tree): Option[TreeEntity] = {
+  def makeTree(rhs: Tree): TreeEntity = {
 
     var expr = new StringBuilder
     var refs = new immutable.TreeMap[Int, (Entity, Int)] // start, (Entity to be linked to , end)
@@ -80,17 +80,16 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
 
         traverser.traverse(rhs)
 
-        Some(new TreeEntity {
+        new TreeEntity {
           val expression = expr.toString
           val refEntity = refs
-        })
+        }
       }
-      case pos: OffsetPosition =>
-        Some(new TreeEntity {
+      case _ =>
+        new TreeEntity {
           val expression = rhs.toString
           val refEntity = new immutable.TreeMap[Int, (Entity, Int)]
-        })
-      case _ => None
+        }
     }
   }
 }
