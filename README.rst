@@ -182,7 +182,7 @@ In detail:
   http://docs.scala-lang.org
 
 - Scala mailing lists:
-  http://www.scala-lang.org/node/199
+  http://www.scala-lang.org/community/#mailing_lists
 
 - Scala bug and issue tracker:
   https://issues.scala-lang.org
@@ -190,15 +190,10 @@ In detail:
 - Scala live git source tree:
   http://github.com/scala/scala
 
-- Contact form:
-  http://www.scala-lang.org/node/188
-
-
-If you are interested in contributing code, we ask you to complete and submit
-to us the Scala Contributor License Agreement, which allows us to ensure that
-all code submitted to the project is unencumbered by copyrights or patents.
-The form is available at:
-http://www.scala-lang.org/sites/default/files/contributor_agreement.pdf
+If you are interested in contributing code, we ask you to sign the
+[Scala Contributor License Agreement](http://typesafe.com/contribute/cla/scala),
+which allows us to ensure that all code submitted to the project is
+unencumbered by copyrights or patents.
 
 Before submitting a pull-request, please make sure you have followed the guidelines
 outlined in our `Pull Request Policy <https://github.com/scala/scala/wiki/Pull-Request-Policy>`_.

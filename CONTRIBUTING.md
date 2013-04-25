@@ -6,7 +6,7 @@ These guidelines are meant to be a living document that should be changed and ad
 
 This is the process for committing code to the Scala project. There are of course exceptions to these rules, for example minor changes to comments and documentation, fixing a broken build etc.
 
-1. Make sure you have signed the [Scala CLA](http://www.scala-lang.org/sites/default/files/contributor_agreement.pdf), if not, sign it.
+1. Make sure you have signed the [Scala CLA](http://typesafe.com/contribute/cla/scala), if not, sign it.
 2. Before starting to work on a feature or a fix, it's good practice to ensure that:
     1. There is a ticket for your work in the project's issue tracker. If not, create it first (perhaps given a thumbs up from the scala-internals mailing list first).
     2. The ticket has been discussed and prioritized by the team.
