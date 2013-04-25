@@ -182,7 +182,7 @@ In detail:
   http://docs.scala-lang.org
 
 - Scala mailing lists:
-  http://www.scala-lang.org/community/#mailing_lists
+  http://www.scala-lang.org/node/199
 
 - Scala bug and issue tracker:
   https://issues.scala-lang.org
