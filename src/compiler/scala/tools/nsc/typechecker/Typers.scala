@@ -2480,8 +2480,7 @@ trait Typers extends Adaptations with Tags {
 
     def adaptCase(cdef: CaseDef, mode: Mode, tpe: Type): CaseDef = deriveCaseDef(cdef)(adapt(_, mode, tpe))
 
-    def ptOrLub(tps: List[Type], pt: Type  )       = if (isFullyDefined(pt)) (pt, false) else weakLub(tps map (_.deconst))
-    def ptOrLubPacked(trees: List[Tree], pt: Type) = if (isFullyDefined(pt)) (pt, false) else weakLub(trees map (c => packedType(c, context.owner).deconst))
+    def packedTypes(trees: List[Tree]): List[Type] = trees map (c => packedType(c, context.owner).deconst)
 
     // takes untyped sub-trees of a match and type checks them
     def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match = {
@@ -2489,11 +2488,17 @@ trait Typers extends Adaptations with Tags {
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
-      val (resTp, needAdapt) = ptOrLubPacked(casesTyped, pt)
+      def finish(cases: List[CaseDef], matchType: Type) =
+        treeCopy.Match(tree, selector1, cases) setType matchType
 
-      val casesAdapted = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, resTp))
-
-      treeCopy.Match(tree, selector1, casesAdapted) setType resTp
+      if (isFullyDefined(pt))
+        finish(casesTyped, pt)
+      else packedTypes(casesTyped) match {
+        case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
+        case packed                             =>
+          val lub = weakLub(packed)
+          finish(casesTyped map (adaptCase(_, mode, lub)), lub)
+      }
     }
 
     // match has been typed -- virtualize it during type checking so the full context is available
@@ -3402,8 +3407,7 @@ trait Typers extends Adaptations with Tags {
         if (formals == null) duplErrorTree(WrongNumberOfArgsError(tree, fun))
         else {
           val args1 = typedArgs(args, mode, formals, formalsExpanded)
-          val pt1 = if (isFullyDefined(pt)) pt else makeFullyDefined(pt) // SI-1048
-
+          val pt1   = ensureFullyDefined(pt) // SI-1048
           val itype = glb(List(pt1, arg.tpe))
           arg setType pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
           val unapply = UnApply(fun1, args1) setPos tree.pos setType itype
@@ -3990,7 +3994,7 @@ trait Typers extends Adaptations with Tags {
     }
 
     def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
-      def isPatternMode = mode.inPatternMode
+      def isPatternMode        = mode.inPatternMode
       def inPatternConstructor = mode.inAll(PATTERNmode | FUNmode)
       def isQualifierMode      = mode.inAll(QUALmode)
 
@@ -4182,36 +4186,39 @@ trait Typers extends Adaptations with Tags {
         else fail()
       }
 
-      def typedIf(tree: If) = {
+      def typedIf(tree: If): If = {
         val cond1 = checkDead(typed(tree.cond, EXPRmode | BYVALmode, BooleanClass.tpe))
-        val thenp = tree.thenp
-        val elsep = tree.elsep
-        if (elsep.isEmpty) { // in the future, should be unnecessary
-          val thenp1 = typed(thenp, UnitClass.tpe)
-          treeCopy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
-        } else {
-          var thenp1 = typed(thenp, pt)
-          var elsep1 = typed(elsep, pt)
-          def thenTp = packedType(thenp1, context.owner)
-          def elseTp = packedType(elsep1, context.owner)
+        // One-legged ifs don't need a lot of analysis
+        if (tree.elsep.isEmpty)
+          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitClass.tpe), tree.elsep) setType UnitClass.tpe
 
-          // println("typedIf: "+(thenp1.tpe, elsep1.tpe, ptOrLub(List(thenp1.tpe, elsep1.tpe)),"\n", thenTp, elseTp, thenTp =:= elseTp))
-          val (owntype, needAdapt) =
-            // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
-            // in the special (though common) case where the types are equal, it pays to pack before comparing
-            // especially virtpatmat needs more aggressive unification of skolemized types
-            // this breaks src/library/scala/collection/immutable/TrieIterator.scala
-            if (!isPastTyper && thenp1.tpe.annotations.isEmpty && elsep1.tpe.annotations.isEmpty // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
-              && thenTp =:= elseTp
-               ) (thenp1.tpe.deconst, false) // use unpacked type. Important to deconst, as is done in ptOrLub, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
-            // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-            else ptOrLub(thenp1.tpe :: elsep1.tpe :: Nil, pt)
+        val thenp1 = typed(tree.thenp, pt)
+        val elsep1 = typed(tree.elsep, pt)
 
-          if (needAdapt) { //isNumericValueType(owntype)) {
-            thenp1 = adapt(thenp1, mode, owntype)
-            elsep1 = adapt(elsep1, mode, owntype)
-          }
-          treeCopy.If(tree, cond1, thenp1, elsep1) setType owntype
+        // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
+        // in the special (though common) case where the types are equal, it pays to pack before comparing
+        // especially virtpatmat needs more aggressive unification of skolemized types
+        // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+        // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
+        def samePackedTypes = (
+             !isPastTyper
+          && thenp1.tpe.annotations.isEmpty
+          && elsep1.tpe.annotations.isEmpty
+          && packedType(thenp1, context.owner) =:= packedType(elsep1, context.owner)
+        )
+        def finish(ownType: Type) = treeCopy.If(tree, cond1, thenp1, elsep1) setType ownType
+        // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
+        // @PP: This was doing the samePackedTypes check BEFORE the isFullyDefined check,
+        // which based on everything I see everywhere else was a bug. I reordered it.
+        if (isFullyDefined(pt))
+          finish(pt)
+        // Important to deconst, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
+        else thenp1.tpe.deconst :: elsep1.tpe.deconst :: Nil match {
+          case tp :: _ if samePackedTypes     => finish(tp)
+          case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+          case tpes                           =>
+            val lub = weakLub(tpes)
+            treeCopy.If(tree, cond1, adapt(thenp1, mode, lub), adapt(elsep1, mode, lub)) setType lub
         }
       }
 
@@ -4942,37 +4949,49 @@ trait Typers extends Adaptations with Tags {
         treeCopy.UnApply(tree, fun1, args1) setType pt
       }
 
-      def typedTry(tree: Try) = {
-        tree match {
-          case Try(_, Nil, EmptyTree) =>
-            if (!isPastTyper) context.warning(tree.pos,
-              "A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.")
-          case _ =>
-        }
-
-        var block1 = typed(tree.block, pt)
-        var catches1 = typedCases(tree.catches, ThrowableClass.tpe, pt)
-
-        for (cdef <- catches1 if !isPastTyper && cdef.guard.isEmpty) {
-          def warn(name: Name) = context.warning(cdef.pat.pos, s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning.")
+      def issueTryWarnings(tree: Try): Try = {
+        def checkForCatchAll(cdef: CaseDef) {
           def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
-          cdef.pat match {
+          def warn(name: Name) = {
+            val msg = s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning."
+            context.warning(cdef.pat.pos, msg)
+          }
+          if (cdef.guard.isEmpty) cdef.pat match {
             case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
-            case i @ Ident(name) if unbound(i) => warn(name)
-            case _ =>
+            case i @ Ident(name) if unbound(i)          => warn(name)
+            case _                                      =>
           }
         }
-
-        val finalizer1 =
-          if (tree.finalizer.isEmpty) tree.finalizer
-          else typed(tree.finalizer, UnitClass.tpe)
-        val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)), pt)
-        if (needAdapt) {
-          block1 = adapt(block1, mode, owntype)
-          catches1 = catches1 map (adaptCase(_, mode, owntype))
+        if (!isPastTyper) tree match {
+          case Try(_, Nil, fin) =>
+            if (fin eq EmptyTree)
+              context.warning(tree.pos, "A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.")
+          case Try(_, catches, _) =>
+            catches foreach checkForCatchAll
         }
+        tree
+      }
 
-        treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
+      def typedTry(tree: Try) = {
+        val Try(block, catches, fin) = tree
+        val block1   = typed(block, pt)
+        val catches1 = typedCases(catches, ThrowableClass.tpe, pt)
+        val fin1     = if (fin.isEmpty) fin else typed(fin, UnitClass.tpe)
+
+        def finish(ownType: Type) = treeCopy.Try(tree, block1, catches1, fin1) setType ownType
+
+        issueTryWarnings(
+          if (isFullyDefined(pt))
+            finish(pt)
+          else block1 :: catches1 map (_.tpe.deconst) match {
+            case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+            case tpes                           =>
+              val lub      = weakLub(tpes)
+              val block2   = adapt(block1, mode, lub)
+              val catches2 = catches1 map (adaptCase(_, mode, lub))
+              treeCopy.Try(tree, block2, catches2, fin1) setType lub
+          }
+        )
       }
 
       def typedThrow(tree: Throw) = {
@@ -5025,9 +5044,8 @@ trait Typers extends Adaptations with Tags {
 
             if (isPatternMode) {
               val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
-
               // make fully defined to avoid bounded wildcard types that may be in pt from calling dropExistential (SI-2038)
-              val ptDefined = if (isFullyDefined(pt)) pt else makeFullyDefined(pt)
+              val ptDefined = ensureFullyDefined(pt)
               val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, ptDefined, canRemedy = uncheckedTypeExtractor.nonEmpty)
               treeTyped setType ownType
 

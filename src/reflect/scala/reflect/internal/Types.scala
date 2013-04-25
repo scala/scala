@@ -742,6 +742,8 @@ trait Types
       def map[T](f: Type => T): List[T]  = collect(Type.this) map f
     }
 
+    @inline final def orElse(alt: => Type): Type = if (this ne NoType) this else alt
+
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.
      */
