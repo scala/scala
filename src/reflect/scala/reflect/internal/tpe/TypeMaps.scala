@@ -525,15 +525,39 @@ private[internal] trait TypeMaps {
       val TypeRef(_, rhsSym, rhsArgs) = rhs
       require(lhsSym.safeOwner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
 
-      // Find the type parameter position; we'll use the corresponding argument
-      val argIndex = rhsSym.typeParams indexOf lhsSym
-
-      if (argIndex >= 0 && argIndex < rhsArgs.length)             // @M! don't just replace the whole thing, might be followed by type application
-        appliedType(rhsArgs(argIndex), lhsArgs mapConserve this)
-      else if (rhsSym.tpe_*.parents exists typeIsErroneous)        // don't be too zealous with the exceptions, see #2641
+      // Find the type parameter position; we'll use the corresponding argument.
+      // Why are we checking by name rather than by equality? Because for
+      // reasons which aren't yet fully clear, we can arrive here holding a type
+      // parameter whose owner is rhsSym, and which shares the name of an actual
+      // type parameter of rhsSym, but which is not among the type parameters of
+      // rhsSym. One can see examples of it at SI-4365.
+      val argIndex = rhsSym.typeParams indexWhere (lhsSym.name == _.name)
+      // don't be too zealous with the exceptions, see #2641
+      if (argIndex < 0 && rhs.parents.exists(typeIsErroneous))
         ErrorType
-      else
-        abort(s"something is wrong: cannot make sense of type application\n  $lhs\n  $rhs")
+      else {
+        // It's easy to get here when working on hardcore type machinery (not to
+        // mention when not doing so, see above) so let's provide a standout error.
+        def own_s(s: Symbol) = s.nameString + " in " + s.safeOwner.nameString
+        def explain =
+          sm"""|   sought  ${own_s(lhsSym)}
+               | classSym  ${own_s(rhsSym)}
+               |  tparams  ${rhsSym.typeParams map own_s mkString ", "}
+               |"""
+
+        if (argIndex < 0)
+          abort(s"Something is wrong: cannot find $lhs in applied type $rhs\n" + explain)
+        else {
+          val targ   = rhsArgs(argIndex)
+          // @M! don't just replace the whole thing, might be followed by type application
+          val result = appliedType(targ, lhsArgs mapConserve this)
+          def msg = s"Created $result, though could not find ${own_s(lhsSym)} among tparams of ${own_s(rhsSym)}"
+          if (!rhsSym.typeParams.contains(lhsSym))
+            devWarning(s"Inconsistent tparam/owner views: had to fall back on names\n$msg\n$explain")
+
+          result
+        }
+      }
     }
 
     // 0) @pre: `classParam` is a class type parameter
