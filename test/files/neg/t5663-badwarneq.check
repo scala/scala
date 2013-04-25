@@ -1,22 +1,40 @@
-t5663-badwarneq.scala:42: error: comparing case class values of types Some[Int] and None.type using `==' will always yield false
+t5663-badwarneq.scala:47: error: comparing case class values of types Some[Int] and None.type using `==' will always yield false
     println(new Some(1) == None) // Should complain on type, was: spuriously complains on fresh object
                         ^
-t5663-badwarneq.scala:43: error: comparing case class values of types Some[Int] and Thing using `==' will always yield false
+t5663-badwarneq.scala:48: error: comparing case class values of types Some[Int] and Thing using `==' will always yield false
     println(Some(1) == new Thing(1)) // Should complain on type, was: spuriously complains on fresh object
                     ^
-t5663-badwarneq.scala:51: error: ThingOne and Thingy are unrelated: they will most likely never compare equal
+t5663-badwarneq.scala:56: error: ThingOne and Thingy are unrelated: they will most likely never compare equal
     println(t1 == t2) // true, but apparently unrelated, a compromise warning
                ^
-t5663-badwarneq.scala:52: error: ThingThree and Thingy are unrelated: they will most likely never compare equal
+t5663-badwarneq.scala:57: error: ThingThree and Thingy are unrelated: they will most likely never compare equal
     println(t4 == t2) // true, complains because ThingThree is final and Thingy not a subclass, stronger claim than unrelated
                ^
-t5663-badwarneq.scala:55: error: comparing case class values of types ThingTwo and Some[Int] using `==' will always yield false
+t5663-badwarneq.scala:60: error: comparing case class values of types ThingTwo and Some[Int] using `==' will always yield false
     println(t3 == Some(1)) // false, warn on different cases
                ^
-t5663-badwarneq.scala:56: error: comparing values of types ThingOne and Cousin using `==' will always yield false
+t5663-badwarneq.scala:61: error: comparing values of types ThingOne and Cousin using `==' will always yield false
     println(t1 == c) // should warn
                ^
-t5663-badwarneq.scala:64: error: comparing case class values of types Simple and SimpleSibling.type using `==' will always yield false
+t5663-badwarneq.scala:69: error: comparing case class values of types Simple and SimpleSibling.type using `==' will always yield false
     println(new Simple() == SimpleSibling) // like Some(1) == None, but needn't be final case
                          ^
-7 errors found
+t5663-badwarneq.scala:72: error: ValueClass1 and Int are unrelated: they will never compare equal
+    println(new ValueClass1(5) == 5) // bad
+                               ^
+t5663-badwarneq.scala:74: error: comparing values of types Int and ValueClass1 using `==' will always yield false
+    println(5 == new ValueClass1(5)) // bad
+              ^
+t5663-badwarneq.scala:78: error: ValueClass2[String] and String are unrelated: they will never compare equal
+    println(new ValueClass2("abc") == "abc") // bad
+                                   ^
+t5663-badwarneq.scala:79: error: ValueClass2[Int] and ValueClass1 are unrelated: they will never compare equal
+    println(new ValueClass2(5) == new ValueClass1(5)) // bad - different value classes
+                               ^
+t5663-badwarneq.scala:81: error: comparing values of types ValueClass3 and ValueClass2[Int] using `==' will always yield false
+    println(ValueClass3(5) == new ValueClass2(5)) // bad
+                           ^
+t5663-badwarneq.scala:82: error: comparing values of types ValueClass3 and Int using `==' will always yield false
+    println(ValueClass3(5) == 5) // bad
+                           ^
+13 errors found
