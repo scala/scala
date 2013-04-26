@@ -41,7 +41,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
    */
   private def isInterfaceMember(sym: Symbol) = (
     sym.isType || {
-      sym.info  // initialize to set lateMETHOD flag if necessary
+      sym.info  // initialize to set METHOD flag if necessary
 
       (     sym.isMethod
         && !sym.isLabel

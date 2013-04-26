@@ -34,7 +34,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** A member of a trait is implemented statically if its implementation after the
    *  mixin transform is in the static implementation module. To be statically
    *  implemented, a member must be a method that belonged to the trait's implementation class
-   *  before (e.g. it is not abstract). Not statically implemented are
+   *  before (i.e. it is not abstract). Not statically implemented are
    *   - non-private modules: these are implemented directly in the mixin composition class
    *     (private modules, on the other hand, are implemented statically, but their
    *      module variable is not. all such private modules are lifted, because
@@ -1037,7 +1037,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else if (!clazz.isTrait) {
           // This needs to be a def to avoid sharing trees
           def accessedRef = accessedReference(sym)
-          if (sym.hasAccessorFlag && (!sym.isDeferred || sym.hasFlag(lateDEFERRED))) {
+          if (isConcreteAccessor(sym)) {
             // add accessor definitions
             addDefDef(sym, {
               if (sym.isSetter) {

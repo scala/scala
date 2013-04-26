@@ -52,14 +52,22 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks"
-  override def phaseNewFlags: Long = lateMETHOD
 
   def newTransformer(unit: CompilationUnit): RefCheckTransformer =
     new RefCheckTransformer(unit)
   override def changesBaseClasses = false
 
   override def transformInfo(sym: Symbol, tp: Type): Type = {
-    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    // !!! This is a sketchy way to do things.
+    // It would be better to replace the module symbol with a method symbol
+    // rather than creating this module/method hybrid which must be special
+    // cased all over the place. Look for the call sites which use(d) some
+    // variation of "isMethod && !isModule", which to an observer looks like
+    // a nonsensical condition. (It is now "isModuleNotMethod".)
+    if (sym.isModule && !sym.isStatic) {
+      sym setFlag STABLE | METHOD
+      log(s"Stabilizing module method for ${sym.fullLocationString}")
+    }
     super.transformInfo(sym, tp)
   }
 
