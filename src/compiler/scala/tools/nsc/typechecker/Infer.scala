@@ -38,10 +38,7 @@ trait Infer extends Checkable {
    *  @param removeRepeated allows keeping repeated parameter (if there's one argument). Used in NamesDefaults.
    */
   def formalTypes(formals: List[Type], nargs: Int, removeByName: Boolean = true, removeRepeated: Boolean = true): List[Type] = {
-    val formals1 = if (removeByName) formals mapConserve {
-      case TypeRef(_, ByNameParamClass, List(arg)) => arg
-      case formal => formal
-    } else formals
+    val formals1 = if (removeByName) formals mapConserve dropByName else formals
     if (isVarArgTypes(formals1) && (removeRepeated || formals.length != nargs)) {
       val ft = formals1.last.dealiasWiden.typeArgs.head
       formals1.init ::: (for (i <- List.range(formals1.length - 1, nargs)) yield ft)
@@ -412,10 +409,9 @@ trait Infer extends Checkable {
      *  since that induces a tie between m(=>A) and m(=>A,B*) [SI-3761]
      */
     private def isCompatible(tp: Type, pt: Type): Boolean = {
-      def isCompatibleByName(tp: Type, pt: Type): Boolean = pt match {
-        case TypeRef(_, ByNameParamClass, List(res)) if !isByNameParamType(tp) => isCompatible(tp, res)
-        case _ => false
-      }
+      def isCompatibleByName(tp: Type, pt: Type): Boolean = (
+        isByNameParamType(pt) && !isByNameParamType(tp) && isCompatible(tp, dropByName(pt))
+      )
       val tp1 = normalize(tp)
       (tp1 weak_<:< pt) || isCoercible(tp1, pt) || isCompatibleByName(tp, pt)
     }
