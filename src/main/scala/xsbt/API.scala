@@ -312,9 +312,13 @@ final class API(val global: CallbackGlobal) extends Compat
 	private def processType(in: Symbol, t: Type): xsbti.api.Type = typeCache.getOrElseUpdate((in, t), makeType(in, t))
 	private def makeType(in: Symbol, t: Type): xsbti.api.Type =
 	{
-		def dealias(t: Type) = t match { case TypeRef(_, sym, _) if sym.isAliasType => t.normalize; case _ => t }
 
-		dealias(t) match
+		val dealiased = t match {
+			case TypeRef(_, sym, _) if sym.isAliasType => t.dealias
+			case _ => t
+		}
+
+		dealiased match
 		{
 			case NoPrefix => Constants.emptyType
 			case ThisType(sym) => new xsbti.api.Singleton(thisPath(sym))
