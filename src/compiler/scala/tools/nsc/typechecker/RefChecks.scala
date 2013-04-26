@@ -383,7 +383,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             overrideError("cannot be used here - classes can only override abstract types");
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member");
-          } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) { // (*)
+          } else if (!other.isDeferred && !other.hasFlag(DEFAULTMETHOD) && !member.isAnyOverride && !member.isSynthetic) { // (*)
             // (*) Synthetic exclusion for (at least) default getters, fixes SI-5178. We cannot assign the OVERRIDE flag to
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
