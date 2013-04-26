@@ -204,11 +204,6 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Group similar functions together (based on the @group annotation)"
   )
 
-  // Somewhere slightly before r18708 scaladoc stopped building unless the
-  // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
-  // suppress-vt-warnings option and renamed it for this purpose.
-  noSelfCheck.value = true
-
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
