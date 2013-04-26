@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 package backend.jvm
-import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
 
 /** Code shared between the erstwhile legacy backend (aka GenJVM)
@@ -18,20 +17,6 @@ trait GenJVMASM {
   import global._
   import icodes._
   import definitions._
-
-  protected def outputDirectory(sym: Symbol): AbstractFile =
-    settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
-
-  protected def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    var dir = base
-    val pathParts = clsName.split("[./]").toList
-    for (part <- pathParts.init) {
-      dir = dir.subdirectoryNamed(part)
-    }
-    dir.fileNamed(pathParts.last + suffix)
-  }
-  protected def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
-    getFile(outputDirectory(sym), clsName, suffix)
 
   protected val ExcludedForwarderFlags = {
     import Flags._

@@ -379,7 +379,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
   private val classfileVersion: Int = settings.target.value match {
     case "jvm-1.5"     => asm.Opcodes.V1_5
-    case "jvm-1.5-asm" => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
   }
@@ -1625,6 +1624,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
        	  jmethod = clinitMethod
           jMethodName = CLASS_CONSTRUCTOR_NAME
           jmethod.visitCode()
+          computeLocalVarsIndex(m)
           genCode(m, emitVars = false, isStatic = true)
           jmethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
           jmethod.visitEnd()

@@ -121,25 +121,32 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  must be `String`. This specialised class is used to encode Scala
    *  signatures for reasons of efficiency, both in term of class-file size
    *  and in term of compiler performance.
+   *  Details about the storage format of pickles at the bytecode level (classfile annotations) can be found in SIP-10.
    */
   case class ScalaSigBytes(bytes: Array[Byte]) extends ClassfileAnnotArg {
     override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
-    lazy val encodedBytes = ByteCodecs.encode(bytes)    // TODO remove after migration to ASM-based GenJVM complete
-    def isLong: Boolean = (encodedBytes.length > 65535) // TODO remove after migration to ASM-based GenJVM complete
     lazy val sevenBitsMayBeZero: Array[Byte] = {
       mapToNextModSevenBits(scala.reflect.internal.pickling.ByteCodecs.encode8to7(bytes))
     }
+
+    /* In order to store a byte array (the pickle) using a bytecode-level annotation,
+     * the most compact representation is used (which happens to be string-constant and not byte array as one would expect).
+     * However, a String constant in a classfile annotation is limited to a maximum of 65535 characters.
+     * Method `fitsInOneString` tells us whether the pickle can be held by a single classfile-annotation of string-type.
+     * Otherwise an array of strings will be used.
+     */
     def fitsInOneString: Boolean = {
+      // due to escaping, a zero byte in a classfile-annotation of string-type takes actually two characters.
       val numZeros = (sevenBitsMayBeZero count { b => b == 0 })
-      val res = (sevenBitsMayBeZero.length + numZeros) <= 65535
-      assert(this.isLong == !res, "As things stand, can't just swap in `fitsInOneString()` for `isLong()`")
-      res
+
+      (sevenBitsMayBeZero.length + numZeros) <= 65535
     }
+
     def sigAnnot: Type =
-      if (this.isLong)
-        definitions.ScalaLongSignatureAnnotation.tpe
-      else
+      if (fitsInOneString)
         definitions.ScalaSignatureAnnotation.tpe
+      else
+        definitions.ScalaLongSignatureAnnotation.tpe
 
     private def mapToNextModSevenBits(src: Array[Byte]): Array[Byte] = {
       var i = 0
