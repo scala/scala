@@ -100,9 +100,6 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 				None
 		}
 	}
-	// doesn't seem to be in 2.7.7, so copied from GenJVM to here
-	private def moduleSuffix(sym: Symbol) =
-		if (sym.hasFlag(Flags.MODULE) && !sym.isMethod && !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$" else "";
 	private def flatname(s: Symbol, separator: Char) =
 		atPhase(currentRun.flattenPhase.next) { s fullName separator }
 
@@ -136,18 +133,29 @@ abstract class Compat
 		def NullaryMethodType = NullaryMethodTpe
 
 		def MACRO = DummyValue
+
+		// in 2.10, sym.moduleSuffix exists, but genJVM.moduleSuffix(Symbol) does not
+		def moduleSuffix(sym: Symbol): String = sourceCompatibilityOnly
 	}
 	// in 2.9, NullaryMethodType was added to Type
 	object NullaryMethodTpe {
 		def unapply(t: Type): Option[Type] = None
 	}
 
+	// before 2.10, sym.moduleSuffix doesn't exist, but genJVM.moduleSuffix does
+	private[this] implicit def symbolCompat(sym: Symbol): SymbolCompat = new SymbolCompat(sym)
+	private[this] final class SymbolCompat(sym: Symbol) {
+		def moduleSuffix = genJVM.moduleSuffix(sym)
+	}
+
+
 	val DummyValue = 0
 	def hasMacro(s: Symbol): Boolean =
 	{
 		val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
-	  MACRO != DummyValue && s.hasFlag(MACRO)
+		MACRO != DummyValue && s.hasFlag(MACRO)
 	}
+	def moduleSuffix(s: Symbol): String = s.moduleSuffix
 
 	private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 
