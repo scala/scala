@@ -51,6 +51,22 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     override def erasedTypes = true
     def apply(cls: IClass) = sys.error("no implementation")
 
+    // An AsmPhase starts and ends within a Run, thus the caches in question will get populated and cleared within a Run, too), SI-7422
+    javaNameCache.clear()
+    javaNameCache ++= List(
+      NothingClass        -> binarynme.RuntimeNothing,
+      RuntimeNothingClass -> binarynme.RuntimeNothing,
+      NullClass           -> binarynme.RuntimeNull,
+      RuntimeNullClass    -> binarynme.RuntimeNull
+    )
+
+    // unlike javaNameCache, reverseJavaName contains entries only for class symbols and their internal names.
+    reverseJavaName.clear()
+    reverseJavaName ++= List(
+      binarynme.RuntimeNothing.toString() -> RuntimeNothingClass, // RuntimeNothingClass is the bytecode-level return type of Scala methods with Nothing return-type.
+      binarynme.RuntimeNull.toString()    -> RuntimeNullClass
+    )
+
     // Lazy val; can't have eager vals in Phase constructors which may
     // cause cycles before Global has finished initialization.
     lazy val BeanInfoAttr = rootMirror.getRequiredClass("scala.beans.BeanInfo")
@@ -139,6 +155,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       bytecodeWriter.close()
       classes.clear()
+      javaNameCache.clear()
       reverseJavaName.clear()
 
       /* don't javaNameCache.clear() because that causes the following tests to fail:
@@ -163,19 +180,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
   var pickledBytes = 0 // statistics
 
-  // Don't put this in per run caches. Contains entries for classes as well as members.
-  val javaNameCache = new mutable.WeakHashMap[Symbol, Name]() ++= List(
-    NothingClass        -> binarynme.RuntimeNothing,
-    RuntimeNothingClass -> binarynme.RuntimeNothing,
-    NullClass           -> binarynme.RuntimeNull,
-    RuntimeNullClass    -> binarynme.RuntimeNull
-  )
+  val javaNameCache = mutable.Map.empty[Symbol, Name]
 
   // unlike javaNameCache, reverseJavaName contains entries only for class symbols and their internal names.
-  val reverseJavaName = mutable.Map.empty[String, Symbol] ++= List(
-    binarynme.RuntimeNothing.toString() -> RuntimeNothingClass, // RuntimeNothingClass is the bytecode-level return type of Scala methods with Nothing return-type.
-    binarynme.RuntimeNull.toString()    -> RuntimeNullClass
-  )
+  val reverseJavaName = mutable.Map.empty[String, Symbol]
 
   private def mkFlags(args: Int*)         = args.foldLeft(0)(_ | _)
   private def hasPublicBitSet(flags: Int) = (flags & asm.Opcodes.ACC_PUBLIC) != 0
