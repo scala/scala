@@ -154,9 +154,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       }
 
       bytecodeWriter.close()
-      classes.clear()
-      javaNameCache.clear()
-      reverseJavaName.clear()
 
       /* don't javaNameCache.clear() because that causes the following tests to fail:
        *   test/files/run/macro-repl-dontexpand.scala
