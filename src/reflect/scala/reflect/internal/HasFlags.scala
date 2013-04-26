@@ -90,6 +90,7 @@ trait HasFlags {
   def isAnyOverride      = hasFlag(OVERRIDE | ABSOVERRIDE)
   def isCase             = hasFlag(CASE)
   def isCaseAccessor     = hasFlag(CASEACCESSOR)
+  def isDefaultMethod    = hasFlag(DEFAULTMETHOD)
   def isDeferred         = hasFlag(DEFERRED)
   def isFinal            = hasFlag(FINAL)
   def isArtifact         = hasFlag(ARTIFACT)

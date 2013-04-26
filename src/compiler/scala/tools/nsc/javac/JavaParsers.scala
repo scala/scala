@@ -420,6 +420,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           case FINAL =>
             flags |= Flags.FINAL
             in.nextToken
+          case DEFAULT =>
+            flags |= Flags.DEFAULTMETHOD
+            in.nextToken()
           case NATIVE =>
             addAnnot(NativeAttr)
             in.nextToken
