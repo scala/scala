@@ -332,13 +332,12 @@ trait ModelFactoryImplicitSupport {
 
     def targetType: TypeEntity = makeType(toType, inTpl)
 
-    def convertorOwner: TemplateEntity =
-      if (convSym != NoSymbol)
-        makeTemplate(convSym.owner)
-      else {
+    def convertorOwner: TemplateEntity = {
+      if (convSym eq NoSymbol)
         error("Scaladoc implicits: " + toString + " = NoSymbol!")
-        makeRootPackage
-      }
+
+      makeTemplate(convSym.owner)
+    }
 
     def targetTypeComponents: List[(TemplateEntity, TypeEntity)] = makeParentTypes(toType, None, inTpl)
 
