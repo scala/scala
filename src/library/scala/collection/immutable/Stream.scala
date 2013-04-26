@@ -183,10 +183,12 @@ import scala.language.implicitConversions
  *  @define orderDependentFold
  *  @define willTerminateInf Note: lazily evaluated; will terminate for infinite-sized collections.
  */
+@deprecatedInheritance("This class will be sealed.", "2.11.0")
 abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
-                             with LinearSeqOptimized[A, Stream[A]] {
+                             with LinearSeqOptimized[A, Stream[A]]
+                             with Serializable {
 self =>
   override def companion: GenericCompanion[Stream] = Stream
 
@@ -1048,7 +1050,7 @@ object Stream extends SeqFactory[Stream] {
     def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
-  object Empty extends Stream[Nothing] with Serializable {
+  object Empty extends Stream[Nothing] {
     override def isEmpty = true
     override def head = throw new NoSuchElementException("head of empty stream")
     override def tail = throw new UnsupportedOperationException("tail of empty stream")
@@ -1099,7 +1101,7 @@ object Stream extends SeqFactory[Stream] {
 
   /** A lazy cons cell, from which streams are built. */
   @SerialVersionUID(-602202424901551803L)
-  final class Cons[+A](hd: A, tl: => Stream[A]) extends Stream[A] with Serializable {
+  final class Cons[+A](hd: A, tl: => Stream[A]) extends Stream[A] {
     override def isEmpty = false
     override def head = hd
     @volatile private[this] var tlVal: Stream[A] = _
