@@ -1,0 +1,13 @@
+t7369.scala:6: error: unreachable code
+    case Tuple1(X) => // unreachable
+                   ^
+t7369.scala:13: error: unreachable code
+    case Tuple1(true) => // unreachable
+                      ^
+t7369.scala:31: error: unreachable code
+    case Tuple1(X) => // unreachable
+                   ^
+t7369.scala:40: error: unreachable code
+    case Tuple1(null) => // unreachable
+                      ^
+four errors found
