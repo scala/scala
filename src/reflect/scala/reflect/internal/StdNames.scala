@@ -589,6 +589,7 @@ trait StdNames {
     val clone_ : NameType              = "clone"
     val conforms: NameType             = "conforms"
     val copy: NameType                 = "copy"
+    val create: NameType               = "create"
     val currentMirror: NameType        = "currentMirror"
     val delayedInit: NameType          = "delayedInit"
     val delayedInitArg: NameType       = "delayedInit$body"
@@ -697,6 +698,7 @@ trait StdNames {
     val view_ : NameType               = "view"
     val wait_ : NameType               = "wait"
     val withFilter: NameType           = "withFilter"
+    val zero: NameType                 = "zero"
 
     // unencoded operators
     object raw {

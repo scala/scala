@@ -17,4 +17,7 @@ public class IntRef implements java.io.Serializable {
     public int elem;
     public IntRef(int elem) { this.elem = elem; }
     public String toString() { return java.lang.Integer.toString(elem); }
+
+    public static IntRef create(int e) { return new IntRef(e); }
+    public static IntRef zero() { return new IntRef(0); }
 }

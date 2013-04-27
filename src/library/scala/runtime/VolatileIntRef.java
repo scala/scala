@@ -16,4 +16,7 @@ public class VolatileIntRef implements java.io.Serializable {
     volatile public int elem;
     public VolatileIntRef(int elem) { this.elem = elem; }
     public String toString() { return java.lang.Integer.toString(elem); }
+
+    public static VolatileIntRef create(int e) { return new VolatileIntRef(e); }
+    public static VolatileIntRef zero() { return new VolatileIntRef(0); }
 }

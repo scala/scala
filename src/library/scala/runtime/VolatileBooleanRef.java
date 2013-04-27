@@ -17,4 +17,7 @@ public class VolatileBooleanRef implements java.io.Serializable {
     volatile public boolean elem;
     public VolatileBooleanRef(boolean elem) { this.elem = elem; }
     public String toString() { return String.valueOf(elem); }
+
+    public static VolatileBooleanRef create(boolean e) { return new VolatileBooleanRef(e); }
+    public static VolatileBooleanRef zero() { return new VolatileBooleanRef(false); }
 }

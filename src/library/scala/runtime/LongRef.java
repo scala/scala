@@ -17,4 +17,7 @@ public class LongRef implements java.io.Serializable {
     public long elem;
     public LongRef(long elem) { this.elem = elem; }
     public String toString() { return java.lang.Long.toString(elem); }
+
+    public static LongRef create(long e) { return new LongRef(e); }
+    public static LongRef zero() { return new LongRef(0); }
 }
