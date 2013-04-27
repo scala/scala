@@ -1107,32 +1107,33 @@ self =>
      *                  | symbol
      *                  | null
      *  }}}
-     *  @note  The returned tree does not yet have a position
      */
-    def literal(isNegated: Boolean = false, inPattern: Boolean = false): Tree = {
-      def finish(value: Any): Tree = {
-        val t = Literal(Constant(value))
-        in.nextToken()
-        t
+    def literal(isNegated: Boolean = false, inPattern: Boolean = false, start: Int = in.offset): Tree = {
+      atPos(start) {
+        def finish(value: Any): Tree = {
+          val t = Literal(Constant(value))
+          in.nextToken()
+          t
+        }
+        if (in.token == SYMBOLLIT)
+          Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
+        else if (in.token == INTERPOLATIONID)
+          interpolatedString(inPattern = inPattern)
+        else finish(in.token match {
+          case CHARLIT   => in.charVal
+          case INTLIT    => in.intVal(isNegated).toInt
+          case LONGLIT   => in.intVal(isNegated)
+          case FLOATLIT  => in.floatVal(isNegated).toFloat
+          case DOUBLELIT => in.floatVal(isNegated)
+          case STRINGLIT | STRINGPART => in.strVal.intern()
+          case TRUE      => true
+          case FALSE     => false
+          case NULL      => null
+          case _         =>
+            syntaxErrorOrIncomplete("illegal literal", true)
+            null
+        })
       }
-      if (in.token == SYMBOLLIT)
-        Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
-      else if (in.token == INTERPOLATIONID)
-        interpolatedString(inPattern = inPattern)
-      else finish(in.token match {
-        case CHARLIT   => in.charVal
-        case INTLIT    => in.intVal(isNegated).toInt
-        case LONGLIT   => in.intVal(isNegated)
-        case FLOATLIT  => in.floatVal(isNegated).toFloat
-        case DOUBLELIT => in.floatVal(isNegated)
-        case STRINGLIT | STRINGPART => in.strVal.intern()
-        case TRUE      => true
-        case FALSE     => false
-        case NULL      => null
-        case _         =>
-          syntaxErrorOrIncomplete("illegal literal", true)
-          null
-      })
     }
 
     private def stringOp(t: Tree, op: TermName) = {
@@ -1152,7 +1153,7 @@ self =>
       val exprBuf = new ListBuffer[Tree]
       in.nextToken()
       while (in.token == STRINGPART) {
-        partsBuf += atPos(in.offset)(literal())
+        partsBuf += literal()
         exprBuf += {
           if (inPattern) dropAnyBraces(pattern())
           else {
@@ -1166,7 +1167,7 @@ self =>
           }
         }
       }
-      if (in.token == STRINGLIT) partsBuf += atPos(in.offset)(literal())
+      if (in.token == STRINGLIT) partsBuf += literal()
 
       val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
       val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
@@ -1510,7 +1511,7 @@ self =>
         atPos(in.offset) {
           val name = nme.toUnaryName(rawIdent())
           if (name == nme.UNARY_- && isNumericLit)
-            simpleExprRest(atPos(in.offset)(literal(isNegated = true)), canApply = true)
+            simpleExprRest(literal(isNegated = true), canApply = true)
           else
             Select(stripParens(simpleExpr()), name)
         }
@@ -1535,7 +1536,7 @@ self =>
     def simpleExpr(): Tree = {
       var canApply = true
       val t =
-        if (isLiteral) atPos(in.offset)(literal())
+        if (isLiteral) literal()
         else in.token match {
           case XMLSTART =>
             xmlLiteral()
@@ -1924,7 +1925,7 @@ self =>
               case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
                 t match {
                   case Ident(nme.MINUS) =>
-                    return atPos(start) { literal(isNegated = true, inPattern = true) }
+                    return literal(isNegated = true, inPattern = true, start = start)
                   case _ =>
                 }
               case _ =>
@@ -1942,7 +1943,7 @@ self =>
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
                STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
-            atPos(start) { literal(inPattern = true) }
+            literal(inPattern = true)
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))
           case XMLSTART =>
