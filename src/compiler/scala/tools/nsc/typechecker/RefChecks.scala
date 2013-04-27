@@ -59,7 +59,22 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
   override def changesBaseClasses = false
 
   override def transformInfo(sym: Symbol, tp: Type): Type = {
-    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    // !!! This is a sketchy way to do things.
+    // It would be better to replace the module symbol with a method symbol
+    // rather than creating this module/method hybrid which must be special
+    // cased all over the place. Look for the call sites which use(d) some
+    // variation of "isMethod && !isModule", which to an observer looks like
+    // a nonsensical condition. (It is now "isModuleNotMethod".)
+    if (sym.isModule && !sym.isStatic) {
+      sym setFlag lateMETHOD | STABLE
+      // Note that this as far as we can see it works equally well
+      // to set the METHOD flag here and dump lateMETHOD, but it does
+      // mean that under separate compilation the typer will see
+      // modules as methods (albeit stable ones with singleton types.)
+      // So for now lateMETHOD lives while we try to convince ourselves
+      // we can live without it or deliver that info some other way.
+      log(s"Stabilizing module method for ${sym.fullLocationString}")
+    }
     super.transformInfo(sym, tp)
   }
 

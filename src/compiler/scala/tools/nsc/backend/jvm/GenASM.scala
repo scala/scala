@@ -539,7 +539,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       collectInnerClass(sym)
 
-      val hasInternalName = (sym.isClass || (sym.isModule && !sym.isMethod))
+      val hasInternalName = sym.isClass || sym.isModuleNotMethod
       val cachedJN = javaNameCache.getOrElseUpdate(sym, {
         if (hasInternalName) { sym.javaBinaryName }
         else                 { sym.javaSimpleName }
