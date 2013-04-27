@@ -136,6 +136,8 @@ abstract class Compat
 
 		// in 2.10, sym.moduleSuffix exists, but genJVM.moduleSuffix(Symbol) does not
 		def moduleSuffix(sym: Symbol): String = sourceCompatibilityOnly
+		// in 2.11 genJVM does not exist
+		def genJVM = this
 	}
 	// in 2.9, NullaryMethodType was added to Type
 	object NullaryMethodTpe {
@@ -145,7 +147,7 @@ abstract class Compat
 	// before 2.10, sym.moduleSuffix doesn't exist, but genJVM.moduleSuffix does
 	private[this] implicit def symbolCompat(sym: Symbol): SymbolCompat = new SymbolCompat(sym)
 	private[this] final class SymbolCompat(sym: Symbol) {
-		def moduleSuffix = genJVM.moduleSuffix(sym)
+		def moduleSuffix = global.genJVM.moduleSuffix(sym)
 	}
 
 
