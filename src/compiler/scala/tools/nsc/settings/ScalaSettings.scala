@@ -164,6 +164,7 @@ trait ScalaSettings extends AbsScalaSettings
   val refinementMethodDispatch
                       = ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy", List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
   val Yrangepos       = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
+  val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", "Show start and end positions of members", "") withPostSetHook (_ => Yrangepos.value = true)
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
   val Yreplsync       = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
