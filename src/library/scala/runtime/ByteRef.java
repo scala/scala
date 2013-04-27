@@ -17,4 +17,7 @@ public class ByteRef implements java.io.Serializable {
     public byte elem;
     public ByteRef(byte elem) { this.elem = elem; }
     public String toString() { return java.lang.Byte.toString(elem); }
+
+    public static ByteRef create(byte e) { return new ByteRef(e); }
+    public static ByteRef zero() { return new ByteRef((byte)0); }
 }
