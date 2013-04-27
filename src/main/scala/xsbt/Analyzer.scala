@@ -37,7 +37,7 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 				for(on <- inheritedDependencies.getOrElse(sourceFile, Nil: Iterable[Symbol])) processDependency(on, inherited=true)
 				def processDependency(on: Symbol, inherited: Boolean)
 				{
-					def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile /*, inherited*/)
+					def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile, inherited)
 					val onSource = on.sourceFile
 					if(onSource == null)
 					{
@@ -55,7 +55,7 @@ final class Analyzer(val global: CallbackGlobal) extends Compat
 						}
 					}
 					else
-						callback.sourceDependency(onSource.file, sourceFile /*, inherited*/)
+						callback.sourceDependency(onSource.file, sourceFile, inherited)
 				}
 
 				// build list of generated classes
