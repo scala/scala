@@ -39,6 +39,7 @@ final class API(val global: CallbackGlobal) extends Compat
 		def processScalaUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
+			currentSourceFile = sourceFile
 			debug("Traversing " + sourceFile)
 			val traverser = new TopLevelHandler(sourceFile)
 			traverser.apply(unit.body)
@@ -49,6 +50,10 @@ final class API(val global: CallbackGlobal) extends Compat
 			callback.api(sourceFile, source)
 		}
 	}
+
+	// Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
+	// This is used when recording inheritance dependencies.
+	private[this] var currentSourceFile: File = _
 
 	// this cache reduces duplicate work both here and when persisting
 	//   caches on other structures had minimal effect on time and cache size
@@ -237,8 +242,18 @@ final class API(val global: CallbackGlobal) extends Compat
 		mkStructure(s, baseTypes, ds, is)
 	}
 
-	private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure =
+	// If true, this template is publicly visible and should be processed as a public inheritance dependency.
+	// Local classes and local refinements will never be traversed by the api phase, so we don't need to check for that.
+	private[this] def isPublicStructure(s: Symbol): Boolean =
+		s.isStructuralRefinement || 
+			// do not consider templates that are private[this] or private
+			!(s.isPrivate && (s.privateWithin == NoSymbol || s.isLocal))
+
+	private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure = {
+		if(isPublicStructure(s))
+			addInheritedDependencies(currentSourceFile, bases.map(_.dealias.typeSymbol))
 		new xsbti.api.Structure(lzy(types(s, bases)), lzy(processDefinitions(s, declared)), lzy(processDefinitions(s, inherited)))
+	}
 	private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.Definition] =
 		sort(defs.toArray).flatMap( (d: Symbol) => definition(in, d))
 	private[this] def sort(defs: Array[Symbol]): Array[Symbol] = {
