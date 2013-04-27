@@ -66,5 +66,5 @@ Note that implicit conversions are not applicable because they are ambiguous:
        ^
 stringinterpolation_macro-neg.scala:30: error: illegal conversion character
   f"$s%i"
-     ^
+       ^
 15 errors found

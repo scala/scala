@@ -1,0 +1,19 @@
+t7325.scala:2: error: percent signs not directly following splicees must be escaped
+  println(f"%")
+            ^
+t7325.scala:4: error: percent signs not directly following splicees must be escaped
+  println(f"%%%")
+              ^
+t7325.scala:6: error: percent signs not directly following splicees must be escaped
+  println(f"%%%%%")
+                ^
+t7325.scala:16: error: wrong conversion string
+  println(f"${0}%")
+                ^
+t7325.scala:19: error: percent signs not directly following splicees must be escaped
+  println(f"${0}%%%d")
+                  ^
+t7325.scala:21: error: percent signs not directly following splicees must be escaped
+  println(f"${0}%%%%%d")
+                    ^
+6 errors found
