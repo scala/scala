@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.io.Codec
-import scala.sys.process.Process
+import scala.sys.process.{ Process, ProcessLogger }
 import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile }
@@ -221,7 +221,25 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
    *  error out to output file.
    */
   private def runCommand(args: Seq[String], outFile: File): Boolean = {
-    (Process(args) #> outFile !) == 0
+    //(Process(args) #> outFile !) == 0
+    val pl = ProcessLogger(outFile)
+    val nonzero = 17     // rounding down from 17.3
+    def run: Int = {
+      val p = Process(args) run pl
+      try p.exitValue
+      catch {
+        case e: InterruptedException =>
+          NestUI verbose s"Interrupted waiting for command to finish (${args mkString " "})"
+          p.destroy
+          nonzero
+        case t: Throwable =>
+          NestUI verbose s"Exception waiting for command to finish: $t (${args mkString " "})"
+          p.destroy
+          throw t
+      }
+      finally pl.close()
+    }
+    (pl buffer run) == 0
   }
 
   private def execTest(outDir: File, logFile: File): Boolean = {
