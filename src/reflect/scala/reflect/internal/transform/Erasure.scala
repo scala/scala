@@ -120,12 +120,14 @@ trait Erasure {
         tp
       case st: SubType =>
         apply(st.supertype)
+      case TypeRef(pre, ArrayClass, arg :: Nil) =>
+        // An existential anywhere in an array element type mandates that
+        // we erase to Object. SI-5353
+        if (containsExistential(arg) || unboundedGenericArrayLevel(tp) == 1) ObjectTpe
+        else if (arg.typeSymbol.isBottomClass) ObjectArray
+        else typeRef(apply(pre), ArrayClass, applyInArray(arg) :: Nil)
       case tref @ TypeRef(pre, sym, args) =>
-        if (sym == ArrayClass)
-          if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
-          else if (args.head.typeSymbol.isBottomClass) ObjectArray
-          else typeRef(apply(pre), sym, args map applyInArray)
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ErasedObject
+        if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ErasedObject
         else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
