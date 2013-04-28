@@ -258,10 +258,6 @@ trait DocTemplateEntity extends MemberTemplateEntity {
     * This template's linearization contains all of its direct and indirect super-types. */
   def linearizationTypes: List[TypeEntity]
 
-  /** All class, trait and object templates for which this template is a direct or indirect super-class or super-trait.
-   *  Only templates for which documentation is available in the universe (`DocTemplateEntity`) are listed. */
-  def allSubClasses: List[DocTemplateEntity]
-
   /** All class, trait and object templates for which this template is a *direct* super-class or super-trait.
    *  Only templates for which documentation is available in the universe (`DocTemplateEntity`) are listed. */
   def directSubClasses: List[DocTemplateEntity]
