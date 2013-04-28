@@ -1,1 +1,4 @@
+t5284b.scala:27: warning: type S is unused or used in non-specializable positions.
+  def bar[@specialized(Int) W <: T, @specialized(Int) S](w: W) = id(w)
+      ^
 17

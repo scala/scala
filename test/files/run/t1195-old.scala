@@ -1,3 +1,6 @@
+
+import scala.language.{ existentials }
+
 object Test {
   def f() = { case class Bar(x: Int); Bar }
   def g() = { case class Bar(x: Int); Bar(5) }

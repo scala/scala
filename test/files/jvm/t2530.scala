@@ -1,6 +1,8 @@
-import scala.actors.{Future, Futures}
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.{Future, Futures}
 
   def main(args:Array[String]) : Unit = {
     //scala.actors.Debug.level = 3
@@ -29,7 +31,6 @@ object Test {
     }
     println("Test done with no deadlock. Try again, it will not occur...")
   }
-}
 
 case class Matrix(numRows: Int, numCols: Int, values: Array[Double])  {
 
@@ -93,4 +94,5 @@ case class Matrix(numRows: Int, numCols: Int, values: Array[Double])  {
       Some(resultMatrix)
   }
 
+}
 }

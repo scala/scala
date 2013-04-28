@@ -1,3 +1,7 @@
+t6146b.scala:15: warning: match may not be exhaustive.
+It would fail on the following inputs: S2(), S3()
+  def foo(f: F[Int]) = f match { case X.S1 => }
+                       ^
 Type in expressions to have them evaluated.
 Type :help for more information.
 

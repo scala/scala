@@ -1,3 +1,5 @@
+
+import scala.language.{ reflectiveCalls }
 object Test {
   abstract class Base {
     val U: {

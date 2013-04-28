@@ -17,7 +17,7 @@ object Test {
   
   def util() = shift { k: (String => String) => "7" }
   
-  def main(args: Array[String]): Any = {
+  def main(args: Array[String]): Unit = {
     test { shift { k: (Int => String) => 9 } }
     test { shift { k: (Int => String) => 9 }; 2 }
 //    test { shift { k: (Int => String) => 9 }; util() }  <-- doesn't work

@@ -1,8 +1,9 @@
-import scala.actors.Actor
 
 /* Test that an actor that hasn't finished prevents termination */
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.Actor
   def main(args: Array[String]) {
     Actor.actor {
       try {

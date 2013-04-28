@@ -2,8 +2,8 @@ import java.io.PrintWriter
 import java.io.FileOutputStream
 import java.util.Calendar
 
+import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.interactive.tests._
-import scala.tools.nsc.util._
 import scala.tools.nsc.io._
 import scala.tools.nsc.doc
 

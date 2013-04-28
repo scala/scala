@@ -4,6 +4,8 @@
 
 //############################################################################
 
+import scala.language.postfixOps
+
 object TestMutable {
   import scala.collection.mutable.BitSet
 

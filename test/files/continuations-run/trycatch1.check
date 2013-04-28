@@ -1,3 +1,9 @@
+trycatch1.scala:34: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    7
+    ^
+trycatch1.scala:18: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    shift((k: Int=>Int) => k(7))
+         ^
 12
 12
 12

@@ -4,6 +4,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.reflect.internal.Positions
 
 object Test extends DirectTest {
 
@@ -29,6 +30,6 @@ object Test extends DirectTest {
     val settings = new Settings()
     settings.Xprintpos.value = true
     val command = new CompilerCommand((CommandLineParser tokenize extraSettings) ++ args.toList, settings)
-    new Global(command.settings, new ConsoleReporter(settings)) with interactive.RangePositions
+    new Global(command.settings, new ConsoleReporter(settings)) with Positions
   }
 }

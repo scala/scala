@@ -1,7 +1,9 @@
-import scala.actors.{Reactor, Actor, TIMEOUT}
-import Actor._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.{Reactor, Actor, TIMEOUT}
+  import Actor._
 
   def assert(cond: => Boolean, hint: String) {
     if (!cond)

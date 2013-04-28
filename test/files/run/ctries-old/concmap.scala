@@ -2,6 +2,7 @@
 
 
 import collection.concurrent.TrieMap
+import Test.Spec
 
 
 object ConcurrentMapSpec extends Spec {

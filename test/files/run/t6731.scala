@@ -12,7 +12,7 @@ abstract class MonoDynamic extends Dynamic {
   def applyDynamic(name: String)(args: Any*): String                = show(this + "." + name + mkArgs(args: _*))
   def applyDynamicNamed(name: String)(args: (String, Any)*): String = show(this + "." + name + mkArgs(args: _*))
 
-  override def toString = this.getClass.getName split '.' last
+  override def toString = (this.getClass.getName split '.').last
 }
 
 object Mono extends MonoDynamic {

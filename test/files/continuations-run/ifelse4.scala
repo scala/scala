@@ -22,7 +22,7 @@ object Test {
       if (sh(x1)==45) x1 else sh(x1)
   }
 
-  def main(args: Array[String]): Any = {
+  def main(args: Array[String]): Unit = {
     println(reset(1 + testA(7)))
     println(reset(1 + testB(9)))
     println(reset(1 + testC(9)))

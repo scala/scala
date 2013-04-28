@@ -1,3 +1,6 @@
+
+import scala.language.{ higherKinds, implicitConversions }
+
 trait Fooable[T]
 object Fooable {
   implicit def conjure[T]: Fooable[T] = {

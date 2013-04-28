@@ -1,3 +1,4 @@
+import scala.language.reflectiveCalls
 object Other {
   abstract class Foo {
     type R1 <:    { def x: Any }

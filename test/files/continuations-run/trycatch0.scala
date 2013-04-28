@@ -7,14 +7,14 @@ object Test {
   def foo = try {
     shift((k: Int=>Int) => k(7))
   } catch {
-    case ex =>
+    case ex: Throwable =>
       9
   }
 
   def bar = try {
     7
   } catch {
-    case ex =>
+    case ex: Throwable =>
     shiftUnit0[Int,Int](9)
   }
   

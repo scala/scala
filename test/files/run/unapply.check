@@ -1,0 +1,3 @@
+unapply.scala:57: warning: comparing values of types Null and Null using `==' will always yield true
+    assert(doMatch2(b) == null)
+                       ^

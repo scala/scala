@@ -102,7 +102,7 @@ object Test {
       seqBack()
     }
   } catch {
-    case ex =>
+    case ex: Throwable =>
       //println("----------------")
       //a.debug
       throw ex

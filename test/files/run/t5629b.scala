@@ -33,7 +33,7 @@ object Test extends App {
   
   val pf = newPF(1)
   println("=== pf(1):")
-  try { pf(1) } catch { case x => println(x) }
+  try { pf(1) } catch { case x: Throwable => println(x) }
   println("=== pf(42):")
   pf(42)
   println("=== done")

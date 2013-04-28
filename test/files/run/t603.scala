@@ -1,4 +1,6 @@
 object forceDelay {
+  import scala.language.implicitConversions
+
   class Susp[+A](lazyValue: => A) extends Function0[A] {
     private var func: () => Any = () => lazyValue
     private var value: Any = null

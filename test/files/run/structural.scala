@@ -1,3 +1,6 @@
+
+import scala.language.{ reflectiveCalls }
+
 object test1 {
   
   val o1 = new Object { override def toString = "ohone" }
@@ -164,7 +167,7 @@ object test3 {
     }
     catch {
       case e: Exc => println("caught")
-      case e => println(e)
+      case e: Throwable => println(e)
     }
   
   m(Rec)

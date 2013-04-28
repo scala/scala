@@ -1,3 +1,7 @@
+
+
+import scala.language.{ implicitConversions, postfixOps, reflectiveCalls }
+
 object Test
 {
   implicit def x[A](a: A) = new { def xx = a }

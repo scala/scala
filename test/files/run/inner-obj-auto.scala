@@ -25,7 +25,7 @@ class Class2_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -54,7 +54,7 @@ object Object3_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -83,7 +83,7 @@ trait Trait4_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -112,7 +112,7 @@ class Class6_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -141,7 +141,7 @@ object Object7_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -170,7 +170,7 @@ trait Trait8_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -199,7 +199,7 @@ class Class10_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -228,7 +228,7 @@ object Object11_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -257,7 +257,7 @@ trait Trait12_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -286,7 +286,7 @@ class Class14_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -315,7 +315,7 @@ object Object15_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -344,7 +344,7 @@ trait Trait16_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -373,7 +373,7 @@ class Class18_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -402,7 +402,7 @@ object Object19_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -431,7 +431,7 @@ trait Trait20_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -460,7 +460,7 @@ class Class22_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -489,7 +489,7 @@ object Object23_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -518,7 +518,7 @@ trait Trait24_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -548,7 +548,7 @@ class Class26_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("failed "); e.printStackTrace()
+          case e: Throwable =>  print("failed "); e.printStackTrace()
         }
       }
 
@@ -579,7 +579,7 @@ object Object27_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("failed "); e.printStackTrace()
+          case e: Throwable =>  print("failed "); e.printStackTrace()
         }
       }
 
@@ -610,7 +610,7 @@ trait Trait28_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("failed "); e.printStackTrace()
+          case e: Throwable =>  print("failed "); e.printStackTrace()
         }
       }
 
@@ -641,7 +641,7 @@ class Class30_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("failed "); e.printStackTrace()
+          case e: Throwable =>  print("failed "); e.printStackTrace()
         }
       }
 
@@ -672,7 +672,7 @@ object Object31_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("failed "); e.printStackTrace()
+          case e: Throwable =>  print("failed "); e.printStackTrace()
         }
       }
 
@@ -703,7 +703,7 @@ trait Trait32_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("failed "); e.printStackTrace()
+          case e: Throwable =>  print("failed "); e.printStackTrace()
         }
       }
 
@@ -733,7 +733,7 @@ class Class34_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -762,7 +762,7 @@ object Object35_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -791,7 +791,7 @@ trait Trait36_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -820,7 +820,7 @@ class Class38_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -849,7 +849,7 @@ object Object39_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -878,7 +878,7 @@ trait Trait40_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -907,7 +907,7 @@ class Class42_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -936,7 +936,7 @@ object Object43_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -965,7 +965,7 @@ trait Trait44_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -994,7 +994,7 @@ class Class46_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -1023,7 +1023,7 @@ object Object47_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -1052,7 +1052,7 @@ trait Trait48_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -1081,7 +1081,7 @@ class Class50_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -1110,7 +1110,7 @@ object Object51_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -1139,7 +1139,7 @@ trait Trait52_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("failed "); e.printStackTrace()
+        case e: Throwable =>  print("failed "); e.printStackTrace()
       }
     }
 
@@ -1172,7 +1172,7 @@ class Class54_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1205,7 +1205,7 @@ object Object55_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1238,7 +1238,7 @@ trait Trait56_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1271,7 +1271,7 @@ class Class58_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1304,7 +1304,7 @@ object Object59_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1337,7 +1337,7 @@ trait Trait60_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1370,7 +1370,7 @@ class Class62_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1403,7 +1403,7 @@ object Object63_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1436,7 +1436,7 @@ trait Trait64_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1469,7 +1469,7 @@ class Class66_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1502,7 +1502,7 @@ object Object67_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1535,7 +1535,7 @@ trait Trait68_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1568,7 +1568,7 @@ class Class70_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1601,7 +1601,7 @@ object Object71_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1634,7 +1634,7 @@ trait Trait72_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1667,7 +1667,7 @@ class Class74_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1700,7 +1700,7 @@ object Object75_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1733,7 +1733,7 @@ trait Trait76_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -1767,7 +1767,7 @@ class Class78_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("multi-threaded failed "); e.printStackTrace()
+          case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
         }
       }
 
@@ -1802,7 +1802,7 @@ object Object79_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("multi-threaded failed "); e.printStackTrace()
+          case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
         }
       }
 
@@ -1837,7 +1837,7 @@ trait Trait80_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("multi-threaded failed "); e.printStackTrace()
+          case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
         }
       }
 
@@ -1872,7 +1872,7 @@ class Class82_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("multi-threaded failed "); e.printStackTrace()
+          case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
         }
       }
 
@@ -1907,7 +1907,7 @@ object Object83_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("multi-threaded failed "); e.printStackTrace()
+          case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
         }
       }
 
@@ -1942,7 +1942,7 @@ trait Trait84_1 {
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
           println("ok")
         } catch {
-          case e =>  print("multi-threaded failed "); e.printStackTrace()
+          case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
         }
       }
 
@@ -1976,7 +1976,7 @@ class Class90_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 
@@ -2009,7 +2009,7 @@ trait Trait92_1 {
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
         println("ok")
       } catch {
-        case e =>  print("multi-threaded failed "); e.printStackTrace()
+        case e: Throwable =>  print("multi-threaded failed "); e.printStackTrace()
       }
     }
 

@@ -1,3 +1,6 @@
+
+import scala.language.{ higherKinds, implicitConversions, postfixOps }
+
 trait Parsers {
   type Input = List[Char]
   

@@ -1,3 +1,6 @@
+
+import scala.language.{ existentials }
+
 object Test extends App {
   {
     val (left, right) = Seq((1, "a"), (1, "a"), (1, "a"), (3, "c")).view.unzip

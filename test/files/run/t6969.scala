@@ -1,3 +1,7 @@
+
+
+import scala.language.{ reflectiveCalls }
+
 object Test {
   private type Clearable = { def clear(): Unit }
   private def choke() = {

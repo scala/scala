@@ -1,5 +1,9 @@
-import scala.actors.{Actor, Exit}
-import scala.actors.Actor._
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
+  import scala.actors.{Actor, Exit}
+  import scala.actors.Actor._
 
 case class MyException(text: String) extends Exception(text) {
   override def fillInStackTrace() = this
@@ -39,7 +43,6 @@ object Master extends Actor {
   }
 }
 
-object Test {
 
   def main(args: Array[String]) {
     actor {

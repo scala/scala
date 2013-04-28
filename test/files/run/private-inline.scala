@@ -43,7 +43,7 @@ object Test {
       
       val foundClass = (
         try   Class.forName(clazz)
-        catch { case _ => null }
+        catch { case _: Throwable => null }
       )
       
       assert(foundClass == null, foundClass)

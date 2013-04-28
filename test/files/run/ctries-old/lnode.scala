@@ -3,6 +3,7 @@
 
 import collection.concurrent.TrieMap
 
+import Test.Spec
 
 object LNodeSpec extends Spec {
   
