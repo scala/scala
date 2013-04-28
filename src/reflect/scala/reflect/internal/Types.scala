@@ -4311,17 +4311,13 @@ trait Types
       val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
       val capturedParams = new ListBuffer[Symbol]
       try {
+        // special treatment for lubs of array types after erasure:
+        // If argss contains more than one distinct type, the lub is Object. SI-5353
         if (sym == ArrayClass && phase.erasedTypes) {
-          // special treatment for lubs of array types after erasure:
-          // if argss contain one value type and some other type, the lub is Object
-          // if argss contain several reference types, the lub is an array over lub of argtypes
-          if (argss exists typeListIsEmpty) {
-            None  // something is wrong: an array without a type arg.
-          } else {
-            val args = argss map (_.head)
-            if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
-            else Some(typeRef(pre, sym, List(lub(args))))
+          if (argss exists typeListIsEmpty) None // something is wrong: an array without a type arg.
+          else argss.map(_.head).distinct match {
+            case t :: Nil => Some(typeRef(pre, sym, t :: Nil))
+            case _        => Some(ObjectClass.tpe)
           }
         }
         else transposeSafe(argss) match {
