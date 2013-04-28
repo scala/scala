@@ -14,6 +14,7 @@ import java.awt.event._
 import javax.swing.event._
 import javax.swing.border._
 import javax.swing.{JComponent, Icon, BorderFactory, SwingUtilities}
+import scala.language.implicitConversions
 
 
 /**
