@@ -464,12 +464,12 @@ abstract class LambdaLift extends InfoTransform {
 
             val factoryCall = typer.typedPos(rhs.pos) {
               rhs match {
-              case EmptyTree =>
-                val zeroMSym   = refZeroMethod(refTypeSym)
-                gen.mkMethodCall(zeroMSym, Nil)
-              case arg =>
-                val createMSym = refCreateMethod(refTypeSym)
-                gen.mkMethodCall(createMSym, arg :: Nil)
+                case EmptyTree =>
+                  val zeroMSym   = refZeroMethod(refTypeSym)
+                  gen.mkMethodCall(zeroMSym, Nil)
+                case arg =>
+                  val createMSym = refCreateMethod(refTypeSym)
+                  gen.mkMethodCall(createMSym, arg :: Nil)
               }
             }
 
