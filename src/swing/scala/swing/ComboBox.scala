@@ -11,6 +11,7 @@ package scala.swing
 import event._
 import javax.swing.{JList, JComponent, JComboBox, JTextField, ComboBoxModel, AbstractListModel, ListCellRenderer}
 import java.awt.event.ActionListener
+import scala.language.implicitConversions
 
 object ComboBox {
   /**

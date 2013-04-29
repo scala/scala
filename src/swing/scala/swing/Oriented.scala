@@ -22,6 +22,7 @@ object Oriented {
       def getOrientation(): Int
       def setOrientation(n: Int)
     }
+    import scala.language.reflectiveCalls
     def orientation: Orientation.Value = Orientation(peer.getOrientation)
   }
 }
