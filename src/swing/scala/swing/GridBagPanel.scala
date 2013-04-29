@@ -9,6 +9,7 @@
 package scala.swing
 
 import java.awt.{GridBagConstraints, GridBagLayout}
+import scala.language.implicitConversions
 
 object GridBagPanel {
   object Fill extends Enumeration {
