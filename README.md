@@ -28,10 +28,13 @@ the given example programs, but there are some limitations and bugs:
 * The "?" syntax for actual output parameters, actual constrained parameters and
  actual adapting parameters is not yet handled. For the time being use 
  alternative notations. E.g.,
+
+ ```
  p?           ==>   ActualOutputParameter     (p, (v:Int)=>p=v)
  p?if?(cond)  ==>   ActualConstrainedParameter(p, (v:Int)=>p=v, (v:Int)=>cond)
  p??          ==>   ActualAdaptingParameter   (_p)
  Note the underscore in the latter line.
+ ```
 
 * The compiler may crash on values in a script expression for which 
  no implicit conversion to a script exist. 
@@ -65,7 +68,7 @@ scala/
         subscript/            The sources of the core SubScript library.
         subscript/examples    The sources of SubScript example applications
         swing/                The sources of the Swing library.
-    target/       †           Build products output directory for sbt.
+    target/                   Build products output directory for sbt.
     test/                     The Scala test suite.
     tools/                    Developer utilities.
 ```
@@ -190,9 +193,9 @@ assumed to be installed on the build machine:
 
   Removes all build files (including locker) and all distributions.
 
-Many of these targets offer a variant which runs with -optimise enabled.
-Optimized targets include build-opt, test-opt, dist-opt, fastdist-opt,
-replacestarr-opt, replacelocker-opt, and distpack-opt.
+Many of these targets offer a variant which runs with `-optimise` enabled.
+Optimized targets include `build-opt`, `test-opt`, `dist-opt`, `fastdist-opt`,
+`replacestarr-opt`, `replacelocker-opt`, and `distpack-opt`.
 
 ##Contributing to Scala
 
