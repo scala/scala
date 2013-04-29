@@ -4434,11 +4434,11 @@ trait Types
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
-    Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
+    inform(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
     indent = indent + "  "
     val result = p(tp1, arg2)
     indent = indent stripSuffix "  "
-    Console.println(indent + result)
+    inform(indent + result)
     result
   }
 
