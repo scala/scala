@@ -47,6 +47,7 @@ abstract class SymbolTable extends macros.Universe
 
   def log(msg: => AnyRef): Unit
   def warning(msg: String): Unit     = Console.err.println(msg)
+  def inform(msg: String): Unit      = Console.err.println(msg)
   def globalError(msg: String): Unit = abort(msg)
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
