@@ -6,12 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
+package scala
+
+import scala.annotation.unchecked.uncheckedPure
 
 /**
  * Core Scala types. They are always available without an explicit import.
  * @contentDiagram hideNodes "scala.Serializable"
  */
-package object scala {
+@uncheckedPure object `package` {
   type Throwable = java.lang.Throwable
   type Exception = java.lang.Exception
   type Error     = java.lang.Error

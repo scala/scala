@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -15,6 +13,7 @@ import generic._
 import mutable.{Builder, ListBuffer}
 import scala.annotation.tailrec
 import java.io._
+import scala.annotation.unchecked.uncheckedPure
 
 /** A class for immutable linked lists representing ordered collections
  *  of elements of type.
@@ -330,8 +329,8 @@ sealed abstract class List[+A] extends AbstractSeq[A]
  *  @since   2.8
  */
 @SerialVersionUID(0 - 8256821097970055419L)
-case object Nil extends List[Nothing] {
-  override def isEmpty = true
+@uncheckedPure case object Nil extends List[Nothing] {
+  @inline final override def isEmpty = true
   override def head: Nothing =
     throw new NoSuchElementException("head of empty list")
   override def tail: List[Nothing] =
@@ -384,7 +383,7 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
  *  @define coll list
  *  @define Coll `List`
  */
-object List extends SeqFactory[List] {
+@uncheckedPure object List extends SeqFactory[List] {
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

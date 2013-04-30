@@ -7,9 +7,11 @@
 \*                                                                      */
 
 package scala
+package sys
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
+import scala.annotation.unchecked.uncheckedPure
 
 /** The package object `scala.sys` contains methods for reading
  *  and altering core aspects of the virtual machine as well as the
@@ -19,7 +21,7 @@ import scala.collection.JavaConverters._
  *  @version 2.9
  *  @since   2.9
  */
-package object sys {
+@uncheckedPure object `package` {
   /** Throw a new RuntimeException with the supplied message.
    *
    *  @return   Nothing.

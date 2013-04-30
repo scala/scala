@@ -11,6 +11,7 @@ package scala
 import java.io.{ BufferedReader, InputStream, InputStreamReader, OutputStream, PrintStream, Reader }
 import scala.io.{ AnsiColor, ReadStdin }
 import scala.util.DynamicVariable
+import scala.annotation.unchecked.uncheckedPure
 
 /** Implements functionality for
  *  printing Scala values on the terminal as well as reading specific values.
@@ -19,7 +20,7 @@ import scala.util.DynamicVariable
  *  @author  Matthias Zenger
  *  @version 1.0, 03/09/2003
  */
-object Console extends DeprecatedConsole with AnsiColor {
+@uncheckedPure object Console extends DeprecatedConsole with AnsiColor {
   private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
   private val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
   private val inVar  = new DynamicVariable[BufferedReader](

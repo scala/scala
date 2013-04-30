@@ -1,8 +1,9 @@
 package scala.reflect.internal.util
 
 import scala.collection.mutable
+import scala.annotation.unchecked.uncheckedPure
 
-object Statistics {
+@uncheckedPure object Statistics {
 
   type TimerSnapshot = (Long, Long)
 

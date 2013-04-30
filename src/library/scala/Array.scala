@@ -14,6 +14,7 @@ import mutable.{ ArrayBuilder, ArraySeq }
 import scala.compat.Platform.arraycopy
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.{ array_apply, array_update }
+import scala.annotation.unchecked.uncheckedPure
 
 /** Contains a fallback builder for arrays when the element type
  *  does not have a class tag. In that case a generic array is built.
@@ -47,7 +48,7 @@ class FallbackArrayBuilding {
  *  @author Martin Odersky
  *  @version 1.0
  */
-object Array extends FallbackArrayBuilding {
+@uncheckedPure object Array extends FallbackArrayBuilding {
   val emptyBooleanArray = new Array[Boolean](0)
   val emptyByteArray    = new Array[Byte](0)
   val emptyCharArray    = new Array[Char](0)
