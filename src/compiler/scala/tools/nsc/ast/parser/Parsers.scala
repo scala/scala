@@ -1332,11 +1332,10 @@ self =>
         def parseWhile = {
           val start = in.offset
           atPos(in.skipToken()) {
-            val lname: Name = freshTermName(nme.WHILE_PREFIX)
             val cond = condExpr()
             newLinesOpt()
             val body = expr()
-            makeWhile(lname, cond, body)
+            makeWhile(start, cond, body)
           }
         }
         parseWhile
