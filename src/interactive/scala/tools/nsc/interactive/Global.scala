@@ -15,7 +15,7 @@ import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPo
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.doc.ScaladocAnalyzer
-import scala.tools.nsc.typechecker.{ Analyzer, DivergentImplicit }
+import scala.tools.nsc.typechecker.Analyzer
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
@@ -1209,9 +1209,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     } catch {
       case ex: TypeError =>
         debugLog("type error caught: "+ex)
-        alt
-      case ex: DivergentImplicit =>
-        debugLog("divergent implicit caught: "+ex)
         alt
     }
   }
