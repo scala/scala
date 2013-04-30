@@ -64,17 +64,18 @@ extends scala.collection.AbstractSeq[Int]
     || (start < end && step < 0)
     || (start == end && !isInclusive)
   )
-  final val numRangeElements: Int = {
+  final private lazy val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
     else {
       val len = longLength
-      if (len > scala.Int.MaxValue) -1
+      if (len > scala.Int.MaxValue)
+        throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
       else len.toInt
     }
   }
-  final val lastElement     = start + (numRangeElements - 1) * step
-  final val terminalElement = start + numRangeElements * step
+  final private lazy val lastElement     = start + (numRangeElements - 1) * step
+  final private lazy val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else lastElement
   override def head = if (isEmpty) Nil.head else start
@@ -103,19 +104,12 @@ extends scala.collection.AbstractSeq[Int]
   def isInclusive = false
 
   override def size = length
-  override def length = if (numRangeElements < 0) fail() else numRangeElements
+  override def length = numRangeElements
 
   private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
-  private def fail() = throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
-  private def validateMaxLength() {
-    if (numRangeElements < 0)
-      fail()
-  }
 
   @deprecated("Range.foreach() is now self-contained, making this auxiliary method redundant.", "2.10.1")
   def validateRangeBoundaries(f: Int => Any): Boolean = {
-    validateMaxLength()
-
     start != Int.MinValue || end != Int.MinValue || {
       var count = 0
       var num = start
@@ -129,13 +123,11 @@ extends scala.collection.AbstractSeq[Int]
   }
 
   final def apply(idx: Int): Int = {
-    validateMaxLength()
     if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
     else start + (step * idx)
   }
 
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
-    validateMaxLength()
     val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
     var i = start
     var count = 0
