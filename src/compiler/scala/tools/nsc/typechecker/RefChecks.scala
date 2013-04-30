@@ -1411,6 +1411,16 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
     }
 
+    private def checkDelayedInitSelect(qual: Tree, sym: Symbol, pos: Position) = {
+      def isLikelyUninitialized = (
+           (sym.owner isSubClass DelayedInitClass)
+        && !qual.tpe.isInstanceOf[ThisType]
+        && sym.accessedOrSelf.isVal
+      )
+      if (settings.lint.value && isLikelyUninitialized)
+        unit.warning(pos, s"Selecting ${sym} from ${sym.owner}, which extends scala.DelayedInit, is likely to yield an uninitialized value")
+    }
+
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
          (otherSym != NoSymbol)
       && !otherSym.isProtected
@@ -1610,6 +1620,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       if(settings.Xmigration.value != NoScalaVersion)
         checkMigration(sym, tree.pos)
       checkCompileTimeOnly(sym, tree.pos)
+      checkDelayedInitSelect(qual, sym, tree.pos)
 
       if (sym eq NoSymbol) {
         unit.warning(tree.pos, "Select node has NoSymbol! " + tree + " / " + tree.tpe)
