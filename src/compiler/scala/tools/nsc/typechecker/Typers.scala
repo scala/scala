@@ -1149,12 +1149,9 @@ trait Typers extends Modes with Adaptations with Tags {
             adaptConstrPattern()
           else if (shouldInsertApply(tree))
             insertApply()
-          else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
+          else if (context.undetparams.nonEmpty && !inPolyMode(mode)) { // (9)
             assert(!inHKMode(mode), modeString(mode)) //@M
-            if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
-              instantiateExpectingUnit(tree, mode)
-            else
-              instantiate(tree, mode, pt)
+            instantiatePossiblyExpectingUnit(tree, mode, pt)
           } else if (tree.tpe <:< pt) {
             tree
           } else {
@@ -1300,6 +1297,13 @@ trait Typers extends Modes with Adaptations with Tags {
           val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
+    }
+
+    def instantiatePossiblyExpectingUnit(tree: Tree, mode: Int, pt: Type): Tree = {
+      if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
+        instantiateExpectingUnit(tree, mode)
+      else
+        instantiate(tree, mode, pt)
     }
 
     private def isAdaptableWithView(qual: Tree) = {
@@ -3055,8 +3059,7 @@ trait Typers extends Modes with Adaptations with Tags {
             else if (isByNameParamType(formals.head)) 0
             else BYVALmode
           )
-          var tree = typedArg(args.head, mode, typedMode, adapted.head)
-          if (hasPendingMacroExpansions) tree = macroExpandAll(this, tree)
+          val tree = typedArg(args.head, mode, typedMode, adapted.head)
           // formals may be empty, so don't call tail
           tree :: loop(args.tail, formals drop 1, adapted.tail)
         }
@@ -5608,7 +5611,12 @@ trait Typers extends Modes with Adaptations with Tags {
         }
 
         tree1.tpe = pluginsTyped(tree1.tpe, this, tree1, mode, ptPlugins)
-        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, ptPlugins, tree)
+        val result =
+          if (tree1.isEmpty) tree1
+          else {
+            val result = adapt(tree1, mode, ptPlugins, tree)
+            if (hasPendingMacroExpansions) macroExpandAll(this, result) else result
+          }
 
         if (!alreadyTyped) {
           printTyping("adapted %s: %s to %s, %s".format(
