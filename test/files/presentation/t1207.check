@@ -1,0 +1,53 @@
+reload: Completions.scala
+
+askTypeCompletion at Completions.scala(10,15)
+================================================================================
+[response] askCompletionAt (10,15)
+retrieved 3 members
+final package bongo
+final package lang
+final package util
+================================================================================
+
+askTypeCompletion at Completions.scala(11,16)
+================================================================================
+[response] askCompletionAt (11,16)
+retrieved 3 members
+final package bongo
+final package lang
+final package util
+================================================================================
+
+askTypeCompletion at Completions.scala(12,19)
+================================================================================
+[response] askCompletionAt (12,19)
+retrieved 3 members
+final package bongo
+final package lang
+final package util
+================================================================================
+
+askTypeCompletion at Completions.scala(13,19)
+================================================================================
+[response] askCompletionAt (13,19)
+retrieved 3 members
+final package bongo
+final package lang
+final package util
+================================================================================
+
+askTypeCompletion at Completions.scala(14,23)
+================================================================================
+[response] askCompletionAt (14,23)
+retrieved 3 members
+final package bongo
+final package lang
+final package util
+================================================================================
+
+askTypeCompletion at Completions.scala(15,10)
+================================================================================
+[response] askCompletionAt (15,10)
+retrieved 0 members
+
+================================================================================
