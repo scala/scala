@@ -2,6 +2,8 @@ import org.scalacheck._
 import org.scalacheck.Prop._
 
 import java.net.{URLClassLoader, URLDecoder}
+import scala.collection.mutable
+import scala.xml.NodeSeq
 
 object XMLUtil {
   import scala.xml._
@@ -34,21 +36,24 @@ object Test extends Properties("HtmlFactory") {
     // this test previously relied on the assumption that the current thread's classloader is an url classloader and contains all the classpaths
     // does partest actually guarantee this? to quote Leonard Nimoy: The answer, of course, is no.
     // this test _will_ fail again some time in the future.
-    val paths = Thread.currentThread.getContextClassLoader.asInstanceOf[URLClassLoader].getURLs.map(u => URLDecoder.decode(u.getPath))
-    val morepaths = Thread.currentThread.getContextClassLoader.getParent.asInstanceOf[URLClassLoader].getURLs.map(u => URLDecoder.decode(u.getPath))
-    (paths ++ morepaths).mkString(java.io.File.pathSeparator)
+    // Footnote: java.lang.ClassCastException: org.apache.tools.ant.loader.AntClassLoader5 cannot be cast to java.net.URLClassLoader
+    val loader = Thread.currentThread.getContextClassLoader.asInstanceOf[URLClassLoader]
+    val paths = loader.getURLs.map(u => URLDecoder.decode(u.getPath))
+    paths mkString java.io.File.pathSeparator
   }
 
   def createFactory = {
     val settings = new Settings({Console.err.println(_)})
+    settings.scaladocQuietRun = true
+    settings.nowarn.value = true
     settings.classpath.value = getClasspath
 
     val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
     new DocFactory(reporter, settings)
   }
 
-  def createTemplates(basename: String) = {
-    val result = scala.collection.mutable.Map[String, scala.xml.NodeSeq]()
+  def createTemplates(basename: String): collection.Map[String, NodeSeq] = {
+    val result = mutable.Map[String, NodeSeq]()
 
     createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
@@ -57,7 +62,7 @@ object Test extends Properties("HtmlFactory") {
           result += (page.absoluteLinkTo(page.path) -> page.body)
         })
       }
-      case _ => ;
+      case _ =>
     }
 
     result
