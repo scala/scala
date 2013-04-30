@@ -45,7 +45,7 @@ object Test extends Properties("CommentFactory") {
       with MemberLookup)
   }
 
-  def parse(src: String, dst: Inline) = {
+  def parse(src: String, dst: Inline): Boolean = {
     factory.parseComment(src) match {
         case Some(inline) =>
           inline == dst

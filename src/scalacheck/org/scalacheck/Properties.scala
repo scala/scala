@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2013 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -14,15 +14,15 @@ package org.scalacheck
  *  holds if and only if all of the contained properties hold.
  *  <p>Properties are added in the following way:</p>
  *
- *  <p>
- *  <code>
+ *  {{{
  *  object MyProps extends Properties("MyProps") {
- *    property("myProp1") = forAll { (n:Int, m:Int) =&gt;
+ *    property("myProp1") = forAll { (n:Int, m:Int) =>
  *      n+m == m+n
  *    }
  *
  *    property("myProp2") = ((0/1) throws classOf[ArithmeticException])
  *  }
+ *  }}}
  */
 class Properties(val name: String) extends Prop {
 
@@ -42,16 +42,27 @@ class Properties(val name: String) extends Prop {
 
   /** Convenience method that checks the properties with the given parameters
    *  and reports the result on the console. If you need to get the results
-   *  from the test use the <code>check</code> methods in <code>Test</code>
+   *  from the test use the `check` methods in [[org.scalacheck.Test]]
    *  instead. */
+  override def check(prms: Test.Parameters): Unit = Test.checkProperties(
+    prms copy (_testCallback = ConsoleReporter(1) chain prms.testCallback), this
+  )
+
+  /** Convenience method that checks the properties with the given parameters
+   *  and reports the result on the console. If you need to get the results
+   *  from the test use the `check` methods in [[org.scalacheck.Test]]
+   *  instead.
+   *  @deprecated (in 1.10.0) Use `check(Test.Parameters)` instead.
+   */
+  @deprecated("Use 'check(Test.Parameters)' instead", "1.10.0")
   override def check(prms: Test.Params): Unit = Test.checkProperties(
     prms copy (testCallback = ConsoleReporter(1) chain prms.testCallback), this
   )
 
   /** Convenience method that checks the properties and reports the
    *  result on the console. If you need to get the results from the test use
-   *  the <code>check</code> methods in <code>Test</code> instead. */
-  override def check: Unit = check(Test.Params())
+   *  the `check` methods in [[org.scalacheck.Test]] instead. */
+  override def check: Unit = check(Test.Parameters.default)
 
   /** The logic for main, separated out to make it easier to
    *  avoid System.exit calls.  Returns exit code.
@@ -73,7 +84,10 @@ class Properties(val name: String) extends Prop {
   def include(ps: Properties) = for((n,p) <- ps.properties) property(n) = p
 
   /** Used for specifying properties. Usage:
-   *  <code>property("myProp") = ...</code> */
+   *  {{{
+   *  property("myProp") = ...
+   *  }}}
+   */
   class PropertySpecifier() {
     def update(propName: String, p: Prop) = props += ((name+"."+propName, p))
   }
