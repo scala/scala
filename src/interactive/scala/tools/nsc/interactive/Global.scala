@@ -1033,23 +1033,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   private def typeMembers(pos: Position): Stream[List[TypeMember]] = {
-    var tree = typedTreeAt(pos)
-
-    // if tree consists of just x. or x.fo where fo is not yet a full member name
-    // ignore the selection and look in just x.
-    tree match {
-      case Select(qual, name) if tree.tpe == ErrorType => tree = qual
-      case _ =>
+    // Choosing which tree will tell us the type members at the given position:
+    //   If pos leads to an Import, type the expr
+    //   If pos leads to a Select, type the qualifier as long as it is not erroneous
+    //     (this implies discarding the possibly incomplete name in the Select node)
+    //   Otherwise, type the tree found at 'pos' directly.
+    val tree0 = typedTreeAt(pos) match {
+      case sel @ Select(qual, _) if sel.tpe == ErrorType => qual
+      case Import(expr, _)                               => expr
+      case t                                             => t
     }
-
     val context = doLocateContext(pos)
-
-    if (tree.tpe == null)
-      // TODO: guard with try/catch to deal with ill-typed qualifiers.
-      tree = analyzer.newTyper(context).typedQualifier(tree)
+    // TODO: guard with try/catch to deal with ill-typed qualifiers.
+    val tree = if (tree0.tpe eq null) analyzer newTyper context typedQualifier tree0 else tree0
 
     debugLog("typeMembers at "+tree+" "+tree.tpe)
-
     val superAccess = tree.isInstanceOf[Super]
     val members = new Members[TypeMember]
 
