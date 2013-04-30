@@ -150,15 +150,19 @@ trait Typers extends Adaptations with Tags {
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.reportBuffer.errors.find(_.kind == ErrorKinds.Divergent) match {
-                case Some(divergentImplicit) =>
+              context.reportBuffer.errors.collectFirst {
+                case dte: DivergentImplicitTypeError => dte
+              } match {
+                case Some(divergent) =>
                   // DivergentImplicit error has higher priority than "no implicit found"
                   // no need to issue the problem again if we are still in silent mode
                   if (context.reportErrors) {
-                    context.issue(divergentImplicit)
-                    context.reportBuffer.clearErrors(ErrorKinds.Divergent)
+                    context.issue(divergent.withPt(paramTp))
+                    context.reportBuffer.clearErrors {
+                      case dte: DivergentImplicitTypeError => true
+                    }
                   }
-                case None =>
+                case _ =>
                   NoImplicitFoundError(fun, param)
               }
               paramFailed = true
@@ -1627,22 +1631,27 @@ trait Typers extends Adaptations with Tags {
 
     /** Makes sure that the first type tree in the list of parent types is always a class.
      *  If the first parent is a trait, prepend its supertype to the list until it's a class.
-*/
-    private def normalizeFirstParent(parents: List[Tree]): List[Tree] = parents match {
-      case first :: rest if treeInfo.isTraitRef(first) =>
-        def explode(supertpt: Tree, acc: List[Tree]): List[Tree] = {
-          if (treeInfo.isTraitRef(supertpt)) {
-            val supertpt1 = typedType(supertpt)
-            if (!supertpt1.isErrorTyped) {
-              val supersupertpt = TypeTree(supertpt1.tpe.firstParent) setPos supertpt.pos.focus
-              return explode(supersupertpt, supertpt1 :: acc)
-            }
-          }
-          if (supertpt.tpe.typeSymbol == AnyClass) supertpt setType AnyRefClass.tpe
-          supertpt :: acc
-        }
-        explode(first, Nil) ++ rest
-      case _ => parents
+     */
+    private def normalizeFirstParent(parents: List[Tree]): List[Tree] = {
+      @annotation.tailrec
+      def explode0(parents: List[Tree]): List[Tree] = {
+        val supertpt :: rest = parents // parents is always non-empty here - it only grows
+        if (supertpt.tpe.typeSymbol == AnyClass) {
+          supertpt setType AnyRefTpe
+          parents
+        } else if (treeInfo isTraitRef supertpt) {
+          val supertpt1  = typedType(supertpt)
+          def supersuper = TypeTree(supertpt1.tpe.firstParent) setPos supertpt.pos.focus
+          if (supertpt1.isErrorTyped) rest
+          else explode0(supersuper :: supertpt1 :: rest)
+        } else parents
+      }
+
+      def explode(parents: List[Tree]) =
+        if (treeInfo isTraitRef parents.head) explode0(parents)
+        else parents
+
+      if (parents.isEmpty) Nil else explode(parents)
     }
 
     /** Certain parents are added in the parser before it is known whether
@@ -4683,12 +4692,11 @@ trait Typers extends Adaptations with Tags {
             case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
           }
           val (result, accessibleError) = silent(_.makeAccessible(tree1, sym, qual.tpe, qual)) match {
+            case SilentTypeError(err: AccessTypeError) =>
+              (tree1, Some(err))
             case SilentTypeError(err) =>
-              if (err.kind != ErrorKinds.Access) {
-                context issue err
-                return setError(tree)
-              }
-              else (tree1, Some(err))
+              context issue err
+              return setError(tree)
             case SilentResultValue(treeAndPre) =>
               (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
           }
