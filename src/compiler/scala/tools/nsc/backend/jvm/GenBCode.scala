@@ -17,6 +17,7 @@ import asm.tree.{FieldNode, MethodInsnNode, MethodNode}
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
+ *  Plain, mirror, and bean classes are built respectively by PlainClassBuilder, JMirrorBuilder, and JBeanInfoBuilder.
  *
  *  Three pipelines are at work, each taking work items from a queue dedicated to that pipeline:
  *
@@ -34,11 +35,63 @@ import asm.tree.{FieldNode, MethodInsnNode, MethodNode}
  *          (b) a plain class, and
  *          (c) an optional bean class.
  *
+ *        Pipeline 1
+ *        ----------
+ *
+ *        The processing that takes place between queues 1 and 2 relies on typer, and thus has to be performed by a single thread.
+ *        The thread in question is different from the main thread, for reasons that will become apparent below.
+ *        As long as all operations on typer are carried out under a single thread (not necessarily the main thread), everything is fine.
+ *
+ *        Rather than performing all the work involved in lowering a ClassDef,
+ *        pipeline-1 leaves in general for later those operations that don't require typer.
+ *        All the can-multi-thread operations that pipeline-2 performs can also run during pipeline-1, in fact some of them do.
+ *        In contrast, typer operations can't be performed by pipeline-2.
+ *        pipeline-2 consists of MAX_THREADS worker threads running concurrently.
+ *
+ *        Pipeline 2
+ *        ----------
+ *
+ *        The operations that a worker thread of pipeline-2 can perform are those that rely only on the following abstractions:
+ *          - BType:     a typer-independent representation of a JVM-level type,
+ *          - Tracked:   a bundle of a BType B, its superclass (as a BType), and B's interfaces (as BTypes).
+ *          - exemplars: a concurrent map to obtain a Tracked structure using an internal class name as key.
+ *          - the tree-based representation of classfiles provided by the ASM Tree API.
+ *        For example:
+ *          - it's possible to determine whether a BType conforms to another without resorting to typer.
+ *          - `CClassWriter.getCommonSuperclass()` is thread-reentrant (therefore, it accesses only thread-reentrant functionality).
+ *             This befits the way pipelin-2 works, because `MethodNode.visitMaxs()` invokes `getCommonSuperclass()` on different method nodes,
+ *             and each of these activations accesses typer-independent structures (exemplars, Tracked) to compute its answer.
+ *
+ *        A pipeline-2 worker performs intra-method optimizations on the ASM tree.
+ *        Briefly, `Worker2.visit()` instantiates a `BCodeOpt.BCodeCleanser` to perform those optimizations.
+ *
  *    (3) The third queue contains items ready for serialization.
  *        It's a priority queue that follows the original arrival order,
  *        so as to emit identical jars on repeated compilation of the same sources.
  *
- *  Plain, mirror, and bean classes are built respectively by PlainClassBuilder, JMirrorBuilder, and JBeanInfoBuilder.
+ *        Pipeline 3
+ *        ----------
+ *
+ *        This pipeline consist of just the main thread, which is the thread that some tools (including the Eclipse IDE)
+ *        expect to be the sole performer of file-system modifications.
+ *
+ * ---------------------------------------------------------------------------------------------------------------------
+ *
+ *    Summing up, the key facts about this phase are:
+ *
+ *      (i) Three pipelines run in parallel, thus allowing finishing earlier.
+ *
+ *     (ii) Pipelines 1 and 3 are sequential.
+ *          In contrast, pipeline-2 uses task-parallelism (where each of the N workers is limited to invoking ASM and BType operations).
+ *
+ *          All three queues are concurrent:
+ *
+ *    (iii) Queue-1 connects a single producer (BCodePhase) to a single consumer (Worker-1),
+ *          but given they run on different threads, queue-1 has to be concurrent.
+ *
+ *     (iv) Queue-2 is concurrent because concurrent workers of pipeline-2 take items from it.
+ *
+ *      (v) Queue-3 is concurrent (it's in fact a priority queue) because those same concurrent workers add items to it.
  *
  *  @author  Miguel Garcia, http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
  *  @version 1.0
@@ -58,6 +111,15 @@ abstract class GenBCode extends BCodeOptIntra {
     override def description = "Generate bytecode from ASTs"
     override def erasedTypes = true
 
+    // number of woker threads for pipeline-2 (the pipeline in charge of most optimizations except inlining).
+    val MAX_THREADS = scala.math.min(
+      4,
+      java.lang.Runtime.getRuntime.availableProcessors
+    )
+
+    private val woStarted = new java.util.concurrent.ConcurrentHashMap[Long, Long]  // debug
+    private val woExited  = new java.util.concurrent.ConcurrentHashMap[Long, Item2] // debug
+
     private var bytecodeWriter  : BytecodeWriter   = null
     private var mirrorCodeGen   : JMirrorBuilder   = null
     private var beanInfoCodeGen : JBeanInfoBuilder = null
@@ -68,7 +130,7 @@ abstract class GenBCode extends BCodeOptIntra {
       def isPoison = { arrivalPos == Int.MaxValue }
     }
     private val poison1 = Item1(Int.MaxValue, null, null)
-    private val q1 = new _root_.java.util.LinkedList[Item1]
+    private val q1 = new _root_.java.util.concurrent.LinkedBlockingQueue[Item1]
 
     /* ---------------- q2 ---------------- */
 
@@ -81,7 +143,7 @@ abstract class GenBCode extends BCodeOptIntra {
     }
 
     private val poison2 = Item2(Int.MaxValue, null, null, null, null)
-    private val q2 = new _root_.java.util.LinkedList[Item2]
+    private val q2 = new _root_.java.util.concurrent.LinkedBlockingQueue[Item2]
 
     /* ---------------- q3 ---------------- */
 
@@ -101,10 +163,12 @@ abstract class GenBCode extends BCodeOptIntra {
       }
     }
     private val poison3 = Item3(Int.MaxValue, null, null, null, null)
-    private val q3 = new _root_.java.util.PriorityQueue[Item3](1000, i3comparator)
+    private val q3 = new _root_.java.util.concurrent.PriorityBlockingQueue[Item3](1000, i3comparator)
 
     /*
      *  Pipeline that takes ClassDefs from queue-1, lowers them into an intermediate form, placing them on queue-2
+     *
+     *  must-single-thread (because it relies on typer).
      */
     class Worker1(needsOutFolder: Boolean) extends _root_.java.lang.Runnable {
 
@@ -112,9 +176,9 @@ abstract class GenBCode extends BCodeOptIntra {
 
       def run() {
         while (true) {
-          val item = q1.poll
-          if (item.isPoison) {
-            q2 add poison2
+          val item = q1.take
+          if(item.isPoison) {
+            for(i <- 1 to MAX_THREADS) { q2 put poison2 } // explanation in Worker2.run() as to why MAX_THREADS poison pills are needed on queue-2.
             return
           }
           else {
@@ -185,7 +249,7 @@ abstract class GenBCode extends BCodeOptIntra {
                 mirrorC, plainC, beanC,
                 outF)
 
-        q2 add item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
+        q2 put item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
 
       } // end of method visit(Item1)
 
@@ -195,16 +259,23 @@ abstract class GenBCode extends BCodeOptIntra {
      *  Pipeline that takes ClassNodes from queue-2. The unit of work depends on the optimization level:
      *
      *    (a) no optimization involves:
+     *          - removing dead code, and then
      *          - converting the plain ClassNode to byte array and placing it on queue-3
+     *
+     *  can-multi-thread
      */
-    class Worker2 {
+    class Worker2 extends _root_.java.lang.Runnable {
 
       def run() {
+        val id = java.lang.Thread.currentThread.getId
+        woStarted.put(id, id)
 
         while (true) {
-          val item = q2.poll
+          val item = q2.take
           if (item.isPoison) {
-            q3 add poison3
+            woExited.put(id, item)
+            q3 put poison3 // therefore queue-3 will contain as many poison pills as pipeline-2 threads.
+            // to terminate all pipeline-2 workers, queue-1 must contain as many poison pills as pipeline-2 threads.
             return
           }
           else {
@@ -219,7 +290,7 @@ abstract class GenBCode extends BCodeOptIntra {
       }
 
       /*
-       *  Performs optimizations.
+       *  Performs optimizations using task parallelism.
        *  Afterwards, adds the ClassNode(s) to queue-3.
        */
       def visit(item: Item2) {
@@ -249,7 +320,7 @@ abstract class GenBCode extends BCodeOptIntra {
         val plainC  = SubItem3(plain.name, getByteArray(plain))
         val beanC   = if (bean == null)   null else SubItem3(bean.name, getByteArray(bean))
 
-        q3 add Item3(arrivalPos, mirrorC, plainC, beanC, outFolder)
+        q3 put Item3(arrivalPos, mirrorC, plainC, beanC, outFolder)
 
       }
 
@@ -280,7 +351,7 @@ abstract class GenBCode extends BCodeOptIntra {
       beanInfoCodeGen = new JBeanInfoBuilder
 
       val needsOutfileForSymbol = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
-      buildAndSendToDisk(needsOutfileForSymbol)
+      buildAndSendToDiskInParallel(needsOutfileForSymbol)
 
       // closing output files.
       bytecodeWriter.close()
@@ -303,17 +374,15 @@ abstract class GenBCode extends BCodeOptIntra {
     }
 
     /*
-     *  Sequentially:
-     *    (a) place all ClassDefs in queue-1
-     *    (b) dequeue one at a time from queue-1, convert it to ASM ClassNode, place in queue-2
-     *    (c) dequeue one at a time from queue-2, convert it to byte-array,    place in queue-3
-     *    (d) serialize to disk by draining queue-3.
+     *  As soon as each individual ClassNode is ready
+     *  it's also ready for disk serialization, ie it's ready to be added to queue-3.
+     *
      */
-    private def buildAndSendToDisk(needsOutFolder: Boolean) {
+    private def buildAndSendToDiskInParallel(needsOutFolder: Boolean) {
 
+      new _root_.java.lang.Thread(new Worker1(needsOutFolder), "bcode-typer").start()
+      spawnPipeline2()
       feedPipeline1()
-      (new Worker1(needsOutFolder)).run()
-      (new Worker2).run()
       drainQ3()
 
     }
@@ -321,7 +390,17 @@ abstract class GenBCode extends BCodeOptIntra {
     /* Feed pipeline-1: place all ClassDefs on q1, recording their arrival position. */
     private def feedPipeline1() {
       super.run()
-      q1 add poison1
+      q1 put poison1
+    }
+
+    /* Pipeline from q2 to q3. */
+    private def spawnPipeline2(): IndexedSeq[Thread] = {
+      for(i <- 1 to MAX_THREADS) yield {
+        val w = new Worker2
+        val t = new _root_.java.lang.Thread(w, "optimizer-" + i)
+        t.start()
+        t
+      }
     }
 
     /* Pipeline that writes classfile representations to disk. */
@@ -344,14 +423,28 @@ abstract class GenBCode extends BCodeOptIntra {
           }
 
       var moreComing = true
+      var remainingWorkers = MAX_THREADS
       // `expected` denotes the arrivalPos whose Item3 should be serialized next
       var expected = 0
+      // `followers` contains items that arrived too soon, they're parked waiting for `expected` to be polled from queue-3
+      val followers = new java.util.PriorityQueue[Item3](100, i3comparator)
 
       while (moreComing) {
-        val incoming = q3.poll
-        moreComing   = !incoming.isPoison
-        if (moreComing) {
-          val item = incoming
+        val incoming = q3.take
+        if (incoming.isPoison) {
+          remainingWorkers -= 1
+          moreComing = (remainingWorkers != 0)
+        } else {
+          followers.add(incoming)
+        }
+        if (!moreComing) {
+          val queuesOK = (q3.isEmpty && followers.isEmpty)
+          if(!queuesOK) {
+            error("GenBCode found class files waiting in queues to be written but an error prevented doing so.")
+          }
+        }
+        while(!followers.isEmpty && followers.peek.arrivalPos == expected) {
+          val item = followers.poll
           val outFolder = item.outFolder
           sendToDisk(item.mirror, outFolder)
           sendToDisk(item.plain,  outFolder)
@@ -379,7 +472,7 @@ abstract class GenBCode extends BCodeOptIntra {
               case EmptyTree            => ()
               case PackageDef(_, stats) => stats foreach gen
               case cd: ClassDef         =>
-                q1 add Item1(arrivalPos, cd, cunit)
+                q1 put Item1(arrivalPos, cd, cunit)
                 arrivalPos += 1
             }
           }
@@ -1795,13 +1888,13 @@ abstract class GenBCode extends BCodeOptIntra {
         // LOAD_FIELD.hostClass , CALL_METHOD.hostClass , and #4283
         val owner      =
           if (hostClass == null) internalName(field.owner)
-          else                  internalName(hostClass)
+          else                   internalName(hostClass)
         val fieldJName = field.javaSimpleName.toString
         val fieldDescr = symInfoTK(field).getDescriptor
         val isStatic   = field.isStaticMember
         val opc =
           if (isLoad) { if (isStatic) asm.Opcodes.GETSTATIC else asm.Opcodes.GETFIELD }
-          else       { if (isStatic) asm.Opcodes.PUTSTATIC else asm.Opcodes.PUTFIELD }
+          else        { if (isStatic) asm.Opcodes.PUTSTATIC else asm.Opcodes.PUTFIELD }
         mnode.visitFieldInsn(opc, owner, fieldJName, fieldDescr)
 
       }
