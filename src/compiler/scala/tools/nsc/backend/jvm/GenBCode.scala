@@ -1996,9 +1996,16 @@ abstract class GenBCode extends BCodeOptIntra {
               case rt if generatedType.hasObjectSort =>
                 assert(exemplar(ctor.owner).c == rt, "Symbol " + ctor.owner.fullName + " is different from " + rt)
                 mnode.visitTypeInsn(asm.Opcodes.NEW, rt.getInternalName)
+                val newInsn = mnode.instructions.getLast.asInstanceOf[asm.tree.TypeInsnNode]
                 bc dup generatedType
                 genLoadArguments(args, paramTKs(app))
                 genCallMethod(ctor, icodes.opcodes.Static(onInstance = true))
+                val initInsn = mnode.instructions.getLast.asInstanceOf[asm.tree.MethodInsnNode]
+                val bes = asm.optimiz.Util.backedges(newInsn, initInsn)
+                if (!bes.isEmpty) {
+                  // SI-6720 Avoid java.lang.VerifyError: Uninitialized object exists on backward branch.
+                  nxtIdx = rephraseBackedgesInCtorArg(nxtIdx, bes, cnode, mnode, newInsn, initInsn)
+                }
 
               case _ =>
                 abort("Cannot instantiate " + tpt + " of kind: " + generatedType)
