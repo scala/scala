@@ -42,6 +42,11 @@ sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Rep
 			case multi: MultipleOutput => multi.outputGroups.toStream map (_.outputDirectory)
 		}
 	}
+	// Map source files to public inherited dependencies.  These dependencies are tracked as the symbol for the dealiased base class.
+	val inheritedDependencies = new mutable.HashMap[File, mutable.Set[Symbol]]
+	def addInheritedDependencies(file: File, deps: Iterable[Symbol]) {
+		inheritedDependencies.getOrElseUpdate(file, new mutable.HashSet) ++= deps
+	}
 }
 class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed
 
