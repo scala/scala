@@ -858,6 +858,12 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BoxedNumberClass       = getClassByName(sn.BoxedNumber)
     lazy val BoxedCharacterClass    = getClassByName(sn.BoxedCharacter)
     lazy val BoxedBooleanClass      = getClassByName(sn.BoxedBoolean)
+    lazy val BoxedByteClass         = requiredClass[java.lang.Byte]
+    lazy val BoxedShortClass        = requiredClass[java.lang.Short]
+    lazy val BoxedIntClass          = requiredClass[java.lang.Integer]
+    lazy val BoxedLongClass         = requiredClass[java.lang.Long]
+    lazy val BoxedFloatClass        = requiredClass[java.lang.Float]
+    lazy val BoxedDoubleClass       = requiredClass[java.lang.Double]
 
     lazy val Boxes_isNumberOrBool  = getDecl(BoxesRunTimeClass, nme.isBoxedNumberOrBoolean)
     lazy val Boxes_isNumber        = getDecl(BoxesRunTimeClass, nme.isBoxedNumber)

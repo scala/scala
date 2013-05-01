@@ -621,7 +621,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           null
         else {
           val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
+          if (isTopLevelModule(innerSym.rawowner)) "" + newTermName(outerName).dropModule
           else outerName
         }
       }
