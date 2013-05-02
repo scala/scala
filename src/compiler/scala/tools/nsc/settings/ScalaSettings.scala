@@ -38,7 +38,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def futureSettings = List[BooleanSetting]()
 
   /** Enabled under -optimise. */
-  protected def optimiseSettings = List[BooleanSetting](inline, inlineHandlers, Xcloselim, Xdce, YconstOptimization)
+  def optimiseSettings = List[BooleanSetting](inline, inlineHandlers, Xcloselim, Xdce, YconstOptimization)
 
   /** Internal use - syntax enhancements. */
   private class EnableSettings[T <: BooleanSetting](val s: T) {
@@ -200,6 +200,12 @@ trait ScalaSettings extends AbsScalaSettings
   val nooptimise    = BooleanSetting("-Ynooptimise", "Clears all the flags set by -optimise. Useful for testing optimizations in isolation.") withAbbreviation "-Ynooptimize" disabling optimise::optimiseSettings
   val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enabling experimentalSettings
 
+  /**
+   * Settings motivated by GenBCode
+   */
+  val neo         = ChoiceSetting ("-neo", "choice of bytecode emitter", "Choice of bytecode emitter.",
+                                   List("GenASM", "GenBCode"),
+                                   "GenASM")
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
 
@@ -222,4 +228,12 @@ trait ScalaSettings extends AbsScalaSettings
 
   /** Test whether this is scaladoc we're looking at */
   def isScaladoc = false
+
+  /**
+   * Helper utilities for use by checkConflictingSettings()
+   */
+  def isBCodeActive   = !isICodeAskedFor
+  def isBCodeAskedFor = (neo.value != "GenASM")
+  def isICodeAskedFor = { (neo.value == "GenASM") || optimiseSettings.exists(_.value) || writeICode.isSetByUser }
+
 }
