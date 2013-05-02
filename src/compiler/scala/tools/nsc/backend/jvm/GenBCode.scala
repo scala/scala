@@ -44,7 +44,7 @@ import asm.tree.{FieldNode, MethodInsnNode, MethodNode}
  *  @version 1.0
  *
  */
-abstract class GenBCode extends BCodeTypes {
+abstract class GenBCode extends BCodeOptIntra {
   import global._
   import definitions._
 
@@ -218,8 +218,19 @@ abstract class GenBCode extends BCodeTypes {
         }
       }
 
+      /*
+       *  Performs optimizations.
+       *  Afterwards, adds the ClassNode(s) to queue-3.
+       */
       def visit(item: Item2) {
+
+        val cnode   = item.plain
+
+        val essential = new EssentialCleanser(cnode)
+        essential.codeFixupDCE()    // the very least fixups that must be done, even for unoptimized runs.
+
         addToQ3(item)
+
       } // end of method visit(Item2)
 
       private def addToQ3(item: Item2) {
