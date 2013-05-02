@@ -112,8 +112,10 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-archives.latest.unix" depends="pack-archives.src" unless="os.win">
+    <!-- be sure to use a relative symlink to make the distribution portable,
+        `resource` is relative to directory of `link` -->
     <symlink link="${dists.dir}/archives/scala-latest-sources.tgz"
-             resource="${dists.dir}/archives/scala-${version.number}-sources.tgz"
+             resource="scala-${version.number}-sources.tgz"
              overwrite="yes"/>
   </target>
 

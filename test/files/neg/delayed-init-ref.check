@@ -1,0 +1,12 @@
+delayed-init-ref.scala:17: warning: Selecting value vall from object O, which extends scala.DelayedInit, is likely to yield an uninitialized value
+  println(O.vall)     // warn
+            ^
+delayed-init-ref.scala:19: warning: Selecting value vall from object O, which extends scala.DelayedInit, is likely to yield an uninitialized value
+  println(vall)       // warn
+          ^
+delayed-init-ref.scala:40: warning: Selecting value foo from trait UserContext, which extends scala.DelayedInit, is likely to yield an uninitialized value
+    println({locally(()); this}.foo)  // warn (spurious, but we can't discriminate)
+                                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
