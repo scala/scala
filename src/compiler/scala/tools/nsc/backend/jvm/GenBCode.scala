@@ -229,6 +229,8 @@ abstract class GenBCode extends BCodeOptIntra {
         val essential = new EssentialCleanser(cnode)
         essential.codeFixupDCE()    // the very least fixups that must be done, even for unoptimized runs.
 
+        refreshInnerClasses(cnode)
+
         addToQ3(item)
 
       } // end of method visit(Item2)
