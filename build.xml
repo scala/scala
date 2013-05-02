@@ -762,6 +762,7 @@ TODO:
         <stopwatch name="@{project}.timer"/>
         <mkdir dir="${@{project}-classes}"/>
         <javac
+          debug="true"
           srcdir="${src.dir}/@{project}"
           destdir="${@{project}-classes}"
           classpath="${@{project}-classes}"
@@ -794,6 +795,7 @@ TODO:
 
     <sequential>
       <javac
+        debug="true"
         srcdir="${src.dir}/@{project}"
         destdir="${build-@{stage}.dir}/classes/@{destproject}"
         includes="**/*.java"
