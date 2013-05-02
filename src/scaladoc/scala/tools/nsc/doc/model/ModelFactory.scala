@@ -837,36 +837,36 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     }
   }
 
-  /** */
   def makeAnnotation(annot: AnnotationInfo): scala.tools.nsc.doc.model.Annotation = {
     val aSym = annot.symbol
     new EntityImpl(aSym, makeTemplate(aSym.owner)) with scala.tools.nsc.doc.model.Annotation {
       lazy val annotationClass =
         makeTemplate(annot.symbol)
-      val arguments = { // lazy
-        def annotArgs = annot.args match {
-          case Nil => annot.assocs collect { case (_, LiteralAnnotArg(const)) => Literal(const) }
-          case xs  => xs
-        }
-        def noParams = annotArgs map (_ => None)
-
-        val params: List[Option[ValueParam]] = annotationClass match {
+      val arguments = {
+        val paramsOpt: Option[List[ValueParam]] = annotationClass match {
           case aClass: DocTemplateEntity with Class =>
-            (aClass.primaryConstructor map { _.valueParams.head }) match {
-              case Some(vps) => vps map { Some(_) }
-              case _         => noParams
+            val constr = aClass.constructors collectFirst {
+              case c: MemberImpl if c.sym == annot.original.symbol => c
             }
-          case _ => noParams
+            constr flatMap (_.valueParams.headOption)
+          case _ => None
         }
-        assert(params.length == annotArgs.length, (params, annotArgs))
-
-        params zip annotArgs flatMap { case (param, arg) =>
-          makeTree(arg) map { tree =>
-            new ValueArgument {
-              def parameter = param
-              def value     = tree
+        val argTrees = annot.args map makeTree
+        paramsOpt match {
+          case Some (params) =>
+            params zip argTrees map { case (param, tree) =>
+              new ValueArgument {
+                def parameter = Some(param)
+                def value = tree
+              }
             }
-          }
+          case None => 
+            argTrees map { tree =>
+              new ValueArgument {
+                def parameter = None
+                def value = tree
+              }
+            }
         }
       }
     }
@@ -906,9 +906,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                 sym.name == aSym.name &&
                 sym.isParamWithDefault
               )
-              (unit.body find (t => isCorrespondingParam(t.symbol))) match {
-                case Some(ValDef(_,_,_,rhs)) => makeTree(rhs)
-                case _ => None
+              unit.body find (t => isCorrespondingParam(t.symbol)) collect {
+                case ValDef(_,_,_,rhs) if rhs ne EmptyTree  => makeTree(rhs)
               }
             case _ => None
           }

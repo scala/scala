@@ -17,6 +17,11 @@ class SimpleParent
 case class Simple() extends SimpleParent
 case object SimpleSibling extends SimpleParent
 
+// value classes
+final class ValueClass1(val value: Int) extends AnyVal
+final class ValueClass2[T](val value: T) extends AnyVal
+final case class ValueClass3(val value: Int) extends AnyVal
+
 /* It's not possible to run partest without -deprecation.
  * Since detecting the warnings requires a neg test with
  * -Xfatal-warnings, and deprecation terminates the compile,
@@ -62,6 +67,19 @@ object Test {
     println(new ThingTwo(11) == t3) // ditto
 
     println(new Simple() == SimpleSibling) // like Some(1) == None, but needn't be final case
+
+    println(new ValueClass1(5) == new ValueClass1(5)) // ok
+    println(new ValueClass1(5) == 5) // bad
+    println(new ValueClass1(5) == (5: Any)) // ok, have to let it through
+    println(5 == new ValueClass1(5)) // bad
+    println((5: Any) == new ValueClass1(5) == (5: Any)) // ok
+
+    println(new ValueClass2("abc") == new ValueClass2("abc")) // ok
+    println(new ValueClass2("abc") == "abc") // bad
+    println(new ValueClass2(5) == new ValueClass1(5)) // bad - different value classes
+    println(ValueClass3(5) == new ValueClass3(5)) // ok
+    println(ValueClass3(5) == new ValueClass2(5)) // bad
+    println(ValueClass3(5) == 5) // bad
 
     /*
     val mine = new MyThing

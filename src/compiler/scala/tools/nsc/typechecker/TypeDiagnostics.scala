@@ -271,6 +271,24 @@ trait TypeDiagnostics {
     )
   }
 
+  def typePatternAdvice(sym: Symbol, ptSym: Symbol) = {
+    val clazz = if (sym.isModuleClass) sym.companionClass else sym
+    val caseString =
+      if (clazz.isCaseClass && (clazz isSubClass ptSym))
+        ( clazz.caseFieldAccessors
+          map (_ => "_")    // could use the actual param names here
+          mkString (s"`case ${clazz.name}(", ",", ")`")
+        )
+      else
+        "`case _: " + (clazz.typeParams match {
+          case Nil  => "" + clazz.name
+          case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
+        })+ "`"
+
+    "\nNote: if you intended to match against the class, try "+ caseString
+
+  }
+
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
     // save the name because it will be mutated until it has been
     // distinguished from the other types in the same error message
