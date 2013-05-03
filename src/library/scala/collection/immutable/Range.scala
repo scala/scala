@@ -131,10 +131,10 @@ extends scala.collection.AbstractSeq[Int]
     val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
     var i = start
     var count = 0
-    val terminal = terminalElement
     val step = this.step
     while(
-      if(isCommonCase) { i != terminal }
+      // let the lazy vals jitted by putting them in the loop.
+      if(isCommonCase) { i != terminalElement }
       else             { count < numRangeElements }
     ) {
       f(i)
