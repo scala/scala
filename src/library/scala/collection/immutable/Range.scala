@@ -64,7 +64,8 @@ extends scala.collection.AbstractSeq[Int]
     || (start < end && step < 0)
     || (start == end && !isInclusive)
   )
-  final private lazy val numRangeElements: Int = {
+  @deprecated("This method will be made private, use length instead.", "2.11")
+  final lazy val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
     else {
@@ -74,8 +75,10 @@ extends scala.collection.AbstractSeq[Int]
       else len.toInt
     }
   }
-  final private lazy val lastElement     = start + (numRangeElements - 1) * step
-  final private lazy val terminalElement = start + numRangeElements * step
+  @deprecated("This method will be made private, use last instead.", "2.11")
+  final lazy val lastElement     = start + (numRangeElements - 1) * step
+  @deprecated("This method will be made private.", "2.11")
+  final lazy val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else (start + (numRangeElements - 1) * step)
   override def head = if (isEmpty) Nil.head else start
