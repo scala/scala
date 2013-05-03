@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.reflect.internal
+package scala
+package reflect.internal
 package settings
 
 /** A mutable Settings object.

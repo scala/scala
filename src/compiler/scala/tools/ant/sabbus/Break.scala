@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.tools.ant.sabbus
+package scala
+package tools.ant.sabbus
 
 import org.apache.tools.ant.Task
 

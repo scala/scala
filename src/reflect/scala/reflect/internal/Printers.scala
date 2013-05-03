@@ -5,7 +5,8 @@
 
 // todo. we need to unify this prettyprinter with NodePrinters
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
@@ -434,7 +435,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(tpt)
           printColumn(whereClauses, " forSome { ", ";", "}")
 
-// SelectFromArray is no longer visible in reflect.internal.
+// SelectFromArray is no longer visible in scala.reflect.internal.
 // eliminated until we figure out what we will do with both Printers and
 // SelectFromArray.
 //          case SelectFromArray(qualifier, name, _) =>

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.mutable
+package scala
+package collection.mutable
 
 import scala.collection.AbstractIterator
 import scala.collection.Iterator

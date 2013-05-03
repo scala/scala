@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 import scala.reflect.macros.Attachments

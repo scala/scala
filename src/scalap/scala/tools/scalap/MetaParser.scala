@@ -6,7 +6,8 @@
 */
 
 
-package scala.tools.scalap
+package scala
+package tools.scalap
 
 import java.io._
 import java.util._

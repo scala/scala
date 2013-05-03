@@ -7,13 +7,16 @@
 \*                                                                      */
 
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable }
-import java.io.{ File => JFile }
+  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable,
+  File => JFile
+}
+
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 import scala.language.{reflectiveCalls, implicitConversions}

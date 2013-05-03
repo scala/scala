@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel.immutable
+package scala
+package collection.parallel.immutable
 
 import scala.collection.immutable.Range
 import scala.collection.parallel.Combiner
@@ -106,7 +107,7 @@ self =>
       cb
     }
   }
-  
+
 }
 
 object ParRange {

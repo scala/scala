@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.hashing
+package scala
+package util.hashing
 
 import java.lang.Integer.{ rotateLeft => rotl }
 

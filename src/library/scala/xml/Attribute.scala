@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** This singleton object contains the `apply` and `unapply` methods for
  *  convenient construction and deconstruction.

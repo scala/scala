@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }

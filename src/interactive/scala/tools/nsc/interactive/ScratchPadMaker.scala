@@ -1,4 +1,5 @@
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interactive
 
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile, RangePosition}

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 
 import scala.collection.{ mutable, Iterator }
 import scala.collection.JavaConverters._

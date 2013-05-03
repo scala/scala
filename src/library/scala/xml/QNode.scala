@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** This object provides an extractor method to match a qualified node with
  *  its namespace URI

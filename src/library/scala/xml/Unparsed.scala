@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** An XML node for unparsed content. It will be output verbatim, all bets
  *  are off regarding wellformedness etc.

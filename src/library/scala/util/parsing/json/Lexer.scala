@@ -8,7 +8,8 @@
 
 
 
-package scala.util.parsing.json
+package scala
+package util.parsing.json
 
 import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.lexical._

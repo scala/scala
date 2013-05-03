@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.settings
+package scala
+package tools.nsc.settings
 
 /**
  * Represents a single Scala version in a manner that
@@ -19,7 +20,7 @@ abstract class ScalaVersion extends Ordered[ScalaVersion] {
  */
 case object NoScalaVersion extends ScalaVersion {
   def unparse = "none"
-      
+
   def compare(that: ScalaVersion): Int = that match {
     case NoScalaVersion => 0
     case _ => 1
@@ -33,7 +34,7 @@ case object NoScalaVersion extends ScalaVersion {
  * to segregate builds
  */
 case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBuild) extends ScalaVersion {
-  def unparse = s"${major}.${minor}.${rev}.${build.unparse}"  
+  def unparse = s"${major}.${minor}.${rev}.${build.unparse}"
 
   def compare(that: ScalaVersion): Int =  that match {
     case SpecificScalaVersion(thatMajor, thatMinor, thatRev, thatBuild) =>
@@ -48,7 +49,7 @@ case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBu
       else build compare thatBuild
     case AnyScalaVersion => 1
     case NoScalaVersion => -1
-  }  
+  }
 }
 
 /**
@@ -56,7 +57,7 @@ case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBu
  */
 case object AnyScalaVersion extends ScalaVersion {
   def unparse = "any"
-      
+
   def compare(that: ScalaVersion): Int = that match {
     case AnyScalaVersion => 0
     case _ => -1
@@ -70,7 +71,7 @@ object ScalaVersion {
   private val dot = "\\."
   private val dash = "\\-"
   private def not(s:String) = s"[^${s}]"
-  private val R = s"((${not(dot)}*)(${dot}(${not(dot)}*)(${dot}(${not(dash)}*)(${dash}(.*))?)?)?)".r  
+  private val R = s"((${not(dot)}*)(${dot}(${not(dot)}*)(${dot}(${not(dash)}*)(${dash}(.*))?)?)?)".r
 
   def apply(versionString : String, errorHandler: String => Unit): ScalaVersion = {
     def errorAndValue() = {
@@ -82,41 +83,41 @@ object ScalaVersion {
         )
         AnyScalaVersion
     }
-    
+
     def toInt(s: String) = s match {
       case null | "" => 0
       case _ => s.toInt
     }
-    
+
     def isInt(s: String) = util.Try(toInt(s)).isSuccess
-    
+
     def toBuild(s: String) = s match {
       case null | "FINAL" => Final
       case s if (s.toUpperCase.startsWith("RC") && isInt(s.substring(2))) => RC(toInt(s.substring(2)))
       case s if (s.toUpperCase.startsWith("M") && isInt(s.substring(1))) => Milestone(toInt(s.substring(1)))
       case _ => Development(s)
     }
-    
+
     try versionString match {
       case "none" => NoScalaVersion
       case "any" => AnyScalaVersion
-      case R(_, majorS, _, minorS, _, revS, _, buildS) => 
+      case R(_, majorS, _, minorS, _, revS, _, buildS) =>
         SpecificScalaVersion(toInt(majorS), toInt(minorS), toInt(revS), toBuild(buildS))
-      case _ => 
+      case _ =>
         errorAndValue()
     } catch {
       case e: NumberFormatException => errorAndValue()
     }
   }
-  
-  def apply(versionString: String): ScalaVersion = 
+
+  def apply(versionString: String): ScalaVersion =
       apply(versionString, msg => throw new NumberFormatException(msg))
-  
+
   /**
    * The version of the compiler running now
    */
   val current = apply(util.Properties.versionNumberString)
-  
+
   /**
    * The 2.8.0 version.
    */
@@ -126,7 +127,7 @@ object ScalaVersion {
 /**
  * Represents the data after the dash in major.minor.rev-build
  */
-abstract class ScalaBuild extends Ordered[ScalaBuild] {  
+abstract class ScalaBuild extends Ordered[ScalaBuild] {
   /**
    * Return a version of this build information that can be parsed back into the
    * same ScalaBuild
@@ -138,7 +139,7 @@ abstract class ScalaBuild extends Ordered[ScalaBuild] {
  */
 case class Development(id: String) extends ScalaBuild {
   def unparse = s"-${id}"
-      
+
   def compare(that: ScalaBuild) = that match {
     // sorting two development builds based on id is reasonably valid for two versions created with the same schema
     // otherwise it's not correct, but since it's impossible to put a total ordering on development build versions
@@ -154,7 +155,7 @@ case class Development(id: String) extends ScalaBuild {
  */
 case object Final extends ScalaBuild {
   def unparse = ""
-      
+
   def compare(that: ScalaBuild) = that match {
     case Final => 0
     // a final is newer than anything other than a development build or another final
@@ -168,14 +169,14 @@ case object Final extends ScalaBuild {
  */
 case class RC(n: Int) extends ScalaBuild {
   def unparse = s"-RC${n}"
-      
+
   def compare(that: ScalaBuild) = that match {
     // compare two rcs based on their RC numbers
     case RC(thatN) => n - thatN
     // an rc is older than anything other than a milestone or another rc
     case Milestone(_) => 1
-    case _ => -1    
-  }  
+    case _ => -1
+  }
 }
 
 /**
@@ -183,12 +184,12 @@ case class RC(n: Int) extends ScalaBuild {
  */
 case class Milestone(n: Int) extends ScalaBuild {
   def unparse = s"-M${n}"
-      
+
   def compare(that: ScalaBuild) = that match {
     // compare two milestones based on their milestone numbers
     case Milestone(thatN) => n - thatN
     // a milestone is older than anything other than another milestone
     case _ => -1
-    
-  }  
+
+  }
 }

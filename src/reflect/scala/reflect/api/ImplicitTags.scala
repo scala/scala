@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /** Tags which preserve the identity of abstract types in the face of erasure.

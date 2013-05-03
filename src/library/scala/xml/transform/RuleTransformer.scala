@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.xml
+package scala
+package xml
 package transform
 
 class RuleTransformer(rules: RewriteRule*) extends BasicTransformer {

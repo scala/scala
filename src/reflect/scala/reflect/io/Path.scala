@@ -3,13 +3,13 @@
  * @author Paul Phillips
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, RandomAccessFile }
-import java.io.{ File => JFile }
+  BufferedInputStream, BufferedOutputStream, RandomAccessFile, File => JFile }
 import java.net.{ URI, URL }
 import scala.util.Random.alphanumeric
 import scala.language.implicitConversions

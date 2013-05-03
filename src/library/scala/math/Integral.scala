@@ -8,7 +8,8 @@
 
 
 
-package scala.math
+package scala
+package math
 
 import scala.language.implicitConversions
 

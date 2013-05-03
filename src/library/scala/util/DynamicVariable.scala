@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 import java.lang.InheritableThreadLocal
 

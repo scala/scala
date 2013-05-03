@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools
+package scala
+package tools
 package nsc
 package util
 

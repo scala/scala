@@ -3,13 +3,14 @@
  * @author  Paul Phillips
  */
 
-package scala.tools
+package scala
+package tools
 package util
 
 import scala.tools.reflect.WrappedProperties.AccessControl
-import nsc.{ Settings, GenericRunnerSettings }
-import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
-import nsc.io.{ File, Directory, Path, AbstractFile }
+import scala.tools.nsc.{ Settings, GenericRunnerSettings }
+import scala.tools.nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
+import scala.tools.nsc.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps

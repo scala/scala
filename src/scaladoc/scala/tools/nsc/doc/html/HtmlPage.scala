@@ -3,7 +3,9 @@
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 package doc
 package html
 

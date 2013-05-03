@@ -1,4 +1,5 @@
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._

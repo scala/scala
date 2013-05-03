@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{ File => JFile }

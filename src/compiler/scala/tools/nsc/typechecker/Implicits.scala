@@ -8,7 +8,8 @@
 //todo: disallow C#D in superclass
 //todo: treat :::= correctly
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package typechecker
 
 import scala.annotation.tailrec
@@ -167,7 +168,7 @@ trait Implicits {
     override def isFailure   = true
     override def isDivergent = true
   }
-  
+
   lazy val AmbiguousSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
     override def isFailure          = true
     override def isAmbiguousFailure = true
@@ -799,16 +800,16 @@ trait Implicits {
         // Initially null, will be saved on first diverging expansion.
         private var implicitSym: Symbol    = _
         private var countdown: Int = 1
-        
+
         def sym: Symbol = implicitSym
-        def apply(search: SearchResult, i: ImplicitInfo): SearchResult = 
+        def apply(search: SearchResult, i: ImplicitInfo): SearchResult =
           if (search.isDivergent && countdown > 0) {
             countdown -= 1
             implicitSym = i.sym
             log("discarding divergent implicit ${implicitSym} during implicit search")
             SearchFailure
           } else search
-      } 
+      }
 
       /** Sorted list of eligible implicits.
        */

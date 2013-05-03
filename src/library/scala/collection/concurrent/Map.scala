@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.concurrent
+package scala
+package collection.concurrent
 
 /** A template trait for mutable maps that allow concurrent access.
  *

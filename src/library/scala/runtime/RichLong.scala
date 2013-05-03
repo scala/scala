@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   protected def num = scala.math.Numeric.LongIsIntegral

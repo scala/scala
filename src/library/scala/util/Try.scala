@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 import scala.collection.Seq
 import scala.util.control.NonFatal

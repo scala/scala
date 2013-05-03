@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 // Methods could be printed by  cat SetLike.scala | egrep '^  (override )?def'
 

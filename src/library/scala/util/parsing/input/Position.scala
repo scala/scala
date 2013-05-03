@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.input
+package scala
+package util.parsing.input
 
 /** `Position` is the base trait for objects describing a position in a `document`.
  *

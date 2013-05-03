@@ -6,11 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
-
-
-
+package scala
+package collection.parallel
 
 import scala.collection.mutable.Builder
 import scala.collection.mutable.ArrayBuffer

@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 
 /** an XML node for processing instructions (PI)
  *

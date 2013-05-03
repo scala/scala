@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection
+package scala
+package collection
 package parallel.immutable
 
-
 import scala.collection.generic._
-
 import scala.collection.parallel.ParIterableLike
 import scala.collection.parallel.Combiner
 
@@ -28,21 +26,17 @@ import scala.collection.parallel.Combiner
  *  @since 2.9
  */
 trait ParIterable[+T]
-extends scala.collection/*.immutable*/.GenIterable[T]
+extends scala.collection.GenIterable[T]
    with scala.collection.parallel.ParIterable[T]
    with GenericParTemplate[T, ParIterable]
    with ParIterableLike[T, ParIterable[T], scala.collection.immutable.Iterable[T]]
    with Immutable
 {
   override def companion: GenericCompanion[ParIterable] with GenericParCompanion[ParIterable] = ParIterable
-
   // if `immutable.ParIterableLike` is introduced, please move these 4 methods there
   override def toIterable: ParIterable[T] = this
-
   override def toSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => ParSeq.newCombiner[T])
-
 }
-
 
 /** $factoryInfo
  */
@@ -51,21 +45,5 @@ object ParIterable extends ParFactory[ParIterable] {
     new GenericCanCombineFrom[T]
 
   def newBuilder[T]: Combiner[T, ParIterable[T]] = ParVector.newBuilder[T]
-
   def newCombiner[T]: Combiner[T, ParIterable[T]] = ParVector.newCombiner[T]
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

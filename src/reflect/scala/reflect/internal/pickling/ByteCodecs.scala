@@ -5,7 +5,8 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.reflect.internal.pickling
+package scala
+package reflect.internal.pickling
 
 object ByteCodecs {
 
@@ -195,10 +196,10 @@ object ByteCodecs {
    *
    * Sometimes returns (length+1) of the decoded array. Example:
    *
-   *   scala> val enc = reflect.generic.ByteCodecs.encode(Array(1,2,3))
+   *   scala> val enc = scala.reflect.generic.ByteCodecs.encode(Array(1,2,3))
    *   enc: Array[Byte] = Array(2, 5, 13, 1)
    *
-   *   scala> reflect.generic.ByteCodecs.decode(enc)
+   *   scala> scala.reflect.generic.ByteCodecs.decode(enc)
    *   res43: Int = 4
    *
    *   scala> enc

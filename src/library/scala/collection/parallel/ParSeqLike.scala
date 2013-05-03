@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 import scala.collection.{ Parallel, SeqLike, GenSeqLike, GenSeq, GenIterable, Iterator }
 import scala.collection.generic.DefaultSignalling

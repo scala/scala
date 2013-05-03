@@ -3,7 +3,8 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interpreter
 
 import java.lang.{ ClassLoader => JavaClassLoader, Iterable => JIterable }

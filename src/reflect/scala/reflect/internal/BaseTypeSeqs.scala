@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect
+package scala
+package reflect
 package internal
 
 // todo implement in terms of BitSet

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.control
+package scala
+package util.control
 
 /**
  * Extractor of non-fatal Throwables. Will not match fatal errors like `VirtualMachineError`

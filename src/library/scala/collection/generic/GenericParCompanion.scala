@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.generic
+package scala
+package collection
+package generic
 
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParIterable

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.ast
+package scala
+package util.parsing.ast
 
 import scala.collection.AbstractIterable
 import scala.collection.mutable

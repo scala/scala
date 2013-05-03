@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.immutable
+package scala
+package collection.immutable
 
 import scala.collection.parallel.immutable.ParRange
 

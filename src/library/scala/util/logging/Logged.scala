@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.logging
+package scala
+package util.logging
 
 /** Mixing in Logged indicates that a class provides support for logging.
   *

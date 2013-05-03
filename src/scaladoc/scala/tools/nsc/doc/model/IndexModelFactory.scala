@@ -3,7 +3,8 @@
  * @author  Pedro Furlanetto
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package doc
 package model
 

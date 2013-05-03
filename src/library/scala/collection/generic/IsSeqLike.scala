@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 /** Type class witnessing that a collection representation type `Repr` has
@@ -41,7 +42,7 @@ trait IsSeqLike[Repr] {
 }
 
 object IsSeqLike {
-  import language.higherKinds
+  import scala.language.higherKinds
 
   implicit val stringRepr: IsSeqLike[String] { type A = Char } =
     new IsSeqLike[String] {

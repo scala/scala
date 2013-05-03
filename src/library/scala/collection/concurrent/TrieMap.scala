@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package concurrent
 
 import java.util.concurrent.atomic._
@@ -428,10 +429,10 @@ extends MainNode[K, V] with KVNode[K, V] {
 }
 
 
-private[collection] final class LNode[K, V](final val listmap: ImmutableListMap[K, V])
+private[collection] final class LNode[K, V](final val listmap: immutable.ListMap[K, V])
 extends MainNode[K, V] {
-  def this(k: K, v: V) = this(ImmutableListMap(k -> v))
-  def this(k1: K, v1: V, k2: K, v2: V) = this(ImmutableListMap(k1 -> v1, k2 -> v2))
+  def this(k: K, v: V) = this(immutable.ListMap(k -> v))
+  def this(k1: K, v1: V, k2: K, v2: V) = this(immutable.ListMap(k1 -> v1, k2 -> v2))
   def inserted(k: K, v: V) = new LNode(listmap + ((k, v)))
   def removed(k: K, ct: TrieMap[K, V]): MainNode[K, V] = {
     val updmap = listmap - k

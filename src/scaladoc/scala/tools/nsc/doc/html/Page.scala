@@ -3,7 +3,8 @@
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
-package scala.tools.nsc.doc.html
+package scala
+package tools.nsc.doc.html
 
 import scala.tools.nsc.doc.model._
 import java.io.{FileOutputStream, File}

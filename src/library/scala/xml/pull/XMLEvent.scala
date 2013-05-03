@@ -8,7 +8,8 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package pull
 
 /** An XML event for pull parsing.  All events received during

@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import Flags._
@@ -35,7 +36,7 @@ trait Mirrors extends api.Mirrors {
       else definitions.findNamedMember(segs.tail, RootClass.info member segs.head)
     }
 
-    /** Todo: organize similar to mkStatic in reflect.Base */
+    /** Todo: organize similar to mkStatic in scala.reflect.Base */
     private def getModuleOrClass(path: Name, len: Int): Symbol = {
       val point = path lastPos('.', len - 1)
       val owner =

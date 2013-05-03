@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
 
 import scala.collection.{ mutable, immutable }
 import scala.math.{ ScalaNumericConversions, ScalaNumericAnyConversions }

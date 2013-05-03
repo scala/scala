@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect
+package scala
+package reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
 

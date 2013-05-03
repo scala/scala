@@ -1,6 +1,7 @@
 /* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package doc
 package model
 
@@ -9,11 +10,9 @@ import diagram._
 
 import scala.collection._
 import scala.util.matching.Regex
-
 import symtab.Flags
 
 import io._
-
 import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */

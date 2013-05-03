@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.math;
 
 /** A marker class for Number types introduced by Scala
