@@ -77,7 +77,7 @@ extends scala.collection.AbstractSeq[Int]
   final private lazy val lastElement     = start + (numRangeElements - 1) * step
   final private lazy val terminalElement = start + numRangeElements * step
 
-  override def last = if (isEmpty) Nil.last else lastElement
+  override def last = if (isEmpty) Nil.last else (start + (numRangeElements - 1) * step)
   override def head = if (isEmpty) Nil.head else start
 
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
@@ -128,15 +128,11 @@ extends scala.collection.AbstractSeq[Int]
   }
 
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
-    val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
     var i = start
     var count = 0
     val step = this.step
-    while(
-      // let the lazy vals jitted by putting them in the loop.
-      if(isCommonCase) { i != terminalElement }
-      else             { count < numRangeElements }
-    ) {
+    val numRange = numRangeElements
+    while(count < numRange) {
       f(i)
       count += 1
       i += step
