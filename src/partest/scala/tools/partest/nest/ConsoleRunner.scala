@@ -95,6 +95,7 @@ class ConsoleRunner extends DirectRunner {
     if (parsed isSet "--debug") NestUI.setDebug()
     if (parsed isSet "--verbose") NestUI.setVerbose()
     if (parsed isSet "--terse") NestUI.setTerse()
+    if (parsed isSet "--show-diff") NestUI.setDiffOnFail()
 
     // Early return on no args, version, or invalid args
     if (parsed isSet "--version") return echo(versionMsg)

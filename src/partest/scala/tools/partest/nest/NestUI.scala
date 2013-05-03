@@ -84,7 +84,13 @@ object NestUI {
         dotCount += 1
       }
     }
-    else echo(statusLine(state))
+    else {
+      echo(statusLine(state))
+      if (!state.isOk && isDiffy) {
+        val differ = bold(red("% ")) + "diff "
+        state.transcript find (_ startsWith differ) foreach (echo(_))
+      }
+    }
   }
 
   def echo(message: String): Unit = synchronized {
@@ -172,10 +178,12 @@ object NestUI {
   var _verbose = false
   var _debug = false
   var _terse = false
+  var _diff  = false
 
   def isVerbose = _verbose
   def isDebug = _debug
   def isTerse = _terse
+  def isDiffy = _diff
 
   def setVerbose() {
     _verbose = true
@@ -185,6 +193,9 @@ object NestUI {
   }
   def setTerse() {
     _terse = true
+  }
+  def setDiffOnFail() {
+    _diff = true
   }
   def verbose(msg: String) {
     if (isVerbose)
