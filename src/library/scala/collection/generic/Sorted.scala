@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 /** Any collection (including maps) whose keys (or elements) are ordered.

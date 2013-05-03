@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import java.lang.{ StringBuilder => JavaStringBuilder }

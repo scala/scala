@@ -3,11 +3,11 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
-import java.io.{ File => JFile }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream, File => JFile }
 
 /** This class implements an in-memory file.
  *

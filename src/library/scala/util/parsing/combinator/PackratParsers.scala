@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.combinator
+package scala
+package util.parsing.combinator
 
 import scala.util.parsing.input.{ Reader, Position }
 import scala.collection.mutable

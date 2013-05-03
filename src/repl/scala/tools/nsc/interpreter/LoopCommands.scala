@@ -3,7 +3,9 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }

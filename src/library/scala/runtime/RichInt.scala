@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 import scala.collection.immutable.Range
 

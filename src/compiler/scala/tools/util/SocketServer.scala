@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.util
+package scala
+package tools.util
 
 import java.net.{ ServerSocket, SocketException, SocketTimeoutException }
 import java.io.{ PrintWriter, BufferedReader }

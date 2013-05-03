@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package dtd
 
 import scala.collection.mutable

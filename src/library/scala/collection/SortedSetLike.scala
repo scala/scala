@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 import generic._
 
 /** A template for sets which are sorted.

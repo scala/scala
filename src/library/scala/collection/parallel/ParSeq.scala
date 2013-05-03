@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
-
-
+package scala
+package collection.parallel
 
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParCompanion
@@ -53,26 +51,3 @@ object ParSeq extends ParFactory[ParSeq] {
   def newCombiner[T]: Combiner[T, ParSeq[T]] = ParArrayCombiner[T]
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

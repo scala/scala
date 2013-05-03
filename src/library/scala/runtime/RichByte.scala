@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 final class RichByte(val self: Byte) extends AnyVal with ScalaWholeNumberProxy[Byte] {
   protected def num = scala.math.Numeric.ByteIsIntegral

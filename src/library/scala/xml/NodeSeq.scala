@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 import scala.collection.{ mutable, immutable, generic, SeqLike, AbstractSeq }
 import mutable.{ Builder, ListBuffer }

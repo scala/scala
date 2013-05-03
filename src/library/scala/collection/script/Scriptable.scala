@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package script
 
 /** Classes that mix in the `Scriptable` class allow messages to be sent to

@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package factory
 
 import javax.xml.parsers.SAXParserFactory

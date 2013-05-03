@@ -4,7 +4,8 @@
  */
 
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }

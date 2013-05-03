@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 package immutable {
   /** A (parallel) sequence consisting of `length` elements `elem`. Used in the `padTo` method.

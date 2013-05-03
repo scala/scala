@@ -10,7 +10,6 @@ package scala
 package collection
 package mutable
 
-
 /**
  * An immutable AVL Tree implementation used by mutable.TreeSet
  *

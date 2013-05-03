@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.math
+package scala
+package math
 
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }

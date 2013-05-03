@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel.immutable
+package scala
+package collection.parallel.immutable
 
 
 

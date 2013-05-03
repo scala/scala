@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 import scala.language.existentials // SI-6541

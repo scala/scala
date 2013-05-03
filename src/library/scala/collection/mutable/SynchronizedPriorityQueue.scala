@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class implements synchronized priority queues using a binary heap.

@@ -4,7 +4,8 @@
  * @author Adriaan Moors
  */
 
-package scala.tools.nsc.transform.patmat
+package scala
+package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable

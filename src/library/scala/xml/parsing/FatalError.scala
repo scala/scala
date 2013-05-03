@@ -8,7 +8,8 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package parsing
 
 /** !!! This is poorly named, but I guess it's in the API.

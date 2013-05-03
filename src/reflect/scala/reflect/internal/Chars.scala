@@ -2,7 +2,8 @@
  * Copyright 2006-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.annotation.{ tailrec, switch }

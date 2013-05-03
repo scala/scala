@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.net.URL
@@ -267,8 +268,8 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
   def input = url.openStream()
   def lastModified =
     try url.openConnection().getLastModified()
-    catch { case _: IOException => 0 }  
-  
+    catch { case _: IOException => 0 }
+
   override def canEqual(other: Any) = other.isInstanceOf[ManifestResources]
   override def hashCode() = url.hashCode
   override def equals(that: Any) = that match {

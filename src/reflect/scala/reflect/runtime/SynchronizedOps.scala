@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 // SI-6240: test thread-safety, make trees synchronized as well

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 
 import scala.language.implicitConversions
 

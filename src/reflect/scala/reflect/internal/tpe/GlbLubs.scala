@@ -1,8 +1,10 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 package tpe
 
-import scala.collection.{ mutable }
+import scala.collection.mutable
+import scala.annotation.tailrec
 import util.Statistics
 import Variance._
 
@@ -11,7 +13,7 @@ private[internal] trait GlbLubs {
   import definitions._
   import TypesStats._
 
-  private final val printLubs = sys.props contains "scalac.debug.lub"
+  private final val printLubs = scala.sys.props contains "scalac.debug.lub"
 
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
@@ -86,7 +88,7 @@ private[internal] trait GlbLubs {
       case _ => tp
     }
     // pretypes is a tail-recursion-preserving accumulator.
-    @annotation.tailrec def loop(pretypes: List[Type], tsBts: List[List[Type]]): List[Type] = {
+    @tailrec def loop(pretypes: List[Type], tsBts: List[List[Type]]): List[Type] = {
       lubListDepth += 1
 
       if (tsBts.isEmpty || (tsBts exists typeListIsEmpty)) pretypes.reverse

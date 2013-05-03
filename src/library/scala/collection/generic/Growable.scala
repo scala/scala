@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 import scala.annotation.tailrec
@@ -47,15 +48,15 @@ trait Growable[-A] extends Clearable {
    *  @return  the $coll itself.
    */
   def ++=(xs: TraversableOnce[A]): this.type = {
-    @tailrec def loop(xs: collection.LinearSeq[A]) {
+    @tailrec def loop(xs: scala.collection.LinearSeq[A]) {
       if (xs.nonEmpty) {
         this += xs.head
         loop(xs.tail)
       }
     }
     xs.seq match {
-      case xs: collection.LinearSeq[_] => loop(xs)
-      case xs                          => xs foreach +=
+      case xs: scala.collection.LinearSeq[_] => loop(xs)
+      case xs                                => xs foreach +=
     }
     this
   }

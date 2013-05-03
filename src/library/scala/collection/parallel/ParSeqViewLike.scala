@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 import scala.collection.{ Parallel, SeqView, SeqViewLike, GenSeqView, GenSeqViewLike, GenSeq }
 import scala.collection.{ GenIterable, GenTraversable, GenTraversableOnce, Iterator }

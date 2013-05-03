@@ -3,11 +3,12 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 
 import settings.FscSettings
 import scala.tools.util.CompileOutputCommon
-import sys.SystemProperties.preferIPv4Stack
+import scala.sys.SystemProperties.preferIPv4Stack
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.

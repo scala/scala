@@ -29,8 +29,6 @@ import scala.collection.mutable.Builder
 import scala.collection.GenTraversableOnce
 import scala.reflect.ClassTag
 
-
-
 /** Parallel sequence holding elements in a linear array.
  *
  *  `ParArray` is a parallel sequence with a predefined size. The size of the array
@@ -702,7 +700,7 @@ object ParArray extends ParFactory[ParArray] {
 
   private def wrapOrRebuild[T](arr: AnyRef, sz: Int) = arr match {
     case arr: Array[AnyRef] => new ParArray[T](new ExposedArraySeq[T](arr, sz))
-    case _ => new ParArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
+    case _ => new ParArray[T](new ExposedArraySeq[T](scala.runtime.ScalaRunTime.toObjectArray(arr), sz))
   }
 
   def createFromCopy[T <: AnyRef : ClassTag](arr: Array[T]): ParArray[T] = {
@@ -720,27 +718,3 @@ object ParArray extends ParFactory[ParArray] {
   }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package dtd
 
 /** Scanner for regexps (content models in DTD element declarations)

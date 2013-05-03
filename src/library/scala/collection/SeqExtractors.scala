@@ -1,4 +1,5 @@
-package scala.collection
+package scala
+package collection
 
 /** An extractor used to head/tail deconstruct sequences. */
 object +: {

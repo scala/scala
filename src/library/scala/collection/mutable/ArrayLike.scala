@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** A common supertrait of `ArrayOps` and `WrappedArray` that factors out most

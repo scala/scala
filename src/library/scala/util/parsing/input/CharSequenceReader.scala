@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.util.parsing.input
+package scala
+package util.parsing.input
 
 /** An object encapsulating basic character constants.
  *

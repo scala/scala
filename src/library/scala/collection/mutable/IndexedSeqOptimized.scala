@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** A subtrait of scala.collection.IndexedSeq which represents sequences

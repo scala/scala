@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.ArrayBuffer
 import scala.annotation.tailrec

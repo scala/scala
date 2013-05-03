@@ -28,7 +28,8 @@
  *   into a [[java.lang.String]].
  *
  */
-package scala.util.matching
+package scala
+package util.matching
 
 import scala.collection.AbstractIterator
 import java.util.regex.{ Pattern, Matcher }

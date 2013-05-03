@@ -1,4 +1,5 @@
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 /** A simple three value type for booleans with an unknown value */
 object ThreeValues {

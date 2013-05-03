@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.io
+package scala
+package io
 
 import scala.collection.AbstractIterator
 import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile }

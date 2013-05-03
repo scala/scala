@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 /** Type class witnessing that a collection representation type `Repr` has

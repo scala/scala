@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.json
+package scala
+package util.parsing.json
 
 /**
  * This object provides a simple interface to the JSON parser class.

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
 import generic.CanBuildFrom

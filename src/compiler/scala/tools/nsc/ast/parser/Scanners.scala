@@ -696,7 +696,7 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    @annotation.tailrec private def getStringPart(multiLine: Boolean): Unit = {
+    @scala.annotation.tailrec private def getStringPart(multiLine: Boolean): Unit = {
       def finishStringPart() = {
         setStrVal()
         token = STRINGPART

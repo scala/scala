@@ -9,7 +9,8 @@
 // Added: Thu Apr 12 18:23:58 2007
 //todo: disallow C#D in superclass
 //todo: treat :::= correctly
-package scala.tools.nsc
+package scala
+package tools.nsc
 package typechecker
 
 import scala.collection.mutable

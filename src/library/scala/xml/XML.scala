@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 import parsing.NoBindingFactoryAdapter
 import factory.XMLLoader

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 /** This object provides utility methods to extract elements
  *  from Strings.

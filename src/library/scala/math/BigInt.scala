@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.math
+package scala
+package math
 
 import java.math.BigInteger
 import scala.language.implicitConversions

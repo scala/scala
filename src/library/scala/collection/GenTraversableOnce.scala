@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom

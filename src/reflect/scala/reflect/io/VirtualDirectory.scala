@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import scala.collection.mutable

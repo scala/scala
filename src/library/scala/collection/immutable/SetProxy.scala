@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 /** This is a simple wrapper class for <a href="Set.html"

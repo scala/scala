@@ -8,7 +8,8 @@
 
 
 
-package scala.xml.dtd.impl
+package scala
+package xml.dtd.impl
 
 
 /** A fast test of language inclusion between minimal automata.
