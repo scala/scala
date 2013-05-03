@@ -10,6 +10,17 @@ object Test {
   def boundaryTests() = {
     // #4321
     assert((Int.MinValue to Int.MaxValue by Int.MaxValue).size == 3)
+    // #6736
+    val tooLarge1 = (
+      try   {(Int.MinValue until 0).contains(4) ; false }
+      catch { case _: IllegalArgumentException => true }
+    )
+    assert(tooLarge1)
+    val tooLarge2 = (
+      try   {(0 to Int.MaxValue).contains(4) ; false }
+      catch { case _: IllegalArgumentException => true }
+    )
+    assert(tooLarge2)
     // #4308
     val caught = (
       try   { (Long.MinValue to Long.MaxValue).sum ; false }
