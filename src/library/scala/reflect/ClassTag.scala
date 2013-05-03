@@ -4,6 +4,7 @@ package reflect
 import java.lang.{ Class => jClass }
 import scala.language.{implicitConversions, existentials}
 import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
+import scala.annotation.unchecked.uncheckedPure
 
 /**
  *
@@ -28,7 +29,7 @@ import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
  *   scala> mkArray("Japan","Brazil","Germany")
  *   res1: Array[String] = Array(Japan, Brazil, Germany)
  * }}}
- * 
+ *
  * See [[scala.reflect.api.TypeTags]] for more examples, or the
  * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
  * for more details.
@@ -106,7 +107,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
 /**
  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
  */
-object ClassTag {
+@uncheckedPure object ClassTag {
   private val ObjectTYPE = classOf[java.lang.Object]
   private val NothingTYPE = classOf[scala.runtime.Nothing$]
   private val NullTYPE = classOf[scala.runtime.Null$]

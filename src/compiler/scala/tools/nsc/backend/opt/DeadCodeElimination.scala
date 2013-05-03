@@ -15,7 +15,7 @@ abstract class DeadCodeElimination extends SubComponent {
   import global._
   import icodes._
   import icodes.opcodes._
-  import definitions.RuntimePackage
+  import definitions.{ RuntimePackage, UncheckedPureClass }
 
   /** The block and index where an instruction is located */
   type InstrLoc = (BasicBlock, Int)
@@ -422,9 +422,24 @@ abstract class DeadCodeElimination extends SubComponent {
       abort("could not find init in: " + method)
     }
 
+    // ??? - Are there synthetic objects with non-pure constructors?
+    // Are there likely to be? It's synthetic case class companions
+    // I'm thinking of here.
+    private def isPureModule(sym: Symbol) = (
+         (sym hasAnnotation UncheckedPureClass)
+      || sym.isSynthetic
+    )
+    private def hasPureConstructor(sym: Symbol) = (
+         sym.enclosingPackage == RuntimePackage
+      || inliner.isClosureClass(sym)
+      || (sym hasAnnotation UncheckedPureClass)
+      || (sym.isModuleClass && isPureModule(sym.sourceModule))
+    )
     private def isPure(sym: Symbol) = (
          (sym.isGetter && sym.isEffectivelyFinal && !sym.isLazy)
-      || (sym.isPrimaryConstructor && (sym.enclosingPackage == RuntimePackage || inliner.isClosureClass(sym.owner)))
+      || (sym.isPrimaryConstructor && hasPureConstructor(sym.owner))
+      || (sym.name endsWith "extension$")
+      || (sym.name.toString matches """.*?\$extension\$\d+$""")
     )
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
     private def isSideEffecting(sym: Symbol) = !isPure(sym)

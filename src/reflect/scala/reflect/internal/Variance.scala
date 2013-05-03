@@ -7,6 +7,7 @@ package scala.reflect
 package internal
 
 import Variance._
+import scala.annotation.unchecked.uncheckedPure
 
 /** Variances form a lattice:
  *
@@ -32,11 +33,11 @@ import Variance._
  *  only for Covariant.
  */
 final class Variance private (val flags: Int) extends AnyVal {
-  def isBivariant     = flags == 2
-  def isCovariant     = flags == 1    // excludes bivariant
-  def isInvariant     = flags == 0
-  def isContravariant = flags == -1   // excludes bivariant
-  def isPositive      = flags > 0     // covariant or bivariant
+  @inline def isBivariant     = flags == 2
+  @inline def isCovariant     = flags == 1    // excludes bivariant
+  @inline def isInvariant     = flags == 0
+  @inline def isContravariant = flags == -1   // excludes bivariant
+  @inline def isPositive      = flags > 0     // covariant or bivariant
 
   def &(other: Variance): Variance = (
     if (this == other) this
@@ -52,10 +53,10 @@ final class Variance private (val flags: Int) extends AnyVal {
   )
 
   /** Flip between covariant and contravariant. I chose not to use unary_- because it doesn't stand out enough. */
-  def flip = if (isCovariant) Contravariant else if (isContravariant) Covariant else this
+  @inline def flip = if (isCovariant) Contravariant else if (isContravariant) Covariant else this
 
   /** Map everything below bivariant to invariant. */
-  def cut  = if (isBivariant) this else Invariant
+  @inline def cut  = if (isBivariant) this else Invariant
 
   /** The symbolic annotation used to indicate the given kind of variance. */
   def symbolicString = (
@@ -73,7 +74,7 @@ final class Variance private (val flags: Int) extends AnyVal {
   )
 }
 
-object Variance {
+@uncheckedPure object Variance {
   implicit class SbtCompat(val v: Variance) {
     def < (other: Int) = v.flags < other
     def > (other: Int) = v.flags > other

@@ -1,8 +1,10 @@
 package scala
+package reflect
 
 import java.lang.reflect.{ AccessibleObject => jAccessibleObject }
+import scala.annotation.unchecked.uncheckedPure
 
-package object reflect {
+@uncheckedPure object `package` {
 
   // in the new scheme of things ClassManifests are aliased to ClassTags
   // this is done because we want `toArray` in collections work with ClassTags
@@ -42,7 +44,7 @@ package object reflect {
   // @deprecated("Use scala.reflect.ClassTag (to capture erasures), scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   val Manifest = ManifestFactory
 
-  def classTag[T](implicit ctag: ClassTag[T]) = ctag
+  @inline final def classTag[T](implicit ctag: ClassTag[T]) = ctag
 
   /** Make a java reflection object accessible, if it is not already
    *  and it is possible to do so. If a SecurityException is thrown in the
@@ -77,6 +79,3 @@ package object reflect {
   @deprecated("Use `@scala.beans.ScalaBeanInfo` instead", "2.10.0")
   type ScalaBeanInfo = scala.beans.ScalaBeanInfo
 }
-
-/** An exception that indicates an error during Scala reflection */
-case class ScalaReflectionException(msg: String) extends Exception(msg)

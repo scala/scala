@@ -13,7 +13,7 @@ import mutable.ArrayBuffer
 import scala.annotation.migration
 import immutable.Stream
 import scala.collection.generic.CanBuildFrom
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
+import scala.annotation.unchecked.{ uncheckedPure, uncheckedVariance => uV }
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
  *
@@ -22,7 +22,7 @@ import scala.annotation.unchecked.{ uncheckedVariance => uV }
  *  @version 2.8
  *  @since   2.8
  */
-object Iterator {
+@uncheckedPure object Iterator {
 
   /** With the advent of `TraversableOnce` and `Iterator`, it can be useful to have a builder which
    *  operates on `Iterator`s so they can be treated uniformly along with the collections.

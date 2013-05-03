@@ -13,6 +13,7 @@ import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
+import scala.annotation.unchecked.uncheckedPure
 import scala.annotation.elidable.ASSERTION
 import scala.language.{implicitConversions, existentials}
 import scala.io.ReadStdin
@@ -69,7 +70,7 @@ import scala.io.ReadStdin
  *  Short value to a Long value as required, and to add additional higher-order
  *  functions to Array values. These are described in more detail in the documentation of [[scala.Array]].
  */
-object Predef extends LowPriorityImplicits with DeprecatedPredef {
+@uncheckedPure object Predef extends LowPriorityImplicits with DeprecatedPredef {
   /**
    * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * the class literal `T.class` in Java.
@@ -248,7 +249,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   // implicit classes -----------------------------------------------------
 
   implicit final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
-    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
+    @inline def -> [B](y: B): Tuple2[A, B] = ((__leftOfArrow, y))
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
 

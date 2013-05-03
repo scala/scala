@@ -57,17 +57,17 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   /**
     * @return `'''this'''` if `'''this''' < that` or `that` otherwise
     */
-  override def min(that: Int): Int = if (self < that) self else that
+  @inline override def min(that: Int): Int = if (self < that) self else that
 
   /**
     * @return `'''this'''` if `'''this''' > that` or `that` otherwise
     */
-  override def max(that: Int): Int = if (self > that) self else that
+  @inline override def max(that: Int): Int = if (self > that) self else that
 
   /**
     * Computes the absolute value of `'''this'''`.
     */
-  override def abs: Int = if (self < 0) -self else self
+  @inline override def abs: Int = if (self < 0) -self else self
 
   def toBinaryString: String = java.lang.Integer.toBinaryString(self)
   def toHexString: String = java.lang.Integer.toHexString(self)
