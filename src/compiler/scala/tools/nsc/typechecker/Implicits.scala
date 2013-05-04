@@ -96,6 +96,31 @@ trait Implicits {
     result
   }
 
+  /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
+   */
+  def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree = {
+    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
+    def wrapper(inference: => SearchResult) = wrapper1(inference)
+    def fail(reason: Option[String]) = {
+      if (!silent) {
+        if (context.hasErrors) onError(context.errBuffer.head.errPos, context.errBuffer.head.errMsg)
+        else onError(pos, reason getOrElse "implicit search has failed. to find out the reason, turn on -Xlog-implicits")
+      }
+      EmptyTree
+    }
+    try {
+      wrapper(inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos)) match {
+        case failure if failure.tree.isEmpty => fail(None)
+        case success => success.tree
+      }
+    } catch {
+      case ex: DivergentImplicit =>
+        if (settings.Xdivergence211.value)
+          debugwarn("this shouldn't happen. DivergentImplicit exception has been thrown with -Xdivergence211 turned on: "+ex)
+        fail(Some("divergent implicit expansion"))
+    }
+  }
+
   /** Find all views from type `tp` (in which `tpars` are free)
    *
    * Note that the trees in the search results in the returned list share the same type variables.

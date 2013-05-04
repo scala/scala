@@ -180,28 +180,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree =
         transformDuringTyper(tree, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
-            import scala.tools.nsc.typechecker.DivergentImplicit
             trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymkinds.value))
-            val context = currentTyper.context
-            def fail(reason: Option[String]) = {
-              debuglog("reflective implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-              if (!silent) {
-                if (context.hasErrors) throw ToolBoxError("reflective implicit search has failed: %s".format(context.errBuffer.head.errMsg))
-                else throw ToolBoxError(reason getOrElse "reflective implicit search has failed. to find out the reason, turn on -Xlog-implicits")
-              }
-              EmptyTree
-            }
-            try {
-              analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos) match {
-                case failure if failure.tree.isEmpty => fail(None)
-                case success => success.tree
-              }
-            } catch {
-              case ex: DivergentImplicit =>
-                if (settings.Xdivergence211.value)
-                  debuglog("this shouldn't happen. DivergentImplicit exception has been thrown with -Xdivergence211 turned on: "+ex)
-                fail(Some("divergent implicit expansion"))
-            }
+            analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
       def compile(expr0: Tree): () => Any = {
