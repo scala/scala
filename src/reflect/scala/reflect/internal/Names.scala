@@ -120,6 +120,41 @@ trait Names extends api.Names {
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
+  /**
+   *  Used only by the GenBCode backend, to represent bytecode-level types in a way that makes equals() and hashCode() efficient.
+   *  For bytecode-level types of OBJECT sort, its internal name (not its descriptor) is stored.
+   *  For those of ARRAY sort,  its descriptor is stored ie has a leading '['
+   *  For those of METHOD sort, its descriptor is stored ie has a leading '('
+   *
+   *  can-multi-thread
+   */
+  final def lookupTypeName(cs: Array[Char]): TypeName = { lookupTypeNameIfExisting(cs, true) }
+
+  final def lookupTypeNameIfExisting(cs: Array[Char], failOnNotFound: Boolean): TypeName = {
+
+    val hterm = hashValue(cs, 0, cs.size) & HASH_MASK
+    var nterm = termHashtable(hterm)
+    while ((nterm ne null) && (nterm.length != cs.size || !equals(nterm.start, cs, 0, cs.size))) {
+      nterm = nterm.next
+    }
+    if (nterm eq null) {
+      if (failOnNotFound) { assert(false, "TermName not yet created: " + new String(cs)) }
+      return null
+    }
+
+    val htype = hashValue(chrs, nterm.start, nterm.length) & HASH_MASK
+    var ntype = typeHashtable(htype)
+    while ((ntype ne null) && ntype.start != nterm.start) {
+      ntype = ntype.next
+    }
+    if (ntype eq null) {
+      if (failOnNotFound) { assert(false, "TypeName not yet created: " + new String(cs)) }
+      return null
+    }
+
+    ntype
+  }
+
 // Classes ----------------------------------------------------------------------
 
   /** The name class.
