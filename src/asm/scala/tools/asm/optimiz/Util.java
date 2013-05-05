@@ -119,7 +119,7 @@ public class Util {
     public static boolean hasPushEffectOnly(final AbstractInsnNode producer) {
         if (Util.isLOAD(producer)) return true;
         // we leave out LDC <type> on purpose.
-        if(Util.isPrimitiveConstant(producer) || Util.isStringConstant(producer)) return true;
+        if (Util.isPrimitiveConstant(producer) || Util.isStringConstant(producer)) return true;
         // taking DUP to be push-effect-only leads to trouble.
         return false;
     }
@@ -307,6 +307,36 @@ public class Util {
     }
 
     // ------------------------------------------------------------------------
+    // jumps, backedges
+    // ------------------------------------------------------------------------
+
+    /**
+     *  @return all the backedges bracketed between instructions `start` and `end`
+     * */
+    public static Map<JumpInsnNode, LabelNode> backedges(final AbstractInsnNode start, final AbstractInsnNode end) {
+        Map<JumpInsnNode, LabelNode> result = new HashMap<JumpInsnNode, LabelNode>();
+        Set<LabelNode> seen = new HashSet<LabelNode>();
+        AbstractInsnNode current = start;
+        boolean stop = false;
+        do {
+            if (current.getType() == AbstractInsnNode.LABEL) {
+                seen.add((LabelNode)current);
+            } else if (current.getType() == AbstractInsnNode.JUMP_INSN) {
+                JumpInsnNode j = (JumpInsnNode)current;
+                if (seen.contains(j.label)) {
+                    result.put(j, j.label);
+                }
+            }
+            if (current == end) {
+                stop = true;
+            } else {
+                current = current.getNext();
+            }
+        } while (!stop);
+        return result;
+    }
+
+    // ------------------------------------------------------------------------
     // maxLocals and maxStack
     // ------------------------------------------------------------------------
 
@@ -329,5 +359,81 @@ public class Util {
         mnode.maxStack  = mw.getMaxStack();
     }
 
+
+    // ------------------------------------------------------------------------
+    // Textification
+    // ------------------------------------------------------------------------
+
+    /**
+     * Returns a human-readable representation of the cnode ClassNode.
+     */
+    public static String textify(final ClassNode cnode) {
+      scala.tools.asm.util.TraceClassVisitor trace = new scala.tools.asm.util.TraceClassVisitor(new java.io.PrintWriter(new java.io.StringWriter()));
+      cnode.accept(trace);
+      java.io.StringWriter sw = new java.io.StringWriter();
+      java.io.PrintWriter  pw = new java.io.PrintWriter(sw);
+      trace.p.print(pw);
+      return sw.toString();
+    }
+
+    /**
+     * Returns a human-readable representation of the code in the mnode MethodNode.
+     */
+    public static String textify(final MethodNode mnode) {
+      scala.tools.asm.util.TraceClassVisitor trace = new scala.tools.asm.util.TraceClassVisitor(new java.io.PrintWriter(new java.io.StringWriter()));
+      mnode.accept(trace);
+      java.io.StringWriter sw = new java.io.StringWriter();
+      java.io.PrintWriter  pw = new java.io.PrintWriter(sw);
+      trace.p.print(pw);
+      return sw.toString();
+    }
+
+    /**
+     * Returns a human-readable representation of the given instruction.
+     */
+    public static String textify(final AbstractInsnNode insn) {
+        scala.tools.asm.util.TraceMethodVisitor trace = new scala.tools.asm.util.TraceMethodVisitor(new Textifier());
+        insn.accept(trace);
+        java.io.StringWriter sw = new java.io.StringWriter();
+        java.io.PrintWriter  pw = new java.io.PrintWriter(sw);
+        trace.p.print(pw);
+        return sw.toString().trim();
+    }
+
+    /**
+     * Returns a human-readable representation of the given instruction sequence.
+     */
+    public static String textify(final InsnList insns) {
+        scala.tools.asm.util.TraceMethodVisitor trace = new scala.tools.asm.util.TraceMethodVisitor(new Textifier());
+
+        ListIterator<AbstractInsnNode> iter = insns.iterator();
+        while (iter.hasNext()) {
+            AbstractInsnNode insn = iter.next();
+            insn.accept(trace);
+        }
+
+        java.io.StringWriter sw = new java.io.StringWriter();
+        java.io.PrintWriter  pw = new java.io.PrintWriter(sw);
+        trace.p.print(pw);
+        return sw.toString().trim();
+    }
+
+    /**
+     * Returns a human-readable representation of the given instruction sequence.
+     */
+    public static String textify(final Iterable<AbstractInsnNode> insns) {
+        scala.tools.asm.util.TraceMethodVisitor trace = new scala.tools.asm.util.TraceMethodVisitor(new Textifier());
+
+        Iterator<AbstractInsnNode> iter = insns.iterator();
+        while (iter.hasNext()) {
+            AbstractInsnNode insn = iter.next();
+            insn.accept(trace);
+        }
+
+        java.io.StringWriter sw = new java.io.StringWriter();
+        java.io.PrintWriter  pw = new java.io.PrintWriter(sw);
+        trace.p.print(pw);
+        return sw.toString().trim();
+    }
 
 }
