@@ -414,6 +414,9 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     // Phase II: typecheck the right-hand side of the macro def
     val typed = typecheckRhs(macroDdef.rhs)
     typed match {
+      case MacroImplReference(_, meth, _) if meth == Predef_??? =>
+        bindMacroImpl(macroDef, typed)
+        MacroDefIsQmarkQmarkQmark()
       case MacroImplReference(owner, meth, targs) =>
         if (!meth.isMethod) MacroDefInvalidBodyError()
         if (!meth.isPublic) MacroImplNotPublicError()
@@ -506,26 +509,30 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         val methName = binding.methName
         macroLogVerbose(s"resolved implementation as $className.$methName")
 
-        // I don't use Scala reflection here, because it seems to interfere with JIT magic
-        // whenever you instantiate a mirror (and not do anything with in, just instantiate), performance drops by 15-20%
-        // I'm not sure what's the reason - for me it's pure voodoo
-        // upd. my latest experiments show that everything's okay
-        // it seems that in 2.10.1 we can easily switch to Scala reflection
-        try {
-          macroTraceVerbose("loading implementation class: ")(className)
-          macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroClassloader))
-          val implObj = ReflectionUtils.staticSingletonInstance(macroClassloader, className)
-          // relies on the fact that macro impls cannot be overloaded
-          // so every methName can resolve to at maximum one method
-          val implMeths = implObj.getClass.getDeclaredMethods.find(_.getName == methName)
-          val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
-          macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMeth))
-          args => implMeth.invoke(implObj, ((args.c +: args.others) map (_.asInstanceOf[AnyRef])): _*)
-        } catch {
-          case ex: Exception =>
-            macroTraceVerbose(s"macro runtime failed to load: ")(ex.toString)
-            macroDef setFlag IS_ERROR
-            null
+        if (binding.className == Predef_???.owner.fullName.toString && binding.methName == Predef_???.name.encoded) {
+          args => throw new AbortMacroException(args.c.enclosingPosition, "macro implementation is missing")
+        } else {
+          // I don't use Scala reflection here, because it seems to interfere with JIT magic
+          // whenever you instantiate a mirror (and not do anything with in, just instantiate), performance drops by 15-20%
+          // I'm not sure what's the reason - for me it's pure voodoo
+          // upd. my latest experiments show that everything's okay
+          // it seems that in 2.10.1 we can easily switch to Scala reflection
+          try {
+            macroTraceVerbose("loading implementation class: ")(className)
+            macroTraceVerbose("classloader is: ")(ReflectionUtils.show(macroClassloader))
+            val implObj = ReflectionUtils.staticSingletonInstance(macroClassloader, className)
+            // relies on the fact that macro impls cannot be overloaded
+            // so every methName can resolve to at maximum one method
+            val implMeths = implObj.getClass.getDeclaredMethods.find(_.getName == methName)
+            val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
+            macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMeth))
+            args => implMeth.invoke(implObj, ((args.c +: args.others) map (_.asInstanceOf[AnyRef])): _*)
+          } catch {
+            case ex: Exception =>
+              macroTraceVerbose(s"macro runtime failed to load: ")(ex.toString)
+              macroDef setFlag IS_ERROR
+              null
+          }
         }
       })
     }
