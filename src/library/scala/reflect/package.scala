@@ -60,7 +60,7 @@ package object reflect {
   // implementation is hardwired into `scala.reflect.reify.Taggers`
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   // todo. once we have implicit macros for tag generation, we can remove this anchor
-  private[scala] def materializeClassTag[T](): ClassTag[T] = ??? // macro
+  private[scala] def materializeClassTag[T](): ClassTag[T] = macro ???
 
   @deprecated("Use `@scala.beans.BeanDescription` instead", "2.10.0")
   type BeanDescription = scala.beans.BeanDescription
