@@ -71,7 +71,7 @@ import scala.reflect.ClassTag
  *  val g = future { 3 }
  *  val h = for {
  *    x: Int <- f // returns Future(5)
- *    y: Int <- g // returns Future(5)
+ *    y: Int <- g // returns Future(3)
  *  } yield x + y
  *  }}}
  *
