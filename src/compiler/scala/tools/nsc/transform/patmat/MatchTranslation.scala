@@ -248,7 +248,10 @@ trait MatchTranslation {
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
         val swatches = { // switch-catches
-          val bindersAndCases = caseDefs map { caseDef =>
+          // SI-7459 must duplicate here as we haven't commited to switch emission, and just figuring out
+          //         if we can ends up mutating `caseDefs` down in the use of `substituteSymbols` in
+          //         `TypedSubstitution#Substitution`. That is called indirectly by `emitTypeSwitch`.
+          val bindersAndCases = caseDefs.map(_.duplicate) map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
             val caseScrutSym = freshSym(pos, pureType(ThrowableTpe))
