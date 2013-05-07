@@ -33,7 +33,7 @@ abstract class DeadCodeElimination extends SubComponent {
     val dce = new DeadCode()
 
     override def apply(c: IClass) {
-      if (settings.Xdce)
+      if (settings.Xdce && (dce ne null))
         dce.analyzeClass(c)
     }
   }

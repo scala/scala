@@ -218,7 +218,10 @@ trait Implicits {
       case _ => false
     }
     override def hashCode = name.## + pre.## + sym.##
-    override def toString = name + ": " + tpe
+    override def toString = (
+      if (tpeCache eq null) name + ": ?"
+      else name + ": " + tpe
+    )
   }
 
   /** A sentinel indicating no implicit was found */

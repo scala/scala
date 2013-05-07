@@ -542,7 +542,8 @@ abstract class CopyPropagation {
       m.isGetter // abstract getters are still pure, as we 'know'
 
     final override def toString() = (
-      method.blocks map { b =>
+      if (method eq null) List("<null>")
+      else method.blocks map { b =>
         "\nIN(%s):\t Bindings: %s".format(b.label, in(b).bindings) +
         "\nIN(%s):\t Stack: %s".format(b.label, in(b).stack)
       }
