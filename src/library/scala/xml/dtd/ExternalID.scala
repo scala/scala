@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package dtd
 
 /** an ExternalIDs - either PublicID or SystemID

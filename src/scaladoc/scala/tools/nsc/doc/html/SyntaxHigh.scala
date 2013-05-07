@@ -3,7 +3,8 @@
  * @author  Stephane Micheloud
  */
 
-package scala.tools.nsc.doc.html
+package scala
+package tools.nsc.doc.html
 
 import scala.xml.NodeSeq
 import scala.annotation.tailrec

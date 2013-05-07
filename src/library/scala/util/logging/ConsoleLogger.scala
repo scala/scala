@@ -8,7 +8,8 @@
 
 
 
-package scala.util.logging
+package scala
+package util.logging
 
 /**
  *  The trait `ConsoleLogger` is mixed into a concrete class who

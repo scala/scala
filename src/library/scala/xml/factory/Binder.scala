@@ -8,7 +8,8 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package factory
 
 import parsing.ValidatingMarkupHandler

@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 /** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.

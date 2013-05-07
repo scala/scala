@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 /**
  * Dummy class which exist only to satisfy the JVM. It corresponds to

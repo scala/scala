@@ -664,8 +664,8 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    * Long.MinValue is not a legal `length` anyway.
    */
   private def safeMul(_a: Long, _b: Long): Long = {
-    val a = math.abs(_a)
-    val b = math.abs(_b)
+    val a = scala.math.abs(_a)
+    val b = scala.math.abs(_b)
     import java.lang.Long.{ numberOfLeadingZeros => leading }
     if (leading(a) + leading(b) < 64) throw new IllegalArgumentException("multiplication overflow")
     val product = a * b

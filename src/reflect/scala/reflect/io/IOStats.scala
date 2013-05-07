@@ -1,4 +1,5 @@
-package scala.reflect.io
+package scala
+package reflect.io
 
 import scala.reflect.internal.util.Statistics
 

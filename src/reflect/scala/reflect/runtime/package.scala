@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 
 /** Entry points into runtime reflection.
  *  See [[scala.reflect.api.package the overview page]] for details on how to use them.

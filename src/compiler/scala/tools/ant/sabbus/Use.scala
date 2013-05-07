@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.tools.ant
+package scala
+package tools.ant
 package sabbus
 
 import java.io.File

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 /** This trait implements a proxy for iterable objects. It forwards all calls
  *  to a different iterable object.

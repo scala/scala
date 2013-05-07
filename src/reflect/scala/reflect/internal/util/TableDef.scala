@@ -1,4 +1,5 @@
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import TableDef._
 import scala.language.postfixOps

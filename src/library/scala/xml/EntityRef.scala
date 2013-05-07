@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** The class `EntityRef` implements an XML node for entity references.
  *

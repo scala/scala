@@ -6,8 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.io
+package scala
+package io
 
 import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
 import scala.annotation.migration

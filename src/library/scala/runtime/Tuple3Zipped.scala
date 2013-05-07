@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.{ CanBuildFrom => CBF }

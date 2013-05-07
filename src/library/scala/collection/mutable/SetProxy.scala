@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This is a simple wrapper class for [[scala.collection.mutable.Set]].

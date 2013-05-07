@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** `Queue` objects implement data structures that allow to

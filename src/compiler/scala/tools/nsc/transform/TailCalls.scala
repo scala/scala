@@ -3,7 +3,8 @@
  * @author Iulian Dragos
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package transform
 
 import symtab.Flags

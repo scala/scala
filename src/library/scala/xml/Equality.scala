@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** In an attempt to contain the damage being inflicted on consistency by the
  *  ad hoc `equals` methods spread around `xml`, the logic is centralized and

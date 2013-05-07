@@ -4,7 +4,8 @@
  *
  */
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.reflect.ClassTag
 import scala.reflect.internal.FatalError
@@ -210,7 +211,7 @@ abstract class Position extends scala.reflect.api.Position { self =>
    */
   def lineWithCarat(maxWidth: Int): (String, String) = {
     val radius = maxWidth / 2
-    var start  = math.max(column - radius, 0)
+    var start  = scala.math.max(column - radius, 0)
     var result = lineContent drop start take maxWidth
 
     if (result.length < maxWidth) {

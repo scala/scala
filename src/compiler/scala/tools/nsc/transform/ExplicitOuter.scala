@@ -3,7 +3,8 @@
  * @author Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package transform
 
 import symtab._

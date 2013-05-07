@@ -1,4 +1,5 @@
-package scala.tools
+package scala
+package tools
 package reflect
 
 import scala.tools.nsc.EXPRmode

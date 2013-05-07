@@ -3,7 +3,9 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
 

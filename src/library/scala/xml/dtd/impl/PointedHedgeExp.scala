@@ -8,7 +8,8 @@
 
 
 
-package scala.xml.dtd.impl
+package scala
+package xml.dtd.impl
 
 /** Pointed regular hedge expressions, a useful subclass of regular hedge expressions.
  *

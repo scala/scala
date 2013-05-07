@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 package control
 
 import scala.collection.immutable.List

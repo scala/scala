@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class can be used to construct data structures that are based

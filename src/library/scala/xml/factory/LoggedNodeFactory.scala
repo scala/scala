@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 package factory
 
 /** This class logs what the nodefactory is actually doing.

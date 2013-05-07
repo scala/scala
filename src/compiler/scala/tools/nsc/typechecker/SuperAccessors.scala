@@ -4,7 +4,8 @@
  * @author Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package typechecker
 
 import scala.collection.{ mutable, immutable }

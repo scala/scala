@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /**
  * This class acts as a Buffer for nodes. If it is used as a sequence of

@@ -2,7 +2,8 @@
  * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interactive
 package tests
 

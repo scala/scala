@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** This singleton object contains the `unapplySeq` method for
  *  convenient deconstruction.

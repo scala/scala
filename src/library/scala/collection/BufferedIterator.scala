@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 
 /** Buffered iterators are iterators which provide a method `head`
  *  that inspects the next element without discarding it.

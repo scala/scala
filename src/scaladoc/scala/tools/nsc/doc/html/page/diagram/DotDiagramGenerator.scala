@@ -2,7 +2,9 @@
  * @author Damien Obrist
  * @author Vlad Ureche
  */
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 package doc
 package html
 package page

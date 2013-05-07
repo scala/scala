@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools
+package scala
+package tools
 package nsc
 package settings
 

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** This class (which is not used by all XML parsers, but always used by the
  *  XHTML one) represents parseable character data, which appeared as CDATA

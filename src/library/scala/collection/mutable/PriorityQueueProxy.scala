@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class servers as a proxy for priority queues. The

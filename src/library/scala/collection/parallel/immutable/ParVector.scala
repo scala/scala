@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package parallel.immutable
 
 

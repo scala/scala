@@ -3,7 +3,8 @@
  * @author  James Iry
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend.opt
 
 import scala.tools.nsc.backend.icode.analysis.LubException

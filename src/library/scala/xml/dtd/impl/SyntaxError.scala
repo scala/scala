@@ -8,7 +8,8 @@
 
 
 
-package scala.xml.dtd.impl
+package scala
+package xml.dtd.impl
 
 /** This runtime exception is thrown if an attempt to instantiate a
  *  syntactically incorrect expression is detected.

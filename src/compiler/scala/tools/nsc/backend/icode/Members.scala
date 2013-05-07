@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend
 package icode
 
@@ -73,7 +74,7 @@ trait Members {
         )
         startBlock = b.successors.head
       }
-      
+
       blocks -= b
       assert(!blocks.contains(b))
       method.exh filter (_ covers b) foreach (_.covered -= b)

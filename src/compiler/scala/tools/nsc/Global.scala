@@ -3,7 +3,9 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }

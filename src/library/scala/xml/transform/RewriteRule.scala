@@ -8,7 +8,8 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package transform
 
 /** A RewriteRule, when applied to a term, yields either

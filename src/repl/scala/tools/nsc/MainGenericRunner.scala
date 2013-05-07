@@ -3,7 +3,8 @@
  * @author  Lex Spoon
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }

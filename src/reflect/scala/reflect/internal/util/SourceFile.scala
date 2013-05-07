@@ -4,7 +4,8 @@
  */
 
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.reflect.io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer

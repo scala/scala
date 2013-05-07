@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 
 import BitSetLike._
 import mutable.StringBuilder

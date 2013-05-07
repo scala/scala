@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy[Short] {
   protected def num = scala.math.Numeric.ShortIsIntegral

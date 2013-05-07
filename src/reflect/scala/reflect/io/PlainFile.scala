@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{ FileInputStream, FileOutputStream, IOException }

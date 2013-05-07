@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.util
+package scala
+package util
 
 import java.io.{ IOException, PrintWriter }
 import java.util.jar.Attributes.{ Name => AttributeName }
@@ -72,7 +73,7 @@ private[scala] trait PropertiesTrait {
    *  it is an RC, Beta, etc. or was built from source, or if the version
    *  cannot be read.
    */
-  val releaseVersion = 
+  val releaseVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if !(v endsWith "-SNAPSHOT")
@@ -86,7 +87,7 @@ private[scala] trait PropertiesTrait {
    *  @return Some(version) if this is a non-final version, None if this
    *  is a final release or the version cannot be read.
    */
-  val developmentVersion = 
+  val developmentVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if v endsWith "-SNAPSHOT"
