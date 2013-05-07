@@ -38,7 +38,7 @@ trait BasicBlocks {
 
     import BBFlags._
 
-    def code = method.code
+    def code = if (method eq null) NoCode else method.code
 
     private final class SuccessorList() {
       private var successors: List[BasicBlock] = Nil

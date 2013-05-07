@@ -71,8 +71,10 @@ abstract class ClosureElimination extends SubComponent {
     def name = phaseName
     val closser = new ClosureElim
 
-    override def apply(c: IClass): Unit =
-      closser analyzeClass c
+    override def apply(c: IClass): Unit = {
+      if (closser ne null)
+        closser analyzeClass c
+    }
   }
 
   /**

@@ -240,7 +240,8 @@ abstract class ReachingDefinitions {
       findDefs(bb, idx, m, 0)
 
     override def toString: String = {
-      method.code.blocks map { b =>
+      if (method eq null) "<null>"
+      else method.code.blocks map { b =>
         "  entry(%s) = %s\n".format(b, in(b)) +
         "   exit(%s) = %s\n".format(b, out(b))
       } mkString ("ReachingDefinitions {\n", "\n", "\n}")
