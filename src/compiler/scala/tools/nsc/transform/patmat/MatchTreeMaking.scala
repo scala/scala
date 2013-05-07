@@ -166,8 +166,17 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           val usedBinders = new mutable.HashSet[Symbol]()
           // all potentially stored subpat binders
           val potentiallyStoredBinders = stored.unzip._1.toSet
+          def ref(sym: Symbol) =
+            if (potentiallyStoredBinders(sym)) usedBinders += sym
           // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
-          in.foreach(t => if (potentiallyStoredBinders(t.symbol)) usedBinders += t.symbol)
+          in.foreach {
+            case tt: TypeTree =>
+              tt.tpe foreach { // SI-7459 e.g. case Prod(t) => new t.u.Foo
+                case SingleType(_, sym) => ref(sym)
+                case _ =>
+              }
+            case t => ref(t.symbol)
+          }
 
           if (usedBinders.isEmpty) in
           else {

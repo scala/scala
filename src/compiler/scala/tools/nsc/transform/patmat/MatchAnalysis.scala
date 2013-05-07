@@ -266,7 +266,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       // the type of the binder passed to the first invocation
       // determines the type of the tree that'll be returned for that binder as of then
       final def binderToUniqueTree(b: Symbol) =
-        unique(accumSubst(normalize(CODE.REF(b))), b.tpe)
+        unique(accumSubst(normalize(gen.mkAttributedStableRef(b))), b.tpe)
 
       // note that the sequencing of operations is important: must visit in same order as match execution
       // binderToUniqueTree uses the type of the first symbol that was encountered as the type for all future binders
