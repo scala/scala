@@ -28,9 +28,11 @@ private[scala] object ReflectionUtils {
     case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
   }
 
-  private def systemProperties: Iterator[(String, String)] = {
+  private def systemProperties: Map[String, String] = {
     import scala.collection.JavaConverters._
-    System.getProperties.asScala.iterator
+    // cannot use System.getProperties.asScala because of SI-7465
+    val javaProperties: java.util.Dictionary[Object, Object] = System.getProperties
+    javaProperties.asScala.collect{ case (k: String, v: String) => (k, v) }.toMap
   }
 
   private def inferBootClasspath: String = (
