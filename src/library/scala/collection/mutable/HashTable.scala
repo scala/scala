@@ -58,7 +58,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   @transient protected var seedvalue: Int = tableSizeSeed
 
-  protected def tableSizeSeed = Integer.bitCount(table.length - 1)
+  protected def tableSizeSeed = java.lang.Integer.bitCount(table.length - 1)
 
   /** The initial size of the hash table.
    */

@@ -10,6 +10,7 @@
 package scala
 package util
 
+import java.lang.System
 import java.io.{ IOException, PrintWriter }
 import java.util.jar.Attributes.{ Name => AttributeName }
 
@@ -47,9 +48,9 @@ private[scala] trait PropertiesTrait {
         catch   { case _: IOException => }
     }
 
-  def propIsSet(name: String)                   = System.getProperty(name) != null
+  def propIsSet(name: String)                   = java.lang.System.getProperty(name) != null
   def propIsSetTo(name: String, value: String)  = propOrNull(name) == value
-  def propOrElse(name: String, alt: String)     = System.getProperty(name, alt)
+  def propOrElse(name: String, alt: String)     = java.lang.System.getProperty(name, alt)
   def propOrEmpty(name: String)                 = propOrElse(name, "")
   def propOrNull(name: String)                  = propOrElse(name, null)
   def propOrNone(name: String)                  = Option(propOrNull(name))

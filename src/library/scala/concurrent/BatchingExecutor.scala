@@ -8,7 +8,9 @@
 
 package scala.concurrent
 
+import java.lang.Runnable
 import java.util.concurrent.Executor
+
 import scala.annotation.tailrec
 
 /**
@@ -42,7 +44,7 @@ import scala.annotation.tailrec
 private[concurrent] trait BatchingExecutor extends Executor {
 
   // invariant: if "_tasksLocal.get ne null" then we are inside BatchingRunnable.run; if it is null, we are outside
-  private val _tasksLocal = new ThreadLocal[List[Runnable]]()
+  private val _tasksLocal = new java.lang.ThreadLocal[List[Runnable]]()
 
   private class Batch(val initial: List[Runnable]) extends Runnable with BlockContext {
     private var parentBlockContext: BlockContext = _

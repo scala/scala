@@ -71,7 +71,7 @@ trait ContextErrors {
     extends TreeTypeError {
     def errMsg: String   = errMsgForPt(pt0)
     def withPt(pt: Type): AbsTypeError = this.copy(pt0 = pt)
-    private def errMsgForPt(pt: Type) = 
+    private def errMsgForPt(pt: Type) =
       s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
   }
 
@@ -741,7 +741,7 @@ trait ContextErrors {
             if (relevancyThreshold == -1) None
             else {
               var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
-              def isMacroInvoker(este: StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
+              def isMacroInvoker(este: java.lang.StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
               var threshold = relevantElements.reverse.indexWhere(isMacroInvoker) + 1
               while (threshold != relevantElements.length && isMacroInvoker(relevantElements(relevantElements.length - threshold - 1))) threshold += 1
               relevantElements = relevantElements dropRight threshold

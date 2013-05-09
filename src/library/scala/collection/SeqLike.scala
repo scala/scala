@@ -612,7 +612,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
       arr(i) = x
       i += 1
     }
-    java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[Object]])
+    java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[java.lang.Object]])
     val b = newBuilder
     b.sizeHint(len)
     for (x <- arr) b += x

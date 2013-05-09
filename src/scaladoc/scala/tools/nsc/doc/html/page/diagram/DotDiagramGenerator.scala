@@ -55,7 +55,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     var edges: List[(Node, List[Node])] = null
 
     // timing
-    var tDot = -System.currentTimeMillis
+    var tDot = -java.lang.System.currentTimeMillis
 
     // variables specific to class diagrams:
     // current node of a class diagram
@@ -197,7 +197,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
       }).mkString}.mkString +
     "}"
 
-    tDot += System.currentTimeMillis
+    tDot += java.lang.System.currentTimeMillis
     DiagramStats.addDotGenerationTime(tDot)
 
     graph
@@ -318,7 +318,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
    */
   private def generateSVG(dotInput: String, template: DocTemplateEntity) = {
     val dotOutput = DiagramGenerator.getDotRunner().feedToDot(dotInput, template)
-    var tSVG = -System.currentTimeMillis
+    var tSVG = -java.lang.System.currentTimeMillis
 
     val result = if (dotOutput != null) {
       val src = scala.io.Source.fromString(dotOutput)
@@ -347,7 +347,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
     } else
       NodeSeq.Empty
 
-    tSVG += System.currentTimeMillis
+    tSVG += java.lang.System.currentTimeMillis
     DiagramStats.addSvgTime(tSVG)
 
     result

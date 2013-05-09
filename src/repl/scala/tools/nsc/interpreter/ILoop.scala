@@ -358,7 +358,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo(intp.global.throwableAsString(ex))
 
       ex match {
-        case _: NoSuchMethodError | _: NoClassDefFoundError =>
+        case _: java.lang.NoSuchMethodError | _: java.lang.NoClassDefFoundError =>
           echo("\nUnrecoverable error.")
           throw ex
         case _  =>
@@ -636,7 +636,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       else new JLineCompletion(intp)
     )
     catch {
-      case ex @ (_: Exception | _: NoClassDefFoundError) =>
+      case ex @ (_: Exception | _: java.lang.NoClassDefFoundError) =>
         echo("Failed to created JLineReader: " + ex + "\nFalling back to SimpleReader.")
         SimpleReader()
     }

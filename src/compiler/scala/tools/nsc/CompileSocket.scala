@@ -5,6 +5,7 @@
 
 package scala.tools.nsc
 
+import java.lang.Thread
 import java.io.{ FileNotFoundException, PrintWriter, FileOutputStream }
 import java.security.SecureRandom
 import io.{ File, Path, Directory, Socket }
@@ -139,7 +140,7 @@ class CompileSocket extends CompileOutputCommon {
     val secret  = new SecureRandom().nextInt.toString
 
     try file writeAll secret catch {
-      case e @ (_: FileNotFoundException | _: SecurityException) =>
+      case e @ (_: FileNotFoundException | _: java.lang.SecurityException) =>
         fatal("Cannot create file: %s".format(file.path))
     }
   }

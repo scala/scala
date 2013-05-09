@@ -56,7 +56,7 @@ object Array extends FallbackArrayBuilding {
   val emptyIntArray     = new Array[Int](0)
   val emptyLongArray    = new Array[Long](0)
   val emptyShortArray   = new Array[Short](0)
-  val emptyObjectArray  = new Array[Object](0)
+  val emptyObjectArray  = new Array[java.lang.Object](0)
 
   implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =
     new CanBuildFrom[Array[_], T, Array[T]] {

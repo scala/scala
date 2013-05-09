@@ -24,7 +24,7 @@ trait ReplGlobal extends Global {
     val global: ReplGlobal.this.type = ReplGlobal.this
   } with Analyzer {
 
-    override protected def findMacroClassLoader(): ClassLoader = {
+    override protected def findMacroClassLoader(): java.lang.ClassLoader = {
       val loader = super.findMacroClassLoader
       macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
       val virtualDirectory = globalSettings.outputDirs.getSingleOutput.get

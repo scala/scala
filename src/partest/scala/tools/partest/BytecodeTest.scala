@@ -87,7 +87,7 @@ abstract class BytecodeTest extends ASMConverters {
   }
 
   def diffInstructions(isa: List[Instruction], isb: List[Instruction]) = {
-    val len = Math.max(isa.length, isb.length)
+    val len = math.max(isa.length, isb.length)
     if (len > 0 ) {
       val width = isa.map(_.toString.length).max
       val lineWidth = len.toString.length

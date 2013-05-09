@@ -32,6 +32,8 @@ package scala
 package util.matching
 
 import scala.collection.AbstractIterator
+
+import java.lang.CharSequence
 import java.util.regex.{ Pattern, Matcher }
 
 /** This class provides methods for creating and using regular expressions.

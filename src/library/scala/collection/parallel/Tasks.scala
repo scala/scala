@@ -9,8 +9,9 @@
 package scala
 package collection.parallel
 
-
-
+import java.lang.Runnable
+import java.lang.Runtime
+import java.lang.Thread
 import java.util.concurrent.ThreadPoolExecutor
 
 import scala.concurrent.forkjoin._

@@ -165,7 +165,7 @@ object REPL {
           show(reloadResult)
         case "reloadAndAskType" :: file :: millis :: Nil =>
           comp.askReload(List(toSourceFile(file)), reloadResult)
-          Thread.sleep(millis.toInt)
+          java.lang.Thread.sleep(millis.toInt)
           println("ask type now")
           comp.askLoadedTyped(toSourceFile(file), typedResult)
           typedResult.get

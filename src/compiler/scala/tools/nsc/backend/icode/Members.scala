@@ -12,7 +12,7 @@ import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
 
 trait ReferenceEquality {
-  override def hashCode = System.identityHashCode(this)
+  override def hashCode = java.lang.System.identityHashCode(this)
   override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
 }
 

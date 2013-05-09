@@ -7,9 +7,9 @@ trait TestUtil {
    *  calls function with nanoseconds elapsed, and returns block result.
    */
   def timed[T](f: Long => Unit)(body: => T): T = {
-    val start = System.nanoTime
+    val start = java.lang.System.nanoTime
     val result = body
-    val end = System.nanoTime
+    val end = java.lang.System.nanoTime
 
     f(end - start)
     result

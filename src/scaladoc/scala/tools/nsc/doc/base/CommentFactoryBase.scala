@@ -724,7 +724,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     def normalizeIndentation(_code: String): String = {
 
       val code = _code.trim
-      var maxSkip = Integer.MAX_VALUE
+      var maxSkip = Int.MaxValue
       var crtSkip = 0
       var wsArea = true
       var index = 0

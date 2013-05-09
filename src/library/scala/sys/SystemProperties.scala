@@ -9,9 +9,12 @@
 package scala
 package sys
 
+import java.lang.System
+import java.security.AccessControlException
+
 import scala.collection.{ mutable, Iterator }
 import scala.collection.JavaConverters._
-import java.security.AccessControlException
+
 import scala.language.implicitConversions
 
 

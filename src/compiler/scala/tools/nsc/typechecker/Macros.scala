@@ -46,7 +46,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
   def globalSettings = global.settings
 
-  protected def findMacroClassLoader(): ClassLoader = {
+  protected def findMacroClassLoader(): java.lang.ClassLoader = {
     val classpath = global.classPath.asURLs
     macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
     ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
@@ -481,7 +481,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *  Loads classes from from -cp (aka the library classpath).
    *  Is also capable of detecting REPL and reusing its classloader.
    */
-  lazy val macroClassloader: ClassLoader = findMacroClassLoader()
+  lazy val macroClassloader: java.lang.ClassLoader = findMacroClassLoader()
 
   /** Produces a function that can be used to invoke macro implementation for a given macro definition:
    *    1) Looks up macro implementation symbol in this universe.
@@ -518,7 +518,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           // relies on the fact that macro impls cannot be overloaded
           // so every methName can resolve to at maximum one method
           val implMeths = implObj.getClass.getDeclaredMethods.find(_.getName == methName)
-          val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
+          val implMeth = implMeths getOrElse { throw new java.lang.NoSuchMethodException(s"$className.$methName") }
           macroLogVerbose("successfully loaded macro impl as (%s, %s)".format(implObj, implMeth))
           args => implMeth.invoke(implObj, ((args.c +: args.others) map (_.asInstanceOf[AnyRef])): _*)
         } catch {

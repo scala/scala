@@ -9,6 +9,7 @@
 package scala
 package runtime
 
+import java.lang.CharSequence
 import java.util.Arrays.copyOfRange
 
 @deprecated("Use Predef.SeqCharSequence", "2.11.0")

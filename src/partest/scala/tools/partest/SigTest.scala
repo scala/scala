@@ -19,7 +19,7 @@ trait SigTest {
   )
   def fstr(f: JField) = "  (f) %s".format(f.toGenericString)
 
-  def isObjectMethodName(name: String) = classOf[Object].getMethods exists (_.getName == name)
+  def isObjectMethodName(name: String) = classOf[java.lang.Object].getMethods exists (_.getName == name)
 
   def fields[T: ClassTag](p: JField => Boolean) = {
     val cl = classTag[T].runtimeClass

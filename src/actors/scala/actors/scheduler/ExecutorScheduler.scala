@@ -60,15 +60,15 @@ object ExecutorScheduler {
  * @author Philipp Haller
  */
 @deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
-trait ExecutorScheduler extends Thread
+trait ExecutorScheduler extends java.lang.Thread
                         with IScheduler with TerminationService
                         with ThreadPoolRunner {
 
-  def execute(task: Runnable) {
+  def execute(task: java.lang.Runnable) {
     super[ThreadPoolRunner].execute(task.asInstanceOf[Task[Unit]])
   }
 
-  private class RunCallable(fun: => Unit) extends Callable[Unit] with Runnable {
+  private class RunCallable(fun: => Unit) extends Callable[Unit] with java.lang.Runnable {
     def call() { fun }
     def run() { fun }
   }

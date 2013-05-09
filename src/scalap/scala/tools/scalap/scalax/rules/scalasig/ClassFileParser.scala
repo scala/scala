@@ -66,7 +66,7 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
    */
   def fromUTF8StringAndBytes = {
     val chunk: Array[Byte] = new Array[Byte](length)
-    System.arraycopy(bytes, pos, chunk, 0, length)
+    scala.compat.Platform.arraycopy(bytes, pos, chunk, 0, length)
     val str = new String(io.Codec.fromUTF8(bytes, pos, length))
 
     StringBytesPair(str, chunk)

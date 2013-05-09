@@ -37,7 +37,7 @@ private[mutable] sealed trait AVLTree[+A] extends Serializable {
    *
    */
   def remove[B >: A](value: B, ordering: Ordering[B]): AVLTree[A] =
-    throw new NoSuchElementException(String.valueOf(value))
+    throw new NoSuchElementException(java.lang.String.valueOf(value))
 
   /**
    * Return a tuple containing the smallest element of the provided tree

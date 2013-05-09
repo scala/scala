@@ -12,6 +12,8 @@ package scala
 package collection
 package immutable
 
+import java.lang.Integer
+
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import generic._
 import scala.collection.parallel.immutable.ParHashSet

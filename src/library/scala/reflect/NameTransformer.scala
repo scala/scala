@@ -74,7 +74,7 @@ object NameTransformer {
         buf.append(op2code(c))
       /* Handle glyphs that are not valid Java/JVM identifiers */
       }
-      else if (!Character.isJavaIdentifierPart(c)) {
+      else if (!java.lang.Character.isJavaIdentifierPart(c)) {
         if (buf eq null) {
           buf = new StringBuilder()
           buf.append(name.substring(0, i))
@@ -124,12 +124,12 @@ object NameTransformer {
              * not valid Java/JVM identifiers */
           } else if ((len - i) >= 6 && // Check that there are enough characters left
                      ch1 == 'u' &&
-                     ((Character.isDigit(ch2)) ||
+                     ((java.lang.Character.isDigit(ch2)) ||
                      ('A' <= ch2 && ch2 <= 'F'))) {
             /* Skip past "$u", next four should be hexadecimal */
             val hex = name.substring(i+2, i+6)
             try {
-              val str = Integer.parseInt(hex, 16).toChar
+              val str = java.lang.Integer.parseInt(hex, 16).toChar
               if (buf eq null) {
                 buf = new StringBuilder()
                 buf.append(name.substring(0, i))

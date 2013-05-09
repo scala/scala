@@ -20,11 +20,11 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   def askAndListen[T, U](msg: String,  arg: T, op: (T, Response[U]) => Unit) {
     if (settings.verbose) print(msg+" "+arg+": ")
     val TIMEOUT = 10 // ms
-    val limit = System.currentTimeMillis() + randomDelayMillis
+    val limit = java.lang.System.currentTimeMillis() + randomDelayMillis
     val res = new Response[U]
     op(arg, res)
     while (!res.isComplete && !res.isCancelled) {
-      if (System.currentTimeMillis() > limit) {
+      if (java.lang.System.currentTimeMillis() > limit) {
         print("c"); res.cancel()
       } else res.get(TIMEOUT) match {
         case Some(Left(t)) =>

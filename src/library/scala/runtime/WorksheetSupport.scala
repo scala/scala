@@ -1,5 +1,8 @@
 package scala.runtime
+
+import java.lang.System
 import java.io.{OutputStream, PrintStream}
+
 import scala.runtime.ScalaRunTime.stringOf
 
 /** A utility object that's needed by the code that executes a worksheet.

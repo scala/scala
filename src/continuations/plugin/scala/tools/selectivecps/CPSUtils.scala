@@ -9,7 +9,7 @@ trait CPSUtils {
   import global._
 
   var cpsEnabled = false
-  val verbose: Boolean = System.getProperty("cpsVerbose", "false") == "true"
+  val verbose: Boolean = scala.util.Properties.propOrElse("cpsVerbose", "false") == "true"
   def vprintln(x: =>Any): Unit = if (verbose) println(x)
 
   object cpsNames {

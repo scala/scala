@@ -6,7 +6,7 @@ abstract class MemoryTest {
   def calc(): Unit
 
   def main(args: Array[String]) {
-    val rt = Runtime.getRuntime()
+    val rt = java.lang.Runtime.getRuntime()
     def memUsage() = {
       import java.lang.management._
       import scala.collection.JavaConverters._

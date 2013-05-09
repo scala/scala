@@ -20,7 +20,7 @@ private[actors] object Reactor {
     def makeNewScheduler: IScheduler = {
       val sched = if (!ThreadPoolConfig.useForkJoin) {
         // default is non-daemon
-        val workQueue = new LinkedBlockingQueue[Runnable]
+        val workQueue = new LinkedBlockingQueue[java.lang.Runnable]
         ExecutorScheduler(
           new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
                                  ThreadPoolConfig.maxPoolSize,
@@ -118,11 +118,11 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
       searchMailbox(startMbox, handler, true)
     })
 
-  private[actors] final def makeReaction(fun: () => Unit): Runnable =
+  private[actors] final def makeReaction(fun: () => Unit): java.lang.Runnable =
     makeReaction(fun, null, null)
 
   /* This method is supposed to be overridden. */
-  private[actors] def makeReaction(fun: () => Unit, handler: PartialFunction[Msg, Any], msg: Msg): Runnable =
+  private[actors] def makeReaction(fun: () => Unit, handler: PartialFunction[Msg, Any], msg: Msg): java.lang.Runnable =
     new ReactorTask(this, fun, handler, msg)
 
   private[actors] def resumeReceiver(item: (Msg, OutputChannel[Any]), handler: PartialFunction[Msg, Any], onSameThread: Boolean) {

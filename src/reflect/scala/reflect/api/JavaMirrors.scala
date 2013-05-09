@@ -42,7 +42,7 @@ trait JavaMirrors { self: JavaUniverse =>
    *  @group JavaMirrors
    */
   trait JavaMirror extends scala.reflect.api.Mirror[self.type] with RuntimeMirror {
-    val classLoader: ClassLoader
+    val classLoader: java.lang.ClassLoader
     override def toString = s"JavaMirror with ${runtime.ReflectionUtils.show(classLoader)}"
   }
 
@@ -53,5 +53,5 @@ trait JavaMirrors { self: JavaUniverse =>
    *
    *  @group JavaMirrors
    */
-  def runtimeMirror(cl: ClassLoader): Mirror
+  def runtimeMirror(cl: java.lang.ClassLoader): Mirror
 }

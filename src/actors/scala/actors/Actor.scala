@@ -48,7 +48,7 @@ object Actor extends Combinators {
         Terminated = Value
   }
 
-  private[actors] val tl = new ThreadLocal[InternalReplyReactor]
+  private[actors] val tl = new java.lang.ThreadLocal[InternalReplyReactor]
 
   // timer thread runs as daemon
   private[actors] val timer = new Timer(true)
@@ -72,7 +72,7 @@ object Actor extends Combinators {
   private[actors] def rawSelf(sched: IScheduler): InternalReplyReactor = {
     val s = tl.get
     if (s eq null) {
-      val r = new ActorProxy(Thread.currentThread, sched)
+      val r = new ActorProxy(java.lang.Thread.currentThread, sched)
       tl.set(r)
       r
     } else
@@ -95,7 +95,7 @@ object Actor extends Combinators {
   def resetProxy() {
     val a = tl.get
     if ((null ne a) && a.isInstanceOf[ActorProxy])
-      tl.set(new ActorProxy(Thread.currentThread, parentScheduler))
+      tl.set(new ActorProxy(java.lang.Thread.currentThread, parentScheduler))
   }
 
   /**

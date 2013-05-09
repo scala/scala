@@ -8,6 +8,8 @@ package scala.tools
 package nsc
 package settings
 
+import java.lang.ClassLoader
+
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
 import scala.reflect.internal.util.StringOps
 import scala.io.Source

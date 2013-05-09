@@ -204,7 +204,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
 
   private def noArithmeticException(body: => Unit): Boolean = {
     try   { body ; true }
-    catch { case _: ArithmeticException => false }
+    catch { case _: java.lang.ArithmeticException => false }
   }
 
   def isWhole() = (this remainder 1) == BigDecimal(0)
@@ -440,7 +440,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def toBigIntExact(): Option[BigInt] =
     try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
-    catch { case _: ArithmeticException => None }
+    catch { case _: java.lang.ArithmeticException => None }
 
   /** Returns the decimal String representation of this BigDecimal.
    */

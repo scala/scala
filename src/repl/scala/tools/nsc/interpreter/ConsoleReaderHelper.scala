@@ -37,7 +37,7 @@ trait ConsoleReaderHelper extends ConsoleReader {
     }
   }
 
-  override def printColumns(items: JCollection[_ <: CharSequence]): Unit =
+  override def printColumns(items: JCollection[_ <: java.lang.CharSequence]): Unit =
     printColumns(items: List[String])
 
   def printColumns(items: List[String]): Unit = {

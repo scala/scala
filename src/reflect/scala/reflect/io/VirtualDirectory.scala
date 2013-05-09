@@ -28,7 +28,7 @@ extends AbstractFile {
   def container = maybeContainer.get
   def isDirectory = true
   override def isVirtual = true
-  val lastModified: Long = System.currentTimeMillis
+  val lastModified: Long = java.lang.System.currentTimeMillis
 
   override def file = null
   override def input = sys.error("directories cannot be read")

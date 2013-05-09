@@ -25,7 +25,7 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
   def reset() = term.reset()
 
   def scalaToJline(tc: ScalaCompleter): Completer = new Completer {
-    def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
+    def complete(_buf: String, cursor: Int, candidates: JList[java.lang.CharSequence]): Int = {
       val buf   = if (_buf == null) "" else _buf
       val Candidates(newCursor, newCandidates) = tc.complete(buf, cursor)
       newCandidates foreach (candidates add _)

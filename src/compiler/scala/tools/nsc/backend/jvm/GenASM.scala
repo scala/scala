@@ -451,7 +451,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     def createJAttribute(name: String, b: Array[Byte], offset: Int, len: Int): asm.Attribute = {
       val dest = new Array[Byte](len)
-      System.arraycopy(b, offset, dest, 0, len)
+      scala.compat.Platform.arraycopy(b, offset, dest, 0, len)
       new asm.CustomAttr(name, dest)
     }
 
@@ -1717,7 +1717,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         } else if (cst >= java.lang.Short.MIN_VALUE && cst <= java.lang.Short.MAX_VALUE) {
           jmethod.visitIntInsn(Opcodes.SIPUSH, cst)
         } else {
-          jmethod.visitLdcInsn(new Integer(cst))
+          jmethod.visitLdcInsn(new java.lang.Integer(cst))
         }
       }
 

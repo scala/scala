@@ -112,7 +112,7 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
     type JBoolean = java.lang.Boolean
     val method =
       try classOf[JFile].getMethod("setExecutable", classOf[Boolean], classOf[Boolean])
-      catch { case _: NoSuchMethodException => return false }
+      catch { case _: java.lang.NoSuchMethodException => return false }
 
     try method.invoke(jfile, executable: JBoolean, ownerOnly: JBoolean).asInstanceOf[JBoolean].booleanValue
     catch { case _: Exception => false }

@@ -7,6 +7,7 @@ package scala
 package reflect
 package io
 
+import java.lang.SecurityException
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, RandomAccessFile, File => JFile }

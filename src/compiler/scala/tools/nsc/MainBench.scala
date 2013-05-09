@@ -21,14 +21,14 @@ object MainBench extends Driver with EvalLoop {
 
   override def main(args: Array[String]) = {
     val times = new Array[Long](NIter)
-    var start = System.nanoTime()
+    var start = java.lang.System.nanoTime()
     for (i <- 0 until NIter) {
       if (i == NIter-1) {
         theCompiler.settings.Ystatistics.value = true
         Statistics.enabled = true
       }
       process(args)
-      val end = System.nanoTime()
+      val end = java.lang.System.nanoTime()
       val duration = (end-start)/1000000
       println(s"${duration}ms")
       times(i) = duration

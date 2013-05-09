@@ -199,10 +199,10 @@ object NestUI {
   }
   def verbose(msg: String) {
     if (isVerbose)
-      System.err.println(msg)
+      java.lang.System.err.println(msg)
   }
   def debug(msg: String) {
     if (isDebug)
-      System.err.println(msg)
+      java.lang.System.err.println(msg)
   }
 }

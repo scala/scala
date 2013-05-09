@@ -11,6 +11,8 @@ package collection
 package mutable
 
 import java.lang.{ StringBuilder => JavaStringBuilder }
+import java.lang.String
+
 import scala.annotation.migration
 import immutable.StringLike
 

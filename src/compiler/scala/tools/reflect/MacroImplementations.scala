@@ -98,9 +98,9 @@ abstract class MacroImplementations {
           //    [flags][width][.precision]conversion
           var pos = 1
           while(pos < strLen && isFlag(str charAt pos)) pos += 1
-          while(pos < strLen && Character.isDigit(str charAt pos)) pos += 1
+          while(pos < strLen && java.lang.Character.isDigit(str charAt pos)) pos += 1
           if(pos < strLen && str.charAt(pos) == '.') { pos += 1
-            while(pos < strLen && Character.isDigit(str charAt pos)) pos += 1
+            while(pos < strLen && java.lang.Character.isDigit(str charAt pos)) pos += 1
           }
           if(pos < strLen) {
             conversionType(str charAt pos, arg) match {

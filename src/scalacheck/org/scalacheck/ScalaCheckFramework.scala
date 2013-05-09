@@ -29,7 +29,7 @@ class ScalaCheckFramework extends Framework {
 
   val tests = Array[Fingerprint](PropsFingerprint, PropsFingerprint)
 
-  def testRunner(loader: ClassLoader,  loggers: Array[Logger]) = new Runner2 {
+  def testRunner(loader: java.lang.ClassLoader,  loggers: Array[Logger]) = new Runner2 {
 
     private def asEvent(nr: (String, Test.Result)) = nr match {
       case (n: String, r: Test.Result) => new Event {
@@ -77,11 +77,11 @@ class ScalaCheckFramework extends Framework {
       fingerprint match {
         case fp: SubclassFingerprint =>
           if(fp.isModule) {
-            val obj = Class.forName(testClassName + "$", true, loader)
+            val obj = java.lang.Class.forName(testClassName + "$", true, loader)
             val ps = obj.getField("MODULE$").get(null).asInstanceOf[Properties]
             Test.checkProperties(prms, ps)
           } else {
-            val p = Class.forName(testClassName, true, loader).newInstance.asInstanceOf[Prop]
+            val p = java.lang.Class.forName(testClassName, true, loader).newInstance.asInstanceOf[Prop]
             handler.handle(asEvent((testClassName, Test.check(prms, p))))
           }
       }

@@ -1,5 +1,7 @@
 package scala.tools.partest
 
+import java.lang.Integer
+
 import scala.collection.JavaConverters._
 import scala.tools.asm
 import asm.tree.{ClassNode, MethodNode, InsnList}

@@ -67,7 +67,7 @@ class Response[T] {
    *  or else None if no provisional result was stored.
    */
   def get(timeout: Long): Option[Either[T, Throwable]] = synchronized {
-    val start = System.currentTimeMillis
+    val start = java.lang.System.currentTimeMillis
     var current = start
     while (!complete && start + timeout > current) {
       try {
@@ -75,7 +75,7 @@ class Response[T] {
       } catch {
         case exc: InterruptedException => raise(exc)
       }
-      current = System.currentTimeMillis
+      current = java.lang.System.currentTimeMillis
     }
     data
   }

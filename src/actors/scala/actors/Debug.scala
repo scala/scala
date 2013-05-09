@@ -15,7 +15,7 @@ package scala.actors
  * @author Philipp Haller
  */
 @deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
-object Debug extends Logger("") {}
+object Debug extends Logger("")
 
 private[actors] class Logger(tag: String) {
   private var lev = 2
@@ -26,13 +26,13 @@ private[actors] class Logger(tag: String) {
   private val tagString = if (tag == "") "" else " ["+tag+"]"
 
   def info(s: String) =
-    if (lev > 2) System.out.println("Info" + tagString + ": " + s)
+    if (lev > 2) java.lang.System.out.println("Info" + tagString + ": " + s)
 
   def warning(s: String) =
-    if (lev > 1) System.err.println("Warning" + tagString + ": " + s)
+    if (lev > 1) java.lang.System.err.println("Warning" + tagString + ": " + s)
 
   def error(s: String) =
-    if (lev > 0) System.err.println("Error" + tagString + ": " + s)
+    if (lev > 0) java.lang.System.err.println("Error" + tagString + ": " + s)
 
   def doInfo(b: => Unit) =
     if (lev > 2) b

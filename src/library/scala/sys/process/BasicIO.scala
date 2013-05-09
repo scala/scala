@@ -103,7 +103,7 @@ object BasicIO {
     *               sent. If `None`, output will be sent to stderr.
     * @return A `ProcessIO` with the characteristics above.
     */
-  def apply(withIn: Boolean, buffer: StringBuffer, log: Option[ProcessLogger]) =
+  def apply(withIn: Boolean, buffer: java.lang.StringBuffer, log: Option[ProcessLogger]) =
     new ProcessIO(input(withIn), processFully(buffer), getErr(log))
 
   /** Creates a `ProcessIO` from a `ProcessLogger` . It can attach the
@@ -147,7 +147,7 @@ object BasicIO {
     *          [[scala.sys.process.ProcessIO]] which will append all data read
     *          from the stream to the buffer.
     */
-  def processFully(buffer: Appendable): InputStream => Unit = processFully(appendLine(buffer))
+  def processFully(buffer: java.lang.Appendable): InputStream => Unit = processFully(appendLine(buffer))
 
   /** Returns a function `InputStream => Unit` that will call the passed
     * function with all data read. This function can be used to create a
@@ -215,7 +215,7 @@ object BasicIO {
     try transferFullyImpl(in, out)
     catch onInterrupt(())
 
-  private[this] def appendLine(buffer: Appendable): String => Unit = line => {
+  private[this] def appendLine(buffer: java.lang.Appendable): String => Unit = line => {
     buffer append line
     buffer append Newline
   }

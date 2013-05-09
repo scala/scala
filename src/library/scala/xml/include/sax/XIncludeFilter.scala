@@ -340,7 +340,7 @@ class XIncludeFilter extends XMLFilterImpl {
         catch {
           case e: SAXException  =>
             try XMLReaderFactory.createXMLReader(XercesClassName)
-            catch { case _: SAXException => return System.err.println("Could not find an XML parser") }
+            catch { case _: SAXException => return java.lang.System.err.println("Could not find an XML parser") }
         }
 
       parser setContentHandler this

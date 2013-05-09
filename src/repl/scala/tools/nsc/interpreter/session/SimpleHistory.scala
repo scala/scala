@@ -7,6 +7,8 @@ package scala.tools.nsc
 package interpreter
 package session
 
+import java.lang.CharSequence
+
 import scala.collection.mutable.{ Buffer, ListBuffer }
 import scala.collection.JavaConverters._
 

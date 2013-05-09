@@ -127,7 +127,7 @@ object ClassPath {
       if (used) for (url <- manifests) yield newClassPath(AbstractFile getResources url) else Nil
   }
 
-  def manifests = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
+  def manifests = java.lang.Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
 
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {

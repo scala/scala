@@ -354,7 +354,7 @@ abstract class ClassfileParser {
     private def getSubArray(bytes: Array[Byte]): Array[Byte] = {
       val decodedLength = ByteCodecs.decode(bytes)
       val arr           = new Array[Byte](decodedLength)
-      System.arraycopy(bytes, 0, arr, 0, decodedLength)
+      scala.compat.Platform.arraycopy(bytes, 0, arr, 0, decodedLength)
       arr
     }
 
@@ -366,7 +366,7 @@ abstract class ClassfileParser {
           val start = firstExpecting(index, CONSTANT_UTF8)
           val len   = in getChar start
           val bytes = new Array[Byte](len)
-          System.arraycopy(in.buf, start + 2, bytes, 0, len)
+          scala.compat.Platform.arraycopy(in.buf, start + 2, bytes, 0, len)
           recordAtIndex(getSubArray(bytes), index)
       }
     )
@@ -1083,7 +1083,7 @@ abstract class ClassfileParser {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
         val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {
-          throw new AssertionError(entry.externalName)
+          throw new java.lang.AssertionError(entry.externalName)
         }
         enterClassAndModule(entry, file)
       }
@@ -1189,7 +1189,7 @@ abstract class ClassfileParser {
   }
 
   class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
-    override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
+    override def complete(sym: Symbol) { throw new java.lang.AssertionError("cyclic type dereferencing") }
   }
   class LazyAliasType(alias: Symbol) extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) {

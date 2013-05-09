@@ -29,7 +29,7 @@ object TcpService {
   private val random = new Random
   private val ports = new mutable.HashMap[Int, TcpService]
 
-  def apply(port: Int, cl: ClassLoader): TcpService =
+  def apply(port: Int, cl: java.lang.ClassLoader): TcpService =
     ports.get(port) match {
       case Some(service) =>
         service
@@ -69,7 +69,7 @@ object TcpService {
  * @author Philipp Haller
  */
 @deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
-class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
+class TcpService(port: Int, cl: java.lang.ClassLoader) extends Thread with Service {
   val serializer: JavaSerializer = new JavaSerializer(this, cl)
 
   private val internalNode = new Node(InetAddress.getLocalHost().getHostAddress(), port)

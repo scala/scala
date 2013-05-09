@@ -286,7 +286,7 @@ trait CompilerControl { self: Global =>
     }
   }
 
-  def onCompilerThread = Thread.currentThread == compileRunner
+  def onCompilerThread = java.lang.Thread.currentThread == compileRunner
 
   /** Info given for every member found by completion
    */

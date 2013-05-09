@@ -20,7 +20,7 @@ private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with sc
 
 /* Precondition: `executor` is prepared, i.e., `executor` has been returned from invocation of `prepare` on some other `ExecutionContext`.
  */
-private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete: Try[T] => Any) extends Runnable with OnCompleteRunnable {
+private class CallbackRunnable[T](val executor: ExecutionContext, val onComplete: Try[T] => Any) extends java.lang.Runnable with OnCompleteRunnable {
   // must be filled in before running it
   var value: Try[T] = null
 

@@ -178,7 +178,7 @@ class ConsoleRunner extends DirectRunner {
         |Java runtime is:            $vmName
         |Java options are:           $vmOpts
         |Source directory is:        $srcDir
-        |Available processors:       ${Runtime.getRuntime().availableProcessors()}
+        |Available processors:       ${java.lang.Runtime.getRuntime().availableProcessors()}
         |Java Classpath:             ${sys.props("java.class.path")}
       """.stripMargin
     }
@@ -214,6 +214,6 @@ class ConsoleRunner extends DirectRunner {
     }
     this.elapsedMillis = millis
     issueSummaryReport()
-    System exit ( if (isSuccess) 0 else 1 )
+    java.lang.System exit ( if (isSuccess) 0 else 1 )
   }
 }

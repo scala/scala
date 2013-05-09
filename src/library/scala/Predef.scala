@@ -8,6 +8,8 @@
 
 package scala
 
+import java.lang.CharSequence
+
 import scala.collection.{ mutable, immutable, generic }
 import immutable.StringOps
 import mutable.ArrayOps
@@ -268,7 +270,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   }
 
   implicit final class StringAdd[A](val __thingToAdd: A) extends AnyVal {
-    def +(other: String) = String.valueOf(__thingToAdd) + other
+    def +(other: String) = java.lang.String.valueOf(__thingToAdd) + other
   }
 
   implicit final class RichException(val __throwableToEnrich: Throwable) extends AnyVal {

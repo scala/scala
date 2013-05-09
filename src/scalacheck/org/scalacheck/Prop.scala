@@ -78,7 +78,7 @@ trait Prop {
   def main(args: Array[String]): Unit = {
     val code = mainRunner(args)
     if (mainCallsExit)
-      System exit code
+      java.lang.System exit code
   }
 
   /** Returns a new property that holds if and only if both this
@@ -806,13 +806,13 @@ object Prop {
   def within(maximumMs: Long)(wrappedProp: => Prop): Prop = new Prop {
     @tailrec private def attempt(prms: Params, endTime: Long): Result = {
       val result = wrappedProp.apply(prms)
-      if (System.currentTimeMillis > endTime) {
+      if (java.lang.System.currentTimeMillis > endTime) {
         (if (result.failure) result else Result(False)).label("Timeout")
       } else {
         if (result.success) result
         else attempt(prms, endTime)
       }
     }
-    def apply(prms: Params) = attempt(prms, System.currentTimeMillis + maximumMs)
+    def apply(prms: Params) = attempt(prms, java.lang.System.currentTimeMillis + maximumMs)
   }
 }

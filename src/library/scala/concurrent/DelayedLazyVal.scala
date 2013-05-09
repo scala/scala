@@ -39,5 +39,5 @@ class DelayedLazyVal[T](f: () => T, body: => Unit)(implicit exec: ExecutionConte
    */
   def apply(): T = if (isDone) complete else f()
 
-  exec.execute(new Runnable { def run = { body; _isDone = true } })
+  exec.execute(new java.lang.Runnable { def run = { body; _isDone = true } })
 }

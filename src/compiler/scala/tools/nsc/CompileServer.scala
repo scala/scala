@@ -31,7 +31,7 @@ class StandardCompileServer extends SocketServer {
 
   val MaxCharge = 0.8
 
-  private val runtime = Runtime.getRuntime()
+  private val runtime = java.lang.Runtime.getRuntime()
   import runtime.{ totalMemory, freeMemory, maxMemory }
 
   /** Create a new compiler instance */

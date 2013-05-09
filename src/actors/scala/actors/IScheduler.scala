@@ -30,9 +30,9 @@ trait IScheduler {
    *
    *  @param  task  the task to be executed
    */
-  def execute(task: Runnable): Unit
+  def execute(task: java.lang.Runnable): Unit
 
-  def executeFromActor(task: Runnable): Unit =
+  def executeFromActor(task: java.lang.Runnable): Unit =
     execute(task)
 
   /** Shuts down the scheduler. */

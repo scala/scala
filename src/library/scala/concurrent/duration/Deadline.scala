@@ -56,7 +56,7 @@ case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
    * '''''Note that on some systems this operation is costly because it entails a system call.'''''
    * Check `System.nanoTime` for your platform.
    */
-  def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
+  def isOverdue(): Boolean = (time.toNanos - java.lang.System.nanoTime()) < 0
   /**
    * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.
    */
@@ -69,7 +69,7 @@ object Deadline {
    * advancing it to obtain a future deadline, or for sampling the current time exactly once and
    * then comparing it to multiple deadlines (using subtraction).
    */
-  def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
+  def now: Deadline = Deadline(Duration(java.lang.System.nanoTime, NANOSECONDS))
 
   /**
    * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.

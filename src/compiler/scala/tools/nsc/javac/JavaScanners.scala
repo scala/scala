@@ -563,7 +563,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                 return
 
               case _ =>
-                if (Character.isUnicodeIdentifierStart(in.ch)) {
+                if (java.lang.Character.isUnicodeIdentifierStart(in.ch)) {
                   putChar(in.ch)
                   in.next()
                   getIdentRest()
@@ -626,7 +626,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
             token = JavaScannerConfiguration.name2token(name)
             return
           case _ =>
-            if (Character.isUnicodeIdentifierPart(in.ch)) {
+            if (java.lang.Character.isUnicodeIdentifierPart(in.ch)) {
               putChar(in.ch)
               in.next()
             } else {

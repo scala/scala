@@ -55,7 +55,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       private[TreeMakers] def incorporateOuterSubstitution(outerSubst: Substitution): Unit = {
         if (currSub ne null) {
           debug.patmat("BUG: incorporateOuterSubstitution called more than once for "+ ((this, currSub, outerSubst)))
-          Thread.dumpStack()
+          java.lang.Thread.dumpStack()
         }
         else currSub = outerSubst >> substitution
       }

@@ -255,7 +255,7 @@ class Table extends Component with Scrollable.Wrapper {
         if (v != null)
           Table.this.peer.getDefaultRenderer(v.getClass).getTableCellRendererComponent(Table.this.peer,
                  v, isSelected, focused, row, column).asInstanceOf[JComponent]
-        else Table.this.peer.getDefaultRenderer(classOf[Object]).getTableCellRendererComponent(Table.this.peer,
+        else Table.this.peer.getDefaultRenderer(classOf[java.lang.Object]).getTableCellRendererComponent(Table.this.peer,
                  v, isSelected, focused, row, column).asInstanceOf[JComponent]
       }
     }
@@ -266,7 +266,7 @@ class Table extends Component with Scrollable.Wrapper {
     if (v != null)
       Table.this.peer.getDefaultEditor(v.getClass)
     else
-      Table.this.peer.getDefaultEditor(classOf[Object])
+      Table.this.peer.getDefaultEditor(classOf[java.lang.Object])
   }
 
   /**

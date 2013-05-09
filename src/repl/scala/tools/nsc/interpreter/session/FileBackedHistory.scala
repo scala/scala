@@ -27,7 +27,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     try op
     finally isPersistent = saved
   }
-  def addLineToFile(item: CharSequence): Unit = {
+  def addLineToFile(item: java.lang.CharSequence): Unit = {
     if (isPersistent)
       append(item + "\n")
   }

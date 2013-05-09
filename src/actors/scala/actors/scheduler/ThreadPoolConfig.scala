@@ -17,7 +17,7 @@ import scala.util.Properties.{ javaVersion, javaVmVendor, isJavaAtLeast, propIsS
  * @author Philipp Haller
  */
 private[actors] object ThreadPoolConfig {
-  private val rt = Runtime.getRuntime()
+  private val rt = java.lang.Runtime.getRuntime()
   private val minNumThreads = 4
 
   private def getIntegerProp(propName: String): Option[Int] =

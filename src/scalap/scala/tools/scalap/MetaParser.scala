@@ -19,7 +19,7 @@ import java.util._
 class MetaParser(meta: String) {
   val scanner = new StringTokenizer(meta, "()[], \t<;", true)
   var token: String = _
-  val res = new StringBuffer
+  val res = new java.lang.StringBuffer
 
   private def nextToken: String = {
     do {

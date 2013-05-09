@@ -10,6 +10,8 @@
 package scala.actors
 package scheduler
 
+import java.lang.Runnable
+
 import scala.collection.mutable
 
 /**
