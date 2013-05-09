@@ -165,7 +165,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
             trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymkinds.value))
-            currentTyper.silent(_.typed(expr, pt)) match {
+            currentTyper.silent(_.typed(expr, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
                 result
