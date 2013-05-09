@@ -25,7 +25,7 @@ trait ExecutionContext {
   
   /** Reports that an asynchronous computation failed.
    */
-  def reportFailure(t: Throwable): Unit
+  def reportFailure(@deprecatedName('t) cause: Throwable): Unit
   
   /** Prepares for the execution of a task. Returns the prepared
    *  execution context. A valid implementation of `prepare` is one
@@ -83,7 +83,7 @@ object ExecutionContext {
   
   /** The default reporter simply prints the stack trace of the `Throwable` to System.err.
    */
-  def defaultReporter: Throwable => Unit = (t: Throwable) => t.printStackTrace()
+  def defaultReporter: Throwable => Unit = _.printStackTrace()
 }
 
 
