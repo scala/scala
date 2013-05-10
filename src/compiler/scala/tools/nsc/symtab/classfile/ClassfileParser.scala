@@ -52,18 +52,14 @@ abstract class ClassfileParser {
 
   private def handleMissing(e: MissingRequirementError) = {
     if (settings.debug.value) e.printStackTrace
-    throw new IOException("Missing dependency '" + e.req + "', required by " + in.file)
+    throw new IOException(s"Missing dependency '${e.req}', required by ${in.file}")
   }
   private def handleError(e: Exception) = {
     if (settings.debug.value) e.printStackTrace()
-    throw new IOException("class file '%s' is broken\n(%s/%s)".format(
-      in.file,
-      e.getClass,
-      if (e.getMessage eq null) "" else e.getMessage)
-    )
+    throw new IOException(s"class file '${in.file}' is broken\n(${e.getClass}/${e.getMessage})")
   }
   private def mismatchError(c: Symbol) = {
-    throw new IOException("class file '%s' has location not matching its contents: contains ".format(in.file) + c)
+    throw new IOException(s"class file '${in.file}' has location not matching its contents: contains $c")
   }
 
   private def parseErrorHandler[T]: PartialFunction[Throwable, T] = {
@@ -72,8 +68,8 @@ abstract class ClassfileParser {
   }
   @inline private def pushBusy[T](sym: Symbol)(body: => T): T = {
     busy match {
-      case Some(`sym`)  => throw new IOException("unsatisfiable cyclic dependency in '%s'".format(sym))
-      case Some(sym1)   => throw new IOException("illegal class file dependency between '%s' and '%s'".format(sym, sym1))
+      case Some(`sym`)  => throw new IOException(s"unsatisfiable cyclic dependency in '$sym'")
+      case Some(sym1)   => throw new IOException(s"illegal class file dependency between '$sym' and '$sym1'")
       case _            => ()
     }
 
@@ -232,8 +228,6 @@ abstract class ClassfileParser {
 
         forceMangledName(tpe0.typeSymbol.name, false)
         val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
-//        println("new tpe: " + tpe + " at phase: " + phase)
-
         if (name == nme.MODULE_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
@@ -244,14 +238,12 @@ abstract class ClassfileParser {
         } else {
           val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
-//          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
           f = owner.info.findMember(origName, 0, 0, false).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
             f = owner.info.findMember(newTermName(origName + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
             if (ownerTpe.typeSymbol.isImplClass) {
-//              println("impl class, member: " + owner.tpe.member(origName) + ": " + owner.tpe.member(origName).tpe)
               f = ownerTpe.findMember(origName, 0, 0, false).suchThat(_.tpe =:= tpe)
             } else {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
@@ -262,11 +254,13 @@ abstract class ClassfileParser {
               f setInfo tpe
               log("created fake member " + f.fullName)
             }
-//            println("\townerTpe.decls: " + ownerTpe.decls)
-//            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.typeSymbol + "\n\tand found: " + ownerTpe.members)
           }
         }
-        assert(f != NoSymbol, "could not find\n  " + name + ": " + tpe + "\ninside:\n  " + ownerTpe.members.mkString(", "))
+        assert(f != NoSymbol,
+          s"could not find $name: $tpe in $ownerTpe" + (
+            if (settings.debug.value) ownerTpe.members.mkString(", members are:\n  ", "\n  ", "") else ""
+          )
+        )
         values(index) = f
       }
       f
@@ -586,11 +580,9 @@ abstract class ClassfileParser {
   def addEnclosingTParams(clazz: Symbol) {
     var sym = clazz.owner
     while (sym.isClass && !sym.isModuleClass) {
-//      println("adding tparams of " + sym)
-      for (t <- sym.tpe.typeArgs) {
-//        println("\tadding " + (t.typeSymbol.name + "->" + t.typeSymbol))
+      for (t <- sym.tpe.typeArgs)
         classTParams = classTParams + (t.typeSymbol.name -> t.typeSymbol)
-      }
+
       sym = sym.owner
     }
   }
@@ -740,10 +732,7 @@ abstract class ClassfileParser {
                 // raw type - existentially quantify all type parameters
                 val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
                 val t = typeRef(pre, classSym, eparams.map(_.tpeHK))
-                val res = newExistentialType(eparams, t)
-                if (settings.debug.value && settings.verbose.value)
-                  println("raw type " + classSym + " -> " + res)
-                res
+                newExistentialType(eparams, t)
               }
             case tp =>
               assert(sig.charAt(index) != '<', s"sig=$sig, index=$index, tp=$tp")
@@ -865,8 +854,6 @@ abstract class ClassfileParser {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
-            if (settings.debug.value && settings.verbose.value)
-              println("" + sym + "; signature = " + sig + " type = " + newType)
           }
           else in.skip(attrLen)
         case tpnme.SyntheticATTR =>
@@ -883,10 +870,10 @@ abstract class ClassfileParser {
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
           if (c1 ne null) sym.setInfo(ConstantType(c1))
-          else println("failure to convert " + c + " to " + symtype); //debug
+          else debugwarn(s"failure to convert $c to $symtype")
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
-            debuglog("warning: symbol " + sym.fullName + " has pickled signature in attribute")
+            debugwarn(s"symbol ${sym.fullName} has pickled signature in attribute")
             unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.name)
           }
           in.skip(attrLen)
@@ -1018,16 +1005,18 @@ abstract class ClassfileParser {
       }
       if (hasError) None
       else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
-    } catch {
-      case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
-      case ex: Throwable =>
+    }
+    catch {
+      case f: FatalError       => throw f  // don't eat fatal errors, they mean a class was not found
+      case ex: java.lang.Error => throw ex
+      case ex: Throwable       =>
         // We want to be robust when annotations are unavailable, so the very least
         // we can do is warn the user about the exception
         // There was a reference to ticket 1135, but that is outdated: a reference to a class not on
         // the classpath would *not* end up here. A class not found is signaled
         // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
         // and that should never be swallowed silently.
-        warning("Caught: " + ex + " while parsing annotations in " + in.file)
+        warning(s"Caught: $ex while parsing annotations in ${in.file}")
         if (settings.debug.value) ex.printStackTrace()
 
         None // ignore malformed annotations
