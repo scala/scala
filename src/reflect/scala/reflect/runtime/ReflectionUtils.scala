@@ -42,7 +42,8 @@ private[scala] object ReflectionUtils {
       case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
         cl.asInstanceOf[{val root: scala.reflect.io.AbstractFile}].root.canonicalPath
       case null =>
-        scala.util.Properties.propOrEmpty("sun.boot.class.path")
+        val loadBootCp = (flavor: String) => scala.util.Properties.propOrNone(flavor + ".boot.class.path")
+        loadBootCp("sun") orElse loadBootCp("java") getOrElse "<unknown>"
       case _ =>
         "<unknown>"
     }

@@ -341,11 +341,13 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     }
 
     import SigGenerator._
-    macroLogVerbose(s"generating macroImplSigs for: $macroDef")
-    macroLogVerbose(s"tparams are: $tparams")
-    macroLogVerbose(s"vparamss are: $vparamss")
-    macroLogVerbose(s"retTpe is: $retTpe")
-    macroLogVerbose(s"macroImplSig is: $paramss, $implRetTpe")
+    macroLogVerbose(sm"""
+      |generating macroImplSigs for: $macroDef
+      |tparams are: $tparams
+      |vparamss are: $vparamss
+      |retTpe is: $retTpe
+      |macroImplSig is: $paramss, $implRetTpe
+    """.trim)
     (paramss, implRetTpe)
   }
 
