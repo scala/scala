@@ -293,7 +293,6 @@ abstract class Pickler extends SubComponent {
           putTree(definition)
 */
         case Template(parents, self, body) =>
-          writeNat(parents.length)
           putTrees(parents)
           putTree(self)
           putTrees(body)
