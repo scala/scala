@@ -7,7 +7,7 @@ package scala.tools.partest
 
 import scala.tools.nsc._
 import io.Directory
-import util.{BatchSourceFile, CommandLineParser}
+import util.{ SourceFile, BatchSourceFile, CommandLineParser }
 import reporters.{Reporter, ConsoleReporter}
 
 /** A class for testing code which is embedded as a string.
@@ -49,18 +49,32 @@ abstract class DirectTest extends App {
 
   def reporter(settings: Settings): Reporter = new ConsoleReporter(settings)
 
-  def newSources(sourceCodes: String*) = sourceCodes.toList.zipWithIndex map {
-    case (src, idx) => new BatchSourceFile("newSource" + (idx + 1), src)
-  }
+  private def newSourcesWithExtension(ext: String)(codes: String*): List[BatchSourceFile] =
+    codes.toList.zipWithIndex map {
+      case (src, idx) => new BatchSourceFile(s"newSource${idx + 1}.$ext", src)
+    }
+
+  def newJavaSources(codes: String*) = newSourcesWithExtension("java")(codes: _*)
+  def newSources(codes: String*)     = newSourcesWithExtension("scala")(codes: _*)
+
   def compileString(global: Global)(sourceCode: String): Boolean = {
     withRun(global)(_ compileSources newSources(sourceCode))
     !global.reporter.hasErrors
   }
-  def compilationUnits(global: Global)(sourceCodes: String*): List[global.CompilationUnit] = {
-    val units = withRun(global) { run =>
-      run compileSources newSources(sourceCodes: _*)
+
+  def javaCompilationUnits(global: Global)(sourceCodes: String*) = {
+    sourceFilesToCompiledUnits(global)(newJavaSources(sourceCodes: _*))
+  }
+
+  def sourceFilesToCompiledUnits(global: Global)(files: List[SourceFile]) = {
+    withRun(global) { run =>
+      run compileSources files
       run.units.toList
     }
+  }
+
+  def compilationUnits(global: Global)(sourceCodes: String*): List[global.CompilationUnit] = {
+    val units = sourceFilesToCompiledUnits(global)(newSources(sourceCodes: _*))
     if (global.reporter.hasErrors) {
       global.reporter.flush()
       sys.error("Compilation failure.")

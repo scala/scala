@@ -1,4 +1,4 @@
-[[syntax trees at end of                    patmat]] // newSource1
+[[syntax trees at end of                    patmat]] // newSource1.scala
 [7]package [7]<empty> {
   [7]object Case3 extends [13][106]scala.AnyRef {
     [13]def <init>(): [13]Case3.type = [13]{

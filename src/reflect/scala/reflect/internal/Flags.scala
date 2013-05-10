@@ -59,9 +59,9 @@ import scala.collection.{ mutable, immutable }
 // 42:         VBRIDGE
 // 43:         VARARGS
 // 44:    TRIEDCOOKING
-// 45:
-// 46:
-// 47:
+// 45:  SYNCHRONIZED/M
+// 46:        ARTIFACT
+// 47: DEFAULTMETHOD/M
 // 48:
 // 49:
 // 50:
@@ -116,6 +116,8 @@ class ModifierFlags {
   final val LAZY          = 1L << 31      // symbol is a lazy val. can't have MUTABLE unless transformed by typer
   final val PRESUPER      = 1L << 37      // value is evaluated before super call
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
+  // ARTIFACT at #46 in 2.11+
+  final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method
 
   // Overridden.
   def flagToString(flag: Long): String = ""
@@ -239,7 +241,7 @@ class Flags extends ModifierFlags {
    */
   final val ExplicitFlags =
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED |
-    OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY
+    OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY | DEFAULTMETHOD
 
   /** The two bridge flags */
   final val BridgeFlags = BRIDGE | VBRIDGE
@@ -421,7 +423,7 @@ class Flags extends ModifierFlags {
     case        TRIEDCOOKING => "<triedcooking>"                      // (1L << 44)
     case        SYNCHRONIZED => "<synchronized>"                      // (1L << 45)
     case     0x400000000000L => ""                                    // (1L << 46)
-    case     0x800000000000L => ""                                    // (1L << 47)
+    case       DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)
     case    0x1000000000000L => ""                                    // (1L << 48)
     case    0x2000000000000L => ""                                    // (1L << 49)
     case    0x4000000000000L => ""                                    // (1L << 50)
