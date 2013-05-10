@@ -141,6 +141,19 @@ trait CallGraphNode[+T<:TemplateNode] extends CallGraphNodeTrait[T] {
   }
   // answer the n_ary_op ancestor in case there is one and the path leading thereto does not branch
   def n_ary_op_ancestor: N_n_ary_op
+  def n_ary_op_ancestor_up(n: Int): N_n_ary_op = {
+    var ancestor = n_ary_op_ancestor
+    if (n<=0 || ancestor==null) return ancestor
+    return ancestor.n_ary_op_ancestor_up(n-1)
+  }
+  def break_up0 = break_up(0)
+  def break_up1 = break_up(1)
+  def break_up2 = break_up(2)
+  def break_up3 = break_up(3)
+  def break_up(n: Int): Unit = {
+    var ancestor = n_ary_op_ancestor_up(n)
+    if (ancestor!=null) ancestor.mustBreak
+  }
   def getLogicalKind_n_ary_op_ancestor: LogicalKind.LogicalKindType = {
     val a = n_ary_op_ancestor
     if (a==null) return null
@@ -219,6 +232,7 @@ abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode[T_n_ary] 
   var continuation: Continuation = null
   var lastActivatedChild: CallGraphNodeTrait[_<:TemplateNode] = null
   var aaStartedSinceLastOptionalBreak = false
+  def mustBreak = hadBreak = true
 }
 
 case class N_code_normal     (template: T_0_ary_code[N_code_normal  ]) extends N_atomic_action   [N_code_normal  ](template)

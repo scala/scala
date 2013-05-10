@@ -34,7 +34,7 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
       try {
           Thread.sleep(time_ms)
       }
-      catch { case e: InterruptedException => println("sleep interrupted")}
+      catch { case e: InterruptedException => /*println("sleep interrupted")*/}
 
     //////////////////////////////////////////////
     // confirm exit dialog
@@ -113,12 +113,11 @@ def script..
 //                     !@#%^&$ mouseSingleClick also reacts on double clicks!!! 
 //                     So wait 220 ms; if by then no mouseDoubleClick as arrived, do the singleClick action:
    mouseClickInput  = var p:java.awt.Point=null
-                    ; var doubleClickTimeout:Boolean=false 
-                      mouseSingleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) 
+                    ; mouseSingleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) 
                       {! resetLastMousePos !}
-                      ( {*sleep_ms(220); println("timeout"); doubleClickTimeout=true*}
+                      ( {*sleep_ms(220)*} break_up2 
                       / mouseDoubleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)))
-                      while (!doubleClickTimeout)
+                      ...
                     ; {! handleMouseSingleClick(p) !}
                     ; ...
                     

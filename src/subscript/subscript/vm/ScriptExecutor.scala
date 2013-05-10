@@ -875,20 +875,16 @@ class CommonScriptExecutor extends ScriptExecutor {
        | "||;" |  "|;|" => // messy; maybe the outer if on the activationMode should be moved inside the match{}
                          val s = message.success
                          val b = message.break
-                         if (s!=null) {
-                           activateNextOrEnded = true
-                           childNode = s.child
-                         }
-                         else if (b!=null) {
-                           activateNextOrEnded = true
+                         if      (s!=null) {activateNextOrEnded = true; childNode = s.child}
+                         else if (b!=null) {activateNextOrEnded = true; childNode = b.child
                            activationEndedOptionally = b.activationMode==ActivationMode.Optional 
-                           childNode = b.child
                          }
       
-                         
       case "+" | "|+" | "|+|" 
                       => val a = message.aaActivated; val c = message.caActivated; val b = message.break
-                         activateNextOrEnded = b==null || a!=null || c!=null
+                         activateNextOrEnded = if (b==null) true
+                                               else if (b.activationMode==ActivationMode.Optional) a!=null || c!=null
+                                               else false 
                          if (activateNextOrEnded) {
                            childNode = n.lastActivatedChild         
                            //childNode = message.childNode         
@@ -938,7 +934,9 @@ class CommonScriptExecutor extends ScriptExecutor {
 	  nextActivationPass = childNode.pass 
 	  
 	  message.node.activationMode = ActivationMode.Active
-	  if (nextActivationTemplateIndex==message.node.template.children.size) {
+	  
+	  if (n.hadBreak) activationEnded = true
+	  else if (nextActivationTemplateIndex==message.node.template.children.size) {
 	    if (message.node.isIteration) {
 	      nextActivationTemplateIndex = 0
 	      nextActivationPass += 1

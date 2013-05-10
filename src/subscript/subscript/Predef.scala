@@ -36,11 +36,14 @@ object Predef {
   def pass_up1(implicit node: CallGraphTreeNode[_]): Int = node.n_ary_op_ancestor.pass
   def pass_up2(implicit node: CallGraphTreeNode[_]): Int = node.n_ary_op_ancestor.n_ary_op_ancestor.pass
   
-//  scripts
-//    times(n:Int) = while(pass<n)
-//    delta        = (-)
-//    epsilon      = (+)
-//    nu           = (+-)
+  def script..
+    times(n:Int) = while(here.pass<n) // TBD: here should become implicit
+  //delta        = (-)
+  //epsilon      = (+)
+  //nu           = (+-)
+    break_up(n:Int) = {!here.break_up(n)!}
+    break_up1 = break_up,1
+    break_up2 = break_up,2
 
-  def _times(_n: FormalInputParameter[Int]) = _script(this, 'times, _n~'n) {_while{implicit here=>pass<_n.value}}
+//  def _times(_n: FormalInputParameter[Int]) = _script(this, 'times, _n~'n) {_while{implicit here=>pass<_n.value}}
 }
