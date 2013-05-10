@@ -149,7 +149,7 @@ trait Implicits {
   class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter) {
     override def toString = "SearchResult(%s, %s)".format(tree,
       if (subst.isEmpty) "" else subst)
-    
+
     def isFailure          = false
     def isAmbiguousFailure = false
     final def isSuccess    = !isFailure
@@ -158,7 +158,7 @@ trait Implicits {
   lazy val SearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
     override def isFailure = true
   }
-  
+
   lazy val AmbiguousSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
     override def isFailure          = true
     override def isAmbiguousFailure = true
@@ -892,11 +892,20 @@ trait Implicits {
            */
           if (divergence)
             throw DivergentImplicit
-
-          if (invalidImplicits.nonEmpty)
+          else invalidImplicits take 1 foreach { sym =>
+            def isSensibleAddendum = pt match {
+              case Function1(_, out) => out <:< sym.tpe.finalResultType
+              case tp                => tp <:< sym.tpe.finalResultType
+              case _                 => false
+            }
+            // Don't pitch in with this theory unless it looks plausible that the
+            // implicit would have helped
             setAddendum(pos, () =>
-              "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
-              " because it comes after the application point and it lacks an explicit result type")
+              if (isSensibleAddendum)
+                s"\n Note: implicit $sym is not applicable here because it comes after the application point and it lacks an explicit result type"
+              else ""
+            )
+          }
         }
 
         best
