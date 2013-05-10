@@ -17,4 +17,7 @@ public class ObjectRef<T> implements java.io.Serializable {
     public T elem;
     public ObjectRef(T elem) { this.elem = elem; }
     public String toString() { return String.valueOf(elem); }
+
+    public static <U> ObjectRef create(U e) { return new ObjectRef(e); }
+    public static ObjectRef zero() { return new ObjectRef(null); }
 }
