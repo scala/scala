@@ -227,10 +227,11 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   private def execTest(outDir: File, logFile: File): Boolean = {
     val cmd = assembleTestCommand(outDir, logFile)
 
-    pushTranscript(cmd.mkString(" \\\n  ") + " > " + logFile.getName)
-    nextTestActionExpectTrue("non-zero exit code", runCommand(cmd, logFile)) || {
-      _transcript append logFile.fileContents
-      false
+    pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
+    nextTestAction(runCommand(cmd, logFile)) {
+      case false =>
+        _transcript append EOL + logFile.fileContents
+        genFail("non-zero exit code")
     }
   }
 
