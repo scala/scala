@@ -13,7 +13,7 @@ object Test extends App {
     println(s"Best price: $f")
     println(f"Best price: $f%.2f")
     println(s"$f% discount included")
-    println(f"$f%3.2f% discount included")
+    println(f"$f%3.2f%% discount included")
   }
 
   test1(1)
