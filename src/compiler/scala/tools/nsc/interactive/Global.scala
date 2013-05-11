@@ -1174,8 +1174,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         debugLog("type error caught: "+ex)
         alt
       case ex: DivergentImplicit =>
-        debugLog("divergent implicit caught: "+ex)
-        alt
+        if (settings.Xdivergence211.value) {
+          debugLog("this shouldn't happen. DivergentImplicit exception has been thrown with -Xdivergence211 turned on: "+ex)
+          alt
+        } else {
+          debugLog("divergent implicit caught: "+ex)
+          alt
+        }
     }
   }
 
