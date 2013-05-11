@@ -16,6 +16,17 @@ object Test {
       catch { case _: IllegalArgumentException => true }
     )
     assert(caught)
+    // #7432
+    val noElemAtMin = (
+      try   { (10 until 10).min ; false }
+      catch { case _: NoSuchElementException => true }
+    )
+    assert(noElemAtMin)
+    val noElemAtMax = (
+      try   { (10 until 10).max ; false }
+      catch { case _: NoSuchElementException => true }
+    )
+    assert(noElemAtMax)
   }
   
   case class GR[T](val x: T)(implicit val num: Integral[T]) {
