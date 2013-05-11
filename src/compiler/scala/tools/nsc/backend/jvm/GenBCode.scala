@@ -54,6 +54,38 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
     private var needsOutFolder  = false // whether getOutFolder(claszSymbol) should be invoked for each claszSymbol
 
+    /* ---------------- q3 ---------------- */
+
+    /*
+     *  An item of queue-3 (the last queue before serializing to disk) contains three of these
+     *  (one for each of mirror, plain, and bean classes).
+     *
+     *  @param jclassName  internal name of the class
+     *  @param jclassBytes bytecode emitted for the class SubItem3 represents
+     */
+    case class SubItem3(
+      jclassName:  String,
+      jclassBytes: Array[Byte]
+    )
+
+    case class Item3(arrivalPos: Int,
+                     mirror:     SubItem3,
+                     plain:      SubItem3,
+                     bean:       SubItem3,
+                     outFolder:  _root_.scala.tools.nsc.io.AbstractFile) {
+
+      def isPoison  = { arrivalPos == Int.MaxValue }
+    }
+    private val i3comparator = new _root_.java.util.Comparator[Item3] {
+      override def compare(a: Item3, b: Item3) = {
+        if (a.arrivalPos < b.arrivalPos) -1
+        else if (a.arrivalPos == b.arrivalPos) 0
+        else 1
+      }
+    }
+    private val poison3 = Item3(Int.MaxValue, null, null, null, null)
+    private val q3 = new _root_.java.util.PriorityQueue[Item3](1000, i3comparator)
+
     val caseInsensitively = mutable.Map.empty[String, Symbol]
 
     /*
@@ -104,7 +136,19 @@ abstract class GenBCode extends BCodeSyncAndTry {
           )
         } else null
 
-      // ----------- serialize classfiles to disk
+      // ----------- hand over to next pipeline
+
+      addToQ3(arrivalPos,
+              mirrorC, plainC, beanC,
+              outF)
+
+    } // end of method visit()
+
+    private def addToQ3(arrivalPos:   Int,
+                        mirror:       asm.tree.ClassNode,
+                        plain:        asm.tree.ClassNode,
+                        bean:         asm.tree.ClassNode,
+                        outFolder:    _root_.scala.tools.nsc.io.AbstractFile) {
 
           def getByteArray(cn: asm.tree.ClassNode): Array[Byte] = {
             val cw = new CClassWriter(extraProc)
@@ -112,15 +156,13 @@ abstract class GenBCode extends BCodeSyncAndTry {
             cw.toByteArray
           }
 
-      if (mirrorC != null) {
-        sendToDisk(mirrorC.name, getByteArray(mirrorC), outF)
-      }
-      sendToDisk(plainC.name, getByteArray(plainC), outF)
-      if (beanC != null) {
-        sendToDisk(beanC.name, getByteArray(beanC), outF)
-      }
+      val mirrorC = if (mirror == null) null else SubItem3(mirror.name, getByteArray(mirror))
+      val plainC  = SubItem3(plain.name, getByteArray(plain))
+      val beanC   = if (bean == null)   null else SubItem3(bean.name, getByteArray(bean))
 
-    } // end of method visit()
+      q3 add Item3(arrivalPos, mirrorC, plainC, beanC, outFolder)
+
+    }
 
     var arrivalPos = 0
 
@@ -149,6 +191,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
       needsOutFolder = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
 
       super.run()
+      q3 add poison3
+      drainQ3()
 
       // closing output files.
       bytecodeWriter.close()
@@ -172,17 +216,45 @@ abstract class GenBCode extends BCodeSyncAndTry {
       clearBCodeTypes()
     }
 
-    def sendToDisk(jclassName: String, jclassBytes: Array[Byte], outFolder: _root_.scala.tools.nsc.io.AbstractFile) {
-      try {
-        val outFile =
-          if (outFolder == null) null
-          else getFileForClassfile(outFolder, jclassName, ".class")
-        bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, outFile)
+    /* Pipeline that writes classfile representations to disk. */
+    private def drainQ3() {
+
+          def sendToDisk(cfr: SubItem3, outFolder: _root_.scala.tools.nsc.io.AbstractFile) {
+            if (cfr != null){
+              val SubItem3(jclassName, jclassBytes) = cfr
+              try {
+                val outFile =
+                  if (outFolder == null) null
+                  else getFileForClassfile(outFolder, jclassName, ".class")
+                bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, outFile)
+              }
+              catch {
+                case e: FileConflictException =>
+                  error(s"error writing $jclassName: ${e.getMessage}")
+              }
+            }
+          }
+
+      var moreComing = true
+      // `expected` denotes the arrivalPos whose Item3 should be serialized next
+      var expected = 0
+
+      while (moreComing) {
+        val incoming = q3.poll
+        moreComing   = !incoming.isPoison
+        if (moreComing) {
+          val item = incoming
+          val outFolder = item.outFolder
+          sendToDisk(item.mirror, outFolder)
+          sendToDisk(item.plain,  outFolder)
+          sendToDisk(item.bean,   outFolder)
+          expected += 1
+        }
       }
-      catch {
-        case e: FileConflictException =>
-          error(s"error writing $jclassName: ${e.getMessage}")
-      }
+
+      // we're done
+      assert(q3.isEmpty, "Some classfiles weren't written to disk: "      + q3.toString)
+
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
