@@ -65,11 +65,11 @@ object Mode {
    */
   final val TYPEPATmode: Mode   = 0x10000
 
-  final private val StickyModes: Mode = EXPRmode | PATTERNmode | TYPEmode
-
-  final val MonoQualifierModes: Mode = EXPRmode | QUALmode
-  final val PolyQualifierModes: Mode = EXPRmode | QUALmode | POLYmode
-  final val OperatorModes: Mode      = EXPRmode |            POLYmode | TAPPmode | FUNmode
+  private val StickyModes: Mode       = EXPRmode | PATTERNmode | TYPEmode
+  private val StickyModesForFun: Mode = StickyModes | SCCmode
+  final val MonoQualifierModes: Mode  = EXPRmode | QUALmode
+  final val PolyQualifierModes: Mode  = EXPRmode | QUALmode | POLYmode
+  final val OperatorModes: Mode       = EXPRmode |            POLYmode | TAPPmode | FUNmode
 
   /** Translates a mask of mode flags into something readable.
    */
@@ -96,16 +96,14 @@ object Mode {
 import Mode._
 
 final class Mode private (val bits: Int) extends AnyVal {
-  def &(other: Mode): Mode = new Mode(bits & other.bits)
-  def |(other: Mode): Mode = new Mode(bits | other.bits)
+  def &(other: Mode): Mode  = new Mode(bits & other.bits)
+  def |(other: Mode): Mode  = new Mode(bits | other.bits)
   def &~(other: Mode): Mode = new Mode(bits & ~(other.bits))
 
   def onlyTypePat = this & TYPEPATmode
-
-  def stickyPlus(mode: Mode) = onlySticky | mode
-  def onlySticky             = this & Mode.StickyModes
-  def forFunMode             = this & (Mode.StickyModes | SCCmode) | FUNmode | POLYmode | BYVALmode
-  def forTypeMode            = if (typingPatternOrTypePat) TYPEmode | TYPEPATmode else TYPEmode
+  def onlySticky  = this & Mode.StickyModes
+  def forFunMode  = this & Mode.StickyModesForFun | FUNmode | POLYmode | BYVALmode
+  def forTypeMode = if (typingPatternOrTypePat) TYPEmode | TYPEPATmode else TYPEmode
 
   def inAll(required: Mode)    = (this & required) == required
   def inAny(required: Mode)    = (this & required) != NOmode
@@ -126,17 +124,17 @@ final class Mode private (val bits: Int) extends AnyVal {
   def inTappMode    = inAll(TAPPmode)
   def inTypeMode    = inAll(TYPEmode)
 
-  def typingPatternOrTypePat = inAny(PATTERNmode | TYPEPATmode)
-  def typingTypeByValue      = inAll(TYPEmode | BYVALmode)
   def typingExprByValue      = inAll(EXPRmode | BYVALmode)
   def typingExprFun          = inAll(EXPRmode | FUNmode)
-  def typingPatternFun       = inAll(PATTERNmode | FUNmode)
-  def typingExprNotValue     = in(all = EXPRmode, none = BYVALmode)
-  def typingExprNotLhs       = in(all = EXPRmode, none = LHSmode)
   def typingExprNotFun       = in(all = EXPRmode, none = FUNmode)
   def typingExprNotFunNotLhs = in(all = EXPRmode, none = FUNmode | LHSmode)
+  def typingExprNotLhs       = in(all = EXPRmode, none = LHSmode)
+  def typingExprNotValue     = in(all = EXPRmode, none = BYVALmode)
   def typingMonoExprByValue  = in(all = EXPRmode | BYVALmode, none = POLYmode)
+  def typingPatternFun       = inAll(PATTERNmode | FUNmode)
   def typingPatternNotFun    = in(all = PATTERNmode, none = FUNmode)
+  def typingPatternOrTypePat = inAny(PATTERNmode | TYPEPATmode)
+  def typingTypeByValue      = inAll(TYPEmode | BYVALmode)
 
   override def toString =
     if (this == NOmode) "NOmode"

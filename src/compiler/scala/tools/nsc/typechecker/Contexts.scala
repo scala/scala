@@ -365,6 +365,7 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinTypeConstructor[T](op: => T): T                = withMode(enabled = TypeConstructor)(op)
+    @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
 
     /* TODO - consolidate returnsSeen (which seems only to be used by checkDead)
      * and ReturnExpr.
@@ -374,14 +375,8 @@ trait Contexts { self: Analyzer =>
       withMode(enabled = ReturnExpr)(op)
     }
 
-    /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
-     *  To mimick the sticky mode behavior, when captain stickyfingers
-     *  comes around we need to propagate those modes but forget the other
-     *  context modes which were once mode bits; those being so far the
-     *  ones listed here.
-     */
-    @inline final def withOnlyStickyModes[T](op: => T): T =
-      withMode(disabled = PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructor | TypeApplication)(op)
+    // See comment on FormerNonStickyModes.
+    @inline final def withOnlyStickyModes[T](op: => T): T = withMode(disabled = FormerNonStickyModes)(op)
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
@@ -1388,6 +1383,16 @@ object ContextMode {
    *  TODO.
    */
   final val TypeApplication: ContextMode          = 1 << 17
+
+  /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
+   *  To mimick the sticky mode behavior, when captain stickyfingers
+   *  comes around we need to propagate those modes but forget the other
+   *  context modes which were once mode bits; those being so far the
+   *  ones listed here.
+   */
+  final val FormerNonStickyModes: ContextMode = (
+    PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructor | TypeApplication
+  )
 
   final val DefaultMode: ContextMode      = MacrosEnabled
 

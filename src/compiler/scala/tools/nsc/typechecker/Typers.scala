@@ -3039,7 +3039,7 @@ trait Typers extends Adaptations with Tags {
     }
 
     def typedArg(arg: Tree, mode: Mode, newmode: Mode, pt: Type): Tree = {
-      val typedMode = mode stickyPlus newmode
+      val typedMode = mode.onlySticky | newmode
       val t = withCondConstrTyper(mode.inSccMode)(_.typed(arg, typedMode, pt))
       checkDead.inMode(typedMode, t)
     }
@@ -3062,7 +3062,7 @@ trait Typers extends Adaptations with Tags {
           // No formals left or * indicates varargs.
           val isVarArgs = formals.isEmpty || formals.tail.isEmpty && isRepeatedParamType(formals.head)
           val isByName  = formals.nonEmpty && isByNameParamType(formals.head)
-          def typedMode = mode stickyPlus ( if (isByName) NOmode else BYVALmode )
+          def typedMode = if (isByName) mode.onlySticky else mode.onlySticky | BYVALmode
           def body = typedArg(args.head, mode, typedMode, adapted.head)
           def arg1 = if (isVarArgs) context.withinStarPatterns(body) else body
 
@@ -4984,13 +4984,11 @@ trait Typers extends Adaptations with Tags {
         newTyper(context.makeNewScope(ddef, sym)).constrTyperIf(isConstrDefaultGetter)
       }
 
-      def typedAlternative(alt: Alternative) = {
-        val saved = context.inPatAlternative
-        context.inPatAlternative = true
-        try treeCopy.Alternative(tree, alt.trees mapConserve (alt => typed(alt, mode, pt))) setType pt
-        finally context.inPatAlternative = saved
-      }
-
+      def typedAlternative(alt: Alternative) = (
+        context withinPatAlternative (
+          treeCopy.Alternative(tree, alt.trees mapConserve (alt => typed(alt, mode, pt))) setType pt
+        )
+      )
       def typedStar(tree: Star) = {
         if (!context.starPatterns && !isPastTyper)
           StarPatternWithVarargParametersError(tree)
