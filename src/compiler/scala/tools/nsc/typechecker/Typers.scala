@@ -4867,19 +4867,23 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedAppliedTypeTree(tree: AppliedTypeTree) = {
-        val tpt = tree.tpt
-        val args = tree.args
-        val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
+        val tpt        = tree.tpt
+        val args       = tree.args
+        val tpt1       = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
+        def isPoly     = tpt1.tpe.isInstanceOf[PolyType]
+        def isComplete = tpt1.symbol.rawInfo.isComplete
+
         if (tpt1.isErrorTyped) {
           tpt1
         } else if (!tpt1.hasSymbolField) {
           AppliedTypeNoParametersError(tree, tpt1.tpe)
         } else {
           val tparams = tpt1.symbol.typeParams
+
           if (sameLength(tparams, args)) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
             val args1 =
-              if (!tpt1.symbol.rawInfo.isComplete)
+              if (!isComplete)
                 args mapConserve (typedHigherKindedType(_, mode))
                 // if symbol hasn't been fully loaded, can't check kind-arity
               else map2Conserve(args, tparams) { (arg, tparam) =>
@@ -4888,19 +4892,39 @@ trait Typers extends Adaptations with Tags {
               }
             val argtypes = args1 map (_.tpe)
 
-            foreach2(args, tparams)((arg, tparam) => arg match {
-              // note: can't use args1 in selector, because Bind's got replaced
-              case Bind(_, _) =>
-                if (arg.symbol.isAbstractType)
-                  arg.symbol setInfo // XXX, feedback. don't trackSymInfo here!
-                    TypeBounds(
-                      lub(List(arg.symbol.info.bounds.lo, tparam.info.bounds.lo.subst(tparams, argtypes))),
-                      glb(List(arg.symbol.info.bounds.hi, tparam.info.bounds.hi.subst(tparams, argtypes))))
-              case _ =>
-            })
+            foreach2(args, tparams) { (arg, tparam) =>
+              // note: can't use args1 in selector, because Binds got replaced
+              val asym = arg.symbol
+              def abounds = asym.info.bounds
+              def tbounds = tparam.info.bounds
+              def enhanceBounds(): Unit = {
+                val TypeBounds(lo0, hi0) = abounds
+                val TypeBounds(lo1, hi1) = tbounds.subst(tparams, argtypes)
+                val lo = lub(List(lo0, lo1))
+                val hi = glb(List(hi0, hi1))
+                if (!(lo =:= lo0 && hi =:= hi0))
+                  asym setInfo logResult(s"Updating bounds of ${asym.fullLocationString} in $tree from '$abounds' to")(TypeBounds(lo, hi))
+              }
+              if (asym != null && asym.isAbstractType) {
+                // See pos/t1786 to follow what's happening here.
+                def canEnhanceIdent = (
+                     asym.hasCompleteInfo
+                  && tparam.exists          /* sometimes it is NoSymbol */
+                  && tparam.hasCompleteInfo /* SI-2940 */
+                  && !tparam.isFBounded     /* SI-2251 */
+                  && !tparam.isHigherOrderTypeParameter
+                  && !(abounds.hi <:< tbounds.hi)
+                )
+                arg match {
+                  case Bind(_, _)                     => enhanceBounds()
+                  case Ident(name) if canEnhanceIdent => enhanceBounds()
+                  case _                              =>
+                }
+              }
+            }
             val original = treeCopy.AppliedTypeTree(tree, tpt1, args1)
             val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal original
-            if(tpt1.tpe.isInstanceOf[PolyType]) // did the type application (performed by appliedType) involve an unchecked beta-reduction?
+            if (isPoly) // did the type application (performed by appliedType) involve an unchecked beta-reduction?
               TypeTreeWithDeferredRefCheck(){ () =>
                 // wrap the tree and include the bounds check -- refchecks will perform this check (that the beta reduction was indeed allowed) and unwrap
                 // we can't simply use original in refchecks because it does not contains types
