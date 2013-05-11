@@ -19,7 +19,7 @@ abstract class CompilerTest extends DirectTest {
   def check(source: String, unit: global.CompilationUnit): Unit
 
   lazy val global: Global = newCompiler()
-  lazy val units = compilationUnits(global)(sources: _ *)
+  lazy val units: List[global.CompilationUnit] = compilationUnits(global)(sources: _ *)
   import global._
   import definitions._
 

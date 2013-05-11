@@ -918,6 +918,12 @@ abstract class ClassfileParser {
             case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
           }
           srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
+        case tpnme.CodeATTR =>
+          if (sym.owner.isInterface) {
+            sym setFlag DEFAULTMETHOD
+            log(s"$sym in ${sym.owner} is a java8+ default method.")
+          }
+          in.skip(attrLen)
         case _ =>
           in.skip(attrLen)
       }

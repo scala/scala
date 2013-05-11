@@ -420,6 +420,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           case FINAL =>
             flags |= Flags.FINAL
             in.nextToken
+          case DEFAULT =>
+            flags |= Flags.DEFAULTMETHOD
+            in.nextToken()
           case NATIVE =>
             addAnnot(NativeAttr)
             in.nextToken
@@ -544,8 +547,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
           optThrows()
+          val bodyOk = !inInterface || (mods hasFlag Flags.DEFAULTMETHOD)
           val body =
-            if (!inInterface && in.token == LBRACE) {
+            if (bodyOk && in.token == LBRACE) {
               methodBody()
             } else {
               if (parentToken == AT && in.token == DEFAULT) {
