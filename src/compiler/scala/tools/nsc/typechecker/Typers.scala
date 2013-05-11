@@ -4292,9 +4292,9 @@ trait Typers extends Adaptations with Tags {
           val DefDef(_, name, _, _, restpt, _) = enclMethod.tree
           if (restpt.tpe eq null) {
             ReturnWithoutTypeError(tree, enclMethod.owner)
-          } else {
-            context.enclMethod.returnsSeen = true
-            val expr1: Tree = typed(expr, EXPRmode | BYVALmode | RETmode, restpt.tpe)
+          }
+          else {
+            val expr1 = context withReturnExpr typed(expr, EXPRmode | BYVALmode, restpt.tpe)
             // Warn about returning a value if no value can be returned.
             if (restpt.tpe.typeSymbol == UnitClass) {
               // The typing in expr1 says expr is Unit (it has already been coerced if

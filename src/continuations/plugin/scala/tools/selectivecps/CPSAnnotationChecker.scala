@@ -169,7 +169,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
               true
             //}
           } else false
-        } else if (!hasPlusMarker(tree.tpe) && annots1.isEmpty && !annots2.isEmpty && mode.inRetMode) {
+        } else if (!hasPlusMarker(tree.tpe) && annots1.isEmpty && !annots2.isEmpty && typer.context.inReturnExpr) {
           vprintln("checking enclosing method's result type without annotations")
           tree.tpe <:< pt.withoutAnnotations
         } else if (!hasMinusMarker(tree.tpe) && !annots1.isEmpty && mode.inByValMode) {
@@ -219,7 +219,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
         val res = tree modifyType addMinusMarker
         vprintln("adapted annotations (by val) of " + tree + " to " + res.tpe)
         res
-      } else if (mode.inRetMode && !hasPlusMarker(tree.tpe) && isMissingExpectedAnnots) {
+      } else if (typer.context.inReturnExpr && !hasPlusMarker(tree.tpe) && isMissingExpectedAnnots) {
         // add a marker annotation that will make tree.tpe behave as pt, subtyping wise
         // tree will look like having any possible annotation
 

@@ -243,6 +243,7 @@ trait Contexts { self: Analyzer =>
     def retyping                              = this(ReTyping)
     def inSecondTry                           = this(SecondTry)
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
+    def inReturnExpr                          = this(ReturnExpr)
 
     /** These messages are printed when issuing an error */
     var diagnostic: List[String] = Nil
@@ -360,6 +361,11 @@ trait Contexts { self: Analyzer =>
     def withStarPatterns[T](op: => T): T                     = withMode(enabled = StarPatterns)(op)
     def withSuperInit[T](op: => T): T                        = withMode(enabled = SuperInit)(op)
     def withSecondTry[T](op: => T): T                        = withMode(enabled = SecondTry)(op)
+
+    def withReturnExpr[T](op: => T): T = {
+      enclMethod.returnsSeen = true
+      withMode(enabled = ReturnExpr)(op)
+    }
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
@@ -1354,6 +1360,9 @@ object ContextMode {
    *  may no longer be coerced with implicit views. Formerly SNDTRYmode.
    */
   final val SecondTry: ContextMode                = 1 << 14
+
+  /** Are we in return position? Formerly RETmode. */
+  final val ReturnExpr: ContextMode               = 1 << 15
 
   final val DefaultMode: ContextMode      = MacrosEnabled
 

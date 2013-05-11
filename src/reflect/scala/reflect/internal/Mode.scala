@@ -71,10 +71,6 @@ object Mode {
    */
   final val TYPEPATmode: Mode   = 0x10000
 
-  /** RETmode is set when we are typing a return expression.
-   */
-  final val RETmode: Mode       = 0x20000
-
   final private val StickyModes: Mode = EXPRmode | PATTERNmode | TYPEmode
 
   /** Translates a mask of mode flags into something readable.
@@ -129,7 +125,6 @@ final class Mode private (val bits: Int) extends AnyVal {
   def inPatternMode = inAll(PATTERNmode)
   def inPolyMode    = inAll(POLYmode)
   def inQualMode    = inAll(QUALmode)
-  def inRetMode     = inAll(RETmode)
   def inSccMode     = inAll(SCCmode)
   def inTappMode    = inAll(TAPPmode)
   def inTypeMode    = inAll(TYPEmode)
