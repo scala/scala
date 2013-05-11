@@ -110,6 +110,7 @@ trait ScalaSettings extends AbsScalaSettings
   val XoldPatmat    = BooleanSetting    ("-Xoldpatmat", "Use the pre-2.10 pattern matcher. Otherwise, the 'virtualizing' pattern matcher is used in 2.10.")
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs     = BooleanSetting    ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
+  val Xdivergence211 = BooleanSetting   ("-Xdivergence211", "Turn on the 2.11 behavior of implicit divergence not terminating recursive implicit searches (SI-7291).")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.

@@ -29,8 +29,12 @@ trait Enclosures {
    */
   val enclosingMacros: List[Context]
 
-  /** Types along with corresponding trees for which implicit arguments are currently searched.
+  /** Information about one of the currently considered implicit candidates.
+   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
+   *  hence implicit searches can recursively trigger other implicit searches.
+   *
    *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
+   *  If we're in an implicit macro being expanded, it's included in this list.
    *
    *  Unlike `openImplicits`, this is a val, which means that it gets initialized when the context is created
    *  and always stays the same regardless of whatever happens during macro expansion.
