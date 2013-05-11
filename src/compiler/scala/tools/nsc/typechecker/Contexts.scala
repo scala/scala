@@ -241,6 +241,8 @@ trait Contexts { self: Analyzer =>
     def checking                              = this(Checking)
     def retyping_=(value: Boolean)            = this(ReTyping) = value
     def retyping                              = this(ReTyping)
+    def inSecondTry                           = this(SecondTry)
+    def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
 
     /** These messages are printed when issuing an error */
     var diagnostic: List[String] = Nil
@@ -357,6 +359,7 @@ trait Contexts { self: Analyzer =>
     def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
     def withStarPatterns[T](op: => T): T                     = withMode(enabled = StarPatterns)(op)
     def withSuperInit[T](op: => T): T                        = withMode(enabled = SuperInit)(op)
+    def withSecondTry[T](op: => T): T                        = withMode(enabled = SecondTry)(op)
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
@@ -1333,8 +1336,9 @@ object ContextMode {
   /** Are we in a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
   final val Checking: ContextMode                 = 1 << 9
 
-  /** Are we retypechecking arguments independently from the function applied to them? See `Typer.tryTypedApply` */
-  // TODO This seems to directly overlap with Mode.SNDTRYmode
+  /** Are we retypechecking arguments independently from the function applied to them? See `Typer.tryTypedApply`
+   *  TODO - iron out distinction/overlap with SecondTry.
+   */
   final val ReTyping: ContextMode                 = 1 << 10
 
   /** Are we typechecking pattern alternatives. Formerly ALTmode. */
@@ -1345,6 +1349,11 @@ object ContextMode {
 
   /** Are we typing the "super" in a superclass constructor call super.<init>. Formerly SUPERCONSTRmode. */
   final val SuperInit: ContextMode                = 1 << 13
+
+  /*  Is this the second attempt to type this tree? In that case functions
+   *  may no longer be coerced with implicit views. Formerly SNDTRYmode.
+   */
+  final val SecondTry: ContextMode                = 1 << 14
 
   final val DefaultMode: ContextMode      = MacrosEnabled
 
@@ -1359,7 +1368,9 @@ object ContextMode {
     Checking           -> "Checking",
     ReTyping           -> "ReTyping",
     PatternAlternative -> "PatternAlternative",
-    StarPatterns       -> "StarPatterns"
+    StarPatterns       -> "StarPatterns",
+    SuperInit          -> "SuperInit",
+    SecondTry          -> "SecondTry"
   )
 }
 

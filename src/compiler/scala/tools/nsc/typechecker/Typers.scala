@@ -34,9 +34,9 @@ trait Typers extends Adaptations with Tags {
   import TypersStats._
 
   final def forArgMode(fun: Tree, mode: Mode) =
-    if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode
-    else mode
+    if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
+    // printResult(s"forArgMode($fun, $mode) gets SCCmode")(mode | SCCmode)
   // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
   // is cached here and re-used in typedDefDef / typedValDef
   // Also used to cache imports type-checked by namer.
@@ -4450,7 +4450,7 @@ trait Typers extends Adaptations with Tags {
                     else qual
                   if (qual1 ne qual) {
                     val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
-                    return typed1(tree1, mode | SNDTRYmode, pt)
+                    return context withSecondTry typed1(tree1, mode, pt)
                   }
                 case _ => ()
               }
@@ -4496,15 +4496,14 @@ trait Typers extends Adaptations with Tags {
             if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
             val noSecondTry = (
                  isPastTyper
+              || context.inSecondTry
               || (fun2.symbol ne null) && fun2.symbol.isConstructor
-              || (fun2.tpe match { case mt: MethodType => mt.isImplicit case _ => false })
+              || isImplicitMethodType(fun2.tpe)
             )
-            val isFirstTry = !noSecondTry && (
-              fun2 match {
-                case Select(_, _) => mode.in(all = EXPRmode, none = SNDTRYmode)
-                case _            => false
-              }
-            )
+            val isFirstTry = fun2 match {
+              case Select(_, _) => !noSecondTry && mode.inExprMode
+              case _            => false
+            }
             if (isFirstTry)
               tryTypedApply(fun2, args)
             else

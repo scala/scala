@@ -3964,6 +3964,11 @@ trait Types
     case _                     => false
   }
 
+  def isImplicitMethodType(tp: Type) = tp match {
+    case mt: MethodType => mt.isImplicit
+    case _              => false
+  }
+
   /** This is defined and named as it is because the goal is to exclude source
    *  level types which are not value types (e.g. MethodType) without excluding
    *  necessary internal types such as WildcardType.  There are also non-value

@@ -48,11 +48,6 @@ object Mode {
    */
   final val TAPPmode: Mode      = 0x080
 
-  /** SNDTRYmode indicates that an application is typed for the 2nd time.
-   *  In that case functions may no longer be coerced with implicit views.
-   */
-  final val SNDTRYmode: Mode    = 0x200
-
   /** LHSmode is set for the left-hand side of an assignment.
    */
   final val LHSmode: Mode       = 0x400
@@ -93,12 +88,12 @@ object Mode {
     (1 << 5)  -> "POLYmode",
     (1 << 6)  -> "QUALmode",
     (1 << 7)  -> "TAPPmode",
-    (1 << 8)  -> "<NO SUCH MODE>", // formerly SUPERCONSTRmode
-    (1 << 9)  -> "SNDTRYmode",
+    (1 << 8)  -> "<>",      // formerly SUPERCONSTRmode
+    (1 << 9)  -> "<>",      // formerly SNDTRYmode
     (1 << 10) -> "LHSmode",
-    (1 << 11) -> "<NO SUCH MODE>",
-    (1 << 12) -> "<NO SUCH MODE>", // formerly STARmode
-    (1 << 13) -> "<NO SUCH MODE>", // formerly ALTmode
+    (1 << 11) -> "<>",
+    (1 << 12) -> "<>",      // formerly STARmode
+    (1 << 13) -> "<>",      // formerly ALTmode
     (1 << 14) -> "HKmode",
     (1 << 15) -> "BYVALmode",
     (1 << 16) -> "TYPEPATmode"
@@ -151,6 +146,6 @@ final class Mode private (val bits: Int) extends AnyVal {
   def typingPatternNotFun    = in(all = PATTERNmode, none = FUNmode)
 
   override def toString =
-    if (bits == 0) "NOmode"
-    else (modeNameMap filterKeys inAll).values.toList.sorted mkString " "
+    if (this == NOmode) "NOmode"
+    else (modeNameMap filterKeys inAll).values.toList.sorted mkString "-"
 }
