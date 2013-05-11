@@ -82,14 +82,14 @@ extends scala.collection.AbstractSeq[Int]
 
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
-      if (step > 0) start
+      if (step > 0) head
       else last
     } else super.min(ord)
 
   override def max[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
