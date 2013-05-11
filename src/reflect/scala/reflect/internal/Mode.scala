@@ -67,6 +67,10 @@ object Mode {
 
   final private val StickyModes: Mode = EXPRmode | PATTERNmode | TYPEmode
 
+  final val MonoQualifierModes: Mode = EXPRmode | QUALmode
+  final val PolyQualifierModes: Mode = EXPRmode | QUALmode | POLYmode
+  final val OperatorModes: Mode      = EXPRmode |            POLYmode | TAPPmode | FUNmode
+
   /** Translates a mask of mode flags into something readable.
    */
   private val modeNameMap = Map[Int, String]( // TODO why duplicate the bitmasks here, rather than just referring to this.EXPRmode etc?
@@ -96,11 +100,12 @@ final class Mode private (val bits: Int) extends AnyVal {
   def |(other: Mode): Mode = new Mode(bits | other.bits)
   def &~(other: Mode): Mode = new Mode(bits & ~(other.bits))
 
-  def onlySticky = this & Mode.StickyModes
-  def forFunMode = this & (Mode.StickyModes | SCCmode) | FUNmode | POLYmode | BYVALmode
-  def forTypeMode =
-    if (inAny(PATTERNmode | TYPEPATmode)) TYPEmode | TYPEPATmode
-    else TYPEmode
+  def onlyTypePat = this & TYPEPATmode
+
+  def stickyPlus(mode: Mode) = onlySticky | mode
+  def onlySticky             = this & Mode.StickyModes
+  def forFunMode             = this & (Mode.StickyModes | SCCmode) | FUNmode | POLYmode | BYVALmode
+  def forTypeMode            = if (typingPatternOrTypePat) TYPEmode | TYPEPATmode else TYPEmode
 
   def inAll(required: Mode)    = (this & required) == required
   def inAny(required: Mode)    = (this & required) != NOmode
@@ -114,7 +119,6 @@ final class Mode private (val bits: Int) extends AnyVal {
   def inByValMode   = inAll(BYVALmode)
   def inExprMode    = inAll(EXPRmode)
   def inFunMode     = inAll(FUNmode)
-  def inLhsMode     = inAll(LHSmode)
   def inPatternMode = inAll(PATTERNmode)
   def inPolyMode    = inAll(POLYmode)
   def inQualMode    = inAll(QUALmode)
@@ -122,6 +126,7 @@ final class Mode private (val bits: Int) extends AnyVal {
   def inTappMode    = inAll(TAPPmode)
   def inTypeMode    = inAll(TYPEmode)
 
+  def typingPatternOrTypePat = inAny(PATTERNmode | TYPEPATmode)
   def typingTypeByValue      = inAll(TYPEmode | BYVALmode)
   def typingExprByValue      = inAll(EXPRmode | BYVALmode)
   def typingExprFun          = inAll(EXPRmode | FUNmode)

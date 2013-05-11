@@ -356,20 +356,32 @@ trait Contexts { self: Analyzer =>
       finally contextMode = saved
     }
 
-    def withImplicitsEnabled[T](op: => T): T                 = withMode(enabled = ImplicitsEnabled)(op)
-    def withImplicitsDisabled[T](op: => T): T                = withMode(disabled = ImplicitsEnabled | EnrichmentEnabled)(op)
-    def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
-    def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
-    def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
-    def withStarPatterns[T](op: => T): T                     = withMode(enabled = StarPatterns)(op)
-    def withSuperInit[T](op: => T): T                        = withMode(enabled = SuperInit)(op)
-    def withSecondTry[T](op: => T): T                        = withMode(enabled = SecondTry)(op)
-    def withTypeConstructor[T](op: => T): T                  = withMode(enabled = TypeConstructor)(op)
+    @inline final def withImplicitsEnabled[T](op: => T): T                 = withMode(enabled = ImplicitsEnabled)(op)
+    @inline final def withImplicitsDisabled[T](op: => T): T                = withMode(disabled = ImplicitsEnabled | EnrichmentEnabled)(op)
+    @inline final def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
+    @inline final def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
+    @inline final def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
+    @inline final def withinStarPatterns[T](op: => T): T                   = withMode(enabled = StarPatterns)(op)
+    @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
+    @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
+    @inline final def withinTypeConstructor[T](op: => T): T                = withMode(enabled = TypeConstructor)(op)
 
-    def withReturnExpr[T](op: => T): T = {
+    /* TODO - consolidate returnsSeen (which seems only to be used by checkDead)
+     * and ReturnExpr.
+     */
+    @inline final def withinReturnExpr[T](op: => T): T = {
       enclMethod.returnsSeen = true
       withMode(enabled = ReturnExpr)(op)
     }
+
+    /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
+     *  To mimick the sticky mode behavior, when captain stickyfingers
+     *  comes around we need to propagate those modes but forget the other
+     *  context modes which were once mode bits; those being so far the
+     *  ones listed here.
+     */
+    @inline final def withOnlyStickyModes[T](op: => T): T =
+      withMode(disabled = PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructor | TypeApplication)(op)
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
@@ -1371,6 +1383,12 @@ object ContextMode {
   /** Are we typing a type constructor? Formerly HKmode. */
   final val TypeConstructor: ContextMode          = 1 << 16
 
+  /** Are we in the function/type constructor part of a type application?
+   *  When we are, we do not decompose PolyTypes. Formerly TAPPmode.
+   *  TODO.
+   */
+  final val TypeApplication: ContextMode          = 1 << 17
+
   final val DefaultMode: ContextMode      = MacrosEnabled
 
   private val contextModeNameMap = Map(
@@ -1387,7 +1405,8 @@ object ContextMode {
     StarPatterns       -> "StarPatterns",
     SuperInit          -> "SuperInit",
     SecondTry          -> "SecondTry",
-    TypeConstructor    -> "TypeConstructor"
+    TypeConstructor    -> "TypeConstructor",
+    TypeApplication    -> "TypeApplication"
   )
 }
 
