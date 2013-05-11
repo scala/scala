@@ -81,7 +81,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
   override def andThen[C](k: B => C): PartialFunction[A, C] =
     new AndThen[A, B, C] (this, k)
 
-  /** Turns this partial function into an plain function returning an `Option` result.
+  /** Turns this partial function into a plain function returning an `Option` result.
    *  @see     Function.unlift
    *  @return  a function that takes an argument `x` to `Some(this(x))` if `this`
    *           is defined for `x`, and to `None` otherwise.
