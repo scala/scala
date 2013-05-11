@@ -612,7 +612,7 @@ trait Typers extends Adaptations with Tags {
           else tree1
         }
         else fail()
-      } else if (mode.inExprModeButNot(QUALmode) && !sym.isValue && !phase.erasedTypes) { // (2)
+      } else if (mode.in(all = EXPRmode, none = QUALmode) && !sym.isValue && !phase.erasedTypes) { // (2)
         fail()
       } else {
         if (sym.isStable && pre.isStable && !isByNameParamType(tree.tpe) &&
@@ -3036,13 +3036,13 @@ trait Typers extends Adaptations with Tags {
         else {
           // No formals left or * indicates varargs.
           val isVarArgs = formals.isEmpty || formals.tail.isEmpty && isRepeatedParamType(formals.head)
-          val typedMode = sticky | (
-            if (isVarArgs) STARmode | BYVALmode
-            else if (isByNameParamType(formals.head)) NOmode
-            else BYVALmode
-          )
+          val isByName  = formals.nonEmpty && isByNameParamType(formals.head)
+          def typedMode = if (isByName) sticky else sticky | BYVALmode
+          def body = typedArg(args.head, mode, typedMode, adapted.head)
+          def arg1 = if (isVarArgs) context.withStarPatterns(body) else body
+
           // formals may be empty, so don't call tail
-          typedArg(args.head, mode, typedMode, adapted.head) :: loop(args.tail, formals drop 1, adapted.tail)
+          arg1 :: loop(args.tail, formals drop 1, adapted.tail)
         }
       }
       loop(args0, formals0, adapted0)
@@ -3531,7 +3531,7 @@ trait Typers extends Adaptations with Tags {
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
         // The typed tree may be relevantly different than the tree `tr`,
         // e.g. it may have encountered an implicit conversion.
-        val ttree = typed(constfold(tr), EXPRmode, pt)
+        val ttree = typed(constfold(tr), pt)
         val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
@@ -3570,7 +3570,7 @@ trait Typers extends Adaptations with Tags {
         // use of Array.apply[T: ClassTag](xs: T*): Array[T]
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
         case Apply(fun, args) =>
-          val typedFun = typed(fun, mode.forFunMode, WildcardType)
+          val typedFun = typed(fun, mode.forFunMode)
           if (typedFun.symbol.owner == ArrayModule.moduleClass && typedFun.symbol.name == nme.apply)
             pt match {
               case TypeRef(_, ArrayClass, targ :: _) =>
@@ -3601,7 +3601,7 @@ trait Typers extends Adaptations with Tags {
       val treeInfo.Applied(fun0, targs, argss) = ann
       if (fun0.isErroneous)
         return finish(ErroneousAnnotation)
-      val typedFun0 = typed(fun0, mode.forFunMode, WildcardType)
+      val typedFun0 = typed(fun0, mode.forFunMode)
       val typedFunPart = (
         // If there are dummy type arguments in typeFun part, it suggests we
         // must type the actual constructor call, not only the select. The value
@@ -4148,7 +4148,9 @@ trait Typers extends Adaptations with Tags {
               else context.owner.newValue(name, tree.pos)
 
             if (name != nme.WILDCARD) {
-              if (mode.inAltMode) VariableInPatternAlternativeError(tree)
+              if (context.inPatAlternative)
+                VariableInPatternAlternativeError(tree)
+
               namer.enterInScope(sym)
             }
 
@@ -4181,7 +4183,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
-        val lhs1    = typed(lhs, EXPRmode | LHSmode, WildcardType)
+        val lhs1    = typed(lhs, EXPRmode | LHSmode)
         val varsym  = lhs1.symbol
 
         // see #2494 for double error message example
@@ -4499,7 +4501,7 @@ trait Typers extends Adaptations with Tags {
             )
             val isFirstTry = !noSecondTry && (
               fun2 match {
-                case Select(_, _) => mode inExprModeButNot SNDTRYmode
+                case Select(_, _) => mode.in(all = EXPRmode, none = SNDTRYmode)
                 case _            => false
               }
             )
@@ -4620,7 +4622,7 @@ trait Typers extends Adaptations with Tags {
 
         val owntype = (
           if (!mix.isEmpty) findMixinSuper(clazz.tpe)
-          else if (mode.inAll(SUPERCONSTRmode)) clazz.info.firstParent
+          else if (context.inSuperInit) clazz.info.firstParent
           else intersectionType(clazz.info.parents)
         )
         treeCopy.Super(tree, qual1, mix) setType SuperType(clazz.thisType, owntype)
@@ -4664,7 +4666,7 @@ trait Typers extends Adaptations with Tags {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
-          if (name != nme.CONSTRUCTOR && mode.inExprModeOr(PATTERNmode)) {
+          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             val qual1 = adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = true, saveErrors = true)
             if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
@@ -4752,44 +4754,41 @@ trait Typers extends Adaptations with Tags {
         }
       }
 
-      def typedSelectOrSuperCall(tree: Select) = {
-        val qual = tree.qualifier
-        val name = tree.name
-        qual match {
-          case _: Super if name == nme.CONSTRUCTOR =>
-            val qual1 =
-              typed(qual, EXPRmode | QUALmode | POLYmode | SUPERCONSTRmode, WildcardType)
-              // the qualifier type of a supercall constructor is its first parent class
-            typedSelect(tree, qual1, nme.CONSTRUCTOR)
-          case _ =>
-            if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
-            var qual1 = checkDead(typedQualifier(qual, mode))
-            if (name.isTypeName) qual1 = checkStable(qual1)
+      // temporarily use `filter` as an alternative for `withFilter`
+      def tryWithFilterAndFilter(tree: Select, qual: Tree): Tree = {
+        def warn() = unit.deprecationWarning(tree.pos, s"`withFilter' method does not yet exist on ${qual.tpe.widen}, using `filter' method instead")
 
-            val tree1 = // temporarily use `filter` and an alternative for `withFilter`
-              if (name == nme.withFilter)
-                silent(_ => typedSelect(tree, qual1, name)) orElse { _ =>
-                    silent(_ => typed1(Select(qual1, nme.filter) setPos tree.pos, mode, pt)) match {
-                      case SilentResultValue(result2) =>
-                        unit.deprecationWarning(
-                          tree.pos, "`withFilter' method does not yet exist on " + qual1.tpe.widen +
-                            ", using `filter' method instead")
-                        result2
-                      case SilentTypeError(err) =>
-                        WithFilterError(tree, err)
-                    }
-                }
-              else
-                typedSelect(tree, qual1, name)
+        silent(_ => typedSelect(tree, qual, nme.withFilter)) orElse (_ =>
+          silent(_ => typed1(Select(qual, nme.filter) setPos tree.pos, mode, pt)) match {
+            case SilentResultValue(res) => warn() ; res
+            case SilentTypeError(err)   => WithFilterError(tree, err)
+          }
+        )
+      }
 
-            if (tree.isInstanceOf[PostfixSelect])
-              checkFeature(tree.pos, PostfixOpsFeature, name.decode)
-            if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
-              checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
+      def typedSelectOrSuperCall(tree: Select) = tree match {
+        case Select(qual @ Super(_, _), nme.CONSTRUCTOR) =>
+          typedSelect(tree, typedSelectOrSuperQualifier(qual), nme.CONSTRUCTOR)
+        case Select(qual, name) =>
+          if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
+          val qual1 = checkDead(typedQualifier(qual, mode)) match {
+            case q if name.isTypeName => checkStable(q)
+            case q                    => q
+          }
+          val tree1 = name match {
+            case nme.withFilter => tryWithFilterAndFilter(tree, qual1)
+            case _              => typedSelect(tree, qual1, name)
+          }
+          def sym = tree1.symbol
+          if (tree.isInstanceOf[PostfixSelect])
+            checkFeature(tree.pos, PostfixOpsFeature, name.decode)
+          if (sym != null && sym.isOnlyRefinementMember)
+            checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
 
-            if (qual1.hasSymbolWhich(_.isRootPackage)) treeCopy.Ident(tree1, name)
-            else tree1
-        }
+          qual1.symbol match {
+            case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
+            case _                            => tree1
+          }
       }
 
       /* A symbol qualifies if:
@@ -4962,13 +4961,16 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedAlternative(alt: Alternative) = {
-        val alts1 = alt.trees mapConserve (alt => typed(alt, mode | ALTmode, pt))
-        treeCopy.Alternative(tree, alts1) setType pt
+        val saved = context.inPatAlternative
+        context.inPatAlternative = true
+        try treeCopy.Alternative(tree, alt.trees mapConserve (alt => typed(alt, mode, pt))) setType pt
+        finally context.inPatAlternative = saved
       }
 
       def typedStar(tree: Star) = {
-        if (mode.inNone(STARmode) && !isPastTyper)
+        if (!context.starPatterns && !isPastTyper)
           StarPatternWithVarargParametersError(tree)
+
         treeCopy.Star(tree, typed(tree.elem, mode, pt)) setType makeFullyDefined(pt)
       }
 
@@ -5382,6 +5384,9 @@ trait Typers extends Adaptations with Tags {
     def typed(tree: Tree, pt: Type): Tree =
       typed(tree, EXPRmode, pt)
 
+    def typed(tree: Tree, mode: Mode): Tree =
+      typed(tree, mode, WildcardType)
+
     /** Types qualifier `tree` of a select node.
      *  E.g. is tree occurs in a context like `tree.m`.
      */
@@ -5399,6 +5404,10 @@ trait Typers extends Adaptations with Tags {
     /** Types function part of an application */
     def typedOperator(tree: Tree): Tree =
       typed(tree, EXPRmode | FUNmode | POLYmode | TAPPmode, WildcardType)
+
+    // the qualifier type of a supercall constructor is its first parent class
+    private def typedSelectOrSuperQualifier(qual: Tree) =
+      context withSuperInit typed(qual, EXPRmode | QUALmode | POLYmode)
 
     /** Types a pattern with prototype `pt` */
     def typedPattern(tree: Tree, pt: Type): Tree = {

@@ -48,11 +48,6 @@ object Mode {
    */
   final val TAPPmode: Mode      = 0x080
 
-  /** SUPERCONSTRmode is set for the super
-   *  in a superclass constructor call super.<init>.
-   */
-  final val SUPERCONSTRmode: Mode = 0x100
-
   /** SNDTRYmode indicates that an application is typed for the 2nd time.
    *  In that case functions may no longer be coerced with implicit views.
    */
@@ -61,15 +56,6 @@ object Mode {
   /** LHSmode is set for the left-hand side of an assignment.
    */
   final val LHSmode: Mode       = 0x400
-
-  /** STARmode is set when star patterns are allowed.
-   *  (This was formerly called REGPATmode.)
-   */
-  final val STARmode: Mode      = 0x1000
-
-  /** ALTmode is set when we are under a pattern alternative.
-   */
-  final val ALTmode: Mode       = 0x2000
 
   /** HKmode is set when we are typing a higher-kinded type.
    *  adapt should then check kind-arity based on the prototypical type's
@@ -94,7 +80,7 @@ object Mode {
    */
   final val RETmode: Mode       = 0x20000
 
-  final private val StickyModes: Mode = EXPRmode | PATTERNmode | TYPEmode | ALTmode
+  final private val StickyModes: Mode = EXPRmode | PATTERNmode | TYPEmode
 
   /** Translates a mask of mode flags into something readable.
    */
@@ -107,12 +93,12 @@ object Mode {
     (1 << 5)  -> "POLYmode",
     (1 << 6)  -> "QUALmode",
     (1 << 7)  -> "TAPPmode",
-    (1 << 8)  -> "SUPERCONSTRmode",
+    (1 << 8)  -> "<NO SUCH MODE>", // formerly SUPERCONSTRmode
     (1 << 9)  -> "SNDTRYmode",
     (1 << 10) -> "LHSmode",
-    (1 << 11) -> "<DOES NOT EXIST mode>",
-    (1 << 12) -> "STARmode",
-    (1 << 13) -> "ALTmode",
+    (1 << 11) -> "<NO SUCH MODE>",
+    (1 << 12) -> "<NO SUCH MODE>", // formerly STARmode
+    (1 << 13) -> "<NO SUCH MODE>", // formerly ALTmode
     (1 << 14) -> "HKmode",
     (1 << 15) -> "BYVALmode",
     (1 << 16) -> "TYPEPATmode"
@@ -131,40 +117,38 @@ final class Mode private (val bits: Int) extends AnyVal {
     if (inAny(PATTERNmode | TYPEPATmode)) TYPEmode | TYPEPATmode
     else TYPEmode
 
-  def inAll(required: Mode)                            = (this & required) == required
-  def inAny(required: Mode)                            = (this & required) != NOmode
-  def inNone(prohibited: Mode)                         = (this & prohibited) == NOmode
-  def inAllButNone(required: Mode, prohibited: Mode)   = inAll(required) && inNone(prohibited)
-  def in(allOf: Mode = NOmode, noneOf: Mode = NOmode)  = inAll(allOf) && inNone(noneOf)
+  def inAll(required: Mode)    = (this & required) == required
+  def inAny(required: Mode)    = (this & required) != NOmode
+  def inNone(prohibited: Mode) = (this & prohibited) == NOmode
 
-  def inSccMode     = inAll(SCCmode)
-  def inQualMode    = inAll(QUALmode)
-  def inHKMode      = inAll(HKmode)
-  def inFunMode     = inAll(FUNmode)
-  def inPolyMode    = inAll(POLYmode)
-  def inPatternMode = inAll(PATTERNmode)
-  def inExprMode    = inAll(EXPRmode)
+  /** True if this mode matches every mode in the 'all' Mode,
+   *  and no modes in the 'none' Mode.
+   */
+  def in(all: Mode = NOmode, none: Mode = NOmode) = inAll(all) && inNone(none)
+
   def inByValMode   = inAll(BYVALmode)
-  def inRetMode     = inAll(RETmode)
+  def inExprMode    = inAll(EXPRmode)
+  def inFunMode     = inAll(FUNmode)
+  def inHKMode      = inAll(HKmode)
   def inLhsMode     = inAll(LHSmode)
+  def inPatternMode = inAll(PATTERNmode)
+  def inPolyMode    = inAll(POLYmode)
+  def inQualMode    = inAll(QUALmode)
+  def inRetMode     = inAll(RETmode)
+  def inSccMode     = inAll(SCCmode)
   def inTappMode    = inAll(TAPPmode)
-  def inAltMode     = inAll(ALTmode)
   def inTypeMode    = inAll(TYPEmode)
 
   def typingTypeByValue      = inAll(TYPEmode | BYVALmode)
   def typingExprByValue      = inAll(EXPRmode | BYVALmode)
   def typingExprFun          = inAll(EXPRmode | FUNmode)
-  def typingExprNotValue     = inAllButNone(EXPRmode, BYVALmode)
-  def typingExprNotLhs       = inAllButNone(EXPRmode, LHSmode)
-  def typingExprNotFun       = inAllButNone(EXPRmode, FUNmode)
-  def typingExprNotFunNotLhs = inAllButNone(EXPRmode, FUNmode | LHSmode)
-  def typingMonoExprByValue  = inAllButNone(EXPRmode | BYVALmode, POLYmode)
-
-  def typingPatternNotFun    = inAllButNone(PATTERNmode, FUNmode)
   def typingPatternFun       = inAll(PATTERNmode | FUNmode)
-
-  def inExprModeOr(others: Mode)         = inAny(EXPRmode | others)
-  def inExprModeButNot(prohibited: Mode) = inAllButNone(EXPRmode, prohibited)
+  def typingExprNotValue     = in(all = EXPRmode, none = BYVALmode)
+  def typingExprNotLhs       = in(all = EXPRmode, none = LHSmode)
+  def typingExprNotFun       = in(all = EXPRmode, none = FUNmode)
+  def typingExprNotFunNotLhs = in(all = EXPRmode, none = FUNmode | LHSmode)
+  def typingMonoExprByValue  = in(all = EXPRmode | BYVALmode, none = POLYmode)
+  def typingPatternNotFun    = in(all = PATTERNmode, none = FUNmode)
 
   override def toString =
     if (bits == 0) "NOmode"

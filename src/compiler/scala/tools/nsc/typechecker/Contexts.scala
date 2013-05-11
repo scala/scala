@@ -219,8 +219,14 @@ trait Contexts { self: Analyzer =>
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
 
+    def inSuperInit_=(value: Boolean)         = this(SuperInit) = value
+    def inSuperInit                           = this(SuperInit)
     def inConstructorSuffix_=(value: Boolean) = this(ConstructorSuffix) = value
     def inConstructorSuffix                   = this(ConstructorSuffix)
+    def inPatAlternative_=(value: Boolean)    = this(PatternAlternative) = value
+    def inPatAlternative                      = this(PatternAlternative)
+    def starPatterns_=(value: Boolean)        = this(StarPatterns) = value
+    def starPatterns                          = this(StarPatterns)
     def returnsSeen_=(value: Boolean)         = this(ReturnsSeen) = value
     def returnsSeen                           = this(ReturnsSeen)
     def inSelfSuperCall_=(value: Boolean)     = this(SelfSuperCall) = value
@@ -349,6 +355,8 @@ trait Contexts { self: Analyzer =>
     def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
     def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
     def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
+    def withStarPatterns[T](op: => T): T                     = withMode(enabled = StarPatterns)(op)
+    def withSuperInit[T](op: => T): T                        = withMode(enabled = SuperInit)(op)
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
@@ -1329,18 +1337,29 @@ object ContextMode {
   // TODO This seems to directly overlap with Mode.SNDTRYmode
   final val ReTyping: ContextMode                 = 1 << 10
 
+  /** Are we typechecking pattern alternatives. Formerly ALTmode. */
+  final val PatternAlternative: ContextMode       = 1 << 11
+
+  /** Are star patterns allowed. Formerly STARmode. */
+  final val StarPatterns: ContextMode             = 1 << 12
+
+  /** Are we typing the "super" in a superclass constructor call super.<init>. Formerly SUPERCONSTRmode. */
+  final val SuperInit: ContextMode                = 1 << 13
+
   final val DefaultMode: ContextMode      = MacrosEnabled
 
   private val contextModeNameMap = Map(
-    ReportErrors -> "ReportErrors",
-    BufferErrors -> "BufferErrors",
-    AmbiguousErrors -> "AmbiguousErrors",
-    ConstructorSuffix -> "ConstructorSuffix",
-    SelfSuperCall -> "SelfSuperCall",
-    ImplicitsEnabled -> "ImplicitsEnabled",
-    MacrosEnabled -> "MacrosEnabled",
-    Checking -> "Checking",
-    ReTyping -> "ReTyping"
+    ReportErrors       -> "ReportErrors",
+    BufferErrors       -> "BufferErrors",
+    AmbiguousErrors    -> "AmbiguousErrors",
+    ConstructorSuffix  -> "ConstructorSuffix",
+    SelfSuperCall      -> "SelfSuperCall",
+    ImplicitsEnabled   -> "ImplicitsEnabled",
+    MacrosEnabled      -> "MacrosEnabled",
+    Checking           -> "Checking",
+    ReTyping           -> "ReTyping",
+    PatternAlternative -> "PatternAlternative",
+    StarPatterns       -> "StarPatterns"
   )
 }
 
