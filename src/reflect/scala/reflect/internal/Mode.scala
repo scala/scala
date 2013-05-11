@@ -131,20 +131,40 @@ final class Mode private (val bits: Int) extends AnyVal {
     if (inAny(PATTERNmode | TYPEPATmode)) TYPEmode | TYPEPATmode
     else TYPEmode
 
-  def inAll(required: Mode)              = (this & required) == required
-  def inAny(required: Mode)              = (this & required) !=NOmode
-  def inNone(prohibited: Mode)           = (this & prohibited) == NOmode
-  def inHKMode                           = inAll(HKmode)
-  def inFunMode                          = inAll(FUNmode)
-  def inPolyMode                         = inAll(POLYmode)
-  def inPatternMode                      = inAll(PATTERNmode)
-  def inExprMode                         = inAll(EXPRmode)
-  def inByValMode                        = inAll(BYVALmode)
-  def inRetMode                          = inAll(RETmode)
+  def inAll(required: Mode)                            = (this & required) == required
+  def inAny(required: Mode)                            = (this & required) != NOmode
+  def inNone(prohibited: Mode)                         = (this & prohibited) == NOmode
+  def inAllButNone(required: Mode, prohibited: Mode)   = inAll(required) && inNone(prohibited)
+  def in(allOf: Mode = NOmode, noneOf: Mode = NOmode)  = inAll(allOf) && inNone(noneOf)
 
-  def inPatternNotFunMode                = inPatternMode && !inFunMode
+  def inSccMode     = inAll(SCCmode)
+  def inQualMode    = inAll(QUALmode)
+  def inHKMode      = inAll(HKmode)
+  def inFunMode     = inAll(FUNmode)
+  def inPolyMode    = inAll(POLYmode)
+  def inPatternMode = inAll(PATTERNmode)
+  def inExprMode    = inAll(EXPRmode)
+  def inByValMode   = inAll(BYVALmode)
+  def inRetMode     = inAll(RETmode)
+  def inLhsMode     = inAll(LHSmode)
+  def inTappMode    = inAll(TAPPmode)
+  def inAltMode     = inAll(ALTmode)
+  def inTypeMode    = inAll(TYPEmode)
+
+  def typingTypeByValue      = inAll(TYPEmode | BYVALmode)
+  def typingExprByValue      = inAll(EXPRmode | BYVALmode)
+  def typingExprFun          = inAll(EXPRmode | FUNmode)
+  def typingExprNotValue     = inAllButNone(EXPRmode, BYVALmode)
+  def typingExprNotLhs       = inAllButNone(EXPRmode, LHSmode)
+  def typingExprNotFun       = inAllButNone(EXPRmode, FUNmode)
+  def typingExprNotFunNotLhs = inAllButNone(EXPRmode, FUNmode | LHSmode)
+  def typingMonoExprByValue  = inAllButNone(EXPRmode | BYVALmode, POLYmode)
+
+  def typingPatternNotFun    = inAllButNone(PATTERNmode, FUNmode)
+  def typingPatternFun       = inAll(PATTERNmode | FUNmode)
+
   def inExprModeOr(others: Mode)         = inAny(EXPRmode | others)
-  def inExprModeButNot(prohibited: Mode) = inAll(EXPRmode) && inNone(prohibited)
+  def inExprModeButNot(prohibited: Mode) = inAllButNone(EXPRmode, prohibited)
 
   override def toString =
     if (bits == 0) "NOmode"
