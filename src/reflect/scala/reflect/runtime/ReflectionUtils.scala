@@ -28,15 +28,6 @@ private[scala] object ReflectionUtils {
     case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
   }
 
-  private def systemProperties: Iterator[(String, String)] = {
-    import scala.collection.JavaConverters._
-    System.getProperties.asScala.iterator
-  }
-
-  private def inferBootClasspath: String = (
-    systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
-  )
-
   def show(cl: ClassLoader): String = {
     import scala.language.reflectiveCalls
 
@@ -51,7 +42,8 @@ private[scala] object ReflectionUtils {
       case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
         cl.asInstanceOf[{val root: scala.reflect.io.AbstractFile}].root.canonicalPath
       case null =>
-        inferBootClasspath
+        val loadBootCp = (flavor: String) => scala.util.Properties.propOrNone(flavor + ".boot.class.path")
+        loadBootCp("sun") orElse loadBootCp("java") getOrElse "<unknown>"
       case _ =>
         "<unknown>"
     }
