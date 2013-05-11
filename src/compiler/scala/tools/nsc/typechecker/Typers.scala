@@ -877,36 +877,43 @@ trait Typers extends Adaptations with Tags {
       }
 
       def adaptType(): Tree = {
-        if (mode.inFunMode) {
-          // todo. the commented line below makes sense for typechecking, say, TypeApply(Ident(`some abstract type symbol`), List(...))
-          // because otherwise Ident will have its tpe set to a TypeRef, not to a PolyType, and `typedTypeApply` will fail
-          // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
-          // tree setType tree.tpe.normalize
-          tree
-        } else if (tree.hasSymbolField && !tree.symbol.typeParams.isEmpty && !mode.inHKMode &&
-          !(tree.symbol.isJavaDefined && context.unit.isJava)) { // (7)
-          // @M When not typing a higher-kinded type ((mode & HKmode) == 0)
-          // or raw type (tree.symbol.isJavaDefined && context.unit.isJava), types must be of kind *,
-          // and thus parameterized types must be applied to their type arguments
-          // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
-          MissingTypeParametersError(tree)
-        } else if ( // (7.1) @M: check kind-arity
+        // @M When not typing a higher-kinded type (!context.inTypeConstructor)
+        // or raw type (tree.symbol.isJavaDefined && context.unit.isJava), types must be of kind *,
+        // and thus parameterized types must be applied to their type arguments
+        // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
+        def kindStarRequired = (
+             tree.hasSymbolField
+          && !context.inTypeConstructor
+          && !(tree.symbol.isJavaDefined && context.unit.isJava)
+        )
+        // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
+        // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
         // @M: removed check for tree.hasSymbolField and replace tree.symbol by tree.tpe.symbol
         // (TypeTree's must also be checked here, and they don't directly have a symbol)
-        mode.inHKMode &&
-          // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
-          // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
-          !sameLength(tree.tpe.typeParams, pt.typeParams) &&
-          !(tree.tpe.typeSymbol == AnyClass ||
-            tree.tpe.typeSymbol == NothingClass ||
-            pt == WildcardType)) {
-          // Check that the actual kind arity (tree.symbol.typeParams.length) conforms to the expected
-          // kind-arity (pt.typeParams.length). Full checks are done in checkKindBounds in Infer.
-          // Note that we treat Any and Nothing as kind-polymorphic.
-          // We can't perform this check when typing type arguments to an overloaded method before the overload is resolved
-          // (or in the case of an error type) -- this is indicated by pt == WildcardType (see case TypeApply in typed1).
+        def kindArityMismatch = (
+             context.inTypeConstructor
+          && !sameLength(tree.tpe.typeParams, pt.typeParams)
+        )
+        // Note that we treat Any and Nothing as kind-polymorphic.
+        // We can't perform this check when typing type arguments to an overloaded method before the overload is resolved
+        // (or in the case of an error type) -- this is indicated by pt == WildcardType (see case TypeApply in typed1).
+        def kindArityMismatchOk = tree.tpe.typeSymbol match {
+          case NothingClass | AnyClass => true
+          case _                       => pt == WildcardType
+        }
+
+        // todo. It would make sense when mode.inFunMode to instead use
+        //    tree setType tree.tpe.normalize
+        // when typechecking, say, TypeApply(Ident(`some abstract type symbol`), List(...))
+        // because otherwise Ident will have its tpe set to a TypeRef, not to a PolyType, and `typedTypeApply` will fail
+        // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
+        if (mode.inFunMode)
+          tree
+        else if (kindStarRequired && tree.symbol.typeParams.nonEmpty)  // (7)
+          MissingTypeParametersError(tree)
+        else if (kindArityMismatch && !kindArityMismatchOk)  // (7.1) @M: check kind-arity
           KindArityMismatchError(tree, pt)
-        } else tree match { // (6)
+        else tree match { // (6)
           case TypeTree() => tree
           case _          => TypeTree(tree.tpe) setOriginal tree
         }
@@ -1028,7 +1035,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       def insertApply(): Tree = {
-        assert(!mode.inHKMode, mode) //@M
+        assert(!context.inTypeConstructor, mode) //@M
         val adapted = adaptToName(tree, nme.apply)
         def stabilize0(pre: Type): Tree = stabilize(adapted, pre, EXPRmode | QUALmode, WildcardType)
 
@@ -1212,7 +1219,7 @@ trait Typers extends Adaptations with Tags {
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
-          assert(!mode.inHKMode, mode) //@M
+          assert(!context.inTypeConstructor, context) //@M
           if (mode.typingExprNotFun && pt.typeSymbol == UnitClass)
             instantiateExpectingUnit(tree, mode)
           else
@@ -1246,7 +1253,7 @@ trait Typers extends Adaptations with Tags {
           adapt(tree setType arg, mode, pt, original)
         case tp if mode.typingExprNotLhs && isExistentialType(tp) =>
           adapt(tree setType tp.dealias.skolemizeExistential(context.owner, tree), mode, pt, original)
-        case PolyType(tparams, restpe) if mode.inNone(TAPPmode | PATTERNmode | HKmode) => // (3)
+        case PolyType(tparams, restpe) if mode.inNone(TAPPmode | PATTERNmode) && !context.inTypeConstructor => // (3)
           // assert((mode & HKmode) == 0) //@M a PolyType in HKmode represents an anonymous type function,
           // we're in HKmode since a higher-kinded type is expected --> hence, don't implicitly apply it to type params!
           // ticket #2197 triggered turning the assert into a guard
@@ -5366,7 +5373,7 @@ trait Typers extends Adaptations with Tags {
     /** Types expression or definition `tree`.
      */
     def typed(tree: Tree): Tree = {
-      val ret = typed(tree, EXPRmode, WildcardType)
+      val ret = typed(tree, context.defaultModeForTyped, WildcardType)
       ret
     }
 
@@ -5381,7 +5388,7 @@ trait Typers extends Adaptations with Tags {
     /** Types expression `tree` with given prototype `pt`.
      */
     def typed(tree: Tree, pt: Type): Tree =
-      typed(tree, EXPRmode, pt)
+      typed(tree, context.defaultModeForTyped, pt)
 
     def typed(tree: Tree, mode: Mode): Tree =
       typed(tree, mode, WildcardType)
@@ -5444,10 +5451,10 @@ trait Typers extends Adaptations with Tags {
     /** Types a higher-kinded type tree -- pt denotes the expected kind*/
     def typedHigherKindedType(tree: Tree, mode: Mode, pt: Type): Tree =
       if (pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
-      else typed(tree, HKmode, pt)
+      else context withTypeConstructor typed(tree, NOmode, pt)
 
     def typedHigherKindedType(tree: Tree, mode: Mode): Tree =
-      typed(tree, HKmode, WildcardType)
+      context withTypeConstructor typed(tree)
 
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree, mode: Mode): Tree = {

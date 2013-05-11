@@ -52,12 +52,6 @@ object Mode {
    */
   final val LHSmode: Mode       = 0x400
 
-  /** HKmode is set when we are typing a higher-kinded type.
-   *  adapt should then check kind-arity based on the prototypical type's
-   *  kind arity.  Type arguments should not be inferred.
-   */
-  final val HKmode: Mode        = 0x4000 // @M: could also use POLYmode | TAPPmode
-
   /** BYVALmode is set when we are typing an expression
    *  that occurs in a by-value position. An expression e1 is in by-value
    *  position within expression e2 iff it will be reduced to a value at that
@@ -90,7 +84,7 @@ object Mode {
     (1 << 11) -> "<>",
     (1 << 12) -> "<>",      // formerly STARmode
     (1 << 13) -> "<>",      // formerly ALTmode
-    (1 << 14) -> "HKmode",
+    (1 << 14) -> "<>",      // formerly HKmode
     (1 << 15) -> "BYVALmode",
     (1 << 16) -> "TYPEPATmode"
   ).map({ case (k, v) => Mode(k) -> v })
@@ -120,7 +114,6 @@ final class Mode private (val bits: Int) extends AnyVal {
   def inByValMode   = inAll(BYVALmode)
   def inExprMode    = inAll(EXPRmode)
   def inFunMode     = inAll(FUNmode)
-  def inHKMode      = inAll(HKmode)
   def inLhsMode     = inAll(LHSmode)
   def inPatternMode = inAll(PATTERNmode)
   def inPolyMode    = inAll(POLYmode)

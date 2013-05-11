@@ -244,6 +244,9 @@ trait Contexts { self: Analyzer =>
     def inSecondTry                           = this(SecondTry)
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
+    def inTypeConstructor                     = this(TypeConstructor)
+
+    def defaultModeForTyped: Mode = if (inTypeConstructor) Mode.NOmode else Mode.EXPRmode
 
     /** These messages are printed when issuing an error */
     var diagnostic: List[String] = Nil
@@ -361,6 +364,7 @@ trait Contexts { self: Analyzer =>
     def withStarPatterns[T](op: => T): T                     = withMode(enabled = StarPatterns)(op)
     def withSuperInit[T](op: => T): T                        = withMode(enabled = SuperInit)(op)
     def withSecondTry[T](op: => T): T                        = withMode(enabled = SecondTry)(op)
+    def withTypeConstructor[T](op: => T): T                  = withMode(enabled = TypeConstructor)(op)
 
     def withReturnExpr[T](op: => T): T = {
       enclMethod.returnsSeen = true
@@ -1364,6 +1368,9 @@ object ContextMode {
   /** Are we in return position? Formerly RETmode. */
   final val ReturnExpr: ContextMode               = 1 << 15
 
+  /** Are we typing a type constructor? Formerly HKmode. */
+  final val TypeConstructor: ContextMode          = 1 << 16
+
   final val DefaultMode: ContextMode      = MacrosEnabled
 
   private val contextModeNameMap = Map(
@@ -1379,7 +1386,8 @@ object ContextMode {
     PatternAlternative -> "PatternAlternative",
     StarPatterns       -> "StarPatterns",
     SuperInit          -> "SuperInit",
-    SecondTry          -> "SecondTry"
+    SecondTry          -> "SecondTry",
+    TypeConstructor    -> "TypeConstructor"
   )
 }
 
