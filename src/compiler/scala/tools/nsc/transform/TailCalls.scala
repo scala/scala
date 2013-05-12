@@ -89,12 +89,12 @@ abstract class TailCalls extends Transform {
    */
   class TailCallElimination(unit: CompilationUnit) extends Transformer {
     private def defaultReason = "it contains a recursive call not in tail position"
-    private val failPositions = perRunCaches.newMap[TailContext, Position]()
-    private val failReasons   = perRunCaches.newMap[TailContext, String]()
+    private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
+    private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason
     private def tailrecFailure(ctx: TailContext) {
-      val method           = ctx.method
-      val failReason       = failReasons.getOrElse(ctx, defaultReason)
-      val failPos          = failPositions.getOrElse(ctx, ctx.methodPos)
+      val method      = ctx.method
+      val failReason  = failReasons(ctx)
+      val failPos     = failPositions(ctx)
 
       unit.error(failPos, s"could not optimize @tailrec annotated $method: $failReason")
     }
@@ -237,7 +237,7 @@ abstract class TailCalls extends Transform {
 
         if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
         else if (!isRecursiveCall) {
-          if (receiverIsSuper)          failHere("it contains a recursive call targeting supertype " + receiver.tpe)
+          if (receiverIsSuper)          failHere("it contains a recursive call targeting a supertype")
           else                          failHere(defaultReason)
         }
         else if (!matchesTypeArgs)      failHere("it is called recursively with different type arguments")
