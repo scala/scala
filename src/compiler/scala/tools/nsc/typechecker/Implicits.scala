@@ -100,6 +100,21 @@ trait Implicits {
     result
   }
 
+  /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
+   */
+  def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree = {
+    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
+    def wrapper(inference: => SearchResult) = wrapper1(inference)
+    val result = wrapper(inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos))
+    if (result.isFailure && !silent) {
+      val err = context.firstError
+      val errPos = err.map(_.errPos).getOrElse(pos)
+      val errMsg = err.map(_.errMsg).getOrElse("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
+      onError(errPos, errMsg)
+    }
+    result.tree
+  }
+
   /** Find all views from type `tp` (in which `tpars` are free)
    *
    * Note that the trees in the search results in the returned list share the same type variables.
