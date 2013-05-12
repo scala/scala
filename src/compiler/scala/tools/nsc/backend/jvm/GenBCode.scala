@@ -24,7 +24,10 @@ import scala.tools.asm
  *          (a) an optional mirror class,
  *          (b) a plain class, and
  *          (c) an optional bean class.
- *    - each of the ClassNodes above is lowered into a byte-array (ie into a classfile) and serialized.
+ *    - each of the items (a), (b), (c) is placed on queue `q2`.
+ *      Those items will be transferred from that queue to `q3` by Worker2,
+ *      whose job is lowering a ClassNode into a byte-array (ie into a classfile)
+ *    - the classfilse are serialized in `drainQ3()`
  *
  *  Plain, mirror, and bean classes are built respectively by PlainClassBuilder, JMirrorBuilder, and JBeanInfoBuilder.
  *
@@ -53,6 +56,19 @@ abstract class GenBCode extends BCodeSyncAndTry {
     private var beanInfoCodeGen : JBeanInfoBuilder = null
 
     private var needsOutFolder  = false // whether getOutFolder(claszSymbol) should be invoked for each claszSymbol
+
+    /* ---------------- q2 ---------------- */
+
+    case class Item2(arrivalPos:   Int,
+                     mirror:       asm.tree.ClassNode,
+                     plain:        asm.tree.ClassNode,
+                     bean:         asm.tree.ClassNode,
+                     outFolder:    _root_.scala.tools.nsc.io.AbstractFile) {
+      def isPoison = { arrivalPos == Int.MaxValue }
+    }
+
+    private val poison2 = Item2(Int.MaxValue, null, null, null, null)
+    private val q2 = new _root_.java.util.LinkedList[Item2]
 
     /* ---------------- q3 ---------------- */
 
@@ -90,7 +106,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
     /*
      *  Checks for duplicate internal names case-insensitively,
-     *  builds ASM ClassNodes for mirror, plain, and bean classes.
+     *  builds ASM ClassNodes for mirror, plain, and bean classes;
+     *  enqueues them in queue-2.
      *
      */
     def visit(arrivalPos: Int, cd: ClassDef, cunit: CompilationUnit) {
@@ -138,17 +155,42 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
       // ----------- hand over to next pipeline
 
-      addToQ3(arrivalPos,
+      val item2 =
+        Item2(arrivalPos,
               mirrorC, plainC, beanC,
               outF)
 
+      q2 add item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
+
     } // end of method visit()
 
-    private def addToQ3(arrivalPos:   Int,
-                        mirror:       asm.tree.ClassNode,
-                        plain:        asm.tree.ClassNode,
-                        bean:         asm.tree.ClassNode,
-                        outFolder:    _root_.scala.tools.nsc.io.AbstractFile) {
+    /*
+     *  Pipeline that takes ClassNodes from queue-2. The unit of work depends on the optimization level:
+     *
+     *    (a) no optimization involves:
+     *          - converting the plain ClassNode to byte array and placing it on queue-3
+     */
+    class Worker2 {
+
+      def run() {
+        while (true) {
+          val item = q2.poll
+          if (item.isPoison) {
+            q3 add poison3
+            return
+          }
+          else {
+            try   { addToQ3(item) }
+            catch {
+              case ex: Throwable =>
+                ex.printStackTrace()
+                error("Error while emitting " + item.plain.name +  "\n"  + ex.getMessage)
+            }
+          }
+        }
+      }
+
+      private def addToQ3(item: Item2) {
 
           def getByteArray(cn: asm.tree.ClassNode): Array[Byte] = {
             val cw = new CClassWriter(extraProc)
@@ -156,13 +198,17 @@ abstract class GenBCode extends BCodeSyncAndTry {
             cw.toByteArray
           }
 
-      val mirrorC = if (mirror == null) null else SubItem3(mirror.name, getByteArray(mirror))
-      val plainC  = SubItem3(plain.name, getByteArray(plain))
-      val beanC   = if (bean == null)   null else SubItem3(bean.name, getByteArray(bean))
+        val Item2(arrivalPos, mirror, plain, bean, outFolder) = item
 
-      q3 add Item3(arrivalPos, mirrorC, plainC, beanC, outFolder)
+        val mirrorC = if (mirror == null) null else SubItem3(mirror.name, getByteArray(mirror))
+        val plainC  = SubItem3(plain.name, getByteArray(plain))
+        val beanC   = if (bean == null)   null else SubItem3(bean.name, getByteArray(bean))
 
-    }
+        q3 add Item3(arrivalPos, mirrorC, plainC, beanC, outFolder)
+
+      }
+
+    } // end of class BCodePhase.Worker2
 
     var arrivalPos = 0
 
@@ -191,7 +237,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
       needsOutFolder = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
 
       super.run()
-      q3 add poison3
+      q2 add poison2
+      (new Worker2).run()
       drainQ3()
 
       // closing output files.
@@ -253,6 +300,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
       }
 
       // we're done
+      assert(q2.isEmpty, "Some classfiles remained in the second queue: " + q2.toString)
       assert(q3.isEmpty, "Some classfiles weren't written to disk: "      + q3.toString)
 
     }
@@ -275,4 +323,3 @@ abstract class GenBCode extends BCodeSyncAndTry {
   } // end of class BCodePhase
 
 } // end of class GenBCode
-
