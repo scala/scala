@@ -15,7 +15,7 @@ import scala.language.{higherKinds, implicitConversions}
  *  @author Philipp Haller
  */
 @deprecated("Use `ExecutionContext` instead.", "2.10.0")
-trait TaskRunner {
+private[scala] trait TaskRunner {
 
   type Task[T]
 

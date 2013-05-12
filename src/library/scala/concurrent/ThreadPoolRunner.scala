@@ -17,7 +17,7 @@ import scala.language.implicitConversions
  *  @author Philipp Haller
  */
 @deprecated("Use `ExecutionContext` instead.", "2.10.0")
-trait ThreadPoolRunner extends FutureTaskRunner {
+private[scala] trait ThreadPoolRunner extends FutureTaskRunner {
 
   type Task[T] = Callable[T] with Runnable
   type Future[T] = java.util.concurrent.Future[T]
