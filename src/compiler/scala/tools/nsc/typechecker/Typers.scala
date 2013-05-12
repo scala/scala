@@ -1091,7 +1091,6 @@ trait Typers extends Adaptations with Tags {
           instantiateToMethodType(mt)
 
         case _ =>
-        def vanillaAdapt(tree: Tree) = {
           def shouldInsertApply(tree: Tree) = mode.inAll(EXPRmode | FUNmode) && (tree.tpe match {
             case _: MethodType | _: OverloadedType | _: PolyType => false
             case _                                               => applyPossible
@@ -1107,16 +1106,15 @@ trait Typers extends Adaptations with Tags {
           }
           if (tree.isType)
             adaptType()
+          else if (mode.inExprModeButNot(FUNmode) && treeInfo.isMacroApplication(tree))
+            macroExpandApply(this, tree, mode, pt)
           else if (mode.inAll(PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (shouldInsertApply(tree))
             insertApply()
-          else if (!context.undetparams.isEmpty && !mode.inPolyMode) { // (9)
+          else if (context.undetparams.nonEmpty && !mode.inPolyMode) { // (9)
             assert(!mode.inHKMode, mode) //@M
-            if (mode.inExprModeButNot(FUNmode) && pt.typeSymbol == UnitClass)
-              instantiateExpectingUnit(tree, mode)
-            else
-              instantiate(tree, mode, pt)
+            instantiatePossiblyExpectingUnit(tree, mode, pt)
           } else if (tree.tpe <:< pt) {
             tree
           } else {
@@ -1242,9 +1240,6 @@ trait Typers extends Adaptations with Tags {
             fallBack
           }
       }
-        val tree1 = if (mode.inExprModeButNot(FUNmode) && treeInfo.isMacroApplication(tree)) macroExpandApply(this, tree, mode, pt) else tree
-        if (tree == tree1) vanillaAdapt(tree1) else tree1
-    }
     }
 
     def instantiate(tree: Tree, mode: Mode, pt: Type): Tree = {
@@ -1262,6 +1257,13 @@ trait Typers extends Adaptations with Tags {
           val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
+    }
+
+    def instantiatePossiblyExpectingUnit(tree: Tree, mode: Mode, pt: Type): Tree = {
+      if (mode.inExprModeButNot(FUNmode) && pt.typeSymbol == UnitClass)
+        instantiateExpectingUnit(tree, mode)
+      else
+        instantiate(tree, mode, pt)
     }
 
     private def isAdaptableWithView(qual: Tree) = {
