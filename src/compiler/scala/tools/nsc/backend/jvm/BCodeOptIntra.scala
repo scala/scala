@@ -34,6 +34,102 @@ abstract class BCodeOptIntra extends BCodeSyncAndTry {
   import global._
 
   /*
+   *  SI-6720: Avoid java.lang.VerifyError: Uninitialized object exists on backward branch.
+   *
+   *  Quoting from the JVM Spec, 4.9.2 Structural Constraints , http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html
+   *
+   *     There must never be an uninitialized class instance on the operand stack or in a local variable
+   *     at the target of a backwards branch unless the special type of the uninitialized class instance
+   *     at the branch instruction is merged with itself at the target of the branch (Sec. 4.10.2.4).
+   *
+   *  The Oracle JVM as of JDK 7 has started rejecting bytecode of the form:
+   *
+   *      NEW x
+   *      DUP
+   *      ... instructions loading ctor-args, involving a backedge
+   *      INVOKESPECIAL <init>
+   *
+   *  `rephraseBackedgesInConstructorArgs()` overcomes the above by reformulating into:
+   *
+   *      ... instructions loading ctor-arg N
+   *      STORE nth-arg
+   *      ... instructions loading ctor-arg (N-1)
+   *      STORE (n-1)th-arg
+   *      ... and so on
+   *      STORE 1st-arg
+   *      NEW x
+   *      DUP
+   *      LOAD 1st-arg
+   *      ...
+   *      LOAD nth-arg
+   *      INVOKESPECIAL <init>
+   *
+   *  A warning informs that, in the rewritten version, `NEW x` comes after the code to compute arguments.
+   *  It's either that (potential) behavioral change or VerifyError.
+   *  "Behavioral change" that is, in case the class being instantiated has a side-effecting static initializer.
+   *
+   *  @param nxtIdx0  next available index for local variable
+   *  @param bes      backedges in ctor-arg section
+   *  @param newInsn  left  bracket of the section where backedges were found
+   *  @param initInsn right bracket of the section where backedges were found
+   *
+   */
+  def rephraseBackedgesInCtorArg(nxtIdx0:  Int,
+                                 bes:      _root_.java.util.Map[asm.tree.JumpInsnNode, asm.tree.LabelNode],
+                                 cnode:    asm.tree.ClassNode,
+                                 mnode:    asm.tree.MethodNode,
+                                 newInsn:  asm.tree.TypeInsnNode,
+                                 initInsn: MethodInsnNode): Int = {
+
+    var nxtIdx = nxtIdx0
+
+        def methodSignature(cnode: ClassNode, mnode: MethodNode): String = {
+          cnode.name + "::" + mnode.name + mnode.desc
+        }
+
+        def insnPos(insn: AbstractInsnNode, mnode: MethodNode): String = {
+          s"${Util.textify(insn)} at index ${mnode.instructions.indexOf(insn)}"
+        }
+
+    import collection.convert.Wrappers.JSetWrapper
+    for(
+      entry <- JSetWrapper(bes.entrySet());
+      jump  = entry.getKey;
+      label = entry.getValue
+    ) {
+      warning(
+        s"Backedge found in contructor-args section, in method ${methodSignature(cnode, mnode)} " +
+        s"(jump ${insnPos(jump, mnode)} , target ${insnPos(label, mnode)} ). " +
+        s"In order to avoid SI-6720, adding LOADs and STOREs for arguments. "  +
+        s"As a result, ${newInsn.desc} is now instantiated after evaluating all ctor-arguments, " +
+        s"on the assumption such class has not static-ctor performing visible side-effects that could make a difference."
+      )
+    }
+
+    assert(newInsn.getOpcode == asm.Opcodes.NEW)
+    val dupInsn = newInsn.getNext
+    val paramTypes = BType.getMethodType(initInsn.desc).getArgumentTypes
+
+    val stream = mnode.instructions
+    stream.remove(newInsn)
+    stream.remove(dupInsn)
+    stream.insertBefore(initInsn, newInsn)
+    stream.insertBefore(initInsn, dupInsn)
+
+    for(i <- (paramTypes.length - 1) to 0 by -1) {
+      val pt = paramTypes(i)
+      val idxVar = nxtIdx
+      nxtIdx += pt.getSize
+      val load  = new asm.tree.VarInsnNode(pt.getOpcode(asm.Opcodes.ILOAD),  idxVar)
+      val store = new asm.tree.VarInsnNode(pt.getOpcode(asm.Opcodes.ISTORE), idxVar)
+      stream.insertBefore(newInsn, store)
+      stream.insert(dupInsn,load)
+    }
+
+    nxtIdx
+  } // end of method rephraseBackedgesInCtorArg()
+
+  /*
    *  All methods in this class can-multi-thread
    */
   class EssentialCleanser(cnode: asm.tree.ClassNode) {

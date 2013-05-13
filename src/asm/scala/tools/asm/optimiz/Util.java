@@ -119,7 +119,7 @@ public class Util {
     public static boolean hasPushEffectOnly(final AbstractInsnNode producer) {
         if (Util.isLOAD(producer)) return true;
         // we leave out LDC <type> on purpose.
-        if(Util.isPrimitiveConstant(producer) || Util.isStringConstant(producer)) return true;
+        if (Util.isPrimitiveConstant(producer) || Util.isStringConstant(producer)) return true;
         // taking DUP to be push-effect-only leads to trouble.
         return false;
     }
@@ -304,6 +304,36 @@ public class Util {
 
     public static boolean hasBytecodeInstructions(final MethodNode m) {
         return (m.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) == 0;
+    }
+
+    // ------------------------------------------------------------------------
+    // jumps, backedges
+    // ------------------------------------------------------------------------
+
+    /**
+     *  @return all the backedges bracketed between instructions `start` and `end`
+     * */
+    public static Map<JumpInsnNode, LabelNode> backedges(final AbstractInsnNode start, final AbstractInsnNode end) {
+        Map<JumpInsnNode, LabelNode> result = new HashMap<JumpInsnNode, LabelNode>();
+        Set<LabelNode> seen = new HashSet<LabelNode>();
+        AbstractInsnNode current = start;
+        boolean stop = false;
+        do {
+            if (current.getType() == AbstractInsnNode.LABEL) {
+                seen.add((LabelNode)current);
+            } else if (current.getType() == AbstractInsnNode.JUMP_INSN) {
+                JumpInsnNode j = (JumpInsnNode)current;
+                if (seen.contains(j.label)) {
+                    result.put(j, j.label);
+                }
+            }
+            if (current == end) {
+                stop = true;
+            } else {
+                current = current.getNext();
+            }
+        } while (!stop);
+        return result;
     }
 
     // ------------------------------------------------------------------------
