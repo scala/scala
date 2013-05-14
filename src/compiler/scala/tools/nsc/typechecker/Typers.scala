@@ -4914,6 +4914,7 @@ trait Typers extends Adaptations with Tags {
                   && !tparam.isFBounded     /* SI-2251 */
                   && !tparam.isHigherOrderTypeParameter
                   && !(abounds.hi <:< tbounds.hi)
+                  && asym.isSynthetic     /* this limits us to placeholder tparams, excluding named ones */
                 )
                 arg match {
                   case Bind(_, _)                     => enhanceBounds()
