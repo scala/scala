@@ -1448,7 +1448,7 @@ TODO:
   </target>
 
   <target name="test.run" depends="pack.done">
-    <testSuite kinds="run jvm"/>
+    <testSuite kinds="run jvm avian"/>
   </target>
 
   <target name="test.continuations.suite" depends="pack.done">

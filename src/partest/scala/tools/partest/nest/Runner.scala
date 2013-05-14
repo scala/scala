@@ -275,6 +275,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     def retainOn(f: String) = f match {
       case "java7"  => javaVersion startsWith "1.7"
       case "java6"  => javaVersion startsWith "1.6"
+      case "avian"  => TestKinds.isAvian
       case _        => true
     }
     if (d contains prefix) {
