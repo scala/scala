@@ -123,7 +123,7 @@ extends AbstractMap[A, B]
       def next(): (A,B) =
         if (!hasNext) throw new NoSuchElementException("next on empty iterator")
         else { val res = (self.key, self.value); self = self.tail; res }
-    }.toList.reverseIterator
+    }.toList.iterator
 
   protected def key: A = throw new NoSuchElementException("empty map")
   protected def value: B = throw new NoSuchElementException("empty map")
@@ -217,5 +217,6 @@ extends AbstractMap[A, B]
 
 
     override def tail: ListMap[A, B1] = ListMap.this
+    override def head: (A, B1) = (key,value)
   }
 }
