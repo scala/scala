@@ -706,6 +706,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
             var expectedTpe = expandee.tpe
             if (isNullaryInvocation(expandee)) expectedTpe = expectedTpe.finalResultType
+            var undetparams = List[Symbol]()
+            def traverse(sym: Symbol) = if (sym.isTypeParameter && !sym.isSkolem) undetparams ::= sym
+            expectedTpe.foreach(sub => traverse(sub.typeSymbol))
+            expectedTpe = deriveTypeWithWildcards(undetparams)(expectedTpe)
+
             var typechecked = typecheck("macro def return type", expanded, expectedTpe)
             typechecked = typecheck("expected type", typechecked, pt)
             typechecked
@@ -757,8 +762,21 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           // (in a sense that a datatype's uniform representation is unambiguously determined by the datatype,
           // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
           // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
+          //
+          // =========== THE SOLUTION ===========
+          //
+          // To give materializers a chance to say their word before vanilla inference kicks in,
+          // we infer as much as possible (e.g. in the example above even though L is hopeless, C still can be inferred to Foo)
+          // and then trigger macro expansion with the undetermined type parameters still there.
+          // Thanks to that the materializer can take a look at what's going on and react accordingly.
+          // Simple, yet powerful and much more lightweight and elegant than onInfer.
+          // (What's onInfer? See http://docs.scala-lang.org/overviews/macros/inference.html)
           val shouldInstantiate = typer.context.undetparams.nonEmpty && !inPolyMode(mode)
-          if (shouldInstantiate) typer.instantiatePossiblyExpectingUnit(delayed, mode, pt)
+          if (shouldInstantiate) {
+            forced += delayed
+            typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
+            macroExpand(typer, delayed, mode, WildcardType)
+          }
           else delayed
         case Fallback(fallback) =>
           typer.context.withImplicitsEnabled(typer.typed(fallback, EXPRmode, pt))
@@ -877,10 +895,12 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
    *    2) undetparams (sym.isTypeParameter && !sym.isSkolem)
    */
   var hasPendingMacroExpansions = false
+  private val forced = perRunCaches.newWeakSet[Tree]
   private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]
   private def isDelayed(expandee: Tree) = delayed contains expandee
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
-    delayed.get(expandee).getOrElse {
+    if (forced contains expandee) scala.collection.mutable.Set[Int]()
+    else delayed.get(expandee).getOrElse {
       val calculated = scala.collection.mutable.Set[Symbol]()
       expandee foreach (sub => {
         def traverse(sym: Symbol) = if (sym != null && (undetparams contains sym.id)) calculated += sym
