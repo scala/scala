@@ -597,11 +597,19 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private class WrappedRequest(val req: Request) extends CompiledScript {
     var recorded = false
 
+    /** In Java we would have to wrap any checked exception in the declared
+     *  ScriptException. Runtime exceptions and errors would be ok and would
+     *  not need to be catched. So let us do the same in Scala : catch and
+     *  wrap any checked exception, and let runtime exceptions and errors
+     *  escape. We could have wrapped runtime exceptions just like other
+     *  exceptions in ScriptException, this is a choice.
+     */
     @throws(classOf[ScriptException])
     def eval(context: ScriptContext): Object = {
       val result = req.lineRep.evalEither match {
+        case Left(e: RuntimeException) => throw e
         case Left(e: Exception) => throw new ScriptException(e)
-        case Left(_) => throw new ScriptException("run-time error")
+        case Left(e) => throw e
         case Right(result) => result.asInstanceOf[Object]
       }
       if (!recorded) {
@@ -899,7 +907,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       val preamble = """
       |object %s {
       |  %s
-      |  val %s: String = %s {
+      |  lazy val %s: String = %s {
       |    %s
       |    (""
       """.stripMargin.format(
