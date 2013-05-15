@@ -209,7 +209,7 @@ class Path private[io] (val jfile: JFile) {
   }
   def isDirectory = {
     if (Statistics.canEnable) Statistics.incCounter(IOStats.fileIsDirectoryCount)
-    try jfile.isDirectory() catch { case ex: SecurityException => false }
+    try jfile.isDirectory() catch { case ex: SecurityException => jfile.getPath == "." }
   }
   def isAbsolute = jfile.isAbsolute()
   def isEmpty = path.length == 0
