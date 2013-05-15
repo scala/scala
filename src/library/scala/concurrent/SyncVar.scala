@@ -79,7 +79,7 @@ class SyncVar[A] {
   // whether or not the SyncVar is already defined. So, set has been
   // deprecated in order to eventually be able to make "setting" private
   @deprecated("Use `put` instead, as `set` is potentionally error-prone", "2.10.0")
-  def set(x: A): Unit = setVal(x)
+  private[scala] def set(x: A): Unit = setVal(x)
 
   /** Places a value in the SyncVar. If the SyncVar already has a stored value,
    * it waits until another thread takes it */
@@ -98,7 +98,7 @@ class SyncVar[A] {
   // whether or not the SyncVar is already defined. So, unset has been
   // deprecated in order to eventually be able to make "unsetting" private
   @deprecated("Use `take` instead, as `unset` is potentionally error-prone", "2.10.0")
-  def unset(): Unit = synchronized {
+  private[scala] def unset(): Unit = synchronized {
     isDefined = false
     value = None
     notifyAll()
