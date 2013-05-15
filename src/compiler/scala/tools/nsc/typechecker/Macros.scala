@@ -394,7 +394,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
             case Fallback(fallback) =>
               typer.typed1(fallback, EXPRmode, WildcardType)
             case Delayed(delayed) =>
-              delayed
+              typer.instantiate(delayed, EXPRmode, WildcardType)
             case Skipped(skipped) =>
               skipped
             case Failure(failure) =>
@@ -777,6 +777,29 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           if (macroDebugVerbose && expanded2.isErrorTyped) println(s"typecheck #2 has failed: ${typer.context.reportBuffer.errors}")
           expanded2
         }
+      }
+      override def onDelayed(delayed: Tree) = {
+        // If we've been delayed (i.e. bailed out of the expansion because of undetermined type params present in the expandee),
+        // then there are two possible situations we're in:
+        // 1) We're in POLYmode, when the typer tests the waters wrt type inference
+        // (e.g. as in typedArgToPoly in doTypedApply).
+        // 2) We're out of POLYmode, which means that the typer is out of tricks to infer our type
+        // (e.g. if we're an argument to a function call, then this means that no previous argument lists
+        // can determine our type variables for us).
+        //
+        // Situation #1 is okay for us, since there's no pressure. In POLYmode we're just verifying that
+        // there's nothing outrageously wrong with our undetermined type params (from what I understand!).
+        //
+        // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
+        // the undetermined type params. Therefore we need to do something ourselves or otherwise this
+        // expandee will forever remaing not expanded (see SI-5692). A traditional way out of this conundrum
+        // is to call `instantiate` and let the inferencer try to find the way out. It works for simple cases,
+        // but sometimes, if the inferencer lacks information, it will be forced to approximate. This prevents
+        // an important class of macros, fundep materializers, from working, which I perceive is a problem we need to solve.
+        // For details see SI-7470.
+        val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
+        if (shouldInstantiate) typer.instantiatePossiblyExpectingUnit(delayed, mode, pt)
+        else delayed
       }
     }
     expander(expandee)
