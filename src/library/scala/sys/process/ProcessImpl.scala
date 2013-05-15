@@ -223,8 +223,21 @@ private[process] trait ProcessImpl {
       p.exitValue()
     }
     override def destroy() = {
-      try{
-        outputThreads foreach (_.stop())
+      /*
+      val ms = 500L     // wait for thread to join
+      def nudge() {
+        for (t <- outputThreads; if t.isAlive) {
+          t.interrupt() // on destroy, don't bother consuming any more output
+          t.join(ms)    // this ensures that threads are done before zapping their streams
+        }
+      }
+      try {
+        nudge()
+        p.destroy()
+      }
+      */
+      try {
+        outputThreads foreach (_.interrupt()) // on destroy, don't bother consuming any more output
         p.destroy()
       }
       finally inputThread.interrupt()
