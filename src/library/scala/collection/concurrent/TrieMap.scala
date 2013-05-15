@@ -10,7 +10,9 @@ package scala
 package collection
 package concurrent
 
+import java.lang.Integer
 import java.util.concurrent.atomic._
+
 import scala.collection.immutable.{ ListMap => ImmutableListMap }
 import scala.collection.parallel.mutable.ParTrieMap
 import scala.util.hashing.Hashing

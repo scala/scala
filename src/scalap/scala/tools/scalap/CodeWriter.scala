@@ -9,8 +9,8 @@
 package scala
 package tools.scalap
 
+import java.lang.String
 import java.io._
-
 
 class CodeWriter(writer: Writer) {
 

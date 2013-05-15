@@ -7,6 +7,8 @@ package scala
 package reflect
 package internal.util
 
+import java.lang.StackTraceElement
+
 import scala.collection.{ mutable, immutable }
 
 /** A debugging class for logging from whence a method is being called.
@@ -49,7 +51,7 @@ abstract class Origins {
 
   // Create a stack and whittle it down to the interesting part.
   def readStack(): Array[StackTraceElement] = (
-    Thread.currentThread.getStackTrace dropWhile (x => !isCutoff(x)) dropWhile isCutoff drop 1
+    java.lang.Thread.currentThread.getStackTrace dropWhile (x => !isCutoff(x)) dropWhile isCutoff drop 1
   )
 
   def apply[T](body: => T): T = {
@@ -95,7 +97,7 @@ object Origins {
     || (el.getClassName startsWith "java.lang.")
   )
   private def findCutoff() = {
-    val cutoff = (Thread.currentThread.getStackTrace dropWhile preCutoff).head
+    val cutoff = (java.lang.Thread.currentThread.getStackTrace dropWhile preCutoff).head
     OriginId(cutoff.getClassName, cutoff.getMethodName)
   }
 

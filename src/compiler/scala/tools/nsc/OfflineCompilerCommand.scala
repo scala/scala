@@ -25,9 +25,9 @@ class OfflineCompilerCommand(arguments: List[String], settings: FscSettings) ext
       // ... except on windows, because under cygwin PWD involves "/cygdrive"
       // instead of whatever it's supposed to be doing.
       val baseDirectory = {
-        val pwd = System.getenv("PWD")
+        val pwd = java.lang.System.getenv("PWD")
         if (pwd == null || isWin) Directory.Current getOrElse Directory("/")
-        else Directory(pwd) 
+        else Directory(pwd)
       }
       currentDir.value = baseDirectory.path
     }

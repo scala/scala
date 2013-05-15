@@ -8,6 +8,7 @@ package tools.nsc
 package interpreter
 
 import Predef.{ println => _, _ }
+import java.lang.Object
 import util.stringFromWriter
 import scala.reflect.internal.util._
 import java.net.URL
@@ -248,7 +249,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   /** Parent classloader.  Overridable. */
-  protected def parentClassLoader: ClassLoader =
+  protected def parentClassLoader: java.lang.ClassLoader =
     settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
@@ -320,7 +321,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
   }
 
-  private class TranslatingClassLoader(parent: ClassLoader) extends util.AbstractFileClassLoader(replOutput.dir, parent) {
+  private class TranslatingClassLoader(parent: java.lang.ClassLoader) extends util.AbstractFileClassLoader(replOutput.dir, parent) {
     /** Overridden here to try translating a simple name to the generated
      *  class name if the original attempt fails.  This method is used by
      *  getResourceAsStream as well as findClass.
@@ -762,8 +763,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     private def evalError(path: String, ex: Throwable) =
       throw new EvalException("Failed to load '" + path + "': " + ex.getMessage, ex)
 
-    private def load(path: String): Class[_] = {
-      try Class.forName(path, true, classLoader)
+    private def load(path: String): java.lang.Class[_] = {
+      try java.lang.Class.forName(path, true, classLoader)
       catch { case ex: Throwable => evalError(path, unwrap(ex)) }
     }
 

@@ -1,6 +1,7 @@
 package scala
 package reflect.internal.util
 
+import java.lang.System
 import scala.collection.mutable
 
 object Statistics {

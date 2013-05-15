@@ -16,7 +16,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
   val cf = classfile
 
   def flagsToStr(clazz: Boolean, flags: Int): String = {
-    val buffer = new StringBuffer()
+    val buffer = new StringBuilder()
     if (((flags & 0x0007) == 0) &&
       ((flags & 0x0002) != 0))
       buffer.append("private ")

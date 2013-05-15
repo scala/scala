@@ -25,7 +25,7 @@ trait Javap {
 
 object NoJavap extends Javap {
   def loader: ScalaClassLoader                   = getClass.getClassLoader
-  def printWriter: PrintWriter                   = new PrintWriter(System.err, true)
+  def printWriter: PrintWriter                   = new PrintWriter(java.lang.System.err, true)
   def apply(args: Seq[String]): List[JpResult]   = Nil
   def tryFile(path: String): Option[Array[Byte]] = None
   def tryClass(path: String): Array[Byte]        = Array()

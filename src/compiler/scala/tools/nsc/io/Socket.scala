@@ -23,7 +23,7 @@ object Socket {
 
   class Box[+T](f: () => T) {
     private def handlerFn[U](f: Throwable => U): PartialFunction[Throwable, U] = {
-      case x @ (_: IOException | _: SecurityException)  => f(x)
+      case x @ (_: IOException | _: java.lang.SecurityException)  => f(x)
     }
     private val optHandler = handlerFn[Option[T]](_ => None)
     private val eitherHandler = handlerFn[Either[Throwable, T]](x => Left(x))

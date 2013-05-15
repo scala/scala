@@ -132,7 +132,7 @@ extends TrieMapIterator[K, V](lev, ct, mustInit)
   protected override def newIterator(_lev: Int, _ct: TrieMap[K, V], _mustInit: Boolean) = new ParTrieMapSplitter[K, V](_lev, _ct, _mustInit)
 
   override def shouldSplitFurther[S](coll: scala.collection.parallel.ParIterable[S], parallelismLevel: Int) = {
-    val maxsplits = 3 + Integer.highestOneBit(parallelismLevel)
+    val maxsplits = 3 + java.lang.Integer.highestOneBit(parallelismLevel)
     level < maxsplits
   }
 

@@ -61,8 +61,8 @@ abstract class ScaladocModelTest extends DirectTest {
 
   override def show(): Unit = {
     // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
+    val prevErr = java.lang.System.err
+    java.lang.System.setErr(java.lang.System.out)
 
     try {
       // 1 - compile with scaladoc and get the model out
@@ -76,7 +76,7 @@ abstract class ScaladocModelTest extends DirectTest {
         e.printStackTrace
     }
     // set err back to the real err handler
-    System.setErr(prevErr)
+    java.lang.System.setErr(prevErr)
   }
 
   private[this] var settings: doc.Settings = null

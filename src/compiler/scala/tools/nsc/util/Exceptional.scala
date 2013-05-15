@@ -1,6 +1,7 @@
 package scala.tools.nsc
 package util
 
+import java.lang.ExceptionInInitializerError
 import java.util.concurrent.ExecutionException
 import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
 

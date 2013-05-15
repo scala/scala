@@ -5,11 +5,13 @@
 package scala.tools.partest
 package nest
 
+import java.lang.System
 import java.io.{ Console => _, _ }
 import java.net.URL
 import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.io.Codec
@@ -701,9 +703,9 @@ trait DirectRunner {
 
   import PartestDefaults.{ numThreads, waitTime }
 
-  Thread.setDefaultUncaughtExceptionHandler(
-    new Thread.UncaughtExceptionHandler {
-      def uncaughtException(thread: Thread, t: Throwable) {
+  java.lang.Thread.setDefaultUncaughtExceptionHandler(
+    new java.lang.Thread.UncaughtExceptionHandler {
+      def uncaughtException(thread: java.lang.Thread, t: Throwable) {
         val t1 = Exceptional unwrap t
         System.err.println(s"Uncaught exception on thread $thread: $t1")
         t1.printStackTrace()

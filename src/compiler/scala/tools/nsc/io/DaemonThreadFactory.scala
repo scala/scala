@@ -9,8 +9,8 @@ package io
 import java.util.concurrent._
 
 class DaemonThreadFactory extends ThreadFactory {
-  def newThread(r: Runnable): Thread = {
-    val thread = new Thread(r)
+  def newThread(r: java.lang.Runnable): java.lang.Thread = {
+    val thread = new java.lang.Thread(r)
     thread setDaemon true
     thread
   }

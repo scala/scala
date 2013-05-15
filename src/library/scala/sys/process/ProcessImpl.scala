@@ -11,6 +11,8 @@ package sys
 package process
 
 import processInternal._
+
+import java.lang.Thread
 import java.io.{ PipedInputStream, PipedOutputStream }
 
 private[process] trait ProcessImpl {

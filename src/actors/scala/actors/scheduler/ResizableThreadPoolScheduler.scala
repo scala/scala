@@ -8,6 +8,8 @@
 
 package scala.actors.scheduler
 
+import java.lang.{Runnable, Thread}
+
 import scala.actors.threadpool.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue,
                                 ThreadFactory}
 import scala.actors.{Debug, IScheduler}
@@ -42,7 +44,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
   // guarded by this
   private var coreSize = ThreadPoolConfig.corePoolSize
   private val maxSize = ThreadPoolConfig.maxPoolSize
-  private val numCores = Runtime.getRuntime().availableProcessors()
+  private val numCores = java.lang.Runtime.getRuntime().availableProcessors()
 
   protected val CHECK_FREQ = 10
 

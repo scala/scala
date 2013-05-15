@@ -126,7 +126,7 @@ class Parser extends StdTokenParsers with ImplicitConversions {
   protected var defaultNumberParser : NumericParser = {_.toDouble}
 
   // Per-thread default number parsing function
-  protected val numberParser = new ThreadLocal[NumericParser]() {
+  protected val numberParser = new java.lang.ThreadLocal[NumericParser]() {
     override def initialValue() = defaultNumberParser
   }
 

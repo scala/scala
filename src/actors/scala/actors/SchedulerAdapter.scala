@@ -25,7 +25,7 @@ trait SchedulerAdapter extends IScheduler {
    *
    *  @param  task  the task to be executed
    */
-  def execute(task: Runnable): Unit =
+  def execute(task: java.lang.Runnable): Unit =
     execute { task.run() }
 
   /** Shuts down the scheduler.

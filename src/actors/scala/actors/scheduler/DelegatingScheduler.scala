@@ -37,9 +37,9 @@ private[actors] trait DelegatingScheduler extends IScheduler {
 
   def execute(fun: => Unit) = impl.execute(fun)
 
-  def execute(task: Runnable) = impl.execute(task)
+  def execute(task: java.lang.Runnable) = impl.execute(task)
 
-  override def executeFromActor(task: Runnable) = impl.executeFromActor(task)
+  override def executeFromActor(task: java.lang.Runnable) = impl.executeFromActor(task)
 
   def shutdown(): Unit = synchronized {
     if (sched ne null) {

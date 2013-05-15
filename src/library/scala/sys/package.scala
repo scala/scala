@@ -8,6 +8,8 @@
 
 package scala
 
+import java.lang.Thread
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
@@ -45,7 +47,7 @@ package object sys {
    *
    *  @return   the result of `java.lang.Runtime.getRuntime()`
    */
-  def runtime: Runtime = Runtime.getRuntime
+  def runtime: java.lang.Runtime = java.lang.Runtime.getRuntime
 
   /** A bidirectional, mutable Map representing the current system Properties.
    *
@@ -58,7 +60,7 @@ package object sys {
    *
    *  @return   a Map containing the system environment variables.
    */
-  def env: immutable.Map[String, String] = immutable.Map(System.getenv().asScala.toSeq: _*)
+  def env: immutable.Map[String, String] = immutable.Map(java.lang.System.getenv().asScala.toSeq: _*)
 
   /** Register a shutdown hook to be run when the VM exits.
    *  The newly created thread is marked as a daemon so it will not

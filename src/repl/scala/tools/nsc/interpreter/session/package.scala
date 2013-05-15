@@ -19,5 +19,5 @@ package object session {
   type JMemoryHistory     = scala.tools.jline.console.history.MemoryHistory
   type JPersistentHistory = scala.tools.jline.console.history.PersistentHistory
 
-  private[interpreter] implicit def charSequenceFix(x: CharSequence): String = x.toString
+  private[interpreter] implicit def charSequenceFix(x: java.lang.CharSequence): String = x.toString
 }

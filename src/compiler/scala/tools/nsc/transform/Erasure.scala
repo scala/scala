@@ -288,7 +288,7 @@ abstract class Erasure extends AddInterfaces
           poly + jsig(restpe)
 
         case MethodType(params, restpe) =>
-          val buf = new StringBuffer("(")
+          val buf = new StringBuilder("(")
           params foreach (p => buf append jsig(p.tpe))
           buf append ")"
           buf append (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))

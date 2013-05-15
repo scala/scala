@@ -5,6 +5,8 @@
 package scala.tools.nsc
 package ast.parser
 
+import java.lang.Character
+
 import scala.tools.nsc.util.CharArrayReader
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._

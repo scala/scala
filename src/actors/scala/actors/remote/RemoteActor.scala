@@ -47,10 +47,10 @@ object RemoteActor {
    * of <code>java.io.ObjectInputStream</code> is used for deserializing
    * objects sent as messages.
    */
-  private var cl: ClassLoader = null
+  private var cl: java.lang.ClassLoader = null
 
-  def classLoader: ClassLoader = cl
-  def classLoader_=(x: ClassLoader) { cl = x }
+  def classLoader: java.lang.ClassLoader = cl
+  def classLoader_=(x: java.lang.ClassLoader) { cl = x }
 
   /**
    * Makes <code>self</code> remotely accessible on TCP port

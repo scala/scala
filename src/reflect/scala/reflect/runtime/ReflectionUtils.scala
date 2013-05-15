@@ -6,6 +6,8 @@
 package scala
 package reflect.runtime
 
+import java.lang.{ClassNotFoundException, NoSuchMethodException}
+import java.lang.{NoClassDefFoundError, ExceptionInInitializerError}
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 
@@ -31,14 +33,14 @@ private[scala] object ReflectionUtils {
 
   private def systemProperties: Iterator[(String, String)] = {
     import scala.collection.JavaConverters._
-    System.getProperties.asScala.iterator
+    java.lang.System.getProperties.asScala.iterator
   }
 
   private def inferBootClasspath: String = (
     systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
   )
 
-  def show(cl: ClassLoader): String = {
+  def show(cl: java.lang.ClassLoader): String = {
     import scala.language.reflectiveCalls
 
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
@@ -46,7 +48,7 @@ private[scala] object ReflectionUtils {
       if (clazz.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader") return true
       isAbstractFileClassLoader(clazz.getSuperclass)
     }
-    def inferClasspath(cl: ClassLoader): String = cl match {
+    def inferClasspath(cl: java.lang.ClassLoader): String = cl match {
       case cl: java.net.URLClassLoader =>
         (cl.getURLs mkString ",")
       case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
@@ -64,7 +66,7 @@ private[scala] object ReflectionUtils {
     }
   }
 
-  def staticSingletonInstance(cl: ClassLoader, className: String): AnyRef = {
+  def staticSingletonInstance(cl: java.lang.ClassLoader, className: String): AnyRef = {
     val name = if (className endsWith "$") className else className + "$"
     val clazz = java.lang.Class.forName(name, true, cl)
     staticSingletonInstance(clazz)

@@ -7,6 +7,8 @@ package scala.tools.nsc
 package interpreter
 package session
 
+import java.lang.CharSequence
+
 /** A straight scalification of the jline interface which mixes
  *  in the sparse jline-independent one too.
  */

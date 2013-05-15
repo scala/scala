@@ -24,7 +24,7 @@ object Source {
 
   /** Creates a `Source` from System.in.
    */
-  def stdin = fromInputStream(System.in)
+  def stdin = fromInputStream(java.lang.System.in)
 
   /** Creates a Source from an Iterable.
    *

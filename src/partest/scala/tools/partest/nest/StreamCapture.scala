@@ -5,6 +5,7 @@
 package scala.tools.partest
 package nest
 
+import java.lang.System
 import java.io.{ Console => _, _ }
 
 object StreamCapture {

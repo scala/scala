@@ -10,10 +10,11 @@ package scala
 package xml
 package pull
 
-import scala.io.Source
 import java.lang.Thread
 import java.util.concurrent.LinkedBlockingQueue
 import java.nio.channels.ClosedChannelException
+
+import scala.io.Source
 import scala.xml.parsing.{ ExternalSources, MarkupHandler, MarkupParser }
 
 /**
@@ -57,7 +58,7 @@ extends scala.collection.AbstractIterator[XMLEvent]
     parserThread.interrupt()
   }
 
-  private class Parser(val input: Source) extends MarkupHandler with MarkupParser with ExternalSources with Runnable {
+  private class Parser(val input: Source) extends MarkupHandler with MarkupParser with ExternalSources with java.lang.Runnable {
     val preserveWS = XMLEventReader.this.preserveWS
     // track level for elem memory usage optimization
     private var level = 0

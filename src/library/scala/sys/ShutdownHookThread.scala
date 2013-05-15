@@ -16,7 +16,7 @@ package sys
  *  @version 2.9
  *  @since   2.9
  */
-class ShutdownHookThread private (name: String) extends Thread(name) {
+class ShutdownHookThread private (name: String) extends java.lang.Thread(name) {
   def remove() = runtime removeShutdownHook this
 }
 

@@ -36,11 +36,11 @@ object Compilers extends scala.collection.DefaultMap[String, Compiler] {
     if (debug) println("Breaking compiler " + id)
     if (debug) println("  memory before: " + freeMemoryString)
     container -= id
-    System.gc()
+    java.lang.System.gc()
     if (debug) println("  memory after: " + freeMemoryString)
     null
   }
 
   private def freeMemoryString: String =
-    (Runtime.getRuntime.freeMemory/1048576.0).formatted("%10.2f") + " MB"
+    (java.lang.Runtime.getRuntime.freeMemory/1048576.0).formatted("%10.2f") + " MB"
 }

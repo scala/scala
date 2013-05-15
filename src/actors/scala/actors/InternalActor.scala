@@ -79,7 +79,7 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
     }
   }
 
-  private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
+  private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): java.lang.Runnable =
     new ActorTask(this, fun, handler, msg)
 
   /** See the companion object's `receive` method. */

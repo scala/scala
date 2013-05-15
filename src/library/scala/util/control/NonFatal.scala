@@ -34,9 +34,9 @@ object NonFatal {
     * Returns true if the provided `Throwable` is to be considered non-fatal, or false if it is to be considered fatal
     */
    def apply(t: Throwable): Boolean = t match {
-     case _: StackOverflowError => true // StackOverflowError ok even though it is a VirtualMachineError
+     case _: java.lang.StackOverflowError => true // StackOverflowError ok even though it is a VirtualMachineError
      // VirtualMachineError includes OutOfMemoryError and other fatal errors
-     case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable => false
+     case _: java.lang.VirtualMachineError | _: java.lang.ThreadDeath | _: InterruptedException | _: java.lang.LinkageError | _: ControlThrowable => false
      case _ => true
    }
   /**

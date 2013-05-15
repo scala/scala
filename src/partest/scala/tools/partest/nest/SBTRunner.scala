@@ -79,7 +79,7 @@ object SBTRunner extends DirectRunner {
   def main(args: Array[String]): Unit = {
     val failures = mainReflect(args).asScala collect { case s if !s.isOk => s.longStatus }
     // Re-list all failures so we can go figure out what went wrong.
-    failures foreach System.err.println
+    failures foreach java.lang.System.err.println
     if(!failures.isEmpty) sys.exit(1)
   }
 }

@@ -25,10 +25,10 @@ abstract class Reader[+T] {
    *  @throws [[java.lang.NoSuchMethodError]] if this not a char sequence reader.
    */
   def source: java.lang.CharSequence =
-    throw new NoSuchMethodError("not a char sequence reader")
+    throw new java.lang.NoSuchMethodError("not a char sequence reader")
 
   def offset: Int =
-    throw new NoSuchMethodError("not a char sequence reader")
+    throw new java.lang.NoSuchMethodError("not a char sequence reader")
 
    /** Returns the first element of the reader
     */

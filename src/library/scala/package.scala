@@ -19,15 +19,22 @@ package object scala {
   type RuntimeException                = java.lang.RuntimeException
   type NullPointerException            = java.lang.NullPointerException
   type ClassCastException              = java.lang.ClassCastException
+  type ClassNotFoundException          = java.lang.ClassNotFoundException
   type IndexOutOfBoundsException       = java.lang.IndexOutOfBoundsException
   type ArrayIndexOutOfBoundsException  = java.lang.ArrayIndexOutOfBoundsException
   type StringIndexOutOfBoundsException = java.lang.StringIndexOutOfBoundsException
+  type SecurityException               = java.lang.SecurityException
   type UnsupportedOperationException   = java.lang.UnsupportedOperationException
   type IllegalArgumentException        = java.lang.IllegalArgumentException
+  type IllegalStateException           = java.lang.IllegalStateException
   type NoSuchElementException          = java.util.NoSuchElementException
+  type NoSuchMethodException           = java.lang.NoSuchMethodException
   type NumberFormatException           = java.lang.NumberFormatException
-  type AbstractMethodError             = java.lang.AbstractMethodError
   type InterruptedException            = java.lang.InterruptedException
+  type AbstractMethodError             = java.lang.AbstractMethodError
+  type AssertionError                  = java.lang.AssertionError
+  type NoSuchMethodError               = java.lang.NoSuchMethodError
+  type NoClassDefFoundError            = java.lang.NoClassDefFoundError
 
   // A dummy used by the specialization annotation.
   val AnyRef = new Specializable {

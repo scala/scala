@@ -36,7 +36,7 @@ class ByteArrayReader(content: Array[Byte]) {
    */
   def nextBytes(len: Int): Array[Byte] = {
     val res = new Array[Byte](len)
-    System.arraycopy(buf, bp, res, 0, len)
+    scala.compat.Platform.arraycopy(buf, bp, res, 0, len)
     bp += len
     res
   }

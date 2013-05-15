@@ -5,6 +5,7 @@
 
 package scala.tools.nsc
 
+import java.lang.{Runnable, Thread}
 import java.util.concurrent.{ Future, Callable }
 import java.util.{ Timer, TimerTask }
 import scala.language.implicitConversions

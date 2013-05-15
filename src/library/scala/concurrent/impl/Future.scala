@@ -16,7 +16,7 @@ import scala.util.{ Success, Failure }
 
 
 private[concurrent] object Future {
-  class PromiseCompletingRunnable[T](body: => T) extends Runnable {
+  class PromiseCompletingRunnable[T](body: => T) extends java.lang.Runnable {
     val promise = new Promise.DefaultPromise[T]()
 
     override def run() = {

@@ -27,9 +27,9 @@ class SyncVar[A] {
    *  went backward, it will return 0, so it never returns negative results.
    */
   private def waitMeasuringElapsed(timeout: Long): Long = if (timeout <= 0) 0 else {
-    val start = System.currentTimeMillis
+    val start = java.lang.System.currentTimeMillis
     wait(timeout)
-    val elapsed = System.currentTimeMillis - start
+    val elapsed = java.lang.System.currentTimeMillis - start
     if (elapsed < 0) 0 else elapsed
   }
 

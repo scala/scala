@@ -1,7 +1,9 @@
 package scala.tools.util
 
-import scala.tools.nsc.io._
+import java.lang.ClassLoader
 import java.net.URLClassLoader
+
+import scala.tools.nsc.io._
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
 
@@ -10,7 +12,7 @@ object VerifyClass {
   // Returns the error if there's a failure
   private def checkClass(name : String, cl: ClassLoader) : (String, Option[String]) = {
     try   {
-      Class.forName(name, true, cl)
+      java.lang.Class.forName(name, true, cl)
       (name, None)
     } catch {
       case x: Throwable => // TODO: only catch VerifyError (and related) + ExceptionInInitializationError (for static objects that bomb on classload)
@@ -48,6 +50,6 @@ object VerifyClass {
     for( (name, result) <- results; if result != null) {
       println(name + " had error: " + result)
     }
-    System.exit(if(errors.size > 0) 1 else 0)
+    java.lang.System.exit(if(errors.size > 0) 1 else 0)
   }
 }

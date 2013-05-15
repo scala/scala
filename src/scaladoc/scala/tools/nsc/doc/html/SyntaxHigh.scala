@@ -6,6 +6,8 @@
 package scala
 package tools.nsc.doc.html
 
+import java.lang.Character
+
 import scala.xml.NodeSeq
 import scala.annotation.tailrec
 

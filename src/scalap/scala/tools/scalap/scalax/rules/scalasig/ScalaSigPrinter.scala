@@ -284,7 +284,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def toString(attrib: AttributeInfo): String  = {
-    val buffer = new StringBuffer
+    val buffer = new StringBuilder
     buffer.append(toString(attrib.typeRef, "@"))
     if (attrib.value.isDefined) {
       buffer.append("(")

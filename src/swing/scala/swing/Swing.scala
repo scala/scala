@@ -29,7 +29,7 @@ object Swing {
   implicit def pair2Point(p: (Int, Int)): Point = new Point(p._1, p._2)
   implicit def pair2Point(p: (Int, Int, Int, Int)): Rectangle = new Rectangle(p._1, p._2, p._3, p._4)
 
-  @inline final def Runnable(@inline block: =>Unit) = new Runnable {
+  @inline final def Runnable(@inline block: =>Unit) = new java.lang.Runnable {
     def run = block
   }
   final def ChangeListener(f: ChangeEvent => Unit) = new ChangeListener {

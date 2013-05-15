@@ -29,7 +29,7 @@ trait ScratchPadMaker { self: Global =>
 
     private def nameType(name: String, tpe: Type): String = {
       // if name ends in symbol character, add a space to separate it from the following ':'
-      val pad = if (Character.isLetter(name.last) || Character.isDigit(name.last)) "" else " "
+      val pad = if (java.lang.Character.isLetter(name.last) || java.lang.Character.isDigit(name.last)) "" else " "
       name+pad+": "+tpe
     }
 

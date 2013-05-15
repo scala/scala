@@ -5,14 +5,18 @@ package runtime
 import scala.ref.WeakReference
 import scala.collection.mutable.WeakHashMap
 
+import java.lang.ClassLoader
+import java.lang.{ClassNotFoundException, NoSuchFieldException, NoSuchMethodException}
+import java.lang.{LinkageError, NoClassDefFoundError}
 import java.lang.{Class => jClass, Package => jPackage}
 import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable, Array => jArray,
-  AccessibleObject => jAccessibleObject,
-  GenericDeclaration, GenericArrayType, ParameterizedType, WildcardType, AnnotatedElement }
+  AccessibleObject => jAccessibleObject}
+import java.lang.reflect.{GenericDeclaration, GenericArrayType, ParameterizedType, WildcardType, AnnotatedElement}
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
+
 import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags, JMethodOrConstructor }
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
@@ -90,7 +94,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 // ----------- Caching ------------------------------------------------------------------
 
     private val classCache       = new TwoWayCache[jClass[_], ClassSymbol]
-    private val packageCache     = new TwoWayCache[Package, ModuleSymbol]
+    private val packageCache     = new TwoWayCache[jPackage, ModuleSymbol]
     private val methodCache      = new TwoWayCache[jMethod, MethodSymbol]
     private val constructorCache = new TwoWayCache[jConstructor[_], MethodSymbol]
     private val fieldCache       = new TwoWayCache[jField, TermSymbol]
@@ -145,7 +149,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       object AnnotationClass { def unapply(x: jClass[_]) = x.isAnnotation }
 
       object ConstantArg {
-        def enumToSymbol(enum: Enum[_]): Symbol = {
+        def enumToSymbol(enum: java.lang.Enum[_]): Symbol = {
           val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
           staticPartOfEnum.typeSignature.declaration(enum.name: TermName)
         }
@@ -153,7 +157,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
           case (StringClass | PrimitiveClass(), value) => Some(value)
           case (ClassClass, value: jClass[_])          => Some(classToScala(value).toType)
-          case (EnumClass(), value: Enum[_])           => Some(enumToSymbol(value))
+          case (EnumClass(), value: java.lang.Enum[_]) => Some(enumToSymbol(value))
           case _                                       => None
         }
       }

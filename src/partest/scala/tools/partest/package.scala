@@ -35,11 +35,11 @@ package object partest {
   implicit val codec = scala.io.Codec.UTF8
 
   def setUncaughtHandler() = {
-    Thread.setDefaultUncaughtExceptionHandler(
-      new Thread.UncaughtExceptionHandler {
-        def uncaughtException(thread: Thread, t: Throwable) {
+    java.lang.Thread.setDefaultUncaughtExceptionHandler(
+      new java.lang.Thread.UncaughtExceptionHandler {
+        def uncaughtException(thread: java.lang.Thread, t: Throwable) {
           val t1 = Exceptional unwrap t
-          System.err.println(s"Uncaught exception on thread $thread: $t1")
+          java.lang.System.err.println(s"Uncaught exception on thread $thread: $t1")
           t1.printStackTrace()
         }
       }
@@ -88,7 +88,7 @@ package object partest {
     def copyTo(dest: Path): Unit = dest.toFile writeAll f.slurp(scala.io.Codec.UTF8)
   }
 
-  implicit class LoaderOps(val loader: ClassLoader) extends AnyVal {
+  implicit class LoaderOps(val loader: java.lang.ClassLoader) extends AnyVal {
     import scala.util.control.Exception.catching
     /** Like ScalaClassLoader.create for the case where the result type is
      *  available to the current class loader, implying that the current
@@ -123,9 +123,9 @@ package object partest {
   def words(s: String): List[String] = (s.trim split "\\s+").toList
 
   def timed[T](body: => T): (T, Long) = {
-    val t1 = System.currentTimeMillis
+    val t1 = java.lang.System.currentTimeMillis
     val result = body
-    val t2 = System.currentTimeMillis
+    val t2 = java.lang.System.currentTimeMillis
 
     (result, t2 - t1)
   }
@@ -176,7 +176,7 @@ package object partest {
 
   def allPropertiesString = {
     import scala.collection.JavaConversions._
-    System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString ""
+    java.lang.System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString ""
   }
 
   def showAllJVMInfo() {
@@ -237,5 +237,5 @@ package object partest {
   def isPartestDebug   = NestUI.isDebug
   def isPartestVerbose = NestUI.isVerbose
 
-  def vlog(msg: => String) = if (isPartestVerbose) System.err.println(msg)
+  def vlog(msg: => String) = if (isPartestVerbose) java.lang.System.err.println(msg)
 }

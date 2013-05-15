@@ -243,7 +243,7 @@ object Pickler {
    */
   def javaInstancePickler[T <: AnyRef]: Pickler[T] =
     (stringPickler labelled "$new")
-      .wrapped { name => Class.forName(name).newInstance().asInstanceOf[T] } { _.getClass.getName }
+      .wrapped { name => java.lang.Class.forName(name).newInstance().asInstanceOf[T] } { _.getClass.getName }
 
   /** A picklers that handles iterators. It pickles all values
    *  returned by an iterator separated by commas.

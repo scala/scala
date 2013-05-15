@@ -280,7 +280,7 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
   private def resourceInputStream(path: String): InputStream = {
     new FilterInputStream(null) {
       override def read(): Int = {
-        if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+        if(in == null) in = java.lang.Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
         if(in == null) throw new RuntimeException(path + " not found")
         super.read();
       }

@@ -163,7 +163,7 @@ trait Logic extends Debugging  {
     // to govern how much time we spend analyzing matches for unreachability/exhaustivity
     object AnalysisBudget {
       import scala.tools.cmd.FromString.IntFromString
-      val max = sys.props.get("scalac.patmat.analysisBudget").collect(IntFromString.orElse{case "off" => Integer.MAX_VALUE}).getOrElse(256)
+      val max = sys.props.get("scalac.patmat.analysisBudget").collect(IntFromString.orElse{case "off" => Int.MaxValue}).getOrElse(256)
 
       abstract class Exception(val advice: String) extends RuntimeException("CNF budget exceeded")
 

@@ -286,7 +286,7 @@ class JavapClass(
         "create",
         classOf[DiagnosticListener[_]],
         classOf[PrintWriter]
-      ) invoke (null, reporter, new PrintWriter(System.err, true))).asInstanceOf[JavaFileManager] orFailed null
+      ) invoke (null, reporter, new PrintWriter(java.lang.System.err, true))).asInstanceOf[JavaFileManager] orFailed null
 
     // manages named arrays of bytes, which might have failed to load
     class JavapFileManager(val managed: Seq[Input])(delegate: JavaFileManager = defaultFileManager)
@@ -492,7 +492,7 @@ class JavapClass(
 object JavapClass {
   def apply(
     loader: ScalaClassLoader = ScalaClassLoader.appLoader,
-    printWriter: PrintWriter = new PrintWriter(System.out, true),
+    printWriter: PrintWriter = new PrintWriter(java.lang.System.out, true),
     intp: Option[IMain] = None
   ) = new JavapClass(loader, printWriter, intp)
 
@@ -514,9 +514,9 @@ object JavapClass {
       else (s take i, Some(s drop i+1))
     }
   }
-  implicit class ClassLoaderOps(val cl: ClassLoader) extends AnyVal {
-    private def parentsOf(x: ClassLoader): List[ClassLoader] = if (x == null) Nil else x :: parentsOf(x.getParent)
-    def parents: List[ClassLoader] = parentsOf(cl)
+  implicit class ClassLoaderOps(val cl: java.lang.ClassLoader) extends AnyVal {
+    private def parentsOf(x: java.lang.ClassLoader): List[java.lang.ClassLoader] = if (x == null) Nil else x :: parentsOf(x.getParent)
+    def parents: List[java.lang.ClassLoader] = parentsOf(cl)
     /* all file locations */
     def locations = {
       def alldirs = parents flatMap (_ match {

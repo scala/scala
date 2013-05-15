@@ -5,7 +5,9 @@
 package scala.tools.nsc
 package interactive
 
+import java.lang.{System, Thread}
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
+
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable

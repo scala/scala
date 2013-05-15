@@ -212,7 +212,7 @@ trait Constants extends api.Constants {
       case '"'  => "\\\""
       case '\'' => "\\\'"
       case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\0" + toOctalString(ch) else String.valueOf(ch)
+      case _    => if (ch.isControl) "\\0" + toOctalString(ch) else java.lang.String.valueOf(ch)
     }
 
     def escapedStringValue: String = {
@@ -229,7 +229,7 @@ trait Constants extends api.Constants {
         case CharTag   => "'" + escapedChar(charValue) + "'"
         case LongTag   => longValue.toString() + "L"
         case EnumTag   => symbolValue.name.toString()
-        case _         => String.valueOf(value)
+        case _         => java.lang.String.valueOf(value)
       }
     }
     def typeValue: Type     = value.asInstanceOf[Type]

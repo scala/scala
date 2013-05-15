@@ -96,7 +96,7 @@ object Plugin {
    *
    *  @return `None` on failure
    */
-  def load(pd: PluginDescription, loader: ClassLoader): Try[AnyClass] = {
+  def load(pd: PluginDescription, loader: java.lang.ClassLoader): Try[AnyClass] = {
     Try[AnyClass] {
       loader loadClass pd.classname
     } recoverWith {

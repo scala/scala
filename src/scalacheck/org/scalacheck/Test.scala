@@ -44,7 +44,7 @@ object Test {
     def maxDiscardRatio: Float
 
     /** A custom class loader that should be used during test execution. */
-    def customClassLoader: Option[ClassLoader]
+    def customClassLoader: Option[java.lang.ClassLoader]
 
     // private since we can't guarantee binary compatibility for this one
     private[scalacheck] def copy(
@@ -55,7 +55,7 @@ object Test {
       _workers: Int = Parameters.this.workers,
       _testCallback: TestCallback = Parameters.this.testCallback,
       _maxDiscardRatio: Float = Parameters.this.maxDiscardRatio,
-      _customClassLoader: Option[ClassLoader] = Parameters.this.customClassLoader
+      _customClassLoader: Option[java.lang.ClassLoader] = Parameters.this.customClassLoader
     ): Parameters = new Parameters {
       val minSuccessfulTests: Int = _minSuccessfulTests
       val minSize: Int = _minSize
@@ -64,7 +64,7 @@ object Test {
       val workers: Int = _workers
       val testCallback: TestCallback = _testCallback
       val maxDiscardRatio: Float = _maxDiscardRatio
-      val customClassLoader: Option[ClassLoader] = _customClassLoader
+      val customClassLoader: Option[java.lang.ClassLoader] = _customClassLoader
     }
   }
 
@@ -91,7 +91,7 @@ object Test {
       val workers: Int = 1
       val testCallback: TestCallback = new TestCallback {}
       val maxDiscardRatio: Float = 5
-      val customClassLoader: Option[ClassLoader] = None
+      val customClassLoader: Option[java.lang.ClassLoader] = None
     }
 
     /** Default test parameters instance. */
@@ -290,9 +290,9 @@ object Test {
     var stop = false
 
     def worker(workerIdx: Int) =
-      if (workers < 2) () => workerFun(workerIdx) 
+      if (workers < 2) () => workerFun(workerIdx)
       else actors.Futures.future {
-        params.customClassLoader.map(Thread.currentThread.setContextClassLoader(_))
+        params.customClassLoader.map(java.lang.Thread.currentThread.setContextClassLoader(_))
         workerFun(workerIdx)
       }
 
@@ -358,12 +358,12 @@ object Test {
       }
     }
 
-    val start = System.currentTimeMillis
+    val start = java.lang.System.currentTimeMillis
     val results = for(i <- 0 until workers) yield worker(i)
     val r = results.reduceLeft(mergeResults)()
     stop = true
     results foreach (_.apply())
-    val timedRes = r.copy(time = System.currentTimeMillis-start)
+    val timedRes = r.copy(time = java.lang.System.currentTimeMillis-start)
     params.testCallback.onTestResult("", timedRes)
     timedRes
   }

@@ -28,7 +28,7 @@ trait WrappedProperties extends PropertiesTrait {
 
   def systemProperties: Iterator[(String, String)] = {
     import scala.collection.JavaConverters._
-    wrap(System.getProperties.asScala.iterator) getOrElse Iterator.empty
+    wrap(java.lang.System.getProperties.asScala.iterator) getOrElse Iterator.empty
   }
 }
 

@@ -7,6 +7,8 @@ import model._
 // statistics
 import  html.page.diagram.DiagramStats
 
+import java.lang.System
+
 import scala.collection.immutable.SortedMap
 
 /**

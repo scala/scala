@@ -41,7 +41,7 @@ package object util {
   /** Executes the code and returns the result and any threads
    *  which were created during its execution.
    */
-  def trackingThreads[T](body: => T): (T, Seq[Thread]) = {
+  def trackingThreads[T](body: => T): (T, Seq[java.lang.Thread]) = {
     val ts1    = sys.allThreads()
     val result = body
     val ts2    = sys.allThreads()
@@ -78,7 +78,7 @@ package object util {
     s"$clazz$msg @ $frame"
   }
 
-  lazy val trace = new SimpleTracer(System.out)
+  lazy val trace = new SimpleTracer(java.lang.System.out)
 
   @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
   val StringOps = scala.reflect.internal.util.StringOps

@@ -58,7 +58,7 @@ trait Property extends Reference {
     returning(new Properties)(_ load new FileInputStream(file.path))
 
   def systemPropertiesToOptions: List[String] =
-    propertiesToOptions(System.getProperties)
+    propertiesToOptions(java.lang.System.getProperties)
 
   def propertiesToOptions(file: File): List[String] =
     propertiesToOptions(loadProperties(file))

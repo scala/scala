@@ -709,14 +709,14 @@ abstract class TypeFlowAnalysis {
     private var lastStart = 0L
 
     def start() {
-      lastStart = System.currentTimeMillis
+      lastStart = java.lang.System.currentTimeMillis
     }
 
     /** Stop the timer and return the number of milliseconds since the last
      * call to start. The 'millis' field is increased by the elapsed time.
      */
     def stop: Long = {
-      val elapsed = System.currentTimeMillis - lastStart
+      val elapsed = java.lang.System.currentTimeMillis - lastStart
       millis += elapsed
       elapsed
     }

@@ -10,7 +10,7 @@ package scala.tools.nsc.interactive
  *
  */
 final class PresentationCompilerThread(var compiler: Global, name: String = "")
-  extends Thread("Scala Presentation Compiler [" + name + "]") {
+  extends java.lang.Thread("Scala Presentation Compiler [" + name + "]") {
 
   /** The presentation compiler loop.
    */

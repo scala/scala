@@ -41,7 +41,7 @@ private[actors] class ActorTask(actor: InternalActor,
     val uncaught = UncaughtException(actor,
                                      if (initialMsg != null) Some(initialMsg) else None,
                                      senderInfo,
-                                     Thread.currentThread,
+                                     java.lang.Thread.currentThread,
                                      e)
 
     val todo = actor.synchronized {

@@ -16,8 +16,8 @@ import scala.collection.{ mutable, immutable }
  *
  * @author Lex Spoon
  */
-class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
-    extends ClassLoader(parent)
+class AbstractFileClassLoader(val root: AbstractFile, parent: java.lang.ClassLoader)
+    extends java.lang.ClassLoader(parent)
     with ScalaClassLoader
 {
   protected def classNameToPath(name: String): String =
@@ -82,13 +82,13 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
   override def findClass(name: String): Class[_] = {
     val bytes = classBytes(name)
     if (bytes.length == 0)
-      throw new ClassNotFoundException(name)
+      throw new java.lang.ClassNotFoundException(name)
     else
       defineClass(name, bytes, 0, bytes.length, protectionDomain)
   }
 
   lazy val protectionDomain = {
-    val cl = Thread.currentThread().getContextClassLoader()
+    val cl = java.lang.Thread.currentThread().getContextClassLoader()
     val resource = cl.getResource("scala/runtime/package.class")
     if (resource == null || resource.getProtocol != "jar") null else {
       val s = resource.getPath
@@ -100,23 +100,23 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     }
   }
 
-  private val packages = mutable.Map[String, Package]()
+  private val packages = mutable.Map[String, java.lang.Package]()
 
-  override def definePackage(name: String, specTitle: String, specVersion: String, specVendor: String, implTitle: String, implVersion: String, implVendor: String, sealBase: URL): Package = {
+  override def definePackage(name: String, specTitle: String, specVersion: String, specVendor: String, implTitle: String, implVersion: String, implVendor: String, sealBase: URL): java.lang.Package = {
     throw new UnsupportedOperationException()
   }
 
-  override def getPackage(name: String): Package = {
+  override def getPackage(name: String): java.lang.Package = {
     findAbstractDir(name) match {
       case null => super.getPackage(name)
       case file => packages.getOrElseUpdate(name, {
-        val ctor = classOf[Package].getDeclaredConstructor(classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[URL], classOf[ClassLoader])
+        val ctor = classOf[java.lang.Package].getDeclaredConstructor(classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[URL], classOf[java.lang.ClassLoader])
         ctor.setAccessible(true)
         ctor.newInstance(name, null, null, null, null, null, null, null, this)
       })
     }
   }
 
-  override def getPackages(): Array[Package] =
+  override def getPackages(): Array[java.lang.Package] =
     root.iterator.filter(_.isDirectory).map(dir => getPackage(dir.name)).toArray
 }

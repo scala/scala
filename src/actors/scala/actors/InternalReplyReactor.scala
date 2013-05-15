@@ -2,7 +2,7 @@ package scala.actors
 
 import java.util.{TimerTask}
 
-/** 
+/**
  * Extends the [[scala.actors.Reactor]]
  *    trait with methods to reply to the sender of a message.
  *    Sending a message to a <code>ReplyReactor</code> implicitly
@@ -92,15 +92,15 @@ trait InternalReplyReactor extends Reactor[Any] with ReactorCanReply {
     }
   }
 
-  private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
+  private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): java.lang.Runnable =
     new ReplyReactorTask(this, fun, handler, msg)
 
   protected[actors] override def react(handler: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
     super.react(handler)
   }
-   
-  
+
+
   /**
    * Receives a message from this $actor's mailbox within a certain
    * time span.

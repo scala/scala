@@ -11,7 +11,7 @@ import scala.concurrent.forkjoin._
  */
 @deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean, fair: Boolean)
-      extends Runnable with IScheduler with TerminationMonitor {
+      extends java.lang.Runnable with IScheduler with TerminationMonitor {
 
   private var pool = makeNewPool() // guarded by this
   private var terminating = false  // guarded by this
@@ -48,7 +48,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
    */
   def start() {
     try {
-      val t = new Thread(this)
+      val t = new java.lang.Thread(this)
       t.setDaemon(daemon)
       t.setName("ForkJoinScheduler")
       t.start()
@@ -94,7 +94,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
         Debug.info(this+": initiating shutdown...")
         while (!pool.isQuiescent()) {
           try {
-            Thread.sleep(10)
+            java.lang.Thread.sleep(10)
           } catch {
             case ignore: InterruptedException =>
           }
@@ -105,11 +105,11 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
   }
 
   // TODO: when do we pass a task that is not a RecursiveAction?
-  def execute(task: Runnable) {
+  def execute(task: java.lang.Runnable) {
     pool.execute(task)
   }
 
-  override def executeFromActor(task: Runnable) {
+  override def executeFromActor(task: java.lang.Runnable) {
     // in fair mode: 2% chance of submitting to global task queue
     if (fair && random.synchronized { random.nextInt(50) == 1 })
       pool.execute(task)
@@ -122,7 +122,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
    *  @param  fun  the closure to be executed
    */
   def execute(fun: => Unit): Unit =
-    execute(new Runnable {
+    execute(new java.lang.Runnable {
       def run() { fun }
     })
 

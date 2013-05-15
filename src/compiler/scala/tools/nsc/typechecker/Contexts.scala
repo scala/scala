@@ -564,7 +564,7 @@ trait Contexts { self: Analyzer =>
     def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
 
     private def treeTruncated       = tree.toString.replaceAll("\\s+", " ").lines.mkString("\\n").take(70)
-    private def treeIdString        = if (settings.uniqid.value) "#" + System.identityHashCode(tree).toString.takeRight(3) else ""
+    private def treeIdString        = if (settings.uniqid.value) "#" + java.lang.System.identityHashCode(tree).toString.takeRight(3) else ""
     private def treeString          = tree match {
       case x: Import => "" + x
       case Template(parents, `emptyValDef`, body) =>

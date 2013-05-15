@@ -165,7 +165,7 @@ trait DiagramDirectiveParser {
 
     // compute the exact filters. By including the annotation, the diagram is autmatically added
     case _ =>
-      tFilter -= System.currentTimeMillis
+      tFilter -= java.lang.System.currentTimeMillis
       var hideDiagram0: Boolean = false
       var hideIncomingImplicits0: Boolean = false
       var hideOutgoingImplicits0: Boolean = false
@@ -250,7 +250,7 @@ trait DiagramDirectiveParser {
 
       if (settings.docDiagramsDebug && result != NoDiagramAtAll && result != FullDiagram)
         settings.printMsg(template.kind + " " + template.qualifiedName + " filter: " + result)
-      tFilter += System.currentTimeMillis
+      tFilter += java.lang.System.currentTimeMillis
 
       result
   }

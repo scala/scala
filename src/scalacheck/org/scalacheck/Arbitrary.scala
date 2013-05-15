@@ -188,12 +188,12 @@ object Arbitrary {
   }
 
   /** Arbitrary java.lang.Number */
-  implicit lazy val arbNumber: Arbitrary[Number] = {
+  implicit lazy val arbNumber: Arbitrary[java.lang.Number] = {
     val gen = Gen.oneOf(
       arbitrary[Byte], arbitrary[Short], arbitrary[Int], arbitrary[Long],
       arbitrary[Float], arbitrary[Double]
     )
-    Arbitrary(gen map (_.asInstanceOf[Number]))
+    Arbitrary(gen map (_.asInstanceOf[java.lang.Number]))
     // XXX TODO - restore BigInt and BigDecimal
     // Arbitrary(oneOf(arbBigInt.arbitrary :: (arbs map (_.arbitrary) map toNumber) : _*))
   }

@@ -39,8 +39,8 @@ trait ScalaClassLoader extends JClassLoader {
   def tryToInitializeClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = true)
 
   private def tryClass[T <: AnyRef](path: String, initialize: Boolean): Option[Class[T]] =
-    catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
-      Class.forName(path, initialize, this).asInstanceOf[Class[T]]
+    catching(classOf[java.lang.ClassNotFoundException], classOf[java.lang.SecurityException]) opt
+      java.lang.Class.forName(path, initialize, this).asInstanceOf[Class[T]]
 
   /** Create an instance of a class with this classloader */
   def create(path: String): AnyRef =
@@ -59,11 +59,11 @@ trait ScalaClassLoader extends JClassLoader {
   /** Run the main method of a class to be loaded by this classloader */
   def run(objectName: String, arguments: Seq[String]) {
     val clsToRun = tryToInitializeClass(objectName) getOrElse (
-      throw new ClassNotFoundException(objectName)
+      throw new java.lang.ClassNotFoundException(objectName)
     )
     val method = clsToRun.getMethod("main", classOf[Array[String]])
     if (!Modifier.isStatic(method.getModifiers))
-      throw new NoSuchMethodException(objectName + ".main is not static")
+      throw new java.lang.NoSuchMethodException(objectName + ".main is not static")
 
     try asContext(method.invoke(null, Array(arguments.toArray: AnyRef): _*)) // !!! : AnyRef shouldn't be necessary
     catch unwrapHandler({ case ex => throw ex })
@@ -86,10 +86,10 @@ object ScalaClassLoader {
     case cl: JURLClassLoader  => new URLClassLoader(cl.getURLs.toSeq, cl.getParent)
     case _                    => new JClassLoader(cl) with ScalaClassLoader
   }
-  def contextLoader = apply(Thread.currentThread.getContextClassLoader)
+  def contextLoader = apply(java.lang.Thread.currentThread.getContextClassLoader)
   def appLoader     = apply(JClassLoader.getSystemClassLoader)
   def setContext(cl: JClassLoader) =
-    Thread.currentThread.setContextClassLoader(cl)
+    java.lang.Thread.currentThread.setContextClassLoader(cl)
   def savingContextLoader[T](body: => T): T = {
     val saved = contextLoader
     try body
@@ -111,7 +111,7 @@ object ScalaClassLoader {
     }
   }
 
-  def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader =
+  def fromURLs(urls: Seq[URL], parent: JClassLoader = null): URLClassLoader =
     new URLClassLoader(urls, parent)
 
   /** True if supplied class exists in supplied path */
