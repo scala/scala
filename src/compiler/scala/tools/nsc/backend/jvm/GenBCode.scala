@@ -17,16 +17,25 @@ import scala.tools.asm
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
  *
- *  `BCodePhase.apply(CompilationUnit)` is invoked by some external force and that sets in motion:
- *    - visiting each ClassDef contained in that CompilationUnit
- *    - lowering the ClassDef into:
+ *  Three pipelines are at work, each taking work items from a queue dedicated to that pipeline:
+ *
+ *  (There's another pipeline so to speak, the one that populates queue-1 by traversing a CompilationUnit until ClassDefs are found,
+ *   but the "interesting" pipelines are the ones described below)
+ *
+ *    (1) In the first queue, an item consists of a ClassDef along with its arrival position.
+ *        This position is needed at the time classfiles are serialized to disk,
+ *        so as to emit classfiles in the same order CleanUp handed them over.
+ *        As a result, two runs of the compiler on the same files produce jars that are identical on a byte basis.
+ *        See `ant test.stability`
+ *
+ *    (2) The second queue contains items where a ClassDef has been lowered into:
  *          (a) an optional mirror class,
  *          (b) a plain class, and
  *          (c) an optional bean class.
- *    - each of the items (a), (b), (c) is placed on queue `q2`.
- *      Those items will be transferred from that queue to `q3` by Worker2,
- *      whose job is lowering a ClassNode into a byte-array (ie into a classfile)
- *    - the classfilse are serialized in `drainQ3()`
+ *
+ *    (3) The third queue contains items ready for serialization.
+ *        It's a priority queue that follows the original arrival order,
+ *        so as to emit identical jars on repeated compilation of the same sources.
  *
  *  Plain, mirror, and bean classes are built respectively by PlainClassBuilder, JMirrorBuilder, and JBeanInfoBuilder.
  *
@@ -53,7 +62,13 @@ abstract class GenBCode extends BCodeSyncAndTry {
     private var mirrorCodeGen   : JMirrorBuilder   = null
     private var beanInfoCodeGen : JBeanInfoBuilder = null
 
-    private var needsOutFolder  = false // whether getOutFolder(claszSymbol) should be invoked for each claszSymbol
+    /* ---------------- q1 ---------------- */
+
+    case class Item1(arrivalPos: Int, cd: ClassDef, cunit: CompilationUnit) {
+      def isPoison = { arrivalPos == Int.MaxValue }
+    }
+    private val poison1 = Item1(Int.MaxValue, null, null)
+    private val q1 = new _root_.java.util.LinkedList[Item1]
 
     /* ---------------- q2 ---------------- */
 
@@ -100,67 +115,93 @@ abstract class GenBCode extends BCodeSyncAndTry {
     private val poison3 = Item3(Int.MaxValue, null, null, null, null)
     private val q3 = new _root_.java.util.PriorityQueue[Item3](1000, i3comparator)
 
-    val caseInsensitively = mutable.Map.empty[String, Symbol]
-
     /*
-     *  Checks for duplicate internal names case-insensitively,
-     *  builds ASM ClassNodes for mirror, plain, and bean classes;
-     *  enqueues them in queue-2.
-     *
+     *  Pipeline that takes ClassDefs from queue-1, lowers them into an intermediate form, placing them on queue-2
      */
-    def visit(arrivalPos: Int, cd: ClassDef, cunit: CompilationUnit) {
-      val claszSymbol = cd.symbol
+    class Worker1(needsOutFolder: Boolean) {
 
-      // GenASM checks this before classfiles are emitted, https://github.com/scala/scala/commit/e4d1d930693ac75d8eb64c2c3c69f2fc22bec739
-      val lowercaseJavaClassName = claszSymbol.javaClassName.toLowerCase
-      caseInsensitively.get(lowercaseJavaClassName) match {
-        case None =>
-          caseInsensitively.put(lowercaseJavaClassName, claszSymbol)
-        case Some(dupClassSym) =>
-          cunit.warning(
-            claszSymbol.pos,
-            s"Class ${claszSymbol.javaClassName} differs only in case from ${dupClassSym.javaClassName}. " +
-            "Such classes will overwrite one another on case-insensitive filesystems."
-          )
+      val caseInsensitively = mutable.Map.empty[String, Symbol]
+
+      def run() {
+        while (true) {
+          val item = q1.poll
+          if (item.isPoison) {
+            q2 add poison2
+            return
+          }
+          else {
+            try   { visit(item) }
+            catch {
+              case ex: Throwable =>
+                ex.printStackTrace()
+                error(s"Error while emitting ${item.cunit.source}\n${ex.getMessage}")
+            }
+          }
+        }
       }
 
-      // -------------- mirror class, if needed --------------
-      val mirrorC =
-        if (isStaticModule(claszSymbol) && isTopLevelModule(claszSymbol)) {
-          if (claszSymbol.companionClass == NoSymbol) {
-            mirrorCodeGen.genMirrorClass(claszSymbol, cunit)
-          } else {
-            log(s"No mirror class for module with linked class: ${claszSymbol.fullName}");
-            null
-          }
-        } else null
+      /*
+       *  Checks for duplicate internal names case-insensitively,
+       *  builds ASM ClassNodes for mirror, plain, and bean classes;
+       *  enqueues them in queue-2.
+       *
+       */
+      def visit(item: Item1) {
+        val Item1(arrivalPos, cd, cunit) = item
+        val claszSymbol = cd.symbol
 
-      // -------------- "plain" class --------------
-      val pcb = new PlainClassBuilder(cunit)
-      pcb.genPlainClass(cd)
-      val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null;
-      val plainC = pcb.cnode
+        // GenASM checks this before classfiles are emitted, https://github.com/scala/scala/commit/e4d1d930693ac75d8eb64c2c3c69f2fc22bec739
+        val lowercaseJavaClassName = claszSymbol.javaClassName.toLowerCase
+        caseInsensitively.get(lowercaseJavaClassName) match {
+          case None =>
+            caseInsensitively.put(lowercaseJavaClassName, claszSymbol)
+          case Some(dupClassSym) =>
+            item.cunit.warning(
+              claszSymbol.pos,
+              s"Class ${claszSymbol.javaClassName} differs only in case from ${dupClassSym.javaClassName}. " +
+              "Such classes will overwrite one another on case-insensitive filesystems."
+            )
+        }
 
-      // -------------- bean info class, if needed --------------
-      val beanC =
-        if (claszSymbol hasAnnotation BeanInfoAttr) {
-          beanInfoCodeGen.genBeanInfoClass(
-            claszSymbol, cunit,
-            fieldSymbols(claszSymbol),
-            methodSymbols(cd)
-          )
-        } else null
+        // -------------- mirror class, if needed --------------
+        val mirrorC =
+          if (isStaticModule(claszSymbol) && isTopLevelModule(claszSymbol)) {
+            if (claszSymbol.companionClass == NoSymbol) {
+              mirrorCodeGen.genMirrorClass(claszSymbol, cunit)
+            } else {
+              log(s"No mirror class for module with linked class: ${claszSymbol.fullName}")
+              null
+            }
+          } else null
 
-      // ----------- hand over to next pipeline
+        // -------------- "plain" class --------------
+        val pcb = new PlainClassBuilder(cunit)
+        pcb.genPlainClass(cd)
+        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null;
+        val plainC = pcb.cnode
 
-      val item2 =
-        Item2(arrivalPos,
-              mirrorC, plainC, beanC,
-              outF)
+        // -------------- bean info class, if needed --------------
+        val beanC =
+          if (claszSymbol hasAnnotation BeanInfoAttr) {
+            beanInfoCodeGen.genBeanInfoClass(
+              claszSymbol, cunit,
+              fieldSymbols(claszSymbol),
+              methodSymbols(cd)
+            )
+          } else null
 
-      q2 add item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
+          // ----------- hand over to pipeline-2
 
-    } // end of method visit()
+        val item2 =
+          Item2(arrivalPos,
+                mirrorC, plainC, beanC,
+                outF)
+
+        q2 add item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
+
+      } // end of method visit(Item1)
+
+    } // end of class BCodePhase.Worker1
 
     /*
      *  Pipeline that takes ClassNodes from queue-2. The unit of work depends on the optimization level:
@@ -232,17 +273,11 @@ abstract class GenBCode extends BCodeSyncAndTry {
       mirrorCodeGen   = new JMirrorBuilder
       beanInfoCodeGen = new JBeanInfoBuilder
 
-      needsOutFolder = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
-
-      super.run()
-      q2 add poison2
-      (new Worker2).run()
-      drainQ3()
+      val needsOutfileForSymbol = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
+      buildAndSendToDisk(needsOutfileForSymbol)
 
       // closing output files.
       bytecodeWriter.close()
-
-      caseInsensitively.clear()
 
       /* TODO Bytecode can be verified (now that all classfiles have been written to disk)
        *
@@ -259,6 +294,28 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
       // clearing maps
       clearBCodeTypes()
+    }
+
+    /*
+     *  Sequentially:
+     *    (a) place all ClassDefs in queue-1
+     *    (b) dequeue one at a time from queue-1, convert it to ASM ClassNode, place in queue-2
+     *    (c) dequeue one at a time from queue-2, convert it to byte-array,    place in queue-3
+     *    (d) serialize to disk by draining queue-3.
+     */
+    private def buildAndSendToDisk(needsOutFolder: Boolean) {
+
+      feedPipeline1()
+      (new Worker1(needsOutFolder)).run()
+      (new Worker2).run()
+      drainQ3()
+
+    }
+
+    /* Feed pipeline-1: place all ClassDefs on q1, recording their arrival position. */
+    private def feedPipeline1() {
+      super.run()
+      q1 add poison1
     }
 
     /* Pipeline that writes classfile representations to disk. */
@@ -298,6 +355,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
       }
 
       // we're done
+      assert(q1.isEmpty, s"Some ClassDefs remained in the first queue: $q1")
       assert(q2.isEmpty, s"Some classfiles remained in the second queue: $q2")
       assert(q3.isEmpty, s"Some classfiles weren't written to disk: $q3")
 
@@ -310,7 +368,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           case EmptyTree            => ()
           case PackageDef(_, stats) => stats foreach gen
           case cd: ClassDef         =>
-            visit(arrivalPos, cd, cunit)
+            q1 add Item1(arrivalPos, cd, cunit)
             arrivalPos += 1
         }
       }
