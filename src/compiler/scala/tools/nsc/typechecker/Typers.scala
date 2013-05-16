@@ -587,7 +587,7 @@ trait Typers extends Adaptations with Tags {
       }
 
     /** Post-process an identifier or selection node, performing the following:
-     *  1. Check that non-function pattern expressions are stable
+     *  1. Check that non-function pattern expressions are stable (ignoring volatility concerns -- SI-6815)
      *  2. Check that packages and static modules are not used as values
      *  3. Turn tree type into stable type if possible and required by context.
      *  4. Give getClass calls a more precise type based on the type of the target of the call.
@@ -602,16 +602,18 @@ trait Typers extends Adaptations with Tags {
       if (tree.isErrorTyped) tree
       else if (mode.inPatternNotFunMode && tree.isTerm) { // (1)
         if (sym.isValue) {
-          val tree1 = checkStable(tree)
-          // A module reference in a pattern has type Foo.type, not "object Foo"
-          if (sym.isModuleNotMethod) tree1 setType singleType(pre, sym)
-          else tree1
+          if (tree.isErrorTyped) tree
+          else if (treeInfo.isStableIdentifierPattern(tree)) {
+            // A module reference in a pattern has type Foo.type, not "object Foo"
+            if (sym.isModuleNotMethod) tree setType singleType(pre, sym)
+            else tree
+          } else UnstableTreeError(tree)
         }
         else fail()
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue && !phase.erasedTypes) { // (2)
         fail()
       } else {
-        if (sym.isStable && pre.isStable && !isByNameParamType(tree.tpe) &&
+        if (treeInfo.admitsTypeSelection(tree) &&
             (isStableContext(tree, mode, pt) || sym.isModuleNotMethod))
           tree.setType(singleType(pre, sym))
         // To fully benefit from special casing the return type of
@@ -4442,6 +4444,7 @@ trait Typers extends Adaptations with Tags {
         }
 
       def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
+        // TODO: replace `fun.symbol.isStable` by `treeInfo.isStableIdentifierPattern(fun)`
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
         val funpt = if (isPatternMode) pt else WildcardType
         val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
@@ -4744,16 +4747,20 @@ trait Typers extends Adaptations with Tags {
             typedSelect(tree, qual1, nme.CONSTRUCTOR)
           case _ =>
             if (Statistics.canEnable) Statistics.incCounter(typedSelectCount)
-            var qual1 = checkDead(typedQualifier(qual, mode))
-            if (name.isTypeName) qual1 = checkStable(qual1)
+            val qualTyped = checkDead(typedQualifier(qual, mode))
+            val qualStableOrError =
+              if (qualTyped.isErrorTyped || !name.isTypeName || treeInfo.admitsTypeSelection(qualTyped))
+                qualTyped
+              else
+                UnstableTreeError(qualTyped)
 
             val tree1 = // temporarily use `filter` and an alternative for `withFilter`
               if (name == nme.withFilter)
-                silent(_ => typedSelect(tree, qual1, name)) orElse { _ =>
-                    silent(_ => typed1(Select(qual1, nme.filter) setPos tree.pos, mode, pt)) match {
+                silent(_ => typedSelect(tree, qualStableOrError, name)) orElse { _ =>
+                    silent(_ => typed1(Select(qualStableOrError, nme.filter) setPos tree.pos, mode, pt)) match {
                       case SilentResultValue(result2) =>
                         unit.deprecationWarning(
-                          tree.pos, "`withFilter' method does not yet exist on " + qual1.tpe.widen +
+                          tree.pos, "`withFilter' method does not yet exist on " + qualStableOrError.tpe.widen +
                             ", using `filter' method instead")
                         result2
                       case SilentTypeError(err) =>
@@ -4761,14 +4768,14 @@ trait Typers extends Adaptations with Tags {
                     }
                 }
               else
-                typedSelect(tree, qual1, name)
+                typedSelect(tree, qualStableOrError, name)
 
             if (tree.isInstanceOf[PostfixSelect])
               checkFeature(tree.pos, PostfixOpsFeature, name.decode)
             if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
               checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
 
-            if (qual1.hasSymbolWhich(_.isRootPackage)) treeCopy.Ident(tree1, name)
+            if (qualStableOrError.hasSymbolWhich(_.isRootPackage)) treeCopy.Ident(tree1, name)
             else tree1
         }
       }
@@ -5161,12 +5168,16 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
-        val ref1 = checkStable(
-          context.withImplicitsDisabled(
+        val refTyped =
+          context.withImplicitsDisabled {
             typed(tree.ref, EXPRmode | QUALmode | (mode & TYPEPATmode), AnyRefClass.tpe)
-          )
-        )
-        tree setType ref1.tpe.resultType
+          }
+
+        if (!refTyped.isErrorTyped)
+          tree setType refTyped.tpe.resultType
+
+        if (treeInfo.admitsTypeSelection(refTyped)) tree
+        else UnstableTreeError(refTyped)
       }
 
       def typedSelectFromTypeTree(tree: SelectFromTypeTree) = {

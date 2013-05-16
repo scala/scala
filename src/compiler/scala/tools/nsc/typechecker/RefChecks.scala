@@ -511,7 +511,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             }
 
             if (member.isStable && !otherTp.isVolatile) {
-	            if (memberTp.isVolatile)
+              // (1.4), pt 2 -- member.isStable && memberTp.isVolatile started being possible after SI-6815
+              // (before SI-6815, !symbol.tpe.isVolatile was implied by symbol.isStable)
+              // TODO: allow overriding when @uncheckedStable?
+              if (memberTp.isVolatile)
                 overrideError("has a volatile type; cannot override a member with non-volatile type")
               else memberTp.dealiasWiden.resultType match {
                 case rt: RefinedType if !(rt =:= otherTp) && !(checkedCombinations contains rt.parents) =>

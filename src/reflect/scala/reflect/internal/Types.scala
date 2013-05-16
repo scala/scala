@@ -1079,7 +1079,7 @@ trait Types
                     (bcs eq bcs0) ||
                     (flags & PrivateLocal) != PrivateLocal ||
                     (bcs0.head.hasTransOwner(bcs.head)))) {
-                  if (name.isTypeName || stableOnly && sym.isStable) {
+                  if (name.isTypeName || (stableOnly && sym.isStable && !sym.hasVolatileType)) {
                     if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
                     return sym
                   } else if (member eq NoSymbol) {
@@ -1356,7 +1356,7 @@ trait Types
     // more precise conceptually, but causes cyclic errors:    (paramss exists (_ contains sym))
     override def isImmediatelyDependent = (sym ne NoSymbol) && (sym.owner.isMethod && sym.isValueParameter)
 
-    override def isVolatile : Boolean = underlying.isVolatile && !sym.isStable
+    override def isVolatile : Boolean = underlying.isVolatile && (sym.hasVolatileType || !sym.isStable)
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this
@@ -3400,7 +3400,7 @@ trait Types
   /** Rebind symbol `sym` to an overriding member in type `pre`. */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
-    else pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable) orElse sym
+    else pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || (sym.isStable && !sym.hasVolatileType)) orElse sym
   }
 
   /** Convert a `super` prefix to a this-type if `sym` is abstract or final. */
@@ -4096,7 +4096,7 @@ trait Types
     val info1 = tp1.memberInfo(sym1)
     val info2 = tp2.memberInfo(sym2).substThis(tp2.typeSymbol, tp1)
     //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
-    (    sym2.isTerm && isSubType(info1, info2, depth) && (!sym2.isStable || sym1.isStable)
+    (    sym2.isTerm && isSubType(info1, info2, depth) && (!sym2.isStable || sym1.isStable) && (!sym1.hasVolatileType || sym2.hasVolatileType)
       || sym2.isAbstractType && {
             val memberTp1 = tp1.memberType(sym1)
             // println("kinds conform? "+(memberTp1, tp1, sym2, kindsConform(List(sym2), List(memberTp1), tp2, sym2.owner)))

@@ -141,7 +141,7 @@ trait ContextErrors {
         }
         issueNormalTypeError(tree,
           "stable identifier required, but "+tree+" found." + (
-          if (isStableExceptVolatile(tree)) addendum else ""))
+          if (treeInfo.hasVolatileType(tree)) addendum else ""))
         setError(tree)
       }
 
