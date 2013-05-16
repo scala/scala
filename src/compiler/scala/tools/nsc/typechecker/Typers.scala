@@ -605,7 +605,7 @@ trait Typers extends Adaptations with Tags {
         inferExprAlternative(tree, pt)
 
       val sym = tree.symbol
-      val isStableIdPattern = mode.typingPatternNotFun && tree.isTerm
+      val isStableIdPattern = mode.typingPatternNotConstructor && tree.isTerm
 
       def isModuleTypedExpr = (
            sym.isStable
@@ -893,13 +893,13 @@ trait Typers extends Adaptations with Tags {
       }
 
       def adaptType(): Tree = {
-        // @M When not typing a higher-kinded type (!context.inTypeConstructor)
+        // @M When not typing a type constructor (!context.inTypeConstructorAllowed)
         // or raw type (tree.symbol.isJavaDefined && context.unit.isJava), types must be of kind *,
         // and thus parameterized types must be applied to their type arguments
         // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
-        def kindStarRequired = (
+        def properTypeRequired = (
              tree.hasSymbolField
-          && !context.inTypeConstructor
+          && !context.inTypeConstructorAllowed
           && !(tree.symbol.isJavaDefined && context.unit.isJava)
         )
         // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
@@ -907,7 +907,7 @@ trait Typers extends Adaptations with Tags {
         // @M: removed check for tree.hasSymbolField and replace tree.symbol by tree.tpe.symbol
         // (TypeTree's must also be checked here, and they don't directly have a symbol)
         def kindArityMismatch = (
-             context.inTypeConstructor
+             context.inTypeConstructorAllowed
           && !sameLength(tree.tpe.typeParams, pt.typeParams)
         )
         // Note that we treat Any and Nothing as kind-polymorphic.
@@ -925,7 +925,7 @@ trait Typers extends Adaptations with Tags {
         // but this needs additional investigation, because it crashes t5228, gadts1 and maybe something else
         if (mode.inFunMode)
           tree
-        else if (kindStarRequired && tree.symbol.typeParams.nonEmpty)  // (7)
+        else if (properTypeRequired && tree.symbol.typeParams.nonEmpty)  // (7)
           MissingTypeParametersError(tree)
         else if (kindArityMismatch && !kindArityMismatchOk)  // (7.1) @M: check kind-arity
           KindArityMismatchError(tree, pt)
@@ -1051,7 +1051,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       def insertApply(): Tree = {
-        assert(!context.inTypeConstructor, mode) //@M
+        assert(!context.inTypeConstructorAllowed, mode) //@M
         val adapted = adaptToName(tree, nme.apply)
         def stabilize0(pre: Type): Tree = stabilize(adapted, pre, MonoQualifierModes, WildcardType)
 
@@ -1235,12 +1235,12 @@ trait Typers extends Adaptations with Tags {
           adaptType()
         else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree))
           macroExpandApply(this, tree, mode, pt)
-        else if (mode.typingPatternFun)
+        else if (mode.typingConstructorPattern)
           adaptConstrPattern()
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
-          assert(!context.inTypeConstructor, context) //@M
+          assert(!context.inTypeConstructorAllowed, context) //@M
           instantiatePossiblyExpectingUnit(tree, mode, pt)
         }
         else if (tree.tpe <:< pt)
@@ -1264,7 +1264,7 @@ trait Typers extends Adaptations with Tags {
           adapt(tree setType arg, mode, pt, original)
         case tp if mode.typingExprNotLhs && isExistentialType(tp) =>
           adapt(tree setType tp.dealias.skolemizeExistential(context.owner, tree), mode, pt, original)
-        case PolyType(tparams, restpe) if mode.inNone(TAPPmode | PATTERNmode) && !context.inTypeConstructor => // (3)
+        case PolyType(tparams, restpe) if mode.inNone(TAPPmode | PATTERNmode) && !context.inTypeConstructorAllowed => // (3)
           // assert((mode & HKmode) == 0) //@M a PolyType in HKmode represents an anonymous type function,
           // we're in HKmode since a higher-kinded type is expected --> hence, don't implicitly apply it to type params!
           // ticket #2197 triggered turning the assert into a guard
@@ -2544,7 +2544,7 @@ trait Typers extends Adaptations with Tags {
 
     // takes untyped sub-trees of a match and type checks them
     def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match = {
-      val selector1  = checkDead(typedExprByValue(selector))
+      val selector1  = checkDead(typedByValueExpr(selector))
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
@@ -2925,7 +2925,7 @@ trait Typers extends Adaptations with Tags {
                 } else newTyper(context.make(stat, exprOwner))
                 // XXX this creates a spurious dead code warning if an exception is thrown
                 // in a constructor, even if it is the only thing in the constructor.
-                val result = checkDead(localTyper.typedExprByValue(stat))
+                val result = checkDead(localTyper.typedByValueExpr(stat))
 
                 if (treeInfo.isSelfOrSuperConstrCall(result)) {
                   context.inConstructorSuffix = true
@@ -4232,11 +4232,11 @@ trait Typers extends Adaptations with Tags {
 //        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
 //        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
         if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
-          val rhs1 = typedExprByValue(rhs, lhs1.tpe)
+          val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
-          val rhs1 = typedExprByValue(rhs)
+          val rhs1 = typedByValueExpr(rhs)
           val t = Apply(lhs1, List(rhs1))
           dyna.wrapErrors(t, _.typed1(t, mode, pt))
         }
@@ -4244,7 +4244,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedIf(tree: If): If = {
-        val cond1 = checkDead(typedExprByValue(tree.cond, BooleanClass.tpe))
+        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanClass.tpe))
         // One-legged ifs don't need a lot of analysis
         if (tree.elsep.isEmpty)
           return treeCopy.If(tree, cond1, typed(tree.thenp, UnitClass.tpe), tree.elsep) setType UnitClass.tpe
@@ -4318,7 +4318,7 @@ trait Typers extends Adaptations with Tags {
             ReturnWithoutTypeError(tree, enclMethod.owner)
           }
           else {
-            val expr1 = context withinReturnExpr typedExprByValue(expr, restpt.tpe)
+            val expr1 = context withinReturnExpr typedByValueExpr(expr, restpt.tpe)
             // Warn about returning a value if no value can be returned.
             if (restpt.tpe.typeSymbol == UnitClass) {
               // The typing in expr1 says expr is Unit (it has already been coerced if
@@ -4817,13 +4817,13 @@ trait Typers extends Adaptations with Tags {
       /* A symbol qualifies if:
        *  - it exists
        *  - it is not stale (stale symbols are made to disappear here)
-       *  - if we are in a pattern constructor, method definitions do not qualify
+       *  - if we are in a constructor pattern, method definitions do not qualify
        *    unless they are stable.  Otherwise, 'case x :: xs' would find the :: method.
        */
       def qualifies(sym: Symbol) = (
            sym.hasRawInfo
         && reallyExists(sym)
-        && !(mode.typingPatternFun && sym.isMethod && !sym.isStable)
+        && !(mode.typingConstructorPattern && sym.isMethod && !sym.isStable)
       )
 
       /* Attribute an identifier consisting of a simple name or an outer reference.
@@ -4882,7 +4882,7 @@ trait Typers extends Adaptations with Tags {
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
         if (Statistics.canEnable) Statistics.incCounter(typedIdentCount)
-        if ((name == nme.WILDCARD && mode.typingPatternNotFun) ||
+        if ((name == nme.WILDCARD && mode.typingPatternNotConstructor) ||
             (name == tpnme.WILDCARD && mode.inTypeMode))
           tree setType makeFullyDefined(pt)
         else
@@ -5048,7 +5048,7 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedThrow(tree: Throw) = {
-        val expr1 = typedExprByValue(tree.expr, ThrowableClass.tpe)
+        val expr1 = typedByValueExpr(tree.expr, ThrowableClass.tpe)
         treeCopy.Throw(tree, expr1) setType NothingClass.tpe
       }
 
@@ -5392,7 +5392,7 @@ trait Typers extends Adaptations with Tags {
       ret
     }
 
-    def typedExprByValue(tree: Tree, pt: Type = WildcardType): Tree = typed(tree, EXPRmode | BYVALmode, pt)
+    def typedByValueExpr(tree: Tree, pt: Type = WildcardType): Tree = typed(tree, EXPRmode | BYVALmode, pt)
 
     def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree) = typed(atPos(pos)(tree), mode, pt)
     def typedPos(pos: Position)(tree: Tree) = typed(atPos(pos)(tree))
@@ -5465,10 +5465,10 @@ trait Typers extends Adaptations with Tags {
     /** Types a higher-kinded type tree -- pt denotes the expected kind*/
     def typedHigherKindedType(tree: Tree, mode: Mode, pt: Type): Tree =
       if (pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
-      else context withinTypeConstructor typed(tree, NOmode, pt)
+      else context withinTypeConstructorAllowed typed(tree, NOmode, pt)
 
     def typedHigherKindedType(tree: Tree, mode: Mode): Tree =
-      context withinTypeConstructor typed(tree)
+      context withinTypeConstructorAllowed typed(tree)
 
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree, mode: Mode): Tree = {

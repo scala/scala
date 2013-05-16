@@ -244,9 +244,9 @@ trait Contexts { self: Analyzer =>
     def inSecondTry                           = this(SecondTry)
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
-    def inTypeConstructor                     = this(TypeConstructor)
+    def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
 
-    def defaultModeForTyped: Mode = if (inTypeConstructor) Mode.NOmode else Mode.EXPRmode
+    def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
     /** These messages are printed when issuing an error */
     var diagnostic: List[String] = Nil
@@ -364,8 +364,13 @@ trait Contexts { self: Analyzer =>
     @inline final def withinStarPatterns[T](op: => T): T                   = withMode(enabled = StarPatterns)(op)
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
-    @inline final def withinTypeConstructor[T](op: => T): T                = withMode(enabled = TypeConstructor)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+
+    /** TypeConstructorAllowed is enabled when we are typing a higher-kinded type.
+     *  adapt should then check kind-arity based on the prototypical type's kind
+     *  arity. Type arguments should not be inferred.
+     */
+    @inline final def withinTypeConstructorAllowed[T](op: => T): T = withMode(enabled = TypeConstructorAllowed)(op)
 
     /* TODO - consolidate returnsSeen (which seems only to be used by checkDead)
      * and ReturnExpr.
@@ -1375,14 +1380,8 @@ object ContextMode {
   /** Are we in return position? Formerly RETmode. */
   final val ReturnExpr: ContextMode               = 1 << 15
 
-  /** Are we typing a type constructor? Formerly HKmode. */
-  final val TypeConstructor: ContextMode          = 1 << 16
-
-  /** Are we in the function/type constructor part of a type application?
-   *  When we are, we do not decompose PolyTypes. Formerly TAPPmode.
-   *  TODO.
-   */
-  final val TypeApplication: ContextMode          = 1 << 17
+  /** Are unapplied type constructors allowed here? Formerly HKmode. */
+  final val TypeConstructorAllowed: ContextMode   = 1 << 16
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimick the sticky mode behavior, when captain stickyfingers
@@ -1391,27 +1390,26 @@ object ContextMode {
    *  ones listed here.
    */
   final val FormerNonStickyModes: ContextMode = (
-    PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructor | TypeApplication
+    PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructorAllowed
   )
 
   final val DefaultMode: ContextMode      = MacrosEnabled
 
   private val contextModeNameMap = Map(
-    ReportErrors       -> "ReportErrors",
-    BufferErrors       -> "BufferErrors",
-    AmbiguousErrors    -> "AmbiguousErrors",
-    ConstructorSuffix  -> "ConstructorSuffix",
-    SelfSuperCall      -> "SelfSuperCall",
-    ImplicitsEnabled   -> "ImplicitsEnabled",
-    MacrosEnabled      -> "MacrosEnabled",
-    Checking           -> "Checking",
-    ReTyping           -> "ReTyping",
-    PatternAlternative -> "PatternAlternative",
-    StarPatterns       -> "StarPatterns",
-    SuperInit          -> "SuperInit",
-    SecondTry          -> "SecondTry",
-    TypeConstructor    -> "TypeConstructor",
-    TypeApplication    -> "TypeApplication"
+    ReportErrors           -> "ReportErrors",
+    BufferErrors           -> "BufferErrors",
+    AmbiguousErrors        -> "AmbiguousErrors",
+    ConstructorSuffix      -> "ConstructorSuffix",
+    SelfSuperCall          -> "SelfSuperCall",
+    ImplicitsEnabled       -> "ImplicitsEnabled",
+    MacrosEnabled          -> "MacrosEnabled",
+    Checking               -> "Checking",
+    ReTyping               -> "ReTyping",
+    PatternAlternative     -> "PatternAlternative",
+    StarPatterns           -> "StarPatterns",
+    SuperInit              -> "SuperInit",
+    SecondTry              -> "SecondTry",
+    TypeConstructorAllowed -> "TypeConstructorAllowed"
   )
 }
 
