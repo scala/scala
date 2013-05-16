@@ -250,29 +250,6 @@ trait Typers extends Adaptations with Tags {
       case _ => tp
     }
 
-    /** Check that `tree` is a stable expression.
-     */
-    def checkStable(tree: Tree): Tree = (
-      if (treeInfo.isExprSafeToInline(tree)) tree
-      else if (tree.isErrorTyped) tree
-      else UnstableTreeError(tree)
-    )
-
-    /** Would tree be a stable (i.e. a pure expression) if the type
-     *  of its symbol was not volatile?
-     */
-    protected def isStableExceptVolatile(tree: Tree) = {
-      tree.hasSymbolField && tree.symbol != NoSymbol && tree.tpe.isVolatile &&
-      { val savedTpe = tree.symbol.info
-        val savedSTABLE = tree.symbol getFlag STABLE
-        tree.symbol setInfo AnyRefClass.tpe
-        tree.symbol setFlag STABLE
-        val result = treeInfo.isExprSafeToInline(tree)
-        tree.symbol setInfo savedTpe
-        tree.symbol setFlag savedSTABLE
-        result
-      }
-    }
     private def errorNotClass(tpt: Tree, found: Type)  = { ClassTypeRequiredError(tpt, found); false }
     private def errorNotStable(tpt: Tree, found: Type) = { TypeNotAStablePrefixError(tpt, found); false }
 
