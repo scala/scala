@@ -14,7 +14,7 @@ import java.io.{ File, FileOutputStream }
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
 import java.lang.Thread
-import scala.util.logging.Logged
+
 import scala.collection.Iterator
 
 /** Mutable storage of immutable xml trees. Everything is kept in memory,
@@ -26,7 +26,7 @@ import scala.collection.Iterator
  *
  *  @author Burak Emir
  */
-abstract class CachedFileStorage(private val file1: File) extends Thread with Logged {
+abstract class CachedFileStorage(private val file1: File) extends Thread {
 
   private val file2 = new File(file1.getParent, file1.getName+"$")
 
@@ -123,4 +123,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     this.dirty = true
     save()
   }
+
+  @deprecated("This method and its usages will be removed. Use a debugger to debug code.", "2.11")
+  def log(msg: String): Unit = {}
 }
