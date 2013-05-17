@@ -174,7 +174,6 @@ trait ScalaSettings extends AbsScalaSettings
   val etaExpandKeepsStar = BooleanSetting ("-Yeta-expand-keeps-star", "Eta-expand varargs methods to T* rather than Seq[T].  This is a temporary option to ease transition.").
                                           withDeprecationMessage("This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug.")
   val Yinvalidate     = StringSetting     ("-Yinvalidate", "classpath-entry", "Invalidate classpath entry before run", "")
-  val noSelfCheck     = BooleanSetting    ("-Yno-self-type-checks", "Suppress check for self-type conformance among inherited members.")
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
   val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")
 

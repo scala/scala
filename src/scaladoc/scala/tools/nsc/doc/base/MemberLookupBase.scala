@@ -21,10 +21,10 @@ trait MemberLookupBase {
   import global._
   import rootMirror.{RootPackage, EmptyPackage}
 
-  private def isRoot(s: Symbol) = s.isRootSymbol || s.isEmptyPackage || s.isEmptyPackageClass
+  private def isRoot(s: Symbol) = (s eq NoSymbol) || s.isRootSymbol || s.isEmptyPackage || s.isEmptyPackageClass
 
-  def makeEntityLink(title: Inline, pos: Position, query: String, siteOpt: Option[Symbol]) =
-    new EntityLink(title) { lazy val link = memberLookup(pos, query, siteOpt) }
+  def makeEntityLink(title: Inline, pos: Position, query: String, site: Symbol) =
+    new EntityLink(title) { lazy val link = memberLookup(pos, query, site) }
 
   private var showExplanation = true
   private def explanation: String =
@@ -45,18 +45,14 @@ trait MemberLookupBase {
       | - you can use \\# to escape hashes, otherwise they will be considered as delimiters, like dots.""".stripMargin
     } else ""
 
-  def memberLookup(pos: Position, query: String, siteOpt: Option[Symbol]): LinkTo = {
+  def memberLookup(pos: Position, query: String, site: Symbol): LinkTo = {
     val members = breakMembers(query)
 
     // (1) First look in the root package, as most of the links are qualified
     val fromRoot = lookupInRootPackage(pos, members)
 
     // (2) Or recursively go into each containing template.
-    val fromParents = siteOpt.fold(Stream.empty[Symbol]) { s =>
-      Stream.iterate(s)(_.owner)
-    }.takeWhile (!isRoot(_)).map {
-      lookupInTemplate(pos, members, _)
-    }
+    val fromParents = Stream.iterate(site)(_.owner) takeWhile (!isRoot(_)) map (lookupInTemplate(pos, members, _))
 
     val syms = (fromRoot +: fromParents) find (!_.isEmpty) getOrElse Nil
 

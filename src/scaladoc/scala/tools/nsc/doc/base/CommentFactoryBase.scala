@@ -22,7 +22,7 @@ import scala.language.postfixOps
 trait CommentFactoryBase { this: MemberLookupBase =>
 
   val global: Global
-  import global.{ reporter, Symbol }
+  import global.{ reporter, Symbol, NoSymbol }
 
   /* Creates comments with necessary arguments */
   def createComment (
@@ -186,7 +186,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     * @param comment The expanded comment string (including start and end markers) to be parsed.
     * @param src     The raw comment source string.
     * @param pos     The position of the comment in source. */
-  protected def parseAtSymbol(comment: String, src: String, pos: Position, siteOpt: Option[Symbol] = None): Comment = {
+  protected def parseAtSymbol(comment: String, src: String, pos: Position, site: Symbol = NoSymbol): Comment = {
     /** The cleaned raw comment as a list of lines. Cleaning removes comment
       * start and end markers, line start markers  and unnecessary whitespace. */
     def clean(comment: String): List[String] = {
@@ -312,7 +312,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWikiAtSymbol(_, pos, siteOpt))} toSeq: _*)
+          mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWikiAtSymbol(_, pos, site))} toSeq: _*)
 
         def oneTag(key: SimpleTagKey): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
@@ -345,7 +345,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         }
 
         val com = createComment (
-          body0           = Some(parseWikiAtSymbol(docBody.toString, pos, siteOpt)),
+          body0           = Some(parseWikiAtSymbol(docBody.toString, pos, site)),
           authors0        = allTags(SimpleTagKey("author")),
           see0            = allTags(SimpleTagKey("see")),
           result0         = oneTag(SimpleTagKey("return")),
@@ -385,14 +385,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     *  - Removed start-of-line star and one whitespace afterwards (if present).
     *  - Removed all end-of-line whitespace.
     *  - Only `endOfLine` is used to mark line endings. */
-  def parseWikiAtSymbol(string: String, pos: Position, siteOpt: Option[Symbol]): Body = new WikiParser(string, pos, siteOpt).document()
+  def parseWikiAtSymbol(string: String, pos: Position, site: Symbol): Body = new WikiParser(string, pos, site).document()
 
   /** TODO
     *
     * @author Ingo Maier
     * @author Manohar Jonnalagedda
     * @author Gilles Dubochet */
-  protected final class WikiParser(val buffer: String, pos: Position, siteOpt: Option[Symbol]) extends CharReader(buffer) { wiki =>
+  protected final class WikiParser(val buffer: String, pos: Position, site: Symbol) extends CharReader(buffer) { wiki =>
     var summaryParsed = false
 
     def document(): Body = {
@@ -694,7 +694,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         case (SchemeUri(uri), optTitle) =>
           Link(uri, optTitle getOrElse Text(uri))
         case (qualName, optTitle) =>
-          makeEntityLink(optTitle getOrElse Text(target), pos, target, siteOpt)
+          makeEntityLink(optTitle getOrElse Text(target), pos, target, site)
       }
     }
 
