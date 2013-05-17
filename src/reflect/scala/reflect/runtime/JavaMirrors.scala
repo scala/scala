@@ -133,6 +133,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       sm"""Scala field ${sym.name} isn't represented as a Java field, neither it has a Java accessor method
           |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
           |unless they are used outside of their declaring constructors.""")
+    @deprecated("corresponding check has been removed from FieldMirror.set, this method is also being phased out", "2.11.0")
     private def ErrorSetImmutableField(sym: Symbol) = throw new ScalaReflectionException(s"cannot set an immutable field ${sym.name}")
     private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = throw new ScalaReflectionException(s"expected a constructor of $owner, you provided $sym")
     private def ErrorFree(member: Symbol, freeType: Symbol) = throw new ScalaReflectionException(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
@@ -282,7 +283,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
       def get = jfield.get(receiver)
       def set(value: Any) = {
-        if (!symbol.isMutable) ErrorSetImmutableField(symbol)
+        // it appears useful to be able to set values of vals, therefore I'm disabling this check
+        // if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
       override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
