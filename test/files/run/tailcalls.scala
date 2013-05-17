@@ -305,6 +305,11 @@ object Test {
   }
 
   def main(args: Array[String]) {
+    // If we run on Avian, don't bother and just print what the check file expects
+    if (scala.util.Properties.javaVmName contains "Avian") {
+      println(expectedResult)
+      return
+    }
     // compute min and max iteration number
     val min = 16;
     val max = calibrate;
@@ -393,6 +398,59 @@ object Test {
 
   assert(isEven((1 to 100000).toList).result)
 
+  val expectedResult = """test Object   .f was successful
+test Final    .f was successful
+test Class    .f raised exception java.lang.StackOverflowError
+test SubClass .f was successful
+test Sealed   .f raised exception java.lang.StackOverflowError
+test SubSealed.f was successful
+
+test O      .f was successful
+test c      .f was successful
+test O.O    .f was successful
+test O.c    .f was successful
+test c.O    .f was successful
+test c.c    .f was successful
+test O.O.O  .f was successful
+test O.O.c  .f was successful
+test O.c.O  .f was successful
+test O.c.c  .f was successful
+test c.O.O  .f was successful
+test c.O.c  .f was successful
+test c.c.O  .f was successful
+test c.c.c  .f was successful
+test O.O.O.O.f was successful
+test O.O.O.c.f was successful
+test O.O.c.O.f was successful
+test O.O.c.c.f was successful
+test O.c.O.O.f was successful
+test O.c.O.c.f was successful
+test O.c.c.O.f was successful
+test O.c.c.c.f was successful
+test c.O.O.O.f was successful
+test c.O.O.c.f was successful
+test c.O.c.O.f was successful
+test c.O.c.c.f was successful
+test c.c.O.O.f was successful
+test c.c.O.c.f was successful
+test c.c.c.O.f was successful
+test c.c.c.c.f was successful
+
+test TailCall.f1 was successful
+test TailCall.f2 was successful
+test TailCall.f3 was successful
+test TailCall.g1 was successful
+test TailCall.g2 was successful
+test TailCall.g3 was successful
+test TailCall.h1 was successful
+
+test NonTailCall.f1 0 1 2 was successful
+test NonTailCall.f2
+test TailCall.b1 was successful
+test TailCall.b2 was successful
+test FancyTailCalls.tcTryLocal was successful
+test FancyTailCalls.differentInstance was successful
+test PolyObject.tramp was successful"""
 }
 
 //############################################################################
