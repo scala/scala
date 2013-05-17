@@ -1,0 +1,87 @@
+testEquals1
+false
+false
+true
+
+testEquals2
+false
+false
+true
+
+testEquals3
+x=Array(1)
+y=Array(1)
+false
+false
+true
+
+x=Array(Array(1), Array(1))
+y=Array(Array(1), Array(1))
+false
+false
+true
+
+x=Array(Array(Array(1), Array(1)), Array(Array(1), Array(1)))
+y=Array(Array(Array(1), Array(1)), Array(Array(1), Array(1)))
+false
+false
+true
+
+testEquals4
+false
+false
+true
+false
+false
+true
+Array(true, false)
+Array(true, false)
+[true;false]
+true;false
+
+Array(Array(true, false), Array(true, false))
+Array(Array(true, false), Array(true, false))
+[Array(true, false);Array(true, false)]
+Array(true, false);Array(true, false)
+
+Array(Array(Array(true, false), Array(true, false)), Array(Array(true, false), Array(true, false)))
+Array(Array(Array(true, false), Array(true, false)), Array(Array(true, false), Array(true, false)))
+[Array(Array(true, false), Array(true, false));Array(Array(true, false), Array(true, false))]
+Array(Array(true, false), Array(true, false));Array(Array(true, false), Array(true, false))
+
+Array(1.0, 0.0)
+Array(1.0, 0.0)
+[1.0;0.0]
+1.0;0.0
+
+Array(Array(1.0, 0.0), Array(1.0, 0.0))
+Array(Array(1.0, 0.0), Array(1.0, 0.0))
+[Array(1.0, 0.0);Array(1.0, 0.0)]
+Array(1.0, 0.0);Array(1.0, 0.0)
+
+Array(Array(Array(1.0, 0.0), Array(1.0, 0.0)), Array(Array(1.0, 0.0), Array(1.0, 0.0)))
+Array(Array(Array(1.0, 0.0), Array(1.0, 0.0)), Array(Array(1.0, 0.0), Array(1.0, 0.0)))
+[Array(Array(1.0, 0.0), Array(1.0, 0.0));Array(Array(1.0, 0.0), Array(1.0, 0.0))]
+Array(Array(1.0, 0.0), Array(1.0, 0.0));Array(Array(1.0, 0.0), Array(1.0, 0.0))
+
+Array(a, b)
+Array(a, b)
+[a;b]
+a;b
+
+Array(Array(a, b), Array(a, b))
+Array(Array(a, b), Array(a, b))
+[Array(a, b);Array(a, b)]
+Array(a, b);Array(a, b)
+
+Array(Array(Array(a, b), Array(a, b)), Array(Array(a, b), Array(a, b)))
+Array(Array(Array(a, b), Array(a, b)), Array(Array(a, b), Array(a, b)))
+[Array(Array(a, b), Array(a, b));Array(Array(a, b), Array(a, b))]
+Array(Array(a, b), Array(a, b));Array(Array(a, b), Array(a, b))
+
+[Array(true, false); Array(false)]
+[Array(1, 2); Array(3)]
+[Array(1, 2); Array(3)]
+
+Array(boo, and, foo)
+Array(a)

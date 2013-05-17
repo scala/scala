@@ -6,7 +6,8 @@
  **                          |/                                          **
  \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 package dtd
 
 import Utility.sbToString
@@ -123,7 +124,7 @@ case class ExtDef(extID:ExternalID) extends EntityDef {
 /** a parsed entity reference */
 case class PEReference(ent:String) extends MarkupDecl {
   if( !Utility.isName( ent ))
-    throw new IllegalArgumentException("ent must be an XML Name");
+    throw new IllegalArgumentException("ent must be an XML Name")
 
   override def buildString(sb: StringBuilder): StringBuilder =
     sb append '%' append ent append ';'

@@ -21,19 +21,15 @@ abstract class AbstractReporter extends Reporter {
   private val positions = new mutable.HashMap[Position, Severity]
 
   override def reset() {
-    super.reset
-    positions.clear
+    super.reset()
+    positions.clear()
   }
 
   private def isVerbose   = settings.verbose.value
   private def noWarnings  = settings.nowarnings.value
   private def isPromptSet = settings.prompt.value
 
-  protected def info0(pos: Position, msg: String, _severity: Severity, force: Boolean) {
-    val severity =
-      if (settings.fatalWarnings.value && _severity == WARNING) ERROR
-      else _severity
-
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     if (severity == INFO) {
       if (isVerbose || force) {
         severity.count += 1
@@ -47,13 +43,13 @@ abstract class AbstractReporter extends Reporter {
         if (!hidden || isPromptSet) {
           severity.count += 1
           display(pos, msg, severity)
-        } else if (settings.debug.value) {
+        } else if (settings.debug) {
           severity.count += 1
           display(pos, "[ suppressed ] " + msg, severity)
         }
 
         if (isPromptSet)
-          displayPrompt
+          displayPrompt()
       }
     }
   }

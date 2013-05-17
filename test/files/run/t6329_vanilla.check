@@ -1,2 +1,8 @@
-scala.collection.immutable.List[Any]
+scala.collection.immutable.List[<?>]
 scala.collection.immutable.List
+scala.collection.immutable.List[<?>]
+scala.collection.immutable.List
+scala.collection.immutable.Set[<?>]
+scala.collection.immutable.Set
+scala.collection.immutable.Set[<?>]
+scala.collection.immutable.Set

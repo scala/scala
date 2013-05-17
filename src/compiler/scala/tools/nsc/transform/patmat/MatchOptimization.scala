@@ -11,7 +11,6 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.NoPosition
 
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *
@@ -20,14 +19,8 @@ import scala.reflect.internal.util.NoPosition
  */
 // TODO: split out match analysis
 trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
-  import PatternMatchingStats._
-  import global.{Tree, Type, Symbol, NoSymbol, CaseDef, atPos,
-    ConstantType, Literal, Constant, gen, EmptyTree, distinctBy,
-    Typed, treeInfo, nme, Ident,
-    Apply, If, Bind, lub, Alternative, deriveCaseDef, Match, MethodType, LabelDef, TypeTree, Throw}
-
+  import global._
   import global.definitions._
-
 
   ////
   trait CommonSubconditionElimination extends OptimizedCodegen with MatchApproximator {
@@ -160,7 +153,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       def chainBefore(next: Tree)(casegen: Casegen): Tree = // assert(codegen eq optimizedCodegen)
         atPos(pos)(casegen.asInstanceOf[optimizedCodegen.OptimizedCasegen].flatMapCondStored(cond, storedCond, res, nextBinder, substitution(next).duplicate))
 
-      override def toString = "Memo"+(nextBinder.name, storedCond.name, cond, res, substitution)
+      override def toString = "Memo"+((nextBinder.name, storedCond.name, cond, res, substitution))
     }
 
     case class ReusingCondTreeMaker(sharedPrefix: List[Test], toReused: TreeMaker => TreeMaker) extends TreeMaker { import CODE._
@@ -199,7 +192,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         // and in its confusion it emits illegal casts (diagnosed by Grzegorz: checkcast T ; invokevirtual S.m, where T not a subtype of S)
         casegen.ifThenElseZero(REF(lastReusedTreeMaker.storedCond), substitution(next).duplicate)
       }
-      override def toString = "R"+(lastReusedTreeMaker.storedCond.name, substitution)
+      override def toString = "R"+((lastReusedTreeMaker.storedCond.name, substitution))
     }
   }
 

@@ -6,11 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
-
-import event._
 
 /**
  * A bar indicating progress of some action. Can be in indeterminate mode,

@@ -50,7 +50,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
     lazy val choices = Rule.this :: other :: Nil
   }
 
-  def orError[In2 <: In] = this orElse(error[In2])
+  def orError[In2 <: In] = this orElse error[Any]
 
   def |[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In2, Out2, A2, X2]) = orElse(other)
 

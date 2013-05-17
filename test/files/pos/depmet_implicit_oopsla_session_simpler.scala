@@ -5,7 +5,7 @@ object Sessions {
     def run(dp: Dual): Unit
   }
 
-  sealed case class Stop extends Session {
+  sealed case class Stop() extends Session {
     type Dual = Stop
 
     def run(dp: Dual): Unit = {}

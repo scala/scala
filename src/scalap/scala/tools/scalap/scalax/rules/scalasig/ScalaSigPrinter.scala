@@ -70,7 +70,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def isCaseClassObject(o: ObjectSymbol): Boolean = {
-    val TypeRefType(prefix, classSymbol: ClassSymbol, typeArgs) = o.infoType
+    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType
     o.isFinal && (classSymbol.children.find(x => x.isCase && x.isInstanceOf[MethodSymbol]) match {
       case Some(_) => true
       case None => false
@@ -167,7 +167,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     print("object ")
     val poName = o.symbolInfo.owner.name
     print(processName(poName))
-    val TypeRefType(prefix, classSymbol: ClassSymbol, typeArgs) = o.infoType
+    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType
     printType(classSymbol)
     print(" {\n")
     printChildren(level, classSymbol)
@@ -179,7 +179,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     printModifiers(o)
     print("object ")
     print(processName(o.name))
-    val TypeRefType(prefix, classSymbol: ClassSymbol, typeArgs) = o.infoType
+    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType
     printType(classSymbol)
     print(" {\n")
     printChildren(level, classSymbol)
@@ -191,7 +191,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     val j = str.indexOf("[")
     if (j > 0) str = str.substring(0, j)
     str = StringUtil.trimStart(str, "=> ")
-    var i = str.lastIndexOf(".")
+    val i = str.lastIndexOf(".")
     val res = if (i > 0) str.substring(i + 1) else str
     if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
   })
@@ -381,7 +381,6 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         toString(typeRef, sep)
       }
       case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef, sep)
-      //case DeBruijnIndexType(typeLevel, typeIndex) =>
       case ExistentialType(typeRef, symbols) => {
         val refs = symbols.map(toString _).filter(!_.startsWith("_")).map("type " + _)
         toString(typeRef, sep) + (if (refs.size > 0) refs.mkString(" forSome {", "; ", "}") else "")

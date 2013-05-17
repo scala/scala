@@ -42,7 +42,7 @@ object Terms {
   }
 
   case class Binding(name: String, term: Term) {
-    term match { case Var(n) if (name == n) => error("bad binding") case _ => () }
+    term match { case Var(n) if (name == n) => sys.error("bad binding") case _ => () }
     override def toString() = name + " = " + term;
   }
 
@@ -168,7 +168,7 @@ class Parser(s: String) {
 
   var token: String = it.next;
 
-  def syntaxError(msg: String): Unit = error(msg + ", but " + token + " found");
+  def syntaxError(msg: String): Unit = sys.error(msg + ", but " + token + " found");
 
   def rep[a](p: => a): List[a] = {
     val t = p;

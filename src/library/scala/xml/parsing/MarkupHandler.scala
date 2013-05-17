@@ -8,12 +8,12 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package parsing
 
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.logging.Logged
 import scala.xml.dtd._
 
 /** class that handles markup - provides callback methods to MarkupParser.
@@ -25,8 +25,8 @@ import scala.xml.dtd._
  *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
  *  @todo expanding entity references
  */
-abstract class MarkupHandler extends Logged
-{
+abstract class MarkupHandler {
+
   /** returns true is this markup handler is validating */
   val isValidating: Boolean = false
 
@@ -121,4 +121,7 @@ abstract class MarkupHandler extends Logged
   def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit = ()
   def notationDecl(notat: String, extID: ExternalID): Unit = ()
   def reportSyntaxError(pos: Int, str: String): Unit
+
+  @deprecated("This method and its usages will be removed. Use a debugger to debug code.", "2.11")
+  def log(msg: String): Unit = {}
 }

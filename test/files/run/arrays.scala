@@ -107,7 +107,7 @@ object Test {
       val s1 = if (test1) "ok" else "KO";
       val s2 = actual.toString();
       val s3 = expected.toString();
-      error(s0 + " - " + s1 + ": " + s2 + " != " + s3);
+      sys.error(s0 + " - " + s1 + ": " + s2 + " != " + s3);
     }
     checks += 1
   }

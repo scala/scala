@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 
 /** prefixed attributes always have a non-null namespace.
  *

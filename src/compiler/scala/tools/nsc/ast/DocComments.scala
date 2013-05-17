@@ -7,10 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
-import reporters._
-import scala.reflect.internal.util.{Position, NoPosition}
 import util.DocStrings._
-import scala.reflect.internal.Chars._
 import scala.collection.mutable
 
 /*
@@ -128,8 +125,6 @@ trait DocComments { self: Global =>
     }
     getDocComment(sym) map getUseCases getOrElse List()
   }
-
-  def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym.enclClass)
 
   /** Returns the javadoc format of doc comment string `s`, including wiki expansion
    */
@@ -275,7 +270,7 @@ trait DocComments { self: Global =>
               cleanupSectionText(parent.substring(sectionTextBounds._1, sectionTextBounds._2))
             case None =>
               reporter.info(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym +
-                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", true)
+                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", force = true)
               "<invalid inheritdoc annotation>"
           }
 
@@ -313,7 +308,6 @@ trait DocComments { self: Global =>
   /** Lookup definition of variable.
    *
    *  @param vble  The variable for which a definition is searched
-   *  @param owner The current owner in which variable definitions are searched.
    *  @param site  The class for which doc comments are generated
    */
   def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
@@ -330,12 +324,12 @@ trait DocComments { self: Global =>
   }
 
   /** Expand variable occurrences in string `str`, until a fix point is reached or
-   *  a expandLimit is exceeded.
+   *  an expandLimit is exceeded.
    *
-   *  @param str   The string to be expanded
-   *  @param sym   The symbol for which doc comments are generated
-   *  @param site  The class for which doc comments are generated
-   *  @return      Expanded string
+   *  @param initialStr   The string to be expanded
+   *  @param sym          The symbol for which doc comments are generated
+   *  @param site         The class for which doc comments are generated
+   *  @return             Expanded string
    */
   protected def expandVariables(initialStr: String, sym: Symbol, site: Symbol): String = {
     val expandLimit = 10
@@ -372,7 +366,10 @@ trait DocComments { self: Global =>
             case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym + " in " + site)
+                case None              =>
+                  val pos = docCommentPos(sym)
+                  val loc = pos withPoint (pos.start + vstart + 1)
+                  reporter.warning(loc, s"Variable $vname undefined in comment for $sym in $site")
               }
             }
         }
@@ -470,7 +467,7 @@ trait DocComments { self: Global =>
         //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
         //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
         //findIn(sites)
-        findIn(site.ownerChain ::: List(definitions.EmptyPackage))
+        findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
       }
 
       def getType(str: String, variable: String): Type = {
@@ -507,7 +504,7 @@ trait DocComments { self: Global =>
         result
       }
 
-      /**
+      /*
        * work around the backticks issue suggested by Simon in
        * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
        * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup

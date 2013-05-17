@@ -6,9 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
-import generic._
 import mutable.ArrayBuffer
 import scala.annotation.tailrec
 
@@ -53,7 +53,6 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
   // pre: start >= 0, end <= self.length
   @SerialVersionUID(1756321872811029277L)
   protected class Elements(start: Int, end: Int) extends AbstractIterator[A] with BufferedIterator[A] with Serializable {
-    private def initialSize = if (end <= start) 0 else end - start
     private var index = start
     private def available = (end - index) max 0
 
@@ -61,7 +60,7 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
 
     def next(): A = {
       if (index >= end)
-        Iterator.empty.next
+        Iterator.empty.next()
 
       val x = self(index)
       index += 1
@@ -70,7 +69,7 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
 
     def head = {
       if (index >= end)
-        Iterator.empty.next
+        Iterator.empty.next()
 
       self(index)
     }

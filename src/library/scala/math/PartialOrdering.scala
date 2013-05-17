@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.math
+package scala
+package math
 
 /** A trait for representing partial orderings.  It is important to
  *  distinguish between a type that has a partial order and a representation

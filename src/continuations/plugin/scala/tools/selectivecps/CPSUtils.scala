@@ -7,7 +7,6 @@ import scala.tools.nsc.Global
 trait CPSUtils {
   val global: Global
   import global._
-  import definitions._
 
   var cpsEnabled = false
   val verbose: Boolean = System.getProperty("cpsVerbose", "false") == "true"
@@ -36,7 +35,7 @@ trait CPSUtils {
   lazy val MarkerCPSAdaptMinus = rootMirror.getRequiredClass("scala.util.continuations.cpsMinus")
 
   lazy val Context = rootMirror.getRequiredClass("scala.util.continuations.ControlContext")
-  lazy val ModCPS = rootMirror.getRequiredPackage("scala.util.continuations")
+  lazy val ModCPS = rootMirror.getPackage("scala.util.continuations")
 
   lazy val MethShiftUnit  = definitions.getMember(ModCPS, cpsNames.shiftUnit)
   lazy val MethShiftUnit0 = definitions.getMember(ModCPS, cpsNames.shiftUnit0)
@@ -57,12 +56,12 @@ trait CPSUtils {
   protected def newMarker(sym: Symbol): AnnotationInfo = AnnotationInfo marker sym.tpe
 
   protected def newCpsParamsMarker(tp1: Type, tp2: Type) =
-    newMarker(appliedType(MarkerCPSTypes.tpe, List(tp1, tp2)))
+    newMarker(appliedType(MarkerCPSTypes, tp1, tp2))
 
   // annotation checker
 
   protected def annTypes(ann: AnnotationInfo): (Type, Type) = {
-    val tp0 :: tp1 :: Nil = ann.atp.normalize.typeArgs
+    val tp0 :: tp1 :: Nil = ann.atp.dealiasWiden.typeArgs
     ((tp0, tp1))
   }
   protected def hasMinusMarker(tpe: Type)   = tpe hasAnnotation MarkerCPSAdaptMinus

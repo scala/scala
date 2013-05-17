@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import scala.collection.mutable.ListBuffer
 import io.File
 
 /** A class representing command line info for scalac */
@@ -14,9 +13,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def this(arguments: List[String], settings: Settings, error: String => Unit) = this(arguments, settings withErrorFn error)
 
   type Setting = Settings#Setting
-
-  /** file extensions of files that the compiler can process */
-  lazy val fileEndings = Properties.fileEndings
 
   private val processArgumentsResult =
     if (shouldProcessArguments) processArguments
@@ -41,8 +37,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   """.stripMargin.trim + "\n"
 
   def shortUsage = "Usage: %s <options> <source files>" format cmdName
-  def createUsagePreface(shouldExplain: Boolean) =
-    if (shouldExplain) shortUsage + "\n" + explainAdvanced else ""
 
   /** Creates a help message for a subset of options based on cond */
   def createUsageMsg(cond: Setting => Boolean): String = {
@@ -82,9 +76,9 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   }
 
   /** Messages explaining usage and options */
-  def usageMsg    = createUsageMsg("where possible standard", false, _.isStandard)
-  def xusageMsg   = createUsageMsg("Possible advanced", true, _.isAdvanced)
-  def yusageMsg   = createUsageMsg("Possible private", true, _.isPrivate)
+  def usageMsg    = createUsageMsg("where possible standard", shouldExplain = false, _.isStandard)
+  def xusageMsg   = createUsageMsg("Possible advanced", shouldExplain = true, _.isAdvanced)
+  def yusageMsg   = createUsageMsg("Possible private", shouldExplain = true, _.isPrivate)
 
   // If any of these settings is set, the compiler shouldn't start;
   // an informative message of some sort should be printed instead.
@@ -128,6 +122,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
       case x                      => List(x)
     }
 
-    settings.processArguments(expandedArguments, true)
+    settings.processArguments(expandedArguments, processAll = true)
   }
 }

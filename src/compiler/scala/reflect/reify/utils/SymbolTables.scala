@@ -8,8 +8,6 @@ trait SymbolTables {
   self: Utils =>
 
   import global._
-  import definitions._
-  import Flag._
 
   class SymbolTable private[SymbolTable] (
     private[SymbolTable] val symtab: immutable.ListMap[Symbol, Tree] = immutable.ListMap[Symbol, Tree](),
@@ -17,9 +15,6 @@ trait SymbolTables {
     private[SymbolTable] val original: Option[List[Tree]] = None) {
 
     def syms: List[Symbol] = symtab.keys.toList
-    def isConcrete: Boolean = symtab.values forall (sym => !FreeTypeDef.unapply(sym).isDefined)
-
-//    def aliases: Map[Symbol, List[TermName]] = aliases.distinct groupBy (_._1) mapValues (_ map (_._2))
 
     def symDef(sym: Symbol): Tree =
       symtab.getOrElse(sym, EmptyTree)
@@ -89,11 +84,6 @@ trait SymbolTables {
       add(ValDef(NoMods, freshName(name0), TypeTree(), reification) updateAttachment bindingAttachment)
     }
 
-    private def add(sym: Symbol, name: TermName): SymbolTable = {
-      if (!(syms contains sym)) error("cannot add an alias to a symbol not in the symbol table")
-      add(sym, name, EmptyTree)
-    }
-
     private def remove(sym: Symbol): SymbolTable = {
       val newSymtab = symtab - sym
       val newAliases = aliases filter (_._1 != sym)
@@ -107,7 +97,7 @@ trait SymbolTables {
       newSymtab = newSymtab map { case ((sym, tree)) =>
         val ValDef(mods, primaryName, tpt, rhs) = tree
         val tree1 =
-          if (!(newAliases contains (sym, primaryName))) {
+          if (!(newAliases contains ((sym, primaryName)))) {
             val primaryName1 = newAliases.find(_._1 == sym).get._2
             ValDef(mods, primaryName1, tpt, rhs).copyAttrs(tree)
           } else tree
@@ -143,7 +133,7 @@ trait SymbolTables {
       var result = new SymbolTable(original = Some(encoded))
       encoded foreach (entry => (entry.attachments.get[ReifyBindingAttachment], entry.attachments.get[ReifyAliasAttachment]) match {
         case (Some(ReifyBindingAttachment(_)), _) => result += entry
-        case (_, Some(ReifyAliasAttachment(sym, alias))) => result = new SymbolTable(result.symtab, result.aliases :+ (sym, alias))
+        case (_, Some(ReifyAliasAttachment(sym, alias))) => result = new SymbolTable(result.symtab, result.aliases :+ ((sym, alias)))
         case _ => // do nothing, this is boilerplate that can easily be recreated by subsequent `result.encode`
       })
       result

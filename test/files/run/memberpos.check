@@ -1,0 +1,11 @@
+newSource1.scala
+2,4                  class A
+6,28                 object A
+ 7,10                def bippy
+  8                  def hello
+ 11,27               class Dingo
+  12,26              def foooooz
+   22                val a
+30                   class B
+ 30                  def f
+

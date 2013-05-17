@@ -1,6 +1,5 @@
 package scala.tools.reflect
 
-import scala.reflect.macros.{ReificationException, UnexpectedReificationException}
 import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
@@ -35,7 +34,7 @@ abstract class MacroImplementations {
     val argStack = Stack(args : _*)
 
     def defval(value: Tree, tpe: Type): Unit = {
-      val freshName = newTermName(c.fresh("arg$"))
+      val freshName = newTermName(c.freshName("arg$"))
       evals += ValDef(Modifiers(), freshName, TypeTree(tpe) setPos value.pos.focus, value) setPos value.pos
       ids += Ident(freshName)
     }
@@ -106,7 +105,7 @@ abstract class MacroImplementations {
       // 6) "...${smth}[%legalJavaConversion]" => okay, according to http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html
       // 7) "...${smth}[%illegalJavaConversion]" => error
       if (!first) {
-        val arg = argStack.pop
+        val arg = argStack.pop()
         if (isConversion(0)) {
           // PRE str is not empty and str(0) == '%'
           // argument index parameter is not allowed, thus parse
@@ -163,7 +162,7 @@ abstract class MacroImplementations {
           Literal(Constant(fstring)),
           newTermName("format")),
         List(ids: _* )
-      );
+      )
 
     Block(evals.toList, atPos(origApplyPos.focus)(expr)) setPos origApplyPos.makeTransparent
   }

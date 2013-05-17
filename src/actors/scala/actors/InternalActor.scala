@@ -524,6 +524,7 @@ private[actors] trait InternalActor extends AbstractActor with InternalReplyReac
  *
  *  @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 case object TIMEOUT
 
 /**
@@ -534,6 +535,7 @@ case object TIMEOUT
  *  @param from   the actor that terminated
  *  @param reason the reason that caused the actor to terminate
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 case class Exit(from: AbstractActor, reason: AnyRef)
 
 /**

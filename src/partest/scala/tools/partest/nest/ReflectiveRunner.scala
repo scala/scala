@@ -3,8 +3,6 @@
  * @author Philipp Haller
  */
 
-// $Id$
-
 package scala.tools.partest
 package nest
 
@@ -12,7 +10,6 @@ import scala.tools.nsc.Properties.{ setProp, propOrEmpty }
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io
 import io.Path
-import RunnerUtils._
 import java.net.URLClassLoader
 
 /* This class is used to load an instance of DirectRunner using
@@ -27,6 +24,12 @@ class ReflectiveRunner {
   // to use the same classes as used by `scala` that
   // was used to start the runner.
   val sepRunnerClassName = "scala.tools.partest.nest.ConsoleRunner"
+
+  private def searchPath(option: String, as: List[String]): Option[String] = as match {
+    case `option` :: r :: _ => Some(r)
+    case _ :: rest          => searchPath(option, rest)
+    case Nil                => None
+  }
 
   def main(args: String) {
     val argList = (args.split("\\s")).toList
@@ -47,23 +50,18 @@ class ReflectiveRunner {
       else // auto detection
         new ConsoleFileManager
 
-    import fileManager.
-      { latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile }
-    val files =
-      Array(latestCompFile, latestReflectFile, latestLibFile, latestPartestFile, latestFjbgFile, latestScalapFile, latestActorsFile) map (x => io.File(x))
-
-    val sepUrls   = files map (_.toURL)
-    // this seems to be the core classloader that determines which classes can be found when running partest from the test/partest script
-    var sepLoader = new URLClassLoader(sepUrls, null)
-
     // this is a workaround for https://issues.scala-lang.org/browse/SI-5433
+    // when that bug is fixed, the addition of PathSettings.srcCodeLib can be removed    
     // we hack into the classloader that will become parent classloader for scalac
     // this way we ensure that reflective macro lookup will pick correct Code.lift
-    // it's also used to inject diffutils into the classpath when running partest from the test/partest script
-    sepLoader = new URLClassLoader((PathSettings.srcCodeLib +: (PathSettings.diffUtils +: files)) map (_.toURL), null)
+    // it's also used to inject diffutils into the classpath when running partest from the test/partest script    
+    val srcCodeLibAndDiff = List(PathSettings.srcCodeLib, PathSettings.diffUtils, PathSettings.testInterface) 
+    val sepUrls   = srcCodeLibAndDiff.map(_.toURI.toURL) ::: fileManager.latestUrls
+    // this seems to be the core classloader that determines which classes can be found when running partest from the test/partest script    
+    val sepLoader = new URLClassLoader(sepUrls.toArray, null)
 
     if (isPartestDebug)
-      println("Loading classes from:\n" + sepUrls.mkString("\n"))
+      println("Loading classes from:\n  " + fileManager.latestUrls.mkString("\n  "))
 
     // @partest maintainer: it seems to me that commented lines are incorrect
     // if classPath is not empty, then it has been provided by the --classpath option
@@ -74,11 +72,11 @@ class ReflectiveRunner {
     //  case Some(cp) => Nil
     //  case _        => files.toList map (_.path)
     //}
-    val paths = files.toList map (_.path)
 
-    val newClasspath = ClassPath.join(paths: _*)
+    setProp("java.class.path", ClassPath.join(fileManager.latestPaths: _*))
 
-    setProp("java.class.path", newClasspath)
+    // don't let partest find pluginsdir; in ant build, standard plugin has dedicated test suite
+    //setProp("scala.home", latestLibFile.parent.parent.path)
     setProp("scala.home", "")
 
     if (isPartestDebug)

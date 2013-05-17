@@ -1,1 +1,1 @@
-Block(List(ValDef(Modifiers(), newTermName("v"), Select(Ident(A), newTypeName("I")), Select(Ident(A), newTermName("impl")))), Ident(newTermName("v")))
+Block(List(ValDef(Modifiers(), TermName("v"), Select(Ident(A), TypeName("I")), Select(Ident(A), TermName("impl")))), Ident(TermName("v")))

@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 
 
@@ -15,14 +16,6 @@ import scala.collection.SetLike
 import scala.collection.GenSetLike
 import scala.collection.GenSet
 import scala.collection.Set
-import scala.collection.mutable.Builder
-
-
-
-
-
-
-
 
 /** A template trait for parallel sets. This trait is mixed in with concrete
  *  parallel sets to override the representation type.

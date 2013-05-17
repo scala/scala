@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -49,16 +50,16 @@ abstract class Mirror[U <: Universe with Singleton] {
    *  If you need a symbol that corresponds to the type alias itself, load it directly from the package class:
    *
    *    scala> cm.staticClass("scala.List")
-   *    res0: reflect.runtime.universe.ClassSymbol = class List
+   *    res0: scala.reflect.runtime.universe.ClassSymbol = class List
    *
    *    scala> res0.fullName
    *    res1: String = scala.collection.immutable.List
    *
    *    scala> cm.staticPackage("scala")
-   *    res2: reflect.runtime.universe.ModuleSymbol = package scala
+   *    res2: scala.reflect.runtime.universe.ModuleSymbol = package scala
    *
    *    scala> res2.moduleClass.typeSignature member newTypeName("List")
-   *    res3: reflect.runtime.universe.Symbol = type List
+   *    res3: scala.reflect.runtime.universe.Symbol = type List
    *
    *    scala> res3.fullName
    *    res4: String = scala.List

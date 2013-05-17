@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 /** A trait for all maps upon which operations may be
  *  implemented in parallel.

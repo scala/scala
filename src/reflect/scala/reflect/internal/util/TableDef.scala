@@ -1,4 +1,5 @@
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import TableDef._
 import scala.language.postfixOps
@@ -19,8 +20,8 @@ class TableDef[T](_cols: Column[T]*) {
    *      if none is specified, a space is used.
    */
   def ~(next: Column[T])            = retThis(cols :+= next)
-  def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, false)
-  def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, true)
+  def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = false)
+  def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = true)
   def >+(sep: String)               = retThis(separators += ((cols.size - 1, sep)))
 
   /** Below this point should all be considered private/internal.
@@ -65,12 +66,6 @@ class TableDef[T](_cols: Column[T]*) {
     def allToSeq = headers ++ toFormattedSeq
 
     override def toString = allToSeq mkString "\n"
-  }
-
-  def formatterFor(rows: Seq[T]): T => String = {
-    val formatStr = new Table(rows).rowFormat
-
-    x => formatStr.format(colApply(x) : _*)
   }
 
   def table(rows: Seq[T]) = new Table(rows)

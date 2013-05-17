@@ -1,7 +1,3 @@
-
-
-
-
 object Test {
   import collection.{ immutable, mutable, generic }
   def TheOneTrueCBF = collection.IndexedSeq.ReusableCBF
@@ -38,7 +34,3 @@ object Test {
     check(iv.:+(4)(cbf3))
   }
 }
-
-
-
-

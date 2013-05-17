@@ -87,9 +87,6 @@ class HashMap[A, +B] extends AbstractMap[A, B]
 
   def split: Seq[HashMap[A, B]] = Seq(this)
 
-  @deprecated("Use the `merged` method instead.", "2.10.0")
-  def merge[B1 >: B](that: HashMap[A, B1], mergef: MergeFunction[A, B1] = null): HashMap[A, B1] = merge0(that, 0, liftMerger(mergef))
-
   /** Creates a new map which is the merge of this and the argument hash map.
    *
    *  Uses the specified collision resolution function if two keys are the same.
@@ -398,7 +395,7 @@ time { mNew.iterator.foreach( p => ()) }
 */
 
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
-      var i = 0;
+      var i = 0
       while (i < elems.length) {
         elems(i).foreach(f)
         i += 1
@@ -471,9 +468,6 @@ time { mNew.iterator.foreach( p => ()) }
             // condition below is due to 2 things:
             // 1) no unsigned int compare on JVM
             // 2) 0 (no lsb) should always be greater in comparison
-            val a = thislsb - 1
-            val b = thatlsb - 1
-
             if (unsignedCompare(thislsb - 1, thatlsb - 1)) {
               val m = thiselems(thisi)
               totalelems += m.size

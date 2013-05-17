@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.tools.ant
+package scala
+package tools.ant
 package sabbus
 
 import java.io.File
@@ -53,9 +54,9 @@ class Use extends ScalaMatchingTask {
         compiler.settings.d,
         mapper
       ) map (new File(sourceDir.get, _))
-    if (includedFiles.size > 0)
+    if (includedFiles.length > 0)
       try {
-        log("Compiling " + includedFiles.size + " file" + (if (includedFiles.size > 1) "s" else "") + " to " + compiler.settings.d.getAbsolutePath)
+        log("Compiling " + includedFiles.length + " file" + (if (includedFiles.length > 1) "s" else "") + " to " + compiler.settings.d.getAbsolutePath)
         val (errors, warnings) = compiler.compile(includedFiles)
         if (errors > 0)
           sys.error("Compilation failed with " + errors + " error" + (if (errors > 1) "s" else "") + ".")

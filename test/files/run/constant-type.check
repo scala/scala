@@ -13,16 +13,16 @@ scala> :power
 scala> val s = transformedType(StringClass.toType).asInstanceOf[Type]
 s: $r.intp.global.Type = String
 
-scala> { println(afterPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))) }
+scala> { println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))) }
 Class[String](classOf[java.lang.String])
 
-scala> { afterPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))) }
+scala> { exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))) }
 Class(classOf[java.lang.String])
 
-scala> { ConstantType(Constant(s)); println(afterPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))); }
+scala> { ConstantType(Constant(s)); println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))); }
 Class[String](classOf[java.lang.String])
 
-scala> { ConstantType(Constant(s)); afterPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
+scala> { ConstantType(Constant(s)); exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
 Class(classOf[java.lang.String])
 
 scala> 

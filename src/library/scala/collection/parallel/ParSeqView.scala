@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
+package scala
+package collection.parallel
 
-package scala.collection.parallel
-
-import scala.collection.{ TraversableView, SeqView, Parallel, Iterator }
+import scala.collection.{ SeqView, Parallel, Iterator }
 import scala.collection.generic.CanCombineFrom
 
 /** A template view of a non-strict view of a parallel sequence.

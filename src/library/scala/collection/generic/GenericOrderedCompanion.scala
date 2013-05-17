@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 import mutable.Builder
@@ -19,16 +20,16 @@ import scala.language.higherKinds
  *  @since 2.8
  */
 abstract class GenericOrderedCompanion[+CC[X] <: Traversable[X]] {
-  type Coll = CC[_]
+  protected[this] type Coll = CC[_]
 
   def newBuilder[A](implicit ord: Ordering[A]): Builder[A, CC[A]]
 
-  def empty[A: Ordering]: CC[A] = newBuilder[A].result
+  def empty[A: Ordering]: CC[A] = newBuilder[A].result()
 
   def apply[A](elems: A*)(implicit ord: Ordering[A]): CC[A] = {
     val b = newBuilder[A]
     b ++= elems
-    b.result
+    b.result()
   }
 }
 

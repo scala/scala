@@ -20,8 +20,6 @@
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="asm" />
-    <orderEntry type="module" module-name="fjbg" />
-    <orderEntry type="module" module-name="msil" />
     <orderEntry type="library" name="ant" level="application" />
     <orderEntry type="library" name="jline" level="project" />
   </component>

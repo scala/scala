@@ -604,6 +604,7 @@ object Test {
     Test7
     Test8
     Test9_parallel
+    Test10_util
   }
 }
 
@@ -667,5 +668,19 @@ object Test9_parallel {
     case e: Exception =>
       println("Error in Test5_parallel: " + e)
       throw e
+  }
+}
+
+//############################################################################
+// Test classes in package scala.util
+
+object Test10_util {
+  import scala.util.Random
+  def rep[A](n: Int)(f: => A) { if (n > 0) { f; rep(n-1)(f) } }
+
+  try {
+    val random = new Random(345)
+    val random2: Random = read(write(random))
+    rep(5) { assert(random.nextInt == random2.nextInt) }
   }
 }

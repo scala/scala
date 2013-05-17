@@ -1,0 +1,35 @@
+ 1                                                             s  Ident
+ 2                                                        r.List  Select
+ 3                                                r.List.apply()  Apply
+ 4                                               r.List.apply(1)  Literal
+ 5                                           r.List.apply[Int]()  TypeApply
+ 6                                                      (1: Int)  Typed
+ 7                                           (null: r.List[Int])  AppliedTypeTree
+ 8                                                    { (); () }  Block
+ 9                                        { val x: Int = 0; () }  ValDef
+10                                             { val x = 0; () }  TypeTree
+11                                          if (true) () else ()  If
+12                                      { def f: Unit = (); () }  DefDef
+13                                    { def m = NN.super.q; () }  Super
+14                       { abstract trait A extends AnyRef; () }  ClassDef Template
+15                              { def f(x: Any): Unit = (); () }  EmptyTree
+16                                          (null: r.D with r.E)  CompoundTypeTree
+17                                          { type T = Int; () }  TypeDef
+18                            { type CC[T <: r.D] = r.C[T]; () }  TypeBoundsTree
+19                          try { 0 } finally Predef.println("")  Try
+20                                               ((x: Int) => x)  Function
+21                                          { var v = 1; v = 2 }  Assign
+22  { class A extends AnyRef { def <init>() = { super.<init>();   This
+23                                             new r.List[Int]()  New
+24                                                 0: @unchecked  Annotated
+25                                         (null: r.Outer#Inner)  SelectFromTypeTree
+26                                              (null: Nil.type)  SingletonTypeTree
+27                                  (null: T forSome { type T })  ExistentialTypeTree
+28                                    { import r.{A, B=>C}; () }  Import
+29                                 { def f: Int = return 0; () }  Return
+30  { object x extends AnyRef { def <init>() = { super.<init>();  ModuleDef
+31                                         throw new Exception()  Throw
+32                                       0 match { case _ => 0 }  Match CaseDef
+33                                  0 match { case (1| 2) => 0 }  Alternative
+34                         NN.q match { case (x @ r.List) => 0 }  Bind
+35                     NN.q match { case r.UnSeq(1, (_)*) => 0 }  Star

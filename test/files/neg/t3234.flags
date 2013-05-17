@@ -1,1 +1,1 @@
--Yinline -Xfatal-warnings
+-Yinline -Yinline-warnings -Xfatal-warnings

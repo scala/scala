@@ -98,6 +98,4 @@ trait TaskArgs extends CompilationPathProperty {
     val parts = a.getParts
     if(parts eq null) Seq[String]() else parts.toSeq
   }
-
-  def isMSIL = compTarget exists (_ == "msil")
 }

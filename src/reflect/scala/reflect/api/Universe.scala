@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -68,6 +69,7 @@ abstract class Universe extends Symbols
                            with Exprs
                            with TypeTags
                            with TagInterop
+                           with ImplicitTags
                            with StandardDefinitions
                            with StandardNames
                            with BuildUtils

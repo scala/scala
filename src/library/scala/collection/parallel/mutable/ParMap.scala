@@ -6,16 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel.mutable
-
-
-
+package scala
+package collection
+package parallel.mutable
 
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
-
-
 
 /** A template trait for mutable parallel maps.
  *
@@ -28,11 +24,11 @@ import scala.collection.parallel.Combiner
  *  @since 2.9
  */
 trait ParMap[K, V]
-extends scala.collection/*.mutable*/.GenMap[K, V]
-   with scala.collection.parallel.ParMap[K, V]
-   with /* mutable */ ParIterable[(K, V)]
+extends GenMap[K, V]
+   with parallel.ParMap[K, V]
+   with ParIterable[(K, V)]
    with GenericParMapTemplate[K, V, ParMap]
-   with /* mutable */ ParMapLike[K, V, ParMap[K, V], scala.collection.mutable.Map[K, V]]
+   with ParMapLike[K, V, ParMap[K, V], mutable.Map[K, V]]
 {
 
   protected[this] override def newCombiner: Combiner[(K, V), ParMap[K, V]] = ParMap.newCombiner[K, V]
@@ -63,10 +59,7 @@ extends scala.collection/*.mutable*/.GenMap[K, V]
    *  @return      a wrapper of the map with a default value
    */
   def withDefaultValue(d: V): scala.collection.parallel.mutable.ParMap[K, V] = new ParMap.WithDefault[K, V](this, x => d)
-
 }
-
-
 
 object ParMap extends ParMapFactory[ParMap] {
   def empty[K, V]: ParMap[K, V] = new ParHashMap[K, V]
@@ -94,22 +87,3 @@ object ParMap extends ParMapFactory[ParMap] {
     override def withDefaultValue(d: V): ParMap[K, V] = new WithDefault[K, V](underlying, x => d)
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

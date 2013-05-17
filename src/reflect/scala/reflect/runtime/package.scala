@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 
 /** Entry points into runtime reflection.
  *  See [[scala.reflect.api.package the overview page]] for details on how to use them.
@@ -6,7 +7,7 @@ package scala.reflect
 package object runtime {
 
   /** The entry point into Scala runtime reflection.
-   * 
+   *
    * To use Scala runtime reflection, simply use or import `scala.reflect.runtime.universe._`
    *
    * See [[scala.reflect.api.Universe]] or the

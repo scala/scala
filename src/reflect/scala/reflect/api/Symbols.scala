@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -61,24 +62,12 @@ trait Symbols { self: Universe =>
    */
   type Symbol >: Null <: SymbolApi
 
-  /** A tag that preserves the identity of the `Symbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SymbolTag: ClassTag[Symbol]
-
   /** The type of type symbols representing type, class, and trait declarations,
    *  as well as type parameters.
    *  @group Symbols
    *  @template
    */
   type TypeSymbol >: Null <: Symbol with TypeSymbolApi
-
-  /** A tag that preserves the identity of the `TypeSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeSymbolTag: ClassTag[TypeSymbol]
 
   /** The type of term symbols representing val, var, def, and object declarations as
    *  well as packages and value parameters.
@@ -87,23 +76,11 @@ trait Symbols { self: Universe =>
    */
   type TermSymbol >: Null <: Symbol with TermSymbolApi
 
-  /** A tag that preserves the identity of the `TermSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TermSymbolTag: ClassTag[TermSymbol]
-
   /** The type of method symbols representing def declarations.
    *  @group Symbols
    *  @template
    */
   type MethodSymbol >: Null <: TermSymbol with MethodSymbolApi
-
-  /** A tag that preserves the identity of the `MethodSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val MethodSymbolTag: ClassTag[MethodSymbol]
 
   /** The type of module symbols representing object declarations.
    *  @group Symbols
@@ -111,23 +88,11 @@ trait Symbols { self: Universe =>
    */
   type ModuleSymbol >: Null <: TermSymbol with ModuleSymbolApi
 
-  /** A tag that preserves the identity of the `ModuleSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ModuleSymbolTag: ClassTag[ModuleSymbol]
-
   /** The type of class symbols representing class and trait definitions.
    *  @group Symbols
    *  @template
    */
   type ClassSymbol >: Null <: TypeSymbol with ClassSymbolApi
-
-  /** A tag that preserves the identity of the `ClassSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ClassSymbolTag: ClassTag[ClassSymbol]
 
   /** The type of free terms introduced by reification.
    *  @group Symbols
@@ -135,23 +100,11 @@ trait Symbols { self: Universe =>
    */
   type FreeTermSymbol >: Null <: TermSymbol with FreeTermSymbolApi
 
-  /** A tag that preserves the identity of the `FreeTermSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val FreeTermSymbolTag: ClassTag[FreeTermSymbol]
-
   /** The type of free types introduced by reification.
    *  @group Symbols
    *  @template
    */
   type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolApi
-
-  /** A tag that preserves the identity of the `FreeTypeSymbol` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val FreeTypeSymbolTag: ClassTag[FreeTypeSymbol]
 
   /** A special "missing" symbol. Commonly used in the API to denote a default or empty value.
    *  @group Symbols
@@ -245,7 +198,7 @@ trait Symbols { self: Universe =>
     /** Does this symbol represent the definition of a term?
      *  Note that every symbol is either a term or a type.
      *  So for every symbol `sym` (except for `NoSymbol`),
-     *  either `sym.isTerm` is true or `sym.isTerm` is true.
+     *  either `sym.isTerm` is true or `sym.isType` is true.
      *
      *  @group Tests
      */

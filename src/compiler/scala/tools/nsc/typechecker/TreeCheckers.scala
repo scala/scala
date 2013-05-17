@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.tools.nsc.symtab.Flags._
 import scala.collection.mutable
 import mutable.ListBuffer
 import util.returning
@@ -70,7 +69,7 @@ abstract class TreeCheckers extends Analyzer {
       // new symbols
       if (newSyms.nonEmpty) {
         informFn(newSyms.size + " new symbols.")
-        val toPrint = if (settings.debug.value) sortedNewSyms mkString " " else ""
+        val toPrint = if (settings.debug) sortedNewSyms mkString " " else ""
 
         newSyms.clear()
         if (toPrint != "")
@@ -121,7 +120,7 @@ abstract class TreeCheckers extends Analyzer {
   def errorFn(msg: Any): Unit                = {hasError = true; println("[check: %s] %s".format(phase.prev, msg))}
   def errorFn(pos: Position, msg: Any): Unit = errorFn(posstr(pos) + ": " + msg)
   def informFn(msg: Any) {
-    if (settings.verbose.value || settings.debug.value)
+    if (settings.verbose || settings.debug)
       println("[check: %s] %s".format(phase.prev, msg))
   }
 
@@ -138,25 +137,18 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def checkTrees() {
-    if (settings.verbose.value)
+    if (settings.verbose)
       Console.println("[consistency check at the beginning of phase " + phase + "]")
 
     currentRun.units foreach (x => wrap(x)(check(x)))
   }
 
-  def printingTypings[T](body: => T): T = {
-    val saved = global.printTypings
-    global.printTypings = true
-    val result = body
-    global.printTypings = saved
-    result
-  }
   def runWithUnit[T](unit: CompilationUnit)(body: => Unit): Unit = {
     hasError = false
     val unit0 = currentUnit
     currentRun.currentUnit = unit
     body
-    currentRun.advanceUnit
+    currentRun.advanceUnit()
     assertFn(currentUnit == unit, "currentUnit is " + currentUnit + ", but unit is " + unit)
     currentRun.currentUnit = unit0
   }
@@ -164,7 +156,7 @@ abstract class TreeCheckers extends Analyzer {
     informProgress("checking "+unit)
     val context = rootContext(unit)
     context.checking = true
-    tpeOfTree.clear
+    tpeOfTree.clear()
     SymbolTracker.check(phase, unit)
     val checker = new TreeChecker(context)
     runWithUnit(unit) {
@@ -189,10 +181,6 @@ abstract class TreeCheckers extends Analyzer {
       errorFn(t1.pos, "trees differ\n old: " + treestr(t1) + "\n new: " + treestr(t2))
     private def typesDiffer(tree: Tree, tp1: Type, tp2: Type) =
       errorFn(tree.pos, "types differ\n old: " + tp1 + "\n new: " + tp2 + "\n tree: " + tree)
-    private def ownersDiffer(tree: Tree, shouldBe: Symbol) = {
-      val sym = tree.symbol
-      errorFn(tree.pos, sym + " has wrong owner: " + ownerstr(sym.owner) + ", should be: " + ownerstr(shouldBe))
-    }
 
     /** XXX Disabled reporting of position errors until there is less noise. */
     private def noPos(t: Tree) =
@@ -204,14 +192,11 @@ abstract class TreeCheckers extends Analyzer {
       if (t.symbol == NoSymbol)
         errorFn(t.pos, "no symbol: " + treestr(t))
 
-    override def typed(tree: Tree, mode: Int, pt: Type): Tree = returning(tree) {
+    override def typed(tree: Tree, mode: Mode, pt: Type): Tree = returning(tree) {
       case EmptyTree | TypeTree() => ()
       case _ if tree.tpe != null  =>
-        tpeOfTree.getOrElseUpdate(tree, {
-          val saved = tree.tpe
-          tree.tpe = null
-          saved
-        })
+        tpeOfTree.getOrElseUpdate(tree, try tree.tpe finally tree.clearType())
+
         wrap(tree)(super.typed(tree, mode, pt) match {
           case _: Literal     => ()
           case x if x ne tree => treesDiffer(tree, x)
@@ -236,7 +221,7 @@ abstract class TreeCheckers extends Analyzer {
                 case _: ConstantType  => ()
                 case _                =>
                   checkSym(tree)
-                  /** XXX: lots of syms show up here with accessed == NoSymbol. */
+                  /* XXX: lots of syms show up here with accessed == NoSymbol. */
                   if (accessed != NoSymbol) {
                     val agetter = accessed.getter(sym.owner)
                     val asetter = accessed.setter(sym.owner)
@@ -263,7 +248,7 @@ abstract class TreeCheckers extends Analyzer {
             else if (currentOwner.ownerChain takeWhile (_ != sym) exists (_ == NoSymbol))
               return fail("tree symbol "+sym+" does not point to enclosing class; tree = ")
 
-          /** XXX: temporary while Import nodes are arriving untyped. */
+          /* XXX: temporary while Import nodes are arriving untyped. */
           case Import(_, _) =>
             return
           case _ =>
@@ -284,7 +269,7 @@ abstract class TreeCheckers extends Analyzer {
               def cond(s: Symbol) = !s.isTerm || s.isMethod || s == sym.owner
 
               if (sym.owner != currentOwner) {
-                val expected = currentOwner.ownerChain find (x => cond(x)) getOrElse fail("DefTree can't find owner: ")
+                val expected = currentOwner.ownerChain find (x => cond(x)) getOrElse { fail("DefTree can't find owner: ") ; NoSymbol }
                 if (sym.owner != expected)
                   fail(sm"""|
                             | currentOwner chain: ${currentOwner.ownerChain take 3 mkString " -> "}
@@ -298,7 +283,6 @@ abstract class TreeCheckers extends Analyzer {
 
       private def checkSymbolRefsRespectScope(tree: Tree) {
         def symbolOf(t: Tree): Symbol = Option(tree.symbol).getOrElse(NoSymbol)
-        def definedSymbolOf(t: Tree): Symbol = if (t.isDef) symbolOf(t) else NoSymbol
         val info = Option(symbolOf(tree).info).getOrElse(NoType)
         val referencedSymbols: List[Symbol] = {
           val directRef = tree match {
@@ -344,7 +328,7 @@ abstract class TreeCheckers extends Analyzer {
               if (oldtpe =:= tree.tpe) ()
               else typesDiffer(tree, oldtpe, tree.tpe)
 
-              tree.tpe = oldtpe
+              tree setType oldtpe
               super.traverse(tree)
             }
         }

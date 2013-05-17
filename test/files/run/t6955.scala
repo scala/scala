@@ -1,5 +1,6 @@
 import scala.tools.partest.IcodeTest
 
+// this class should compile to code that uses switches (twice)
 class Switches {
   type Tag = Byte
 
@@ -10,7 +11,8 @@ class Switches {
     case _ => 0
   }
 
-  def switchOkay(i: Byte): Int = i match { // notice type of i is Byte
+  // this worked before, should keep working
+  def switchOkay(i: Byte): Int = i match {
     case 1 => 1
     case 2 => 2
     case 3 => 3

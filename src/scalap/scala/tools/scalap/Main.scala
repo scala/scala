@@ -5,7 +5,8 @@
 **
 */
 
-package scala.tools.scalap
+package scala
+package tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer

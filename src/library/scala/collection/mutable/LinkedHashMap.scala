@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -92,7 +93,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
   
   protected class FilteredKeys(p: A => Boolean) extends super.FilteredKeys(p) {
@@ -118,7 +119,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
@@ -126,7 +127,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.value; cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   override def foreach[U](f: ((A, B)) => U) {

@@ -9,7 +9,7 @@ trait GenTypes {
 
   /**
    *  Reify a type.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reifyType(tpe: Type): Tree = {
     assert(tpe != null, "tpe is null")
@@ -73,7 +73,6 @@ trait GenTypes {
       if (reifyDebug) println("splicing " + tpe)
 
       val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.WeakTypeTag.toString
-      val key = (tagFlavor, tpe.typeSymbol)
       // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
       // to find out the whereabouts of the error run scalac with -Ydebug
       if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(universe, tagFlavor, tpe))
@@ -156,7 +155,7 @@ trait GenTypes {
    */
   private def reifySemiConcreteTypeMember(tpe: Type): Tree = tpe match {
     case tpe @ TypeRef(pre @ SingleType(prepre, presym), sym, args) if sym.isAbstractType && !sym.isExistential =>
-      return mirrorFactoryCall(nme.TypeRef, reify(pre), mirrorBuildCall(nme.selectType, reify(sym.owner), reify(sym.name.toString)), reify(args))
+      mirrorFactoryCall(nme.TypeRef, reify(pre), mirrorBuildCall(nme.selectType, reify(sym.owner), reify(sym.name.toString)), reify(args))
   }
 
   /** Reify an annotated type, i.e. the one that makes us deal with AnnotationInfos */

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
@@ -232,27 +233,6 @@ trait WrapAsJava {
     //case JConcurrentMapWrapper(wrapped) => wrapped
     case JMapWrapper(wrapped) => wrapped.asInstanceOf[ju.Map[A, B]]
     case _ => new MapWrapper(m)
-  }
-
-  /**
-   * Implicitly converts a Scala mutable `ConcurrentMap` to a Java
-   * `ConcurrentMap`.
-   *
-   * The returned Java `ConcurrentMap` is backed by the provided Scala
-   * `ConcurrentMap` and any side-effects of using it via the Java interface
-   * will be visible via the Scala interface and vice versa.
-   *
-   * If the Scala `ConcurrentMap` was previously obtained from an implicit or
-   * explicit call of `asScalaConcurrentMap(java.util.concurrect.ConcurrentMap)`
-   * then the original Java ConcurrentMap will be returned.
-   *
-   * @param m The `ConcurrentMap` to be converted.
-   * @return A Java `ConcurrentMap` view of the argument.
-   */
-  @deprecated("Use `concurrent.Map` instead of `ConcurrentMap`.", "2.10.0")
-  implicit def asJavaConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B]): juc.ConcurrentMap[A, B] = m match {
-    case JConcurrentMapDeprecatedWrapper(wrapped) => wrapped
-    case _ => new ConcurrentMapDeprecatedWrapper(m)
   }
 
   /**

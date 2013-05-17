@@ -7,7 +7,6 @@ package scala.tools.nsc
 package backend.opt
 
 import scala.tools.nsc.backend.icode.analysis.LubException
-import scala.tools.nsc.symtab._
 
 /**
  *  @author Iulian Dragos
@@ -72,8 +71,10 @@ abstract class ClosureElimination extends SubComponent {
     def name = phaseName
     val closser = new ClosureElim
 
-    override def apply(c: IClass): Unit =
-      closser analyzeClass c
+    override def apply(c: IClass): Unit = {
+      if (closser ne null)
+        closser analyzeClass c
+    }
   }
 
   /**
@@ -83,7 +84,7 @@ abstract class ClosureElimination extends SubComponent {
    *
    */
   class ClosureElim {
-    def analyzeClass(cls: IClass): Unit = if (settings.Xcloselim.value) {
+    def analyzeClass(cls: IClass): Unit = if (settings.Xcloselim) {
       log(s"Analyzing ${cls.methods.size} methods in $cls.")
       cls.methods foreach { m =>
         analyzeMethod(m)
@@ -97,7 +98,7 @@ abstract class ClosureElimination extends SubComponent {
     /* Some embryonic copy propagation. */
     def analyzeMethod(m: IMethod): Unit = try {if (m.hasCode) {
       cpp.init(m)
-      cpp.run
+      cpp.run()
 
       m.linearizedBlocks() foreach { bb =>
         var info = cpp.in(bb)
@@ -109,7 +110,7 @@ abstract class ClosureElimination extends SubComponent {
               val t = info.getBinding(l)
               t match {
               	case Deref(This) | Const(_) =>
-                  bb.replaceInstruction(i, valueToInstruction(t));
+                  bb.replaceInstruction(i, valueToInstruction(t))
                   debuglog(s"replaced $i with $t")
 
                 case _ =>
@@ -120,7 +121,7 @@ abstract class ClosureElimination extends SubComponent {
 
             case LOAD_FIELD(f, false) /* if accessible(f, m.symbol) */ =>
               def replaceFieldAccess(r: Record) {
-                val Record(cls, bindings) = r
+                val Record(cls, _) = r
                 info.getFieldNonRecordValue(r, f) foreach { v =>
                         bb.replaceInstruction(i, DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil)
                         debuglog(s"replaced $i with $v")
@@ -188,28 +189,20 @@ abstract class ClosureElimination extends SubComponent {
       case Boxed(LocalVar(v)) =>
         LOAD_LOCAL(v)
     }
-
-    /** is field 'f' accessible from method 'm'? */
-    def accessible(f: Symbol, m: Symbol): Boolean =
-      f.isPublic || (f.isProtected && (f.enclosingPackageClass == m.enclosingPackageClass))
   } /* class ClosureElim */
 
 
   /** Peephole optimization. */
   abstract class PeepholeOpt {
-
-    private var method: IMethod = NoIMethod
-
     /** Concrete implementations will perform their optimizations here */
     def peep(bb: BasicBlock, i1: Instruction, i2: Instruction): Option[List[Instruction]]
 
     var liveness: global.icodes.liveness.LivenessAnalysis = null
 
     def apply(m: IMethod): Unit = if (m.hasCode) {
-      method = m
       liveness = new global.icodes.liveness.LivenessAnalysis
       liveness.init(m)
-      liveness.run
+      liveness.run()
       m foreachBlock transformBlock
     }
 
@@ -235,7 +228,7 @@ abstract class ClosureElimination extends SubComponent {
           h = t.head
           t = t.tail
         }
-      } while (redo);
+      } while (redo)
       b fromList newInstructions
     }
   }

@@ -71,7 +71,7 @@ import scala.reflect.ClassTag
  *  val g = future { 3 }
  *  val h = for {
  *    x: Int <- f // returns Future(5)
- *    y: Int <- g // returns Future(5)
+ *    y: Int <- g // returns Future(3)
  *  } yield x + y
  *  }}}
  *
@@ -576,7 +576,7 @@ object Future {
   def sequence[A, M[_] <: TraversableOnce[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
     in.foldLeft(Promise.successful(cbf(in)).future) {
       (fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)
-    } map (_.result)
+    } map (_.result())
   }
 
   /** Returns a `Future` to the result of the first future in the list that is completed.
@@ -638,7 +638,7 @@ object Future {
    *  }}}
    */
   def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
-    if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection")).future
+    if (futures.isEmpty) Promise[R]().failure(new NoSuchElementException("reduce attempted on empty collection")).future
     else sequence(futures).map(_ reduceLeft op)
   }
 
@@ -654,7 +654,7 @@ object Future {
     in.foldLeft(Promise.successful(cbf(in)).future) { (fr, a) =>
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <- fb) yield (r += b)
-    }.map(_.result)
+    }.map(_.result())
 
   // This is used to run callbacks which are internal
   // to scala.concurrent; our own callbacks are only
@@ -675,111 +675,11 @@ object Future {
   // by just not ever using it itself. scala.concurrent
   // doesn't need to create defaultExecutionContext as
   // a side effect.
-  private[concurrent] object InternalCallbackExecutor extends ExecutionContext with java.util.concurrent.Executor {
+  private[concurrent] object InternalCallbackExecutor extends ExecutionContext with BatchingExecutor {
+    override protected def unbatchedExecute(r: Runnable): Unit =
+      r.run()
     override def reportFailure(t: Throwable): Unit =
       throw new IllegalStateException("problem in scala.concurrent internal callback", t)
-
-    /**
-     * The BatchingExecutor trait had to be inlined into InternalCallbackExecutor for binary compatibility.
-     *
-     * BatchingExecutor is a trait for an Executor
-     * which groups multiple nested `Runnable.run()` calls
-     * into a single Runnable passed to the original
-     * Executor. This can be a useful optimization
-     * because it bypasses the original context's task
-     * queue and keeps related (nested) code on a single
-     * thread which may improve CPU affinity. However,
-     * if tasks passed to the Executor are blocking
-     * or expensive, this optimization can prevent work-stealing
-     * and make performance worse. Also, some ExecutionContext
-     * may be fast enough natively that this optimization just
-     * adds overhead.
-     * The default ExecutionContext.global is already batching
-     * or fast enough not to benefit from it; while
-     * `fromExecutor` and `fromExecutorService` do NOT add
-     * this optimization since they don't know whether the underlying
-     * executor will benefit from it.
-     * A batching executor can create deadlocks if code does
-     * not use `scala.concurrent.blocking` when it should,
-     * because tasks created within other tasks will block
-     * on the outer task completing.
-     * This executor may run tasks in any order, including LIFO order.
-     * There are no ordering guarantees.
-     *
-     * WARNING: The underlying Executor's execute-method must not execute the submitted Runnable
-     * in the calling thread synchronously. It must enqueue/handoff the Runnable.
-     */
-    // invariant: if "_tasksLocal.get ne null" then we are inside BatchingRunnable.run; if it is null, we are outside
-    private val _tasksLocal = new ThreadLocal[List[Runnable]]()
-
-    private class Batch(val initial: List[Runnable]) extends Runnable with BlockContext {
-      private[this] var parentBlockContext: BlockContext = _
-      // this method runs in the delegate ExecutionContext's thread
-      override def run(): Unit = {
-        require(_tasksLocal.get eq null)
-
-        val prevBlockContext = BlockContext.current
-        BlockContext.withBlockContext(this) {
-          try {
-            parentBlockContext = prevBlockContext
-
-            @tailrec def processBatch(batch: List[Runnable]): Unit = batch match {
-              case Nil => ()
-              case head :: tail =>
-                _tasksLocal set tail
-                try {
-                  head.run()
-                } catch {
-                  case t: Throwable =>
-                    // if one task throws, move the
-                    // remaining tasks to another thread
-                    // so we can throw the exception
-                    // up to the invoking executor
-                    val remaining = _tasksLocal.get
-                    _tasksLocal set Nil
-                    unbatchedExecute(new Batch(remaining)) //TODO what if this submission fails?
-                    throw t // rethrow
-                }
-                processBatch(_tasksLocal.get) // since head.run() can add entries, always do _tasksLocal.get here
-            }
-
-            processBatch(initial)
-          } finally {
-            _tasksLocal.remove()
-            parentBlockContext = null
-          }
-        }
-      }
-
-      override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
-        // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
-        {
-          val tasks = _tasksLocal.get
-          _tasksLocal set Nil
-          if ((tasks ne null) && tasks.nonEmpty)
-            unbatchedExecute(new Batch(tasks))
-        }
-
-        // now delegate the blocking to the previous BC
-        require(parentBlockContext ne null)
-        parentBlockContext.blockOn(thunk)
-      }
-    }
-
-    override def execute(runnable: Runnable): Unit = runnable match {
-      // If we can batch the runnable
-      case _: OnCompleteRunnable =>
-        _tasksLocal.get match {
-          case null => unbatchedExecute(new Batch(List(runnable))) // If we aren't in batching mode yet, enqueue batch
-          case some => _tasksLocal.set(runnable :: some) // If we are already in batching mode, add to batch
-        }
-
-      // If not batchable, just delegate to underlying
-      case _ =>
-        unbatchedExecute(runnable)
-    }
-
-    private def unbatchedExecute(r: Runnable): Unit = r.run()
   }
 }
 

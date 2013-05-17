@@ -1,6 +1,26 @@
-t3224.scala:29: error: polymorphic expression cannot be instantiated to expected type;
+t3224.scala:30: error: polymorphic expression cannot be instantiated to expected type;
  found   : [T]Array[T]
  required: List[?]
-  println(Texts textL Array()); println(Texts textL Array(1)); println(Texts textL Array(1, 1))
-                           ^
-one error found
+    println(Texts textL Array())
+                             ^
+t3224.scala:34: error: type mismatch;
+ found   : List[Nothing]
+ required: Array[?]
+    println(Texts textA List())
+                            ^
+t3224.scala:35: error: type mismatch;
+ found   : List[Int]
+ required: Array[?]
+    println(Texts textA List(1))
+                            ^
+t3224.scala:36: error: type mismatch;
+ found   : List[Int]
+ required: Array[?]
+    println(Texts textA List(1, 1));
+                            ^
+t3224.scala:48: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [T]Array[T]
+ required: List[?]
+    assert(size(Array()) == 0)
+                     ^
+5 errors found

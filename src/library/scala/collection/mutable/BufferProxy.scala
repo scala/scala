@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
 
-import generic._
 import script._
 
 /** This is a simple proxy class for <a href="Buffer.html"
@@ -127,7 +125,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   /** Clears the buffer contents.
    */
-  def clear() { self.clear }
+  def clear() { self.clear() }
 
   /** Send a message to this scriptable object.
    *

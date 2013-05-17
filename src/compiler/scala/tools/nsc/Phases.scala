@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import symtab.Flags
 import scala.reflect.internal.util.TableDef
 import scala.language.postfixOps
 
@@ -22,7 +21,6 @@ object Phases {
     }
     val values                            = new Array[Cell](MaxPhases + 1)
     def results                           = values filterNot (_ == null)
-    def apply(ph: Phase): T               = values(ph.id).value
     def update(ph: Phase, value: T): Unit = values(ph.id) = Cell(ph, value)
   }
   /** A class for recording the elapsed time of each phase in the
@@ -40,7 +38,6 @@ object Phases {
       >> ("ms"      -> (_.value)) >+ "  "
       << ("share"   -> (_.value.toDouble * 100 / total formatted "%.2f"))
     }
-    def formatted = "" + table()
   }
 }
 

@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2013 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -30,7 +30,7 @@ trait CmdLineParser extends Parsers {
   trait StrOpt extends Opt[String]
 
   class OptMap {
-    private val opts = new scala.collection.mutable.HashMap[Opt[_], Any]
+    private val opts = new collection.mutable.HashMap[Opt[_], Any]
     def apply(flag: Flag): Boolean = opts.contains(flag)
     def apply[T](opt: Opt[T]): T = opts.get(opt) match {
       case None => opt.default

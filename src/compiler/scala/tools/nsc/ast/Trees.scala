@@ -16,24 +16,6 @@ import scala.reflect.internal.Flags.TRAIT
 import scala.compat.Platform.EOL
 
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
-
-  def treeLine(t: Tree): String =
-    if (t.pos.isDefined && t.pos.isRange) t.pos.lineContent.drop(t.pos.column - 1).take(t.pos.end - t.pos.start + 1)
-    else t.summaryString
-
-  def treeStatus(t: Tree, enclosingTree: Tree = null) = {
-    val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
-
-    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
-  }
-  def treeSymStatus(t: Tree) = {
-    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
-    "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
-      if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
-      else treeLine(t)
-    )
-  }
-
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree
@@ -65,6 +47,13 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   // --- factory methods ----------------------------------------------------------
 
+  /** Factory method for a primary constructor super call `super.<init>(args_1)...(args_n)`
+   */
+  def PrimarySuperCall(argss: List[List[Tree]]): Tree = argss match {
+    case Nil        => Apply(gen.mkSuperInitCall, Nil)
+    case xs :: rest => rest.foldLeft(Apply(gen.mkSuperInitCall, xs): Tree)(Apply.apply)
+  }
+
     /** Generates a template with constructor corresponding to
    *
    *  constrmods (vparams1_) ... (vparams_n) preSuper { presupers }
@@ -82,7 +71,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *    body
    *  }
    */
-  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): Template = {
+  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): Template = {
     /* Add constructor to template */
 
     // create parameters for <init> as synthetic trees.
@@ -111,16 +100,22 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant())))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
-          vparamss1 = List() :: vparamss1;
-        val superRef: Tree = atPos(superPos)(gen.mkSuperSelect)
-        val superCall = (superRef /: argss) (Apply.apply)
+          vparamss1 = List() :: vparamss1
+        val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
+                                         // this requires knowing which of the parents is a type macro and which is not
+                                         // and that's something that cannot be found out before typer
+                                         // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
+                                         // this means that we don't know what will be the arguments of the super call
+                                         // therefore here we emit a dummy which gets populated when the template is named and typechecked
         List(
-          atPos(wrappingPos(superPos, lvdefs ::: argss.flatten)) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
+          // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
+          // is it going to be a problem that we can no longer include the `argss`?
+          atPos(wrappingPos(superPos, lvdefs)) (
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant(()))))))
       }
     }
     constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
@@ -137,11 +132,10 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *  @param constrMods the modifiers for the class constructor, i.e. as in `class C private (...)`
    *  @param vparamss   the value parameters -- if they have symbols they
    *                    should be owned by `sym`
-   *  @param argss      the supercall arguments
    *  @param body       the template statements without primary constructor
    *                    and value parameter fields.
    */
-  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): ClassDef = {
+  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): ClassDef = {
     // "if they have symbols they should be owned by `sym`"
     assert(
       mforall(vparamss)(p => (p.symbol eq NoSymbol) || (p.symbol.owner == sym)),
@@ -151,7 +145,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     ClassDef(sym,
       Template(sym.info.parents map TypeTree,
                if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
-               constrMods, vparamss, argss, body, superPos))
+               constrMods, vparamss, body, superPos))
   }
 
  // --- subcomponents --------------------------------------------------
@@ -324,6 +318,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         else
           super.transform {
             tree match {
+              case tree if !tree.canHaveAttrs =>
+                tree
               case tpt: TypeTree =>
                 if (tpt.original != null)
                   transform(tpt.original)
@@ -331,9 +327,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                   val refersToLocalSymbols = tpt.tpe != null && (tpt.tpe exists (tp => locals contains tp.typeSymbol))
                   val isInferred = tpt.wasEmpty
                   if (refersToLocalSymbols || isInferred) {
-                    val dupl = tpt.duplicate
-                    dupl.tpe = null
-                    dupl
+                    tpt.duplicate.clearType()
                   } else {
                     tpt
                   }
@@ -382,8 +376,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                   val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
                   if (!(vetoScope || vetoLabel || vetoThis)) dupl.symbol = NoSymbol
                 }
-                dupl.tpe = null
-                dupl
+                dupl.clearType()
             }
           }
       }

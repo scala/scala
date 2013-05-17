@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package dtd
 
 /** An XML node for document type declaration.
@@ -15,11 +16,10 @@ package dtd
  *  @author Burak Emir
  *
  *  @param  name   name of this DOCTYPE
- *  @param  extID  None, or Some(external ID of this doctype)
+ *  @param  extID  NoExternalID or the external ID of this doctype
  *  @param  intSubset sequence of internal subset declarations
  */
-case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl])
-{
+case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl]) {
   if (!Utility.isName(name))
     throw new IllegalArgumentException(name+" must be an XML Name")
 
@@ -29,6 +29,11 @@ case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl])
       if (intSubset.isEmpty) ""
       else intSubset.mkString("[", "", "]")
 
-    """<!DOCTYPE %s %s%s>""".format(name, extID.toString, intString)
+    """<!DOCTYPE %s %s%s>""".format(name, extID.toString(), intString)
   }
+}
+
+object DocType {
+  /** Creates a doctype with no external id, nor internal subset declarations. */
+  def apply(name: String): DocType = apply(name, NoExternalID, Nil)
 }

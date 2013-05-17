@@ -10,7 +10,7 @@ package scala.tools.ant.sabbus
 
 import java.io.File
 
-import org.apache.tools.ant.types.{Path, Reference}
+import org.apache.tools.ant.types.Path
 
 class Settings {
 

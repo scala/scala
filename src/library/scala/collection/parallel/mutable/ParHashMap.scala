@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 package mutable
 
 
@@ -97,7 +98,8 @@ self =>
 
   class ParHashMapIterator(start: Int, untilIdx: Int, totalSize: Int, e: DefaultEntry[K, V])
   extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) {
-    def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value);
+    def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value)
+
     def newIterator(idxFrom: Int, idxUntil: Int, totalSz: Int, es: DefaultEntry[K, V]) =
       new ParHashMapIterator(idxFrom, idxUntil, totalSz, es)
   }
@@ -166,9 +168,8 @@ private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFa
 extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
    with scala.collection.mutable.HashTable.HashUtils[K]
 {
-  private var mask = ParHashMapCombiner.discriminantmask
-  private var nonmasklen = ParHashMapCombiner.nonmasklength
-  private var seedvalue = 27
+  private val nonmasklen = ParHashMapCombiner.nonmasklength
+  private val seedvalue = 27
 
   def +=(elem: (K, V)) = {
     sz += 1
@@ -232,8 +233,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
     def setSize(sz: Int) = tableSize = sz
     def insertEntry(/*block: Int, */e: DefaultEntry[K, V]) = {
       var h = index(elemHashCode(e.key))
-      // assertCorrectBlock(h, block)
-      var olde = table(h).asInstanceOf[DefaultEntry[K, V]]
+      val olde = table(h).asInstanceOf[DefaultEntry[K, V]]
 
       // check if key already exists
       var ce = olde
@@ -251,13 +251,6 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
         nnSizeMapAdd(h)
         true
       } else false
-    }
-    private def assertCorrectBlock(h: Int, block: Int) {
-      val blocksize = table.length / (1 << ParHashMapCombiner.discriminantbits)
-      if (!(h >= block * blocksize && h < (block + 1) * blocksize)) {
-        println("trying to put " + h + " into block no.: " + block + ", range: [" + block * blocksize + ", " + (block + 1) * blocksize + ">")
-        assert(h >= block * blocksize && h < (block + 1) * blocksize)
-      }
     }
     protected def createNewEntry[X](key: K, x: X) = ???
   }
@@ -288,7 +281,6 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
         val chunksz = unrolled.size
         while (i < chunksz) {
           val elem = chunkarr(i)
-          // assertCorrectBlock(block, elem.key)
           if (t.insertEntry(elem)) insertcount += 1
           i += 1
         }
@@ -296,13 +288,6 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
         unrolled = unrolled.next
       }
       insertcount
-    }
-    private def assertCorrectBlock(block: Int, k: K) {
-      val hc = improve(elemHashCode(k), seedvalue)
-      if ((hc >>> nonmasklen) != block) {
-        println(hc + " goes to " + (hc >>> nonmasklen) + ", while expected block is " + block)
-        assert((hc >>> nonmasklen) == block)
-      }
     }
     def split = {
       val fp = howmany / 2
@@ -320,7 +305,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
 private[parallel] object ParHashMapCombiner {
   private[mutable] val discriminantbits = 5
   private[mutable] val numblocks = 1 << discriminantbits
-  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);
+  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1)
   private[mutable] val nonmasklength = 32 - discriminantbits
 
   def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]

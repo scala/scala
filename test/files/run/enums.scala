@@ -36,8 +36,11 @@ object Test2 {
 
 object Test3 {
 
-  object Direction extends Enumeration("North", "South", "East", "West") {
-    val North, South, East, West = Value;
+  object Direction extends Enumeration {
+    val North = Value("North")
+    val South = Value("South")
+    val East = Value("East")
+    val West = Value("West")
   }
 
   def run: Int = {
@@ -48,8 +51,11 @@ object Test3 {
 
 object Test4 {
 
-  object Direction extends Enumeration("North", "South", "East", "West") {
-    val North, South, East, West = Value;
+  object Direction extends Enumeration {
+    val North = Value("North")
+    val South = Value("South")
+    val East = Value("East")
+    val West = Value("West")
   }
 
   def run: Int = {

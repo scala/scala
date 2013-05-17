@@ -6,6 +6,7 @@ object Test {
     UnprefixedAttributeTest()
     AttributeWithOptionTest()
     AttributeOutputTest()
+    AttributeOperatorTest()
   }
   
   object UnprefixedAttributeTest {
@@ -60,4 +61,10 @@ object Test {
     }
   }
 
+  object AttributeOperatorTest {
+    def apply() {
+      val xml = <foo bar="apple" />
+      assert(xml \@ "bar" == "apple")
+    }
+  }
 }

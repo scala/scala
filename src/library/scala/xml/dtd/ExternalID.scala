@@ -7,15 +7,15 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package dtd
 
 /** an ExternalIDs - either PublicID or SystemID
  *
  *  @author Burak Emir
  */
-abstract class ExternalID extends parsing.TokenTests
-{
+abstract class ExternalID extends parsing.TokenTests {
   def quoted(s: String) = {
     val c = if (s contains '"') '\'' else '"'
     c + s + c
@@ -72,4 +72,15 @@ case class PublicID(publicId: String, systemId: String) extends ExternalID {
 
   /** always empty */
   def child = Nil
+}
+
+/** A marker used when a `DocType` contains no external id.
+ *
+ *  @author Michael Bayne
+ */
+object NoExternalID extends ExternalID {
+  val publicId = null
+  val systemId = null
+
+  override def toString = ""
 }

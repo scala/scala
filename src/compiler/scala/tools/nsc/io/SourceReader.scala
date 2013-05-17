@@ -9,7 +9,7 @@ package io
 
 import java.io.{ FileInputStream, InputStream, IOException }
 import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.channels.{FileChannel, ReadableByteChannel, Channels}
+import java.nio.channels.{ ReadableByteChannel, Channels }
 import java.nio.charset.{CharsetDecoder, CoderResult}
 import scala.tools.nsc.reporters._
 
@@ -32,9 +32,6 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
                    "IO error while decoding "+filename+" with "+decoder.charset()+"\n"+
                    "Please try specifying another one using the -encoding option")
   }
-
-  /** Reads the file with the specified name. */
-  def read(filename: String): Array[Char]= read(new JFile(filename))
 
   /** Reads the specified file. */
   def read(file: JFile): Array[Char] = {
@@ -77,7 +74,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   protected def read(bytes: ByteBuffer): Array[Char] = {
     val decoder: CharsetDecoder = this.decoder.reset()
     val chars: CharBuffer = this.chars; chars.clear()
-    terminate(flush(decoder, decode(decoder, bytes, chars, true)))
+    terminate(flush(decoder, decode(decoder, bytes, chars, endOfInput = true)))
   }
 
   //########################################################################

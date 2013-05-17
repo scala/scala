@@ -1,0 +1,18 @@
+t5954.scala:36: warning: class D should be placed directly in package A instead of package object A. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.
+  case class D()
+             ^
+t5954.scala:35: warning: object C should be placed directly in package A instead of package object A. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.
+  object C
+         ^
+t5954.scala:34: warning: trait C should be placed directly in package A instead of package object A. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.
+  trait C
+        ^
+t5954.scala:33: warning: object B should be placed directly in package A instead of package object A. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.
+  object B
+         ^
+t5954.scala:32: warning: class B should be placed directly in package A instead of package object A. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.
+  class B
+        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

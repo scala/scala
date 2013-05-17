@@ -9,9 +9,9 @@ object Test extends ReplTest {
   def code = """
 :power
 val s = transformedType(StringClass.toType).asInstanceOf[Type]
-{ println(afterPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))) }
-{ afterPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))) }
-{ ConstantType(Constant(s)); println(afterPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))); }
-{ ConstantType(Constant(s)); afterPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
+{ println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))) }
+{ exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))) }
+{ ConstantType(Constant(s)); println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))); }
+{ ConstantType(Constant(s)); exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
   """
 }

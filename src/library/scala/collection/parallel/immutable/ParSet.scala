@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package parallel.immutable
 
-import scala.collection.GenSet
 import scala.collection.generic._
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner

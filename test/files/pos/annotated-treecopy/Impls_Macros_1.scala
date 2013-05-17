@@ -21,7 +21,7 @@ object Macros {
         // normalize argument name
         var b1 = new Transformer {
           override def transform(tree: Tree): Tree = tree match {
-            case Ident(x) if (x==n) => Ident(newTermName("_arg"))
+            case Ident(x) if (x==n) => Ident(TermName("_arg"))
             case tt @ TypeTree() if tt.original != null => TypeTree(tt.tpe) setOriginal transform(tt.original)
             // without the fix to LazyTreeCopier.Annotated, we would need to uncomment the line below to make the macro work
             // that's because the pattern match in the input expression gets expanded into Typed(<x>, TypeTree(<Int @unchecked>))

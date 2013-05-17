@@ -23,7 +23,6 @@ trait Unapplies extends ast.TreeDSL
 
   private val unapplyParamName = nme.x_0
 
-
   // In the typeCompleter (templateSig) of a case class (resp it's module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed. During naming (in
@@ -45,17 +44,6 @@ trait Unapplies extends ast.TreeDSL
         else formals
       case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
     }
-  }
-
-  /** returns type of the unapply method returning T_0...T_n
-   *  for n == 0, boolean
-   *  for n == 1, Some[T0]
-   *  else Some[Product[Ti]]
-   */
-  def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
-    case 0 => BooleanClass.tpe
-    case 1 => optionType(WildcardType)
-    case n => optionType(productType((List fill n)(WildcardType)))
   }
 
   /** returns unapply or unapplySeq if available */
@@ -128,11 +116,16 @@ trait Unapplies extends ast.TreeDSL
   /** The module corresponding to a case class; overrides toString to show the module's name
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = {
-    // > MaxFunctionArity is caught in Namers, but for nice error reporting instead of
-    // an abrupt crash we trim the list here.
-    def primaries      = constrParamss(cdef).head take MaxFunctionArity map (_.tpt)
-    def inheritFromFun = !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && constrParamss(cdef).length == 1
-    def createFun      = gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
+    val params = constrParamss(cdef)
+    def inheritFromFun = !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && (params match {
+      case List(ps) if ps.length <= MaxFunctionArity => true
+      case _ => false
+    })
+    def createFun = {
+      def primaries = params.head map (_.tpt)
+      gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
+    }
+
     def parents        = if (inheritFromFun) List(createFun) else Nil
     def toString       = DefDef(
       Modifiers(OVERRIDE | FINAL | SYNTHETIC),
@@ -149,7 +142,7 @@ trait Unapplies extends ast.TreeDSL
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, ListOfNil, body, cdef.impl.pos.focus))
+      Template(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

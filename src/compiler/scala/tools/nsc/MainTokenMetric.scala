@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 
 import scala.tools.nsc.reporters.ConsoleReporter
 
@@ -21,11 +22,11 @@ object MainTokenMetric {
     var totale = 0
     for (source <- fnames) {
       val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
-      s.nextToken
+      s.nextToken()
       var i = 0
       while (s.token != EOF) {
         i += 1
-        s.nextToken
+        s.nextToken()
       }
       Console.println(i.toString + " " + source.toString())
       totale += i
@@ -42,9 +43,9 @@ object MainTokenMetric {
       tokenMetric(compiler, command.files)
     } catch {
       case ex @ FatalError(msg) =>
-        if (command.settings.debug.value)
-          ex.printStackTrace();
-      reporter.error(null, "fatal error: " + msg)
+        if (command.settings.debug)
+          ex.printStackTrace()
+        reporter.error(null, "fatal error: " + msg)
     }
   }
 

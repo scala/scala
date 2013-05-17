@@ -33,7 +33,7 @@ trait AnalyzerPlugins { self: Analyzer =>
     /**
      * Let analyzer plugins change the expected type before type checking a tree.
      */
-    def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Int): Type = pt
+    def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Mode): Type = pt
 
     /**
      * Let analyzer plugins modify the type that has been computed for a tree.
@@ -44,7 +44,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * @param mode  Mode that was used for typing `tree`
      * @param pt    Expected type that was used for typing `tree`
      */
-    def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Int, pt: Type): Type = tpe
+    def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = tpe
 
     /**
      * Let analyzer plugins change the types assigned to definitions. For definitions that have
@@ -133,7 +133,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * Decide whether this analyzer plugin can adapt a tree that has an annotated type to the
      * given type tp, taking into account the given mode (see method adapt in trait Typers).
      */
-    def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Boolean = false
+    def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Boolean = false
 
     /**
      * Adapt a tree that has an annotated type to the given type tp, taking into account the given
@@ -142,7 +142,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * An implementation cannot rely on canAdaptAnnotations being called before. If the implementing
      * class cannot do the adapting, it should return the tree unchanged.
      */
-    def adaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Tree = tree
+    def adaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Tree = tree
 
     /**
      * Modify the type of a return expression. By default, return expressions have type
@@ -169,13 +169,13 @@ trait AnalyzerPlugins { self: Analyzer =>
 
 
   /** @see AnalyzerPlugin.pluginsPt */
-  def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Int): Type =
+  def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Mode): Type =
     if (analyzerPlugins.isEmpty) pt
     else analyzerPlugins.foldLeft(pt)((pt, plugin) =>
       if (!plugin.isActive()) pt else plugin.pluginsPt(pt, typer, tree, mode))
 
   /** @see AnalyzerPlugin.pluginsTyped */
-  def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Int, pt: Type): Type = {
+  def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
     // support deprecated methods in annotation checkers
     val annotCheckersTpe = addAnnotations(tree, tpe)
     if (analyzerPlugins.isEmpty) annotCheckersTpe
@@ -196,7 +196,7 @@ trait AnalyzerPlugins { self: Analyzer =>
       if (!plugin.isActive()) tpe else plugin.pluginsTypeSigAccessor(tpe, typer, tree, sym))
 
   /** @see AnalyzerPlugin.canAdaptAnnotations */
-  def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Boolean = {
+  def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Boolean = {
     // support deprecated methods in annotation checkers
     val annotCheckersExists = global.canAdaptAnnotations(tree, mode, pt)
     annotCheckersExists || {
@@ -207,7 +207,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   }
 
   /** @see AnalyzerPlugin.adaptAnnotations */
-  def adaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Tree = {
+  def adaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Tree = {
     // support deprecated methods in annotation checkers
     val annotCheckersTree = global.adaptAnnotations(tree, mode, pt)
     if (analyzerPlugins.isEmpty) annotCheckersTree

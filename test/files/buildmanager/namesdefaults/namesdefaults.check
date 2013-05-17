@@ -1,9 +1,0 @@
-builder > defparam.scala defparam-use.scala
-compiling Set(defparam-use.scala, defparam.scala)
-Changes: Map()
-builder > defparam-use.scala
-compiling Set(defparam-use.scala)
-Changes: Map(class Test$delayedInit$body -> List(), object Test -> List())
-builder > defparam-use.scala
-compiling Set(defparam-use.scala)
-Changes: Map(class Test$delayedInit$body -> List(), object Test -> List())

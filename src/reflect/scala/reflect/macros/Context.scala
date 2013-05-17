@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 // todo. introduce context hierarchy
@@ -36,7 +37,8 @@ trait Context extends Aliases
                  with Typers
                  with Parsers
                  with Evals
-                 with ExprUtils {
+                 with ExprUtils
+                 with Synthetics {
 
   /** The compile-time universe. */
   val universe: Universe
@@ -51,7 +53,7 @@ trait Context extends Aliases
 
   /** The prefix tree from which the macro is selected.
    *
-   *  For a example, for a macro `filter` defined as an instance method on a collection `Coll`,
+   *  For example, for a macro `filter` defined as an instance method on a collection `Coll`,
    *  `prefix` represents an equivalent of `this` for normal instance methods:
    *
    *  {{{

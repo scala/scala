@@ -56,7 +56,6 @@ INITIALISATION
     <property name="scala.dir" value="${quick.dir}"/>
     <property name="scala-library.lib" value="${scala.dir}/classes/library/"/>
     <property name="scala-compiler.lib" value="${scala.dir}/classes/compiler/"/>
-    <property name="fjbg.lib" value="${project.dir}/lib/fjbg.jar"/>
   </target>
 
   <target name="pack.init" if="pack.binary">
@@ -67,7 +66,6 @@ INITIALISATION
     <property name="scala.dir" value="${pack.dir}"/>
     <property name="scala-library.lib" value="${scala.dir}/lib/scala-library.jar"/>
     <property name="scala-compiler.lib" value="${scala.dir}/lib/scala-compiler.jar"/>
-    <property name="fjbg.lib" value=""/>
   </target>
 
   <target name="latest.init" if="latest.binary">
@@ -78,7 +76,6 @@ INITIALISATION
     <property name="scala.dir" value="${latest.dir}"/>
     <property name="scala-library.lib" value="${scala.dir}/lib/scala-library.jar"/>
     <property name="scala-compiler.lib" value="${scala.dir}/lib/scala-compiler.jar"/>
-    <property name="fjbg.lib" value=""/>
   </target>
 
   <target name="installed.init" if="installed.binary">
@@ -89,7 +86,6 @@ INITIALISATION
     <property name="scala.dir" value="${installed.dir}"/>
     <property name="scala-library.lib" value="${scala.dir}/lib/scala-library.jar"/>
     <property name="scala-compiler.lib" value="${scala.dir}/lib/scala-compiler.jar"/>
-    <property name="fjbg.lib" value=""/>
   </target>
 
   <target name="init" depends="quick.init, pack.init, latest.init, installed.init">
@@ -98,7 +94,6 @@ INITIALISATION
     <path id="scala.classpath">
       <pathelement location="${scala-library.lib}"/>
       <pathelement location="${scala-compiler.lib}"/>
-      <pathelement location="${fjbg.lib}"/> <!-- only present for 'quick' -->
     </path>
 
     <fail message="Scala library '${scala-library.lib}' or '${scala-compiler.lib}' is missing/broken">

@@ -11,8 +11,6 @@
              classname="scala.tools.ant.Scaladoc"/>
     <taskdef name="scalatool"
              classname="scala.tools.ant.ScalaTool"/>
-    <taskdef name="same"
-             classname="scala.tools.ant.Same"/>
     <taskdef name="pack200"
              classname="scala.tools.ant.Pack200Task"/>
 </antlib>

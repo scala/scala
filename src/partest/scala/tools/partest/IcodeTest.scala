@@ -5,9 +5,7 @@
 
 package scala.tools.partest
 
-import scala.tools.nsc._
-import nest.FileUtil._
-import io.Directory
+import scala.tools.partest.nest.FileUtil.compareContents
 
 /** A trait for testing icode.  All you need is this in a
  *  partest source file:

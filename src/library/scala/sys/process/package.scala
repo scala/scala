@@ -25,7 +25,7 @@ package scala.sys {
     *
     * {{{
     * import scala.sys.process._
-    * "ls" #| "grep .scala" #&& "scalac *.scala" #|| "echo nothing found" lines
+    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lines
     * }}}
     *
     * We describe below the general concepts and architecture of the package,

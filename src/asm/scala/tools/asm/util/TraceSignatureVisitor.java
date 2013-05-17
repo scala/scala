@@ -117,8 +117,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitInterface() {
-        separator = seenInterface ? ", " : isInterface
-                ? " extends "
+        separator = seenInterface ? ", " : isInterface ? " extends "
                 : " implements ";
         seenInterface = true;
         startType();
@@ -165,34 +164,34 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     @Override
     public void visitBaseType(final char descriptor) {
         switch (descriptor) {
-            case 'V':
-                declaration.append("void");
-                break;
-            case 'B':
-                declaration.append("byte");
-                break;
-            case 'J':
-                declaration.append("long");
-                break;
-            case 'Z':
-                declaration.append("boolean");
-                break;
-            case 'I':
-                declaration.append("int");
-                break;
-            case 'S':
-                declaration.append("short");
-                break;
-            case 'C':
-                declaration.append("char");
-                break;
-            case 'F':
-                declaration.append("float");
-                break;
-            // case 'D':
-            default:
-                declaration.append("double");
-                break;
+        case 'V':
+            declaration.append("void");
+            break;
+        case 'B':
+            declaration.append("byte");
+            break;
+        case 'J':
+            declaration.append("long");
+            break;
+        case 'Z':
+            declaration.append("boolean");
+            break;
+        case 'I':
+            declaration.append("int");
+            break;
+        case 'S':
+            declaration.append("short");
+            break;
+        case 'C':
+            declaration.append("char");
+            break;
+        case 'F':
+            declaration.append("float");
+            break;
+        // case 'D':
+        default:
+            declaration.append("double");
+            break;
         }
         endType();
     }

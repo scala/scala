@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -58,8 +59,6 @@ private[reflect] trait BuildUtils { self: Universe =>
     def setAnnotations[S <: Symbol](sym: S, annots: List[Annotation]): S
 
     def flagsFromBits(bits: Long): FlagSet
-
-    def emptyValDef: ValDef
 
     def This(sym: Symbol): Tree
 

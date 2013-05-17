@@ -3,7 +3,7 @@
  * in the copy-propagation performed before ClosureElimination.
  *
  * In the general case, the local variable 'l' is connected through
- * a alias chain with other local variables and at the end of the 
+ * an alias chain with other local variables and at the end of the 
  * alias chain there may be a Value, call it 'v'.
  *
  * If 'v' is cheaper to access (it is a Deref(This) or Const(_)), then

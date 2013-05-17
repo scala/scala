@@ -5,7 +5,7 @@ final class Settings {
 abstract class Factory {
     type libraryType <: Base
 
-    final def apply(settings: Settings): libraryType = error("bla")
+    final def apply(settings: Settings): libraryType = sys.error("bla")
 }
 
 abstract class Base {
@@ -19,7 +19,7 @@ class SA(val settings: Settings) extends Base {
             SD
         ) :::  settings.f(
             SC
-        )    
+        )
 }
 
 object SC extends Factory {

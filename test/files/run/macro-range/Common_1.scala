@@ -43,5 +43,5 @@ abstract class Utils {
     LabelDef(lname, Nil, rhs)
   }
   def makeBinop(left: Tree, op: String, right: Tree): Tree =
-    Apply(Select(left, newTermName(op)), List(right))
+    Apply(Select(left, TermName(op)), List(right))
 }

@@ -21,6 +21,7 @@ import scala.concurrent.SyncVar
  *
  *  @author Philipp Haller
  */
+@deprecated("Use the scala.concurrent.Future instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 abstract class Future[+T] extends Responder[T] with Function0[T] {
 
   @volatile
@@ -107,6 +108,7 @@ private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T]) exten
  *
  *  @author Philipp Haller
  */
+@deprecated("Use the object scala.concurrent.Future instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object Futures {
 
   /** Arranges for the asynchronous execution of `body`,
@@ -174,7 +176,7 @@ object Futures {
    *                  or timeout + `System.currentTimeMillis()` is negative.
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
-    var resultsMap: scala.collection.mutable.Map[Int, Option[Any]] = new scala.collection.mutable.HashMap[Int, Option[Any]]
+    val resultsMap: scala.collection.mutable.Map[Int, Option[Any]] = new scala.collection.mutable.HashMap[Int, Option[Any]]
 
     var cnt = 0
     val mappedFts = fts.map(ft =>

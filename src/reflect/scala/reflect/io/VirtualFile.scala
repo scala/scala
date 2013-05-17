@@ -3,18 +3,17 @@
  * @author  Martin Odersky
  */
 
-
-package scala.reflect
+package scala
+package reflect
 package io
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
-import java.io.{ File => JFile }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream, File => JFile }
 
 /** This class implements an in-memory file.
  *
  *  @author  Philippe Altherr
  *  @version 1.0, 23/03/2004
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualFile(val name: String, override val path: String) extends AbstractFile {
@@ -33,20 +32,16 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
     case _              => false
   }
 
-  //########################################################################
-  // Private data
   private var content = Array.emptyByteArray
 
-  //########################################################################
-  // Public Methods
   def absolute = this
 
   /** Returns null. */
-  final def file: JFile = null
+  def file: JFile = null
 
-  override def sizeOption: Option[Int] = Some(content.size)
+  override def sizeOption: Option[Int] = Some(content.length)
 
-  def input : InputStream = new ByteArrayInputStream(content);
+  def input : InputStream = new ByteArrayInputStream(content)
 
   override def output: OutputStream = {
     new ByteArrayOutputStream() {
@@ -62,10 +57,16 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false
 
+  /** @inheritdoc */
+  override def isVirtual: Boolean = true
+
+  // private var _lastModified: Long = 0
+  // _lastModified
+
   /** Returns the time that this abstract file was last modified. */
-  private var _lastModified: Long = 0
-  def lastModified: Long = _lastModified
-  def lastModified_=(x: Long) = _lastModified = x
+  // !!! Except it doesn't - it's private and never set - so I replaced it
+  // with constant 0 to save the field.
+  def lastModified: Long = 0
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {
@@ -74,20 +75,16 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   }
 
   /** Does this abstract file denote an existing file? */
-  def create() { unsupported }
+  def create() { unsupported() }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete() { unsupported }
+  def delete() { unsupported() }
 
   /**
    * Returns the abstract file in this abstract directory with the
    * specified name. If there is no such file, returns null. The
    * argument "directory" tells whether to look for a directory or
    * or a regular file.
-   *
-   * @param name      ...
-   * @param directory ...
-   * @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile = {
     assert(isDirectory, "not a directory '" + this + "'")
@@ -97,7 +94,5 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
-
-  //########################################################################
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
 }

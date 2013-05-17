@@ -12,8 +12,7 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileInputStream, FileOutputStream, BufferedReader,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
-import scala.tools.nsc.io.{ Path, Directory, File => SFile }
-import scala.sys.process._
+import scala.reflect.io.AbstractFile
 import scala.collection.mutable
 
 trait FileUtil {
@@ -62,6 +61,23 @@ trait FileManager extends FileUtil {
   var LATEST_PARTEST: String
   var LATEST_ACTORS: String
 
+  protected def relativeToLibrary(what: String): String = {
+    def jarname = if (what startsWith "scala") s"$what.jar" else s"scala-$what.jar"
+    if (LATEST_LIB endsWith ".jar")
+      (SFile(LATEST_LIB).parent / jarname).toAbsolute.path
+    else
+      (SFile(LATEST_LIB).parent.parent / "classes" / what).toAbsolute.path
+  }
+  def latestScaladoc    = relativeToLibrary("scaladoc")
+  def latestInteractive = relativeToLibrary("interactive")
+  def latestScalapFile  = relativeToLibrary("scalap")
+  def latestPaths       = List(
+        LATEST_LIB, LATEST_REFLECT, LATEST_COMP, LATEST_PARTEST, LATEST_ACTORS,
+        latestScalapFile, latestScaladoc, latestInteractive
+  )
+  def latestFiles       = latestPaths map (p => new java.io.File(p))
+  def latestUrls        = latestFiles map (_.toURI.toURL)
+
   var showDiff = false
   var updateCheck = false
   var showLog = false
@@ -69,18 +85,11 @@ trait FileManager extends FileUtil {
 
   var SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
   var JAVA_OPTS   = PartestDefaults.javaOpts
-  var timeout     = PartestDefaults.timeout
-  // how can 15 minutes not be enough? What are you doing, run/lisp.scala?
-  // You complete in 11 seconds on my machine.
-  var oneTestTimeout = 60 * 60 * 1000
 
   /** Only when --debug is given. */
   lazy val testTimings = new mutable.HashMap[String, Long]
   def recordTestTiming(name: String, milliseconds: Long) =
     synchronized { testTimings(name) = milliseconds }
-  def showTestTimings() {
-    testTimings.toList sortBy (-_._2) foreach { case (k, v) => println("%s: %s".format(k, v)) }
-  }
 
   def getLogFile(dir: File, fileBase: String, kind: String): File =
     new File(dir, fileBase + "-" + kind + ".log")
@@ -120,5 +129,35 @@ trait FileManager extends FileUtil {
     val f = SFile(file)
 
     f.printlnAll(f.lines.toList map replace: _*)
+  }
+
+  /** Massage args to merge plugins and fix paths.
+   *  Plugin path can be relative to test root, or cwd is out.
+   *  While we're at it, mix in the baseline options, too.
+   *  That's how ant passes in the plugins dir.
+   */
+  def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): List[String] = {
+    val dir = testRootDir
+    // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
+    def pathOrCwd(p: String) =
+      if (p == ".") {
+        val plugxml = "scalac-plugin.xml"
+        val pout    = if (out.isVirtual) Directory.makeTemp() else Path(out.path)
+        val srcpath = Path(srcdir.path)
+        val pd      = (srcpath / plugxml).toFile
+        if (pd.exists) pd copyTo (pout / plugxml)
+        pout
+      } else Path(p)
+    def absolutize(path: String) = pathOrCwd(path) match {
+      case x if x.isAbsolute  => x.path
+      case x                  => (dir / x).toAbsolute.path
+    }
+
+    val xprefix          = "-Xplugin:"
+    val (xplugs, others) = args partition (_ startsWith xprefix)
+    val Xplugin          = if (xplugs.isEmpty) Nil else List(xprefix +
+      (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
+    )
+    SCALAC_OPTS.toList ::: others ::: Xplugin
   }
 }

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -30,9 +31,6 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
                          with BitSetLike[BitSet]
                          with Serializable {
   override def empty = BitSet.empty
-
-  @deprecated("Use BitSet.fromBitMask[NoCopy] instead of fromArray", "2.10.0")
-  def fromArray(elems: Array[Long]): BitSet = fromBitMaskNoCopy(elems)
 
   protected def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
@@ -74,16 +72,12 @@ object BitSet extends BitSetFactory[BitSet] {
   def newBuilder: Builder[Int, BitSet] = new Builder[Int, BitSet] {
     private[this] val b = new mutable.BitSet
     def += (x: Int) = { b += x; this }
-    def clear() = b.clear
+    def clear() = b.clear()
     def result() = b.toImmutable
   }
 
   /** $bitsetCanBuildFrom */
   implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
-
-  /** A bitset containing all the bits in an array */
-  @deprecated("Use fromBitMask[NoCopy] instead of fromArray", "2.10.0")
-  def fromArray(elems: Array[Long]): BitSet = fromBitMaskNoCopy(elems)
 
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {

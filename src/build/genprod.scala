@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -63,7 +63,7 @@ object genprod extends App {
     def header = """
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -319,6 +319,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
  *  @constructor  Create a new tuple with {i} elements.{idiomatic}
 {params}
  */
+@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
 case class {className}{covariantArgs}({fields})
   extends {Product.className(i)}{invariantArgs}
 {{

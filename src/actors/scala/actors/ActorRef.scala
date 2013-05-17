@@ -45,8 +45,9 @@ trait ActorRef {
  * This is what is used to complete a Future that is returned from an ask/? call,
  * when it times out.
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException {
   def this(message: String) = this(message, null: Throwable)
 }
-
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object PoisonPill

@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import java.lang.Integer.toOctalString
@@ -94,7 +95,7 @@ trait Constants extends api.Constants {
 
     def booleanValue: Boolean =
       if (tag == BooleanTag) value.asInstanceOf[Boolean]
-      else throw new Error("value " + value + " is not a boolean");
+      else throw new Error("value " + value + " is not a boolean")
 
     def byteValue: Byte = tag match {
       case ByteTag   => value.asInstanceOf[Byte]

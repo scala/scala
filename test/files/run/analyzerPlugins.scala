@@ -77,12 +77,12 @@ object Test extends DirectTest {
     object analyzerPlugin extends AnalyzerPlugin {
       def treeClass(t: Tree) = t.getClass.toString.split('.').last
 
-      override def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Int): Type = {
+      override def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Mode): Type = {
         output += s"pluginsPt($pt, ${treeClass(tree)})"
         pt
       }
   
-      override def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Int, pt: Type): Type = {
+      override def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
         output += s"pluginsTyped($tpe, ${treeClass(tree)})"
         tpe
       }
@@ -98,7 +98,7 @@ object Test extends DirectTest {
       }
 
 
-      override def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Int, pt: Type): Boolean = {
+      override def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Boolean = {
         output += s"canAdaptAnnotations(${treeClass(tree)}, $pt)"
         false
       }

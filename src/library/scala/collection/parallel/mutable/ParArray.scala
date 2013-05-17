@@ -29,8 +29,6 @@ import scala.collection.mutable.Builder
 import scala.collection.GenTraversableOnce
 import scala.reflect.ClassTag
 
-
-
 /** Parallel sequence holding elements in a linear array.
  *
  *  `ParArray` is a parallel sequence with a predefined size. The size of the array
@@ -181,10 +179,10 @@ self =>
 
     override def fold[U >: T](z: U)(op: (U, U) => U): U = foldLeft[U](z)(op)
 
-    override def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
+    override def aggregate[S](z: =>S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
 
     override def sum[U >: T](implicit num: Numeric[U]): U = {
-      var s = sum_quick(num, arr, until, i, num.zero)
+      val s = sum_quick(num, arr, until, i, num.zero)
       i = until
       s
     }
@@ -200,7 +198,7 @@ self =>
     }
 
     override def product[U >: T](implicit num: Numeric[U]): U = {
-        var p = product_quick(num, arr, until, i, num.one)
+        val p = product_quick(num, arr, until, i, num.one)
         i = until
         p
     }
@@ -226,7 +224,7 @@ self =>
         if (all) i = nextuntil
         else {
           i = until
-          abort
+          abort()
         }
 
         if (isAborted) return false
@@ -241,7 +239,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) j += 1
         else return false
       }
-      return true
+      true
     }
 
     override def exists(p: T => Boolean): Boolean = {
@@ -254,7 +252,7 @@ self =>
         some = exists_quick(p, array, nextuntil, i)
         if (some) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return true
@@ -269,7 +267,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) return true
         else j += 1
       }
-      return false
+      false
     }
 
     override def find(p: T => Boolean): Option[T] = {
@@ -283,7 +281,7 @@ self =>
 
         if (r != None) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return r
@@ -298,7 +296,7 @@ self =>
         if (p(elem)) return Some(elem)
         else j += 1
       }
-      return None
+      None
     }
 
     override def drop(n: Int): ParArrayIterator = {
@@ -405,9 +403,10 @@ self =>
 
     private def collect2combiner_quick[S, That](pf: PartialFunction[T, S], a: Array[Any], cb: Builder[S, That], ntil: Int, from: Int) {
       var j = from
+      val runWith = pf.runWith(b => cb += b)
       while (j < ntil) {
         val curr = a(j).asInstanceOf[T]
-        if (pf.isDefinedAt(curr)) cb += pf(curr)
+        runWith(curr)
         j += 1
       }
     }
@@ -432,7 +431,7 @@ self =>
     private def filter2combiner_quick[U >: T, This](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
-        var curr = a(j).asInstanceOf[T]
+        val curr = a(j).asInstanceOf[T]
         if (pred(curr)) cb += curr
         j += 1
       }
@@ -447,7 +446,7 @@ self =>
     private def filterNot2combiner_quick[U >: T, This](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
-        var curr = a(j).asInstanceOf[T]
+        val curr = a(j).asInstanceOf[T]
         if (!pred(curr)) cb += curr
         j += 1
       }
@@ -576,8 +575,6 @@ self =>
 
   /* operations */
 
-  private def asTask[R, Tp](t: Any) = t.asInstanceOf[Task[R, Tp]]
-
   private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParArrayCombiner[_]]
 
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {
@@ -612,7 +609,8 @@ self =>
 
   class ScanToArray[U >: T](tree: ScanTree[U], z: U, op: (U, U) => U, targetarr: Array[Any])
   extends Task[Unit, ScanToArray[U]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = iterate(tree)
     private def iterate(tree: ScanTree[U]): Unit = tree match {
       case ScanNode(left, right) =>
@@ -648,7 +646,8 @@ self =>
   }
 
   class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends Task[Unit, Map[S]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = {
       val tarr = targetarr
       val sarr = array
@@ -701,7 +700,7 @@ object ParArray extends ParFactory[ParArray] {
 
   private def wrapOrRebuild[T](arr: AnyRef, sz: Int) = arr match {
     case arr: Array[AnyRef] => new ParArray[T](new ExposedArraySeq[T](arr, sz))
-    case _ => new ParArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
+    case _ => new ParArray[T](new ExposedArraySeq[T](scala.runtime.ScalaRunTime.toObjectArray(arr), sz))
   }
 
   def createFromCopy[T <: AnyRef : ClassTag](arr: Array[T]): ParArray[T] = {
@@ -719,27 +718,3 @@ object ParArray extends ParFactory[ParArray] {
   }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

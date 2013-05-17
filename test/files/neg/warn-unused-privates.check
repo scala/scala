@@ -1,0 +1,63 @@
+warn-unused-privates.scala:2: warning: private constructor in class Bippy is never used
+  private def this(c: Int) = this(c, c)           // warn
+              ^
+warn-unused-privates.scala:4: warning: private method in class Bippy is never used
+  private def boop(x: Int)            = x+a+b     // warn
+              ^
+warn-unused-privates.scala:6: warning: private val in class Bippy is never used
+  final private val MILLIS2: Int      = 1000      // warn
+                    ^
+warn-unused-privates.scala:13: warning: private val in object Bippy is never used
+  private val HEY_INSTANCE: Int = 1000    // warn
+              ^
+warn-unused-privates.scala:35: warning: private val in class Boppy is never used
+  private val hummer = "def" // warn
+              ^
+warn-unused-privates.scala:42: warning: private var in trait Accessors is never used
+  private var v1: Int = 0 // warn
+              ^
+warn-unused-privates.scala:43: warning: private setter in trait Accessors is never used
+  private var v2: Int = 0 // warn, never set
+              ^
+warn-unused-privates.scala:44: warning: private var in trait Accessors is never used
+  private var v3: Int = 0 // warn, never got
+              ^
+warn-unused-privates.scala:56: warning: private default argument in trait DefaultArgs is never used
+  private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
+                             ^
+warn-unused-privates.scala:56: warning: private default argument in trait DefaultArgs is never used
+  private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
+                                           ^
+warn-unused-privates.scala:67: warning: local var in method f0 is never used
+    var x = 1 // warn
+        ^
+warn-unused-privates.scala:74: warning: local val in method f1 is never used
+    val b = new Outer // warn
+        ^
+warn-unused-privates.scala:84: warning: private object in object Types is never used
+  private object Dongo { def f = this } // warn
+                 ^
+warn-unused-privates.scala:94: warning: local object in method l1 is never used
+    object HiObject { def f = this } // warn
+           ^
+warn-unused-privates.scala:78: warning: local var x in method f2 is never set - it could be a val
+    var x = 100 // warn about it being a var
+        ^
+warn-unused-privates.scala:85: warning: private class Bar1 in object Types is never used
+  private class Bar1 // warn
+                ^
+warn-unused-privates.scala:87: warning: private type Alias1 in object Types is never used
+  private type Alias1 = String // warn
+               ^
+warn-unused-privates.scala:95: warning: local class Hi is never used
+    class Hi { // warn
+          ^
+warn-unused-privates.scala:99: warning: local class DingDongDoobie is never used
+    class DingDongDoobie // warn
+          ^
+warn-unused-privates.scala:102: warning: local type OtherThing is never used
+    type OtherThing = String // warn
+         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+20 warnings found
+one error found

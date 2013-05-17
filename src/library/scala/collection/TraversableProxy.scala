@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 
 // Methods could be printed by  cat TraversableLike.scala | egrep '^  (override )?def'
 

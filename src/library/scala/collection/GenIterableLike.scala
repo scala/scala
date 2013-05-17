@@ -6,9 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
-import generic.{ CanBuildFrom => CBF, _ }
+import generic.{ CanBuildFrom => CBF }
 
 /** A template trait for all iterable collections which may possibly
  *  have their operations implemented in parallel.

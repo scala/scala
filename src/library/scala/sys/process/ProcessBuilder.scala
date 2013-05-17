@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 package process
 
 import processInternal._
@@ -23,7 +24,7 @@ import ProcessBuilder._
   * based on these factories made available in the package object
   * [[scala.sys.process]]. Here are some examples:
   * {{{
-  * import.scala.sys.process._
+  * import scala.sys.process._
   *
   * // Executes "ls" and sends output to stdout
   * "ls".!
@@ -46,14 +47,14 @@ import ProcessBuilder._
   *
   * Two existing `ProcessBuilder` can be combined in the following ways:
   *
-  *   * They can be executed in parallel, with the output of the first being fed
-  *   as input to the second, like Unix pipes. This is achieved with the `#|`
-  *   method.
-  *   * They can be executed in sequence, with the second starting as soon as
-  *   the first ends. This is done by the `###` method.
-  *   * The execution of the second one can be conditioned by the return code
-  *   (exit status) of the first, either only when it's zero, or only when it's
-  *   not zero. The methods `#&&` and `#||` accomplish these tasks.
+  *   - They can be executed in parallel, with the output of the first being fed
+  *     as input to the second, like Unix pipes. This is achieved with the `#|`
+  *     method.
+  *   - They can be executed in sequence, with the second starting as soon as
+  *     the first ends. This is done by the `###` method.
+  *   - The execution of the second one can be conditioned by the return code
+  *     (exit status) of the first, either only when it's zero, or only when it's
+  *     not zero. The methods `#&&` and `#||` accomplish these tasks.
   *
   * ==Redirecting Input/Output==
   *
@@ -74,18 +75,18 @@ import ProcessBuilder._
   * overloads and variations to enable further control over the I/O. These
   * methods are:
   *
-  *   * `run`: the most general method, it returns a
-  *   [[scala.sys.process.Process]] immediately, and the external command
-  *   executes concurrently.
-  *   * `!`: blocks until all external commands exit, and returns the exit code
-  *   of the last one in the chain of execution.
-  *   * `!!`: blocks until all external commands exit, and returns a `String`
-  *   with the output generated.
-  *   * `lines`: returns immediately like `run`, and the output being generared
-  *   is provided through a `Stream[String]`. Getting the next element of that
-  *   `Stream` may block until it becomes available. This method will throw an
-  *   exception if the return code is different than zero -- if this is not
-  *   desired, use the `lines_!` method.
+  *   - `run`: the most general method, it returns a
+  *     [[scala.sys.process.Process]] immediately, and the external command
+  *     executes concurrently.
+  *   - `!`: blocks until all external commands exit, and returns the exit code
+  *     of the last one in the chain of execution.
+  *   - `!!`: blocks until all external commands exit, and returns a `String`
+  *     with the output generated.
+  *   - `lines`: returns immediately like `run`, and the output being generared
+  *     is provided through a `Stream[String]`. Getting the next element of that
+  *     `Stream` may block until it becomes available. This method will throw an
+  *     exception if the return code is different than zero -- if this is not
+  *     desired, use the `lines_!` method.
   *
   * ==Handling Input and Output==
   *
@@ -305,10 +306,10 @@ object ProcessBuilder extends ProcessBuilderImpl {
     protected def toSource: ProcessBuilder
 
     /** Writes the output stream of this process to the given file. */
-    def #> (f: File): ProcessBuilder = toFile(f, false)
+    def #> (f: File): ProcessBuilder = toFile(f, append = false)
 
     /** Appends the output stream of this process to the given file. */
-    def #>> (f: File): ProcessBuilder = toFile(f, true)
+    def #>> (f: File): ProcessBuilder = toFile(f, append = true)
 
     /** Writes the output stream of this process to the given OutputStream. The
       * argument is call-by-name, so the stream is recreated, written, and closed each

@@ -10,7 +10,6 @@ package settings
 
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
 import scala.reflect.internal.util.StringOps
-import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.reflect.{ ClassTag, classTag }
 
@@ -63,40 +62,33 @@ class MutableSettings(val errorFn: String => Unit)
         (checkDependencies, residualArgs)
       case "--" :: xs =>
         (checkDependencies, xs)
+      // discard empties, sometimes they appear because of ant or etc.
+      // but discard carefully, because an empty string is valid as an argument
+      // to an option, e.g. -cp "" .  So we discard them only when they appear
+      // where an option should be, not where an argument to an option should be.
+      case "" :: xs =>
+        loop(xs, residualArgs)
       case x :: xs  =>
-        val isOpt = x startsWith "-"
-        if (isOpt) {
-          val newArgs = parseParams(args)
-          if (args eq newArgs) {
-            errorFn(s"bad option: '$x'")
-            (false, args)
-          }
-          // discard empties, sometimes they appear because of ant or etc.
-          // but discard carefully, because an empty string is valid as an argument
-          // to an option, e.g. -cp "" .  So we discard them only when they appear
-          // in option position.
-          else if (x == "") {
-            loop(xs, residualArgs)
-          }
-          else lookupSetting(x) match {
-            case Some(s) if s.shouldStopProcessing  => (checkDependencies, newArgs)
-            case _                                  => loop(newArgs, residualArgs)
+        if (x startsWith "-") {
+          parseParams(args) match {
+            case newArgs if newArgs eq args => errorFn(s"bad option: '$x'") ; (false, args)
+            case newArgs                    => loop(newArgs, residualArgs)
           }
         }
-        else {
-          if (processAll) loop(xs, residualArgs :+ x)
-          else (checkDependencies, args)
-        }
+        else if (processAll)
+          loop(xs, residualArgs :+ x)
+        else
+          (checkDependencies, args)
     }
     loop(arguments, Nil)
   }
-  def processArgumentString(params: String) = processArguments(splitParams(params), true)
+  def processArgumentString(params: String) = processArguments(splitParams(params), processAll = true)
 
   /** Create a new Settings object, copying all user-set values.
    */
   def copy(): Settings = {
     val s = new Settings()
-    s.processArguments(recreateArgs, true)
+    s.processArguments(recreateArgs, processAll = true)
     s
   }
 
@@ -134,7 +126,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     // if arg is of form -Xfoo:bar,baz,quux
     def parseColonArg(s: String): Option[List[String]] = {
-      val (p, args) = StringOps.splitWhere(s, _ == ':', true) getOrElse (return None)
+      val (p, args) = StringOps.splitWhere(s, _ == ':', doDropIndex = true) getOrElse (return None)
 
       // any non-Nil return value means failure and we return s unmodified
       tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
@@ -184,7 +176,7 @@ class MutableSettings(val errorFn: String => Unit)
   * The class loader defining `T` should provide resources `app.class.path`
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
-  def embeddedDefaults[T: ClassTag]: Unit =
+  def embeddedDefaults[T: ClassTag]: Unit = // called from sbt and repl
     embeddedDefaults(classTag[T].runtimeClass.getClassLoader)
 
   /** Initializes these settings for embedded use by a class from the given class loader.
@@ -248,7 +240,7 @@ class MutableSettings(val errorFn: String => Unit)
     /** Add a destination directory for sources found under srcdir.
      *  Both directories should exits.
      */
-    def add(srcDir: String, outDir: String): Unit =
+    def add(srcDir: String, outDir: String): Unit = // used in ide?
       add(checkDir(AbstractFile.getDirectory(srcDir), srcDir),
           checkDir(AbstractFile.getDirectory(outDir), outDir))
 
@@ -256,8 +248,7 @@ class MutableSettings(val errorFn: String => Unit)
     private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
       if (dir != null && dir.isDirectory)
         dir
-// was:      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
-      else if (allowJar && dir == null && Jar.isJarOrZip(name, false))
+      else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
         new PlainFile(Path(name))
       else
         throw new FatalError(name + " does not exist or is not a directory")
@@ -268,7 +259,7 @@ class MutableSettings(val errorFn: String => Unit)
      */
     def setSingleOutput(outDir: String) {
       val dst = AbstractFile.getDirectory(outDir)
-      setSingleOutput(checkDir(dst, outDir, true))
+      setSingleOutput(checkDir(dst, outDir, allowJar = true))
     }
 
     def getSingleOutput: Option[AbstractFile] = singleOutDir
@@ -331,12 +322,12 @@ class MutableSettings(val errorFn: String => Unit)
         case Some(d) =>
           d match {
               case _: VirtualDirectory | _: io.ZipArchive => Nil
-              case _                   => List(d.lookupPathUnchecked(srcPath, false))
+              case _                   => List(d.lookupPathUnchecked(srcPath, directory = false))
           }
         case None =>
           (outputs filter (isBelow _).tupled) match {
             case Nil => Nil
-            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, false))
+            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, directory = false))
           }
       }
     }
@@ -390,7 +381,7 @@ class MutableSettings(val errorFn: String => Unit)
     def max = range map (_._2) getOrElse IntMax
 
     override def value_=(s: Int) =
-      if (isInputValid(s)) super.value_=(s) else errorMsg
+      if (isInputValid(s)) super.value_=(s) else errorMsg()
 
     // Validate that min and max are consistent
     assert(min <= max)
@@ -422,7 +413,7 @@ class MutableSettings(val errorFn: String => Unit)
       if (args.isEmpty) errorAndValue("missing argument", None)
       else parseArgument(args.head) match {
         case Some(i)  => value = i ; Some(args.tail)
-        case None     => errorMsg ; None
+        case None     => errorMsg() ; None
       }
 
     def unparse: List[String] =
@@ -443,7 +434,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
-    override def tryToSetFromPropertyValue(s : String) {
+    override def tryToSetFromPropertyValue(s : String) { // used from ide
       value = s.equalsIgnoreCase("true")
     }
   }
@@ -494,8 +485,6 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String,
     default: ScalaVersion)
   extends Setting(name, descr) {
-    import ScalaVersion._
-    
     type T = ScalaVersion
     protected var v: T = NoScalaVersion
 
@@ -503,14 +492,14 @@ class MutableSettings(val errorFn: String => Unit)
       value = default
       Some(args)
     }
-    
+
     override def tryToSetColon(args: List[String]) = args match {
       case Nil      => value = default; Some(Nil)
       case x :: xs  => value = ScalaVersion(x, errorFn) ; Some(xs)
     }
-    
+
     override def tryToSetFromPropertyValue(s: String) = tryToSet(List(s))
-    
+
     def unparse: List[String] = if (value == NoScalaVersion) Nil else List(s"${name}:${value.unparse}")
 
     withHelpSyntax(s"${name}:<${arg}>")
@@ -565,7 +554,7 @@ class MutableSettings(val errorFn: String => Unit)
       Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
-    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
     def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -599,7 +588,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
-    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
+    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil) // used from ide
 
     withHelpSyntax(name + ":<" + helpArg + ">")
   }

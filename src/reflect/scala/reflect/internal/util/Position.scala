@@ -4,7 +4,8 @@
  *
  */
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.reflect.ClassTag
 import scala.reflect.internal.FatalError
@@ -20,18 +21,12 @@ object Position {
       else if (posIn.isDefined) posIn.inUltimateSource(posIn.source)
       else posIn
     )
-    def file   = pos.source.file
-    def prefix = if (shortenFile) file.name else file.path
+    val prefix = if (shortenFile) pos.sourceName else pos.sourcePath
 
     pos match {
       case FakePos(fmsg) => fmsg+" "+msg
       case NoPosition    => msg
-      case _             =>
-        List(
-          "%s:%s: %s".format(prefix, pos.line, msg),
-          pos.lineContent.stripLineEnd,
-          " " * (pos.column - 1) + "^"
-        ) mkString "\n"
+      case _             => "%s:%s: %s\n%s\n%s".format(prefix, pos.line, msg, pos.lineContent, pos.lineCarat)
     }
   }
 }
@@ -129,7 +124,7 @@ abstract class Position extends scala.reflect.api.Position { self =>
   def endOrPoint: Int = point
 
   @deprecated("use point instead", "2.9.0")
-  def offset: Option[Int] = if (isDefined) Some(point) else None
+  def offset: Option[Int] = if (isDefined) Some(point) else None // used by sbt
 
   /** The same position with a different start value (if a range) */
   def withStart(off: Int): Position = this
@@ -206,12 +201,39 @@ abstract class Position extends scala.reflect.api.Position { self =>
 
   def column: Int = throw new UnsupportedOperationException("Position.column")
 
+  /** A line with a ^ padded with the right number of spaces.
+   */
+  def lineCarat: String = " " * (column - 1) + "^"
+
+  /** The line of code and the corresponding carat pointing line, trimmed
+   *  to the maximum specified width, with the trimmed versions oriented
+   *  around the point to give maximum context.
+   */
+  def lineWithCarat(maxWidth: Int): (String, String) = {
+    val radius = maxWidth / 2
+    var start  = scala.math.max(column - radius, 0)
+    var result = lineContent drop start take maxWidth
+
+    if (result.length < maxWidth) {
+      result = lineContent takeRight maxWidth
+      start = lineContent.length - result.length
+    }
+
+    (result, lineCarat drop start take maxWidth)
+  }
+
   /** Convert this to a position around `point` that spans a single source line */
   def toSingleLine: Position = this
 
-  def lineContent: String =
-    if (isDefined) source.lineToString(line - 1)
-    else "NO_LINE"
+  /** The source code corresponding to the range, if this is a range position.
+   *  Otherwise the empty string.
+   */
+  def sourceCode    = ""
+  def sourceName    = "<none>"
+  def sourcePath    = "<none>"
+  def lineContent   = "<none>"
+  def lengthInChars = 0
+  def lengthInLines = 0
 
   /** Map this position to a position in an original source
    * file.  If the SourceFile is a normal SourceFile, simply
@@ -240,7 +262,10 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
   override def withPoint(off: Int) = new OffsetPosition(source, off)
   override def withSource(source: SourceFile, shift: Int) = new OffsetPosition(source, point + shift)
 
-  override def line: Int = source.offsetToLine(point) + 1
+  override def line        = source.offsetToLine(point) + 1
+  override def sourceName  = source.file.name
+  override def sourcePath  = source.file.path
+  override def lineContent = source.lineToString(line - 1)
 
   override def column: Int = {
     var idx = source.lineToOffset(source.offsetToLine(point))
@@ -265,47 +290,4 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
     "source-%s,line-%s,%s%s".format(source.file.canonicalPath, line, pointmsg, point)
   }
   override def show = "["+point+"]"
-}
-
-/** new for position ranges */
-class RangePosition(source: SourceFile, override val start: Int, point: Int, override val end: Int)
-extends OffsetPosition(source, point) {
-  if (start > end) sys.error("bad position: "+show)
-  override def isRange: Boolean = true
-  override def isOpaqueRange: Boolean = true
-  override def startOrPoint: Int = start
-  override def endOrPoint: Int = end
-  override def withStart(off: Int) = new RangePosition(source, off, point, end)
-  override def withEnd(off: Int) = new RangePosition(source, start, point, off)
-  override def withPoint(off: Int) = new RangePosition(source, start, off, end)
-  override def withSource(source: SourceFile, shift: Int) = new RangePosition(source, start + shift, point + shift, end + shift)
-  override def focusStart = new OffsetPosition(source, start)
-  override def focus = {
-    if (focusCache eq NoPosition) focusCache = new OffsetPosition(source, point)
-    focusCache
-  }
-  override def focusEnd = new OffsetPosition(source, end)
-  override def makeTransparent = new TransparentPosition(source, start, point, end)
-  override def includes(pos: Position) = pos.isDefined && start <= pos.startOrPoint && pos.endOrPoint <= end
-  override def union(pos: Position): Position =
-    if (pos.isRange) new RangePosition(source, start min pos.start, point, end max pos.end) else this
-
-  override def toSingleLine: Position = source match {
-    case bs: BatchSourceFile
-    if end > 0 && bs.offsetToLine(start) < bs.offsetToLine(end - 1) =>
-      val pointLine = bs.offsetToLine(point)
-      new RangePosition(source, bs.lineToOffset(pointLine), point, bs.lineToOffset(pointLine + 1))
-    case _ => this
-  }
-
-  override def toString = "RangePosition("+source.file.canonicalPath+", "+start+", "+point+", "+end+")"
-  override def show = "["+start+":"+end+"]"
-  private var focusCache: Position = NoPosition
-}
-
-class TransparentPosition(source: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source, start, point, end) {
-  override def isOpaqueRange: Boolean = false
-  override def isTransparent = true
-  override def makeTransparent = this
-  override def show = "<"+start+":"+end+">"
 }

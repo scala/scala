@@ -1,0 +1,12 @@
+warn-inferred-any.scala:8: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  { List(1, 2, 3) contains "a" }  // only this warns
+                  ^
+warn-inferred-any.scala:16: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+  { 1l to 5l contains 5 }
+             ^
+warn-inferred-any.scala:17: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+  { 1l to 5l contains 5d }
+             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

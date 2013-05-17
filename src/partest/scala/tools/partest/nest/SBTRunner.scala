@@ -1,3 +1,6 @@
+/* NEST (New Scala Test)
+ * Copyright 2007-2013 LAMP/EPFL
+ */
 package scala.tools.partest
 package nest
 
@@ -21,7 +24,7 @@ object SBTRunner extends DirectRunner {
     val testRootDir: Directory = Directory(testRootPath)
   }
 
-  def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String):java.util.Map[String, TestState] = {
+  def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String): java.util.List[TestState] = {
     def failedOnlyIfRequired(files:List[File]):List[File]={
       if (fileManager.failed) files filter (x => fileManager.logFileExists(x, kind)) else files
     }
@@ -33,7 +36,7 @@ object SBTRunner extends DirectRunner {
                                 scalacOptions: Seq[String] = Seq(),
                                 justFailedTests: Boolean = false)
 
-  def mainReflect(args: Array[String]): java.util.Map[String, String] = {
+  def mainReflect(args: Array[String]): java.util.List[TestState] = {
     setProp("partest.debug", "true")
 
     val Argument = new scala.util.matching.Regex("-(.*)")
@@ -46,7 +49,7 @@ object SBTRunner extends DirectRunner {
       case x                                        => sys.error("Unknown command line options: " + x)
     }
     val config = parseArgs(args, CommandLineOptions())
-    fileManager.SCALAC_OPTS ++= config.scalacOptions
+    fileManager.SCALAC_OPTS = config.scalacOptions
     fileManager.CLASSPATH = config.classpath getOrElse sys.error("No classpath set")
 
     def findClasspath(jar: String, name: String): Option[String] = {
@@ -67,22 +70,14 @@ object SBTRunner extends DirectRunner {
     // TODO - Make this a flag?
     //fileManager.updateCheck = true
     // Now run and report...
-    val runs = config.tests.filterNot(_._2.isEmpty)
-    (for {
-     (testType, files) <- runs
-     (path, result) <- reflectiveRunTestsForFiles(files,testType).asScala
-    } yield (path, fixResult(result))).seq.asJava
+    val runs   = config.tests.filterNot(_._2.isEmpty)
+    val result = runs.toList flatMap { case (kind, files) => reflectiveRunTestsForFiles(files, kind).asScala }
+
+    result.asJava
   }
-  def fixResult(result: TestState): String = result match {
-    case TestState.Ok => "OK"
-    case TestState.Fail => "FAIL"
-    case TestState.Timeout => "TIMEOUT"
-  }
+
   def main(args: Array[String]): Unit = {
-    val failures = (
-      for ((path, result) <- mainReflect(args).asScala ; if result != TestState.Ok) yield
-        path + ( if (result == TestState.Fail) " [FAILED]" else " [TIMEOUT]" )
-    )
+    val failures = mainReflect(args).asScala collect { case s if !s.isOk => s.longStatus }
     // Re-list all failures so we can go figure out what went wrong.
     failures foreach System.err.println
     if(!failures.isEmpty) sys.exit(1)

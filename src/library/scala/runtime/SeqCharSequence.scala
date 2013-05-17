@@ -11,6 +11,7 @@ package runtime
 
 import java.util.Arrays.copyOfRange
 
+@deprecated("Use Predef.SeqCharSequence", "2.11.0")
 final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends CharSequence {
   def length: Int                                     = xs.length
   def charAt(index: Int): Char                        = xs(index)
@@ -18,6 +19,8 @@ final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends C
   override def toString = xs.mkString("")
 }
 
+// Still need this one since the implicit class ArrayCharSequence only converts
+// a single argument.
 final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends CharSequence {
   // yikes
   // java.lang.VerifyError: (class: scala/runtime/ArrayCharSequence, method: <init> signature: ([C)V)

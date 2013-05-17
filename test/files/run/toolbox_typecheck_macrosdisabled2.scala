@@ -15,11 +15,11 @@ object Test extends App {
   val ru = build.newFreeTerm("ru", scala.reflect.runtime.universe)
   build.setTypeSignature(ru, rutpe)
 
-  val tree1 = Apply(Select(Ident(ru), newTermName("reify")), List(Apply(Select(Ident(newTermName("scala")), newTermName("Array")), List(Literal(Constant(2))))))
+  val tree1 = Apply(Select(Ident(ru), TermName("reify")), List(Apply(Select(Ident(TermName("scala")), TermName("Array")), List(Literal(Constant(2))))))
   val ttree1 = toolbox.typeCheck(tree1, withMacrosDisabled = false)
   println(ttree1)
 
-  val tree2 = Apply(Select(Ident(ru), newTermName("reify")), List(Apply(Select(Ident(newTermName("scala")), newTermName("Array")), List(Literal(Constant(2))))))
+  val tree2 = Apply(Select(Ident(ru), TermName("reify")), List(Apply(Select(Ident(TermName("scala")), TermName("Array")), List(Literal(Constant(2))))))
   val ttree2 = toolbox.typeCheck(tree2, withMacrosDisabled = true)
   println(ttree2)
 }

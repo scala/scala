@@ -6,7 +6,7 @@ package util
 import java.io.PrintStream
 
 /** A simple tracer
- *  @param out: The print stream where trace info shoul be sent
+ *  @param out: The print stream where trace info should be sent
  *  @param enabled: A condition that must be true for trace info to be produced.
  */
 class SimpleTracer(out: PrintStream, enabled: Boolean = true) {
@@ -14,6 +14,5 @@ class SimpleTracer(out: PrintStream, enabled: Boolean = true) {
     if (enabled) out.println(msg+value)
     value
   }
-  def withOutput(out: PrintStream) = new SimpleTracer(out, enabled)
   def when(enabled: Boolean): SimpleTracer = new SimpleTracer(out, enabled)
 }

@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
@@ -36,7 +37,7 @@ trait Kinds {
     private def varStr(s: Symbol): String =
       if (s.isCovariant) "covariant"
       else if (s.isContravariant) "contravariant"
-      else "invariant";
+      else "invariant"
 
     private def qualify(a0: Symbol, b0: Symbol): String = if (a0.toString != b0.toString) "" else {
       if((a0 eq b0) || (a0.owner eq b0.owner)) ""
@@ -86,15 +87,15 @@ trait Kinds {
   // plan: split into kind inference and subkinding
   // every Type has a (cached) Kind
   def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean =
-    checkKindBounds0(tparams, targs, pre, owner, false).isEmpty
+    checkKindBounds0(tparams, targs, pre, owner, explainErrors = false).isEmpty
 
   /** Check whether `sym1`'s variance conforms to `sym2`'s variance.
    *
    *  If `sym2` is invariant, `sym1`'s variance is irrelevant. Otherwise they must be equal.
    */
   private def variancesMatch(sym1: Symbol, sym2: Symbol) = (
-       sym2.variance==0
-    || sym1.variance==sym2.variance
+       sym2.variance.isInvariant
+    || sym1.variance == sym2.variance
   )
 
   /** Check well-kindedness of type application (assumes arities are already checked) -- @M
@@ -145,7 +146,7 @@ trait Kinds {
           kindErrors = f(kindErrors)
       }
 
-      if (settings.debug.value) {
+      if (settings.debug) {
         log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
         log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
         log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
@@ -201,7 +202,7 @@ trait Kinds {
       else NoKindErrors
     }
 
-    if (settings.debug.value && (tparams.nonEmpty || targs.nonEmpty)) log(
+    if (settings.debug && (tparams.nonEmpty || targs.nonEmpty)) log(
       "checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", "
       + owner + ", " + explainErrors + ")"
     )

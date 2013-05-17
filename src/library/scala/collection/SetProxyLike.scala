@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection
-
-import generic._
+package scala
+package collection
 
 // Methods could be printed by  cat SetLike.scala | egrep '^  (override )?def'
 

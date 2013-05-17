@@ -8,28 +8,23 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
-  import definitions._
+  import treeInfo.isQualifierSafeToElide
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
 
-  /** Updates the owning scope with the given symbol; returns the old symbol.
+  /** Updates the owning scope with the given symbol, unlinking any others.
    */
-  private def replaceSymbolInCurrentScope(sym: Symbol): Symbol = afterFlatten {
+  private def replaceSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     val scope = sym.owner.info.decls
-    val old   = scope lookup sym.name andAlso scope.unlink
+    val old   = (scope lookupUnshadowedEntries sym.name).toList
+    old foreach (scope unlink _)
     scope enter sym
-
-    if (old eq NoSymbol)
-      log(s"lifted ${sym.fullLocationString}")
-    else
-      log(s"lifted ${sym.fullLocationString} after unlinking existing $old from scope.")
-
+    log(s"lifted ${sym.fullLocationString}" + ( if (old.isEmpty) "" else s" after unlinking $old from scope." ))
     old
   }
 
@@ -53,7 +48,7 @@ abstract class Flatten extends InfoTransform {
     clazz.isClass && !clazz.isPackageClass && {
       // Cannot flatten here: class A[T] { object B }
       // was "at erasurePhase.prev"
-      beforeErasure(clazz.typeParams.isEmpty)
+      enteringErasure(clazz.typeParams.isEmpty)
     }
   }
 
@@ -67,11 +62,11 @@ abstract class Flatten extends InfoTransform {
         val decls1 = scopeTransform(clazz) {
           val decls1 = newScope
           if (clazz.isPackageClass) {
-            afterFlatten { decls foreach (decls1 enter _) }
+            exitingFlatten { decls foreach (decls1 enter _) }
           }
           else {
             val oldowner = clazz.owner
-            afterFlatten { oldowner.info }
+            exitingFlatten { oldowner.info }
             parents1 = parents mapConserve (this)
 
             for (sym <- decls) {
@@ -90,7 +85,7 @@ abstract class Flatten extends InfoTransform {
         val restp1 = apply(restp)
         if (restp1 eq restp) tp else copyMethodType(tp, params, restp1)
       case PolyType(tparams, restp) =>
-        val restp1 = apply(restp);
+        val restp1 = apply(restp)
         if (restp1 eq restp) tp else PolyType(tparams, restp1)
       case _ =>
         mapOver(tp)
@@ -122,8 +117,14 @@ abstract class Flatten extends InfoTransform {
         case ClassDef(_, _, _, _) if sym.isNestedClass =>
           liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
-        case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
-          afterFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
+        case Select(qual, name) if sym.isStaticModule && !sym.isTopLevel =>
+          exitingFlatten {
+            atPos(tree.pos) {
+              val ref = gen.mkAttributedRef(sym)
+              if (isQualifierSafeToElide(qual)) ref
+              else Block(List(qual), ref).setType(tree.tpe) // need to execute the qualifier but refer directly to the lifted module.
+            }
+          }
         case _ =>
           tree
       }

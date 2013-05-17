@@ -23,7 +23,7 @@ class Sub extends Base {
   import syms._
 
   def check(source: String, unit: global.CompilationUnit) {
-    afterTyper {
+    exitingTyper {
       terms.filter(_.name.toString == "foo").foreach(sym => {
         val xParam = sym.tpe.paramss.flatten.head
         val annot = sym.tpe.finalResultType.annotations.head

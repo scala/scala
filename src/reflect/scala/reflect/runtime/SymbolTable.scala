@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 import scala.reflect.internal.Flags._
@@ -11,10 +12,10 @@ import scala.reflect.internal.Flags._
 private[scala] trait SymbolTable extends internal.SymbolTable with JavaMirrors with SymbolLoaders with SynchronizedOps {
 
   def info(msg: => String) =
-    if (settings.verbose.value) println("[reflect-compiler] "+msg)
+    if (settings.verbose) println("[reflect-compiler] "+msg)
 
   def debugInfo(msg: => String) =
-    if (settings.debug.value) info(msg)
+    if (settings.debug) info(msg)
 
   /** Declares that this is a runtime reflection universe.
    *

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 import Utility.isNameStart
 import scala.collection.Iterator

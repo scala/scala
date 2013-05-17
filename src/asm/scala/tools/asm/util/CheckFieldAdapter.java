@@ -46,7 +46,8 @@ public class CheckFieldAdapter extends FieldVisitor {
      * this constructor</i>. Instead, they must use the
      * {@link #CheckFieldAdapter(int, FieldVisitor)} version.
      *
-     * @param fv the field visitor to which this adapter must delegate calls.
+     * @param fv
+     *            the field visitor to which this adapter must delegate calls.
      */
     public CheckFieldAdapter(final FieldVisitor fv) {
         this(Opcodes.ASM4, fv);
@@ -55,19 +56,19 @@ public class CheckFieldAdapter extends FieldVisitor {
     /**
      * Constructs a new {@link CheckFieldAdapter}.
      *
-     * @param api the ASM API version implemented by this visitor. Must be one
-     *        of {@link Opcodes#ASM4}.
-     * @param fv the field visitor to which this adapter must delegate calls.
+     * @param api
+     *            the ASM API version implemented by this visitor. Must be one
+     *            of {@link Opcodes#ASM4}.
+     * @param fv
+     *            the field visitor to which this adapter must delegate calls.
      */
     protected CheckFieldAdapter(final int api, final FieldVisitor fv) {
         super(api, fv);
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation(
-        final String desc,
-        final boolean visible)
-    {
+    public AnnotationVisitor visitAnnotation(final String desc,
+            final boolean visible) {
         checkEnd();
         CheckMethodAdapter.checkDesc(desc, false);
         return new CheckAnnotationAdapter(super.visitAnnotation(desc, visible));
@@ -77,7 +78,8 @@ public class CheckFieldAdapter extends FieldVisitor {
     public void visitAttribute(final Attribute attr) {
         checkEnd();
         if (attr == null) {
-            throw new IllegalArgumentException("Invalid attribute (must not be null)");
+            throw new IllegalArgumentException(
+                    "Invalid attribute (must not be null)");
         }
         super.visitAttribute(attr);
     }
@@ -91,7 +93,8 @@ public class CheckFieldAdapter extends FieldVisitor {
 
     private void checkEnd() {
         if (end) {
-            throw new IllegalStateException("Cannot call a visit method after visitEnd has been called");
+            throw new IllegalStateException(
+                    "Cannot call a visit method after visitEnd has been called");
         }
     }
 }

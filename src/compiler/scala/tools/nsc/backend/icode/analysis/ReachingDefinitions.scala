@@ -51,8 +51,8 @@ abstract class ReachingDefinitions {
           // it'd be nice not to call zip with mismatched sequences because
           // it makes it harder to spot the real problems.
           val result = (a.stack, b.stack).zipped map (_ ++ _)
-          if (settings.debug.value && (a.stack.length != b.stack.length))
-            debugwarn("Mismatched stacks in ReachingDefinitions#lub2: " + a.stack + ", " + b.stack + ", returning " + result)
+          if (settings.debug && (a.stack.length != b.stack.length))
+            devWarning(s"Mismatched stacks in ReachingDefinitions#lub2: ${a.stack}, ${b.stack}, returning $result")
           result
         }
       )
@@ -141,13 +141,13 @@ abstract class ReachingDefinitions {
 
     override def run() {
       forwardAnalysis(blockTransfer)
-      if (settings.debug.value) {
+      if (settings.debug) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(lattice.bottom != in(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? " + in(b)
                  + ": bot: " + lattice.bottom
                  + "\nin(b) == bottom: " + (in(b) == lattice.bottom)
-                 + "\nbottom == in(b): " + (lattice.bottom == in(b))));
+                 + "\nbottom == in(b): " + (lattice.bottom == in(b))))
       }
     }
 
@@ -155,7 +155,7 @@ abstract class ReachingDefinitions {
     import lattice.IState
     def updateReachingDefinition(b: BasicBlock, idx: Int, rd: ListSet[Definition]): ListSet[Definition] = {
       val STORE_LOCAL(local) = b(idx)
-      var tmp = local
+      val tmp = local
       (rd filter { case (l, _, _) => l != tmp }) + ((tmp, b, idx))
     }
 
@@ -197,7 +197,7 @@ abstract class ReachingDefinitions {
     def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
       assert(bb.closed, bb)
 
-      var instrs = bb.getArray
+      val instrs = bb.getArray
       var res: List[(BasicBlock, Int)] = Nil
       var i = idx
       var n = m
@@ -240,7 +240,8 @@ abstract class ReachingDefinitions {
       findDefs(bb, idx, m, 0)
 
     override def toString: String = {
-      method.code.blocks map { b =>
+      if (method eq null) "<null>"
+      else method.code.blocks map { b =>
         "  entry(%s) = %s\n".format(b, in(b)) +
         "   exit(%s) = %s\n".format(b, out(b))
       } mkString ("ReachingDefinitions {\n", "\n", "\n}")

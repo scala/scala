@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream }
+import java.io.PrintStream
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.reflect.internal.util.FakePos //Position
 import scala.tools.util.SocketServer
@@ -28,8 +28,6 @@ class StandardCompileServer extends SocketServer {
   var reporter: ConsoleReporter = _
   var shutdown = false
   var verbose = false
-
-  val versionMsg = "Fast " + Properties.versionMsg
 
   val MaxCharge = 0.8
 
@@ -57,9 +55,6 @@ class StandardCompileServer extends SocketServer {
     runtime.gc()
     (totalMemory - freeMemory).toDouble / maxMemory.toDouble > MaxCharge
   }
-
-  protected def newOfflineCompilerCommand(arguments: List[String], settings: FscSettings): OfflineCompilerCommand =
-    new OfflineCompilerCommand(arguments, settings)
 
   /** Problematically, Settings are only considered equal if every setting
    *  is exactly equal.  In fsc this immediately breaks down because the randomly
@@ -92,7 +87,7 @@ class StandardCompileServer extends SocketServer {
 
     val args        = input.split("\0", -1).toList
     val newSettings = new FscSettings(fscError)
-    val command     = newOfflineCompilerCommand(args, newSettings)
+    val command     = new OfflineCompilerCommand(args, newSettings)
     this.verbose    = newSettings.verbose.value
 
     info("Settings after normalizing paths: " + newSettings)
@@ -120,7 +115,7 @@ class StandardCompileServer extends SocketServer {
 
     reporter = new ConsoleReporter(newSettings, in, out) {
       // disable prompts, so that compile server cannot block
-      override def displayPrompt = ()
+      override def displayPrompt() = ()
     }
     def isCompilerReusable: Boolean = {
       if (compiler == null) {
@@ -162,7 +157,7 @@ class StandardCompileServer extends SocketServer {
       }
     }
     reporter.printSummary()
-    if (isMemoryFullEnough) {
+    if (isMemoryFullEnough()) {
       info("Nulling out compiler due to memory utilization.")
       clearCompiler()
     }
@@ -177,9 +172,9 @@ object CompileServer extends StandardCompileServer {
   private def createRedirect(filename: String) =
     new PrintStream((redirectDir / filename).createFile().bufferedOutput())
 
-  def main(args: Array[String]) = 
+  def main(args: Array[String]) =
     execute(() => (), args)
-  
+
   /**
    * Used for internal testing. The callback is called upon
    * server start, notifying the caller that the server is
@@ -204,7 +199,7 @@ object CompileServer extends StandardCompileServer {
         compileSocket setPort port
         startupCallback()
         run()
-    
+
         compileSocket deletePort port
       }
     }

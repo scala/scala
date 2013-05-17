@@ -1,7 +1,6 @@
 package scala.tools
 package reflect
 
-import java.lang.{Class => jClass}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.api.{Mirror, TypeCreator, Universe => ApiUniverse}
 
@@ -24,7 +23,7 @@ trait StdTags {
         }
       })
 
-  private def tagOfStaticClass[T: ClassTag]: u.TypeTag[T] =
+  protected def tagOfStaticClass[T: ClassTag]: u.TypeTag[T] =
     u.TypeTag[T](
       m,
       new TypeCreator {
@@ -35,8 +34,6 @@ trait StdTags {
   lazy val tagOfString = tagOfStaticClass[String]
   lazy val tagOfFile = tagOfStaticClass[scala.tools.nsc.io.File]
   lazy val tagOfDirectory = tagOfStaticClass[scala.tools.nsc.io.Directory]
-  lazy val tagOfStdReplVals = tagOfStaticClass[scala.tools.nsc.interpreter.StdReplVals]
-  lazy val tagOfIMain = tagOfStaticClass[scala.tools.nsc.interpreter.IMain]
   lazy val tagOfThrowable = tagOfStaticClass[java.lang.Throwable]
   lazy val tagOfClassLoader = tagOfStaticClass[java.lang.ClassLoader]
   lazy val tagOfBigInt = tagOfStaticClass[BigInt]

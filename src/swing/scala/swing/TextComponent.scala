@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import event._
-import javax.swing._
 import javax.swing.text._
 import javax.swing.event._
 

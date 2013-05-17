@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 
 import scala.collection.{ mutable, Iterator }
 import scala.collection.JavaConverters._
@@ -64,7 +65,6 @@ object SystemProperties {
     propertyHelp(p.key) = helpText
     p
   }
-  private def str(key: String, helpText: String) = addHelp(Prop[String](key), helpText)
   private def bool(key: String, helpText: String): BooleanProp = addHelp[BooleanProp](
     if (key startsWith "java.") BooleanProp.valueIsTrue(key) else BooleanProp.keyExists(key),
     helpText

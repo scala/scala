@@ -5,7 +5,6 @@ trait ExprUtils {
   self: Context =>
 
   import universe._
-  import mirror._
 
   def literalNull = Expr[Null](Literal(Constant(null)))(TypeTag.Null)
 

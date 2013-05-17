@@ -8,9 +8,6 @@ package transform
 import symtab._
 import Flags._
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable
-import scala.tools.nsc.util.FreshNameCreator
-import scala.runtime.ScalaRunTime.{ isAnyVal, isTuple }
 
 /**
  * Perform Step 1 in the inline classes SIP: Creates extension methods for all
@@ -23,7 +20,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   import global._ // the global environment
   import definitions._ // standard classes and methods
-  import typer.{ typed, atOwner } // methods to type trees
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "extmethods"
@@ -70,7 +66,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   }
 
   /** Return the extension method that corresponds to given instance method `meth`. */
-  def extensionMethod(imeth: Symbol): Symbol = atPhase(currentRun.refchecksPhase) {
+  def extensionMethod(imeth: Symbol): Symbol = enteringPhase(currentRun.refchecksPhase) {
     val companionInfo = companionModuleForce(imeth.owner).info
     val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
@@ -87,7 +83,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
            |
            | ${candidates.map(c => c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}
            |
-           | Eligible Names: ${extensionNames(imeth).mkString(",")}"""")
+           | Eligible Names: ${extensionNames(imeth).mkString(",")}" """)
     matching.head
   }
 
@@ -185,6 +181,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       //  bad: [B#16154 >: A#16149, A#16155 <: AnyRef#2189]($this#16156: Foo#6965[A#16155])(x#16157: B#16154)List#2457[B#16154]
       // good: [B#16151 >: A#16149, A#16149 <: AnyRef#2189]($this#16150: Foo#6965[A#16149])(x#16153: B#16151)List#2457[B#16151]
     }
+
     override def transform(tree: Tree): Tree = {
       tree match {
         case Template(_, _, _) =>
@@ -206,7 +203,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val companion     = origThis.companionModule
 
           def makeExtensionMethodSymbol = {
-            val extensionName = extensionNames(origMeth).head
+            val extensionName = extensionNames(origMeth).head.toTermName
             val extensionMeth = (
               companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
                 setAnnotations origMeth.annotations
@@ -256,12 +253,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
       super.transformStats(stats, exprOwner) map {
-        case md @ ModuleDef(_, _, _) if extensionDefs contains md.symbol =>
-          val defns = extensionDefs(md.symbol).toList map (member =>
-            atOwner(md.symbol)(localTyper.typedPos(md.pos.focus)(member))
-          )
-          extensionDefs -= md.symbol
-          deriveModuleDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ defns))
+        case md @ ModuleDef(_, _, _) =>
+          val extraStats = extensionDefs remove md.symbol match {
+            case Some(defns) => defns.toList map (defn => atOwner(md.symbol)(localTyper.typedPos(md.pos.focus)(defn.duplicate)))
+            case _           => Nil
+          }
+          if (extraStats.isEmpty) md
+          else deriveModuleDef(md)(tmpl => deriveTemplate(tmpl)(_ ++ extraStats))
         case stat =>
           stat
       }

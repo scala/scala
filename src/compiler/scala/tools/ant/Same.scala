@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.ant
+package scala
+package tools.ant
 
 import java.io.{File, FileInputStream}
 
@@ -32,7 +33,7 @@ import org.apache.tools.ant.types.Mapper
  *
  * @author  Gilles Dubochet
  * @version 1.0 */
-class Same extends ScalaMatchingTask {
+@deprecated("Use diff", "2.11.0") class Same extends ScalaMatchingTask {
 /*============================================================================*\
 **                             Ant user-properties                            **
 \*============================================================================*/
@@ -110,7 +111,7 @@ class Same extends ScalaMatchingTask {
 \*============================================================================*/
 
   override def execute() = {
-    validateAttributes
+    validateAttributes()
     val mapper = getMapper
     allEqualNow = true
     val originNames: Array[String] = getDirectoryScanner(origin.get).getIncludedFiles

@@ -13,7 +13,7 @@ case object Stop
  * @author  Philipp Haller
  * @version 1.1
  */
-object pingpong extends Application {
+object pingpong extends App {
   val pong = new Pong
   val ping = new Ping(100000, pong)
   ping.start

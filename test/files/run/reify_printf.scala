@@ -23,7 +23,7 @@ object Test extends App {
    */
 
   var i = 0
-  def gensym(name: String) = { i += 1; newTermName(name + i) }
+  def gensym(name: String) = { i += 1; TermName(name + i) }
 
   def createTempValDef( value : Tree, tpe : Type ) : (Option[Tree],Tree) = {
     val local = gensym("temp")
@@ -59,10 +59,10 @@ object Test extends App {
       Apply(
         Select(
           Select(
-            Ident( newTermName("scala") )
-            , newTermName("Predef")
+            Ident( TermName("scala") )
+            , TermName("Predef")
           )
-          , newTermName("print")
+          , TermName("print")
         )
         , List(ref)
       ): Tree

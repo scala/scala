@@ -11,7 +11,7 @@ object Complex {
     val tpe = weakTypeOf[T]
     for (f <- tpe.declarations.collect{case f: TermSymbol if f.isParamAccessor && !f.isMethod => f}) {
       val trecur = appliedType(typeOf[Complex[_]], List(f.typeSignature))
-      if (c.openImplicits.tail.exists(ic => ic._1 =:= trecur)) c.abort(c.enclosingPosition, "diverging implicit expansion. reported by a macro!")
+      if (c.openImplicits.tail.exists(ic => ic.pt =:= trecur)) c.abort(c.enclosingPosition, "diverging implicit expansion. reported by a macro!")
       val recur = c.inferImplicitValue(trecur, silent = true)
       if (recur == EmptyTree) c.abort(c.enclosingPosition, s"couldn't synthesize $trecur")
     }

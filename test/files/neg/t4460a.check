@@ -1,0 +1,4 @@
+t4460a.scala:6: error: called constructor's definition must precede calling constructor's definition
+  def this() = this() // was binding to Predef.<init> !!
+               ^
+one error found

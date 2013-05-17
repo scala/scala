@@ -7,7 +7,8 @@ trait NonFatalTests {
       Seq(new StackOverflowError,
           new RuntimeException,
           new Exception,
-          new Throwable)
+          new Throwable,
+          new NotImplementedError)
     
     //Fatals
     val fatals: Seq[Throwable] =
@@ -15,8 +16,7 @@ trait NonFatalTests {
           new OutOfMemoryError,
           new LinkageError,
           new VirtualMachineError {},
-          new Throwable with scala.util.control.ControlThrowable,
-          new NotImplementedError)
+          new Throwable with scala.util.control.ControlThrowable)
 
 	def testFatalsUsingApply(): Unit = {
 	   fatals foreach { t => assert(NonFatal(t) == false) }

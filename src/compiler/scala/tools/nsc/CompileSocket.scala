@@ -5,13 +5,9 @@
 
 package scala.tools.nsc
 
-import java.io.{ IOException, FileNotFoundException, PrintWriter, FileOutputStream }
-import java.io.{ BufferedReader, FileReader }
-import java.util.regex.Pattern
-import java.net._
+import java.io.{ FileNotFoundException, PrintWriter, FileOutputStream }
 import java.security.SecureRandom
 import io.{ File, Path, Directory, Socket }
-import scala.util.control.Exception.catching
 import scala.tools.util.CompileOutputCommon
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.sys.process._
@@ -190,7 +186,7 @@ class CompileSocket extends CompileOutputCommon {
     catch { case _: NumberFormatException => None }
 
   def getSocket(serverAdr: String): Socket = (
-    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', true) ; port <- parseInt(portStr)) yield
+    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', doDropIndex = true) ; port <- parseInt(portStr)) yield
       getSocket(name, port)
   ) getOrElse fatal("Malformed server address: %s; exiting" format serverAdr)
 

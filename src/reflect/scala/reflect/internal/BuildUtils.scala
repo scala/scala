@@ -1,7 +1,6 @@
-package scala.reflect
+package scala
+package reflect
 package internal
-
-import Flags._
 
 trait BuildUtils { self: SymbolTable =>
 
@@ -46,8 +45,6 @@ trait BuildUtils { self: SymbolTable =>
       sym.setTypeSignature(tpe)
 
     def flagsFromBits(bits: Long): FlagSet = bits
-
-    def emptyValDef: ValDef = self.emptyValDef
 
     def This(sym: Symbol): Tree = self.This(sym)
 

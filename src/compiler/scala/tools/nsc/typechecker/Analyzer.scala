@@ -16,7 +16,6 @@ trait Analyzer extends AnyRef
             with Typers
             with Infer
             with Implicits
-            with Variances
             with EtaExpansion
             with SyntheticMethods
             with Unapplies
@@ -88,22 +87,25 @@ trait Analyzer extends AnyRef
       override def run() {
         val start = if (Statistics.canEnable) Statistics.startTimer(typerNanos) else null
         global.echoPhaseSummary(this)
-        currentRun.units foreach applyPhase
-        undoLog.clear()
-        // need to clear it after as well or 10K+ accumulated entries are
-        // uncollectable the rest of the way.
+        for (unit <- currentRun.units) {
+          applyPhase(unit)
+          undoLog.clear()
+        }
         if (Statistics.canEnable) Statistics.stopTimer(typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
         try {
-          unit.body = newTyper(rootContext(unit)).typed(unit.body)
-          if (global.settings.Yrangepos.value && !global.reporter.hasErrors) global.validatePositions(unit.body)
+          val typer = newTyper(rootContext(unit))
+          unit.body = typer.typed(unit.body)
+          if (global.settings.Yrangepos && !global.reporter.hasErrors) global.validatePositions(unit.body)
           for (workItem <- unit.toCheck) workItem()
-        } finally {
+          if (settings.lint)
+            typer checkUnused unit
+        }
+        finally {
           unit.toCheck.clear()
         }
       }
     }
   }
 }
-

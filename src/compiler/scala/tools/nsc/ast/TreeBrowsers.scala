@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package ast
 
 import java.awt.{List => awtList, _}
@@ -16,8 +17,6 @@ import javax.swing.tree._
 
 import scala.concurrent.Lock
 import scala.text._
-import symtab.Flags._
-import symtab.SymbolTable
 import scala.language.implicitConversions
 
 /**
@@ -34,7 +33,7 @@ abstract class TreeBrowsers {
 
   val borderSize = 10
 
-  def create(): SwingBrowser = new SwingBrowser();
+  def create(): SwingBrowser = new SwingBrowser()
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
   case class ProgramTree(units: List[UnitTree]) extends Tree {
@@ -61,7 +60,7 @@ abstract class TreeBrowsers {
       frame.createFrame(lock)
 
       // wait for the frame to be closed
-      lock.acquire
+      lock.acquire()
       t
     }
 
@@ -83,7 +82,7 @@ abstract class TreeBrowsers {
       frame.createFrame(lock)
 
       // wait for the frame to be closed
-      lock.acquire
+      lock.acquire()
     }
   }
 
@@ -171,8 +170,8 @@ abstract class TreeBrowsers {
       _setExpansionState(root, new TreePath(root.getModel.getRoot))
     }
 
-    def expandAll(subtree: JTree) = setExpansionState(subtree, true)
-    def collapseAll(subtree: JTree) = setExpansionState(subtree, false)
+    def expandAll(subtree: JTree) = setExpansionState(subtree, expand = true)
+    def collapseAll(subtree: JTree) = setExpansionState(subtree, expand = false)
 
 
     /** Create a frame that displays the AST.
@@ -184,14 +183,14 @@ abstract class TreeBrowsers {
      * especially symbols/types would change while the window is visible.
      */
     def createFrame(lock: Lock): Unit = {
-      lock.acquire // keep the lock until the user closes the window
+      lock.acquire() // keep the lock until the user closes the window
 
       frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
       frame.addWindowListener(new WindowAdapter() {
         /** Release the lock, so compilation may resume after the window is closed. */
-        override def windowClosed(e: WindowEvent): Unit = lock.release
-      });
+        override def windowClosed(e: WindowEvent): Unit = lock.release()
+      })
 
       jTree = new JTree(treeModel) {
         /** Return the string for a tree node. */
@@ -253,7 +252,7 @@ abstract class TreeBrowsers {
           putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_Q, menuKey + shiftKey, false))
           override def actionPerformed(e: ActionEvent) {
             closeWindow()
-            global.currentRun.cancel
+            global.currentRun.cancel()
           }
         }
       )
@@ -509,7 +508,7 @@ abstract class TreeBrowsers {
     /** Return a textual representation of this t's symbol */
     def symbolText(t: Tree): String = {
       val prefix =
-        if (t.hasSymbol)  "[has] "
+        if (t.hasSymbolField)  "[has] "
         else if (t.isDef) "[defines] "
         else ""
 
@@ -529,11 +528,10 @@ abstract class TreeBrowsers {
      * attributes */
     def symbolAttributes(t: Tree): String = {
       val s = t.symbol
-      var att = ""
 
       if ((s ne null) && (s != NoSymbol)) {
-        var str = flagsToString(s.flags)
-        if (s.isStaticMember) str = str + " isStatic ";
+        var str = s.flagString
+        if (s.isStaticMember) str = str + " isStatic "
         (str + " annotations: " + s.annotations.mkString("", " ", "")
           + (if (s.isTypeSkolem) "\ndeSkolemized annotations: " + s.deSkolemize.annotations.mkString("", " ", "") else ""))
       }

@@ -209,6 +209,15 @@ sealed abstract class Option[+A] extends Product with Serializable {
     def withFilter(q: A => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
   }
 
+  /** Tests whether the option contains a given value as an element.
+   * 
+   *  @param elem the element to test.
+   *  @return `true` if the option has an element that is equal (as
+   *  determined by `==`) to `elem`, `false` otherwise.
+   */
+  final def contains[A1 >: A](elem: A1): Boolean =
+    !isEmpty && this.get == elem
+
   /** Returns true if this option is nonempty '''and''' the predicate
    * $p returns true when applied to this $option's value.
    * Otherwise, returns false.
@@ -247,7 +256,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  value (if possible), or $none.
    */
   @inline final def collect[B](pf: PartialFunction[A, B]): Option[B] =
-    if (!isEmpty && pf.isDefinedAt(this.get)) Some(pf(this.get)) else None
+    if (!isEmpty) pf.lift(this.get) else None
 
   /** Returns this $option if it is nonempty,
    *  otherwise return the result of evaluating `alternative`.

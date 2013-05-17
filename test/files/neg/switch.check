@@ -1,7 +1,9 @@
-switch.scala:38: error: could not emit switch for @switch annotated match
+switch.scala:38: warning: could not emit switch for @switch annotated match
   def fail2(c: Char) = (c: @switch @unchecked) match {
                                     ^
-switch.scala:45: error: could not emit switch for @switch annotated match
+switch.scala:45: warning: could not emit switch for @switch annotated match
   def fail3(c: Char) = (c: @unchecked @switch) match {
                                        ^
-two errors found
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

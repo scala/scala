@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.xml
+package scala
+package xml
 package persistent
 
 import scala.collection.mutable
@@ -20,16 +21,14 @@ import java.io.File
  */
 class SetStorage(file: File) extends CachedFileStorage(file) {
 
-  private var theSet: mutable.HashSet[Node] = new mutable.HashSet[Node]
+  private val theSet = mutable.HashSet[Node]()
 
   // initialize
 
   {
     val it = super.initialNodes
     dirty = it.hasNext
-    for(x <- it) {
-      theSet += x;
-    }
+    theSet ++= it
   }
 
   /* forwarding methods to hashset*/

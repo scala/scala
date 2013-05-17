@@ -8,7 +8,8 @@
 
 
 
-package scala.util.parsing.input
+package scala
+package util.parsing.input
 
 
 /** An interface for streams of values that have positions.

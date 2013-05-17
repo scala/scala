@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.control
+package scala
+package util.control
 
 /** A marker trait indicating that the `Throwable` it is mixed into is
  *  intended for flow control.

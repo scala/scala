@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 package transform
 
@@ -16,7 +17,7 @@ trait Erasure {
     /** Is `tp` an unbounded generic type (i.e. which could be instantiated
      *  with primitive as well as class types)?.
      */
-    private def genericCore(tp: Type): Type = tp.normalize match {
+    private def genericCore(tp: Type): Type = tp.dealiasWiden match {
       /* A Java Array<T> is erased to Array[Object] (T can only be a reference type), where as a Scala Array[T] is
        * erased to Object. However, there is only symbol for the Array class. So to make the distinction between
        * a Java and a Scala array, we check if the owner of T comes from a Java class.
@@ -36,7 +37,7 @@ trait Erasure {
      *  then Some((N, T)) where N is the number of Array constructors enclosing `T`,
      *  otherwise None. Existentials on any level are ignored.
      */
-    def unapply(tp: Type): Option[(Int, Type)] = tp.normalize match {
+    def unapply(tp: Type): Option[(Int, Type)] = tp.dealiasWiden match {
       case TypeRef(_, ArrayClass, List(arg)) =>
         genericCore(arg) match {
           case NoType =>
@@ -69,7 +70,7 @@ trait Erasure {
   //
   // This requires that cls.isClass.
   protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
-    if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
+    if (cls.owner.isClass) cls.owner.tpe_* else pre // why not cls.isNestedClass?
   }
 
   def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =
@@ -101,7 +102,7 @@ trait Erasure {
   def valueClassIsParametric(clazz: Symbol): Boolean = {
     assert(!phase.erasedTypes)
     clazz.typeParams contains
-      clazz.derivedValueClassUnbox.tpe.resultType.normalize.typeSymbol
+      clazz.derivedValueClassUnbox.tpe.resultType.typeSymbol
   }
 
   abstract class ErasureMap extends TypeMap {
@@ -125,12 +126,12 @@ trait Erasure {
           if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
           else if (args.head.typeSymbol.isBottomClass) ObjectArray
           else typeRef(apply(pre), sym, args map applyInArray)
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) ErasedObject
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ErasedObject
         else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(pre, sym)
-        else apply(sym.info) // alias type or abstract type
+        else apply(sym.info asSeenFrom (pre, sym.owner)) // alias type or abstract type
       case PolyType(tparams, restpe) =>
         apply(restpe)
       case ExistentialType(tparams, restpe) =>
@@ -214,9 +215,6 @@ trait Erasure {
         specialConstructorErasure(clazz, restpe)
       case ExistentialType(tparams, restpe) =>
         specialConstructorErasure(clazz, restpe)
-      case RefinedType(parents, decls) =>
-        specialConstructorErasure(
-          clazz, specialScalaErasure.mergeParents(parents))
       case mt @ MethodType(params, restpe) =>
         MethodType(
           cloneSymbolsAndModify(params, specialScalaErasure),
@@ -225,15 +223,7 @@ trait Erasure {
         typeRef(pre, clazz, List())
       case tp =>
         if (!(clazz == ArrayClass || tp.isError))
-          // See SI-6556. It seems in some cases the result constructor
-          // type of an anonymous class is a different version of the class.
-          // This has nothing to do with value classes per se.
-          // We simply used a less discriminating transform before, that
-          // did not look at the cases in detail.
-          // It seems there is a deeper problem here, which needs
-          // following up to. But we will not risk regressions
-          // in 2.10 because of it.
-          log(s"!!! unexpected constructor erasure $tp for $clazz")
+          assert(clazz == ArrayClass || tp.isError, s"!!! unexpected constructor erasure $tp for $clazz")
         specialScalaErasure(tp)
     }
   }

@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 package util
 
@@ -6,7 +7,7 @@ trait StripMarginInterpolator {
   def stringContext: StringContext
 
   /**
-   * A safe combination of `[[scala.collection.immutable.StringLike#stripMargin]]
+   * A safe combination of [[scala.collection.immutable.StringLike#stripMargin]]
    * and [[scala.StringContext#raw]].
    *
    * The margin of each line is defined by whitespace leading up to a '|' character.

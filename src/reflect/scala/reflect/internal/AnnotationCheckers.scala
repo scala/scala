@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 /** Additions to the type checker that can be added at
@@ -52,7 +53,7 @@ trait AnnotationCheckers {
      * given type tp, taking into account the given mode (see method adapt in trait Typers).
      */
     @deprecated("Create an AnalyzerPlugin and use canAdaptAnnotations", "2.10.1")
-    def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = false
+    def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = false
 
     /**
      * Adapt a tree that has an annotated type to the given type tp, taking into account the given
@@ -62,7 +63,7 @@ trait AnnotationCheckers {
      * class cannot do the adaptiong, it should return the tree unchanged.
      */
     @deprecated("Create an AnalyzerPlugin and use adaptAnnotations", "2.10.1")
-    def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = tree
+    def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = tree
 
     /**
      * Adapt the type of a return expression. The decision of a typer plugin whether the type
@@ -126,13 +127,13 @@ trait AnnotationCheckers {
     else annotationCheckers.foldLeft(tpe)((tpe, checker) =>
       if (!checker.isActive()) tpe else checker.addAnnotations(tree, tpe))
 
-  def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean =
+  def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean =
     if (annotationCheckers.isEmpty) false
     else annotationCheckers.exists(checker => {
       checker.isActive() && checker.canAdaptAnnotations(tree, mode, pt)
     })
 
-  def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree =
+  def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree =
     if (annotationCheckers.isEmpty) tree
     else annotationCheckers.foldLeft(tree)((tree, checker) =>
       if (!checker.isActive()) tree else checker.adaptAnnotations(tree, mode, pt))

@@ -12,7 +12,7 @@
     [95:101]<paramaccessor> private[this] val i: [98:101]Int = _;
     <119:139>def <init>([95]i: [98]Int) = <119:139>{
       <119:139>val nameElse = <134:139>"Bob";
-      [94][94][94]super.<init>();
+      [NoPosition][NoPosition][NoPosition]super.<init>();
       [94]()
     };
     [168:184]val name = [179:184]"avc";
@@ -20,7 +20,7 @@
   };
   [215:241]object Test extends [227:241][235:238]App {
     [227]def <init>() = [227]{
-      [227][227][227]super.<init>();
+      [NoPosition][NoPosition][NoPosition]super.<init>();
       [227]()
     };
     [NoPosition]<empty>

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.input
+package scala
+package util.parsing.input
 
 /** A trait for objects that have a source position.
  *

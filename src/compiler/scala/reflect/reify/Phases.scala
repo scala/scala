@@ -10,7 +10,6 @@ trait Phases extends Reshape
   self: Reifier =>
 
   import global._
-  import definitions._
 
   private var alreadyRun = false
 
@@ -26,7 +25,7 @@ trait Phases extends Reshape
     if (reifyDebug) println("[reshape phase]")
     tree = reshape.transform(tree)
     if (reifyDebug) println("[interlude]")
-    if (reifyDebug) println("reifee = " + (if (opt.showTrees) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString))
+    if (reifyDebug) println("reifee = " + (if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString))
 
     if (reifyDebug) println("[calculate phase]")
     calculate.traverse(tree)

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry combineaccessrules="false" kind="src" path="/partest"/>
+	<classpathentry kind="src" path="scaladoc"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
+	<classpathentry kind="output" path="build-quick-scaladoc"/>
+</classpath>

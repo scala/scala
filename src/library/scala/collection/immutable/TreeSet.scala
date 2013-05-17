@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -89,15 +90,12 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
   private[this] def countWhile(p: A => Boolean): Int = {
     var result = 0
     val it = iterator
-    while (it.hasNext && p(it.next)) result += 1
+    while (it.hasNext && p(it.next())) result += 1
     result
   }
   override def dropWhile(p: A => Boolean) = drop(countWhile(p))
   override def takeWhile(p: A => Boolean) = take(countWhile(p))
   override def span(p: A => Boolean) = splitAt(countWhile(p))
-
-  @deprecated("use `ordering.lt` instead", "2.10.0")
-  def isSmaller(x: A, y: A) = compare(x,y) < 0
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
@@ -112,7 +110,7 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
    *  @param elem    a new element to add.
    *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
-  def + (elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), false))
+  def + (elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
 
   /** A new `TreeSet` with the entry added is returned,
    *  assuming that elem is <em>not</em> in the TreeSet.
@@ -122,7 +120,7 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
    */
   def insert(elem: A): TreeSet[A] = {
     assert(!RB.contains(tree, elem))
-    newSet(RB.update(tree, elem, (), false))
+    newSet(RB.update(tree, elem, (), overwrite = false))
   }
 
   /** Creates a new `TreeSet` with the entry removed.
@@ -147,6 +145,7 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
    *  @return the new iterator
    */
   def iterator: Iterator[A] = RB.keysIterator(tree)
+  override def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
 
   override def foreach[U](f: A =>  U) = RB.foreachKey(tree, f)
 

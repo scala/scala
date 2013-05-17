@@ -1,11 +1,12 @@
-package scala.tools.nsc
+package scala
+package tools.nsc
 
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.reporters.ConsoleReporter
 import Properties.{ versionString, copyrightString, residentPromptString }
-import scala.reflect.internal.util.{ BatchSourceFile, FakePos }
+import scala.reflect.internal.util.FakePos
 
 abstract class Driver {
-  
+
   val prompt = residentPromptString
 
   val versionMsg = "Scala compiler " +
@@ -41,7 +42,7 @@ abstract class Driver {
     command  = new CompilerCommand(args.toList, ss)
     settings = command.settings
 
-    if (settings.version.value) {
+    if (settings.version) {
       reporter.echo(versionMsg)
     } else if (processSettingsHook()) {
       val compiler = newCompiler()
