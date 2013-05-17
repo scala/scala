@@ -287,6 +287,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         // if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
+      // this dummy method is necessary to prevent the optimizer from stripping off ErrorSetImmutableField
+      // which would break binary compatibility with 2.10.0
+      private def dummy(symbol: Symbol) = ErrorSetImmutableField(symbol)
       override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
     }
 
