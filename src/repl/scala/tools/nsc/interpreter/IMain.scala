@@ -899,7 +899,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       val preamble = """
       |object %s {
       |  %s
-      |  val %s: String = %s {
+      |  lazy val %s: String = %s {
       |    %s
       |    (""
       """.stripMargin.format(
