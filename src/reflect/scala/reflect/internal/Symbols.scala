@@ -92,6 +92,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def isExistential: Boolean = this.isExistentiallyBound
     def isParamWithDefault: Boolean = this.hasDefault
+    // `isByNameParam` is only true for a call-by-name parameter of a *method*,
+    // an argument of the primary constructor seen in the class body is excluded by `isValueParameter`
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
     def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
     def isJava: Boolean = isJavaDefined
@@ -788,8 +790,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol an accessor method for outer? */
     final def isOuterField = isArtifact && (unexpandedName == nme.OUTER_LOCAL)
 
-    /** Does this symbol denote a stable value? */
-    def isStable = false
+    /** Does this symbol denote a stable value, ignoring volatility?
+     *
+     * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. SI-6815
+     */
+    final def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
+    final def hasVolatileType = tpe.isVolatile && !hasAnnotation(uncheckedStableClass)
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
@@ -2587,13 +2593,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isMixinConstructor = name == nme.MIXIN_CONSTRUCTOR
     override def isConstructor      = nme.isConstructorName(name)
 
-    override def isPackageObject  = isModule && (name == nme.PACKAGE)
-    override def isStable = !isUnstable
-    private def isUnstable = (
-         isMutable
-      || (hasFlag(METHOD | BYNAMEPARAM) && !hasFlag(STABLE))
-      || (tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
-    )
+    override def isPackageObject = isModule && (name == nme.PACKAGE)
 
     // The name in comments is what it is being disambiguated from.
     // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.

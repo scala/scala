@@ -1342,13 +1342,16 @@ trait Namers extends MethodSynthesis {
     private def importSig(imp: Import) = {
       val Import(expr, selectors) = imp
       val expr1 = typer.typedQualifier(expr)
-      typer checkStable expr1
+
       if (expr1.symbol != null && expr1.symbol.isRootPackage)
         RootImportError(imp)
 
       if (expr1.isErrorTyped)
         ErrorType
       else {
+        if (!treeInfo.isStableIdentifierPattern(expr1))
+          typer.TyperErrorGen.UnstableTreeError(expr1)
+
         val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
         checkSelectors(newImport)
         transformed(imp) = newImport
