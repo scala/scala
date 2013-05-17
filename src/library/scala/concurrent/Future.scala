@@ -133,8 +133,8 @@ trait Future[+T] extends Awaitable[T] {
    *  $multipleCallbacks
    *  $callbackInContext
    */
-  def onFailure[U](callback: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
-    case Failure(t) if NonFatal(t) && callback.isDefinedAt(t) => callback(t)
+  def onFailure[U](@deprecatedName('callback) pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
+    case Failure(t) if NonFatal(t) && pf.isDefinedAt(t) => pf(t)
     case _ =>
   }(executor)
 
@@ -147,7 +147,7 @@ trait Future[+T] extends Awaitable[T] {
    *  $multipleCallbacks
    *  $callbackInContext
    */
-  def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit
+  def onComplete[U](@deprecatedName('func) f: Try[T] => U)(implicit executor: ExecutionContext): Unit
 
 
   /* Miscellaneous */
@@ -303,21 +303,21 @@ trait Future[+T] extends Awaitable[T] {
    *  Await.result(h, Duration.Zero) // throw a NoSuchElementException
    *  }}}
    */
-  def filter(pred: T => Boolean)(implicit executor: ExecutionContext): Future[T] = {
-    val p = Promise[T]()
+  def filter(@deprecatedName('pred) p: T => Boolean)(implicit executor: ExecutionContext): Future[T] = {
+    val promise = Promise[T]()
 
     onComplete {
-      case f: Failure[_] => p complete f.asInstanceOf[Failure[T]]
+      case f: Failure[_] => promise complete f.asInstanceOf[Failure[T]]
       case Success(v) =>
         try {
-          if (pred(v)) p success v
-          else p failure new NoSuchElementException("Future.filter predicate is not satisfied")
+          if (p(v)) promise success v
+          else promise failure new NoSuchElementException("Future.filter predicate is not satisfied")
         } catch {
-          case NonFatal(t) => p failure t
+          case NonFatal(t) => promise failure t
         }
     }(executor)
 
-    p.future
+    promise.future
   }
 
   /** Used by for-comprehensions.
@@ -565,16 +565,16 @@ object Future {
   *
   *  @tparam T       the type of the result
   *  @param body     the asychronous computation
-  *  @param execctx  the execution context on which the future is run
+  *  @param executor  the execution context on which the future is run
   *  @return         the `Future` holding the result of the computation
   */
-  def apply[T](body: =>T)(implicit execctx: ExecutionContext): Future[T] = impl.Future(body)
+  def apply[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] = impl.Future(body)
 
   /** Simple version of `Futures.traverse`. Transforms a `TraversableOnce[Future[A]]` into a `Future[TraversableOnce[A]]`.
    *  Useful for reducing many `Future`s into a single `Future`.
    */
   def sequence[A, M[_] <: TraversableOnce[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
-    in.foldLeft(Promise.successful(cbf(in)).future) {
+    in.foldLeft(successful(cbf(in))) {
       (fr, fa) => for (r <- fr; a <- fa.asInstanceOf[Future[A]]) yield (r += a)
     } map (_.result())
   }
@@ -592,15 +592,15 @@ object Future {
 
   /** Returns a `Future` that will hold the optional result of the first `Future` with a result that matches the predicate.
    */
-  def find[T](futurestravonce: TraversableOnce[Future[T]])(predicate: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
-    val futures = futurestravonce.toBuffer
-    if (futures.isEmpty) Promise.successful[Option[T]](None).future
+  def find[T](@deprecatedName('futurestravonce) futures: TraversableOnce[Future[T]])(@deprecatedName('predicate) p: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
+    val futuresBuffer = futures.toBuffer
+    if (futuresBuffer.isEmpty) successful[Option[T]](None)
     else {
       val result = Promise[Option[T]]()
-      val ref = new AtomicInteger(futures.size)
+      val ref = new AtomicInteger(futuresBuffer.size)
       val search: Try[T] => Unit = v => try {
         v match {
-          case Success(r) => if (predicate(r)) result tryComplete Success(Some(r))
+          case Success(r) if p(r) => result tryComplete Success(Some(r))
           case _ =>
         }
       } finally {
@@ -609,7 +609,7 @@ object Future {
         }
       }
 
-      futures.foreach(_ onComplete search)
+      futuresBuffer.foreach(_ onComplete search)
 
       result.future
     }
@@ -625,9 +625,9 @@ object Future {
    *    val result = Await.result(Future.fold(futures)(0)(_ + _), 5 seconds)
    *  }}}
    */
-  def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(foldFun: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
-    if (futures.isEmpty) Promise.successful(zero).future
-    else sequence(futures).map(_.foldLeft(zero)(foldFun))
+  def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+    if (futures.isEmpty) successful(zero)
+    else sequence(futures).map(_.foldLeft(zero)(op))
   }
 
   /** Initiates a fold over the supplied futures where the fold-zero is the result value of the `Future` that's completed first.
@@ -638,7 +638,7 @@ object Future {
    *  }}}
    */
   def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
-    if (futures.isEmpty) Promise[R]().failure(new NoSuchElementException("reduce attempted on empty collection")).future
+    if (futures.isEmpty) failed(new NoSuchElementException("reduce attempted on empty collection"))
     else sequence(futures).map(_ reduceLeft op)
   }
 
@@ -651,7 +651,7 @@ object Future {
    *  }}}
    */
   def traverse[A, B, M[_] <: TraversableOnce[_]](in: M[A])(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
-    in.foldLeft(Promise.successful(cbf(in)).future) { (fr, a) =>
+    in.foldLeft(successful(cbf(in))) { (fr, a) =>
       val fb = fn(a.asInstanceOf[A])
       for (r <- fr; b <- fb) yield (r += b)
     }.map(_.result())
