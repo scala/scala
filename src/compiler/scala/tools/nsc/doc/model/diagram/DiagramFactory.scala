@@ -117,18 +117,27 @@ trait DiagramFactory extends DiagramDirectiveParser {
           case d: TemplateEntity if ((!diagramFilter.hideInheritedNodes) || (d.inTemplate == pack)) => d
         }
 
+        def listSuperClasses(member: MemberTemplateImpl) = {
+          // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to add nodes to diagrams.
+          (pack.sym, member.sym) match {
+            case (ScalaPackage, NullClass) =>
+              List(makeTemplate(AnyRefClass))
+            case (ScalaPackage, NothingClass) =>
+              (List(NullClass) ::: ScalaValueClasses) map { makeTemplate(_) }
+            case _ =>
+              member.parentTypes map {
+                case (template, tpe) => template
+              } filter {
+                nodesAll.contains(_)
+              }
+          }
+        }
+
         // for each node, add its subclasses
         for (node <- nodesAll if !classExcluded(node)) {
           node match {
             case dnode: MemberTemplateImpl =>
-              var superClasses = dnode.parentTypes.map(_._1).filter(nodesAll.contains(_))
-
-              // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to add nodes to diagrams.
-              if (pack.sym == ScalaPackage)
-                if (dnode.sym == NullClass)
-                  superClasses = List(makeTemplate(AnyRefClass))
-                else if (dnode.sym == NothingClass)
-                  superClasses = (List(NullClass) ::: ScalaValueClasses).map(makeTemplate(_))
+              val superClasses = listSuperClasses(dnode)
 
               if (!superClasses.isEmpty) {
                 nodesShown += dnode
@@ -150,7 +159,14 @@ trait DiagramFactory extends DiagramDirectiveParser {
           None
         else {
           val nodes = nodesAll.filter(nodesShown.contains(_)).flatMap(mapNodes.get(_))
-          val edges = edgesAll.map(pair => (mapNodes(pair._1), pair._2.map(mapNodes(_)))).filterNot(pair => pair._2.isEmpty)
+          val edges = edgesAll.map {
+            case (entity, superClasses) => {
+              (mapNodes(entity), superClasses flatMap { mapNodes.get(_) })
+            }
+          } filterNot {
+            case (node, superClassNodes) => superClassNodes.isEmpty
+          }
+
           val diagram =
             // TODO: Everyone should be able to use the @{inherit,content}Diagram annotation to change the diagrams.
             if (pack.sym == ScalaPackage) {
