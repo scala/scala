@@ -43,7 +43,7 @@ import scala.tools.asm
  *  @version 1.0
  *
  */
-abstract class GenBCode extends BCodeSyncAndTry {
+abstract class GenBCode extends BCodeOptIntra {
   import global._
 
   val phaseName = "jvm"
@@ -219,7 +219,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
             return
           }
           else {
-            try   { addToQ3(item) }
+            try   { visit(item) }
             catch {
               case ex: Throwable =>
                 ex.printStackTrace()
@@ -228,6 +228,21 @@ abstract class GenBCode extends BCodeSyncAndTry {
           }
         }
       }
+
+      /*
+       *  Performs optimizations.
+       *  Afterwards, adds the ClassNode(s) to queue-3.
+       */
+      def visit(item: Item2) {
+
+        val cnode   = item.plain
+
+        val essential = new EssentialCleanser(cnode)
+        essential.codeFixupDCE()    // the very least fixups that must be done, even for unoptimized runs.
+
+        addToQ3(item)
+
+      } // end of method visit(Item2)
 
       private def addToQ3(item: Item2) {
 
