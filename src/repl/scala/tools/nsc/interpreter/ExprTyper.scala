@@ -95,4 +95,19 @@ trait ExprTyper {
     }
     finally typeOfExpressionDepth -= 1
   }
+
+  // This only works for proper types.
+  def typeOfTypeString(typeString: String): Type = {
+    def asProperType(): Option[Type] = {
+      val name = freshInternalVarName()
+      val line = "def %s: %s = ???" format (name, typeString)
+      interpretSynthetic(line) match {
+        case IR.Success =>
+          val sym0 = symbolOfTerm(name)
+          Some(sym0.asMethod.returnType)
+        case _          => None
+      }
+    }
+    beSilentDuring(asProperType()) getOrElse NoType
+  }
 }
