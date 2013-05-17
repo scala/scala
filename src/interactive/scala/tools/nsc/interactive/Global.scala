@@ -925,14 +925,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   def stabilizedType(tree: Tree): Type = tree match {
-    case Ident(_) if tree.symbol.isStable =>
+    case Ident(_) if treeInfo.admitsTypeSelection(tree) =>
       singleType(NoPrefix, tree.symbol)
-    case Select(qual, _) if qual.tpe != null && tree.symbol.isStable =>
+    case Select(qual, _) if treeInfo.admitsTypeSelection(tree) =>
       singleType(qual.tpe, tree.symbol)
     case Import(expr, selectors) =>
       tree.symbol.info match {
         case analyzer.ImportType(expr) => expr match {
-          case s@Select(qual, name) => singleType(qual.tpe, s.symbol)
+          case s@Select(qual, name) if treeInfo.admitsTypeSelection(expr) => singleType(qual.tpe, s.symbol)
           case i : Ident => i.tpe
           case _ => tree.tpe
         }
