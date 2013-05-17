@@ -1,4 +1,4 @@
-newSource1
+newSource1.scala
 2,4                  class A
 6,28                 object A
  7,10                def bippy

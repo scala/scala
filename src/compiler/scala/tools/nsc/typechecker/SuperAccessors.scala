@@ -82,30 +82,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private def transformArgs(params: List[Symbol], args: List[Tree]) = {
       treeInfo.mapMethodParamsAndArgs(params, args) { (param, arg) =>
         if (isByNameParamType(param.tpe))
-          withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
+          withInvalidOwner(transform(arg))
         else transform(arg)
       }
-    }
-
-    private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
-      def typeError(typer: analyzer.Typer, pos: Position, found: Type, req: Type) {
-        if (!found.isErroneous && !req.isErroneous) {
-          val msg = analyzer.ErrorUtils.typeErrorMsg(found, req, typer.infer.isPossiblyMissingArgs(found, req))
-          typer.context.error(pos, analyzer.withAddendum(pos)(msg))
-          if (settings.explaintypes)
-            explainTypes(found, req)
-        }
-      }
-
-      if (tree.tpe exists (_.typeSymbol.isExistentialSkolem)) {
-        val packed = localTyper.packedType(tree, NoSymbol)
-        if (!(packed <:< pt)) {
-          val errorContext = localTyper.context.make(localTyper.context.tree)
-          errorContext.setReportErrors()
-          typeError(analyzer.newTyper(errorContext), tree.pos, packed, pt)
-        }
-      }
-      tree
     }
 
     /** Check that a class and its companion object to not both define
