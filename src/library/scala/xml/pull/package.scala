@@ -1,4 +1,5 @@
-package scala.xml
+package scala
+package xml
 
 /**
  * Classes needed to view an XML document as a series of events.  The document

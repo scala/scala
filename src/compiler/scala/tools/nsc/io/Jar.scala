@@ -10,8 +10,7 @@ import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, 
 import java.util.jar._
 import scala.collection.JavaConverters._
 import Attributes.Name
-import util.ClassPath
-import scala.language.implicitConversions
+import scala.language.{ implicitConversions, postfixOps }
 
 // Attributes.Name instances:
 //
@@ -37,9 +36,6 @@ class Jar(file: File) extends Iterable[JarEntry] {
   def this(jfile: JFile) = this(File(jfile))
   def this(path: String) = this(File(path))
 
-  protected def errorFn(msg: String): Unit = Console println msg
-
-  lazy val jarFile  = new JarFile(file.jfile)
   lazy val manifest = withJarInput(s => Option(s.getManifest))
 
   def mainClass     = manifest map (f => f(Name.MAIN_CLASS))
@@ -49,6 +45,20 @@ class Jar(file: File) extends Iterable[JarEntry] {
   def classPathElements: List[String] = classPathString match {
     case Some(s)  => s split "\\s+" toList
     case _        => Nil
+  }
+
+  /** Invoke f with input for named jar entry (or None). */
+  def withEntryStream[A](name: String)(f: Option[InputStream] => A) = {
+    val jarFile = new JarFile(file.jfile)
+    def apply() =
+      jarFile getEntry name match {
+        case null   => f(None)
+        case entry  =>
+          val in = Some(jarFile getInputStream entry)
+          try f(in)
+          finally in map (_.close())
+      }
+    try apply() finally jarFile.close()
   }
 
   def withJarInput[T](f: JarInputStream => T): T = {
@@ -64,12 +74,6 @@ class Jar(file: File) extends Iterable[JarEntry] {
     Iterator continually in.getNextJarEntry() takeWhile (_ != null) foreach f
   }
   override def iterator: Iterator[JarEntry] = this.toList.iterator
-  def fileishIterator: Iterator[Fileish] = jarFile.entries.asScala map (x => Fileish(x, () => getEntryStream(x)))
-
-  private def getEntryStream(entry: JarEntry) = jarFile getInputStream entry match {
-    case null   => errorFn("No such entry: " + entry) ; null
-    case x      => x
-  }
   override def toString = "" + file
 }
 
@@ -111,9 +115,9 @@ class JarWriter(val file: File, val manifest: Manifest) {
     val buf = new Array[Byte](10240)
     def loop(): Unit = in.read(buf, 0, buf.length) match {
       case -1 => in.close()
-      case n  => out.write(buf, 0, n) ; loop
+      case n  => out.write(buf, 0, n) ; loop()
     }
-    loop
+    loop()
   }
 
   def close() = out.close()
@@ -131,7 +135,6 @@ object Jar {
       m
     }
     def apply(manifest: JManifest): WManifest = new WManifest(manifest)
-    implicit def unenrichManifest(x: WManifest): JManifest = x.underlying
   }
   class WManifest(manifest: JManifest) {
     for ((k, v) <- initialMainAttrs)
@@ -148,12 +151,7 @@ object Jar {
     }
 
     def apply(name: Attributes.Name): String        = attrs(name)
-    def apply(name: String): String                 = apply(new Attributes.Name(name))
     def update(key: Attributes.Name, value: String) = attrs.put(key, value)
-    def update(key: String, value: String)          = attrs.put(new Attributes.Name(key), value)
-
-    def mainClass: String = apply(Name.MAIN_CLASS)
-    def mainClass_=(value: String) = update(Name.MAIN_CLASS, value)
   }
 
   // See http://download.java.net/jdk7/docs/api/java/nio/file/Path.html
@@ -161,7 +159,7 @@ object Jar {
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
   private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
 
-  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
+  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, examineFile = true)
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
 

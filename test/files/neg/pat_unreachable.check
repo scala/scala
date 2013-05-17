@@ -1,13 +1,14 @@
-pat_unreachable.scala:5: error: unreachable code
-    case Seq(x, y, z, w) => List(z,w) // redundant!
-                                ^
-pat_unreachable.scala:9: error: unreachable code
-    case Seq(x, y) => List(x, y)
-                          ^
-pat_unreachable.scala:23: error: unreachable code
+pat_unreachable.scala:22: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+If you intended to match against parameter b of method contrivedExample, you must use backticks, like: case `b` =>
+    case b => println("matched b")
+         ^
+pat_unreachable.scala:23: warning: unreachable code due to variable pattern 'b' on line 22
+If you intended to match against parameter c of method contrivedExample, you must use backticks, like: case `c` =>
     case c => println("matched c")
                      ^
-pat_unreachable.scala:24: error: unreachable code
+pat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 22
     case _ => println("matched neither")
                      ^
-four errors found
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

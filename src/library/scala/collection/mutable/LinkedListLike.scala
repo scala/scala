@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
 
-import generic._
 import scala.annotation.tailrec
 
 /** This extensible class may be used as a basis for implementing linked
@@ -188,6 +186,6 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
   override def clone(): This = {
     val bf = newBuilder
     bf ++= this
-    bf.result
+    bf.result()
   }
 }

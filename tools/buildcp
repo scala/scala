@@ -8,4 +8,4 @@ lib=$($dir/abspath $dir/../lib)
 build=$($dir/abspath $dir/../build)
 cp=$($dir/cpof $build/$1/classes):$build/asm/classes
 
-echo $cp:$lib/fjbg.jar:$lib/msil.jar:$lib/forkjoin.jar:$lib/jline.jar:$lib/extra/'*'
+echo $cp:$lib/forkjoin.jar:$lib/jline.jar:$lib/extra/'*'

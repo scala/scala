@@ -30,7 +30,7 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
   }
 
   // Implement BlockContext on FJP threads
-  class DefaultThreadFactory(daemonic: Boolean) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory { 
+  class DefaultThreadFactory(daemonic: Boolean) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
     def wire[T <: Thread](thread: T): T = {
       thread.setDaemon(daemonic)
       thread.setUncaughtExceptionHandler(uncaughtExceptionHandler)
@@ -72,7 +72,7 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
       getInt("scala.concurrent.context.maxThreads", _.toInt))
 
     val threadFactory = new DefaultThreadFactory(daemonic = true)
-    
+
     try {
       new ForkJoinPool(
         desiredParallelism,
@@ -96,12 +96,26 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
     }
   }
 
-
   def execute(runnable: Runnable): Unit = executor match {
     case fj: ForkJoinPool =>
-      val fjt = runnable match {
+      val fjt: ForkJoinTask[_] = runnable match {
         case t: ForkJoinTask[_] => t
-        case runnable => new ForkJoinTask[Unit] {
+        case r                  => new ExecutionContextImpl.AdaptedForkJoinTask(r)
+      }
+      Thread.currentThread match {
+        case fjw: ForkJoinWorkerThread if fjw.getPool eq fj => fjt.fork()
+        case _                                              => fj execute fjt
+      }
+    case generic => generic execute runnable
+  }
+
+  def reportFailure(t: Throwable) = reporter(t)
+}
+
+
+private[concurrent] object ExecutionContextImpl {
+
+  final class AdaptedForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
           final override def setRawResult(u: Unit): Unit = ()
           final override def getRawResult(): Unit = ()
           final override def exec(): Boolean = try { runnable.run(); true } catch {
@@ -114,18 +128,7 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
               throw anything
           }
         }
-      }
-      Thread.currentThread match {
-        case fjw: ForkJoinWorkerThread if fjw.getPool eq fj => fjt.fork()
-        case _ => fj execute fjt
-      }
-    case generic => generic execute runnable
-  }
 
-  def reportFailure(t: Throwable) = reporter(t)
-}
-
-private[concurrent] object ExecutionContextImpl {
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl = new ExecutionContextImpl(e, reporter)
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutionContextExecutorService =
     new ExecutionContextImpl(es, reporter) with ExecutionContextExecutorService {

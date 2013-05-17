@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.util.parsing.combinator
+package scala
+package util.parsing.combinator
 
 import scala.language.implicitConversions
 

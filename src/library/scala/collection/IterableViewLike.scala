@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import generic._
-import TraversableView.NoBuilder
 import immutable.Stream
 import scala.language.implicitConversions
 

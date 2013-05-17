@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
@@ -46,7 +47,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray
   }).asInstanceOf[Array[Iterable[T]]]
 
-  private type SplitIterators = ((Iterator[T], Int), Iterator[T])
+  private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
 
   private def isTrie(x: AnyRef) = x match {
     case _: HashTrieMap[_,_] | _: HashTrieSet[_] => true
@@ -94,7 +95,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   def hasNext = (subIter ne null) || depth >= 0
   def next(): T = {
     if (subIter ne null) {
-      val el = subIter.next
+      val el = subIter.next()
       if (!subIter.hasNext)
         subIter = null
       el
@@ -135,7 +136,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     }
     else {
       subIter = m.iterator
-      next
+      next()
     }
     // The much slower version:
     //
@@ -177,7 +178,6 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
       if (depth > 0) {
         // 2) topmost comes before (is not) arrayD
         //    steal a portion of top to create a new iterator
-        val topmost = arrayStack(0)
         if (posStack(0) == arrayStack(0).length - 1) {
           // 2a) only a single entry left on top
           // this means we have to modify this iterator - pop topmost

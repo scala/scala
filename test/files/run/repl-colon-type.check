@@ -8,7 +8,6 @@ scala> :type List[1, 2, 3]
        List[1, 2, 3]
             ^
 
-
 scala> :type List(1, 2, 3)
 List[Int]
 
@@ -43,9 +42,8 @@ scala> :type protected lazy val f = 5
  Access to protected value f not permitted because
  enclosing object $eval in package $line13 is not a subclass of 
  object $iw where target is defined
-  lazy val $result = `f`
+  lazy val $result = f
                                            ^
-
 
 scala> :type def f = 5
 => Int
@@ -81,7 +79,7 @@ TypeRef(
     )
     TypeRef(
       TypeSymbol(
-        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
         
       )
       args = List(
@@ -148,7 +146,7 @@ TypeRef(
       args = List(
         TypeRef(
           TypeSymbol(
-            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
             
           )
           args = List(
@@ -181,7 +179,7 @@ PolyType(
           args = List(
             TypeRef(
               TypeSymbol(
-                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
                 
               )
               args = List(TypeParamTypeRef(TypeParam(T <: AnyVal)))
@@ -204,7 +202,7 @@ PolyType(
     params = List(TermSymbol(x: T), TermSymbol(y: List[U]))
     resultType = TypeRef(
       TypeSymbol(
-        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]]
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
         
       )
       args = List(TypeParamTypeRef(TypeParam(U >: T)))

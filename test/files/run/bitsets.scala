@@ -37,6 +37,19 @@ object TestMutable {
   Console.println("mi1 = " + ms1.toImmutable)
   Console.println("mi2 = " + ms2.toImmutable)
   Console.println
+
+  val N = 257
+  val gen = 3
+  val bs = BitSet((1 until N): _*)
+  (1 until N).foldLeft(gen) {
+    case (acc, i) =>
+      assert(bs.size == N-i, s"Bad size for $bs, expected ${N-i} actual ${bs.size}")
+      assert(!bs.isEmpty, s"Unexpected isEmpty for $bs")
+      bs -= acc
+      acc*gen % N
+  }
+  assert(bs.size == 0, s"Expected size == 0 for $bs")
+  assert(bs.isEmpty, s"Expected isEmpty for $bs")
 }
 
 object TestMutable2 {
@@ -81,12 +94,51 @@ object TestMutable2 {
   println
 }
 
+object TestMutable3 {
+  import scala.collection.mutable.BitSet
+
+  val b0 = BitSet(5, 6)
+  val b1 = BitSet(7)
+  val b2 = BitSet(1, 5)
+  val b3 = BitSet(6, 7)
+  val b4 = BitSet(6, 7)
+
+  b1 |= b0
+  println(s"b1:$b1")
+  b2 &= b0
+  println(s"b2:$b2")
+  b3 ^= b0
+  println(s"b3:$b3")
+  b4 &~= b0
+  println(s"b4:$b4")
+  b0 ^= b0 |= b1
+  println(s"b0:$b0")
+}
+
+/***
+The memory requirements here are way beyond
+what a test should exercise.
+
+object TestMutable4 {
+  import scala.collection.mutable.BitSet
+
+  val bMax = BitSet(Int.MaxValue)
+  println(s"bMax:$bMax")
+  bMax.foreach(println)
+
+  val bLarge = BitSet(2000000001)
+  println(s"bLarge:$bLarge")
+
+  println(bMax == bLarge)
+}
+***/
+
 object TestImmutable {
   import scala.collection.immutable.BitSet
 
   val is0 = BitSet()
-  val is1 = BitSet.fromArray(Array())
-  val is2 = BitSet.fromArray(Array(4))
+  val is1 = BitSet.fromBitMask(Array())
+  val is2 = BitSet.fromBitMask(Array(4))
   val is3 = BitSet.empty
 
   Console.println("is0 = " + is0)
@@ -155,6 +207,8 @@ object TestImmutable2 {
 object Test extends App {
   TestMutable
   TestMutable2
+  TestMutable3
+  // TestMutable4
   TestImmutable
   TestImmutable2
 }

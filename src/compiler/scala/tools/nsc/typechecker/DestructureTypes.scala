@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.language.implicitConversions
-
 /** A generic means of breaking down types into their subcomponents.
  *  Types are decomposed top down, and recognizable substructure is
  *  dispatched via self-apparently named methods.  Those methods can
@@ -36,8 +34,6 @@ trait DestructureTypes {
     def wrapProduct(nodes: List[Node]): Node
     def wrapSequence(nodes: List[Node]): Node
     def wrapAtom[U](value: U): Node
-
-    private implicit def liftToTerm(name: String): TermName = newTermName(name)
 
     private val openSymbols = scala.collection.mutable.Set[Symbol]()
 
@@ -68,15 +64,6 @@ trait DestructureTypes {
       },
       tree.productPrefix
     )
-    def wrapSymbol(label: String, sym: Symbol): Node = {
-      if (sym eq NoSymbol) wrapEmpty
-      else atom(label, sym)
-    }
-    def wrapInfo(sym: Symbol) = sym.info match {
-      case TypeBounds(lo, hi)        => typeBounds(lo, hi)
-      case PolyType(tparams, restpe) => polyFunction(tparams, restpe)
-      case _                         => wrapEmpty
-    }
     def wrapSymbolInfo(sym: Symbol): Node = {
       if ((sym eq NoSymbol) || openSymbols(sym)) wrapEmpty
       else {
@@ -99,7 +86,6 @@ trait DestructureTypes {
     def constant(label: String, const: Constant): Node = atom(label, const)
 
     def scope(decls: Scope): Node          = node("decls", scopeMemberList(decls.toList))
-    def const[T](named: (String, T)): Node = constant(named._1, Constant(named._2))
 
     def resultType(restpe: Type): Node          = this("resultType", restpe)
     def typeParams(tps: List[Symbol]): Node     = node("typeParams", symbolList(tps))
@@ -188,7 +174,6 @@ trait DestructureTypes {
       case AntiPolyType(pre, targs)                  => product(tp, prefix(pre), typeArgs(targs))
       case ClassInfoType(parents, decls, clazz)      => product(tp, parentList(parents), scope(decls), wrapAtom(clazz))
       case ConstantType(const)                       => product(tp, constant("value", const))
-      case DeBruijnIndex(level, index, args)         => product(tp, const("level" -> level), const("index" -> index), typeArgs(args))
       case OverloadedType(pre, alts)                 => product(tp, prefix(pre), node("alts", typeList(alts map pre.memberType)))
       case RefinedType(parents, decls)               => product(tp, parentList(parents), scope(decls))
       case SingleType(pre, sym)                      => product(tp, prefix(pre), wrapAtom(sym))

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package parallel.mutable
 
 import scala.collection.parallel.IterableSplitter
@@ -38,10 +39,6 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       }
     }
 
-    private def checkbounds() = if (idx >= itertable.length) {
-      throw new IndexOutOfBoundsException(idx.toString)
-    }
-
     def newIterator(index: Int, until: Int, totalsize: Int): IterableSplitter[T]
 
     def remaining = totalsize - traversed
@@ -52,7 +49,7 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       idx += 1
       if (hasNext) scan()
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
     def dup = newIterator(idx, until, totalsize)
     def split = if (remaining > 1) {
       val divpt = (until + idx) / 2
@@ -102,11 +99,5 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
       }
       count
     }
-
-    private def check() = if (table.slice(idx, until).count(_ != null) != remaining) {
-      println("Invariant broken: " + debugInformation)
-      assert(false)
-    }
   }
-
 }

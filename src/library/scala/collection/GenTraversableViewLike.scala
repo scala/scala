@@ -6,13 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 
 import generic._
 import mutable.{ Builder, ArrayBuffer }
-import TraversableView.NoBuilder
-
 
 trait GenTraversableViewLike[+A,
                              +Coll,

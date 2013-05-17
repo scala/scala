@@ -37,6 +37,11 @@ m2_r1 = true
 m2_r2 = true
 m2_r3 = true
 
+b1:BitSet(5, 6, 7)
+b2:BitSet(5)
+b3:BitSet(5, 7)
+b4:BitSet(7)
+b0:BitSet(5, 6, 7)
 is0 = BitSet()
 is1 = BitSet()
 is2 = BitSet(2)

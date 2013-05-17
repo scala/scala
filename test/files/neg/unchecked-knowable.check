@@ -1,7 +1,9 @@
-unchecked-knowable.scala:18: error: fruitless type test: a value of type Bippy cannot also be a A1
+unchecked-knowable.scala:18: warning: fruitless type test: a value of type Bippy cannot also be a A1
   /*   warn */ (new Bippy).isInstanceOf[A1]
                                        ^
-unchecked-knowable.scala:19: error: fruitless type test: a value of type Bippy cannot also be a B1
+unchecked-knowable.scala:19: warning: fruitless type test: a value of type Bippy cannot also be a B1
   /*   warn */ (new Bippy).isInstanceOf[B1]
                                        ^
-two errors found
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

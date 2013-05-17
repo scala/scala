@@ -8,8 +8,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
 
 abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment
@@ -94,7 +92,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         impl.typeOfThis = iface.typeOfThis
         impl.thisSym setName iface.thisSym.name
       }
-      impl.sourceFile = iface.sourceFile
+      impl.associatedFile = iface.sourceFile
       if (inClass)
         iface.owner.info.decls enter impl
 
@@ -111,7 +109,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   def implClass(iface: Symbol): Symbol = {
     iface.info
 
-    implClassMap.getOrElse(iface, atPhase(implClassPhase) {
+    implClassMap.getOrElse(iface, enteringPhase(implClassPhase) {
       if (iface.implClass eq NoSymbol)
         debuglog(s"${iface.fullLocationString} has no implClass yet, creating it now.")
       else
@@ -176,8 +174,8 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     override def complete(implSym: Symbol) {
       debuglog("LazyImplClassType completing " + implSym)
 
-      /** If `tp` refers to a non-interface trait, return a
-       *  reference to its implementation class. Otherwise return `tp`.
+      /* If `tp` refers to a non-interface trait, return a
+       * reference to its implementation class. Otherwise return `tp`.
        */
       def mixinToImplClass(tp: Type): Type = AddInterfaces.this.erasure(implSym) {
         tp match { //@MATN: no normalize needed (comes after erasure)
@@ -196,7 +194,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         case PolyType(_, restpe) =>
           implType(restpe)
       }
-      implSym setInfo implType(beforeErasure(iface.info))
+      implSym setInfo implType(enteringErasure(iface.info))
     }
 
     override def load(clazz: Symbol) { complete(clazz) }
@@ -278,7 +276,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
    */
   private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] =
     if (treeInfo.firstConstructor(stats) != EmptyTree) stats
-    else DefDef(clazz.primaryConstructor, Block(List(), Literal(Constant()))) :: stats
+    else DefDef(clazz.primaryConstructor, Block(List(), Literal(Constant(())))) :: stats
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = (
@@ -317,10 +315,10 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         // body until now, because the typer knows that Any has no
         // constructor and won't accept a call to super.init.
         assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
-        Block(List(Apply(gen.mkSuperSelect, Nil)), expr)
+        Block(List(Apply(gen.mkSuperInitCall, Nil)), expr)
 
       case Block(stats, expr) =>
-        // needs `hasSymbol` check because `supercall` could be a block (named / default args)
+        // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
@@ -352,7 +350,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           val mix1 = mix
             if (mix == tpnme.EMPTY) mix
             else {
-              val ps = beforeErasure {
+              val ps = enteringErasure {
                 sym.info.parents dropWhile (p => p.symbol.name != mix)
               }
               assert(!ps.isEmpty, tree);

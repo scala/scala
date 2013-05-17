@@ -194,10 +194,10 @@ object FancyTailCalls {
 }
 
 object PolyObject extends App {
-  def tramp[A](x: Int): Int = 
+  def tramp[A](x: Int): Int =
     if (x > 0)
       tramp[A](x - 1)
-    else 
+    else
       0
 }
 
@@ -233,7 +233,7 @@ class NonTailCall {
     if (n == 0) 0
     else f2(n - 1)
   }
-  
+
 }
 
 //############################################################################
@@ -273,7 +273,7 @@ object Test {
     }
     println
   }
-    
+
   def check_overflow(name: String, closure: => Int) {
     print("test " + name)
     try {
@@ -295,7 +295,7 @@ object Test {
     while (!stop) {
       try {
         calibrator.f(n, n);
-        if (n >= Int.MaxValue / 2) error("calibration failure");
+        if (n >= Int.MaxValue / 2) sys.error("calibration failure");
         n = 2 * n;
       } catch {
         case exception: compat.Platform.StackOverflowError => stop = true
@@ -367,7 +367,7 @@ object Test {
     check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0)
     check_success("TailCall.h1", TailCall.h1(max, max     ), 0)
     println
-    
+
     val NonTailCall = new NonTailCall
     check_success("NonTailCall.f1", NonTailCall.f1(2), 0)
     check_overflow("NonTailCall.f2", NonTailCall.f2(max))
@@ -382,17 +382,17 @@ object Test {
   }
 
   // testing explicit tailcalls.
-  
+
   import scala.util.control.TailCalls._
 
   def isEven(xs: List[Int]): TailRec[Boolean] =
     if (xs.isEmpty) done(true) else tailcall(isOdd(xs.tail))
 
   def isOdd(xs: List[Int]): TailRec[Boolean] =
-    if (xs.isEmpty) done(false) else tailcall(isEven(xs.tail)) 
+    if (xs.isEmpty) done(false) else tailcall(isEven(xs.tail))
 
   assert(isEven((1 to 100000).toList).result)
-  
+
 }
 
 //############################################################################

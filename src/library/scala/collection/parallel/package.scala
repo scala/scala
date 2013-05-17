@@ -41,9 +41,7 @@ package object parallel {
 
   private[parallel] def outofbounds(idx: Int) = throw new IndexOutOfBoundsException(idx.toString)
 
-  private[parallel] def getTaskSupport: TaskSupport =
-    if (scala.util.Properties.isJavaAtLeast("1.6")) new ForkJoinTaskSupport
-    else new ThreadPoolTaskSupport
+  private[parallel] def getTaskSupport: TaskSupport = new ForkJoinTaskSupport
 
   val defaultTaskSupport: TaskSupport = getTaskSupport
 
@@ -136,7 +134,7 @@ package parallel {
 
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
   final case class CompositeThrowable(
-    val throwables: Set[Throwable]
+                                       throwables: Set[Throwable]
   ) extends Exception(
     "Multiple exceptions thrown during a parallel computation: " +
       throwables.map(t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")

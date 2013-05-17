@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class servers as a proxy for priority queues. The
@@ -66,7 +67,7 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    *
    *  @return   the element with the highest priority.
    */
-  override def dequeue(): A = self.dequeue
+  override def dequeue(): A = self.dequeue()
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.
@@ -75,18 +76,10 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    */
   override def head: A = self.head
 
-  /** Returns the element with the highest priority in the queue,
-   *  or throws an error if there is no element contained in the queue.
-   *
-   *  @return   the element with the highest priority.
-   */
-  @deprecated("Use `head` instead.", "2.9.0")
-  override def max: A = self.max
-
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear(): Unit = self.clear
+  override def clear(): Unit = self.clear()
 
   /** Returns a regular queue containing the same elements.
    */

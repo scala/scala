@@ -1,3 +1,0 @@
-javac Ann.java Ann2.java
-scalac Test_1.scala
-scalac Test_2.scala

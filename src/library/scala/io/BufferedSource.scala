@@ -73,7 +73,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
         if (nextLine == null) lineReader.readLine
         else try nextLine finally nextLine = null
       }
-      if (result == null) Iterator.empty.next
+      if (result == null) Iterator.empty.next()
       else result
     }
   }

@@ -1,13 +1,15 @@
-t6048.scala:3: error: unreachable code
+t6048.scala:3: warning: unreachable code
     case _ if false => x // unreachable
                        ^
-t6048.scala:8: error: unreachable code
+t6048.scala:8: warning: unreachable code
     case _ if false => x // unreachable
                        ^
-t6048.scala:13: error: patterns after a variable pattern cannot match (SLS 8.1.1)
+t6048.scala:13: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
     case _ => x
          ^
-t6048.scala:14: error: unreachable code due to variable pattern on line 13
+t6048.scala:14: warning: unreachable code due to variable pattern on line 13
     case 5 if true  => x // unreachable
                        ^
-four errors found
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

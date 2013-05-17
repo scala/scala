@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend.icode.analysis
 
 import scala.collection.{mutable, immutable}
@@ -68,7 +69,6 @@ abstract class TypeFlowAnalysis {
    *  names to types and a type stack.
    */
   object typeFlowLattice extends SemiLattice {
-    import icodes._
     type Elem = IState[VarBinding, icodes.TypeStack]
 
     val top    = new Elem(new VarBinding, typeStackLattice.top)
@@ -132,15 +132,15 @@ abstract class TypeFlowAnalysis {
       init(m)
     }
 
-    def run = {
-      timer.start
+    def run() = {
+      timer.start()
       // icodes.lubs0 = 0
       forwardAnalysis(blockTransfer)
-      val t = timer.stop
-      if (settings.debug.value) {
+      timer.stop
+      if (settings.debug) {
         linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(visited.contains(b),
-            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
+            "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited))
       }
       // log("" + method.symbol.fullName + " ["  + method.code.blocks.size + " blocks] "
       //     + "\n\t" + iterations + " iterations: " + t + " ms."
@@ -168,7 +168,7 @@ abstract class TypeFlowAnalysis {
       val bindings = out.vars
       val stack = out.stack
 
-      if (settings.debug.value) {
+      if (settings.debug) {
         // Console.println("[before] Stack: " + stack);
         // Console.println(i);
       }
@@ -208,7 +208,7 @@ abstract class TypeFlowAnalysis {
             case Test(_, kind, zero) =>
               stack.pop
               if (!zero) { stack.pop }
-              stack push BOOL;
+              stack push BOOL
 
             case Comparison(_, _) => stack.pop2; stack push INT
 
@@ -269,36 +269,6 @@ abstract class TypeFlowAnalysis {
       out
     } // interpret
 
-
-    class SimulatedStack {
-      private var types: List[InferredType] = Nil
-      private var depth = 0
-
-      /** Remove and return the topmost element on the stack. If the
-       *  stack is empty, return a reference to a negative index on the
-       *  stack, meaning it refers to elements pushed by a predecessor block.
-       */
-      def pop: InferredType = types match {
-        case head :: rest =>
-          types = rest
-          head
-        case _ =>
-          depth -= 1
-          TypeOfStackPos(depth)
-      }
-
-      def pop2: (InferredType, InferredType) = {
-        (pop, pop)
-      }
-
-      def push(t: InferredType) {
-        depth += 1
-        types = types ::: List(t)
-      }
-
-      def push(k: TypeKind) { push(Const(k)) }
-    }
-
 	abstract class InferredType {
       /** Return the type kind pointed by this inferred type. */
       def getKind(in: lattice.Elem): icodes.TypeKind = this match {
@@ -326,7 +296,6 @@ abstract class TypeFlowAnalysis {
 	class TransferFunction(consumed: Int, gens: List[Gen]) extends (lattice.Elem => lattice.Elem) {
 	  def apply(in: lattice.Elem): lattice.Elem = {
         val out = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
-        val bindings = out.vars
         val stack = out.stack
 
         out.stack.pop(consumed)
@@ -387,9 +356,9 @@ abstract class TypeFlowAnalysis {
 
     override def run {
 
-      timer.start
+      timer.start()
       forwardAnalysis(blockTransfer)
-      val t = timer.stop
+      timer.stop
 
       /* Now that `forwardAnalysis(blockTransfer)` has finished, all inlining candidates can be found in `remainingCALLs`,
          whose keys are callsites and whose values are pieces of information about the typestack just before the callsite in question.
@@ -399,7 +368,7 @@ abstract class TypeFlowAnalysis {
         preCandidates += rc._2.bb
       }
 
-      if (settings.debug.value) {
+      if (settings.debug) {
         for(b <- callerLin; if (b != method.startBlock) && preCandidates(b)) {
           assert(visited.contains(b),
                  "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited)
@@ -428,7 +397,7 @@ abstract class TypeFlowAnalysis {
     override def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
       var result = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
 
-      val stopAt = if(isOnPerimeter(b)) lastInstruction(b) else null;
+      val stopAt = if(isOnPerimeter(b)) lastInstruction(b) else null
       var isPastLast = false
 
       var instrs = b.toList
@@ -546,9 +515,6 @@ abstract class TypeFlowAnalysis {
       relevantBBs ++= blocks
     }
 
-    /* the argument is also included in the result */
-    private def transitivePreds(b: BasicBlock): Set[BasicBlock] = { transitivePreds(List(b)) }
-
     /* those BBs in the argument are also included in the result */
     private def transitivePreds(starters: Traversable[BasicBlock]): Set[BasicBlock] = {
       val result = mutable.Set.empty[BasicBlock]
@@ -558,19 +524,6 @@ abstract class TypeFlowAnalysis {
         toVisit = toVisit.tail
         result += h
         for(p <- h.predecessors; if !result(p) && !toVisit.contains(p)) { toVisit = p :: toVisit }
-      }
-      result.toSet
-    }
-
-    /* those BBs in the argument are also included in the result */
-    private def transitiveSuccs(starters: Traversable[BasicBlock]): Set[BasicBlock] = {
-      val result = mutable.Set.empty[BasicBlock]
-      var toVisit: List[BasicBlock] = starters.toList.distinct
-      while(toVisit.nonEmpty) {
-        val h   = toVisit.head
-        toVisit = toVisit.tail
-        result += h
-        for(p <- h.successors; if !result(p) && !toVisit.contains(p)) { toVisit = p :: toVisit }
       }
       result.toSet
     }
@@ -646,10 +599,10 @@ abstract class TypeFlowAnalysis {
         return
       } else if(staleOut.isEmpty && inlined.isEmpty && staleIn.isEmpty) {
         // this promotes invoking reinit if in doubt, no performance degradation will ensue!
-        return;
+        return
       }
 
-      worklist.clear // calling reinit(f: => Unit) would also clear visited, thus forgetting about blocks visited before reinit.
+      worklist.clear() // calling reinit(f: => Unit) would also clear visited, thus forgetting about blocks visited before reinit.
 
       // asserts conveying an idea what CFG shapes arrive here:
       //   staleIn foreach (p => assert( !in.isDefinedAt(p), p))
@@ -685,12 +638,6 @@ abstract class TypeFlowAnalysis {
       if(!worklist.contains(b)) { worklist += b }
     }
 
-    /* this is not a general purpose method to add to the worklist,
-     * because the assert is expected to hold only when called from MTFAGrowable.reinit() */
-    private def enqueue(bs: Traversable[BasicBlock]) {
-      bs foreach enqueue
-    }
-
     private def blankOut(blocks: scala.collection.Set[BasicBlock]) {
       blocks foreach { b =>
         in(b)  = typeFlowLattice.bottom
@@ -719,14 +666,14 @@ abstract class TypeFlowAnalysis {
     override def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit = {
       while (!worklist.isEmpty && relevantBBs.nonEmpty) {
         if (stat) iterations += 1
-        val point = worklist.iterator.next; worklist -= point;
+        val point = worklist.iterator.next(); worklist -= point
         if(relevantBBs(point)) {
           shrinkedWatchlist = false
           val output = f(point, in(point))
-          visited += point;
+          visited += point
           if(isOnPerimeter(point)) {
             if(shrinkedWatchlist && !isWatching(point)) {
-              relevantBBs -= point;
+              relevantBBs -= point
               populatePerimeter()
             }
           } else {
@@ -760,10 +707,6 @@ abstract class TypeFlowAnalysis {
     var millis = 0L
 
     private var lastStart = 0L
-
-    def reset() {
-      millis = 0L
-    }
 
     def start() {
       lastStart = System.currentTimeMillis

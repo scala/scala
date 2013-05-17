@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 package pull
 
 import scala.io.Source
@@ -139,10 +140,10 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   def hasNext = !eos && (buffer != null || fillBuffer)
 
   def next() = {
-    if (eos) throw new NoSuchElementException("ProducerConsumerIterator")
-    if (buffer == null) fillBuffer
+    if (eos()) throw new NoSuchElementException("ProducerConsumerIterator")
+    if (buffer == null) fillBuffer()
 
-    drainBuffer
+    drainBuffer()
   }
 
   def available() = isElement(buffer) || isElement(queue.peek)

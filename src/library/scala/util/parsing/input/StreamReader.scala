@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.input
+package scala
+package util.parsing.input
 
 import java.io.BufferedReader
 import scala.collection.immutable.PagedSeq
@@ -22,7 +23,7 @@ object StreamReader {
    *
    * @param in the `java.io.Reader` that provides the underlying
    *           stream of characters for this Reader.
-   */  
+   */
   def apply(in: java.io.Reader): StreamReader = {
     new StreamReader(PagedSeq.fromReader(in), 0, 1)
   }

@@ -8,7 +8,8 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package persistent
 
 /** an Index returns some unique key that is part of a node

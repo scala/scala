@@ -12,7 +12,7 @@ class A {
 object Test extends App {
   import scala.reflect.runtime.universe._
   def test(n: Int): Unit = {
-    val sig = typeOf[A] member newTermName("foo" + n) typeSignature
+    val sig = typeOf[A] member TermName("foo" + n) typeSignature
     val x = sig.asInstanceOf[MethodType].params.head
     println(x.typeSignature)
   }

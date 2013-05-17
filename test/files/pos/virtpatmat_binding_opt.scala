@@ -4,7 +4,7 @@ class Test {
     case that: Test2 =>
       println(that)
       this
-    case _ => error("meh")
+    case _ => sys.error("meh")
   }
 }
 

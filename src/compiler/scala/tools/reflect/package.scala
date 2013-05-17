@@ -32,7 +32,7 @@ package object reflect {
 
   /** Creates a reporter that prints messages to the console according to the settings.
    *
-   *  ``minSeverity'' determines minimum severity of the messages to be printed.
+   *  `minSeverity` determines minimum severity of the messages to be printed.
    *  0 stands for INFO, 1 stands for WARNING and 2 stands for ERROR.
    */
   // todo. untangle warningsAsErrors from Reporters. I don't feel like moving this flag here!
@@ -52,7 +52,7 @@ package object reflect {
     override def hasWarnings = reporter.hasWarnings
 
     def display(info: Info): Unit = info.severity match {
-      case API_INFO => reporter.info(info.pos, info.msg, false)
+      case API_INFO => reporter.info(info.pos, info.msg, force = false)
       case API_WARNING => reporter.warning(info.pos, info.msg)
       case API_ERROR => reporter.error(info.pos, info.msg)
     }
@@ -76,7 +76,6 @@ package object reflect {
   private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): Reporter = new AbstractReporter {
     val settings = settings0
 
-    import frontEnd.{Severity => ApiSeverity}
     val API_INFO = frontEnd.INFO
     val API_WARNING = frontEnd.WARNING
     val API_ERROR = frontEnd.ERROR

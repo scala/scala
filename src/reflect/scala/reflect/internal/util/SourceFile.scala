@@ -4,7 +4,8 @@
  */
 
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.reflect.io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer
@@ -24,7 +25,6 @@ abstract class SourceFile {
     assert(offset < length, file + ": " + offset + " >= " + length)
     new OffsetPosition(this, offset)
   }
-  def position(line: Int, column: Int) : Position = new OffsetPosition(this, lineToOffset(line) + column)
 
   def offsetToLine(offset: Int): Int
   def lineToOffset(index : Int): Int
@@ -36,9 +36,6 @@ abstract class SourceFile {
   override def toString() = file.name
   def dbg(offset: Int) = (new OffsetPosition(this, offset)).dbgString
   def path = file.path
-
-  def beginsWith(offset: Int, text: String): Boolean =
-    (content drop offset) startsWith text
 
   def lineToString(index: Int): String =
     content drop lineToOffset(index) takeWhile (c => !isLineBreakChar(c.toChar)) mkString ""
@@ -81,7 +78,6 @@ object ScriptSourceFile {
     }
     else 0
   }
-  def stripHeader(cs: Array[Char]): Array[Char] = cs drop headerLength(cs)
 
   def apply(file: AbstractFile, content: Array[Char]) = {
     val underlying = new BatchSourceFile(file, content)
@@ -91,7 +87,6 @@ object ScriptSourceFile {
     stripped
   }
 }
-import ScriptSourceFile._
 
 class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], override val start: Int) extends BatchSourceFile(underlying.file, content) {
   override def isSelfContained = false

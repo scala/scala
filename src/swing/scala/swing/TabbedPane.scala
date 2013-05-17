@@ -112,9 +112,6 @@ class TabbedPane extends Component with Publisher {
    */
   def tabPlacement_=(b: Alignment.Value) { peer.setTabPlacement(b.id) }
 
-  @deprecated("Use tabPlacement_=() instead.", "2.9.1")
-  def tabPlacement(b: Alignment.Value) { peer.setTabPlacement(b.id) }
-
   /**
    * The current page selection
    */

@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.runtime
+package scala
+package reflect.runtime
 
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
@@ -34,7 +35,7 @@ private[scala] object ReflectionUtils {
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false
       if (clazz.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader") return true
-      return isAbstractFileClassLoader(clazz.getSuperclass)
+      isAbstractFileClassLoader(clazz.getSuperclass)
     }
     def inferClasspath(cl: ClassLoader): String = cl match {
       case cl: java.net.URLClassLoader =>

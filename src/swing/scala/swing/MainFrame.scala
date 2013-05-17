@@ -6,11 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
-
-import event._
 
 /**
  * A frame that can be used for main application windows. Shuts down the

@@ -3,7 +3,8 @@
  * @author Paul Phillips
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.net.{ URI, URL }
@@ -17,14 +18,14 @@ import Path.fail
  *
  *  @author Paul Phillips
  *  @since  2.8
- *  
+ *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object Streamable {
   /** Traits which can be viewed as a sequence of bytes.  Source types
    *  which know their length should override def length: Long for more
    *  efficient method implementations.
-   *  
+   *
    *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
    */
   trait Bytes {
@@ -69,7 +70,7 @@ object Streamable {
   }
 
   /** For objects which can be viewed as Chars.
-   * 
+   *
    * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
    */
   trait Chars extends Bytes {
@@ -81,7 +82,6 @@ object Streamable {
      */
     def creationCodec: Codec = implicitly[Codec]
 
-    def chars(): BufferedSource = chars(creationCodec)
     def chars(codec: Codec): BufferedSource = Source.fromInputStream(inputStream())(codec)
 
     def lines(): Iterator[String] = lines(creationCodec)
@@ -89,8 +89,7 @@ object Streamable {
 
     /** Obtains an InputStreamReader wrapped around a FileInputStream.
      */
-    def reader(): InputStreamReader = reader(creationCodec)
-    def reader(codec: Codec): InputStreamReader = new InputStreamReader(inputStream, codec.charSet)
+    def reader(codec: Codec): InputStreamReader = new InputStreamReader(inputStream(), codec.charSet)
 
     /** Wraps a BufferedReader around the result of reader().
      */
@@ -108,7 +107,10 @@ object Streamable {
     /** Convenience function to import entire file into a String.
      */
     def slurp(): String = slurp(creationCodec)
-    def slurp(codec: Codec) = chars(codec).mkString
+    def slurp(codec: Codec) = {
+      val src = chars(codec)
+      try src.mkString finally src.close()  // Always Be Closing
+    }
   }
 
   /** Call a function on something Closeable, finally closing it. */
@@ -117,7 +119,9 @@ object Streamable {
     finally stream.close()
 
   def bytes(is: => InputStream): Array[Byte] =
-    (new Bytes { def inputStream() = is }).toByteArray
+    (new Bytes {
+      def inputStream() = is
+    }).toByteArray()
 
   def slurp(is: => InputStream)(implicit codec: Codec): String =
     new Chars { def inputStream() = is } slurp codec

@@ -1,7 +1,7 @@
 package fos
 
 abstract class Expr
-case class Var extends Expr
+case class Var() extends Expr
 
 object Analyzer {
   def substitution(expr: Expr, cls: (Var,Var)): Expr =

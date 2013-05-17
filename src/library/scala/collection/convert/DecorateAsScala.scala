@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
@@ -141,25 +142,6 @@ trait DecorateAsScala {
    */
   implicit def mapAsScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] =
     new AsScala(mapAsScalaMap(m))
-
-  /**
-   * Adds an `asScala` method that implicitly converts a Java `ConcurrentMap`
-   * to a Scala mutable `ConcurrentMap`. The returned Scala `ConcurrentMap` is
-   * backed by the provided Java `ConcurrentMap` and any side-effects of using
-   * it via the Scala interface will be visible via the Java interface and
-   * vice versa.
-   *
-   * If the Java `ConcurrentMap` was previously obtained from an implicit or
-   * explicit call of `asConcurrentMap(scala.collection.mutable.ConcurrentMap)`
-   * then the original Scala `ConcurrentMap` will be returned.
-   *
-   * @param m The `ConcurrentMap` to be converted.
-   * @return An object with an `asScala` method that returns a Scala mutable
-   *         `ConcurrentMap` view of the argument.
-   */
-  @deprecated("Use `mapAsScalaConcurrentMapConverter` instead, and use `concurrent.Map` instead of `ConcurrentMap`.", "2.10.0")
-  def asScalaConcurrentMapConverter[A, B](m: juc.ConcurrentMap[A, B]): AsScala[mutable.ConcurrentMap[A, B]] =
-    new AsScala(asScalaConcurrentMap(m))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `ConcurrentMap`

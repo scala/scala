@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -20,6 +20,7 @@ package scala
  *  @param  _5   Element 5 of this Tuple6
  *  @param  _6   Element 6 of this Tuple6
  */
+@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
 case class Tuple6[+T1, +T2, +T3, +T4, +T5, +T6](_1: T1, _2: T2, _3: T3, _4: T4, _5: T5, _6: T6)
   extends Product6[T1, T2, T3, T4, T5, T6]
 {

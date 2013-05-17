@@ -177,38 +177,11 @@ class ScalaSpec3Test extends Test {
   }
 }
 
-object TestJava extends scala.testing.Benchmark {
-  def run() {
-    (new JavaTest).run()
-  }
-}
-
-object TestSpec extends scala.testing.Benchmark {
-  def run() {
-    (new ScalaSpecTest).run()
-  }
-}
-     
-object TestSpec2 extends scala.testing.Benchmark {
-  def run() {
-    (new ScalaSpec2Test).run()
-  }
-}
-     
-object TestGen extends scala.testing.Benchmark {
-  def run() {
-    (new ScalaGenTest).run()
-  }
-}
-     
-object TestWrap extends scala.testing.Benchmark {
-  def run() {
-    (new ScalaWrapTest).run()
-  }
-}
-     
-object TestSpec3 extends scala.testing.Benchmark {
-  def run() {
-    (new ScalaSpec3Test).run()
-  }
+object TestRunner {
+  (new JavaTest).run()
+  (new ScalaSpecTest).run()
+  (new ScalaSpec2Test).run()
+  (new ScalaGenTest).run()
+  (new ScalaWrapTest).run()
+  (new ScalaSpec3Test).run()
 }

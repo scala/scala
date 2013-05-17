@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -134,20 +133,12 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
       throw new NoSuchElementException("no element to remove from heap")
 
   def dequeueAll[A1 >: A, That](implicit bf: CanBuildFrom[_, A1, That]): That = {
-    val b = bf.apply
+    val b = bf.apply()
     while (nonEmpty) {
       b += dequeue()
     }
-    b.result
+    b.result()
   }
-
-  /** Returns the element with the highest priority in the queue,
-   *  or throws an error if there is no element contained in the queue.
-   *
-   *  @return   the element with the highest priority.
-   */
-  @deprecated("Use `head` instead.", "2.9.0")
-  def max: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.

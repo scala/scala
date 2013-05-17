@@ -4,9 +4,9 @@
  * @author Adriaan Moors
  */
 
-package scala.tools.nsc.transform.patmat
+package scala
+package tools.nsc.transform.patmat
 
-import scala.tools.nsc.symtab._
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
@@ -113,7 +113,7 @@ trait Logic extends Debugging  {
     case object False extends Prop
 
     // symbols are propositions
-    abstract case class Sym(val variable: Var, val const: Const) extends Prop {
+    abstract case class Sym(variable: Var, const: Const) extends Prop {
       private[this] val id = Sym.nextSymId
 
       override def toString = variable +"="+ const +"#"+ id
@@ -212,7 +212,7 @@ trait Logic extends Debugging  {
       }
 
       props foreach gatherEqualities.apply
-      if (modelNull) vars foreach (_.registerNull)
+      if (modelNull) vars foreach (_.registerNull())
 
       val pure = props map (p => eqFreePropToSolvable(rewriteEqualsToProp(p)))
 
@@ -321,7 +321,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       val staticTpCheckable: Type = checkableType(staticTp)
 
       private[this] var _mayBeNull = false
-      def registerNull(): Unit = { ensureCanModify; if (NullTp <:< staticTpCheckable) _mayBeNull = true }
+      def registerNull(): Unit = { ensureCanModify(); if (NullTp <:< staticTpCheckable) _mayBeNull = true }
       def mayBeNull: Boolean = _mayBeNull
 
       // case None => domain is unknown,
@@ -345,16 +345,16 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           } else
             subConsts
 
-        observed; allConsts
+        observed(); allConsts
       }
 
       // populate equalitySyms
       // don't care about the result, but want only one fresh symbol per distinct constant c
-      def registerEquality(c: Const): Unit = {ensureCanModify; symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
+      def registerEquality(c: Const): Unit = {ensureCanModify(); symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
 
       // return the symbol that represents this variable being equal to the constant `c`, if it exists, otherwise False (for robustness)
       // (registerEquality(c) must have been called prior, either when constructing the domain or from outside)
-      def propForEqualsTo(c: Const): Prop = {observed; symForEqualsTo.getOrElse(c, False)}
+      def propForEqualsTo(c: Const): Prop = {observed(); symForEqualsTo.getOrElse(c, False)}
 
       // [implementation NOTE: don't access until all potential equalities have been registered using registerEquality]p
       /** the information needed to construct the boolean proposition that encods the equality proposition (V = C)
@@ -366,7 +366,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
        * and thus in this variable's equality symbols), but reachability also requires us to model things like V = 1 precluding V = "1"
        */
       lazy val implications = {
-        /** when we know V = C, which other equalities must hold
+        /* when we know V = C, which other equalities must hold
          *
          * in general, equality to some type implies equality to its supertypes
          * (this multi-valued kind of equality is necessary for unreachability)
@@ -479,7 +479,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
       // don't access until all potential equalities have been registered using registerEquality
-      private lazy val equalitySyms = {observed; symForEqualsTo.values.toList}
+      private lazy val equalitySyms = {observed(); symForEqualsTo.values.toList}
 
       // don't call until all equalities have been registered and registerNull has been called (if needed)
       def describe = {
@@ -514,11 +514,11 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         uniques.get(tp).getOrElse(
           uniques.find {case (oldTp, oldC) => oldTp =:= tp} match {
             case Some((_, c)) =>
-              debug.patmat("unique const: "+ (tp, c))
+              debug.patmat("unique const: "+ ((tp, c)))
               c
             case _ =>
               val fresh = mkFresh
-              debug.patmat("uniqued const: "+ (tp, fresh))
+              debug.patmat("uniqued const: "+ ((tp, fresh)))
               uniques(tp) = fresh
               fresh
           })
@@ -534,12 +534,12 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         if (!t.symbol.isStable) t.tpe.narrow
         else trees find (a => a.correspondsStructure(t)(sameValue)) match {
           case Some(orig) =>
-            debug.patmat("unique tp for tree: "+ (orig, orig.tpe))
+            debug.patmat("unique tp for tree: "+ ((orig, orig.tpe)))
             orig.tpe
           case _ =>
             // duplicate, don't mutate old tree (TODO: use a map tree -> type instead?)
             val treeWithNarrowedType = t.duplicate setType t.tpe.narrow
-            debug.patmat("uniqued: "+ (t, t.tpe, treeWithNarrowedType.tpe))
+            debug.patmat("uniqued: "+ ((t, t.tpe, treeWithNarrowedType.tpe)))
             trees += treeWithNarrowedType
             treeWithNarrowedType.tpe
         }

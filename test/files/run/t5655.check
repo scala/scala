@@ -4,7 +4,7 @@ Type :help for more information.
 scala> 
 
 scala> object x { def x={} }
-defined module x
+defined object x
 
 scala> import x._
 import x._

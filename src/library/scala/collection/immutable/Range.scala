@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.immutable
+package scala
+package collection.immutable
 
 import scala.collection.parallel.immutable.ParRange
 
@@ -77,17 +78,18 @@ extends scala.collection.AbstractSeq[Int]
   final val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else lastElement
+  override def head = if (isEmpty) Nil.head else start
 
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
-      if (step > 0) start
+      if (step > 0) head
       else last
     } else super.min(ord)
 
   override def max[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
@@ -111,6 +113,7 @@ extends scala.collection.AbstractSeq[Int]
       fail()
   }
 
+  @deprecated("Range.foreach() is now self-contained, making this auxiliary method redundant.", "2.10.1")
   def validateRangeBoundaries(f: Int => Any): Boolean = {
     validateMaxLength()
 
@@ -133,14 +136,19 @@ extends scala.collection.AbstractSeq[Int]
   }
 
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
-    if (validateRangeBoundaries(f)) {
-      var i = start
-      val terminal = terminalElement
-      val step = this.step
-      while (i != terminal) {
-        f(i)
-        i += step
-      }
+    validateMaxLength()
+    val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
+    var i = start
+    var count = 0
+    val terminal = terminalElement
+    val step = this.step
+    while(
+      if(isCommonCase) { i != terminal }
+      else             { count < numRangeElements }
+    ) {
+      f(i)
+      count += 1
+      i += step
     }
   }
 
@@ -325,7 +333,7 @@ object Range {
     }
   }
   def count(start: Int, end: Int, step: Int): Int =
-    count(start, end, step, false)
+    count(start, end, step, isInclusive = false)
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)

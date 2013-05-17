@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="interactive"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scaladoc"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="build-quick-interactive"/>
+</classpath>

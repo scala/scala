@@ -3,11 +3,11 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
-import util._
 
 /** The name of this trait defines the eventual intent better than
  *  it does the initial contents.

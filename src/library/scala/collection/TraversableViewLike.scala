@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import generic._
 import mutable.{ Builder, ArrayBuffer }
-import TraversableView.NoBuilder
 import scala.annotation.migration
 import scala.language.implicitConversions
 
@@ -59,7 +59,7 @@ trait ViewMkString[+A] {
  *  $viewInfo
  *
  *  All views for traversable collections are defined by creating a new `foreach` method.
- *  
+ *
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
@@ -162,7 +162,7 @@ trait TraversableViewLike[+A,
 //     if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]
 //    else super.flatMap[B, That](f)(bf)
   }
-  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]) = 
+  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]) =
     newFlatMapped(asTraversable)
   private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
 

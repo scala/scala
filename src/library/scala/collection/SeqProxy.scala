@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 
 /** This trait implements a proxy for sequence objects. It forwards
  *  all calls to a different sequence object.

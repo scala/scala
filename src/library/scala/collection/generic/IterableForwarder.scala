@@ -6,12 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
+package scala
+package collection
+package generic
 
-
-package scala.collection.generic
 import scala.collection._
-
-import scala.collection.mutable.Buffer
 
 /** This trait implements a forwarder for iterable objects. It forwards
  *  all calls to a different iterable object, except for

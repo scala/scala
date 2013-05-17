@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package concurrent
 
 import java.util.concurrent.atomic._
@@ -41,7 +42,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
   @tailrec private def GCAS_Complete(m: MainNode[K, V], ct: TrieMap[K, V]): MainNode[K, V] = if (m eq null) null else {
     // complete the GCAS
     val prev = /*READ*/m.prev
-    val ctr = ct.readRoot(true)
+    val ctr = ct.readRoot(abort = true)
 
     prev match {
       case null =>
@@ -250,7 +251,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
               if (ct.isReadOnly || (startgen eq in.gen)) in.rec_lookup(k, hc, lev + 5, this, startgen, ct)
               else {
                 if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_lookup(k, hc, lev, parent, startgen, ct)
-                else return RESTART // used to be throw RestartException
+                else RESTART // used to be throw RestartException
               }
             case sn: SNode[K, V] => // 2) singleton node
               if (sn.hc == hc && equal(sn.k, k, ct)) sn.v.asInstanceOf[AnyRef]
@@ -428,16 +429,16 @@ extends MainNode[K, V] with KVNode[K, V] {
 }
 
 
-private[collection] final class LNode[K, V](final val listmap: ImmutableListMap[K, V])
+private[collection] final class LNode[K, V](final val listmap: immutable.ListMap[K, V])
 extends MainNode[K, V] {
-  def this(k: K, v: V) = this(ImmutableListMap(k -> v))
-  def this(k1: K, v1: V, k2: K, v2: V) = this(ImmutableListMap(k1 -> v1, k2 -> v2))
+  def this(k: K, v: V) = this(immutable.ListMap(k -> v))
+  def this(k1: K, v1: V, k2: K, v2: V) = this(immutable.ListMap(k1 -> v1, k2 -> v2))
   def inserted(k: K, v: V) = new LNode(listmap + ((k, v)))
   def removed(k: K, ct: TrieMap[K, V]): MainNode[K, V] = {
     val updmap = listmap - k
     if (updmap.size > 1) new LNode(updmap)
     else {
-      val (k, v) = updmap.iterator.next
+      val (k, v) = updmap.iterator.next()
       new TNode(k, v, ct.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
     }
   }
@@ -545,7 +546,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
   //   removed (those existing when the op began)
   // - if there are only null-i-nodes below, returns null
   def toCompressed(ct: TrieMap[K, V], lev: Int, gen: Gen) = {
-    var bmp = bitmap
+    val bmp = bitmap
     var i = 0
     val arr = array
     val tmparray = new Array[BasicNode](arr.length)
@@ -723,7 +724,7 @@ extends scala.collection.concurrent.Map[K, V]
   private def RDCSS_ROOT(ov: INode[K, V], expectedmain: MainNode[K, V], nv: INode[K, V]): Boolean = {
     val desc = RDCSS_Descriptor(ov, expectedmain, nv)
     if (CAS_ROOT(ov, desc)) {
-      RDCSS_Complete(false)
+      RDCSS_Complete(abort = false)
       /*READ*/desc.committed
     } else false
   }
@@ -920,8 +921,8 @@ object TrieMap extends MutableMapFactory[TrieMap] {
 
 
 private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: TrieMap[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
-  private var stack = new Array[Array[BasicNode]](7)
-  private var stackpos = new Array[Int](7)
+  private val stack = new Array[Array[BasicNode]](7)
+  private val stackpos = new Array[Int](7)
   private var depth = -1
   private var subiter: Iterator[(K, V)] = null
   private var current: KVNode[K, V] = null
@@ -1027,7 +1028,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
         val (arr1, arr2) = stack(d).drop(stackpos(d) + 1).splitAt(rem / 2)
         stack(d) = arr1
         stackpos(d) = -1
-        val it = newIterator(level + 1, ct, false)
+        val it = newIterator(level + 1, ct, _mustInit = false)
         it.stack(0) = arr2
         it.stackpos(0) = -1
         it.depth = 0

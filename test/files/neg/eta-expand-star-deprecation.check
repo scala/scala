@@ -1,0 +1,4 @@
+warning: -Yeta-expand-keeps-star is deprecated: This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug.
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

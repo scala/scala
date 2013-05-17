@@ -10,16 +10,16 @@ trait Tags {
   trait Tag {
     self: Typer =>
 
-    private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = beforeTyper {
+    private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = enteringTyper {
       def wrapper (tree: => Tree): Tree = if (allowMaterialization) (context.withMacrosEnabled[Tree](tree)) else (context.withMacrosDisabled[Tree](tree))
       wrapper(inferImplicit(
         EmptyTree,
         taggedTp,
-        /*reportAmbiguous =*/ true,
-        /*isView =*/ false,
-        /*context =*/ context,
-        /*saveAmbiguousDivergent =*/ true,
-        /*pos =*/ pos
+        reportAmbiguous = true,
+        isView = false,
+        context,
+        saveAmbiguousDivergent = true,
+        pos
       ).tree)
     }
 

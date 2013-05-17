@@ -23,7 +23,7 @@ object Codegen {
       return println (CodegenSpec.helpMsg)
 
     val out = outDir getOrElse { return println("--out is required.") }
-    val all = genall || (!anyvals && !products)
+    val all = genall || !anyvals
 
     echo("Generating sources into " + out)
 

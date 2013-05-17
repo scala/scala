@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
-import generic._
 import parallel.mutable.ParSeq
 
 /** A template trait for mutable sequences of type `mutable.Seq[A]`.

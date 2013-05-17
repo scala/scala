@@ -53,33 +53,33 @@ public class ClassNode extends ClassVisitor {
     public int version;
 
     /**
-     * The class's access flags (see {@link org.objectweb.asm.Opcodes}). This
+     * The class's access flags (see {@link scala.tools.asm.Opcodes}). This
      * field also indicates if the class is deprecated.
      */
     public int access;
 
     /**
      * The internal name of the class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
      */
     public String name;
 
     /**
-     * The signature of the class. Mayt be <tt>null</tt>.
+     * The signature of the class. May be <tt>null</tt>.
      */
     public String signature;
 
     /**
      * The internal of name of the super class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). For
-     * interfaces, the super class is {@link Object}. May be <tt>null</tt>,
-     * but only for the {@link Object} class.
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). For
+     * interfaces, the super class is {@link Object}. May be <tt>null</tt>, but
+     * only for the {@link Object} class.
      */
     public String superName;
 
     /**
      * The internal names of the class's interfaces (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). This
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). This
      * list is a list of {@link String} objects.
      */
     public List<String> interfaces;
@@ -91,7 +91,7 @@ public class ClassNode extends ClassVisitor {
     public String sourceFile;
 
     /**
-     * Debug information to compute the correspondance between source and
+     * Debug information to compute the correspondence between source and
      * compiled elements of the class. May be <tt>null</tt>.
      */
     public String sourceDebug;
@@ -109,8 +109,8 @@ public class ClassNode extends ClassVisitor {
     public String outerMethod;
 
     /**
-     * The descriptor of the method that contains the class, or <tt>null</tt>
-     * if the class is not enclosed in a method.
+     * The descriptor of the method that contains the class, or <tt>null</tt> if
+     * the class is not enclosed in a method.
      */
     public String outerMethodDesc;
 
@@ -118,7 +118,7 @@ public class ClassNode extends ClassVisitor {
      * The runtime visible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.AnnotationNode
+     * @associates scala.tools.asm.tree.AnnotationNode
      * @label visible
      */
     public List<AnnotationNode> visibleAnnotations;
@@ -127,7 +127,7 @@ public class ClassNode extends ClassVisitor {
      * The runtime invisible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.AnnotationNode
+     * @associates scala.tools.asm.tree.AnnotationNode
      * @label invisible
      */
     public List<AnnotationNode> invisibleAnnotations;
@@ -136,7 +136,7 @@ public class ClassNode extends ClassVisitor {
      * The non standard attributes of this class. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.Attribute
+     * @associates scala.tools.asm.Attribute
      */
     public List<Attribute> attrs;
 
@@ -144,7 +144,7 @@ public class ClassNode extends ClassVisitor {
      * Informations about the inner classes of this class. This list is a list
      * of {@link InnerClassNode} objects.
      *
-     * @associates org.objectweb.asm.tree.InnerClassNode
+     * @associates scala.tools.asm.tree.InnerClassNode
      */
     public List<InnerClassNode> innerClasses;
 
@@ -152,7 +152,7 @@ public class ClassNode extends ClassVisitor {
      * The fields of this class. This list is a list of {@link FieldNode}
      * objects.
      *
-     * @associates org.objectweb.asm.tree.FieldNode
+     * @associates scala.tools.asm.tree.FieldNode
      */
     public List<FieldNode> fields;
 
@@ -160,7 +160,7 @@ public class ClassNode extends ClassVisitor {
      * The methods of this class. This list is a list of {@link MethodNode}
      * objects.
      *
-     * @associates org.objectweb.asm.tree.MethodNode
+     * @associates scala.tools.asm.tree.MethodNode
      */
     public List<MethodNode> methods;
 
@@ -176,8 +176,9 @@ public class ClassNode extends ClassVisitor {
     /**
      * Constructs a new {@link ClassNode}.
      *
-     * @param api the ASM API version implemented by this visitor. Must be one
-     *        of {@link Opcodes#ASM4}.
+     * @param api
+     *            the ASM API version implemented by this visitor. Must be one
+     *            of {@link Opcodes#ASM4}.
      */
     public ClassNode(final int api) {
         super(api);
@@ -192,14 +193,9 @@ public class ClassNode extends ClassVisitor {
     // ------------------------------------------------------------------------
 
     @Override
-    public void visit(
-        final int version,
-        final int access,
-        final String name,
-        final String signature,
-        final String superName,
-        final String[] interfaces)
-    {
+    public void visit(final int version, final int access, final String name,
+            final String signature, final String superName,
+            final String[] interfaces) {
         this.version = version;
         this.access = access;
         this.name = name;
@@ -217,21 +213,16 @@ public class ClassNode extends ClassVisitor {
     }
 
     @Override
-    public void visitOuterClass(
-        final String owner,
-        final String name,
-        final String desc)
-    {
+    public void visitOuterClass(final String owner, final String name,
+            final String desc) {
         outerClass = owner;
         outerMethod = name;
         outerMethodDesc = desc;
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation(
-        final String desc,
-        final boolean visible)
-    {
+    public AnnotationVisitor visitAnnotation(final String desc,
+            final boolean visible) {
         AnnotationNode an = new AnnotationNode(desc);
         if (visible) {
             if (visibleAnnotations == null) {
@@ -256,44 +247,25 @@ public class ClassNode extends ClassVisitor {
     }
 
     @Override
-    public void visitInnerClass(
-        final String name,
-        final String outerName,
-        final String innerName,
-        final int access)
-    {
-        InnerClassNode icn = new InnerClassNode(name,
-                outerName,
-                innerName,
+    public void visitInnerClass(final String name, final String outerName,
+            final String innerName, final int access) {
+        InnerClassNode icn = new InnerClassNode(name, outerName, innerName,
                 access);
         innerClasses.add(icn);
     }
 
     @Override
-    public FieldVisitor visitField(
-        final int access,
-        final String name,
-        final String desc,
-        final String signature,
-        final Object value)
-    {
+    public FieldVisitor visitField(final int access, final String name,
+            final String desc, final String signature, final Object value) {
         FieldNode fn = new FieldNode(access, name, desc, signature, value);
         fields.add(fn);
         return fn;
     }
 
     @Override
-    public MethodVisitor visitMethod(
-        final int access,
-        final String name,
-        final String desc,
-        final String signature,
-        final String[] exceptions)
-    {
-        MethodNode mn = new MethodNode(access,
-                name,
-                desc,
-                signature,
+    public MethodVisitor visitMethod(final int access, final String name,
+            final String desc, final String signature, final String[] exceptions) {
+        MethodNode mn = new MethodNode(access, name, desc, signature,
                 exceptions);
         methods.add(mn);
         return mn;
@@ -313,7 +285,8 @@ public class ClassNode extends ClassVisitor {
      * contain elements that were introduced in more recent versions of the ASM
      * API than the given version.
      *
-     * @param api an ASM API version. Must be one of {@link Opcodes#ASM4}.
+     * @param api
+     *            an ASM API version. Must be one of {@link Opcodes#ASM4}.
      */
     public void check(final int api) {
         // nothing to do
@@ -322,7 +295,8 @@ public class ClassNode extends ClassVisitor {
     /**
      * Makes the given class visitor visit this class.
      *
-     * @param cv a class visitor.
+     * @param cv
+     *            a class visitor.
      */
     public void accept(final ClassVisitor cv) {
         // visits header

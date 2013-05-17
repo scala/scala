@@ -1,7 +1,6 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
-
-import internal.{SomePhase, NoPhase, Phase, TreeGen}
 
 /** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *
@@ -11,18 +10,21 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
  */
 class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.SymbolTable { self =>
 
-  def picklerPhase = SomePhase
-
+  override def inform(msg: String): Unit = log(msg)
+  def picklerPhase = internal.SomePhase
   lazy val settings = new Settings
-  def forInteractive = false
-  def forScaladoc = false
+  private val isLogging = sys.props contains "scala.debug.reflect"
 
-  def log(msg: => AnyRef): Unit = if (settings.debug.value) println(" [] "+msg)
+  def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 
   type TreeCopier = InternalTreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 
+  // can't put this in runtime.Trees since that's mixed with Global in ReflectGlobal, which has the definition from internal.Trees
+  object treeInfo extends {
+    val global: JavaUniverse.this.type = JavaUniverse.this
+  } with internal.TreeInfo
+
   init()
 }
-

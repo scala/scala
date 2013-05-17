@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.ant
+package scala
+package tools.ant
 package sabbus
 
 import java.io.{ File, FileWriter }
@@ -80,7 +81,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
 
   private def createMapper() = {
     val mapper = new GlobPatternMapper()
-    val extension = if (isMSIL) "*.msil" else "*.class"
+    val extension = "*.class"
     mapper setTo extension
     mapper setFrom "*.scala"
 
@@ -104,9 +105,6 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
     sourcePath foreach (settings.sourcepath = _)
     settings.extraParams = extraArgsFlat
 
-    if (isMSIL)
-      settings.sourcedir = sourceDir
-
     val mapper = createMapper()
 
     val includedFiles: Array[File] =
@@ -117,12 +115,12 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
         mapper
       ) map (x => new File(sourceDir, x))
 
-    /** Nothing to do. */
+    /* Nothing to do. */
     if (includedFiles.isEmpty && argfile.isEmpty)
       return
 
     if (includedFiles.nonEmpty)
-      log("Compiling %d file%s to %s".format(includedFiles.size, plural(includedFiles.size), destinationDir))
+      log("Compiling %d file%s to %s".format(includedFiles.length, plural(includedFiles.length), destinationDir))
 
     argfile foreach (x => log("Using argfile file: @" + x))
 

@@ -13,13 +13,13 @@ scala>     object GrabContext {
       def impl(c: Context)() = { System.getProperties.put("lastContext", c); c.literalUnit }
       def grab() = macro impl
     }
-defined module GrabContext
+defined object GrabContext
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
-defined module Test
+defined object Test
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
-defined module Test
+defined object Test
 
 scala> 
 

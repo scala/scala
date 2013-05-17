@@ -65,9 +65,9 @@ object Case3 extends Object {
   blocks: [1]
   
   1: 
-    1	THIS(Case3)
-    1	CALL_METHOD java.lang.Object.<init> (super())
-    1	RETURN(UNIT)
+    12	THIS(Case3)
+    12	CALL_METHOD java.lang.Object.<init> (super())
+    12	RETURN(UNIT)
     
   }
   Exception handlers: 

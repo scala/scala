@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2013 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -10,49 +10,44 @@
 package org.scalacheck
 
 import util.{FreqMap,Buildable}
-import scala.reflect.ClassTag
 
 sealed abstract class Arbitrary[T] {
   val arbitrary: Gen[T]
 }
 
-/** Defines implicit <code>Arbitrary</code> instances for common types.
+/** Defines implicit [[org.scalacheck.Arbitrary]] instances for common types.
  *  <p>
  *  ScalaCheck
- *  uses implicit <code>Arbitrary</code> instances when creating properties
- *  out of functions with the <code>Prop.property</code> method, and when
- *  the <code>Arbitrary.arbitrary</code> method is used. For example, the
+ *  uses implicit [[org.scalacheck.Arbitrary]] instances when creating properties
+ *  out of functions with the `Prop.property` method, and when
+ *  the `Arbitrary.arbitrary` method is used. For example, the
  *  following code requires that there exists an implicit
- *  <code>Arbitrary[MyClass]</code> instance:
+ *  `Arbitrary[MyClass]` instance:
  *  </p>
  *
- *  <p>
- *  <code>
- *    val myProp = Prop.forAll { myClass: MyClass =&gt;<br />
- *      ...<br />
- *    }<br />
+ *  {{{
+ *    val myProp = Prop.forAll { myClass: MyClass =>
+ *      ...
+ *    }
  *
  *    val myGen = Arbitrary.arbitrary[MyClass]
- *  </code>
- *  </p>
+ *  }}}
  *
  *  <p>
  *  The required implicit definition could look like this:
  *  </p>
  *
- *  <p>
- *  <code>
+ *  {{{
  *    implicit val arbMyClass: Arbitrary[MyClass] = Arbitrary(...)
- *  </code>
+ *  }}}
+ *
+ *  <p>
+ *  The factory method `Arbitrary(...)` takes a generator of type
+ *  `Gen[T]` and returns an instance of `Arbitrary[T]`.
  *  </p>
  *
  *  <p>
- *  The factory method <code>Arbitrary(...)</code> takes a generator of type
- *  <code>Gen[T]</code> and returns an instance of <code>Arbitrary[T]</code>.
- *  </p>
- *
- *  <p>
- *  The <code>Arbitrary</code> module defines implicit <code>Arbitrary</code>
+ *  The `Arbitrary` module defines implicit [[org.scalacheck.Arbitrary]]
  *  instances for common types, for convenient use in your properties and
  *  generators.
  *  </p>
@@ -93,7 +88,7 @@ object Arbitrary {
 
   /** Arbitrary instance of Long */
   implicit lazy val arbLong: Arbitrary[Long] = Arbitrary(
-    Gen.chooseNum(Long.MinValue / 2, Long.MaxValue / 2)
+    Gen.chooseNum(Long.MinValue, Long.MaxValue)
   )
 
   /** Arbitrary instance of Float */
@@ -182,7 +177,13 @@ object Arbitrary {
       mc <- mcGen
       limit <- value(if(mc == UNLIMITED) 0 else math.max(x.abs.toString.length - mc.getPrecision, 0))
       scale <- Gen.chooseNum(Int.MinValue + limit , Int.MaxValue)
-    } yield BigDecimal(x, scale, mc)
+    } yield {
+      try {
+        BigDecimal(x, scale, mc)
+      } catch {
+        case ae: java.lang.ArithmeticException => BigDecimal(x, scale, UNLIMITED) // Handle the case where scale/precision conflict
+      }
+    }
     Arbitrary(bdGen)
   }
 
@@ -213,22 +214,42 @@ object Arbitrary {
     ))
   }
 
-  /** Arbitrary instance of test params */
+  /** Arbitrary instance of test params
+   *  @deprecated (in 1.10.0) Use `arbTestParameters` instead.
+   */
+  @deprecated("Use 'arbTestParameters' instead", "1.10.0")
   implicit lazy val arbTestParams: Arbitrary[Test.Params] =
     Arbitrary(for {
       minSuccTests <- choose(10,200)
-      maxDiscardRatio <- choose(0.2f,10f)
-      minSize <- choose(0,500)
+      maxDiscTests <- choose(100,500)
+      mnSize <- choose(0,500)
       sizeDiff <- choose(0,500)
-      maxSize <- choose(minSize, minSize + sizeDiff)
+      mxSize <- choose(mnSize, mnSize + sizeDiff)
       ws <- choose(1,4)
     } yield Test.Params(
       minSuccessfulTests = minSuccTests,
-      maxDiscardRatio = maxDiscardRatio,
-      minSize = minSize,
-      maxSize = maxSize,
+      maxDiscardedTests = maxDiscTests,
+      minSize = mnSize,
+      maxSize = mxSize,
       workers = ws
     ))
+
+  /** Arbitrary instance of test parameters */
+  implicit lazy val arbTestParameters: Arbitrary[Test.Parameters] =
+    Arbitrary(for {
+      _minSuccTests <- choose(10,200)
+      _maxDiscardRatio <- choose(0.2f,10f)
+      _minSize <- choose(0,500)
+      sizeDiff <- choose(0,500)
+      _maxSize <- choose(_minSize, _minSize + sizeDiff)
+      _workers <- choose(1,4)
+    } yield new Test.Parameters.Default {
+      override val minSuccessfulTests = _minSuccTests
+      override val maxDiscardRatio = _maxDiscardRatio
+      override val minSize = _minSize
+      override val maxSize = _maxSize
+      override val workers = _workers
+    })
 
   /** Arbitrary instance of gen params */
   implicit lazy val arbGenParams: Arbitrary[Gen.Params] =
@@ -278,7 +299,7 @@ object Arbitrary {
   ): Arbitrary[C[T]] = Arbitrary(containerOf[C,T](arbitrary[T]))
 
   /** Arbitrary instance of any array. */
-  implicit def arbArray[T](implicit a: Arbitrary[T], c: ClassTag[T]
+  implicit def arbArray[T](implicit a: Arbitrary[T], c: ClassManifest[T]
   ): Arbitrary[Array[T]] = Arbitrary(containerOf[Array,T](arbitrary[T]))
 
 

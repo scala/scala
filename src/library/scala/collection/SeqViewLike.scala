@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import generic._
 import Seq.fill
-import TraversableView.NoBuilder
 
 /** A template trait for non-strict views of sequences.
  *  $seqViewInfo

@@ -42,14 +42,14 @@ object NoExcep {
   def method4 = try {
     Console.println("..");
   } catch {
-    case _ => error("..");
+    case _ => sys.error("..");
   }
 }
 
 object Test {
   def nested1: Unit = try {
     try {
-      error("nnnnoooo");
+      sys.error("nnnnoooo");
     } finally {
       Console.println("Innermost finally");
     }
@@ -59,7 +59,7 @@ object Test {
 
   def nested2 =  try {
     try {
-      error("nnnnoooo");
+      sys.error("nnnnoooo");
     } finally {
       Console.println("Innermost finally");
     }
@@ -68,7 +68,7 @@ object Test {
     Console.println("Outermost finally");
   }
 
-  def mixed = 
+  def mixed =
     try {
       if (10 > 0)
         throw Leaf(10);
@@ -107,7 +107,7 @@ object Test {
       case Leaf(a) => Console.println(a);
     }
   } catch {
-    case npe: NullPointerException => 
+    case npe: NullPointerException =>
       Console.println("Caught an NPE");
   }
 
@@ -134,21 +134,21 @@ object Test {
       ()
     } finally {
       try {
-        error("a");
+        sys.error("a");
       } catch {
         case _ => Console.println("Silently ignore exception in finally");
       }
     }
   }
 
-  def valInFinally: Unit = 
-    try {    
+  def valInFinally: Unit =
+    try {
     } finally {
       val fin = "Abc";
       Console.println(fin);
     };
 
-  def tryAndValInFinally: Unit = 
+  def tryAndValInFinally: Unit =
     try {
     } finally {
       val fin = "Abc";
@@ -157,51 +157,51 @@ object Test {
       } catch { case _ => () }
     };
 
-  def returnInBody: Unit = try { 
+  def returnInBody: Unit = try {
     try {
       Console.println("Normal execution...");
-      return 
+      return
       Console.println("non reachable code");
     } finally {
       Console.println("inner finally");
     }
-  } finally { 
+  } finally {
     Console.println("Outer finally");
   }
 
-  def returnInBodySynch: Unit = try { 
+  def returnInBodySynch: Unit = try {
     synchronized {
       try {
         Console.println("Synchronized normal execution...");
-        return 
+        return
         Console.println("non reachable code");
       } finally {
         Console.println("inner finally");
       }
     }
-  } finally { 
+  } finally {
     Console.println("Outer finally");
   }
 
 
-  def returnInBodyAndInFinally: Unit = try { 
+  def returnInBodyAndInFinally: Unit = try {
     try {
       Console.println("Normal execution...");
-      return 
+      return
       Console.println("non reachable code");
     } finally {
       Console.println("inner finally");
       return
     }
-  } finally { 
+  } finally {
     Console.println("Outer finally");
     return
   }
 
-  def returnInBodyAndInFinally2: Unit = try { 
+  def returnInBodyAndInFinally2: Unit = try {
     try {
       Console.println("Normal execution...");
-      return 
+      return
       Console.println("non reachable code");
     } finally {
       try {
@@ -211,7 +211,7 @@ object Test {
         Console.println("finally inside finally");
       }
     }
-  } finally { 
+  } finally {
     Console.println("Outer finally");
     return
   }
@@ -253,7 +253,7 @@ object Test {
   }
 
 
-  def returnWithFinallyClean: Int = try { 
+  def returnWithFinallyClean: Int = try {
     try {
       Console.println("Normal execution...");
       return 10
@@ -262,7 +262,7 @@ object Test {
     } finally {
       Console.println("inner finally");
     }
-  } finally { 
+  } finally {
     Console.println("Outer finally");
     try { 1 } catch { case e: java.io.IOException => () }
   }
@@ -294,7 +294,7 @@ object Test {
 
     Console.println("mixed: ");
     execute(mixed);
-    
+
     Console.println("withValue1:");
     execute(withValue1);
 
@@ -322,7 +322,7 @@ object Test {
 
     Console.println("NoExcep.method3:");
     execute(NoExcep.method3);
-    
+
     Console.println("NoExcep.method4:");
     execute(NoExcep.method4);
 

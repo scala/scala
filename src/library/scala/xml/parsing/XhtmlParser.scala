@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 package parsing
 
 import scala.io.Source
@@ -26,5 +27,5 @@ class XhtmlParser(val input: Source) extends ConstructingHandler with MarkupPars
  *  @author Burak Emir
  */
 object XhtmlParser {
-  def apply(source: Source): NodeSeq = new XhtmlParser(source).initialize.document
+  def apply(source: Source): NodeSeq = new XhtmlParser(source).initialize.document()
 }

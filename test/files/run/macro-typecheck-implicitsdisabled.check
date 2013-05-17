@@ -1,2 +1,2 @@
-scala.this.Predef.any2ArrowAssoc[Int](1).->[Int](2)
+scala.this.Predef.ArrowAssoc[Int](1).->[Int](2)
 scala.reflect.macros.TypecheckException: value -> is not a member of Int

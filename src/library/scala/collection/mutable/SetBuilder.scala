@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection
+package scala
+package collection
 package mutable
-
-import generic._
 
 /** The canonical builder for mutable Sets.
  *

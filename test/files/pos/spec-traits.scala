@@ -11,19 +11,19 @@ class Lazy {
 
 // issue 3307
 class Bug3307 {
-  def f[Z](block: String => Z) { 
-    block("abc") 
+  def f[Z](block: String => Z) {
+    block("abc")
   }
-  
-  ({ () => 
-    f { implicit x => println(x) } })() 
+
+  ({ () =>
+    f { implicit x => println(x) } })()
 }
 
 // issue 3301
   trait T[X]
 
 class Bug3301 {
-  def t[A]: T[A] = error("stub")
+  def t[A]: T[A] = sys.error("stub")
 
   () => {
     type X = Int

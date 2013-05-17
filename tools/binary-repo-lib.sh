@@ -208,7 +208,7 @@ pullJarFile() {
   local sha1=$(cat ${jar}${desired_ext})
   local jar_dir=$(dirname $jar)
   local jar_name=${jar#$jar_dir/}
-  local version=${sha1% ?$jar_name}
+  local version=${sha1%% *}
   local remote_uri=${version}/${jar#$basedir/}
   echo "Resolving [${remote_uri}]"
   pullJarFileToCache $remote_uri $version

@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.util.parsing.input
+package scala
+package util.parsing.input
 
 import scala.collection.immutable.PagedSeq
 

@@ -8,7 +8,8 @@
 
 
 
-package scala.xml
+package scala
+package xml
 package factory
 
 import parsing.ValidatingMarkupHandler
@@ -48,7 +49,7 @@ abstract class Binder(val preserveWS: Boolean) extends ValidatingMarkupHandler {
       val old = result
       result = new NodeBuffer()
       for (m <- x.child) traverse(m)
-      result = old &+ elem(0, x.prefix, x.label, x.attributes, x.scope, x.minimizeEmpty, NodeSeq.fromSeq(result)).toList;
+      result = old &+ elem(0, x.prefix, x.label, x.attributes, x.scope, x.minimizeEmpty, NodeSeq.fromSeq(result)).toList
       elemEnd(0, x.prefix, x.label)
   }
 

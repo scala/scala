@@ -19,6 +19,7 @@ import scala.concurrent.ThreadPoolRunner
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object ExecutorScheduler {
 
   private def start(sched: ExecutorScheduler): ExecutorScheduler = {
@@ -58,6 +59,7 @@ object ExecutorScheduler {
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 trait ExecutorScheduler extends Thread
                         with IScheduler with TerminationService
                         with ThreadPoolRunner {

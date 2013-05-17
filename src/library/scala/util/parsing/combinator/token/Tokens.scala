@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing
+package scala
+package util.parsing
 package combinator
 package token
 

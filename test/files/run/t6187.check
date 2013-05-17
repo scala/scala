@@ -12,7 +12,7 @@ scala> def macroImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[List[T]
 macroImpl: [T](c: scala.reflect.macros.Context)(t: c.Expr[T])(implicit evidence$1: c.WeakTypeTag[T])c.Expr[List[T]]
 
 scala> def demo[T](t: T): List[T] = macro macroImpl[T]
-demo: [T](t: T)List[T]
+defined term macro demo: [T](t: T)List[T]
 
 scala> def m[T](t: T): List[List[T]] =
   demo( List((t,true)) collect { case (x,true) => x } )

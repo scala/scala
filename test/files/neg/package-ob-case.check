@@ -1,5 +1,7 @@
-package-ob-case.scala:3: error: it is not recommended to define classes/objects inside of package objects.
+package-ob-case.scala:3: warning: it is not recommended to define classes/objects inside of package objects.
 If possible, define class X in package foo instead.
     case class X(z: Int) { }
                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
 one error found

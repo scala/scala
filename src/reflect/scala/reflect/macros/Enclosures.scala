@@ -1,5 +1,8 @@
-package scala.reflect
+package scala
+package reflect
 package macros
+
+import scala.language.existentials // SI-6541
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -15,19 +18,32 @@ trait Enclosures {
   /** The tree that undergoes macro expansion.
    *  Can be useful to get an offset or a range position of the entire tree being processed.
    */
-  val macroApplication: Tree
+  def macroApplication: Tree
+
+  /** The semantic role that `macroApplication` plays in the code.
+   */
+  type MacroRole
+
+  /** The role that represents an application of a term macro,
+   *  e.g. `M(2)(3)` in `val x = M(2)(3)` or `M(a, b)` in `x match { case x @ M(a, b) => }`.
+   */
+  def APPLY_ROLE: MacroRole
+
+  /** The semantic role that `macroApplication` plays in the code.
+   */
+  def macroRole: MacroRole
 
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
    *
    *  Is also priceless for emitting sane error messages for macros that are called by other macros on synthetic (i.e. position-less) trees.
-   *  In that dire case navigate the ``enclosingMacros'' stack, and it will most likely contain at least one macro with a position-ful macro application.
-   *  See ``enclosingPosition'' for a default implementation of this logic.
+   *  In that dire case navigate the `enclosingMacros` stack, and it will most likely contain at least one macro with a position-ful macro application.
+   *  See `enclosingPosition` for a default implementation of this logic.
    *
    *  Unlike `openMacros`, this is a val, which means that it gets initialized when the context is created
    *  and always stays the same regardless of whatever happens during macro expansion.
    */
-  val enclosingMacros: List[Context]
+  def enclosingMacros: List[Context]
 
   /** Information about one of the currently considered implicit candidates.
    *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
@@ -39,28 +55,56 @@ trait Enclosures {
    *  Unlike `openImplicits`, this is a val, which means that it gets initialized when the context is created
    *  and always stays the same regardless of whatever happens during macro expansion.
    */
-  val enclosingImplicits: List[(Type, Tree)]
+  def enclosingImplicits: List[ImplicitCandidate]
 
   /** Tries to guess a position for the enclosing application.
-   *  But that is simple, right? Just dereference ``pos'' of ``macroApplication''? Not really.
+   *  But that is simple, right? Just dereference `pos` of `macroApplication`? Not really.
    *  If we're in a synthetic macro expansion (no positions), we must do our best to infer the position of something that triggerd this expansion.
-   *  Surprisingly, quite often we can do this by navigation the ``enclosingMacros'' stack.
+   *  Surprisingly, quite often we can do this by navigation the `enclosingMacros` stack.
    */
-  val enclosingPosition: Position
+  def enclosingPosition: Position
 
   /** Tree that corresponds to the enclosing method, or EmptyTree if not applicable.
    */
-  val enclosingMethod: Tree
+  @deprecated("Use enclosingDef instead, but be wary of changes in semantics", "2.10.1")
+  def enclosingMethod: Tree
 
   /** Tree that corresponds to the enclosing class, or EmptyTree if not applicable.
    */
-  val enclosingClass: Tree
+  @deprecated("Use enclosingImpl instead, but be wary of changes in semantics", "2.10.1")
+  def enclosingClass: Tree
+
+  /** Tree that corresponds to the enclosing DefDef tree.
+   *  Throws `EnclosureException` if there's no such enclosing tree.
+   */
+  def enclosingDef: universe.DefDef
+
+  /** Tree that corresponds to the enclosing Template tree.
+   *  Throws `EnclosureException` if there's no such enclosing tree.
+   */
+  def enclosingTemplate: universe.Template
+
+  /** Tree that corresponds to the enclosing ImplDef tree (i.e. either ClassDef or ModuleDef).
+   *  Throws `EnclosureException` if there's no such enclosing tree.
+   */
+  def enclosingImpl: universe.ImplDef
+
+  /** Tree that corresponds to the enclosing PackageDef tree.
+   *  Throws `EnclosureException` if there's no such enclosing tree.
+   */
+  def enclosingPackage: universe.PackageDef
 
   /** Compilation unit that contains this macro application.
    */
-  val enclosingUnit: CompilationUnit
+  def enclosingUnit: CompilationUnit
 
   /** Compilation run that contains this macro application.
    */
-  val enclosingRun: Run
+  def enclosingRun: Run
+
+  /** Indicates than one of the enclosure methods failed to find a tree
+   *  of required type among enclosing trees.
+   */
+  case class EnclosureException(expected: Class[_], enclosingTrees: List[Tree])
+  extends Exception(s"Couldn't find a tree of type $expected among enclosing trees $enclosingTrees")
 }

@@ -44,7 +44,7 @@ object Test extends App {
           val realex = scala.ExceptionUtils.unwrapThrowable(ex)
           println(realex.getClass + ": " + realex.getMessage)
       }
-    val meth = tpe.declaration(newTermName(method).encodedName.toTermName)
+    val meth = tpe.declaration(TermName(method).encodedName.toTermName)
     val testees = if (meth.isMethod) List(meth.asMethod) else meth.asTerm.alternatives.map(_.asMethod)
     testees foreach (testee => {
       val convertedArgs = args.zipWithIndex.map { case (arg, i) => convert(arg, testee.paramss.flatten.apply(i).typeSignature) }

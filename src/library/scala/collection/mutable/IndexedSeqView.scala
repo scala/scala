@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -81,8 +82,6 @@ self =>
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
   protected override def newReversed: Transformed[A] = new AbstractTransformed[A] with Reversed
-
-  private implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
 
   override def filter(p: A => Boolean): This = newFiltered(p)
   override def init: This = newSliced(SliceInterval(0, self.length - 1))

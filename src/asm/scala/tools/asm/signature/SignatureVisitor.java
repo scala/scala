@@ -35,21 +35,21 @@ import scala.tools.asm.Opcodes;
  * A visitor to visit a generic signature. The methods of this interface must be
  * called in one of the three following orders (the last one is the only valid
  * order for a {@link SignatureVisitor} that is returned by a method of this
- * interface): <ul> <li><i>ClassSignature</i> = (
- * <tt>visitFormalTypeParameter</tt>
- *   <tt>visitClassBound</tt>?
- * <tt>visitInterfaceBound</tt>* )* ( <tt>visitSuperClass</tt>
- *   <tt>visitInterface</tt>* )</li>
+ * interface):
+ * <ul>
+ * <li><i>ClassSignature</i> = ( <tt>visitFormalTypeParameter</tt>
+ * <tt>visitClassBound</tt>? <tt>visitInterfaceBound</tt>* )* (
+ * <tt>visitSuperClass</tt> <tt>visitInterface</tt>* )</li>
  * <li><i>MethodSignature</i> = ( <tt>visitFormalTypeParameter</tt>
- *   <tt>visitClassBound</tt>?
- * <tt>visitInterfaceBound</tt>* )* ( <tt>visitParameterType</tt>*
- * <tt>visitReturnType</tt>
- *   <tt>visitExceptionType</tt>* )</li> <li><i>TypeSignature</i> =
- * <tt>visitBaseType</tt> | <tt>visitTypeVariable</tt> |
- * <tt>visitArrayType</tt> | (
+ * <tt>visitClassBound</tt>? <tt>visitInterfaceBound</tt>* )* (
+ * <tt>visitParameterType</tt>* <tt>visitReturnType</tt>
+ * <tt>visitExceptionType</tt>* )</li>
+ * <li><i>TypeSignature</i> = <tt>visitBaseType</tt> |
+ * <tt>visitTypeVariable</tt> | <tt>visitArrayType</tt> | (
  * <tt>visitClassType</tt> <tt>visitTypeArgument</tt>* (
- * <tt>visitInnerClassType</tt> <tt>visitTypeArgument</tt>* )*
- * <tt>visitEnd</tt> ) )</li> </ul>
+ * <tt>visitInnerClassType</tt> <tt>visitTypeArgument</tt>* )* <tt>visitEnd</tt>
+ * ) )</li>
+ * </ul>
  *
  * @author Thomas Hallgren
  * @author Eric Bruneton
@@ -80,8 +80,9 @@ public abstract class SignatureVisitor {
     /**
      * Constructs a new {@link SignatureVisitor}.
      *
-     * @param api the ASM API version implemented by this visitor. Must be one
-     *        of {@link Opcodes#ASM4}.
+     * @param api
+     *            the ASM API version implemented by this visitor. Must be one
+     *            of {@link Opcodes#ASM4}.
      */
     public SignatureVisitor(final int api) {
         this.api = api;
@@ -90,7 +91,8 @@ public abstract class SignatureVisitor {
     /**
      * Visits a formal type parameter.
      *
-     * @param name the name of the formal parameter.
+     * @param name
+     *            the name of the formal parameter.
      */
     public void visitFormalTypeParameter(String name) {
     }
@@ -162,8 +164,9 @@ public abstract class SignatureVisitor {
     /**
      * Visits a signature corresponding to a primitive type.
      *
-     * @param descriptor the descriptor of the primitive type, or 'V' for
-     *        <tt>void</tt>.
+     * @param descriptor
+     *            the descriptor of the primitive type, or 'V' for <tt>void</tt>
+     *            .
      */
     public void visitBaseType(char descriptor) {
     }
@@ -171,7 +174,8 @@ public abstract class SignatureVisitor {
     /**
      * Visits a signature corresponding to a type variable.
      *
-     * @param name the name of the type variable.
+     * @param name
+     *            the name of the type variable.
      */
     public void visitTypeVariable(String name) {
     }
@@ -190,7 +194,8 @@ public abstract class SignatureVisitor {
      * Starts the visit of a signature corresponding to a class or interface
      * type.
      *
-     * @param name the internal name of the class or interface.
+     * @param name
+     *            the internal name of the class or interface.
      */
     public void visitClassType(String name) {
     }
@@ -198,7 +203,8 @@ public abstract class SignatureVisitor {
     /**
      * Visits an inner class.
      *
-     * @param name the local name of the inner class in its enclosing class.
+     * @param name
+     *            the local name of the inner class in its enclosing class.
      */
     public void visitInnerClassType(String name) {
     }
@@ -213,7 +219,8 @@ public abstract class SignatureVisitor {
     /**
      * Visits a type argument of the last visited class or inner class type.
      *
-     * @param wildcard '+', '-' or '='.
+     * @param wildcard
+     *            '+', '-' or '='.
      * @return a non null visitor to visit the signature of the type argument.
      */
     public SignatureVisitor visitTypeArgument(char wildcard) {

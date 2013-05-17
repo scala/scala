@@ -12,6 +12,7 @@ import java.util.{TimerTask}
  *
  *  @define actor `ReplyReactor`
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 trait InternalReplyReactor extends Reactor[Any] with ReactorCanReply {
 
   /* A list of the current senders. The head of the list is

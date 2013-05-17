@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.generic
+package scala
+package collection
+package generic
 import scala.collection._
 import scala.collection.immutable.Range
 
@@ -50,7 +52,7 @@ trait SeqForwarder[+A] extends Seq[A] with IterableForwarder[A] {
   override def lastIndexOfSlice[B >: A](that: GenSeq[B]): Int = underlying lastIndexOfSlice that
   override def lastIndexOfSlice[B >: A](that: GenSeq[B], end: Int): Int = underlying.lastIndexOfSlice(that, end)
   override def containsSlice[B](that: GenSeq[B]): Boolean = underlying containsSlice that
-  override def contains(elem: Any): Boolean = underlying contains elem
+  override def contains[A1 >: A](elem: A1): Boolean = underlying contains elem
   override def corresponds[B](that: GenSeq[B])(p: (A,B) => Boolean): Boolean = underlying.corresponds(that)(p)
   override def indices: Range = underlying.indices
 }

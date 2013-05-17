@@ -5,7 +5,7 @@ class C {
 }
 
 object Test extends App {
-  val x = typeOf[C].member(newTermName("x")).asTerm
+  val x = typeOf[C].member(TermName("x")).asTerm
   println(x)
   println(x.isVar)
   println(x.accessed)

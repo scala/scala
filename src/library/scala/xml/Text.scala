@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** The class `Text` implements an XML node for text (PCDATA).
  *  It is used in both non-bound and bound XML representations.

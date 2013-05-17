@@ -29,8 +29,7 @@ trait Aliases {
   override def weakTypeOf[T](implicit attag: WeakTypeTag[T]): Type = attag.tpe
   override def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
 
-  type ImplicitCandidate = (Type, Tree)
   implicit class RichOpenImplicit(oi: universe.analyzer.OpenImplicit) {
-    def toImplicitCandidate = (oi.pt, oi.tree)
+    def toImplicitCandidate = ImplicitCandidate(oi.info.pre, oi.info.sym, oi.pt, oi.tree)
   }
 }

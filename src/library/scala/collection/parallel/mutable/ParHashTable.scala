@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package parallel.mutable
 
 
@@ -110,7 +111,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends scala.collec
     } else Seq(this.asInstanceOf[IterRepr])
 
     private def convertToArrayBuffer(chainhead: Entry): mutable.ArrayBuffer[T] = {
-      var buff = mutable.ArrayBuffer[Entry]()
+      val buff = mutable.ArrayBuffer[Entry]()
       var curr = chainhead
       while (curr ne null) {
         buff += curr

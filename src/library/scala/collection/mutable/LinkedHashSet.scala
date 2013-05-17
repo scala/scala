@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -78,7 +79,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
   
   override def foreach[U](f: A => U) {

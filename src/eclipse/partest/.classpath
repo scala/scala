@@ -8,8 +8,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/ant/ant.jar"/>
 	<classpathentry kind="lib" path="lib/jline.jar"/>
-	<classpathentry kind="lib" path="lib/msil.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/repl"/>
 	<classpathentry kind="output" path="build-quick-partest"/>
 </classpath>

@@ -5,7 +5,6 @@ trait GenPositions {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   // we do not reify positions because this inflates resulting trees, but doesn't buy as anything
   // where would one use positions? right, in error messages

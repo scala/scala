@@ -1,15 +1,8 @@
 package scala.tools.nsc
 package ast
 
-import scala.reflect.internal.util.{ SourceFile, Position, OffsetPosition, NoPosition }
-
 trait Positions extends scala.reflect.internal.Positions {
   self: Global =>
-
-  def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
-    new OffsetPosition(source, point)
-
-  def validatePositions(tree: Tree) {}
 
   class ValidatingPosAssigner extends PosAssigner {
     var pos: Position = _
@@ -20,7 +13,7 @@ trait Positions extends scala.reflect.internal.Positions {
         // When we prune due to encountering a position, traverse the
         // pruned children so we can warn about those lacking positions.
         t.children foreach { c =>
-          if ((c eq EmptyTree) || (c eq emptyValDef)) ()
+          if (!c.canHaveAttrs) ()
           else if (c.pos == NoPosition) {
             reporter.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase)
             inform("parent: " + treeSymStatus(t))
@@ -32,6 +25,6 @@ trait Positions extends scala.reflect.internal.Positions {
   }
 
   override protected[this] lazy val posAssigner: PosAssigner =
-    if (settings.Yrangepos.value && settings.debug.value || settings.Yposdebug.value) new ValidatingPosAssigner
+    if (settings.Yrangepos && settings.debug || settings.Yposdebug) new ValidatingPosAssigner
     else new DefaultPosAssigner
 }

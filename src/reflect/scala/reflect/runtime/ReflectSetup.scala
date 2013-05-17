@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 import internal.{SomePhase, NoPhase, Phase, TreeGen}

@@ -3,13 +3,11 @@
  * @author  Martin Odersky
  */
 
-
-
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend
 package icode
 
-import scala.tools.nsc.ast._
 import scala.reflect.internal.util.{Position,NoPosition}
 
 /*
@@ -67,7 +65,7 @@ import scala.reflect.internal.util.{Position,NoPosition}
  * in the source files.
  */
 trait Opcodes { self: ICodes =>
-  import global.{Symbol, NoSymbol, Type, Name, Constant};
+  import global.{Symbol, NoSymbol, Name, Constant}
 
   // categories of ICode instructions
   final val localsCat =  1
@@ -111,16 +109,10 @@ trait Opcodes { self: ICodes =>
     // Vlad: I wonder why we keep producedTypes around -- it looks like an useless thing to have
     def producedTypes: List[TypeKind] = Nil
 
-    /** This method returns the difference of size of the stack when the instruction is used */
-    def difference = produced-consumed
-
     /** The corresponding position in the source file */
     private var _pos: Position = NoPosition
 
     def pos: Position = _pos
-
-    /** Used by dead code elimination. */
-    var useful: Boolean = false
 
     def setPos(p: Position): this.type = {
       _pos = p
@@ -133,13 +125,6 @@ trait Opcodes { self: ICodes =>
   }
 
   object opcodes {
-
-    def mayThrow(i: Instruction): Boolean = i match {
-      case LOAD_LOCAL(_) | STORE_LOCAL(_) | CONSTANT(_) | THIS(_) | CZJUMP(_, _, _, _)
-              | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION(_) | JUMP(_) | CJUMP(_, _, _, _) => false
-      case _ => true
-    }
-
     /** Loads "this" on top of the stack.
      * Stack: ...
      *    ->: ...:ref
@@ -211,7 +196,7 @@ trait Opcodes { self: ICodes =>
     case class LOAD_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "LOAD_FIELD " + (if (isStatic) field.fullName else field.toString());
+        "LOAD_FIELD " + (if (isStatic) field.fullName else field.toString())
 
       override def consumed = if (isStatic) 0 else 1
       override def produced = 1
@@ -273,16 +258,17 @@ trait Opcodes { self: ICodes =>
     case class STORE_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "STORE_FIELD "+field + (if (isStatic) " (static)" else " (dynamic)");
+        "STORE_FIELD "+field + (if (isStatic) " (static)" else " (dynamic)")
 
-      override def consumed = if(isStatic) 1 else 2;
-      override def produced = 0;
+      override def consumed = if(isStatic) 1 else 2
+
+      override def produced = 0
 
       override def consumedTypes =
         if (isStatic)
           toTypeKind(field.tpe) :: Nil
         else
-          REFERENCE(field.owner) :: toTypeKind(field.tpe) :: Nil;
+          REFERENCE(field.owner) :: toTypeKind(field.tpe) :: Nil
 
       override def category = fldsCat
     }
@@ -409,14 +395,14 @@ trait Opcodes { self: ICodes =>
 
       override def category = mthdsCat
     }
-    
+
     /**
      * A place holder entry that allows us to parse class files with invoke dynamic
      * instructions. Because the compiler doesn't yet really understand the
      * behavior of invokeDynamic, this op acts as a poison pill. Any attempt to analyze
      * this instruction will cause a failure. The only optimization that
      * should ever look at non-Scala generated icode is the inliner, and it
-     * has been modified to not examine any method with invokeDynamic 
+     * has been modified to not examine any method with invokeDynamic
      * instructions. So if this poison pill ever causes problems then
      * there's been a serious misunderstanding
      */
@@ -455,10 +441,12 @@ trait Opcodes { self: ICodes =>
      */
     case class NEW(kind: REFERENCE) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "NEW "+ kind;
+      override def toString(): String = "NEW "+ kind
 
-      override def consumed = 0;
-      override def produced = 1;
+      override def consumed = 0
+
+      override def produced = 1
+
       override def producedTypes = kind :: Nil
 
       /** The corresponding constructor call. */
@@ -474,11 +462,13 @@ trait Opcodes { self: ICodes =>
      */
     case class CREATE_ARRAY(elem: TypeKind, dims: Int) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CREATE_ARRAY "+elem + " x " + dims;
+      override def toString(): String ="CREATE_ARRAY "+elem + " x " + dims
 
-      override def consumed = dims;
+      override def consumed = dims
+
       override def consumedTypes = List.fill(dims)(INT)
-      override def produced = 1;
+      override def produced = 1
+
       override def producedTypes = ARRAY(elem) :: Nil
 
       override def category = arraysCat
@@ -567,7 +557,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = (
         "CJUMP (" + kind + ")" +
         cond + " ? "+successBlock.label+" : "+failureBlock.label
-      );
+      )
 
       override def consumed = 2
       override def produced = 0
@@ -590,7 +580,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = (
         "CZJUMP (" + kind + ")" +
         cond + " ? "+successBlock.label+" : "+failureBlock.label
-      );
+      )
 
       override def consumed = 1
       override def produced = 0
@@ -682,10 +672,11 @@ trait Opcodes { self: ICodes =>
      */
     case class MONITOR_EXIT() extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="MONITOR_EXIT";
+      override def toString(): String ="MONITOR_EXIT"
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+
+      override def produced = 0
 
       override def consumedTypes = ObjectReference :: Nil
 
@@ -734,8 +725,6 @@ trait Opcodes { self: ICodes =>
       /** Is this a static method call? */
       def isStatic: Boolean = false
 
-      def isSuper: Boolean = false
-
       /** Is this an instance method call? */
       def hasInstance: Boolean = true
 
@@ -769,77 +758,7 @@ trait Opcodes { self: ICodes =>
      *  On JVM, translated to `invokespecial`.
      */
     case class SuperCall(mix: Name) extends InvokeStyle {
-      override def isSuper = true
       override def toString(): String = { "super(" + mix + ")" }
-    }
-
-
-    // CLR backend
-
-    case class CIL_LOAD_LOCAL_ADDRESS(local: Local) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "CIL_LOAD_LOCAL_ADDRESS "+local  //+isArgument?" (argument)":"";
-
-      override def consumed = 0
-      override def produced = 1
-
-      override def producedTypes = msil_mgdptr(local.kind) :: Nil
-
-      override def category = localsCat
-    }
-
-    case class CIL_LOAD_FIELD_ADDRESS(field: Symbol, isStatic: Boolean) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String =
-        "CIL_LOAD_FIELD_ADDRESS " + (if (isStatic) field.fullName else field.toString)
-
-      override def consumed = if (isStatic) 0 else 1
-      override def produced = 1
-
-      override def consumedTypes = if (isStatic) Nil else REFERENCE(field.owner) :: Nil;
-      override def producedTypes = msil_mgdptr(REFERENCE(field.owner)) :: Nil;
-
-      override def category = fldsCat
-    }
-
-    case class CIL_LOAD_ARRAY_ITEM_ADDRESS(kind: TypeKind) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "CIL_LOAD_ARRAY_ITEM_ADDRESS (" + kind + ")"
-
-      override def consumed = 2
-      override def produced = 1
-
-      override def consumedTypes = ARRAY(kind) :: INT :: Nil
-      override def producedTypes = msil_mgdptr(kind) :: Nil
-
-      override def category = arraysCat
-    }
-
-    case class CIL_UNBOX(valueType: TypeKind) extends Instruction {
-      override def toString(): String = "CIL_UNBOX " + valueType
-      override def consumed = 1
-      override def consumedTypes = ObjectReferenceList // actually consumes a 'boxed valueType'
-      override def produced = 1
-      override def producedTypes = msil_mgdptr(valueType) :: Nil
-      override def category = objsCat
-    }
-
-    case class CIL_INITOBJ(valueType: TypeKind) extends Instruction {
-      override def toString(): String = "CIL_INITOBJ " + valueType
-      override def consumed = 1
-      override def consumedTypes = ObjectReferenceList // actually consumes a managed pointer
-      override def produced = 0
-      override def category = objsCat
-    }
-
-    case class CIL_NEWOBJ(method: Symbol) extends Instruction {
-      override def toString(): String = "CIL_NEWOBJ " + hostClass.fullName + method.fullName
-      var hostClass: Symbol = method.owner;
-      override def consumed = method.tpe.paramTypes.length
-      override def consumedTypes = method.tpe.paramTypes map toTypeKind
-      override def produced = 1
-      override def producedTypes = toTypeKind(method.tpe.resultType) :: Nil
-      override def category = objsCat
     }
   }
 }

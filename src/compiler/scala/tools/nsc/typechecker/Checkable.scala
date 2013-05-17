@@ -6,12 +6,8 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
-import scala.util.control.ControlThrowable
-import symtab.Flags._
-import scala.annotation.tailrec
 import Checkability._
+import scala.language.postfixOps
 
 /** On pattern matcher checkability:
  *
@@ -66,6 +62,9 @@ trait Checkable {
     bases foreach { bc =>
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
+      if (tps1.size != tps2.size)
+        devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
+
       (tps1, tps2).zipped foreach (_ =:= _)
       // Alternate, variance respecting formulation causes
       // neg/unchecked3.scala to fail (abstract types).  TODO -
@@ -82,7 +81,7 @@ trait Checkable {
 
     val resArgs = tparams zip tvars map {
       case (_, tvar) if tvar.instValid => tvar.constr.inst
-      case (tparam, _)                 => tparam.tpe
+      case (tparam, _)                 => tparam.tpeHK
     }
     appliedType(to, resArgs: _*)
   }
@@ -112,7 +111,7 @@ trait Checkable {
   private class CheckabilityChecker(val X: Type, val P: Type) {
     def Xsym = X.typeSymbol
     def Psym = P.typeSymbol
-    def XR   = propagateKnownTypes(X, Psym)
+    def XR   = if (Xsym == AnyClass) classExistentialType(Psym) else propagateKnownTypes(X, Psym)
     // sadly the spec says (new java.lang.Boolean(true)).isInstanceOf[scala.Boolean]
     def P1   = X matchesPattern P
     def P2   = !Psym.isPrimitiveValueClass && isNeverSubType(X, P)
@@ -134,7 +133,7 @@ trait Checkable {
       else if (P3) RuntimeCheckable
       else if (uncheckableType == NoType) {
         // Avoid warning (except ourselves) if we can't pinpoint the uncheckable type
-        debugwarn("Checkability checker says 'Uncheckable', but uncheckable type cannot be found:\n" + summaryString)
+        debuglog("Checkability checker says 'Uncheckable', but uncheckable type cannot be found:\n" + summaryString)
         CheckabilityError
       }
       else Uncheckable
@@ -154,6 +153,7 @@ trait Checkable {
     def neverSubClass = isNeverSubClass(Xsym, Psym)
     def neverMatches  = result == StaticallyFalse
     def isUncheckable = result == Uncheckable
+    def isCheckable   = !isUncheckable
     def uncheckableMessage = uncheckableType match {
       case NoType                                   => "something"
       case tp @ RefinedType(_, _)                   => "refinement " + tp
@@ -195,19 +195,27 @@ trait Checkable {
      *  so I will consult with moors about the optimal time to be doing this.
      */
     def areIrreconcilableAsParents(sym1: Symbol, sym2: Symbol): Boolean = areUnrelatedClasses(sym1, sym2) && (
-         sym1.initialize.isEffectivelyFinal // initialization important
-      || sym2.initialize.isEffectivelyFinal
+         isEffectivelyFinal(sym1) // initialization important
+      || isEffectivelyFinal(sym2)
       || !sym1.isTrait && !sym2.isTrait
       || sym1.isSealed && sym2.isSealed && allChildrenAreIrreconcilable(sym1, sym2) && !currentRun.compiles(sym1) && !currentRun.compiles(sym2)
     )
+    private def isEffectivelyFinal(sym: Symbol): Boolean = (
+      // initialization important
+      sym.initialize.isEffectivelyFinal || (
+        settings.future && isTupleSymbol(sym) // SI-7294 step into the future and treat TupleN as final.
+      )
+    )
+
     def isNeverSubClass(sym1: Symbol, sym2: Symbol) = areIrreconcilableAsParents(sym1, sym2)
 
     private def isNeverSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean = /*logResult(s"isNeverSubArgs($tps1, $tps2, $tparams)")*/ {
-      def isNeverSubArg(t1: Type, t2: Type, variance: Int) = {
-        if (variance > 0) isNeverSubType(t2, t1)
-        else if (variance < 0) isNeverSubType(t1, t2)
-        else isNeverSameType(t1, t2)
-      }
+      def isNeverSubArg(t1: Type, t2: Type, variance: Variance) = (
+        if (variance.isInvariant) isNeverSameType(t1, t2)
+        else if (variance.isCovariant) isNeverSubType(t2, t1)
+        else if (variance.isContravariant) isNeverSubType(t1, t2)
+        else false
+      )
       exists3(tps1, tps2, tparams map (_.variance))(isNeverSubArg)
     }
     private def isNeverSameType(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
@@ -231,6 +239,17 @@ trait Checkable {
 
   trait InferCheckable {
     self: Inferencer =>
+
+    def isUncheckable(P0: Type) = !isCheckable(P0)
+
+    def isCheckable(P0: Type): Boolean = (
+      uncheckedOk(P0) || (P0.widen match {
+        case TypeRef(_, NothingClass | NullClass | AnyValClass, _) => false
+        case RefinedType(_, decls) if !decls.isEmpty               => false
+        case p                                                     =>
+          new CheckabilityChecker(AnyClass.tpe, p) isCheckable
+      })
+    )
 
     /** TODO: much better error positions.
      *  Kind of stuck right now because they just pass us the one tree.

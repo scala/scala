@@ -5,8 +5,8 @@ import scala.reflect.{ClassTag, classTag}
 object Test extends App {
   def test[T: ClassTag: TypeTag](x: T) = {
     println(s"========${classTag[T].runtimeClass}========")
-    println(cm.reflect(x).reflectMethod(typeOf[T].member(newTermName("getClass")).asMethod)())
-    println(cm.reflect(x).reflectMethod(typeOf[T].member(newTermName("toString")).asMethod)())
+    println(cm.reflect(x).reflectMethod(typeOf[T].member(TermName("getClass")).asMethod)())
+    println(cm.reflect(x).reflectMethod(typeOf[T].member(TermName("toString")).asMethod)())
   }
 
   test(2.toByte)

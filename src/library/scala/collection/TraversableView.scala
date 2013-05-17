@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import generic._
 import mutable.Builder
-import TraversableView.NoBuilder
 
 /** A base trait for non-strict views of traversable collections.
  *  $traversableViewInfo

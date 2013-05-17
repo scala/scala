@@ -33,7 +33,7 @@ trait EtaExpansion { self: Analyzer =>
   }
 
   /** <p>
-   *    Expand partial function applications of type <code>type</code>.
+   *    Expand partial function applications of type `type`.
    *  </p><pre>
    *  p.f(es_1)...(es_n)
    *     ==>  {
@@ -56,11 +56,8 @@ trait EtaExpansion { self: Analyzer =>
     }
     val defs = new ListBuffer[Tree]
 
-    /** Append to <code>defs</code> value definitions for all non-stable
-     *  subexpressions of the function application <code>tree</code>.
-     *
-     *  @param tree ...
-     *  @return     ...
+    /* Append to `defs` value definitions for all non-stable
+     * subexpressions of the function application `tree`.
      */
     def liftoutPrefix(tree: Tree): Tree = {
       def liftout(tree: Tree, byName: Boolean): Tree =
@@ -97,12 +94,12 @@ trait EtaExpansion { self: Analyzer =>
             // with repeated params, there might be more or fewer args than params
             liftout(arg, byName(i).getOrElse(false))
           }
-          treeCopy.Apply(tree, liftoutPrefix(fn), newArgs) setType null
+          treeCopy.Apply(tree, liftoutPrefix(fn), newArgs).clearType()
         case TypeApply(fn, args) =>
-          treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
+          treeCopy.TypeApply(tree, liftoutPrefix(fn), args).clearType()
         case Select(qual, name) =>
           val name = tree.symbol.name // account for renamed imports, SI-7233
-          treeCopy.Select(tree, liftout(qual, false), name) setSymbol NoSymbol setType null
+          treeCopy.Select(tree, liftout(qual, byName = false), name).clearType() setSymbol NoSymbol
         case Ident(name) =>
           tree
       }
@@ -110,8 +107,7 @@ trait EtaExpansion { self: Analyzer =>
       tree1
     }
 
-    /** Eta-expand lifted tree.
-     */
+    /* Eta-expand lifted tree. */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
       case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>
         val params: List[(ValDef, Boolean)] = paramSyms.map {
@@ -119,7 +115,7 @@ trait EtaExpansion { self: Analyzer =>
             val origTpe = sym.tpe
             val isRepeated = definitions.isRepeatedParamType(origTpe)
             // SI-4176 Don't leak A* in eta-expanded function types. See t4176b.scala
-            val droppedStarTpe = if (settings.etaExpandKeepsStar.value) origTpe else dropRepeatedParamType(origTpe)
+            val droppedStarTpe = if (settings.etaExpandKeepsStar) origTpe else dropIllegalStarTypes(origTpe)
             val valDef = ValDef(Modifiers(SYNTHETIC | PARAM), sym.name.toTermName, TypeTree(droppedStarTpe), EmptyTree)
             (valDef, isRepeated)
         }

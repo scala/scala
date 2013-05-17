@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.immutable
 
 /**
  * Exception handlers are pieces of code that `handle` exceptions on
@@ -24,14 +24,11 @@ trait ExceptionHandlers {
 
   class ExceptionHandler(val method: IMethod, val label: TermName, val cls: Symbol, val pos: Position) {
     def loadExceptionClass = if (cls == NoSymbol) ThrowableClass else cls
-    private var _startBlock: BasicBlock = _;
-    var finalizer: Finalizer = _;
-
-    /** Needed for the MSIL backend. */
-    var resultKind: TypeKind = _;
+    private var _startBlock: BasicBlock = _
+    var finalizer: Finalizer = _
 
     def setStartBlock(b: BasicBlock) = {
-      _startBlock = b;
+      _startBlock = b
       b.exceptionHandlerStart = true
     }
     def startBlock = _startBlock
@@ -49,11 +46,11 @@ trait ExceptionHandlers {
 
     /** The body of this exception handler. May contain 'dead' blocks (which will not
       * make it into generated code because linearizers may not include them) */
-    var blocks: List[BasicBlock] = Nil;
+    var blocks: List[BasicBlock] = Nil
 
-    def addBlock(b: BasicBlock): Unit = blocks = b :: blocks;
+    def addBlock(b: BasicBlock): Unit = blocks = b :: blocks
 
-    override def toString() = "exh_" + label + "(" + cls.simpleName + ")";
+    override def toString() = "exh_" + label + "(" + cls.simpleName + ")"
 
     /** A standard copy constructor */
     def this(other: ExceptionHandler) = {
@@ -70,11 +67,5 @@ trait ExceptionHandlers {
   class Finalizer(method: IMethod, label: TermName, pos: Position) extends ExceptionHandler(method, label, NoSymbol, pos) {
     override def toString() = "finalizer_" + label
     override def dup: Finalizer = new Finalizer(method, label, pos)
-  }
-
-  object NoFinalizer extends Finalizer(null, newTermNameCached("<no finalizer>"), NoPosition) {
-    override def startBlock: BasicBlock             = sys.error("NoFinalizer cannot have a start block.");
-    override def setStartBlock(b: BasicBlock): Unit = sys.error("NoFinalizer cannot have a start block.");
-    override def dup = this
   }
 }

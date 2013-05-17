@@ -3,7 +3,8 @@
  * @author Paul Phillips
  */
 
-package scala.tools
+package scala
+package tools
 
 package object cmd {
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }

@@ -1,7 +1,6 @@
 import java.io.StringReader
 import org.xml.sax.InputSource
 
-import scala.util.logging._
 import scala.xml._
 
 object Test extends App {

@@ -1,0 +1,23 @@
+normal exit MainNormalExit
+finally MainNormalExit
+normal flow MainNormalExit
+
+return MainReturn
+finally MainReturn
+
+uncaught exception MainUncaughtException
+finally MainUncaughtException
+
+caught exception ExceptionNormalExit
+normal exit ExceptionNormalExit
+finally ExceptionNormalExit
+normal flow ExceptionNormalExit
+
+caught exception ExceptionReturn
+return ExceptionReturn
+finally ExceptionReturn
+
+caught exception ExceptionUncaughtException
+uncaught exception ExceptionUncaughtException
+finally ExceptionUncaughtException
+

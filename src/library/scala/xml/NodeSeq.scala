@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 import scala.collection.{ mutable, immutable, generic, SeqLike, AbstractSeq }
 import mutable.{ Builder, ListBuffer }
@@ -144,6 +145,11 @@ abstract class NodeSeq extends AbstractSeq[Node] with immutable.Seq[Node] with S
       case _                    => filt(x => !x.isAtom && x.label == that)
     }
   }
+
+  /** Convenience method which returns string text of the named attribute. Use:
+   *   - `that \@ "foo"` to get the string text of attribute `"foo"`;
+   */
+  def \@(attributeName: String): String = (this \ ("@" + attributeName)).text
 
   override def toString(): String = theSeq.mkString
 

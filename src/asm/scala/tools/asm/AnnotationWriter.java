@@ -90,20 +90,20 @@ final class AnnotationWriter extends AnnotationVisitor {
     /**
      * Constructs a new {@link AnnotationWriter}.
      *
-     * @param cw the class writer to which this annotation must be added.
-     * @param named <tt>true<tt> if values are named, <tt>false</tt> otherwise.
-     * @param bv where the annotation values must be stored.
-     * @param parent where the number of annotation values must be stored.
-     * @param offset where in <tt>parent</tt> the number of annotation values must
-     *      be stored.
+     * @param cw
+     *            the class writer to which this annotation must be added.
+     * @param named
+     *            <tt>true<tt> if values are named, <tt>false</tt> otherwise.
+     * @param bv
+     *            where the annotation values must be stored.
+     * @param parent
+     *            where the number of annotation values must be stored.
+     * @param offset
+     *            where in <tt>parent</tt> the number of annotation values must
+     *            be stored.
      */
-    AnnotationWriter(
-        final ClassWriter cw,
-        final boolean named,
-        final ByteVector bv,
-        final ByteVector parent,
-        final int offset)
-    {
+    AnnotationWriter(final ClassWriter cw, final boolean named,
+            final ByteVector bv, final ByteVector parent, final int offset) {
         super(Opcodes.ASM4);
         this.cw = cw;
         this.named = named;
@@ -190,11 +190,8 @@ final class AnnotationWriter extends AnnotationVisitor {
     }
 
     @Override
-    public void visitEnum(
-        final String name,
-        final String desc,
-        final String value)
-    {
+    public void visitEnum(final String name, final String desc,
+            final String value) {
         ++size;
         if (named) {
             bv.putShort(cw.newUTF8(name));
@@ -203,10 +200,8 @@ final class AnnotationWriter extends AnnotationVisitor {
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation(
-        final String name,
-        final String desc)
-    {
+    public AnnotationVisitor visitAnnotation(final String name,
+            final String desc) {
         ++size;
         if (named) {
             bv.putShort(cw.newUTF8(name));
@@ -259,7 +254,8 @@ final class AnnotationWriter extends AnnotationVisitor {
      * Puts the annotations of this annotation writer list into the given byte
      * vector.
      *
-     * @param out where the annotations must be put.
+     * @param out
+     *            where the annotations must be put.
      */
     void put(final ByteVector out) {
         int n = 0;
@@ -286,15 +282,15 @@ final class AnnotationWriter extends AnnotationVisitor {
     /**
      * Puts the given annotation lists into the given byte vector.
      *
-     * @param panns an array of annotation writer lists.
-     * @param off index of the first annotation to be written.
-     * @param out where the annotations must be put.
+     * @param panns
+     *            an array of annotation writer lists.
+     * @param off
+     *            index of the first annotation to be written.
+     * @param out
+     *            where the annotations must be put.
      */
-    static void put(
-        final AnnotationWriter[] panns,
-        final int off,
-        final ByteVector out)
-    {
+    static void put(final AnnotationWriter[] panns, final int off,
+            final ByteVector out) {
         int size = 1 + 2 * (panns.length - off);
         for (int i = off; i < panns.length; ++i) {
             size += panns[i] == null ? 0 : panns[i].getSize();

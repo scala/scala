@@ -19,7 +19,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
   def this(spec: Reference, line: String) = this(spec, Parser tokenize line)
   def this(spec: Reference, args: Array[String]) = this(spec, args.toList)
 
-  import spec.{ isAnyOption, isUnaryOption, isBinaryOption, isExpandOption }
+  import spec.{ isUnaryOption, isBinaryOption, isExpandOption }
 
   val Terminator = "--"
   val ValueForUnaryOption = "true"  // so if --opt is given, x(--opt) = true
@@ -36,7 +36,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
     def loop(args: List[String]): Map[String, String] = {
       def residual(xs: List[String]) = { residualBuffer ++= xs ; Map[String, String]() }
 
-      /** Returns Some(List(args)) if this option expands to an
+      /*  Returns Some(List(args)) if this option expands to an
        *  argument list and it's not returning only the same arg.
        */
       def expand(s1: String) = {
@@ -48,7 +48,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
         else None
       }
 
-      /** Assumes known options have all been ruled out already. */
+      /* Assumes known options have all been ruled out already. */
       def isUnknown(opt: String) =
         onlyKnownOptions && (opt startsWith "-") && {
           errorFn("Option '%s' not recognized.".format(opt))

@@ -5,7 +5,8 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** Class used internally.

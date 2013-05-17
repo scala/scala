@@ -11,7 +11,6 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.NoPosition
 
 /** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
  *
@@ -19,13 +18,8 @@ import scala.reflect.internal.util.NoPosition
  * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
  */
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
-  import PatternMatchingStats._
-  import global.{Tree, Type, Symbol, CaseDef, atPos, settings,
-    Select, Block, ThisType, SingleType, NoPrefix, NoType, needsOuterTest,
-    ConstantType, Literal, Constant, gen, This, EmptyTree, map2, NoSymbol, Traverser,
-    Function, Typed, treeInfo, TypeRef, DefTree, Ident, nme}
-
-  import global.definitions.{SomeClass, AnyRefClass, UncheckedClass, BooleanClass}
+  import global._
+  import definitions.{SomeClass, AnyRefClass, UncheckedClass, BooleanClass}
 
   final case class Suppression(exhaustive: Boolean, unreachable: Boolean)
   object Suppression {
@@ -60,7 +54,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
       private[TreeMakers] def incorporateOuterSubstitution(outerSubst: Substitution): Unit = {
         if (currSub ne null) {
-          debug.patmat("BUG: incorporateOuterSubstitution called more than once for "+ (this, currSub, outerSubst))
+          debug.patmat("BUG: incorporateOuterSubstitution called more than once for "+ ((this, currSub, outerSubst)))
           Thread.dumpStack()
         }
         else currSub = outerSubst >> substitution
@@ -100,7 +94,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree = // assert(next eq EmptyTree)
         atPos(body.pos)(casegen.one(substitution(body))) // since SubstOnly treemakers are dropped, need to do it here
-      override def toString = "B"+(body, matchPt)
+      override def toString = "B"+((body, matchPt))
     }
 
     case class SubstOnlyTreeMaker(prevBinder: Symbol, nextBinder: Symbol) extends TreeMaker {
@@ -220,7 +214,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         )
       }
 
-      override def toString = "X"+(extractor, nextBinder.name)
+      override def toString = "X"+((extractor, nextBinder.name))
     }
 
     /**
@@ -274,7 +268,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         }
       }
 
-      override def toString = "P"+(prevBinder.name,  extraCond getOrElse "", localSubstitution)
+      override def toString = "P"+((prevBinder.name,  extraCond getOrElse "", localSubstitution))
     }
 
     object IrrefutableExtractorTreeMaker {
@@ -389,7 +383,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     **/
     case class TypeTestTreeMaker(prevBinder: Symbol, testedBinder: Symbol, expectedTp: Type, nextBinderTp: Type)(override val pos: Position, extractorArgTypeTest: Boolean = false) extends CondTreeMaker {
       import TypeTestTreeMaker._
-      debug.patmat("TTTM"+(prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp))
+      debug.patmat("TTTM"+((prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp)))
 
       lazy val outerTestNeeded = (
           !((expectedTp.prefix eq NoPrefix) || expectedTp.prefix.typeSymbol.isPackageClass)
@@ -452,7 +446,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
       def impliesBinderNonNull(binder: Symbol) = renderCondition(nonNullImpliedByTestChecker(binder))
 
-      override def toString = "TT"+(expectedTp, testedBinder.name, nextBinderTp)
+      override def toString = "TT"+((expectedTp, testedBinder.name, nextBinderTp))
     }
 
     // need to substitute to deal with existential types -- TODO: deal with existentials better, don't substitute (see RichClass during quick.comp)
@@ -463,7 +457,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
       val cond = codegen._equals(patTree, prevBinder)
       val res  = CODE.REF(prevBinder)
-      override def toString = "ET"+(prevBinder.name, patTree)
+      override def toString = "ET"+((prevBinder.name, patTree))
     }
 
     case class AlternativesTreeMaker(prevBinder: Symbol, var altss: List[List[TreeMaker]], pos: Position) extends TreeMaker with NoNewBinders {
@@ -474,7 +468,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         altss = altss map (alts => propagateSubstitution(alts, substitution))
       }
 
-      def chainBefore(next: Tree)(codegenAlt: Casegen): Tree = { import CODE._
+      def chainBefore(next: Tree)(codegenAlt: Casegen): Tree = {
         atPos(pos){
           // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
           // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
@@ -528,7 +522,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         val (suppression, requireSwitch): (Suppression, Boolean) =
-          if (settings.XnoPatmatAnalysis.value) (Suppression.NoSuppression, false)
+          if (settings.XnoPatmatAnalysis) (Suppression.NoSuppression, false)
           else scrut match {
             case Typed(tree, tpt) =>
               val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
@@ -587,18 +581,18 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         t match {
           case Function(_, _) if t.symbol == NoSymbol =>
             t.symbol = currentOwner.newAnonymousFunctionValue(t.pos)
-            debug.patmat("new symbol for "+ (t, t.symbol.ownerChain))
+            debug.patmat("new symbol for "+ ((t, t.symbol.ownerChain)))
           case Function(_, _) if (t.symbol.owner == NoSymbol) || (t.symbol.owner == origOwner) =>
-            debug.patmat("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))
+            debug.patmat("fundef: "+ ((t, t.symbol.ownerChain, currentOwner.ownerChain)))
             t.symbol.owner = currentOwner
           case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
-            debug.patmat("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
+            debug.patmat("def: "+ ((d, d.symbol.ownerChain, currentOwner.ownerChain)))
             if(d.symbol.moduleClass ne NoSymbol)
               d.symbol.moduleClass.owner = currentOwner
 
             d.symbol.owner = currentOwner
           // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
-          debug.patmat("untouched "+ (t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain))
+          debug.patmat("untouched "+ ((t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain)))
           case _ =>
         }
         super.traverse(t)

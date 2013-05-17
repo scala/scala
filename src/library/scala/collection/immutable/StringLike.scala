@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
-import generic._
 import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
@@ -19,12 +19,11 @@ import scala.reflect.ClassTag
  *  @since 2.8
  */
 object StringLike {
-
   // just statics for companion class.
-  private final val LF: Char = 0x0A
-  private final val FF: Char = 0x0C
-  private final val CR: Char = 0x0D
-  private final val SU: Char = 0x1A
+  private final val LF = 0x0A
+  private final val FF = 0x0C
+  private final val CR = 0x0D
+  private final val SU = 0x1A
 }
 
 import StringLike._
@@ -60,8 +59,8 @@ self =>
     val start = from max 0
     val end   = until min length
 
-    if (start >= end) newBuilder.result
-    else (newBuilder ++= toString.substring(start, end)).result
+    if (start >= end) newBuilder.result()
+    else (newBuilder ++= toString.substring(start, end)).result()
   }
 
   /** Return the current string concatenated `n` times.

@@ -11,7 +11,7 @@ trait Extractors {
   // Example of a reified tree for `reify(List(1, 2))`:
   // (also contains an example of a reified type as a third argument to the constructor of Expr)
   // {
-  //   val $u: reflect.runtime.universe.type = scala.reflect.runtime.`package`.universe;
+  //   val $u: scala.reflect.runtime.universe.type = scala.reflect.runtime.`package`.universe;
   //   val $m: $u.Mirror = $u.runtimeMirror(Test.this.getClass().getClassLoader());
   //   $u.Expr[List[Int]]($m, {
   //     final class $treecreator1 extends scala.reflect.api.TreeCreator {
@@ -179,7 +179,7 @@ trait Extractors {
             Literal(Constant(origin: String))))
         if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && acceptFreeTermFactory(freeTermFactory) &&
            uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
-          Some(uref1, name, reifyBinding(tree), flags, origin)
+          Some((uref1, name, reifyBinding(tree), flags, origin))
         case _ =>
           None
       }

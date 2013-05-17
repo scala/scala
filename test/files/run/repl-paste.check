@@ -21,7 +21,7 @@ val x = (new Dingus).y
 // Exiting paste mode, now interpreting.
 
 defined class Dingus
-defined module Dingus
+defined object Dingus
 x: Int = 110
 
 scala> 

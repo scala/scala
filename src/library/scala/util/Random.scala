@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.generic.CanBuildFrom
@@ -17,7 +18,7 @@ import scala.language.{implicitConversions, higherKinds}
  *  @author Stephane Micheloud
  *
  */
-class Random(val self: java.util.Random) {
+class Random(val self: java.util.Random) extends AnyRef with Serializable {
   /** Creates a new random number generator using a single long seed. */
   def this(seed: Long) = this(new java.util.Random(seed))
 
@@ -117,7 +118,7 @@ class Random(val self: java.util.Random) {
       swap(n - 1, k)
     }
 
-    (bf(xs) ++= buf).result
+    (bf(xs) ++= buf).result()
   }
 
   /** Returns a Stream of pseudorandomly chosen alphanumeric characters,

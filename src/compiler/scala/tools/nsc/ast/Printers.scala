@@ -7,8 +7,6 @@ package scala.tools.nsc
 package ast
 
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
-import symtab.Flags._
-import symtab.SymbolTable
 
 trait Printers extends scala.reflect.internal.Printers { this: Global =>
 
@@ -44,7 +42,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     }
   }
 
-  // overflow cases missing from TreePrinter in reflect.api
+  // overflow cases missing from TreePrinter in scala.reflect.api
   override def xprintTree(treePrinter: super.TreePrinter, tree: Tree) = tree match {
     case DocDef(comment, definition) =>
       treePrinter.print(comment.raw)
@@ -130,7 +128,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         case Select(qualifier, name) =>
           printTree(qualifier)
           print(".")
-          print(quotedName(name, true))
+          print(quotedName(name, decode = true))
 
         // target.toString() ==> target.toString
         case Apply(fn, Nil)   => printTree(fn)
@@ -154,7 +152,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         // If thenp or elsep has only one statement, it doesn't need more than one line.
         case If(cond, thenp, elsep) =>
           def ifIndented(x: Tree) = {
-            indent ; println() ; printTree(x) ; undent
+            indent() ; println() ; printTree(x) ; undent()
           }
 
           val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
@@ -168,12 +166,12 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
 
           if (elseStmts.nonEmpty) {
             print(" else")
-            indent ; println()
+            indent() ; println()
             elseStmts match {
               case List(x)  => printTree(x)
               case _        => printTree(elsep)
             }
-            undent ; println()
+            undent() ; println()
           }
         case _        => s()
       }
@@ -202,94 +200,15 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     override def printTree(tree: Tree) { print(safe(tree)) }
   }
 
-  class TreeMatchTemplate {
-    // non-trees defined in Trees
-    //
-    // case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int)
-    // case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree], positions: Map[Long, Position])
-    //
-    def apply(t: Tree): Unit = t match {
-      // eliminated by typer
-      case Annotated(annot, arg)  =>
-      case AssignOrNamedArg(lhs, rhs) =>
-      case DocDef(comment, definition) =>
-      case Import(expr, selectors) =>
-
-      // eliminated by refchecks
-      case ModuleDef(mods, name, impl) =>
-      case TypeTreeWithDeferredRefCheck() =>
-
-      // eliminated by erasure
-      case TypeDef(mods, name, tparams, rhs) =>
-      case Typed(expr, tpt) =>
-
-      // eliminated by cleanup
-      case ApplyDynamic(qual, args) =>
-
-      // eliminated by explicitouter
-      case Alternative(trees) =>
-      case Bind(name, body) =>
-      case CaseDef(pat, guard, body) =>
-      case Star(elem) =>
-      case UnApply(fun, args) =>
-
-      // eliminated by lambdalift
-      case Function(vparams, body) =>
-
-      // eliminated by uncurry
-      case AppliedTypeTree(tpt, args) =>
-      case CompoundTypeTree(templ) =>
-      case ExistentialTypeTree(tpt, whereClauses) =>
-      case SelectFromTypeTree(qual, selector) =>
-      case SingletonTypeTree(ref) =>
-      case TypeBoundsTree(lo, hi) =>
-
-      // survivors
-      case Apply(fun, args) =>
-      case ArrayValue(elemtpt, trees) =>
-      case Assign(lhs, rhs) =>
-      case Block(stats, expr) =>
-      case ClassDef(mods, name, tparams, impl) =>
-      case DefDef(mods, name, tparams, vparamss, tpt, rhs)  =>
-      case EmptyTree =>
-      case Ident(name) =>
-      case If(cond, thenp, elsep) =>
-      case LabelDef(name, params, rhs) =>
-      case Literal(value) =>
-      case Match(selector, cases) =>
-      case New(tpt) =>
-      case PackageDef(pid, stats) =>
-      case Return(expr) =>
-      case Select(qualifier, selector) =>
-      case Super(qual, mix) =>
-      case Template(parents, self, body) =>
-      case This(qual) =>
-      case Throw(expr) =>
-      case Try(block, catches, finalizer) =>
-      case TypeApply(fun, args) =>
-      case TypeTree() =>
-      case ValDef(mods, name, tpt, rhs) =>
-
-      // missing from the Trees comment
-      case Parens(args) =>                          // only used during parsing
-      case SelectFromArray(qual, name, erasure) =>  // only used during erasure
-    }
-  }
-
-  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
-  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
+  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
+  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
   def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
-  def newStandardTreePrinter(stream: OutputStream): TreePrinter = newStandardTreePrinter(new PrintWriter(stream))
-  def newStandardTreePrinter(): TreePrinter = newStandardTreePrinter(new PrintWriter(ConsoleWriter))
-
   def newCompactTreePrinter(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
-  def newCompactTreePrinter(stream: OutputStream): CompactTreePrinter = newCompactTreePrinter(new PrintWriter(stream))
-  def newCompactTreePrinter(): CompactTreePrinter = newCompactTreePrinter(new PrintWriter(ConsoleWriter))
 
   override def newTreePrinter(writer: PrintWriter): TreePrinter =
-    if (settings.Ycompacttrees.value) newCompactTreePrinter(writer)
+    if (settings.Ycompacttrees) newCompactTreePrinter(writer)
     else newStandardTreePrinter(writer)
   override def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))
   override def newTreePrinter(): TreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))

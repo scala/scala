@@ -1,7 +1,7 @@
 t877.scala:3: error: Invalid literal number
 trait Foo extends A(22A, Bug!) {}
                     ^
-t877.scala:3: error: parents of traits may not have parameters
+t877.scala:3: error: ')' expected but eof found.
 trait Foo extends A(22A, Bug!) {}
-                   ^
+                                 ^
 two errors found

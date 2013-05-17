@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 
 
@@ -67,7 +68,7 @@ self =>
       i =>
       val iter = s
       def hasNext = iter.hasNext
-      def next() = iter.next._1
+      def next() = iter.next()._1
       def split = {
         val ss = iter.split.map(keysIterator(_))
         ss.foreach { _.signalDelegate = i.signalDelegate }
@@ -84,7 +85,7 @@ self =>
       i =>
       val iter = s
       def hasNext = iter.hasNext
-      def next() = iter.next._2
+      def next() = iter.next()._2
       def split = {
         val ss = iter.split.map(valuesIterator(_))
         ss.foreach { _.signalDelegate = i.signalDelegate }

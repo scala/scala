@@ -1,4 +1,5 @@
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.collection.mutable
 
@@ -257,7 +258,6 @@ quant)
   def enabled = _enabled
   def enabled_=(cond: Boolean) = {
     if (cond && !_enabled) {
-      val test = new Timer("", Nil)
       val start = System.nanoTime()
       var total = 0L
       for (i <- 1 to 10000) {

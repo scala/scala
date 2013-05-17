@@ -216,7 +216,7 @@ class ListView[A] extends Component {
     def adjusting = peer.getSelectionModel.getValueIsAdjusting
   }
 
-  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getCellRenderer)
+  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap[A](peer.getCellRenderer)
   def renderer_=(r: ListView.Renderer[A]) { peer.setCellRenderer(r.peer) }
 
   def fixedCellWidth = peer.getFixedCellWidth

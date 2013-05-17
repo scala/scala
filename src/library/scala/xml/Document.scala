@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** A document information item (according to InfoSet spec). The comments
  *  are copied from the Infoset spec, only augmented with some information

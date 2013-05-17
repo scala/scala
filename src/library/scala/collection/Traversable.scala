@@ -6,12 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 
 import generic._
-import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
+import mutable.Builder
 import scala.util.control.Breaks
 
 /** A trait for traversable collections.

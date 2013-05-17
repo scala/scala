@@ -105,6 +105,7 @@ object ShaResolve {
   def parseShaFile(file: File): (File, String) =
     IO.read(file).split("\\s") match {
        case Array(sha, filename) if filename.startsWith("?") => (new File(file.getParentFile, filename.drop(1)), sha)
+       case Array(sha, filename) if filename.startsWith("*") => (new File(file.getParentFile, filename.drop(1)), sha)
        case Array(sha, filename)                             => (new File(file.getParentFile, filename), sha)
        case _                                                => error(file.getAbsolutePath + " is an invalid sha file")
     }

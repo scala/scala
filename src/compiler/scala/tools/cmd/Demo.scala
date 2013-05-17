@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.tools
+package scala
+package tools
 package cmd
 
 /** A sample command specification for illustrative purposes.

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import script._
@@ -157,7 +158,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   /** Clears the buffer contents.
    */
   abstract override def clear(): Unit = synchronized {
-    super.clear
+    super.clear()
   }
 
   override def <<(cmd: Message[A]): Unit = synchronized {

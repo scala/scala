@@ -152,7 +152,7 @@ object test2 {
 
 object test3 {
 
-  case class Exc extends Exception
+  case class Exc() extends Exception
   
   object Rec {
     def f = throw Exc()

@@ -69,8 +69,7 @@ object Test {
     var hashCodeModifier = 0
   }
   
-  @serializable
-  class Foo {
+  class Foo extends Serializable {
     override def hashCode = System.identityHashCode(this) + Foo.hashCodeModifier
   }
 }

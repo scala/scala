@@ -1,10 +1,18 @@
-t6162-inheritance.scala:6: error: inheritance from class Foo in package t6126 is deprecated: `Foo` will be made final in a future version.
+usage.scala:3: warning: inheritance from class Foo in package t6126 is deprecated: `Foo` will be made final in a future version.
 class SubFoo extends Foo
                      ^
-t6162-inheritance.scala:11: error: inheritance from trait T in package t6126 is deprecated
+usage.scala:5: warning: inheritance from trait T in package t6126 is deprecated
 object SubT extends T
                     ^
-t6162-inheritance.scala:17: error: inheritance from trait S in package t6126 is deprecated
+usage.scala:8: warning: inheritance from trait S in package t6126 is deprecated
   new S {
       ^
-three errors found
+usage.scala:3: warning: inheritance from class Foo in package t6126 is deprecated: `Foo` will be made final in a future version.
+class SubFoo extends Foo
+             ^
+usage.scala:5: warning: inheritance from trait T in package t6126 is deprecated
+object SubT extends T
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

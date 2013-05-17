@@ -1,11 +1,11 @@
-package scala.reflect
+package scala
+package reflect
 
-import scala.language.implicitConversions
-import scala.reflect.macros.{Context, ReificationException, UnexpectedReificationException}
+import scala.reflect.macros.ReificationException
 import scala.tools.nsc.Global
 
 package object reify {
-  private def mkReifier(global1: Global)(typer: global1.analyzer.Typer, universe: global1.Tree, mirror: global1.Tree, reifee: Any, concrete: Boolean = false): Reifier { val global: global1.type } = {
+  private def mkReifier(global1: Global)(typer: global1.analyzer.Typer, universe: global1.Tree, mirror: global1.Tree, reifee: Any, concrete: Boolean): Reifier { val global: global1.type } = {
     val typer1: typer.type = typer
     val universe1: universe.type = universe
     val mirror1: mirror.type = mirror
@@ -24,7 +24,8 @@ package object reify {
 
   private[reify] def mkDefaultMirrorRef(global: Global)(universe: global.Tree, typer0: global.analyzer.Typer): global.Tree = {
     import global._
-    import definitions._
+    import definitions.JavaUniverseClass
+
     val enclosingErasure = {
       val rClassTree = reifyEnclosingRuntimeClass(global)(typer0)
       // HACK around SI-6259
@@ -56,7 +57,7 @@ package object reify {
       if (concrete) throw new ReificationException(enclosingMacroPosition, "tpe %s is an unresolved spliceable type".format(tpe))
     }
 
-    tpe.normalize match {
+    tpe.dealiasWiden match {
       case TypeRef(_, ArrayClass, componentTpe :: Nil) =>
         val componentErasure = reifyRuntimeClass(global)(typer0, componentTpe, concrete)
         gen.mkMethodCall(arrayClassMethod, List(componentErasure))
@@ -71,7 +72,6 @@ package object reify {
   // a class/object body, this will return an EmptyTree.
   def reifyEnclosingRuntimeClass(global: Global)(typer0: global.analyzer.Typer): global.Tree = {
     import global._
-    import definitions._
     def isThisInScope = typer0.context.enclosingContextChain exists (_.tree.isInstanceOf[ImplDef])
     if (isThisInScope) {
       val enclosingClasses = typer0.context.enclosingContextChain map (_.tree) collect { case classDef: ClassDef => classDef }

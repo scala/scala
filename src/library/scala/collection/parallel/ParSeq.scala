@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
-
-
+package scala
+package collection.parallel
 
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParCompanion
@@ -18,9 +16,6 @@ import scala.collection.generic.ParFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.GenSeq
 import scala.collection.parallel.mutable.ParArrayCombiner
-import scala.collection.parallel.mutable.ParArray
-
-
 
 /** A template trait for parallel sequences.
  *
@@ -56,26 +51,3 @@ object ParSeq extends ParFactory[ParSeq] {
   def newCombiner[T]: Combiner[T, ParSeq[T]] = ParArrayCombiner[T]
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

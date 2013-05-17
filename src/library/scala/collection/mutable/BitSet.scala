@@ -8,11 +8,12 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
-import BitSetLike.{LogWL, updateArray}
+import BitSetLike.{LogWL, MaxSize, updateArray}
 
 /** A class for mutable bitsets.
  *
@@ -58,14 +59,19 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
     if (idx < nwords) elems(idx) else 0L
 
   private def updateWord(idx: Int, w: Long) {
+    ensureCapacity(idx)
+    elems(idx) = w
+  }
+
+  private def ensureCapacity(idx: Int) {
+    require(idx < MaxSize)
     if (idx >= nwords) {
       var newlen = nwords
-      while (idx >= newlen) newlen = newlen * 2
+      while (idx >= newlen) newlen = (newlen * 2) min MaxSize
       val elems1 = new Array[Long](newlen)
       Array.copy(elems, 0, elems1, 0, nwords)
       elems = elems1
     }
-    elems(idx) = w
   }
 
   protected def fromBitMaskNoCopy(words: Array[Long]): BitSet = new BitSet(words)
@@ -91,6 +97,51 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
 
   def += (elem: Int): this.type = { add(elem); this }
   def -= (elem: Int): this.type = { remove(elem); this }
+
+  /** Updates this bitset to the union with another bitset by performing a bitwise "or".
+   *
+   *  @param   other  the bitset to form the union with.
+   *  @return  the bitset itself.
+   */
+  def |= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) | other.word(i)
+    this
+  }
+  /** Updates this bitset to the intersection with another bitset by performing a bitwise "and".
+   *
+   *  @param   other  the bitset to form the intersection with.
+   *  @return  the bitset itself.
+   */
+  def &= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) & other.word(i)
+    this
+  }
+  /** Updates this bitset to the symmetric difference with another bitset by performing a bitwise "xor".
+   *
+   *  @param   other  the bitset to form the symmetric difference with.
+   *  @return  the bitset itself.
+   */
+  def ^= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) ^ other.word(i)
+    this
+  }
+  /** Updates this bitset to the difference with another bitset by performing a bitwise "and-not".
+   *
+   *  @param   other  the bitset to form the difference with.
+   *  @return  the bitset itself.
+   */
+  def &~= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) & ~other.word(i)
+    this
+  }
 
   override def clear() {
     elems = new Array[Long](elems.length)

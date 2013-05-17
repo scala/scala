@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
 
-import generic._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
 

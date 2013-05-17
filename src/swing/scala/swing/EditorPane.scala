@@ -6,13 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.swing
 
-import event._
 import javax.swing._
 import javax.swing.text._
-import java.awt.event._
 
 /**
  * A text component that allows multiline text input and display.

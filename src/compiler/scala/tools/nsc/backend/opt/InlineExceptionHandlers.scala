@@ -4,7 +4,6 @@
 
 package scala.tools.nsc
 package backend.opt
-import scala.util.control.Breaks._
 
 /**
   * This optimization phase inlines the exception handlers so that further phases can optimize the code better
@@ -53,7 +52,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
   import icodes._
   import icodes.opcodes._
 
-  val phaseName = "inlineExceptionHandlers"
+  val phaseName = "inlinehandlers"
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new InlineExceptionHandlersPhase(p)
@@ -70,9 +69,9 @@ abstract class InlineExceptionHandlers extends SubComponent {
      * -some exception handler duplicates expect the exception on the stack while others expect it in a local
      *   => Option[Local]
      */
-    private val handlerCopies = perRunCaches.newMap[BasicBlock, Option[(Option[Local], BasicBlock)]]
+    private val handlerCopies = perRunCaches.newMap[BasicBlock, Option[(Option[Local], BasicBlock)]]()
     /* This map is the inverse of handlerCopies, used to compute the stack of duplicate blocks */
-    private val handlerCopiesInverted = perRunCaches.newMap[BasicBlock, (BasicBlock, TypeKind)]
+    private val handlerCopiesInverted = perRunCaches.newMap[BasicBlock, (BasicBlock, TypeKind)]()
     private def handlerLocal(bb: BasicBlock): Option[Local] =
       for (v <- handlerCopies get bb ; (local, block) <- v ; l <- local) yield l
 
@@ -89,7 +88,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
 
     /** Apply exception handler inlining to a class */
     override def apply(c: IClass): Unit =
-      if (settings.inlineHandlers.value) {
+      if (settings.inlineHandlers) {
         val startTime = System.currentTimeMillis
         currentClass = c
 
@@ -263,7 +262,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
       if (analyzedMethod eq NoIMethod) {
         analyzedMethod = bblock.method
         tfa.init(bblock.method)
-        tfa.run
+        tfa.run()
         log("      performed tfa on method: " + bblock.method)
 
         for (block <- bblock.method.blocks.sortBy(_.label))
@@ -358,7 +357,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
           }
           val caughtException = toTypeKind(caughtClass.tpe)
           // copy the exception handler code once again, dropping the LOAD_EXCEPTION
-          val copy = handler.code.newBlock
+          val copy = handler.code.newBlock()
           copy.emitOnly((handler.iterator drop dropCount).toSeq: _*)
 
           // extend the handlers of the handler to the copy

@@ -4,7 +4,6 @@ trait States {
   self: Reifier =>
 
   import global._
-  import definitions._
 
   /** Encapsulates reifier state
    *

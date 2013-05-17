@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package symtab
 
-import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.io.AbstractFile
 
 /** A subclass of SymbolLoaders that implements browsing behavior.
@@ -28,7 +27,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
   override protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
     completer.sourcefile match {
       case Some(src) =>
-        (if (member.isModule) member.moduleClass else member).sourceFile = src
+        (if (member.isModule) member.moduleClass else member).associatedFile = src
       case _ =>
     }
     val decls = owner.info.decls

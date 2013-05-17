@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package transform
 
-import scala.collection.{ mutable, immutable }
-
 /** A base class for transforms.
  *  A transform contains a compiler phase which applies a tree transformer.
  */
@@ -19,17 +17,15 @@ trait TypingTransformers {
   abstract class TypingTransformer(unit: CompilationUnit) extends Transformer {
     var localTyper: analyzer.Typer =
       if (phase.erasedTypes)
-        erasure.newTyper(erasure.rootContext(unit, EmptyTree, true)).asInstanceOf[analyzer.Typer]
+        erasure.newTyper(erasure.rootContext(unit, EmptyTree, erasedTypes = true)).asInstanceOf[analyzer.Typer]
       else
         analyzer.newTyper(analyzer.rootContext(unit, EmptyTree, true))
     protected var curTree: Tree = _
-    protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
     override final def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
-//      println("transformer atOwner: " + owner + " isPackage? " + owner.isPackage)
       localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
       val result = super.atOwner(owner)(trans)
       localTyper = savedLocalTyper

@@ -1,3 +1,3 @@
-@serializable object Test {                    
-  private def readResolve:AnyRef = this
+object Test extends Serializable {                    
+  private def readResolve: AnyRef = this
 }

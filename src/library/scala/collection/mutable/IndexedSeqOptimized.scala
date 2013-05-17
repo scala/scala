@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
-import generic._
 
 /** A subtrait of scala.collection.IndexedSeq which represents sequences
  *  that can be mutated.

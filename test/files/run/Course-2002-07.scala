@@ -16,13 +16,13 @@ object M0 {
     def isNumber: Boolean = true;
     def isSum: Boolean = false;
     def numValue: Int = n;
-    def leftOp: Expr = error("Number.leftOp");
-    def rightOp: Expr = error("Number.rightOp");
+    def leftOp: Expr = sys.error("Number.leftOp");
+    def rightOp: Expr = sys.error("Number.rightOp");
   }
   class Sum(e1: Expr, e2: Expr) extends Expr {
     def isNumber: Boolean = false;
     def isSum: Boolean = true;
-    def numValue: Int = error("Sum.numValue");
+    def numValue: Int = sys.error("Sum.numValue");
     def leftOp: Expr = e1;
     def rightOp: Expr = e2;
   }
@@ -30,7 +30,7 @@ object M0 {
   class Prod(e1: Expr, e2: Expr) extends Expr {
     def isNumber: Boolean = false;
     def isSum: Boolean = false;
-    def numValue: Int = error("Prod.numValue");
+    def numValue: Int = sys.error("Prod.numValue");
     def leftOp: Expr = e1;
     def rightOp: Expr = e2;
   }
@@ -38,15 +38,15 @@ object M0 {
   class Var(x: String) extends Expr {
     def isNumber: Boolean = false;
     def isSum: Boolean = false;
-    def numValue: Int = error("Var.numValue");
-    def leftOp: Expr = error("Var.leftOp");
-    def rightOp: Expr = error("Var.rightOp");
+    def numValue: Int = sys.error("Var.numValue");
+    def leftOp: Expr = sys.error("Var.leftOp");
+    def rightOp: Expr = sys.error("Var.rightOp");
   }
 
   def eval(e: Expr): Int = {
     if (e.isNumber) e.numValue
     else if (e.isSum) eval(e.leftOp) + eval(e.rightOp)
-    else error("unknown expression")
+    else sys.error("unknown expression")
   }
 
   def test = {
@@ -375,7 +375,7 @@ object M9 {
 object MA {
 
   def lookup[k,v](xs: List[Pair[k,v]], k: k): v = xs match {
-    case List() => error("no value for " + k)
+    case List() => sys.error("no value for " + k)
     case Pair(k1,v1) :: xs1 => if (k1 == k) v1 else lookup(xs1, k)
   }
 
@@ -410,7 +410,7 @@ object MA {
 
   def eval(e: Expr): Int = e match {
     case Number(n) => n
-    case Var(_) => error("cannot evaluate variable")
+    case Var(_) => sys.error("cannot evaluate variable")
     case Sum(e1, e2) => eval(e1) + eval(e2)
     case Prod(e1, e2) => eval(e1) * eval(e2)
   }
@@ -453,7 +453,7 @@ object Utils {
     if (y == 1) x else if (y % 2 == 0) power0(x*x,y/2) else x*power0(x, y-1);
 
   def power(x: Int, y: Int): Int = (x,y) match {
-    case Pair(0,0) => error("power(0,0)")
+    case Pair(0,0) => sys.error("power(0,0)")
     case Pair(0,_) => 0
     case Pair(1,_) => 1
     case Pair(_,0) => 1
@@ -463,7 +463,7 @@ object Utils {
   }
 
   def lookup(entries: List[(String,Int)], key: String): Int = entries match {
-    case List()                       => error("no value for " + key)
+    case List()                       => sys.error("no value for " + key)
     case Pair(k,v) :: _ if (k == key) => v
     case _ :: rest                    => lookup(rest, key)
   }

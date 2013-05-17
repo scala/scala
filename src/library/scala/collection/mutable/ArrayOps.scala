@@ -52,6 +52,20 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
       super.toArray[U]
   }
 
+  def :+[B >: T: scala.reflect.ClassTag](elem: B): Array[B] = {
+    val result = Array.ofDim[B](repr.length + 1)
+    Array.copy(repr, 0, result, 0, repr.length)
+    result(repr.length) = elem
+    result
+  }
+
+  def +:[B >: T: scala.reflect.ClassTag](elem: B): Array[B] = {
+    val result = Array.ofDim[B](repr.length + 1)
+    result(0) = elem
+    Array.copy(repr, 0, result, 1, repr.length)
+    result
+  }
+
   override def par = ParArray.handoff(repr)
 
   /** Flattens a two-dimensional array by concatenating all its rows
@@ -66,7 +80,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     b.sizeHint(map{case is: scala.collection.IndexedSeq[_] => is.size case _ => 0}.sum)
     for (xs <- this)
       b ++= asTrav(xs)
-    b.result
+    b.result()
   }
 
   /** Transposes a two dimensional array.

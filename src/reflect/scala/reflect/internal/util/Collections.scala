@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.collection.{ mutable, immutable }
 import scala.annotation.tailrec
@@ -40,8 +41,6 @@ trait Collections {
     mforeach(xss)(x => if ((res eq null) && p(x)) res = Some(x))
     if (res eq null) None else res
   }
-  final def mfilter[A](xss: List[List[A]])(p: A => Boolean) =
-    for (xs <- xss; x <- xs; if p(x)) yield x
 
   final def map2[A, B, C](xs1: List[A], xs2: List[B])(f: (A, B) => C): List[C] = {
     val lb = new ListBuffer[C]
@@ -141,7 +140,7 @@ trait Collections {
       ys1 = ys1.tail
       ys2 = ys2.tail
     }
-    buf.result
+    buf.result()
   }
   final def foreach2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Unit): Unit = {
     var ys1 = xs1
@@ -189,18 +188,6 @@ trait Collections {
     }
     false
   }
-  final def forall2[A, B](xs1: List[A], xs2: List[B])(f: (A, B) => Boolean): Boolean = {
-    var ys1 = xs1
-    var ys2 = xs2
-    while (!ys1.isEmpty && !ys2.isEmpty) {
-      if (!f(ys1.head, ys2.head))
-        return false
-
-      ys1 = ys1.tail
-      ys2 = ys2.tail
-    }
-    true
-  }
   final def forall3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => Boolean): Boolean = {
     var ys1 = xs1
     var ys2 = xs2
@@ -222,6 +209,3 @@ trait Collections {
     case _: IllegalArgumentException => None
   }
 }
-
-object Collections extends Collections { }
-

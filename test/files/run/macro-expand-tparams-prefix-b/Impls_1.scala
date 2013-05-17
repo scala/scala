@@ -6,7 +6,7 @@ object Impls {
     import c.universe._
     val T = implicitly[c.WeakTypeTag[T]]
     val U = implicitly[c.WeakTypeTag[U]]
-    val body = Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant(T.toString + " " + U.toString))))
+    val body = Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(T.toString + " " + U.toString))))
     c.Expr[Unit](body)
   }
 }

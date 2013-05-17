@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
 
 import scala.collection.{ mutable, immutable }
 import scala.math.{ ScalaNumericConversions, ScalaNumericAnyConversions }
@@ -28,8 +29,8 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed
   def floatValue()  = num.toFloat(self)
   def longValue()   = num.toLong(self)
   def intValue()    = num.toInt(self)
-  def byteValue()   = intValue.toByte
-  def shortValue()  = intValue.toShort
+  def byteValue()   = intValue().toByte
+  def shortValue()  = intValue().toShort
 
   def min(that: T): T = num.min(self, that)
   def max(that: T): T = num.max(self, that)

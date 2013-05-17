@@ -37,7 +37,7 @@ import scala.tools.asm.Opcodes;
 /**
  * A {@link FieldVisitor} that prints the fields it visits with a
  * {@link Printer}.
- * 
+ *
  * @author Eric Bruneton
  */
 public final class TraceFieldVisitor extends FieldVisitor {
@@ -52,12 +52,10 @@ public final class TraceFieldVisitor extends FieldVisitor {
         super(Opcodes.ASM4, fv);
         this.p = p;
     }
-        
+
     @Override
-    public AnnotationVisitor visitAnnotation(
-        final String desc,
-        final boolean visible)
-    {
+    public AnnotationVisitor visitAnnotation(final String desc,
+            final boolean visible) {
         Printer p = this.p.visitFieldAnnotation(desc, visible);
         AnnotationVisitor av = fv == null ? null : fv.visitAnnotation(desc,
                 visible);

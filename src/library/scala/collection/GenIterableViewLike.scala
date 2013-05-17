@@ -6,14 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
-
-
-
-import generic._
-import TraversableView.NoBuilder
-
-
+package scala
+package collection
 
 trait GenIterableViewLike[+A,
                           +Coll,

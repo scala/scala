@@ -6,14 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.xml
+package scala
+package xml
 
 /** A hack to group XML nodes in one node for output.
  *
  *  @author  Burak Emir
  *  @version 1.0
  */
-final case class Group(val nodes: Seq[Node]) extends Node {
+final case class Group(nodes: Seq[Node]) extends Node {
   override def theSeq = nodes
 
   override def canEqual(other: Any) = other match {

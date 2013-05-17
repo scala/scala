@@ -1,10 +1,12 @@
-permanent-blindness.scala:10: error: imported `Bippy' is permanently hidden by definition of class Bippy in package bar
+permanent-blindness.scala:10: warning: imported `Bippy' is permanently hidden by definition of class Bippy in package bar
   import foo.{ Bippy, Bop, Dingus }
                ^
-permanent-blindness.scala:10: error: imported `Bop' is permanently hidden by definition of object Bop in package bar
+permanent-blindness.scala:10: warning: imported `Bop' is permanently hidden by definition of object Bop in package bar
   import foo.{ Bippy, Bop, Dingus }
                       ^
-permanent-blindness.scala:10: error: imported `Dingus' is permanently hidden by definition of object Dingus in package bar
+permanent-blindness.scala:10: warning: imported `Dingus' is permanently hidden by definition of object Dingus in package bar
   import foo.{ Bippy, Bop, Dingus }
                            ^
-three errors found
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

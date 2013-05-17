@@ -6,8 +6,7 @@
 package scala.tools.nsc
 package backend
 
-import scala.tools.nsc.ast._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /**
  * Simple implementation of a worklist algorithm. A processing
@@ -32,8 +31,6 @@ trait WorklistAlgorithm {
    * Run the iterative algorithm until the worklist remains empty.
    * The initializer is run once before the loop starts and should
    * initialize the worklist.
-   *
-   * @param initWorklist ...
    */
   def run(initWorklist: => Unit) = {
     initWorklist

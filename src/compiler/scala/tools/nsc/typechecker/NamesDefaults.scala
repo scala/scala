@@ -8,7 +8,6 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.mutable
-import scala.ref.WeakReference
 import scala.reflect.ClassTag
 
 /**
@@ -20,6 +19,7 @@ trait NamesDefaults { self: Analyzer =>
   import global._
   import definitions._
   import NamesDefaultsErrorsGen._
+  import treeInfo.WildcardStarArg
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -42,13 +42,11 @@ trait NamesDefaults { self: Analyzer =>
     blockTyper: Typer
   ) { }
 
-  val noApplyInfo = NamedApplyInfo(None, Nil, Nil, null)
-
-  def nameOf(arg: Tree) = arg match {
-    case AssignOrNamedArg(Ident(name), rhs) => Some(name)
-    case _ => None
+  private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case AssignOrNamedArg(Ident(name), _) => name }
+  def isNamedArg(arg: Tree) = arg match {
+    case AssignOrNamedArg(Ident(_), _) => true
+    case _                             => false
   }
-  def isNamed(arg: Tree) = nameOf(arg).isDefined
 
   /** @param pos maps indices from old to new */
   def reorderArgs[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
@@ -58,13 +56,13 @@ trait NamesDefaults { self: Analyzer =>
   }
 
   /** @param pos maps indices from new to old (!) */
-  def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
+  private def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
     (argsArray.indices map (i => argsArray(pos(i)))).toList
   }
 
   /** returns `true` if every element is equal to its index */
-  def isIdentity(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
+  def allArgsArePositional(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
 
   /**
    * Transform a function application into a Block, and assigns typer.context
@@ -107,14 +105,14 @@ trait NamesDefaults { self: Analyzer =>
    *  @return the transformed application (a Block) together with the NamedApplyInfo.
    *     if isNamedApplyBlock(tree), returns the existing context.namedApplyBlockInfo
    */
-  def transformNamedApplication(typer: Typer, mode: Int, pt: Type)
+  def transformNamedApplication(typer: Typer, mode: Mode, pt: Type)
                                (tree: Tree, argPos: Int => Int): Tree = {
     import typer._
     import typer.infer._
     val context = typer.context
     import context.unit
 
-    /**
+    /*
      * Transform a function into a block, and passing context.namedApplyBlockInfo to
      * the new block as side-effect.
      *
@@ -164,14 +162,14 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos) setInfo qual.tpe
+        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos, newFlags = ARTIFACT) setInfo qual.tpe
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: SI-5720, SI-5727
         qual changeOwner (blockTyper.context.owner -> sym)
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
-        var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
+        val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
           // setSymbol below is important because the 'selected' function might be overloaded. by
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, SI-5259.
@@ -204,7 +202,7 @@ trait NamesDefaults { self: Analyzer =>
           if (module == NoSymbol) None
           else {
             val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
-            if (module.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
+            if (treeInfo.admitsTypeSelection(ref))  // fixes #4524. the type checker does the same for
               ref.setType(singleType(pre, module))  // typedSelect, it calls "stabilize" on the result.
             Some(ref)
           }
@@ -259,7 +257,7 @@ trait NamesDefaults { self: Analyzer =>
       }
     }
 
-    /**
+    /*
      * For each argument (arg: T), create a local value
      *  x$n: T = arg
      *
@@ -281,15 +279,15 @@ trait NamesDefaults { self: Analyzer =>
           val repeated = isScalaRepeatedParamType(paramTpe)
           val argTpe = (
             if (repeated) arg match {
-              case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
-              case _                                       => seqType(arg.tpe)
+              case WildcardStarArg(expr) => expr.tpe
+              case _                     => seqType(arg.tpe)
             }
             else
               // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
-              // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
-              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe).deconst
-          )
-          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
+              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe)
+          // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
+          ).deconst
+          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo (
             if (byName) functionType(Nil, argTpe) else argTpe
           )
           Some((context.scope.enter(s), byName, repeated))
@@ -305,11 +303,8 @@ trait NamesDefaults { self: Analyzer =>
             } else {
               new ChangeOwnerTraverser(context.owner, sym) traverse arg // fixes #4502
               if (repeated) arg match {
-                case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
-                  expr
-                case _ =>
-                  val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
-                  blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
+                case WildcardStarArg(expr) => expr
+                case _                     => blockTyper typed gen.mkSeqApply(resetLocalAttrs(arg))
               } else arg
             }
           Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))
@@ -328,7 +323,7 @@ trait NamesDefaults { self: Analyzer =>
           assert(isNamedApplyBlock(transformedFun), transformedFun)
           val NamedApplyInfo(qual, targs, vargss, blockTyper) =
             context.namedApplyBlockInfo.get._2
-          val existingBlock @ Block(stats, funOnly) = transformedFun
+          val Block(stats, funOnly) = transformedFun
 
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
@@ -373,7 +368,7 @@ trait NamesDefaults { self: Analyzer =>
     }
   }
 
-  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOf _): (List[Symbol], Boolean) = {
+  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOfNamedArg _): (List[Symbol], Boolean) = {
     val namedArgs = args.dropWhile(arg => {
       val n = argName(arg)
       n.isEmpty || params.forall(p => p.name != n.get)
@@ -408,7 +403,7 @@ trait NamesDefaults { self: Analyzer =>
           // TODO #3649 can create spurious errors when companion object is gone (because it becomes unlinked from scope)
           if (defGetter == NoSymbol) None // prevent crash in erroneous trees, #3649
           else {
-            var default1 = qual match {
+            var default1: Tree = qual match {
               case Some(q) => gen.mkAttributedSelect(q.duplicate, defGetter)
               case None    => gen.mkAttributedRef(defGetter)
 
@@ -454,20 +449,6 @@ trait NamesDefaults { self: Analyzer =>
     } else NoSymbol
   }
 
-  private def savingUndeterminedTParams[T](context: Context)(fn: List[Symbol] => T): T = {
-    val savedParams    = context.extractUndetparams()
-    val savedReporting = context.ambiguousErrors
-
-    context.setAmbiguousErrors(false)
-    try fn(savedParams)
-    finally {
-      context.setAmbiguousErrors(savedReporting)
-      //@M note that we don't get here when an ambiguity was detected (during the computation of res),
-      // as errorTree throws an exception
-      context.undetparams = savedParams
-    }
-  }
-
   /** A full type check is very expensive; let's make sure there's a name
    *  somewhere which could potentially be ambiguous before we go that route.
    */
@@ -482,12 +463,10 @@ trait NamesDefaults { self: Analyzer =>
       //   def f[T](x: T) = x
       //   var x = 0
       //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
-      savingUndeterminedTParams(context) { udp =>
+      val udp = context.undetparams
+      context.savingUndeterminedTypeParams(reportAmbiguous = false) {
         val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
-          override def apply(tp: Type): Type = super.apply(tp match {
-            case TypeRef(_, ByNameParamClass, x :: Nil) => x
-            case _                                      => tp
-          })
+          override def apply(tp: Type): Type = super.apply(dropByName(tp))
         }
         // This throws an exception which is caught in `tryTypedApply` (as it
         // uses `silent`) - unfortunately, tryTypedApply recovers from the

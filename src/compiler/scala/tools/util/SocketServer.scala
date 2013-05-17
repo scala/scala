@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.util
+package scala
+package tools.util
 
 import java.net.{ ServerSocket, SocketException, SocketTimeoutException }
 import java.io.{ PrintWriter, BufferedReader }
@@ -16,8 +17,8 @@ trait CompileOutputCommon {
   def verbose: Boolean
 
   def info(msg: String)  = if (verbose) echo(msg)
-  def echo(msg: String)  = {Console println msg; Console.flush}
-  def warn(msg: String)  = {Console.err println msg; Console.flush}
+  def echo(msg: String)  = {Console println msg; Console.flush()}
+  def warn(msg: String)  = {Console.err println msg; Console.flush()}
   def fatal(msg: String) = { warn(msg) ; sys.exit(1) }
 }
 
