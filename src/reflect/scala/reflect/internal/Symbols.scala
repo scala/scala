@@ -1506,7 +1506,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def cookJavaRawInfo(): Unit = {
       // only try once...
-      if (this hasFlag TRIEDCOOKING)
+      if (phase.erasedTypes || (this hasFlag TRIEDCOOKING))
         return
 
       this setFlag TRIEDCOOKING
