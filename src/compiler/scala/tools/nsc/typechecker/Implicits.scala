@@ -996,11 +996,15 @@ trait Implicits {
           if (divergence || DivergentImplicitRecovery.sym != null) {
             if (settings.Xdivergence211.value) DivergingImplicitExpansionError(tree, pt, DivergentImplicitRecovery.sym)(context)
             else throw DivergentImplicit
-          } else invalidImplicits take 1 foreach { sym =>
-            def isSensibleAddendum = pt match {
+          }
+          else if (invalidImplicits.nonEmpty) {
+            val sym = invalidImplicits.head
+            // We don't even dare look if errors are being buffered
+            // !sym.hasFlag(LOCKED) is a hail mary between SI-2206 and SI-7486
+            def isSensibleAddendum = !sym.hasFlag(LOCKED) && (pt match {
               case Function1(_, out) => out <:< sym.tpe.finalResultType
               case _                 => pt <:< sym.tpe.finalResultType
-            }
+            })
             // Don't pitch in with this theory unless it looks plausible that the
             // implicit would have helped
             setAddendum(pos, () =>
