@@ -5119,10 +5119,9 @@ trait Typers extends Adaptations with Tags {
 
       def typedApplyDynamic(tree: ApplyDynamic) = {
         assert(phase.erasedTypes)
-        val reflectiveCalls = !(settings.refinementMethodDispatch.value == "invoke-dynamic")
         val qual1 = typed(tree.qual, AnyRefClass.tpe)
-        val args1 = tree.args mapConserve (arg => if (reflectiveCalls) typed(arg, AnyRefClass.tpe) else typed(arg))
-        treeCopy.ApplyDynamic(tree, qual1, args1) setType (if (reflectiveCalls) AnyRefClass.tpe else tree.symbol.info.resultType)
+        val args1 = tree.args mapConserve (arg => typed(arg, AnyRefClass.tpe))
+        treeCopy.ApplyDynamic(tree, qual1, args1) setType AnyRefClass.tpe
       }
 
       def typedReferenceToBoxed(tree: ReferenceToBoxed) = {
