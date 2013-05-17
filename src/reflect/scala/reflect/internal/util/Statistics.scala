@@ -104,7 +104,7 @@ quant)
          r <- q :: q.children.toList if r.prefix.nonEmpty) yield r
 
   private def showPercent(x: Double, base: Double) =
-    if (base == 0) "" else f" (${x / base * 100}%2.1f%)"
+    if (base == 0) "" else f" (${x / base * 100}%2.1f%%)"
 
   /** The base trait for quantities.
    *  Quantities with non-empty prefix are printed in the statistics info.

@@ -1,13 +1,13 @@
-newSource1:47: warning: discarding unmoored doc comment
+newSource1.scala:47: warning: discarding unmoored doc comment
         /** Document this crucial constant for posterity.
         ^
-newSource1:64: warning: discarding unmoored doc comment
+newSource1.scala:64: warning: discarding unmoored doc comment
         /*************************\
         ^
-newSource1:73: warning: discarding unmoored doc comment
+newSource1.scala:73: warning: discarding unmoored doc comment
         val i = 10 */** Important!
                    ^
-[[syntax trees at end of                    parser]] // newSource1
+[[syntax trees at end of                    parser]] // newSource1.scala
 package <empty> {
   object UselessComments extends scala.AnyRef {
     def <init>() = {

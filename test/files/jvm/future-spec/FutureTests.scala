@@ -71,6 +71,25 @@ object FutureTests extends MinimalScalaTest {
     }
   }
 
+  "The Future companion object" should {
+    "call ExecutionContext.prepare on apply" in {
+      val p = Promise[Boolean]()
+      val ec = new ExecutionContext {
+        val delegate = ExecutionContext.global
+        override def prepare(): ExecutionContext = {
+          p.success(true)
+          delegate.prepare
+        }
+        override def execute(r: Runnable) = delegate.execute(r)
+        override def reportFailure(t: Throwable): Unit = delegate.reportFailure(t)
+      }
+
+      val f = Future("foo")(ec)
+      Await.result(f, defaultTimeout) mustBe ("foo")
+      Await.result(p.future, defaultTimeout) mustBe (true)
+    }
+  }
+
   "The default ExecutionContext" should {
     "report uncaught exceptions" in {
       val p = Promise[Throwable]()

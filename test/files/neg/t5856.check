@@ -1,6 +1,6 @@
 t5856.scala:10: error: invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected
   val s9 = s"$"
-            ^
+             ^
 t5856.scala:10: error: unclosed string literal
   val s9 = s"$"
               ^
