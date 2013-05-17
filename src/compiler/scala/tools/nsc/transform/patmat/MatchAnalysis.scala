@@ -95,7 +95,9 @@ trait TreeAndTypeAnalysis extends Debugging {
       // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
       // similar to typer.infer.approximateAbstracts
       object typeArgsToWildcardsExceptArray extends TypeMap {
-        def apply(tp: Type): Type = tp match {
+        // SI-6771 dealias would be enough today, but future proofing with the dealiasWiden.
+        // See neg/t6771b.scala for elaboration
+        def apply(tp: Type): Type = tp.dealiasWiden match {
           case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
             TypeRef(pre, sym, args map (_ => WildcardType))
           case _ =>

@@ -929,10 +929,19 @@ trait Implicits {
            */
           if (DivergentImplicitRecovery.sym != null) {
             DivergingImplicitExpansionError(tree, pt, DivergentImplicitRecovery.sym)(context)
-          } else if (invalidImplicits.nonEmpty)
+          } else invalidImplicits take 1 foreach { sym =>
+            def isSensibleAddendum = pt match {
+              case Function1(_, out) => out <:< sym.tpe.finalResultType
+              case _                 => pt <:< sym.tpe.finalResultType
+            }
+            // Don't pitch in with this theory unless it looks plausible that the
+            // implicit would have helped
             setAddendum(pos, () =>
-              "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
-              " because it comes after the application point and it lacks an explicit result type")
+              if (isSensibleAddendum)
+                s"\n Note: implicit $sym is not applicable here because it comes after the application point and it lacks an explicit result type"
+              else ""
+            )
+          }
         }
 
         best

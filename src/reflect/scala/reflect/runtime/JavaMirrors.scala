@@ -125,7 +125,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private def ErrorStaticModule(sym: Symbol)                  = abort(s"$sym is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
     private def ErrorNotMember(sym: Symbol, owner: Symbol)      = abort(s"expected a member of $owner, you provided ${sym.kindString} ${sym.fullName}")
     private def ErrorNotField(sym: Symbol)                      = abort(s"expected a field or an accessor method symbol, you provided $sym")
-    private def ErrorSetImmutableField(sym: Symbol)             = abort(s"cannot set an immutable field ${sym.name}")
     private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = abort(s"expected a constructor of $owner, you provided $sym")
     private def ErrorFree(member: Symbol, freeType: Symbol)     = abort(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
     private def ErrorNonExistentField(sym: Symbol)              = abort(
@@ -269,7 +268,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       lazy val jfield = ensureAccessible(fieldToJava(symbol))
       def get = jfield get receiver
       def set(value: Any) = {
-        if (!symbol.isMutable) ErrorSetImmutableField(symbol)
+        // it appears useful to be able to set values of vals, therefore I'm disabling this check
+        // if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
       def bind(newReceiver: Any) = new JavaFieldMirror(newReceiver, symbol)

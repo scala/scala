@@ -28,7 +28,7 @@ private[concurrent] object Future {
 
   def apply[T](body: =>T)(implicit executor: ExecutionContext): scala.concurrent.Future[T] = {
     val runnable = new PromiseCompletingRunnable(body)
-    executor.execute(runnable)
+    executor.prepare.execute(runnable)
     runnable.promise.future
   }
 }
