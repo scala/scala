@@ -28,38 +28,35 @@ package util.control
  */
 object TailCalls {
 
-  /** This class represents a tailcalling computation
-   */
-  abstract class TailRec[+A] {
-    /** Returns the result of the tailcalling computation.
-     */
-    def result: A = {
-      def loop(body: TailRec[A]): A = body match {
-        case Call(rest) => loop(rest())
-        case Done(result) => result
-      }
-      loop(this)
-    }
+  @annotation.tailrec
+  private def loop(tailRec: TailRec[_]): Any = tailRec.underlying match {
+    case Done(result) => result
+    case underlying => loop(underlying().asInstanceOf[TailRec[_]])
   }
 
-  /** Internal class representing a tailcall */
-  protected case class Call[A](rest: () => TailRec[A]) extends TailRec[A]
+  /** This class represents a tailcalling computation
+   */
+  class TailRec[+A] private[TailCalls](val underlying: () => _) extends AnyVal {
+    /** Returns the result of the tailcalling computation.
+     */
+    def result:A = loop(this).asInstanceOf[A]
+  }
 
   /** Internal class representing the final result returned from a tailcalling
     * computation */
-  protected case class Done[A](override val result: A) extends TailRec[A]
+  private case class Done[+A](override val apply:A) extends (() => A)
 
   /** Performs a tailcall
    *  @param rest  the expression to be evaluated in the tailcall
    *  @return a `TailRec` object representing the expression `rest`
    */
-  def tailcall[A](rest: => TailRec[A]): TailRec[A] = new Call(() => rest)
+  def tailcall[A](rest: => TailRec[A]): TailRec[A] = new TailRec(rest _)
 
   /** Used to return final result from tailcalling computation
    *  @param  `result` the result value
    *  @return a `TailRec` object representing a computation which immediately
    *          returns `result`
    */
-  def done[A](result: A): TailRec[A] = new Done(result)
+  def done[A](result: A): TailRec[A] = new TailRec(Done(result))
 
 }
