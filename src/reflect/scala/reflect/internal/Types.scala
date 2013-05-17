@@ -3668,13 +3668,13 @@ trait Types
 // Hash consing --------------------------------------------------------------
 
   private val initialUniquesCapacity = 4096
-  private var uniques: util.HashSet[Type] = _
+  private var uniques: util.WeakHashSet[Type] = _
   private var uniqueRunId = NoRunId
 
   protected def unique[T <: Type](tp: T): T = {
     if (Statistics.canEnable) Statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
-      uniques = util.HashSet[Type]("uniques", initialUniquesCapacity)
+      uniques = util.WeakHashSet[Type](initialUniquesCapacity)
       perRunCaches.recordCache(uniques)
       uniqueRunId = currentRunId
     }
