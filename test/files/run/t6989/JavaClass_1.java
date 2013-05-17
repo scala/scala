@@ -7,6 +7,8 @@ package foo;
 
 // I'm leaving the incorrect results of FromJavaClassCompleters in the check
 // file, so that we get notified when something changes there.
+// ^^^ It's not clear what those incorrect results were, but the fix for SI-7359
+// (backport of fix for SI-6548) has probably resolved some of these. OP, please revisit this comment.
 
 class PackagePrivateJavaClass {
   private int privateField = 0;
