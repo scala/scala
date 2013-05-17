@@ -1435,13 +1435,27 @@ trait Types
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
-    private def lowerString = if (emptyLowerBound) "" else " >: " + lo
-    private def upperString = if (emptyUpperBound) "" else " <: " + hi
     private def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
     private def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
-    override def safeToString = lowerString + upperString
+    override def safeToString = scalaNotation(_.toString)
+
+    /** Bounds notation used in Scala sytanx.
+      * For example +This <: scala.collection.generic.Sorted[K,This].
+      */
+    private[internal] def scalaNotation(typeString: Type => String): String = {
+      (if (emptyLowerBound) "" else " >: " + typeString(lo)) +
+      (if (emptyUpperBound) "" else " <: " + typeString(hi))
+    }
+    /** Bounds notation used in http://adriaanm.github.com/files/higher.pdf.
+      * For example *(scala.collection.generic.Sorted[K,This]).
+      */
+    private[internal] def starNotation(typeString: Type => String): String = {
+      if (emptyLowerBound && emptyUpperBound) ""
+      else if (emptyLowerBound) "(" + typeString(hi) + ")"
+      else "(%s, %s)" format (typeString(lo), typeString(hi))
+    }
     override def kind = "TypeBoundsType"
   }
 
