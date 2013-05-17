@@ -30,6 +30,9 @@
       <system>JIRA</system>
       <url>https://issues.scala-lang.org/</url>
    </issueManagement>
+   <properties>
+       <info.apiURL>http://www.scala-lang.org/api/@VERSION@/</info.apiURL>
+   </properties>
    <dependencies>
       <!--<dependency>
          <groupId>com.typesafe</groupId>
