@@ -163,8 +163,6 @@ trait ScalaSettings extends AbsScalaSettings
   val Ystatistics     = BooleanSetting    ("-Ystatistics", "Print compiler statistics.") andThen (scala.reflect.internal.util.Statistics.enabled = _)
   val stopAfter       = PhasesSetting     ("-Ystop-after", "Stop after") withAbbreviation ("-stop") // backward compat
   val stopBefore      = PhasesSetting     ("-Ystop-before", "Stop before")
-  val refinementMethodDispatch
-                      = ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy", List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
   val Yrangepos       = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", "Show start and end positions of members", "") withPostSetHook (_ => Yrangepos.value = true)
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
