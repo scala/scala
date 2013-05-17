@@ -249,10 +249,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     }
   }
 
-  def appendIndex(url: String): String = {
-    val index = "/index.html"
-    if (url.endsWith(index)) url else url + index
-  }
+  def appendIndex(url: String): String = url.stripSuffix("index.html").stripSuffix("/") + "/index.html"
 
   // Deprecated together with 'docExternalUrls' option.
   lazy val extUrlPackageMapping: Map[String, String] = (Map.empty[String, String] /: docExternalUrls.value) {
