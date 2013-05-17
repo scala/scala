@@ -1233,28 +1233,20 @@ trait Typers extends Adaptations with Tags {
         }
         if (tree.isType)
           adaptType()
+        else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree))
+          macroExpandApply(this, tree, mode, pt)
         else if (mode.typingPatternFun)
           adaptConstrPattern()
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
           assert(!context.inTypeConstructor, context) //@M
-          if (mode.typingExprNotFun && pt.typeSymbol == UnitClass)
-            instantiateExpectingUnit(tree, mode)
-          else
-            instantiate(tree, mode, pt)
+          instantiatePossiblyExpectingUnit(tree, mode, pt)
         }
         else if (tree.tpe <:< pt)
           tree
         else
           fallbackAfterVanillaAdapt()
-      }
-      def expandMacroAndVanillaAdapt(): Tree = {
-        if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree)) {
-          val tree1 = macroExpandApply(this, tree, mode, pt)
-          if (tree == tree1) vanillaAdapt(tree) else tree1
-        }
-        else vanillaAdapt(tree)
       }
 
       // begin adapt
@@ -1294,7 +1286,7 @@ trait Typers extends Adaptations with Tags {
         case mt: MethodType if mode.typingExprNotFunNotLhs && !hasUndetsInMonoMode && !treeInfo.isMacroApplicationOrBlock(tree) =>
           instantiateToMethodType(mt)
         case _ =>
-          expandMacroAndVanillaAdapt()
+          vanillaAdapt(tree)
       }
     }
 
@@ -1313,6 +1305,13 @@ trait Typers extends Adaptations with Tags {
           val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
+    }
+
+    def instantiatePossiblyExpectingUnit(tree: Tree, mode: Mode, pt: Type): Tree = {
+      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass)
+        instantiateExpectingUnit(tree, mode)
+      else
+        instantiate(tree, mode, pt)
     }
 
     private def isAdaptableWithView(qual: Tree) = {

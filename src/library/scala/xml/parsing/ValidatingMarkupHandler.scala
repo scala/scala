@@ -13,9 +13,8 @@ package xml
 package parsing
 
 import scala.xml.dtd._
-import scala.util.logging.Logged
 
-abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
+abstract class ValidatingMarkupHandler extends MarkupHandler {
 
   var rootLabel:String = _
   var qStack: List[Int] = Nil
@@ -25,20 +24,6 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
   var declCurrent: ElemDecl = null
 
   final override val isValidating = true
-
-  override def log(msg: String) {}
-
-  /*
-  override def checkChildren(pos: Int, pre: String, label:String,ns:NodeSeq): Unit = {
-    Console.println("checkChildren()");
-    val decl = lookupElemDecl(label);
-    // @todo: nice error message
-    val res = decl.contentModel.validate(ns);
-    Console.println("res = "+res);
-    if(!res)
-      //sys.error("invalid!");
-  }
-  */
 
   override def endDTD(n:String) = {
     rootLabel = n
@@ -116,5 +101,4 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
 
   /** report a syntax error */
   def reportValidationError(pos: Int, str: String): Unit
-
 }

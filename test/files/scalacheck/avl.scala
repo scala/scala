@@ -2,14 +2,12 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Properties
 
-import util.logging.ConsoleLogger
-
 package scala.collection.mutable {
 
   /**
    * Property of an AVL Tree : Any node of the tree has a balance value beetween in [-1; 1]
    */
-  abstract class AVLTreeTest(name: String) extends Properties(name) with ConsoleLogger {
+  abstract class AVLTreeTest(name: String) extends Properties(name) {
 
     def `2^`(n: Int) = (1 to n).fold(1)((a, b) => b*2)
 

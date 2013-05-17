@@ -213,7 +213,7 @@ trait Contexts { self: Analyzer =>
     def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
-    var openImplicits: List[(Type,Tree)] = List()
+    var openImplicits: List[OpenImplicit] = List()
 
     /* For a named application block (`Tree`) the corresponding `NamedApplyInfo`. */
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
