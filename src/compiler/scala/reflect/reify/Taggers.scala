@@ -27,8 +27,9 @@ abstract class Taggers {
     NothingTpe -> nme.Nothing,
     NullTpe -> nme.Null)
 
-  def materializeClassTag(tpe: Type): Tree = {
+  def materializeClassTag(tpe0: Type): Tree = {
     val tagModule = ClassTagModule
+    val tpe = tpe0.dealiasWiden
     materializeTag(EmptyTree, tpe, tagModule, {
       val erasure = c.reifyRuntimeClass(tpe, concrete = true)
       val factory = TypeApply(Select(Ident(tagModule), nme.apply), List(TypeTree(tpe)))
