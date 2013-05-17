@@ -999,8 +999,7 @@ trait Implicits {
           } else invalidImplicits take 1 foreach { sym =>
             def isSensibleAddendum = pt match {
               case Function1(_, out) => out <:< sym.tpe.finalResultType
-              case tp                => tp <:< sym.tpe.finalResultType
-              case _                 => false
+              case _                 => pt <:< sym.tpe.finalResultType
             }
             // Don't pitch in with this theory unless it looks plausible that the
             // implicit would have helped
