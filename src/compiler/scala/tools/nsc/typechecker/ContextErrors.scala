@@ -1307,6 +1307,11 @@ trait ContextErrors {
       throw MacroBodyTypecheckException // don't call fail, because we don't need IS_ERROR
     }
 
+    def MacroDefIsQmarkQmarkQmark() = {
+      macroLogVerbose("typecheck terminated unexpectedly: macro is ???")
+      throw MacroBodyTypecheckException
+    }
+
     def MacroFeatureNotEnabled() = {
       macroLogVerbose("typecheck terminated unexpectedly: language.experimental.macros feature is not enabled")
       fail()
