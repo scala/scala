@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.io.Codec
+import scala.reflect.internal.FatalError
 import scala.sys.process.Process
 import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
@@ -451,9 +452,10 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     val failing = rounds find (x => nextTestActionExpectTrue("compilation failed", x.isOk) == false)
 
     // which means passing if it checks and didn't crash the compiler
+    // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
     def checked(r: CompileRound) = r.result match {
-      case f: Crash => false
-      case f        => normalizeLog(); diffIsOk
+      case Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => false
+      case _ => normalizeLog(); diffIsOk
     }
 
     failing map (checked) getOrElse nextTestActionFailing("expected compilation failure")

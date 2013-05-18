@@ -1,4 +1,0 @@
-error: fatal error: Multiple phases want to run right after the phase explicitouter
-Phases: erasure, multi-rafter, 
-Re-run with -Xgenerate-phase-graph <filename> to better see the problem.
-one error found
