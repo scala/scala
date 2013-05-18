@@ -277,16 +277,16 @@ abstract class TreeInfo {
    *  same object?
    */
   def isSelfConstrCall(tree: Tree): Boolean = tree match {
-    case Applied(Ident(nme.CONSTRUCTOR), _, _) => true
+    case Applied(Ident(nme.CONSTRUCTOR), _, _)           => true
     case Applied(Select(This(_), nme.CONSTRUCTOR), _, _) => true
-    case _ => false
+    case _                                               => false
   }
 
   /** Is tree a super constructor call?
    */
   def isSuperConstrCall(tree: Tree): Boolean = tree match {
     case Applied(Select(Super(_, _), nme.CONSTRUCTOR), _, _) => true
-    case _ => false
+    case _                                                   => false
   }
 
   /**

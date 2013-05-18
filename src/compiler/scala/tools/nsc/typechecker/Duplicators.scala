@@ -331,7 +331,7 @@ abstract class Duplicators extends Analyzer {
           super.typed(atPos(tree.pos)(tree1))
 */
         case Match(scrut, cases) =>
-          val scrut1   = typed(scrut, EXPRmode | BYVALmode, WildcardType)
+          val scrut1   = typedByValueExpr(scrut)
           val scrutTpe = scrut1.tpe.widen
           val cases1 = {
             if (scrutTpe.isFinalType) cases filter {

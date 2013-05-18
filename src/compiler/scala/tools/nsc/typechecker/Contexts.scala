@@ -219,8 +219,14 @@ trait Contexts { self: Analyzer =>
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
 
+    def inSuperInit_=(value: Boolean)         = this(SuperInit) = value
+    def inSuperInit                           = this(SuperInit)
     def inConstructorSuffix_=(value: Boolean) = this(ConstructorSuffix) = value
     def inConstructorSuffix                   = this(ConstructorSuffix)
+    def inPatAlternative_=(value: Boolean)    = this(PatternAlternative) = value
+    def inPatAlternative                      = this(PatternAlternative)
+    def starPatterns_=(value: Boolean)        = this(StarPatterns) = value
+    def starPatterns                          = this(StarPatterns)
     def returnsSeen_=(value: Boolean)         = this(ReturnsSeen) = value
     def returnsSeen                           = this(ReturnsSeen)
     def inSelfSuperCall_=(value: Boolean)     = this(SelfSuperCall) = value
@@ -235,6 +241,12 @@ trait Contexts { self: Analyzer =>
     def checking                              = this(Checking)
     def retyping_=(value: Boolean)            = this(ReTyping) = value
     def retyping                              = this(ReTyping)
+    def inSecondTry                           = this(SecondTry)
+    def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
+    def inReturnExpr                          = this(ReturnExpr)
+    def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
+
+    def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
     /** These messages are printed when issuing an error */
     var diagnostic: List[String] = Nil
@@ -344,11 +356,32 @@ trait Contexts { self: Analyzer =>
       finally contextMode = saved
     }
 
-    def withImplicitsEnabled[T](op: => T): T                 = withMode(enabled = ImplicitsEnabled)(op)
-    def withImplicitsDisabled[T](op: => T): T                = withMode(disabled = ImplicitsEnabled | EnrichmentEnabled)(op)
-    def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
-    def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
-    def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
+    @inline final def withImplicitsEnabled[T](op: => T): T                 = withMode(enabled = ImplicitsEnabled)(op)
+    @inline final def withImplicitsDisabled[T](op: => T): T                = withMode(disabled = ImplicitsEnabled | EnrichmentEnabled)(op)
+    @inline final def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
+    @inline final def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
+    @inline final def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
+    @inline final def withinStarPatterns[T](op: => T): T                   = withMode(enabled = StarPatterns)(op)
+    @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
+    @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
+    @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+
+    /** TypeConstructorAllowed is enabled when we are typing a higher-kinded type.
+     *  adapt should then check kind-arity based on the prototypical type's kind
+     *  arity. Type arguments should not be inferred.
+     */
+    @inline final def withinTypeConstructorAllowed[T](op: => T): T = withMode(enabled = TypeConstructorAllowed)(op)
+
+    /* TODO - consolidate returnsSeen (which seems only to be used by checkDead)
+     * and ReturnExpr.
+     */
+    @inline final def withinReturnExpr[T](op: => T): T = {
+      enclMethod.returnsSeen = true
+      withMode(enabled = ReturnExpr)(op)
+    }
+
+    // See comment on FormerNonStickyModes.
+    @inline final def withOnlyStickyModes[T](op: => T): T = withMode(disabled = FormerNonStickyModes)(op)
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
@@ -1325,22 +1358,58 @@ object ContextMode {
   /** Are we in a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
   final val Checking: ContextMode                 = 1 << 9
 
-  /** Are we retypechecking arguments independently from the function applied to them? See `Typer.tryTypedApply` */
-  // TODO This seems to directly overlap with Mode.SNDTRYmode
+  /** Are we retypechecking arguments independently from the function applied to them? See `Typer.tryTypedApply`
+   *  TODO - iron out distinction/overlap with SecondTry.
+   */
   final val ReTyping: ContextMode                 = 1 << 10
+
+  /** Are we typechecking pattern alternatives. Formerly ALTmode. */
+  final val PatternAlternative: ContextMode       = 1 << 11
+
+  /** Are star patterns allowed. Formerly STARmode. */
+  final val StarPatterns: ContextMode             = 1 << 12
+
+  /** Are we typing the "super" in a superclass constructor call super.<init>. Formerly SUPERCONSTRmode. */
+  final val SuperInit: ContextMode                = 1 << 13
+
+  /*  Is this the second attempt to type this tree? In that case functions
+   *  may no longer be coerced with implicit views. Formerly SNDTRYmode.
+   */
+  final val SecondTry: ContextMode                = 1 << 14
+
+  /** Are we in return position? Formerly RETmode. */
+  final val ReturnExpr: ContextMode               = 1 << 15
+
+  /** Are unapplied type constructors allowed here? Formerly HKmode. */
+  final val TypeConstructorAllowed: ContextMode   = 1 << 16
+
+  /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
+   *  To mimick the sticky mode behavior, when captain stickyfingers
+   *  comes around we need to propagate those modes but forget the other
+   *  context modes which were once mode bits; those being so far the
+   *  ones listed here.
+   */
+  final val FormerNonStickyModes: ContextMode = (
+    PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructorAllowed
+  )
 
   final val DefaultMode: ContextMode      = MacrosEnabled
 
   private val contextModeNameMap = Map(
-    ReportErrors -> "ReportErrors",
-    BufferErrors -> "BufferErrors",
-    AmbiguousErrors -> "AmbiguousErrors",
-    ConstructorSuffix -> "ConstructorSuffix",
-    SelfSuperCall -> "SelfSuperCall",
-    ImplicitsEnabled -> "ImplicitsEnabled",
-    MacrosEnabled -> "MacrosEnabled",
-    Checking -> "Checking",
-    ReTyping -> "ReTyping"
+    ReportErrors           -> "ReportErrors",
+    BufferErrors           -> "BufferErrors",
+    AmbiguousErrors        -> "AmbiguousErrors",
+    ConstructorSuffix      -> "ConstructorSuffix",
+    SelfSuperCall          -> "SelfSuperCall",
+    ImplicitsEnabled       -> "ImplicitsEnabled",
+    MacrosEnabled          -> "MacrosEnabled",
+    Checking               -> "Checking",
+    ReTyping               -> "ReTyping",
+    PatternAlternative     -> "PatternAlternative",
+    StarPatterns           -> "StarPatterns",
+    SuperInit              -> "SuperInit",
+    SecondTry              -> "SecondTry",
+    TypeConstructorAllowed -> "TypeConstructorAllowed"
   )
 }
 
