@@ -146,6 +146,9 @@ private[scala] trait PropertiesTrait {
   /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
   def isMac                 = osName startsWith "Mac OS X" 
 
+  /* Some runtime values. */
+  private[scala] def isAvian = javaVmName contains "Avian"
+
   // This is looking for javac, tools.jar, etc.
   // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,
   // and finally the system property based javaHome.
