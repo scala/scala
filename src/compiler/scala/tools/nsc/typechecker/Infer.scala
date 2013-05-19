@@ -938,13 +938,6 @@ trait Infer extends Checkable {
         }
     }
 
-/*
-    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
-      ftpe1.isError || isAsSpecific(ftpe1, ftpe2) &&
-      (!isAsSpecific(ftpe2, ftpe1) ||
-       !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
-       phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
-*/
     /** Is sym1 (or its companion class in case it is a module) a subclass of
      *  sym2 (or its companion class in case it is a module)?
      */
