@@ -297,6 +297,11 @@ trait CompilerControl { self: Global =>
     def implicitlyAdded = false
 
     private def accessible_s = if (accessible) "" else "[inaccessible] "
+    def forceInfoString = {
+      definitions.fullyInitializeSymbol(sym)
+      definitions.fullyInitializeType(tpe)
+      infoString
+    }
     def infoString = s"$accessible_s${sym.defStringSeenAs(tpe)}"
   }
 

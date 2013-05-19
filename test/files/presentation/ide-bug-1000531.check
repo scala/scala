@@ -7,7 +7,7 @@ retrieved 124 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 [inaccessible] protected[this] def reversed: List[B]
-class GroupedIterator[B <: <?>] extends AbstractIterator[Seq[B]] with Iterator[Seq[B]]
+class GroupedIterator[B >: A] extends AbstractIterator[Seq[B]] with Iterator[Seq[B]]
 def +(other: String): String
 def ++[B >: B](that: => scala.collection.GenTraversableOnce[B]): Iterator[B]
 def ->[B](y: B): (java.util.Iterator[B], B)
