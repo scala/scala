@@ -347,79 +347,41 @@ trait Infer extends Checkable {
      * Note: pre is not refchecked -- moreover, refchecking the resulting tree may not refcheck pre,
      *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
      */
-    def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
-      if (sym.isError) {
+    def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
+      def malformed(ex: MalformedType, instance: Type): Type = {
+        val what    = if (ex.msg contains "malformed type") "is malformed" else s"contains a ${ex.msg}"
+        val message = s"\n because its instance type $instance $what"
+        val error   = AccessError(tree, sym, pre, context.enclClass.owner, message)
+        ErrorUtils.issueTypeError(error)(context)
+        ErrorType
+      }
+      def accessible = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super])) match {
+        case NoSymbol if sym.isJavaDefined && context.unit.isJava => sym  // don't try to second guess Java; see #4402
+        case sym1                                                 => sym1
+      }
+      // XXX So... what's this for exactly?
+      if (context.unit.exists)
+        context.unit.depends += sym.enclosingTopLevelClass
+
+      if (sym.isError)
         tree setSymbol sym setType ErrorType
-      } else {
-        if (context.unit.exists)
-          context.unit.depends += sym.enclosingTopLevelClass
-
-        var sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
-        // Console.println("check acc " + (sym, sym1) + ":" + (sym.tpe, sym1.tpe) + " from " + pre);//DEBUG
-        if (sym1 == NoSymbol && sym.isJavaDefined && context.unit.isJava) // don't try to second guess Java; see #4402
-          sym1 = sym
-
-        if (sym1 == NoSymbol) {
-          if (settings.debug) {
-            Console.println(context)
-            Console.println(tree)
-            Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
-          }
-          ErrorUtils.issueTypeError(AccessError(tree, sym, pre, context.enclClass.owner,
-            if (settings.check.isDefault)
-              analyzer.lastAccessCheckDetails
-            else
-              ptBlock("because of an internal error (no accessible symbol)",
-                "sym.ownerChain"                -> sym.ownerChain,
-                "underlyingSymbol(sym)"         -> underlyingSymbol(sym),
-                "pre"                           -> pre,
-                "site"                          -> site,
-                "tree"                          -> tree,
-                "sym.accessBoundary(sym.owner)" -> sym.accessBoundary(sym.owner),
-                "context.owner"                 -> context.owner,
-                "context.outer.enclClass.owner" -> context.outer.enclClass.owner
-              )
-          ))(context)
-          setError(tree)
-        }
-        else {
-          if (context.owner.isTermMacro && (sym1 hasFlag LOCKED)) {
-            // we must not let CyclicReference to be thrown from sym1.info
-            // because that would mark sym1 erroneous, which it is not
-            // but if it's a true CyclicReference then macro def will report it
-            // see comments to TypeSigError for an explanation of this special case
-            // [Eugene] is there a better way?
-            val dummy = new TypeCompleter { val tree = EmptyTree; override def complete(sym: Symbol) {} }
-            throw CyclicReference(sym1, dummy)
-          }
-
-          if (sym1.isTerm)
-            sym1.cookJavaRawInfo() // xform java rawtypes into existentials
-
-          val owntype = {
-            try pre.memberType(sym1)
-            catch {
-              case ex: MalformedType =>
-                if (settings.debug) ex.printStackTrace
-                val sym2 = underlyingSymbol(sym1)
-                val itype = pre.memberType(sym2)
-                ErrorUtils.issueTypeError(
-                  AccessError(tree, sym, pre, context.enclClass.owner,
-                          "\n because its instance type "+itype+
-                          (if ("malformed type: "+itype.toString==ex.msg) " is malformed"
-                           else " contains a "+ex.msg)))(context)
-                ErrorType
-            }
-          }
-          tree setSymbol sym1 setType {
+      else accessible match {
+        case NoSymbol                                                 => checkAccessibleError(tree, sym, pre, site)
+        case sym if context.owner.isTermMacro && (sym hasFlag LOCKED) => throw CyclicReference(sym, CheckAccessibleMacroCycle)
+        case sym                                                      =>
+          val sym1 = if (sym.isTerm) sym.cookJavaRawInfo() else sym // xform java rawtypes into existentials
+          val owntype = (
+            try pre memberType sym1
+            catch { case ex: MalformedType => malformed(ex, pre memberType underlyingSymbol(sym)) }
+          )
+          tree setSymbol sym1 setType (
             pre match {
               case _: SuperType => owntype map (tp => if (tp eq pre) site.symbol.thisType else tp)
               case _            => owntype
             }
-          }
-        }
+          )
       }
-
+    }
 
     /** "Compatible" means conforming after conversions.
      *  "Raising to a thunk" is not implicit; therefore, for purposes of applicability and
