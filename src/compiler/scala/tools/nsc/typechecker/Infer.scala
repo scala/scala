@@ -291,16 +291,6 @@ trait Infer extends Checkable {
 
     def issue(err: AbsTypeError): Unit = context.issue(err)
 
-    def isPossiblyMissingArgs(found: Type, req: Type) = (
-      false
-      /* However it is that this condition is expected to imply
-       * "is possibly missing args", it is too weak.  It is
-       * better to say nothing than to offer misleading guesses.
-
-       * (found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req)
-      */
-    )
-
     def explainTypes(tp1: Type, tp2: Type) = {
       if (context.reportErrors)
         withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))
