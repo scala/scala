@@ -920,7 +920,7 @@ trait Infer extends Checkable {
         case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2)
         case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2)
         case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2)
-        case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes map repeatedToSingle)
+        case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes mapConserve repeatedToSingle)
         case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt.paramTypes)
         case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2)
         case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2)
@@ -1042,23 +1042,19 @@ trait Infer extends Checkable {
 
 */
     /** error if arguments not within bounds. */
-    def checkBounds(tree: Tree, pre: Type, owner: Symbol,
-                    tparams: List[Symbol], targs: List[Type], prefix: String): Boolean =
-      if ((targs exists (_.isErroneous)) || (tparams exists (_.isErroneous))) true
-      else {
-        //@M validate variances & bounds of targs wrt variances & bounds of tparams
-        //@M TODO: better place to check this?
-        //@M TODO: errors for getters & setters are reported separately
-        val kindErrors = checkKindBounds(tparams, targs, pre, owner)
-        kindErrors match {
-          case Nil =>
-            def notWithinBounds() = NotWithinBounds(tree, prefix, targs, tparams, Nil)
-            isWithinBounds(pre, owner, tparams, targs) || {notWithinBounds(); false}
-          case errors =>
-            def kindBoundErrors() = KindBoundErrors(tree, prefix, targs, tparams, errors)
-            (targs contains WildcardType) || {kindBoundErrors(); false}
-        }
+    def checkBounds(tree: Tree, pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type], prefix: String): Boolean = {
+      def issueBoundsError()                       = { NotWithinBounds(tree, prefix, targs, tparams, Nil) ; false }
+      def issueKindBoundErrors(errs: List[String]) = { KindBoundErrors(tree, prefix, targs, tparams, errs) ; false }
+      //@M validate variances & bounds of targs wrt variances & bounds of tparams
+      //@M TODO: better place to check this?
+      //@M TODO: errors for getters & setters are reported separately
+      def check() = checkKindBounds(tparams, targs, pre, owner) match {
+        case Nil  => isWithinBounds(pre, owner, tparams, targs) || issueBoundsError()
+        case errs => (targs contains WildcardType) || issueKindBoundErrors(errs)
       }
+
+      targs.exists(_.isErroneous) || tparams.exists(_.isErroneous) || check()
+    }
 
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
       checkKindBounds0(tparams, targs, pre, owner, explainErrors = true) map {
@@ -1262,17 +1258,14 @@ trait Infer extends Checkable {
           }
         } else None
 
-      val inferred = inferFor(pt) orElse inferForApproxPt
-
-      inferred match {
+      inferFor(pt) orElse inferForApproxPt match {
         case Some(targs) =>
-        new TreeTypeSubstituter(undetparams, targs).traverse(tree)
-        notifyUndetparamsInferred(undetparams, targs)
+          new TreeTypeSubstituter(undetparams, targs).traverse(tree)
+          notifyUndetparamsInferred(undetparams, targs)
         case _ =>
-          def full = if (isFullyDefined(pt)) "(fully defined)" else "(not fully defined)"
-          devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt $full")
-        // if (settings.explaintypes.value) explainTypes(resTp.instantiateTypeParams(undetparams, tvars), pt)
-        ConstrInstantiationError(tree, resTp, pt)
+          def not = if (isFullyDefined(pt)) "" else "not "
+          devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt (${not}fully defined)")
+          ConstrInstantiationError(tree, resTp, pt)
       }
     }
 
