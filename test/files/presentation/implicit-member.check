@@ -15,7 +15,7 @@ def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String
 def →[B](y: B): (Implicit.type, B)
-final class AppliedImplicit[A <: <?>] extends AnyRef
+final class AppliedImplicit[A] extends AnyRef
 final def !=(x$1: Any): Boolean
 final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
