@@ -427,20 +427,19 @@ trait Infer extends Checkable {
      *  by existentially bound variables.
      */
     def makeFullyDefined(tp: Type): Type = {
-      val tparams = new ListBuffer[Symbol]
+      var tparams: List[Symbol] = Nil
       def addTypeParam(bounds: TypeBounds): Type = {
         val tparam = context.owner.newExistential(newTypeName("_"+tparams.size), context.tree.pos.focus) setInfo bounds
-        tparams += tparam
+        tparams ::= tparam
         tparam.tpe
       }
       val tp1 = tp map {
-        case WildcardType =>
-          addTypeParam(TypeBounds.empty)
-        case BoundedWildcardType(bounds) =>
-          addTypeParam(bounds)
-        case t => t
+        case WildcardType                => addTypeParam(TypeBounds.empty)
+        case BoundedWildcardType(bounds) => addTypeParam(bounds)
+        case t                           => t
       }
-      existentialAbstraction(tparams.toList, tp1)
+      if (tp eq tp1) tp
+      else existentialAbstraction(tparams.reverse, tp1)
     }
     def ensureFullyDefined(tp: Type): Type = if (isFullyDefined(tp)) tp else makeFullyDefined(tp)
 
