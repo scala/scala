@@ -189,27 +189,19 @@ trait Infer extends Checkable {
     }
   }
 
+  @inline final def falseIfNoInstance(body: => Boolean): Boolean =
+    try body catch { case _: NoInstance => false }
+
   /** Is type fully defined, i.e. no embedded anytypes or wildcards in it?
    */
   private[typechecker] def isFullyDefined(tp: Type): Boolean = tp match {
-    case WildcardType | BoundedWildcardType(_) | NoType =>
-      false
-    case NoPrefix | ThisType(_) | ConstantType(_) =>
-      true
-    case TypeRef(pre, sym, args) =>
-      isFullyDefined(pre) && (args forall isFullyDefined)
-    case SingleType(pre, sym) =>
-      isFullyDefined(pre)
-    case RefinedType(ts, decls) =>
-      ts forall isFullyDefined
-    case TypeVar(origin, constr) if (constr.inst == NoType) =>
-      false
-    case _ =>
-      try {
-        instantiate(tp); true
-      } catch {
-        case ex: NoInstance => false
-      }
+    case WildcardType | BoundedWildcardType(_) | NoType => false
+    case NoPrefix | ThisType(_) | ConstantType(_)       => true
+    case TypeRef(pre, _, args)                          => isFullyDefined(pre) && (args forall isFullyDefined)
+    case SingleType(pre, _)                             => isFullyDefined(pre)
+    case RefinedType(ts, _)                             => ts forall isFullyDefined
+    case TypeVar(_, constr) if constr.inst == NoType    => false
+    case _                                              => falseIfNoInstance({ instantiate(tp) ; true })
   }
 
   /** Solve constraint collected in types `tvars`.
@@ -261,18 +253,12 @@ trait Infer extends Checkable {
    *  This method seems to be performance critical.
    */
   def normalize(tp: Type): Type = tp match {
-    case pt @ PolyType(tparams, restpe) =>
-      logResult(s"Normalizing $tp in infer")(normalize(restpe))
-    case mt @ MethodType(params, restpe) if mt.isImplicit =>
-      normalize(restpe)
-    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
-      functionType(mt.paramTypes, normalize(restpe))
-    case NullaryMethodType(restpe) =>
-      normalize(restpe)
-    case ExistentialType(tparams, qtpe) =>
-      newExistentialType(tparams, normalize(qtpe))
-    case tp1 =>
-      tp1 // @MAT aliases already handled by subtyping
+    case PolyType(_, restpe)                                     => logResult(s"Normalizing $tp in infer")(normalize(restpe))
+    case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
+    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType => functionType(mt.paramTypes, normalize(restpe))
+    case NullaryMethodType(restpe)                               => normalize(restpe)
+    case ExistentialType(tparams, qtpe)                          => newExistentialType(tparams, normalize(qtpe))
+    case _                                                       => tp // @MAT aliases already handled by subtyping
   }
 
   private lazy val stdErrorClass = rootMirror.RootClass.newErrorClass(tpnme.ERROR)
@@ -834,6 +820,51 @@ trait Infer extends Checkable {
         argtpes
     }
 
+    private def isApplicableToMethod(undetparams: List[Symbol], mt: MethodType, argtpes0: List[Type], pt: Type): Boolean = {
+      val MethodType(params, _) = mt
+      val formals          = formalTypes(mt.paramTypes, argtpes0.length, removeByName = false)
+      def missingArgs      = missingParams[Type](argtpes0, params, x => Some(x) collect { case NamedType(n, _) => n })
+      def argsTupled       = tupleIfNecessary(mt.paramTypes, argtpes0)
+      def argsPlusDefaults = missingArgs match {
+        case (args, _) if args forall (_.hasDefault) => argtpes0 ::: makeNamedTypes(args)
+        case _                                       => argsTupled
+      }
+      // If args eq the incoming arg types, fail; otherwise recurse with these args.
+      def tryWithArgs(args: List[Type]) = (
+           (args ne argtpes0)
+        && isApplicable(undetparams, mt, args, pt)
+      )
+      def tryInstantiating(args: List[Type], restpe: Type) = falseIfNoInstance {
+        val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, args, pt)
+        val restpeInst = restpe.instantiateTypeParams(okparams, okargs)
+        // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
+        exprTypeArgs(leftUndet, restpeInst, pt, useWeaklyCompatible = true) match {
+          case (null, _) => false
+          case _         => isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
+        }
+      }
+      def typesCompatible(argtpes: List[Type]) = {
+        val restpe = mt resultType argtpes
+        undetparams match {
+          case Nil => isCompatibleArgs(argtpes, formals) && isWeaklyCompatible(restpe, pt)
+          case _   => tryInstantiating(argtpes, restpe)
+        }
+      }
+
+      // when using named application, the vararg param has to be specified exactly once
+      def reorderedTypesCompatible = checkNames(argtpes0, params) match {
+        case (_, _, false)                                                             => false // names are not ok
+        case (_, pos, _) if !allArgsArePositional(pos) && !sameLength(formals, params) => false // different length lists and all args not positional
+        case (args, pos, _)                                                            => typesCompatible(reorderArgs(args, pos))
+      }
+      compareLengths(argtpes0, formals) match {
+        case 0 if containsNamedType(argtpes0) => reorderedTypesCompatible      // right number of args, wrong order
+        case 0                                => typesCompatible(argtpes0)     // fast track if no named arguments are used
+        case x if x > 0                       => tryWithArgs(argsTupled)       // too many args, try tupling
+        case _                                => tryWithArgs(argsPlusDefaults) // too few args, try adding defaults or tupling
+      }
+    }
+
     /** Is there an instantiation of free type variables `undetparams`
      *  such that function type `ftpe` is applicable to
      *  `argtpes` and its result conform to `pt`?
@@ -844,77 +875,17 @@ trait Infer extends Checkable {
      *    type is set to `Unit`, i.e. the corresponding argument is treated as
      *    an assignment expression (@see checkNames).
      */
-    private def isApplicable(undetparams: List[Symbol], ftpe: Type,
-                             argtpes0: List[Type], pt: Type): Boolean =
+    private def isApplicable(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = (
       ftpe match {
-        case OverloadedType(pre, alts) =>
-          alts exists (alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
-        case ExistentialType(tparams, qtpe) =>
-          isApplicable(undetparams, qtpe, argtpes0, pt)
-        case mt @ MethodType(params, _) =>
-          val argslen = argtpes0.length
-          val formals = formalTypes(mt.paramTypes, argslen, removeByName = false)
-
-          def tryTupleApply = {
-            val tupled = tupleIfNecessary(mt.paramTypes, argtpes0)
-            (tupled ne argtpes0) && isApplicable(undetparams, ftpe, tupled, pt)
-          }
-          def typesCompatible(argtpes: List[Type]) = {
-            val restpe = ftpe.resultType(argtpes)
-            if (undetparams.isEmpty) {
-              isCompatibleArgs(argtpes, formals) && isWeaklyCompatible(restpe, pt)
-            } else {
-              try {
-                val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
-                // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
-                (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, useWeaklyCompatible = true)._1 ne null) &&
-                isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
-              } catch {
-                case ex: NoInstance => false
-              }
-            }
-          }
-
-          // very similar logic to doTypedApply in typechecker
-          val lencmp = compareLengths(argtpes0, formals)
-          if (lencmp > 0) tryTupleApply
-          else if (lencmp == 0) {
-              // fast track if no named arguments are used
-            if (!containsNamedType(argtpes0))
-              typesCompatible(argtpes0)
-            else {
-              // named arguments are used
-              val (argtpes1, argPos, namesOK) = checkNames(argtpes0, params)
-              // when using named application, the vararg param has to be specified exactly once
-              (    namesOK
-                && (allArgsArePositional(argPos) || sameLength(formals, params))
-                && typesCompatible(reorderArgs(argtpes1, argPos)) // nb. arguments and names are OK, check if types are compatible
-              )
-            }
-          }
-          else {
-            // not enough arguments, check if applicable using defaults
-            val missing = missingParams[Type](argtpes0, params, {
-              case NamedType(name, _) => Some(name)
-              case _ => None
-            })._1
-            if (missing forall (_.hasDefault)) {
-              // add defaults as named arguments
-              val argtpes1 = argtpes0 ::: (missing map (p => NamedType(p.name, p.tpe)))
-              isApplicable(undetparams, ftpe, argtpes1, pt)
-            }
-            else tryTupleApply
-          }
-
-        case NullaryMethodType(restpe) => // strip nullary method type, which used to be done by the polytype case below
-          isApplicable(undetparams, restpe, argtpes0, pt)
-        case PolyType(tparams, restpe) =>
-          createFromClonedSymbols(tparams, restpe)((tps1, restpe1) => isApplicable(tps1 ::: undetparams, restpe1, argtpes0, pt))
-        case ErrorType =>
-          true
-        case _ =>
-          false
+        case OverloadedType(pre, alts) => alts exists (alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
+        case ExistentialType(_, qtpe)  => isApplicable(undetparams, qtpe, argtpes0, pt)
+        case mt @ MethodType(_, _)     => isApplicableToMethod(undetparams, mt, argtpes0, pt)
+        case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt) // strip nullary methods
+        case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, restpe)((tps1, res1) => isApplicable(tps1 ::: undetparams, res1, argtpes0, pt))
+        case ErrorType                 => true
+        case _                         => false
       }
+    )
 
     /**
      * Are arguments of the given types applicable to `ftpe`? Type argument inference
