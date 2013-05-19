@@ -63,6 +63,16 @@ trait Infer extends Checkable {
     }
   }
 
+  // we must not let CyclicReference to be thrown from sym1.info
+  // because that would mark sym1 erroneous, which it is not
+  // but if it's a true CyclicReference then macro def will report it
+  // see comments to TypeSigError for an explanation of this special case
+  // [Eugene] is there a better way?
+  private object CheckAccessibleMacroCycle extends TypeCompleter {
+    val tree = EmptyTree
+    override def complete(sym: Symbol) = ()
+  }
+
   /** Returns `(formals, formalsExpanded)` where `formalsExpanded` are the expected types
    * for the `nbSubPats` sub-patterns of an extractor pattern, of which the corresponding
    * unapply[Seq] call is assumed to have result type `resTp`.
@@ -296,10 +306,43 @@ trait Infer extends Checkable {
         withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))
     }
 
+    // When filtering sym down to the accessible alternatives leaves us empty handed.
+    private def checkAccessibleError(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
+      if (settings.debug) {
+        Console.println(context)
+        Console.println(tree)
+        Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
+      }
+      ErrorUtils.issueTypeError(AccessError(tree, sym, pre, context.enclClass.owner,
+        if (settings.check.isDefault)
+          analyzer.lastAccessCheckDetails
+        else
+          ptBlock("because of an internal error (no accessible symbol)",
+            "sym.ownerChain"                -> sym.ownerChain,
+            "underlyingSymbol(sym)"         -> underlyingSymbol(sym),
+            "pre"                           -> pre,
+            "site"                          -> site,
+            "tree"                          -> tree,
+            "sym.accessBoundary(sym.owner)" -> sym.accessBoundary(sym.owner),
+            "context.owner"                 -> context.owner,
+            "context.outer.enclClass.owner" -> context.outer.enclClass.owner
+          )
+      ))(context)
+
+      setError(tree)
+    }
+
     /* -- Tests & Checks---------------------------------------------------- */
 
     /** Check that `sym` is defined and accessible as a member of
      *  tree `site` with type `pre` in current context.
+     *  @PP: In case it's not abundantly obvious to anyone who might read
+     *  this, the method does a lot more than "check" these things, as does
+     *  nearly every method in the compiler, so don't act all shocked.
+     *  This particular example "checks" its way to assigning both the
+     *  symbol and type of the incoming tree, in addition to forcing lots
+     *  of symbol infos on its way to transforming java raw types (but
+     *  only of terms - why?)
      *
      * Note: pre is not refchecked -- moreover, refchecking the resulting tree may not refcheck pre,
      *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
