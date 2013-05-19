@@ -143,7 +143,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       join(outDir.toString, CLASSPATH)
     ) ++ files.map(_.getAbsolutePath)
 
-    pushTranscript(args mkString " ")
+    // pushTranscript(javacCmd :: files mkString " ")
     val captured = StreamCapture(runCommand(args, logFile))
     if (captured.result) genPass() else {
       logFile appendAll captured.stderr
@@ -227,7 +227,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   private def execTest(outDir: File, logFile: File): Boolean = {
     val cmd = assembleTestCommand(outDir, logFile)
 
-    pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
+    // pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
     nextTestAction(runCommand(cmd, logFile)) {
       case false =>
         _transcript append EOL + logFile.fileContents
@@ -592,12 +592,12 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
 
     // run compiler in resident mode
     // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
-    val sourcedir  = logFile.getParentFile.getAbsoluteFile
+    val sourcedir  = logFile.getParentFile
     val sourcepath = sourcedir.getAbsolutePath+File.separator
     NestUI.verbose("sourcepath: "+sourcepath)
 
     val argList = List(
-      "-d", outDir.getAbsoluteFile.getPath,
+      "-d", outDir.getPath,
       "-Xresident",
       "-sourcepath", sourcepath)
 

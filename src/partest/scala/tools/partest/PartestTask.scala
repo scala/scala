@@ -136,16 +136,16 @@ class PartestTask extends Task with CompilationPathProperty {
     val antRunner = new scala.tools.partest.nest.AntRunner
     val antFileManager = antRunner.fileManager
 
-    // antFileManager.failed = runFailed
-    antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
-    antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
-    antFileManager.LATEST_REFLECT = scalaReflect.getAbsolutePath
-    antFileManager.LATEST_COMP = scalaCompiler.getAbsolutePath
-    antFileManager.LATEST_PARTEST = scalaPartest.getAbsolutePath
-    antFileManager.LATEST_ACTORS = scalaActors.getAbsolutePath
+    // antFileManager.failed      = runFailed
+    antFileManager.CLASSPATH      = ClassPath.join(classpath.list: _*)
+    antFileManager.LATEST_LIB     = scalaLibrary.getPath
+    antFileManager.LATEST_REFLECT = scalaReflect.getPath
+    antFileManager.LATEST_COMP    = scalaCompiler.getPath
+    antFileManager.LATEST_PARTEST = scalaPartest.getPath
+    antFileManager.LATEST_ACTORS  = scalaActors.getPath
 
-    javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
-    javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
+    javacmd foreach (x => antFileManager.JAVACMD = x.getPath)
+    javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getPath)
     scalacArgsFlat foreach (antFileManager.SCALAC_OPTS ++= _)
 
     def runSet(kind: String, files: Array[File]): (Int, Int, List[String]) = {
