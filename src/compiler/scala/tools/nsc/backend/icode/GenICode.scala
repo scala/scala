@@ -2165,8 +2165,7 @@ abstract class GenICode extends SubComponent  {
      * by a real JUMP instruction when all labels are resolved.
      */
     abstract class PseudoJUMP(label: Label) extends Instruction {
-      override def toString(): String = "PJUMP " + label.symbol
-
+      override def toString = s"PJUMP(${label.symbol})"
       override def consumed = 0
       override def produced = 0
 
