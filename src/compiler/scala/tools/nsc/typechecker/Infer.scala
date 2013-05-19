@@ -24,11 +24,6 @@ trait Infer extends Checkable {
   import typer.printInference
   import typeDebug.ptBlock
 
-/* -- Type parameter inference utility functions --------------------------- */
-
-  private def assertNonCyclic(tvar: TypeVar) =
-    assert(tvar.constr.inst != tvar, tvar.origin)
-
   /** The formal parameter types corresponding to `formals`.
    *  If `formals` has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
@@ -492,22 +487,20 @@ trait Infer extends Checkable {
     *  If instantiation of a type parameter fails,
     *  take WildcardType for the proto-type argument.
     */
-    def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
-                      pt: Type): List[Type] = {
-      /* Map type variable to its instance, or, if `variance` is covariant/contravariant,
-       * to its upper/lower bound */
+    def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type, pt: Type): List[Type] = {
+      // Map type variable to its instance, or, if `variance` is variant,
+      // to its upper or lower bound
       def instantiateToBound(tvar: TypeVar, variance: Variance): Type = {
         lazy val hiBounds = tvar.constr.hiBounds
         lazy val loBounds = tvar.constr.loBounds
-        lazy val upper = glb(hiBounds)
-        lazy val lower = lub(loBounds)
+        lazy val upper    = glb(hiBounds)
+        lazy val lower    = lub(loBounds)
         def setInst(tp: Type): Type = {
           tvar setInst tp
-          assertNonCyclic(tvar)//debug
+          assert(tvar.constr.inst != tvar, tvar.origin)
           instantiate(tvar.constr.inst)
         }
-        //Console.println("instantiate "+tvar+tvar.constr+" variance = "+variance);//DEBUG
-        if (tvar.constr.inst != NoType)
+        if (tvar.constr.instValid)
           instantiate(tvar.constr.inst)
         else if (loBounds.nonEmpty && variance.isContravariant)
           setInst(lower)
@@ -516,6 +509,7 @@ trait Infer extends Checkable {
         else
           WildcardType
       }
+
       val tvars = tparams map freshVar
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         map2(tparams, tvars)((tparam, tvar) =>
