@@ -817,9 +817,8 @@ trait Infer extends Checkable {
     }
 
     private def isApplicableToMethod(undetparams: List[Symbol], mt: MethodType, argtpes0: List[Type], pt: Type): Boolean = {
-      val MethodType(params, _) = mt
       val formals          = formalTypes(mt.paramTypes, argtpes0.length, removeByName = false)
-      def missingArgs      = missingParams[Type](argtpes0, params, x => Some(x) collect { case NamedType(n, _) => n })
+      def missingArgs      = missingParams[Type](argtpes0, mt.params, x => Some(x) collect { case NamedType(n, _) => n })
       def argsTupled       = tupleIfNecessary(mt.paramTypes, argtpes0)
       def argsPlusDefaults = missingArgs match {
         case (args, _) if args forall (_.hasDefault) => argtpes0 ::: makeNamedTypes(args)
@@ -846,10 +845,10 @@ trait Infer extends Checkable {
       }
 
       // when using named application, the vararg param has to be specified exactly once
-      def reorderedTypesCompatible = checkNames(argtpes0, params) match {
-        case (_, _, false)                                                             => false // names are not ok
-        case (_, pos, _) if !allArgsArePositional(pos) && !sameLength(formals, params) => false // different length lists and all args not positional
-        case (args, pos, _)                                                            => typesCompatible(reorderArgs(args, pos))
+      def reorderedTypesCompatible = checkNames(argtpes0, mt.params) match {
+        case (_, _, false)                                                                => false // names are not ok
+        case (_, pos, _) if !allArgsArePositional(pos) && !sameLength(formals, mt.params) => false // different length lists and all args not positional
+        case (args, pos, _)                                                               => typesCompatible(reorderArgs(args, pos))
       }
       compareLengths(argtpes0, formals) match {
         case 0 if containsNamedType(argtpes0) => reorderedTypesCompatible      // right number of args, wrong order
@@ -889,12 +888,12 @@ trait Infer extends Checkable {
     // The chance of TypeErrors should be reduced through context errors
     private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
       def applicableExpectingPt(pt: Type): Boolean = {
-        val silentContext = context.makeSilent(reportAmbiguousErrors = false)
-        val applicable    = newTyper(silentContext).infer.isApplicable(undetparams, ftpe, argtpes0, pt)
-        if (silentContext.hasErrors && !pt.isWildcard)
+        val silent = context.makeSilent(reportAmbiguousErrors = false)
+        val result = newTyper(silent).infer.isApplicable(undetparams, ftpe, argtpes0, pt)
+        if (silent.hasErrors && !pt.isWildcard)
           applicableExpectingPt(WildcardType) // second try
         else
-          applicable
+          result
       }
       applicableExpectingPt(pt)
     }
@@ -981,23 +980,14 @@ trait Infer extends Checkable {
         specificCount + subClassCount > 0
       }
     }
-/*
-      ftpe1.isError || {
-        if (isAsSpecific(ftpe1, ftpe2))
-          (!isAsSpecific(ftpe2, ftpe1) ||
-           isProperSubClassOrObject(sym1.owner, sym2.owner) ||
-           !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
-           phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
-        else
-          !isAsSpecific(ftpe2, ftpe1) &&
-          isProperSubClassOrObject(sym1.owner, sym2.owner)
-      }
-*/
-    private def covariantReturnOverride(ftpe1: Type, ftpe2: Type): Boolean = (ftpe1, ftpe2) match {
-      case (MethodType(_, rtpe1), MethodType(_, rtpe2)) =>
-        rtpe1 <:< rtpe2 || rtpe2.typeSymbol == ObjectClass
-      case _ =>
-        false
+
+    private def covariantReturnOverride(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
+      case MethodType(_, rtpe1) =>
+        ftpe2 match {
+          case MethodType(_, rtpe2) => rtpe1 <:< rtpe2 || rtpe2.typeSymbol == ObjectClass
+          case _                    => false
+        }
+      case _ => false
     }
 /*
     /** Is type `tpe1` a strictly better expression alternative than type `tpe2`?
@@ -1454,20 +1444,19 @@ trait Infer extends Checkable {
      *  If several alternatives match `pt`, take parameterless one.
      *  If no alternative matches `pt`, take the parameterless one anyway.
      */
-    def inferExprAlternative(tree: Tree, pt: Type) = tree.tpe match {
-      case OverloadedType(pre, alts) => tryTwice { isSecondTry =>
-        val alts0          = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
+    def inferExprAlternative(tree: Tree, pt: Type): Tree = {
+      def tryOurBests(pre: Type, alts: List[Symbol], isSecondTry: Boolean): Unit = {
+        val alts0 = alts filter (alt => isWeaklyCompatible(pre memberType alt, pt))
         val alts1 = if (alts0.isEmpty) alts else alts0
-
         val bests = bestAlternatives(alts1) { (sym1, sym2) =>
-          val tp1 = pre.memberType(sym1)
-            val tp2 = pre.memberType(sym2)
+          val tp1 = pre memberType sym1
+          val tp2 = pre memberType sym2
 
-          (    tp2 == ErrorType
-            || (!isWeaklyCompatible(tp2, pt) && isWeaklyCompatible(tp1, pt))
+          (    (tp2 eq ErrorType)
+            || isWeaklyCompatible(tp1, pt) && !isWeaklyCompatible(tp2, pt)
             || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)
           )
-            }
+        }
         // todo: missing test case for bests.isEmpty
         bests match {
           case best :: Nil                              => tree setSymbol best setType (pre memberType best)
@@ -1479,9 +1468,13 @@ trait Infer extends Checkable {
             if (pt.isErroneous) setError(tree)
             else AmbiguousExprAlternativeError(tree, pre, best, competing, pt, isSecondTry)
           case _                                        => if (bests.isEmpty || alts0.isEmpty) NoBestExprAlternativeError(tree, pt, isSecondTry)
-          }
         }
       }
+      tree.tpe match {
+        case OverloadedType(pre, alts) => tryTwice(tryOurBests(pre, alts, _)) ; tree
+        case _                         => tree
+      }
+    }
 
     // Checks against the name of the parameter and also any @deprecatedName.
     private def paramMatchesName(param: Symbol, name: Name) =
@@ -1515,7 +1508,7 @@ trait Infer extends Checkable {
       val namesMatch = namesOfNamedArguments(argtpes) match {
         case Nil   => Nil
         case names => eligible filter (m => names forall (name => m.info.params exists (p => paramMatchesName(p, name))))
-          }
+      }
       if (namesMatch.nonEmpty)
         namesMatch
       else if (eligible.isEmpty || eligible.tail.isEmpty)
@@ -1524,7 +1517,7 @@ trait Infer extends Checkable {
         eligible filter (alt =>
           !alt.hasDefault && isApplicableBasedOnArity(alt.tpe, argtpes.length, varargsStar, tuplingAllowed = true)
       )
-        }
+    }
 
     /** Assign `tree` the type of an alternative which is applicable
      *  to `argtpes`, and whose result type is compatible with `pt`.
@@ -1551,16 +1544,16 @@ trait Infer extends Checkable {
       }
       def followType(sym: Symbol) = followApply(pre memberType sym)
       def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
-        val applicable0 = alts filter (alt => context inSilentMode (isApplicable(undetparams, followType(alt), argtpes, pt)))
+        val applicable0 = alts filter (alt => context inSilentMode isApplicable(undetparams, followType(alt), argtpes, pt))
         val applicable  = overloadsToConsiderBySpecificity(applicable0, argtpes, varargsStar)
         val ranked      = bestAlternatives(applicable)((sym1, sym2) =>
           isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
         )
         ranked match {
-          case best :: competing :: _    => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
-          case best :: Nil               => tree setSymbol best setType (pre memberType best)           // success
-          case Nil if pt eq WildcardType => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
-          case Nil                       => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
+          case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
+          case best :: Nil            => tree setSymbol best setType (pre memberType best)           // success
+          case Nil if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
+          case Nil                    => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
         }
       }
       // This potentially makes up to four attempts: tryTwice may execute
@@ -1610,44 +1603,41 @@ trait Infer extends Checkable {
     }
 
     /** Assign `tree` the type of all polymorphic alternatives
-     *  with `nparams` as the number of type parameters, if it exists.
+     *  which have the same number of type parameters as does `argtypes`
+     *  with all argtypes are within the corresponding type parameter bounds.
      *  If no such polymorphic alternative exist, error.
      */
     def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): Unit = {
       val OverloadedType(pre, alts) = tree.tpe
-      val sym0 = tree.symbol filter (alt => sameLength(alt.typeParams, argtypes))
-      def fail(kind: PolyAlternativeErrorKind.ErrorType) =
-        PolyAlternativeError(tree, argtypes, sym0, kind)
-
-      if (sym0 == NoSymbol) return (
-        if (alts exists (_.typeParams.nonEmpty))
-          fail(PolyAlternativeErrorKind.WrongNumber)
-        else fail(PolyAlternativeErrorKind.NoParams))
-
-      val (resSym, resTpe) = {
-        if (!sym0.isOverloaded)
-          (sym0, pre.memberType(sym0))
-        else {
-          val sym = sym0 filter (alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes))
-          if (sym == NoSymbol) {
-            if (argtypes forall (x => !x.isErroneous))
-              fail(PolyAlternativeErrorKind.ArgsDoNotConform)
-            return
-          }
-          else if (sym.isOverloaded) {
-            val xs      = sym.alternatives
-            val tparams = newAsSeenFromMap(pre, xs.head.owner) mapOver xs.head.typeParams
-            val bounds  = tparams map (_.tpeHK) // see e.g., #1236
-            val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), xs))
-
-            (sym setInfo tpe, tpe)
-          }
-          else (sym, pre.memberType(sym))
-        }
+      // Alternatives with a matching length type parameter list
+      val matchingLength   = tree.symbol filter (alt => sameLength(alt.typeParams, argtypes))
+      def allMonoAlts      = alts forall (_.typeParams.isEmpty)
+      def errorKind        = matchingLength match {
+        case NoSymbol if allMonoAlts => PolyAlternativeErrorKind.NoParams          // no polymorphic method alternative
+        case NoSymbol                => PolyAlternativeErrorKind.WrongNumber       // wrong number of tparams
+        case _                       => PolyAlternativeErrorKind.ArgsDoNotConform  // didn't conform to bounds
       }
-      // Side effects tree with symbol and type
-      tree setSymbol resSym setType resTpe
+      def fail() = PolyAlternativeError(tree, argtypes, matchingLength, errorKind)
+      def finish(sym: Symbol, tpe: Type) = tree setSymbol sym setType tpe
+      // Alternatives which conform to bounds
+      def checkWithinBounds(sym: Symbol) = sym.alternatives match {
+        case Nil if argtypes.exists(_.isErroneous) =>
+        case Nil                                   => fail()
+        case alt :: Nil                            => finish(alt, pre memberType alt)
+        case alts @ (hd :: _)                      =>
+          log(s"Attaching AntiPolyType-carrying overloaded type to $sym")
+          // Multiple alternatives which are within bounds; spin up an
+          // overloaded type which carries an "AntiPolyType" as a prefix.
+          val tparams = newAsSeenFromMap(pre, hd.owner) mapOver hd.typeParams
+          val bounds  = tparams map (_.tpeHK) // see e.g., #1236
+          val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), alts))
+          finish(sym setInfo tpe, tpe)
+      }
+      matchingLength.alternatives match {
+        case Nil        => fail()
+        case alt :: Nil => finish(alt, pre memberType alt)
+        case _          => checkWithinBounds(matchingLength filter (alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes)))
+      }
     }
   }
 }
-
