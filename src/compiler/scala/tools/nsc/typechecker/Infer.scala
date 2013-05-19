@@ -6,12 +6,11 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.immutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.{ mutable, immutable }
 import scala.util.control.ControlThrowable
 import symtab.Flags._
 
-/** This trait ...
+/** This trait contains methods related to type parameter inference.
  *
  *  @author Martin Odersky
  *  @version 1.0
@@ -46,9 +45,9 @@ trait Infer extends Checkable {
    */
   private def bestAlternatives(alternatives: List[Symbol])(isBetter: (Symbol, Symbol) => Boolean): List[Symbol] = {
     def improves(sym1: Symbol, sym2: Symbol) = (
-         sym2 == NoSymbol
+         (sym2 eq NoSymbol)
       || sym2.isError
-      || sym2.hasAnnotation(BridgeClass)
+      || (sym2 hasAnnotation BridgeClass)
       || isBetter(sym1, sym2)
     )
 
@@ -58,10 +57,10 @@ trait Infer extends Checkable {
     }
   }
 
-  // we must not let CyclicReference to be thrown from sym1.info
-  // because that would mark sym1 erroneous, which it is not
-  // but if it's a true CyclicReference then macro def will report it
-  // see comments to TypeSigError for an explanation of this special case
+  // we must not allow CyclicReference to be thrown when sym.info is called
+  // in checkAccessible, because that would mark the symbol erroneous, which it
+  // is not. But if it's a true CyclicReference then macro def will report it.
+  // See comments to TypeSigError for an explanation of this special case.
   // [Eugene] is there a better way?
   private object CheckAccessibleMacroCycle extends TypeCompleter {
     val tree = EmptyTree
@@ -271,12 +270,8 @@ trait Infer extends Checkable {
 
     /* -- Error Messages --------------------------------------------------- */
     def setError[T <: Tree](tree: T): T = {
-      debuglog("set error: "+ tree)
-      // this breaks -Ydebug pretty radically
-      // if (settings.debug.value) { // DEBUG
-      //   println("set error: "+tree);
-      //   throw new Error()
-      // }
+      // SI-7388, one can incur a cycle calling sym.toString
+      // (but it'd be nicer if that weren't so)
       def name = {
         val sym = tree.symbol
         val nameStr = try sym.toString catch { case _: CyclicReference => sym.nameString }
@@ -444,32 +439,33 @@ trait Infer extends Checkable {
     def ensureFullyDefined(tp: Type): Type = if (isFullyDefined(tp)) tp else makeFullyDefined(tp)
 
     /** Return inferred type arguments of polymorphic expression, given
-     *  its type parameters and result type and a prototype `pt`.
-     *  If no minimal type variables exist that make the
-     *  instantiated type a subtype of `pt`, return null.
+     *  type vars, its type parameters and result type and a prototype `pt`.
+     *  If the type variables cannot be instantiated such that the type
+     *  conforms to `pt`, return null.
      */
-    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean = false): (List[Type], List[TypeVar]) = {
-      val tvars = tparams map freshVar
-      val instResTp = restpe.instantiateTypeParams(tparams, tvars)
-      if ( if (useWeaklyCompatible) isWeaklyCompatible(instResTp, pt) else isCompatible(instResTp, pt) ) {
-        try {
-          // If the restpe is an implicit method, and the expected type is fully defined
-          // optimize type variables wrt to the implicit formals only; ignore the result type.
-          // See test pos/jesper.scala
-          val varianceType = restpe match {
-            case mt: MethodType if mt.isImplicit && isFullyDefined(pt) =>
-              MethodType(mt.params, AnyClass.tpe)
-            case _ =>
-              restpe
-          }
-          //println("try to solve "+tvars+" "+tparams)
-          (solvedTypes(tvars, tparams, tparams map varianceInType(varianceType),
-                      upper = false, lubDepth(List(restpe, pt))), tvars)
-        } catch {
-          case ex: NoInstance => (null, null)
-        }
-      } else (null, null)
+    private def exprTypeArgs(tvars: List[TypeVar], tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean): List[Type] = {
+      def restpeInst = restpe.instantiateTypeParams(tparams, tvars)
+      def conforms   = if (useWeaklyCompatible) isWeaklyCompatible(restpeInst, pt) else isCompatible(restpeInst, pt)
+      // If the restpe is an implicit method, and the expected type is fully defined
+      // optimize type variables wrt to the implicit formals only; ignore the result type.
+      // See test pos/jesper.scala
+      def variance = restpe match {
+        case mt: MethodType if mt.isImplicit && isFullyDefined(pt) => MethodType(mt.params, AnyTpe)
+        case _                                                     => restpe
+      }
+      def solve() = solvedTypes(tvars, tparams, tparams map varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
+
+      if (conforms)
+        try solve() catch { case _: NoInstance => null }
+      else
+        null
     }
+    /** Overload which allocates fresh type vars.
+     *  The other one exists because apparently inferExprInstance needs access to the typevars
+     *  after the call, and its wasteful to return a tuple and throw it away almost every time.
+     */
+    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean): List[Type] =
+      exprTypeArgs(tparams map freshVar, tparams, restpe, pt, useWeaklyCompatible)
 
     /** Return inferred proto-type arguments of function, given
     *  its type and value parameters and result type, and a
@@ -517,8 +513,8 @@ trait Infer extends Checkable {
      *  and the code is not exactly readable.
      */
     object AdjustedTypeArgs {
-      val Result = scala.collection.mutable.LinkedHashMap
-      type Result = scala.collection.mutable.LinkedHashMap[Symbol, Option[Type]]
+      val Result  = mutable.LinkedHashMap
+      type Result = mutable.LinkedHashMap[Symbol, Option[Type]]
 
       def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
         (m collect {case (p, Some(a)) => (p, a)}).unzip  ))
@@ -697,15 +693,13 @@ trait Infer extends Checkable {
         val restp1 = followApply(restp)
         if (restp1 eq restp) tp else restp1
       case _ =>
-        val appmeth = {
-          //OPT cut down on #closures by special casing non-overloaded case
-          // was: tp.nonPrivateMember(nme.apply) filter (_.isPublic)
-          val result = tp.nonPrivateMember(nme.apply)
-          if ((result eq NoSymbol) || !result.isOverloaded && result.isPublic) result
-          else result filter (_.isPublic)
+        //OPT cut down on #closures by special casing non-overloaded case
+        // was: tp.nonPrivateMember(nme.apply) filter (_.isPublic)
+        tp nonPrivateMember nme.apply match {
+          case NoSymbol                                 => tp
+          case sym if !sym.isOverloaded && sym.isPublic => OverloadedType(tp, sym.alternatives)
+          case sym                                      => OverloadedType(tp, sym filter (_.isPublic) alternatives)
         }
-        if (appmeth == NoSymbol) tp
-        else OverloadedType(tp, appmeth.alternatives)
     }
 
     /**
@@ -817,8 +811,8 @@ trait Infer extends Checkable {
         val restpeInst = restpe.instantiateTypeParams(okparams, okargs)
         // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
         exprTypeArgs(leftUndet, restpeInst, pt, useWeaklyCompatible = true) match {
-          case (null, _) => false
-          case _         => isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
+          case null => false
+          case _    => isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
         }
       }
       def typesCompatible(args: List[Type]) = undetparams match {
@@ -1002,9 +996,9 @@ trait Infer extends Checkable {
           "lenientPt"   -> lenientPt
         )
       )
-      var targs = exprTypeArgs(undetparams, tree.tpe, strictPt)._1
+      var targs = exprTypeArgs(undetparams, tree.tpe, strictPt, useWeaklyCompatible = false)
       if ((targs eq null) || !(tree.tpe.subst(undetparams, targs) <:< strictPt))
-        targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)._1
+        targs = exprTypeArgs(undetparams, tree.tpe, lenientPt, useWeaklyCompatible = false)
 
       substExpr(tree, undetparams, targs, lenientPt)
       printInference("[inferArgumentInstance] finished, targs = " + targs)
@@ -1016,8 +1010,9 @@ trait Infer extends Checkable {
      * If passed, infers against specified type `treeTp` instead of `tree.tp`.
      */
     def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, useWeaklyCompatible: Boolean = false): List[Symbol] = {
-      val treeTp = if(treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
-      val (targs, tvars) = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
+      val treeTp = if (treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
+      val tvars  = tparams map freshVar
+      val targs  = exprTypeArgs(tvars, tparams, treeTp, pt, useWeaklyCompatible)
       printInference(
         ptBlock("inferExprInstance",
           "tree"    -> tree,
