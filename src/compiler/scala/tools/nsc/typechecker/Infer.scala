@@ -388,43 +388,37 @@ trait Infer extends Checkable {
      */
     private def isCompatible(tp: Type, pt: Type): Boolean = {
       def isCompatibleByName(tp: Type, pt: Type): Boolean = (
-        isByNameParamType(pt) && !isByNameParamType(tp) && isCompatible(tp, dropByName(pt))
+           isByNameParamType(pt)
+        && !isByNameParamType(tp)
+        && isCompatible(tp, dropByName(pt))
       )
       val tp1 = normalize(tp)
-      (tp1 weak_<:< pt) || isCoercible(tp1, pt) || isCompatibleByName(tp, pt)
+
+      (    (tp1 weak_<:< pt)
+        || isCoercible(tp1, pt)
+        || isCompatibleByName(tp, pt)
+      )
     }
-    def isCompatibleArgs(tps: List[Type], pts: List[Type]) =
-      (tps corresponds pts)(isCompatible)
+    def isCompatibleArgs(tps: List[Type], pts: List[Type]) = (tps corresponds pts)(isCompatible)
 
-    def isWeaklyCompatible(tp: Type, pt: Type): Boolean =
-      pt.typeSymbol == UnitClass || // can perform unit coercion
-      isCompatible(tp, pt) ||
-      tp.isInstanceOf[MethodType] && // can perform implicit () instantiation
-      tp.params.isEmpty && isCompatible(tp.resultType, pt)
+    def isWeaklyCompatible(tp: Type, pt: Type): Boolean = {
+      def isCompatibleNoParamsMethod = tp match {
+        case MethodType(Nil, restpe) => isCompatible(restpe, pt)
+        case _                       => false
+      }
+      (    pt.typeSymbol == UnitClass // can perform unit coercion
+        || isCompatible(tp, pt)
+        || isCompatibleNoParamsMethod // can perform implicit () instantiation
+      )
+    }
 
-    /** Like weakly compatible but don't apply any implicit conversions yet.
+    /*  Like weakly compatible but don't apply any implicit conversions yet.
      *  Used when comparing the result type of a method with its prototype.
-     *
-     *  [Martin] I think Infer is also created by Erasure, with the default
-     *  implementation of isCoercible
-     *  [Paulp] (Assuming the above must refer to my comment on isCoercible)
-     *  Nope, I examined every occurrence of Inferencer in trunk.  It
-     *  appears twice as a self-type, once at its definition, and once
-     *  where it is instantiated in Typers.  There are no others.
-     *
-         % ack -A0 -B0 --no-filename '\bInferencer\b' src
-             self: Inferencer =>
-             self: Inferencer =>
-           class Inferencer(context: Context) extends InferencerContextErrors with InferCheckable {
-             val infer = new Inferencer(context0) {
      */
     def isConservativelyCompatible(tp: Type, pt: Type): Boolean =
       context.withImplicitsDisabled(isWeaklyCompatible(tp, pt))
 
-    /** This is overridden in the Typer.infer with some logic, but since
-     *  that's the only place in the compiler an Inferencer is ever created,
-     *  I suggest this should either be abstract or have the implementation.
-     */
+    // Overridden at the point of instantiation, where inferView is visible.
     def isCoercible(tp: Type, pt: Type): Boolean = false
 
     /* -- Type instantiation------------------------------------------------ */
