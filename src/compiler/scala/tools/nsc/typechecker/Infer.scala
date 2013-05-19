@@ -170,22 +170,18 @@ trait Infer extends Checkable {
    */
   object instantiate extends TypeMap {
     private var excludedVars = immutable.Set[TypeVar]()
+    private def applyTypeVar(tv: TypeVar): Type = tv match {
+      case TypeVar(origin, constr) if !constr.instValid => throw new DeferredNoInstance(() => s"no unique instantiation of type variable $origin could be found")
+      case _ if excludedVars(tv)                        => throw new NoInstance("cyclic instantiation")
+      case TypeVar(_, constr)                           =>
+        excludedVars += tv
+        try apply(constr.inst)
+        finally excludedVars -= tv
+    }
     def apply(tp: Type): Type = tp match {
-      case WildcardType | BoundedWildcardType(_) | NoType =>
-        throw new NoInstance("undetermined type")
-      case tv @ TypeVar(origin, constr) if !tv.untouchable =>
-        if (constr.inst == NoType) {
-          throw new DeferredNoInstance(() =>
-            s"no unique instantiation of type variable $origin could be found")
-        } else if (excludedVars(tv)) {
-          throw new NoInstance("cyclic instantiation")
-        } else {
-          excludedVars += tv
-          try apply(constr.inst)
-          finally excludedVars -= tv
-        }
-      case _ =>
-        mapOver(tp)
+      case WildcardType | BoundedWildcardType(_) | NoType => throw new NoInstance("undetermined type")
+      case tv: TypeVar if !tv.untouchable                 => applyTypeVar(tv)
+      case _                                              => mapOver(tp)
     }
   }
 
@@ -834,7 +830,8 @@ trait Infer extends Checkable {
            (args ne argtpes0)
         && isApplicable(undetparams, mt, args, pt)
       )
-      def tryInstantiating(args: List[Type], restpe: Type) = falseIfNoInstance {
+      def tryInstantiating(args: List[Type]) = falseIfNoInstance {
+        val restpe = mt resultType args
         val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, args, pt)
         val restpeInst = restpe.instantiateTypeParams(okparams, okargs)
         // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
@@ -843,12 +840,9 @@ trait Infer extends Checkable {
           case _         => isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
         }
       }
-      def typesCompatible(argtpes: List[Type]) = {
-        val restpe = mt resultType argtpes
-        undetparams match {
-          case Nil => isCompatibleArgs(argtpes, formals) && isWeaklyCompatible(restpe, pt)
-          case _   => tryInstantiating(argtpes, restpe)
-        }
+      def typesCompatible(args: List[Type]) = undetparams match {
+        case Nil => isCompatibleArgs(args, formals) && isWeaklyCompatible(mt resultType args, pt)
+        case _   => tryInstantiating(args)
       }
 
       // when using named application, the vararg param has to be specified exactly once
@@ -880,7 +874,7 @@ trait Infer extends Checkable {
         case OverloadedType(pre, alts) => alts exists (alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
         case ExistentialType(_, qtpe)  => isApplicable(undetparams, qtpe, argtpes0, pt)
         case mt @ MethodType(_, _)     => isApplicableToMethod(undetparams, mt, argtpes0, pt)
-        case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt) // strip nullary methods
+        case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt)
         case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, restpe)((tps1, res1) => isApplicable(tps1 ::: undetparams, res1, argtpes0, pt))
         case ErrorType                 => true
         case _                         => false
@@ -893,82 +887,57 @@ trait Infer extends Checkable {
      */
     // Todo: Try to make isApplicable always safe (i.e. not cause TypeErrors).
     // The chance of TypeErrors should be reduced through context errors
-    private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type,
-                                              argtpes0: List[Type], pt: Type): Boolean = {
-      final case class Result(error: Boolean, applicable: Boolean)
-      def isApplicableWithExpectedType(pt0: Type): Result = {
+    private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
+      def applicableExpectingPt(pt: Type): Boolean = {
         val silentContext = context.makeSilent(reportAmbiguousErrors = false)
-        val applicable = newTyper(silentContext).infer.isApplicable(undetparams, ftpe, argtpes0, pt0)
-        Result(silentContext.hasErrors, applicable)
+        val applicable    = newTyper(silentContext).infer.isApplicable(undetparams, ftpe, argtpes0, pt)
+        if (silentContext.hasErrors && !pt.isWildcard)
+          applicableExpectingPt(WildcardType) // second try
+        else
+          applicable
       }
-      val canSecondTry = pt != WildcardType
-      val firstTry = isApplicableWithExpectedType(pt)
-      if (!firstTry.error || !canSecondTry)
-        firstTry.applicable
-      else {
-        val secondTry = isApplicableWithExpectedType(WildcardType)
-        // TODO `!secondTry.error &&` was faithfully replicated as part of the refactoring, but mayberedundant.
-        !secondTry.error && secondTry.applicable
-      }
+      applicableExpectingPt(pt)
     }
 
     /** Is type `ftpe1` strictly more specific than type `ftpe2`
      *  when both are alternatives in an overloaded function?
      *  @see SLS (sec:overloading-resolution)
      */
-    def isAsSpecific(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
-      case OverloadedType(pre, alts) =>
-        alts exists (alt => isAsSpecific(pre memberType alt, ftpe2))
-      case et: ExistentialType =>
-        isAsSpecific(ftpe1.skolemizeExistential, ftpe2)
-        //et.withTypeVars(isAsSpecific(_, ftpe2))
-      case NullaryMethodType(res) =>
-        isAsSpecific(res, ftpe2)
-      case mt: MethodType if mt.isImplicit =>
-        isAsSpecific(ftpe1.resultType, ftpe2)
-      case mt @ MethodType(params, _) if params.nonEmpty =>
-        var argtpes = mt.paramTypes
-        if (isVarArgsList(params) && isVarArgsList(ftpe2.params))
-          argtpes = argtpes map (argtpe =>
-            if (isRepeatedParamType(argtpe)) argtpe.typeArgs.head else argtpe)
-        isApplicable(List(), ftpe2, argtpes, WildcardType)
-      case PolyType(tparams, NullaryMethodType(res)) =>
-        isAsSpecific(PolyType(tparams, res), ftpe2)
-      case PolyType(tparams, mt: MethodType) if mt.isImplicit =>
-        isAsSpecific(PolyType(tparams, mt.resultType), ftpe2)
-      case PolyType(_, (mt @ MethodType(params, _))) if params.nonEmpty =>
-        isApplicable(List(), ftpe2, mt.paramTypes, WildcardType)
-      // case NullaryMethodType(res) =>
-      //   isAsSpecific(res, ftpe2)
-      case ErrorType =>
-        true
-      case _ =>
-        ftpe2 match {
-          case OverloadedType(pre, alts) =>
-            alts forall (alt => isAsSpecific(ftpe1, pre memberType alt))
-          case et: ExistentialType =>
-            et.withTypeVars(isAsSpecific(ftpe1, _))
-          case mt: MethodType =>
-            !mt.isImplicit || isAsSpecific(ftpe1, mt.resultType)
-          case NullaryMethodType(res) =>
-            isAsSpecific(ftpe1, res)
-          case PolyType(tparams, NullaryMethodType(res)) =>
-            isAsSpecific(ftpe1, PolyType(tparams, res))
-          case PolyType(tparams, mt: MethodType) =>
-            !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, mt.resultType))
-          case _ =>
-            isAsSpecificValueType(ftpe1, ftpe2, List(), List())
+    def isAsSpecific(ftpe1: Type, ftpe2: Type): Boolean = {
+      def checkIsApplicable(argtpes: List[Type]) = isApplicable(Nil, ftpe2, argtpes, WildcardType)
+      def bothAreVarargs                         = isVarArgsList(ftpe1.params) && isVarArgsList(ftpe2.params)
+      def onRight = ftpe2 match {
+        case OverloadedType(pre, alts)                     => alts forall (alt => isAsSpecific(ftpe1, pre memberType alt))
+        case et: ExistentialType                           => et.withTypeVars(isAsSpecific(ftpe1, _))
+        case mt @ MethodType(_, restpe)                    => !mt.isImplicit || isAsSpecific(ftpe1, restpe)
+        case NullaryMethodType(res)                        => isAsSpecific(ftpe1, res)
+        case PolyType(tparams, NullaryMethodType(restpe))  => isAsSpecific(ftpe1, PolyType(tparams, restpe))
+        case PolyType(tparams, mt @ MethodType(_, restpe)) => !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, restpe))
+        case _                                             => isAsSpecificValueType(ftpe1, ftpe2, Nil, Nil)
+      }
+      ftpe1 match {
+        case OverloadedType(pre, alts)                                      => alts exists (alt => isAsSpecific(pre memberType alt, ftpe2))
+        case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2)
+        case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2)
+        case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2)
+        case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes map repeatedToSingle)
+        case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt.paramTypes)
+        case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2)
+        case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2)
+        case PolyType(_, mt @ MethodType(params, _)) if params.nonEmpty     => checkIsApplicable(mt.paramTypes)
+        case ErrorType                                                      => true
+        case _                                                              => onRight
+      }
+    }
+    private def isAsSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = tpe1 match {
+      case PolyType(tparams1, rtpe1) =>
+        isAsSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
+      case _                         =>
+        tpe2 match {
+          case PolyType(tparams2, rtpe2) => isAsSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
+          case _                         => existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
         }
     }
-    private def isAsSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = (tpe1, tpe2) match {
-      case (PolyType(tparams1, rtpe1), _) =>
-        isAsSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
-      case (_, PolyType(tparams2, rtpe2)) =>
-        isAsSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
-      case _ =>
-        existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
-    }
-
 
 /*
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
@@ -981,17 +950,20 @@ trait Infer extends Checkable {
      *  sym2 (or its companion class in case it is a module)?
      */
     def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean = (
-      (sym1 != sym2) && (sym1 != NoSymbol) && (
-           (sym1 isSubClass sym2)
-        || (sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
-        || (sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
-      )
+         (sym1 ne sym2)
+      && (sym1 ne NoSymbol)
+      && (    (sym1 isSubClass sym2)
+           || (sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2))
+           || (sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass))
+         )
     )
 
     /** is symbol `sym1` defined in a proper subclass of symbol `sym2`?
      */
-    def isInProperSubClassOrObject(sym1: Symbol, sym2: Symbol) =
-      sym2 == NoSymbol || isProperSubClassOrObject(sym1.owner, sym2.owner)
+    def isInProperSubClassOrObject(sym1: Symbol, sym2: Symbol) = (
+         (sym2 eq NoSymbol)
+      || isProperSubClassOrObject(sym1.safeOwner, sym2.owner)
+    )
 
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean = {
       // ftpe1 / ftpe2 are OverloadedTypes (possibly with one single alternative) if they
@@ -1187,7 +1159,7 @@ trait Infer extends Checkable {
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(mt.paramTypes, args.length)
-          val argtpes  = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
+          val argtpes = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
           val restpe  = fn.tpe.resultType(argtpes)
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
@@ -1583,7 +1555,7 @@ trait Infer extends Checkable {
       val argtpes = argtpes0 mapConserve {
         case RepeatedType(tp) => varargsStar = true ; tp
         case tp               => tp
-            }
+      }
       def followType(sym: Symbol) = followApply(pre memberType sym)
       def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
         val applicable0 = alts filter (alt => context inSilentMode (isApplicable(undetparams, followType(alt), argtpes, pt)))
@@ -1605,7 +1577,7 @@ trait Infer extends Checkable {
         val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         debuglog(s"infer method alt ${tree.symbol} with alternatives ${alts map pre.memberType} argtpes=$argtpes pt=$pt")
         bestForExpectedType(pt, isLastTry)
-        }
+      }
     }
 
     /** Try inference twice, once without views and once with views,
