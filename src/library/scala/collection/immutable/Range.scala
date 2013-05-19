@@ -65,6 +65,7 @@ extends scala.collection.AbstractSeq[Int]
     || (start < end && step < 0)
     || (start == end && !isInclusive)
   )
+  @deprecated("This method will be made private, use length instead.", "2.11")
   final val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
@@ -74,10 +75,12 @@ extends scala.collection.AbstractSeq[Int]
       else len.toInt
     }
   }
+  @deprecated("This method will be made private, use last instead.", "2.11")
   final val lastElement     = start + (numRangeElements - 1) * step
+  @deprecated("This method will be made private.", "2.11")
   final val terminalElement = start + numRangeElements * step
 
-  override def last = if (isEmpty) Nil.last else lastElement
+  override def last = if (isEmpty) Nil.last else {validateMaxLength(); lastElement}
   override def head = if (isEmpty) Nil.head else start
 
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
@@ -104,7 +107,7 @@ extends scala.collection.AbstractSeq[Int]
   def isInclusive = false
 
   override def size = length
-  override def length = if (numRangeElements < 0) fail() else numRangeElements
+  override def length = {validateMaxLength(); numRangeElements}
 
   private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
   private def fail() = throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
@@ -159,11 +162,12 @@ extends scala.collection.AbstractSeq[Int]
    *  @param n  the number of elements to take.
    *  @return   a new range consisting of `n` first elements.
    */
-  final override def take(n: Int): Range = (
+  final override def take(n: Int): Range = {
+    validateMaxLength()
     if (n <= 0 || isEmpty) newEmptyRange(start)
     else if (n >= numRangeElements) this
     else new Range.Inclusive(start, locationAfterN(n - 1), step)
-  )
+  }
 
   /** Creates a new range containing all the elements of this range except the first `n` elements.
    *
@@ -172,11 +176,12 @@ extends scala.collection.AbstractSeq[Int]
    *  @param n  the number of elements to drop.
    *  @return   a new range consisting of all the elements of this range except `n` first elements.
    */
-  final override def drop(n: Int): Range = (
+  final override def drop(n: Int): Range = {
+    validateMaxLength()
     if (n <= 0 || isEmpty) this
     else if (n >= numRangeElements) newEmptyRange(end)
     else copy(locationAfterN(n), end, step)
-  )
+  }
 
   /** Creates a new range containing all the elements of this range except the last one.
    *
@@ -206,6 +211,7 @@ extends scala.collection.AbstractSeq[Int]
 
   // Counts how many elements from the start meet the given test.
   private def skipCount(p: Int => Boolean): Int = {
+    validateMaxLength()
     var current = start
     var counted = 0
 
@@ -271,6 +277,7 @@ extends scala.collection.AbstractSeq[Int]
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
 
   final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
+    validateMaxLength()
     if (isEmpty) 0
     else if (numRangeElements == 1) head
     else (numRangeElements.toLong * (head + last) / 2).toInt
@@ -294,6 +301,7 @@ extends scala.collection.AbstractSeq[Int]
    */
 
   override def toString() = {
+    validateMaxLength()
     val endStr = if (numRangeElements > Range.MAX_PRINT) ", ... )" else ")"
     take(Range.MAX_PRINT).mkString("Range(", ", ", endStr)
   }
