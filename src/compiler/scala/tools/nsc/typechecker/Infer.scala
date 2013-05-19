@@ -737,7 +737,7 @@ trait Infer extends Checkable {
      *    to the corresponding position in params
      *  - namesOK is false when there's an invalid use of named arguments
      */
-    private def checkNames(argtpes: List[Type], params: List[Symbol]) = {
+    private def checkNames(argtpes: List[Type], params: List[Symbol]): (List[Type], Array[Int], Boolean) = {
       val argPos = Array.fill(argtpes.length)(-1)
       var positionalAllowed, namesOK = true
       var index = 0
@@ -858,9 +858,8 @@ trait Infer extends Checkable {
       }
     }
 
-    /** Is there an instantiation of free type variables `undetparams`
-     *  such that function type `ftpe` is applicable to
-     *  `argtpes` and its result conform to `pt`?
+    /** Is there an instantiation of free type variables `undetparams` such that
+     *  function type `ftpe` is applicable to `argtpes0` and its result conform to `pt`?
      *
      *  @param ftpe        the type of the function (often a MethodType)
      *  @param argtpes0    the argument types; a NamedType(name, tp) for named
