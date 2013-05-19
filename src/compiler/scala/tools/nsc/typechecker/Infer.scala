@@ -975,8 +975,6 @@ trait Infer extends Checkable {
                                  (!phase.erasedTypes || covariantReturnOverride(ftpe1, ftpe2))) 1 else 0)
         val subClassCount = (if (isInProperSubClassOrObject(sym1, sym2)) 1 else 0) -
                             (if (isInProperSubClassOrObject(sym2, sym1)) 1 else 0)
-//        println("is more specific? "+sym1+":"+ftpe1+sym1.locationString+"/"+sym2+":"+ftpe2+sym2.locationString+":"+
-//                specificCount+"/"+subClassCount)
         specificCount + subClassCount > 0
       }
     }
@@ -989,48 +987,7 @@ trait Infer extends Checkable {
         }
       case _ => false
     }
-/*
-    /** Is type `tpe1` a strictly better expression alternative than type `tpe2`?
-     */
-    def isStrictlyBetterExpr(tpe1: Type, tpe2: Type) = {
-      isMethod(tpe2) && !isMethod(tpe1) ||
-      isNullary(tpe1) && !isNullary(tpe2) ||
-      isStrictlyBetter(tpe1, tpe2)
-    }
 
-    /** Is type `tpe1` a strictly better alternative than type `tpe2`?
-     *  non-methods are always strictly better than methods
-     *  nullary methods are always strictly better than non-nullary
-     *  if both are non-nullary methods, then tpe1 is strictly better than tpe2 if
-     *   - tpe1 specializes tpe2 and tpe2 does not specialize tpe1
-     *   - tpe1 and tpe2 specialize each other and tpe1 has a strictly better resulttype than
-     *     tpe2
-     */
-    def isStrictlyBetter(tpe1: Type, tpe2: Type) = {
-      def isNullary(tpe: Type): Boolean = tpe match {
-        case tp: RewrappingTypeProxy => isNullary(tp.underlying)
-        case _ => tpe.paramSectionCount == 0 || tpe.params.isEmpty
-      }
-      def isMethod(tpe: Type): Boolean = tpe match {
-        case tp: RewrappingTypeProxy => isMethod(tp.underlying)
-        case MethodType(_, _) | PolyType(_, _) => true
-        case _ => false
-      }
-      def hasStrictlyBetterResult =
-        resultIsBetter(tpe1, tpe2, List(), List()) && !resultIsBetter(tpe2, tpe1, List(), List())
-      if (!isMethod(tpe1))
-        isMethod(tpe2) || hasStrictlyBetterResult
-
-      isNullary(tpe1) && !isNullary(tpe2) ||
-      is
-
-      else if (isNullary(tpe1))
-        isMethod(tpe2) && (!isNullary(tpe2) || hasStrictlyBetterResult)
-      else
-        specializes(tpe1, tpe2) && (!specializes(tpe2, tpe1) || hasStrictlyBetterResult)
-    }
-
-*/
     /** error if arguments not within bounds. */
     def checkBounds(tree: Tree, pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type], prefix: String): Boolean = {
       def issueBoundsError()                       = { NotWithinBounds(tree, prefix, targs, tparams, Nil) ; false }
