@@ -1426,19 +1426,6 @@ trait Infer extends Checkable {
 
     /* -- Overload Resolution ---------------------------------------------- */
 
-/*
-    def checkNotShadowed(pos: Position, pre: Type, best: Symbol, eligible: List[Symbol]) =
-      if (!phase.erasedTypes)
-        for (alt <- eligible) {
-          if (isProperSubClassOrObject(alt.owner, best.owner))
-            error(pos,
-                  "erroneous reference to overloaded definition,\n"+
-                  "most specific definition is: "+best+best.locationString+" of type "+pre.memberType(best)+
-                  ",\nyet alternative definition   "+alt+alt.locationString+" of type "+pre.memberType(alt)+
-                  "\nis defined in a subclass")
-        }
-*/
-
     /** Assign `tree` the symbol and type of the alternative which
      *  matches prototype `pt`, if it exists.
      *  If several alternatives match `pt`, take parameterless one.
