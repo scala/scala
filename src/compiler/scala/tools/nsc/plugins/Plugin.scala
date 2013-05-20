@@ -93,15 +93,13 @@ object Plugin {
   type AnyClass = Class[_]
 
   /** Use a class loader to load the plugin class.
-   *
-   *  @return `None` on failure
    */
-  def load(pd: PluginDescription, loader: ClassLoader): Try[AnyClass] = {
+  def load(classname: String, loader: ClassLoader): Try[AnyClass] = {
     Try[AnyClass] {
-      loader loadClass pd.classname
+      loader loadClass classname
     } recoverWith {
       case _: Exception =>
-        Failure(new RuntimeException(s"Warning: class not found: ${pd.classname}"))
+        Failure(new RuntimeException(s"Warning: class not found: ${classname}"))
     }
   }
 
@@ -137,9 +135,8 @@ object Plugin {
       case _                   => false
     }
     val (locs, pds) = ((explicit ::: exploded ::: included) filterNot ignored).unzip
-
     val loader = loaderFor(locs.distinct)
-    pds filter (_.isSuccess) map (_.get) map (Plugin load (_, loader))
+    (pds filter (_.isSuccess) map (_.get.classname)).distinct map (Plugin load (_, loader))
   }
 
   /** Instantiate a plugin class, given the class and
