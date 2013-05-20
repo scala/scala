@@ -431,6 +431,11 @@ trait Definitions extends api.StandardDefinitions {
       case _                           => false
     }
 
+    def repeatedToSingle(tp: Type): Type = tp match {
+      case TypeRef(_, RepeatedParamClass, arg :: Nil) => arg
+      case _                                          => tp
+    }
+
     def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
       case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
       case _                                          => tp

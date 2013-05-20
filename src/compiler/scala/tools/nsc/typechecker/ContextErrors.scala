@@ -96,11 +96,7 @@ trait ContextErrors {
 
     def issueTypeError(err: AbsTypeError)(implicit context: Context) { context.issue(err) }
 
-    def typeErrorMsg(found: Type, req: Type, possiblyMissingArgs: Boolean) = {
-      def missingArgsMsg = if (possiblyMissingArgs) "\n possible cause: missing arguments for method or constructor" else ""
-
-      "type mismatch" + foundReqMsg(found, req) + missingArgsMsg
-    }
+    def typeErrorMsg(found: Type, req: Type) = "type mismatch" + foundReqMsg(found, req)
   }
 
   def notAnyRefMessage(found: Type): String = {
@@ -185,7 +181,7 @@ trait ContextErrors {
         }
         assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
 
-        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req, infer.isPossiblyMissingArgs(foundType, req))) )
+        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req)))
         infer.explainTypes(foundType, req)
       }
 
@@ -901,7 +897,7 @@ trait ContextErrors {
       }
 
       def NoBestExprAlternativeError(tree: Tree, pt: Type, lastTry: Boolean) = {
-        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt, isPossiblyMissingArgs(tree.symbol.tpe, pt))))
+        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt)))
         setErrorOnLastTry(lastTry, tree)
       }
 
@@ -1165,7 +1161,7 @@ trait ContextErrors {
                sm"""|Note that implicit conversions are not applicable because they are ambiguous:
                     |${coreMsg}are possible conversion functions from $found to $req"""
           }
-          typeErrorMsg(found, req, infer.isPossiblyMissingArgs(found, req)) + (
+          typeErrorMsg(found, req) + (
             if (explanation == "") "" else "\n" + explanation
           )
         }
