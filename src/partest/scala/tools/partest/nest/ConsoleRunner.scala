@@ -13,6 +13,7 @@ import scala.tools.nsc.util.CommandLineParser
 import scala.collection.{ mutable, immutable }
 import PathSettings.srcDir
 import TestKinds._
+import scala.reflect.internal.util.Collections.distinctBy
 
 class ConsoleRunner extends DirectRunner {
   import NestUI._
@@ -67,11 +68,17 @@ class ConsoleRunner extends DirectRunner {
       val message   = passFail + elapsed
 
       if (failed0.nonEmpty) {
-        echo(bold(cyan("##### Transcripts from failed tests #####\n")))
-        failed0 foreach { state =>
-          comment("partest " + state.testFile)
-          echo(state.transcriptString + "\n")
+        if (isPartestVerbose) {
+          echo(bold(cyan("##### Transcripts from failed tests #####\n")))
+          failed0 foreach { state =>
+            comment("partest " + state.testFile)
+            echo(state.transcriptString + "\n")
+          }
         }
+
+        def files_s = failed0.map(_.testFile).mkString(""" \""" + "\n  ")
+        echo("# Failed test paths (this command will update checkfiles)")
+        echo("test/partest --update-check \\\n  " + files_s + "\n")
       }
 
       echo(message)
@@ -185,8 +192,8 @@ class ConsoleRunner extends DirectRunner {
 
     chatty(banner)
 
-    val allTests   = (miscTests ++ (kinds flatMap testsFor)).distinct
-    val grouped    = (allTests groupBy kindOf).toList sortBy (x => standardKinds indexOf x._1)
+    val allTests: List[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical) sortBy (_.toString)
+    val grouped              = (allTests groupBy kindOf).toList sortBy (x => standardKinds indexOf x._1)
 
     totalTests = allTests.size
     expectedFailures = propOrNone("partest.errors") match {
