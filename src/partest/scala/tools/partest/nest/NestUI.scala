@@ -74,7 +74,7 @@ object NestUI {
   }
 
   def reportTest(state: TestState) = {
-    if (isTerse && state.isOk) {
+    if (state.isOk && !isVerbose) {
       if (dotCount >= DotWidth) {
         outline("\n.")
         dotCount = 1

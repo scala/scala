@@ -64,9 +64,9 @@ trait FileManager extends FileUtil {
   protected def relativeToLibrary(what: String): String = {
     def jarname = if (what startsWith "scala") s"$what.jar" else s"scala-$what.jar"
     if (LATEST_LIB endsWith ".jar")
-      (SFile(LATEST_LIB).parent / jarname).toAbsolute.path
+      (SFile(LATEST_LIB).parent / jarname).path
     else
-      (SFile(LATEST_LIB).parent.parent / "classes" / what).toAbsolute.path
+      (SFile(LATEST_LIB).parent.parent / "classes" / what).path
   }
   def latestScaladoc    = relativeToLibrary("scaladoc")
   def latestInteractive = relativeToLibrary("interactive")

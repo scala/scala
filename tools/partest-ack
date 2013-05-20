@@ -47,7 +47,7 @@ EOM
 while getopts :fuvdp: opt; do
   case $opt in
     d) partest_debug=true && partest_args="$partest_args --debug" ;;
-    f) failed=true && partest_args="$partest_args --failed" ;;
+    f) failed=true ;;
     p) cotouched="$cotouched $OPTARG" ;;
     q) quiet=true ;;
     u) partest_args="$partest_args --update-check" ;;
@@ -121,7 +121,7 @@ allMatches() {
   [[ -n $failed ]]      && testRun tests-which-failed
 }
 
-paths=$(allMatches | sort -u)
+paths="$(allMatches | sort -u)"
 [[ -n $quiet ]] || partest_args="--show-diff --show-log $partest_args"
 
 if [[ -z $paths ]] && [[ -z $failed ]]; then

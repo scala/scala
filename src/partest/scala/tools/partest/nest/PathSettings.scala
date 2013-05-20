@@ -14,7 +14,7 @@ import Path._
 object PathSettings {
   import PartestDefaults.{ testRootDir, srcDirName }
 
-  private def cwd = Directory.Current getOrElse sys.error("user.dir property not set")
+  private def cwd = Directory(Path("."))
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
   private def findJar(d: Directory, name: String): Option[File] = findJar(d.files, name)
   private def findJar(files: Iterator[File], name: String): Option[File] =
@@ -22,15 +22,24 @@ object PathSettings {
   private def findJarOrFail(name: String, ds: Directory*): File = findJar(ds flatMap (_.files) iterator, name) getOrElse
     sys.error(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
 
-  // Directory <root>/test
-  lazy val testRoot: Directory = testRootDir getOrElse {
-    val candidates: List[Directory] = (cwd :: cwd.parents) flatMap (d => List(d, Directory(d / "test")))
-
-    candidates find isPartestDir getOrElse sys.error("Directory 'test' not found.")
+  private def findPartestDir(): Directory = {
+    def loop(d: Directory, remaining: Int): Directory = {
+      val testDir = Directory(d / "test")
+      if (testDir / srcDirName isDirectory)
+        testDir
+      else if (remaining > 0)
+        loop(Directory(d / ".."), remaining - 1)
+      else
+        sys.error(s"Directory 'test' not found.")
+    }
+    loop(cwd, cwd.toAbsolute.segments.length)
   }
 
+  // Directory <root>/test
+  lazy val testRoot: Directory = testRootDir getOrElse findPartestDir()
+
   // Directory <root>/test/files or .../scaladoc
-  def srcDir = Directory(testRoot / srcDirName toCanonical)
+  def srcDir = Directory(testRoot / srcDirName)
 
   // Directory <root>/test/files/lib
   lazy val srcLibDir = Directory(srcDir / "lib")

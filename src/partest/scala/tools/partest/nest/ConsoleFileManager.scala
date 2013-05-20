@@ -17,7 +17,6 @@ import PathResolver.{ Environment, Defaults }
 class ConsoleFileManager extends FileManager {
   var testBuild: Option[String] = PartestDefaults.testBuild
   def testBuildFile = testBuild map (testParent / _)
-
   var testClasses: Option[String] = None
 
   def this(buildPath: String, rawClasses: Boolean) = {
@@ -40,15 +39,14 @@ class ConsoleFileManager extends FileManager {
     SCALAC_OPTS = SCALAC_OPTS ++ moreOpts.split(' ').toSeq.filter(_.length > 0)
   }
 
-  lazy val srcDir        = PathSettings.srcDir
-  lazy val testRootDir   = PathSettings.testRoot
-  lazy val testRootPath  = testRootDir.toAbsolute.path
-  def testParent    = testRootDir.parent
+  lazy val srcDir       = PathSettings.srcDir
+  lazy val testRootDir  = PathSettings.testRoot
+  lazy val testRootPath = testRootDir.path
+  def testParent        = testRootDir.parent
 
   var CLASSPATH   = PartestDefaults.classPath
   var JAVACMD     = PartestDefaults.javaCmd
   var JAVAC_CMD   = PartestDefaults.javacCmd
-
 
   vlog("CLASSPATH: "+CLASSPATH)
 
@@ -58,7 +56,7 @@ class ConsoleFileManager extends FileManager {
   }
 
   CLASSPATH = {
-    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
+    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.path)
 
     // add all jars in libs
     (CLASSPATH :: libs.toList) mkString pathSeparator
@@ -67,11 +65,11 @@ class ConsoleFileManager extends FileManager {
   def findLatest() {
     vlog("test parent: "+testParent)
 
-    def prefixFileWith(parent: File, relPath: String) = (SFile(parent) / relPath).toCanonical
-    def prefixFile(relPath: String) = (testParent / relPath).toCanonical
+    def prefixFileWith(parent: File, relPath: String) = SFile(parent) / relPath
+    def prefixFile(relPath: String) = testParent / relPath
 
     if (!testClasses.isEmpty) {
-      testClassesDir = Path(testClasses.get).toCanonical.toDirectory
+      testClassesDir = Path(testClasses.get).toDirectory
       vlog("Running with classes in "+testClassesDir)
 
       latestLibFile     = testClassesDir / "library"
@@ -147,26 +145,24 @@ class ConsoleFileManager extends FileManager {
       pairs(pairs.keys max)()
     }
 
-    LATEST_LIB = latestLibFile.getAbsolutePath
-    LATEST_REFLECT = latestReflectFile.getAbsolutePath
-    LATEST_COMP = latestCompFile.getAbsolutePath
-    LATEST_PARTEST = latestPartestFile.getAbsolutePath
-    LATEST_ACTORS = latestActorsFile.getAbsolutePath
+    LATEST_LIB     = latestLibFile.getPath
+    LATEST_REFLECT = latestReflectFile.getPath
+    LATEST_COMP    = latestCompFile.getPath
+    LATEST_PARTEST = latestPartestFile.getPath
+    LATEST_ACTORS  = latestActorsFile.getPath
   }
 
-  var LATEST_LIB: String = ""
+  var LATEST_LIB: String     = ""
   var LATEST_REFLECT: String = ""
-  var LATEST_COMP: String = ""
+  var LATEST_COMP: String    = ""
   var LATEST_PARTEST: String = ""
-  var LATEST_ACTORS: String = ""
+  var LATEST_ACTORS: String  = ""
 
-  var latestLibFile: File = _
-  var latestActorsFile: File = _
+  var latestLibFile: File     = _
+  var latestActorsFile: File  = _
   var latestReflectFile: File = _
-  var latestCompFile: File = _
+  var latestCompFile: File    = _
   var latestPartestFile: File = _
-  //def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
-  //def latestScalapFile: File = new File(latestLibFile.getParentFile, "scalap.jar")
   var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
