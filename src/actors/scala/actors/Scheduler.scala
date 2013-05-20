@@ -24,17 +24,8 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-    val sched = if (!ThreadPoolConfig.useForkJoin) {
-      // default is non-daemon
-      val s = new ResizableThreadPoolScheduler(false)
-      s.start()
-      s
-    } else {
-      // default is non-daemon, fair
-      val s = new ForkJoinScheduler
-      s.start()
-      s
-    }
+    val sched = new ForkJoinScheduler
+    sched.start()
     Debug.info(this+": starting new "+sched+" ["+sched.getClass+"]")
     sched
   }

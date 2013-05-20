@@ -18,22 +18,8 @@ private[actors] object Reactor {
 
   val scheduler = new DelegatingScheduler {
     def makeNewScheduler: IScheduler = {
-      val sched = if (!ThreadPoolConfig.useForkJoin) {
-        // default is non-daemon
-        val workQueue = new LinkedBlockingQueue[Runnable]
-        ExecutorScheduler(
-          new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
-                                 ThreadPoolConfig.maxPoolSize,
-                                 60000L,
-                                 TimeUnit.MILLISECONDS,
-                                 workQueue,
-                                 new ThreadPoolExecutor.CallerRunsPolicy))
-      } else {
-        // default is non-daemon, non-fair
-        val s = new ForkJoinScheduler(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, false, false)
-        s.start()
-        s
-      }
+      val sched = new ForkJoinScheduler(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, false, false)
+      sched.start()
       Debug.info(this+": starting new "+sched+" ["+sched.getClass+"]")
       sched
     }
