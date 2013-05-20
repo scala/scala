@@ -209,3 +209,5 @@ trait Collections {
     case _: IllegalArgumentException => None
   }
 }
+
+object Collections extends Collections
