@@ -569,11 +569,7 @@ trait TypeDiagnostics {
       }
 
       // The checkDead call from typedArg is more selective.
-      def inMode(mode: Mode, tree: Tree): Tree = {
-        val modeOK = (mode & (EXPRmode | BYVALmode | POLYmode)) == (EXPRmode | BYVALmode)
-        if (modeOK) apply(tree)
-        else tree
-      }
+      def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
     }
 
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded

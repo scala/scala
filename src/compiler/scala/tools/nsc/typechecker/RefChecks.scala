@@ -951,6 +951,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) =>
+        // Make sure the 'eq' or 'ne' method is the one in AnyRef.
         def isReferenceOp = fn.symbol == Object_eq || fn.symbol == Object_ne
         def isNew(tree: Tree) = tree match {
           case Function(_, _)

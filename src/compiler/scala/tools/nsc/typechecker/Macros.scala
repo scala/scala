@@ -365,6 +365,8 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     catch { case MacroBodyTypecheckException => EmptyTree }
 
   class MacroTyper(val typer: Typer, val macroDdef: DefDef) extends MacroErrors {
+    private def typed1Expr(tree: Tree) = typer.typed1(tree, EXPRmode, WildcardType)
+
     // Phase I: sanity checks
     val macroDef = macroDdef.symbol
     macroLogVerbose("typechecking macro def %s at %s".format(macroDef, macroDdef.pos))
@@ -382,20 +384,20 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
         // e.g. a "type arguments [U] do not conform to method foo's type parameter bounds" error
         // doesn't manifest itself as an error in the resulting tree
         val prevNumErrors = reporter.ERROR.count
-        var rhs1 = typer.typed1(rhs, EXPRmode, WildcardType)
+        var rhs1 = typed1Expr(rhs)
         def rhsNeedsMacroExpansion = rhs1.symbol != null && rhs1.symbol.isTermMacro && !rhs1.symbol.isErroneous
         while (rhsNeedsMacroExpansion) {
           rhs1 = macroExpand1(typer, rhs1) match {
             case Success(expanded) =>
               try {
-                val typechecked = typer.typed1(expanded, EXPRmode, WildcardType)
+                val typechecked = typed1Expr(expanded)
                 macroLogVerbose("typechecked1:%n%s%n%s".format(typechecked, showRaw(typechecked)))
                 typechecked
               } finally {
                 popMacroContext()
               }
             case Fallback(fallback) =>
-              typer.typed1(fallback, EXPRmode, WildcardType)
+              typed1Expr(fallback)
             case Delayed(delayed) =>
               typer.instantiate(delayed, EXPRmode, WildcardType)
             case Skipped(skipped) =>
