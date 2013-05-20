@@ -498,7 +498,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                   atPos(pos) {
                     New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), Nil)
                   }
-                mods1 = mods1 withAnnotations List(annot)
+                mods1 = mods1 withAnnotations annot :: Nil
                 skipTo(SEMI)
                 accept(SEMI)
                 blankExpr
