@@ -22,13 +22,13 @@ trait BytecodeWriters {
   val global: Global
   import global._
 
-  private def outputDirectory(sym: Symbol): AbstractFile =
+  def outputDirectory(sym: Symbol): AbstractFile =
     settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
   /**
    * @param clsName cls.getName
    */
-  private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
+  def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
     def ensureDirectory(dir: AbstractFile): AbstractFile =
       if (dir.isDirectory) dir
       else throw new FileConflictException(s"${base.path}/$clsName$suffix: ${dir.path} is not a directory", dir)
