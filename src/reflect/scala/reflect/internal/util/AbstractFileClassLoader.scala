@@ -2,10 +2,10 @@
  * Copyright 2005-2013 LAMP/EPFL
  */
 
-package scala.tools.nsc
-package util
+package scala
+package reflect.internal.util
 
-import scala.tools.nsc.io.AbstractFile
+import scala.reflect.io.AbstractFile
 import java.security.cert.Certificate
 import java.security.{ ProtectionDomain, CodeSource }
 import java.net.{ URL, URLConnection, URLStreamHandler }
