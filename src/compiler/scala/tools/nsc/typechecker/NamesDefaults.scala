@@ -368,6 +368,8 @@ trait NamesDefaults { self: Analyzer =>
     }
   }
 
+  def makeNamedTypes(syms: List[Symbol]) = syms map (sym => NamedType(sym.name, sym.tpe))
+
   def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOfNamedArg _): (List[Symbol], Boolean) = {
     val namedArgs = args.dropWhile(arg => {
       val n = argName(arg)

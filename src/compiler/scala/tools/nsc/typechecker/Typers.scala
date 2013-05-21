@@ -107,6 +107,11 @@ trait Typers extends Adaptations with Tags {
     import typeDebug.{ ptTree, ptBlock, ptLine }
     import TyperErrorGen._
 
+    val infer = new Inferencer(context0) {
+      // See SI-3281 re undoLog
+      override def isCoercible(tp: Type, pt: Type) = undoLog undo viewExists(tp, pt)
+    }
+
     /** Overridden to false in scaladoc and/or interactive. */
     def canAdaptConstantTypeToLiteral = true
     def canTranslateEmptyListToNil    = true
@@ -114,14 +119,6 @@ trait Typers extends Adaptations with Tags {
 
     def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree =
       typed(docDef.definition, mode, pt)
-
-    val infer = new Inferencer(context0) {
-      override def isCoercible(tp: Type, pt: Type): Boolean = undoLog undo { // #3281
-        tp.isError || pt.isError ||
-        context0.implicitsEnabled && // this condition prevents chains of views
-        inferView(EmptyTree, tp, pt, reportAmbiguous = false) != EmptyTree
-      }
-    }
 
     /** Find implicit arguments and pass them to given tree.
      */
@@ -189,6 +186,13 @@ trait Typers extends Adaptations with Tags {
         fun
     }
 
+    def viewExists(from: Type, to: Type): Boolean = (
+         !from.isError
+      && !to.isError
+      && context.implicitsEnabled
+      && (inferView(EmptyTree, from, to, reportAmbiguous = false) != EmptyTree)
+    )
+
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
       inferView(tree, from, to, reportAmbiguous, saveErrors = true)
 
@@ -207,10 +211,10 @@ trait Typers extends Adaptations with Tags {
       debuglog("infer view from "+from+" to "+to)//debug
       if (isPastTyper) EmptyTree
       else from match {
-        case MethodType(_, _) => EmptyTree
+        case MethodType(_, _)     => EmptyTree
         case OverloadedType(_, _) => EmptyTree
-        case PolyType(_, _) => EmptyTree
-        case _ =>
+        case PolyType(_, _)       => EmptyTree
+        case _                    =>
           def wrapImplicit(from: Type): Tree = {
             val result = inferImplicit(tree, functionType(from.withoutAnnotations :: Nil, to), reportAmbiguous, isView = true, context, saveAmbiguousDivergent = saveErrors)
             if (result.subst != EmptyTreeTypeSubstituter) {

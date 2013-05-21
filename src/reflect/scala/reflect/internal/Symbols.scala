@@ -1504,10 +1504,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * This is done in checkAccessible and overriding checks in refchecks
      * We can't do this on class loading because it would result in infinite cycles.
      */
-    def cookJavaRawInfo(): Unit = {
+    def cookJavaRawInfo(): this.type = {
       // only try once...
       if (phase.erasedTypes || (this hasFlag TRIEDCOOKING))
-        return
+        return this
 
       this setFlag TRIEDCOOKING
       info  // force the current info
@@ -1515,6 +1515,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         this modifyInfo rawToExistential
       else if (isOverloaded)
         alternatives withFilter (_.isJavaDefined) foreach (_ modifyInfo rawToExistential)
+
+      this
     }
 
     /** The logic approximately boils down to finding the most recent phase
