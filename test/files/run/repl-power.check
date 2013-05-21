@@ -14,6 +14,7 @@ scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
 res0: $r.global.emptyValDef.type = private val _ = _
 
 scala> val tp = ArrayClass[scala.util.Random]    // magic with tags
+warning: there were 1 feature warning(s); re-run with -feature for details
 tp: $r.global.Type = Array[scala.util.Random]
 
 scala> tp.memberType(Array_apply)                // evidence
