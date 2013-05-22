@@ -3,8 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
-package util
+package scala
+package reflect.internal.util
 
 import java.lang.{ ClassLoader => JClassLoader }
 import java.lang.reflect.{ Constructor, Modifier, Method }
@@ -49,7 +49,7 @@ trait ScalaClassLoader extends JClassLoader {
   /** The actual bytes for a class file, or an empty array if it can't be found. */
   def classBytes(className: String): Array[Byte] = classAsStream(className) match {
     case null   => Array()
-    case stream => io.Streamable.bytes(stream)
+    case stream => scala.reflect.io.Streamable.bytes(stream)
   }
 
   /** An InputStream representing the given class name, or null if not found. */

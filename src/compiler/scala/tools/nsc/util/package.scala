@@ -133,4 +133,13 @@ package object util {
 
   @deprecated("Moved to scala.reflect.internal.util.BatchSourceFile", "2.10.0")
   type BatchSourceFile = scala.reflect.internal.util.BatchSourceFile
+
+  @deprecated("Moved to scala.reflect.internal.util.AbstractFileClassLoader", "2.11.0")
+  type AbstractFileClassLoader = scala.reflect.internal.util.AbstractFileClassLoader
+
+  @deprecated("Moved to scala.reflect.internal.util.ScalaClassLoader", "2.11.0")
+  val ScalaClassLoader = scala.reflect.internal.util.ScalaClassLoader
+
+  @deprecated("Moved to scala.reflect.internal.util.ScalaClassLoader", "2.11.0")
+  type ScalaClassLoader = scala.reflect.internal.util.ScalaClassLoader
 }

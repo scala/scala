@@ -8,6 +8,7 @@ package reflect.runtime
 
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
+import scala.reflect.internal.util.AbstractFileClassLoader
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -34,7 +35,7 @@ private[scala] object ReflectionUtils {
 
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false
-      if (clazz.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader") return true
+      if (clazz == classOf[AbstractFileClassLoader]) return true
       isAbstractFileClassLoader(clazz.getSuperclass)
     }
     def inferClasspath(cl: ClassLoader): String = cl match {
