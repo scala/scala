@@ -200,7 +200,63 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           constrStatBuf += intoConstructor(impl.symbol, stat)
       }
 
-      // ----------- avoid making parameter-accessor fields for symbols accessed only within the primary constructor --------------
+      /*
+       * Summary
+       * -------
+       *
+       * The following gets elided unless they're actually needed:
+       *   (a) parameter-accessor fields for non-val, non-var, constructor-param-symbols, as well as
+       *   (b) outer accessors of a final class which don't override anything.
+       *
+       *
+       * Gory details
+       * ------------
+       *
+       * The constructors phase elides
+       *
+       *  (a) parameter-accessor fields for non-val, non-var, constructor-param-symbols
+       *      provided they're only accessed within the primary constructor;
+       *
+       * as well as
+       *
+       *  (b) outer accessors directly owned by the class of interest,
+       *      provided that class is final, they don't override anything, and moreover they aren't accessed anywhere.
+       *      An outer accessor is backed by a param-accessor field.
+       *      If an outer-accessor can be elided then its supporting field can be elided as well.
+       *
+       * Once the potential candidates for elision are known (as described above) it remains to visit
+       * those program locations where they might be accessed, and only those.
+       *
+       * What trees can be visited at this point?
+       * To recap, by the time the constructors phase runs, local definitions have been hoisted out of their original owner.
+       * Moreover, by the time elision is about to happen, the `intoConstructors` rewriting
+       * of template-level statements has taken place (the resulting trees can be found in `constrStatBuf`).
+       *
+       * That means:
+       *
+       *   - nested classes are to be found in `defBuf`
+       *
+       *   - value and method definitions are also in `defBuf` and none of them contains local methods or classes.
+       *
+       *   - auxiliary constructors are to be found in `auxConstructorBuf`
+       *
+       * Coming back to the question which trees may contain accesses:
+       *
+       *   (c) regarding parameter-accessor fields, all candidates in (a) are necessarily private-local,
+       *       and thus may only be accessed from value or method definitions owned by the current class
+       *       (ie there's no point drilling down into nested classes).
+       *
+       *   (d) regarding candidates in (b), they are accesible from all places listed in (c) and in addition
+       *       from nested classes (nested at any number of levels).
+       *
+       * In all cases, we're done with traversing as soon as all candidates have been ruled out.
+       *
+       * Finally, the whole affair of eliding is avoided for DelayedInit subclasses,
+       * given that for them usually nothing gets elided anyway.
+       * That's a consequence from re-locating the post-super-calls statements from their original location
+       * (the primary constructor) into a dedicated synthetic method that an anon-closure may invoke, as required by DelayedInit.
+       *
+       */
 
       // A sorted set of symbols that are known to be accessed outside the primary constructor.
       val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
@@ -214,11 +270,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // This is the case if the symbol is defined in the current class, and
       // ( the symbol is an object private parameter accessor field, or
       //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
-      def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
-        sym.isParamAccessor && sym.isPrivateLocal ||
-        sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol &&
-        !isDelayedInitSubclass
-      )
+      def maybeOmittable(sym: Symbol) = {
+        !isDelayedInitSubclass &&
+        (sym.owner == clazz)   && (
+          sym.isParamAccessor && sym.isPrivateLocal ||
+          sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol
+        )
+      }
 
       // Is symbol known to be accessed outside of the primary constructor,
       // or is it a symbol whose definition cannot be omitted anyway?
