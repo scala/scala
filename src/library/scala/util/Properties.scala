@@ -150,16 +150,32 @@ private[scala] trait PropertiesTrait {
   def scalaCmd              = if (isWin) "scala.bat" else "scala"
   def scalacCmd             = if (isWin) "scalac.bat" else "scalac"
 
-  /** Can the java version be determined to be at least as high as the argument?
-   *  Hard to properly future proof this but at the rate 1.7 is going we can leave
-   *  the issue for our cyborg grandchildren to solve.
-   */
+  /** Compares the given Java version string to the runtime's Java version string.
+    *
+    * @return `true` iff the given Java version string denotes an equal or
+    * higher version compared to the Java version of the current runtime,
+    * `false` otherwise.
+    *
+    * @example {{{
+    * // In this example, the runtime's Java version is considered to be 1.7.
+    * isJavaAtLeast("1.6")            // true
+    * isJavaAtLeast("1.7")            // true
+    * isJavaAtLeast("1.8")            // false
+    * }}
+    */
   def isJavaAtLeast(version: String) = {
+    val     v9 = "1.9" ::   Nil
+    val    v89 = "1.8" ::    v9
+    val   v789 = "1.7" ::   v89
+    val  v6789 = "1.6" ::  v789
+    val v56789 = "1.5" :: v6789
     val okVersions = version match {
-      case "1.5"    => List("1.5", "1.6", "1.7")
-      case "1.6"    => List("1.6", "1.7")
-      case "1.7"    => List("1.7")
-      case _        => Nil
+      case "1.5"    => v56789
+      case "1.6"    =>  v6789
+      case "1.7"    =>   v789
+      case "1.8"    =>    v89
+      case "1.9"    =>     v9
+      case _        =>    Nil
     }
     okVersions exists (javaVersion startsWith _)
   }
