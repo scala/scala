@@ -9,7 +9,6 @@ package transform
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
-import util.TreeSet
 
 /** This phase converts classes with parameters into Java-like classes with
  *  fields, which are assigned to from constructors.
@@ -315,68 +314,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
       }
 
-      // TODO for now both old and new implementations of elision coexist, allowing cross-checking their results. In the next commit only the new one will remain.
-
-      // A sorted set of symbols that are known to be accessed outside the primary constructor.
-      val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
-
-      // a list of outer accessor symbols and their bodies
-      var outerAccessors: List[(Symbol, Tree)] = List()
-
-      // Could symbol's definition be omitted, provided it is not accessed?
-      // This is the case if the symbol is defined in the current class, and
-      // ( the symbol is an object private parameter accessor field, or
-      //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
-      def maybeOmittable(sym: Symbol) = {
-        !isDelayedInitSubclass &&
-        (sym.owner == clazz)   && (
-          sym.isParamAccessor && sym.isPrivateLocal ||
-          sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol
-        )
-      }
-
-      // Is symbol known to be accessed outside of the primary constructor,
-      // or is it a symbol whose definition cannot be omitted anyway?
-      def mustbeKept(sym: Symbol) = isDelayedInitSubclass || !maybeOmittable(sym) || (accessedSyms contains sym)
-
-      // A traverser to set accessedSyms and outerAccessors
-      val accessTraverser = new Traverser {
-        override def traverse(tree: Tree) = {
-          tree match {
-            case DefDef(_, _, _, _, _, body)
-            if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isEffectivelyFinal) =>
-              debuglog("outerAccessors += " + tree.symbol.fullName)
-              outerAccessors ::= ((tree.symbol, body))
-            case Select(_, _) =>
-              if (!mustbeKept(tree.symbol)) {
-                debuglog("accessedSyms += " + tree.symbol.fullName)
-                accessedSyms addEntry tree.symbol
-              }
-              super.traverse(tree)
-            case _ =>
-              super.traverse(tree)
-          }
-        }
-      }
-
-      // first traverse all definitions except outeraccesors
-      // (outeraccessors are avoided in accessTraverser)
-      for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator)
-        accessTraverser.traverse(stat)
-
-      // then traverse all bodies of outeraccessors which are accessed themselves
-      // note: this relies on the fact that an outer accessor never calls another
-      // outer accessor in the same class.
-      for ((accSym, accBody) <- outerAccessors)
-        if (mustbeKept(accSym)) accessTraverser.traverse(accBody)
-
-      // TODO cross-checking with new implementation.
-      for(sym <- clazz.info.decls.toList) {
-        val oldImplSays = mustbeKept(sym)
-        val newImplSays = !omittables(sym)
-
-        assert(oldImplSays == newImplSays)
-      }
+      def mustbeKept(sym: Symbol) = (!omittables(sym))
 
       // Initialize all parameters fields that must be kept.
       val paramInits = paramAccessors filter mustbeKept map { acc =>
