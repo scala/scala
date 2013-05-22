@@ -34,41 +34,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val stats = impl.body          // the transformed template body
       val localTyper = typer.atOwner(impl, clazz)
 
-      // Inspect for obvious out-of-order initialization; concrete, eager vals or vars,
-      // declared in this class, for which a reference to the member precedes its definition.
-      def checkableForInit(sym: Symbol) = (
-           (sym ne null)
-        && (sym.isVal || sym.isVar)
-        && !(sym hasFlag LAZY | DEFERRED | SYNTHETIC)
-      )
-      val uninitializedVals = mutable.Set[Symbol](
-        stats collect { case vd: ValDef if checkableForInit(vd.symbol) => vd.symbol.accessedOrSelf }: _*
-      )
-      if (uninitializedVals.nonEmpty)
-        log("Checking constructor for init order issues among: " + uninitializedVals.map(_.name).mkString(", "))
-
-      for (stat <- stats) {
-        // Checking the qualifier symbol is necessary to prevent a selection on
-        // another instance of the same class from potentially appearing to be a forward
-        // reference on the member in the current class.
-        def check(tree: Tree) = {
-          for (t <- tree) t match {
-            case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
-              unit.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
-            case _ =>
-          }
-        }
-        stat match {
-          case vd: ValDef      =>
-            // doing this first allows self-referential vals, which to be a conservative
-            // warner we will do because it's possible though difficult for it to be useful.
-            uninitializedVals -= vd.symbol.accessedOrSelf
-            if (!vd.symbol.isLazy)
-              check(vd.rhs)
-          case _: MemberDef    => // skip other member defs
-          case t               => check(t) // constructor body statement
-        }
-      }
       val specializedFlag: Symbol = clazz.info.decl(nme.SPECIALIZED_INSTANCE)
       val shouldGuard = (specializedFlag != NoSymbol) && !clazz.hasFlag(SPECIALIZED)
 
@@ -582,10 +547,55 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       deriveTemplate(impl)(_ => defBuf.toList filter (stat => mustbeKept(stat.symbol)))
     } // transformClassTemplate
 
+    /*
+     * Inspect for obvious out-of-order initialization; concrete, eager vals or vars, declared in this class,
+     * for which a reference to the member precedes its definition.
+     */
+    private def checkUninitializedReads(cd: ClassDef) {
+      val stats = cd.impl.body
+      val clazz = cd.symbol
+
+      def checkableForInit(sym: Symbol) = (
+           (sym ne null)
+        && (sym.isVal || sym.isVar)
+        && !(sym hasFlag LAZY | DEFERRED | SYNTHETIC)
+      )
+      val uninitializedVals = mutable.Set[Symbol](
+        stats collect { case vd: ValDef if checkableForInit(vd.symbol) => vd.symbol.accessedOrSelf }: _*
+      )
+      if (uninitializedVals.nonEmpty)
+        log("Checking constructor for init order issues among: " + uninitializedVals.map(_.name).mkString(", "))
+
+      for (stat <- stats) {
+        // Checking the qualifier symbol is necessary to prevent a selection on
+        // another instance of the same class from potentially appearing to be a forward
+        // reference on the member in the current class.
+        def check(tree: Tree) = {
+          for (t <- tree) t match {
+            case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
+              unit.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
+            case _ =>
+          }
+        }
+        stat match {
+          case vd: ValDef      =>
+            // doing this first allows self-referential vals, which to be a conservative
+            // warner we will do because it's possible though difficult for it to be useful.
+            uninitializedVals -= vd.symbol.accessedOrSelf
+            if (!vd.symbol.isLazy)
+              check(vd.rhs)
+          case _: MemberDef    => // skip other member defs
+          case t               => check(t) // constructor body statement
+        }
+      }
+
+    } // end of checkUninitializedReads()
+
     override def transform(tree: Tree): Tree = {
       tree match {
-        case ClassDef(_,_,_,_) if !tree.symbol.isInterface && !isPrimitiveValueClass(tree.symbol) =>
-          deriveClassDef(tree)(transformClassTemplate)
+        case cd : ClassDef if !cd.symbol.isInterface && !isPrimitiveValueClass(cd.symbol) =>
+          checkUninitializedReads(cd)
+          deriveClassDef(cd)(transformClassTemplate)
         case _ =>
           super.transform(tree)
       }
