@@ -656,8 +656,7 @@ trait Typers extends Modes with Adaptations with Tags {
         // To fully benefit from special casing the return type of
         // getClass, we have to catch it immediately so expressions
         // like x.getClass().newInstance() are typed with the type of x.
-        else if (  tree.symbol.name == nme.getClass_
-                && tree.tpe.params.isEmpty
+        else if (  isGetClass(tree.symbol)
                 // TODO: If the type of the qualifier is inaccessible, we can cause private types
                 // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
                 // so for now it requires the type symbol be public.

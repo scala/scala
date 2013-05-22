@@ -341,11 +341,6 @@ abstract class Erasure extends AddInterfaces
     }
   }
   
-  // Each primitive value class has its own getClass for ultra-precise class object typing.
-  private lazy val primitiveGetClassMethods = Set[Symbol](Any_getClass, AnyVal_getClass) ++ (
-    ScalaValueClasses map (_.tpe member nme.getClass_)
-  )
-  
   // ## requires a little translation
   private lazy val poundPoundMethods = Set[Symbol](Any_##, Object_##)
   
