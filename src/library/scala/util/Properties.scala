@@ -67,7 +67,7 @@ private[scala] trait PropertiesTrait {
    *  it is an RC, Beta, etc. or was built from source, or if the version
    *  cannot be read.
    */
-  val releaseVersion = 
+  val releaseVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if !(v endsWith "-SNAPSHOT")
@@ -81,7 +81,7 @@ private[scala] trait PropertiesTrait {
    *  @return Some(version) if this is a non-final version, None if this
    *  is a final release or the version cannot be read.
    */
-  val developmentVersion = 
+  val developmentVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if v endsWith "-SNAPSHOT"
@@ -109,8 +109,7 @@ private[scala] trait PropertiesTrait {
    */
   def lineSeparator         = propOrElse("line.separator", "\n")
 
-  /** Various well-known properties.
-   */
+  /* Various well-known properties. */
   def javaClassPath         = propOrEmpty("java.class.path")
   def javaHome              = propOrEmpty("java.home")
   def javaVendor            = propOrEmpty("java.vendor")
@@ -126,10 +125,11 @@ private[scala] trait PropertiesTrait {
   def userHome              = propOrEmpty("user.home")
   def userName              = propOrEmpty("user.name")
 
-  /** Some derived values.
-   */
+  /* Some derived values. */
+  /** Returns `true` iff the underlying operating system is a version of Microsoft Windows. */
   def isWin                 = osName startsWith "Windows"
-  def isMac                 = javaVendor startsWith "Apple"
+  /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
+  def isMac                 = osName contains   "OS X" // See developer.apple.com/library/mac/#technotes/tn2002/tn2110
 
   def versionMsg            = "Scala %s %s -- %s".format(propCategory, versionString, copyrightString)
   def scalaCmd              = if (isWin) "scala.bat" else "scala"
