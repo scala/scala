@@ -91,6 +91,136 @@ abstract class Constructors extends Transform with ast.TreeDSL {
   } // ConstructorTransformer
 
   /*
+   * Summary
+   * -------
+   *
+   * The following gets elided unless they're actually needed:
+   *   (a) parameter-accessor fields for non-val, non-var, constructor-param-symbols, as well as
+   *   (b) outer accessors of a final class which don't override anything.
+   *
+   *
+   * Gory details
+   * ------------
+   *
+   * The constructors phase elides
+   *
+   *  (a) parameter-accessor fields for non-val, non-var, constructor-param-symbols
+   *      provided they're only accessed within the primary constructor;
+   *
+   * as well as
+   *
+   *  (b) outer accessors directly owned by the class of interest,
+   *      provided that class is final, they don't override anything, and moreover they aren't accessed anywhere.
+   *      An outer accessor is backed by a param-accessor field.
+   *      If an outer-accessor can be elided then its supporting field can be elided as well.
+   *
+   * Once the potential candidates for elision are known (as described above) it remains to visit
+   * those program locations where they might be accessed, and only those.
+   *
+   * What trees can be visited at this point?
+   * To recap, by the time the constructors phase runs, local definitions have been hoisted out of their original owner.
+   * Moreover, by the time elision is about to happen, the `intoConstructors` rewriting
+   * of template-level statements has taken place (the resulting trees can be found in `constrStatBuf`).
+   *
+   * That means:
+   *
+   *   - nested classes are to be found in `defBuf`
+   *
+   *   - value and method definitions are also in `defBuf` and none of them contains local methods or classes.
+   *
+   *   - auxiliary constructors are to be found in `auxConstructorBuf`
+   *
+   * Coming back to the question which trees may contain accesses:
+   *
+   *   (c) regarding parameter-accessor fields, all candidates in (a) are necessarily private-local,
+   *       and thus may only be accessed from value or method definitions owned by the current class
+   *       (ie there's no point drilling down into nested classes).
+   *
+   *   (d) regarding candidates in (b), they are accesible from all places listed in (c) and in addition
+   *       from nested classes (nested at any number of levels).
+   *
+   * In all cases, we're done with traversing as soon as all candidates have been ruled out.
+   *
+   * Finally, the whole affair of eliding is avoided for DelayedInit subclasses,
+   * given that for them usually nothing gets elided anyway.
+   * That's a consequence from re-locating the post-super-calls statements from their original location
+   * (the primary constructor) into a dedicated synthetic method that an anon-closure may invoke, as required by DelayedInit.
+   *
+   */
+  trait OmittablesHelper { self: TemplateTransformer =>
+
+    /*
+     * Initially populated with all elision candidates.
+     * Trees are traversed, and those candidates are removed which are actually needed.
+     * After that, `omittables` doesn't shrink anymore: each symbol it contains can be unlinked from clazz.info.decls.
+     */
+    val omittables = mutable.Set.empty[Symbol]
+
+    def populateOmittables() {
+
+      omittables.clear()
+
+      if(isDelayedInitSubclass) {
+        return
+      }
+
+      def isParamCandidateForElision(sym: Symbol) = (sym.isParamAccessor && sym.isPrivateLocal)
+      def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol)
+
+      val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (clazz.info.decls.toSet filter isParamCandidateForElision)
+      val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (clazz.info.decls.toSet filter isOuterCandidateForElision)
+
+      omittables ++= paramCandidatesForElision
+      omittables ++= outerCandidatesForElision
+
+      val bodyOfOuterAccessor: Map[Symbol, DefDef] = {
+        val outers = (defBuf collect { case dd: DefDef if outerCandidatesForElision.contains(dd.symbol) => dd })
+        Map(outers.map { dd => (dd.symbol, dd) } : _*)
+      }
+
+      class UsagesDetector extends Traverser {
+        var done = false
+        override def traverse(tree: Tree) {
+          if (done) { return }
+          tree match {
+            case DefDef(_, _, _, _, _, body) if outerCandidatesForElision.contains(tree.symbol) =>
+              () // don't mark as "needed" the field supporting this outer-accessor, ie not just yet.
+            case Select(_, _) =>
+              val sym = tree.symbol
+              if (omittables contains sym) {
+                debuglog("omittables -= " + sym.fullName)
+                omittables   -= sym
+                bodyOfOuterAccessor.get(sym) match {
+                  case Some(dd) => traverse(dd.rhs) // recursive call to mark as needed the field supporting the outer-accessor-method.
+                  case _        => ()
+                }
+                if (omittables.isEmpty) {
+                  done = true
+                  return // no point traversing further, all candidates ruled out already.
+                }
+              }
+              super.traverse(tree)
+            case _ =>
+              super.traverse(tree)
+          }
+        }
+      }
+
+      if (omittables.nonEmpty) {
+        val usagesDetector = new UsagesDetector
+
+        for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator) {
+          usagesDetector.traverse(stat)
+        }
+      }
+
+    }
+
+    def mustbeKept(sym: Symbol) = (!omittables(sym))
+
+  } // OmittablesHelper
+
+  /*
    *  TemplateTransformer rewrites DelayedInit subclasses.
    *  The list of statements that will end up in the primary constructor can be split into:
    *
@@ -229,7 +359,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
   } // DelayedInitHelper
 
-  class TemplateTransformer(val unit: CompilationUnit, val impl: Template) extends Transformer with DelayedInitHelper {
+  class TemplateTransformer(val unit: CompilationUnit, val impl: Template)
+    extends Transformer
+    with    DelayedInitHelper
+    with    OmittablesHelper {
 
     val clazz = impl.symbol.owner  // the transformed class
     val stats = impl.body          // the transformed template body
@@ -401,122 +534,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         constrStatBuf += intoConstructor(impl.symbol, stat)
     }
 
-    /*
-     * Summary
-     * -------
-     *
-     * The following gets elided unless they're actually needed:
-     *   (a) parameter-accessor fields for non-val, non-var, constructor-param-symbols, as well as
-     *   (b) outer accessors of a final class which don't override anything.
-     *
-     *
-     * Gory details
-     * ------------
-     *
-     * The constructors phase elides
-     *
-     *  (a) parameter-accessor fields for non-val, non-var, constructor-param-symbols
-     *      provided they're only accessed within the primary constructor;
-     *
-     * as well as
-     *
-     *  (b) outer accessors directly owned by the class of interest,
-     *      provided that class is final, they don't override anything, and moreover they aren't accessed anywhere.
-     *      An outer accessor is backed by a param-accessor field.
-     *      If an outer-accessor can be elided then its supporting field can be elided as well.
-     *
-     * Once the potential candidates for elision are known (as described above) it remains to visit
-     * those program locations where they might be accessed, and only those.
-     *
-     * What trees can be visited at this point?
-     * To recap, by the time the constructors phase runs, local definitions have been hoisted out of their original owner.
-     * Moreover, by the time elision is about to happen, the `intoConstructors` rewriting
-     * of template-level statements has taken place (the resulting trees can be found in `constrStatBuf`).
-     *
-     * That means:
-     *
-     *   - nested classes are to be found in `defBuf`
-     *
-     *   - value and method definitions are also in `defBuf` and none of them contains local methods or classes.
-     *
-     *   - auxiliary constructors are to be found in `auxConstructorBuf`
-     *
-     * Coming back to the question which trees may contain accesses:
-     *
-     *   (c) regarding parameter-accessor fields, all candidates in (a) are necessarily private-local,
-     *       and thus may only be accessed from value or method definitions owned by the current class
-     *       (ie there's no point drilling down into nested classes).
-     *
-     *   (d) regarding candidates in (b), they are accesible from all places listed in (c) and in addition
-     *       from nested classes (nested at any number of levels).
-     *
-     * In all cases, we're done with traversing as soon as all candidates have been ruled out.
-     *
-     * Finally, the whole affair of eliding is avoided for DelayedInit subclasses,
-     * given that for them usually nothing gets elided anyway.
-     * That's a consequence from re-locating the post-super-calls statements from their original location
-     * (the primary constructor) into a dedicated synthetic method that an anon-closure may invoke, as required by DelayedInit.
-     *
-     */
-
     val isDelayedInitSubclass = (clazz isSubClass DelayedInitClass)
 
-    def isParamCandidateForElision(sym: Symbol) = (sym.isParamAccessor && sym.isPrivateLocal)
-    def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol)
-
-    val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (clazz.info.decls.toSet filter isParamCandidateForElision)
-    val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (clazz.info.decls.toSet filter isOuterCandidateForElision)
-
-    /*
-     * Initially populated with all elision candidates.
-     * Trees are traversed, and those candidates are removed which are actually needed.
-     * After that, `omittables` doesn't shrink anymore: each symbol it contains can be unlinked from clazz.info.decls.
-     */
-    val omittables = mutable.Set.empty[Symbol] ++ paramCandidatesForElision ++ outerCandidatesForElision
-    if(isDelayedInitSubclass) { omittables.clear }
-
-    val bodyOfOuterAccessor: Map[Symbol, DefDef] = {
-      val outers = (defBuf collect { case dd: DefDef if outerCandidatesForElision.contains(dd.symbol) => dd })
-      Map(outers.map { dd => (dd.symbol, dd) } : _*)
-    }
-
-    class UsagesDetector extends Traverser {
-      var done = false
-      override def traverse(tree: Tree) {
-        if (done) { return }
-        tree match {
-          case DefDef(_, _, _, _, _, body) if outerCandidatesForElision.contains(tree.symbol) =>
-            () // don't mark as "needed" the field supporting this outer-accessor, ie not just yet.
-          case Select(_, _) =>
-            val sym = tree.symbol
-            if (omittables contains sym) {
-              debuglog("omittables -= " + sym.fullName)
-              omittables   -= sym
-              bodyOfOuterAccessor.get(sym) match {
-                case Some(dd) => traverse(dd.rhs) // recursive call to mark as needed the field supporting the outer-accessor-method.
-                case _        => ()
-              }
-              if (omittables.isEmpty) {
-                done = true
-                return // no point traversing further, all candidates ruled out already.
-              }
-            }
-            super.traverse(tree)
-          case _ =>
-            super.traverse(tree)
-        }
-      }
-    }
-
-    if (omittables.nonEmpty) {
-      val usagesDetector = new UsagesDetector
-
-      for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator) {
-        usagesDetector.traverse(stat)
-      }
-    }
-
-    def mustbeKept(sym: Symbol) = (!omittables(sym))
+    populateOmittables()
 
     // Initialize all parameters fields that must be kept.
     val paramInits = paramAccessors filter mustbeKept map { acc =>
