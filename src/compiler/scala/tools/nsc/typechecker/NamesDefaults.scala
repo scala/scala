@@ -333,9 +333,12 @@ trait NamesDefaults { self: Analyzer =>
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
           typedApp match {
-            // Extract the typed arguments, restore the call-site evaluation order (using
-            // ValDef's in the block), change the arguments to these local values.
-            case Apply(expr, typedArgs) if !(typedApp :: typedArgs).exists(_.isErrorTyped) => // bail out with erroneous args, see SI-7238
+            case Apply(expr, typedArgs) if (typedApp :: typedArgs).exists(_.isErrorTyped) =>
+              setError(tree) // bail out with and erroneous Apply *or* erroneous arguments, see SI-7238, SI-7509
+            case Apply(expr, typedArgs) =>
+              // Extract the typed arguments, restore the call-site evaluation order (using
+              // ValDef's in the block), change the arguments to these local values.
+
               // typedArgs: definition-site order
               val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, removeByName = false, removeRepeated = false)
               // valDefs: call-site order
