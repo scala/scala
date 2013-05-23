@@ -371,6 +371,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     val specializedFlag: Symbol = clazz.info.decl(nme.SPECIALIZED_INSTANCE)
     val shouldGuard = (specializedFlag != NoSymbol) && !clazz.hasFlag(SPECIALIZED)
 
+    val isDelayedInitSubclass = (clazz isSubClass DelayedInitClass)
+
     case class ConstrInfo(
       constr: DefDef,               // The primary constructor
       constrParams: List[Symbol],   // ... and its parameters
@@ -407,36 +409,62 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
     var usesSpecializedField: Boolean = false
 
-    // A transformer for expressions that go into the constructor
-    val intoConstructorTransformer = new Transformer {
-      def isParamRef(sym: Symbol) =
-        sym.isParamAccessor &&
-        sym.owner == clazz &&
-        !(clazz isSubClass DelayedInitClass) &&
+    /*
+     * A transformer for expressions that go into the constructor.
+     */
+    private class IntoCtorTransformer extends Transformer {
+
+      private def isParamRef(sym: Symbol) = { sym.isParamAccessor && sym.owner == clazz }
+
+      /*
+       * Terminology: a stationary location is never written after being read.
+       */
+      private def isStationaryParamRef(sym: Symbol) = {
+        isParamRef(sym) &&
         !(sym.isGetter && sym.accessed.isVariable) &&
         !sym.isSetter
+      }
+
       private def possiblySpecialized(s: Symbol) = specializeTypes.specializedTypeVars(s).nonEmpty
+
+      /*
+       * whether `sym` denotes a param-accessor (ie a field) that fulfills all of:
+       *   (a) has stationary value, ie the same value provided via the corresponding ctor-arg; and
+       *   (b) isn't subject to specialization. We might be processing statements for:
+       *         (b.1) the constructur in the generic   (super-)class; or
+       *         (b.2) the constructor in the specialized (sub-)class.
+       *   (c) isn't part of a DelayedInit subclass.
+       */
+      private def canBeSupplanted(sym: Symbol) = { !isDelayedInitSubclass && isStationaryParamRef(sym) && !possiblySpecialized(sym) }
+
       override def transform(tree: Tree): Tree = tree match {
+
         case Apply(Select(This(_), _), List()) =>
           // references to parameter accessor methods of own class become references to parameters
           // outer accessors become references to $outer parameter
-          if (isParamRef(tree.symbol) && !possiblySpecialized(tree.symbol))
+          if (canBeSupplanted(tree.symbol))
             gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
           else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
             gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
           else
             super.transform(tree)
-        case Select(This(_), _) if (isParamRef(tree.symbol) && !possiblySpecialized(tree.symbol)) =>
+
+        case Select(This(_), _) if (canBeSupplanted(tree.symbol)) =>
           // references to parameter accessor field of own class become references to parameters
           gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
+
         case Select(_, _) =>
-          if (specializeTypes.specializedTypeVars(tree.symbol).nonEmpty)
+          if (possiblySpecialized(tree.symbol))
             usesSpecializedField = true
           super.transform(tree)
+
         case _ =>
           super.transform(tree)
       }
+
     }
+
+    private val intoConstructorTransformer = new IntoCtorTransformer
 
     // Move tree into constructor, take care of changing owner from `oldowner` to constructor symbol
     def intoConstructor(oldowner: Symbol, tree: Tree) =
@@ -533,8 +561,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         // all other statements go into the constructor
         constrStatBuf += intoConstructor(impl.symbol, stat)
     }
-
-    val isDelayedInitSubclass = (clazz isSubClass DelayedInitClass)
 
     populateOmittables()
 
