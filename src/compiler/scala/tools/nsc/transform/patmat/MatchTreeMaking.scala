@@ -19,7 +19,7 @@ import scala.reflect.internal.util.Position
  */
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
   import global._
-  import definitions.{SomeClass, AnyRefClass, UncheckedClass, BooleanClass}
+  import definitions._
 
   final case class Suppression(exhaustive: Boolean, unreachable: Boolean)
   object Suppression {
@@ -414,7 +414,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           case SingleType(_, sym)                       => and(equalsTest(gen.mkAttributedQualifier(expectedTp), testedBinder), typeTest(testedBinder, expectedTp.widen))
           // must use == to support e.g. List() == Nil
           case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
-          case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefClass.tpe
+          case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefTpe
                                                         => eqTest(expTp(CODE.NULL), testedBinder)
           case ConstantType(const)                      => equalsTest(expTp(Literal(const)), testedBinder)
           case ThisType(sym)                            => eqTest(expTp(This(sym)), testedBinder)
@@ -428,7 +428,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             // since the types conform, no further checking is required
             if (expectedTp.typeSymbol.isPrimitiveValueClass) tru
             // have to test outer and non-null only when it's a reference type
-            else if (expectedTp <:< AnyRefClass.tpe) {
+            else if (expectedTp <:< AnyRefTpe) {
               // do non-null check first to ensure we won't select outer on null
               if (outerTestNeeded) and(nonNullTest(testedBinder), outerTest(testedBinder, expectedTp))
               else nonNullTest(testedBinder)
@@ -476,7 +476,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(mkTRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanClass.tpe)(combinedAlts, Some(x => mkFALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => mkFALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }

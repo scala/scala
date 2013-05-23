@@ -236,7 +236,7 @@ private[internal] trait GlbLubs {
    */
   def weakLub(tps: List[Type]): Type = (
     if (tps.isEmpty)
-      NothingClass.tpe
+      NothingTpe
     else if (tps forall isNumericValueType)
       numericLub(tps)
     else if (tps exists typeHasAnnotations)
@@ -249,7 +249,7 @@ private[internal] trait GlbLubs {
     ts reduceLeft ((t1, t2) =>
       if (isNumericSubType(t1, t2)) t2
       else if (isNumericSubType(t2, t1)) t1
-      else IntClass.tpe)
+      else IntTpe)
 
   private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
   private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
@@ -272,7 +272,7 @@ private[internal] trait GlbLubs {
   }
 
   def lub(ts: List[Type]): Type = ts match {
-    case Nil      => NothingClass.tpe
+    case Nil      => NothingTpe
     case t :: Nil => t
     case _        =>
       if (Statistics.canEnable) Statistics.incCounter(lubCount)
@@ -301,7 +301,7 @@ private[internal] trait GlbLubs {
   /** The least upper bound wrt <:< of a list of types */
   protected[internal] def lub(ts: List[Type], depth: Int): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
-      case List() => NothingClass.tpe
+      case List() => NothingTpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
@@ -320,8 +320,8 @@ private[internal] trait GlbLubs {
           case Some(lubType) =>
             lubType
           case None =>
-            lubResults((depth, ts)) = AnyClass.tpe
-            val res = if (depth < 0) AnyClass.tpe else lub1(ts)
+            lubResults((depth, ts)) = AnyTpe
+            val res = if (depth < 0) AnyTpe else lub1(ts)
             lubResults((depth, ts)) = res
             res
         }
@@ -437,7 +437,7 @@ private[internal] trait GlbLubs {
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */
   def glb(ts: List[Type]): Type = elimSuper(ts) match {
-    case List() => AnyClass.tpe
+    case List() => AnyTpe
     case List(t) => t
     case ts0 =>
       if (Statistics.canEnable) Statistics.incCounter(lubCount)
@@ -452,7 +452,7 @@ private[internal] trait GlbLubs {
   }
 
   protected[internal] def glb(ts: List[Type], depth: Int): Type = elimSuper(ts) match {
-    case List() => AnyClass.tpe
+    case List() => AnyTpe
     case List(t) => t
     case ts0 => glbNorm(ts0, depth)
   }
@@ -461,7 +461,7 @@ private[internal] trait GlbLubs {
     *  with regard to `elimSuper`. */
   protected def glbNorm(ts: List[Type], depth: Int): Type = {
     def glb0(ts0: List[Type]): Type = ts0 match {
-      case List() => AnyClass.tpe
+      case List() => AnyTpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
@@ -478,8 +478,8 @@ private[internal] trait GlbLubs {
           case Some(glbType) =>
             glbType
           case _ =>
-            glbResults((depth, ts)) = NothingClass.tpe
-            val res = if (depth < 0) NothingClass.tpe else glb1(ts)
+            glbResults((depth, ts)) = NothingTpe
+            val res = if (depth < 0) NothingTpe else glb1(ts)
             glbResults((depth, ts)) = res
             res
         }
@@ -556,8 +556,8 @@ private[internal] trait GlbLubs {
         existentialAbstraction(tparams, glbType)
       } catch {
         case GlbFailure =>
-          if (ts forall (t => NullClass.tpe <:< t)) NullClass.tpe
-          else NothingClass.tpe
+          if (ts forall (t => NullTpe <:< t)) NullTpe
+          else NothingTpe
       }
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG

@@ -701,7 +701,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val parents = try {
           parentsLevel += 1
           val jsuperclazz = jclazz.getGenericSuperclass
-          val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
+          val superclazz = if (jsuperclazz == null) AnyTpe else typeToScala(jsuperclazz)
           superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
         } finally {
           parentsLevel -= 1

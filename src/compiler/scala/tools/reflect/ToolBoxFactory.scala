@@ -129,7 +129,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         // it inaccessible then please put it somewhere designed for that
         // rather than polluting the empty package with synthetics.
         val ownerClass    = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
-        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
+        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectTpe), newScope, ownerClass))
         val owner         = ownerClass.newLocalDummy(expr.pos)
         val currentTyper  = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr, owner))
         val wrapper1      = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
@@ -196,7 +196,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val (obj, _) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
             nextWrapperModuleName())
 
-          val minfo = ClassInfoType(List(ObjectClass.tpe), newScope, obj.moduleClass)
+          val minfo = ClassInfoType(List(ObjectTpe), newScope, obj.moduleClass)
           obj.moduleClass setInfo minfo
           obj setInfo obj.moduleClass.tpe
 
@@ -206,7 +206,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             val (fv, name) = schema
             meth.newValueParameter(name, newFlags = if (fv.hasStableFlag) STABLE else 0) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
           }
-          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyClass.tpe)
+          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyTpe)
           minfo.decls enter meth
           def defOwner(tree: Tree): Symbol = tree find (_.isDef) map (_.symbol) match {
             case Some(sym) if sym != null && sym != NoSymbol => sym.owner
@@ -218,7 +218,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val moduledef = ModuleDef(
               obj,
               Template(
-                  List(TypeTree(ObjectClass.tpe)),
+                  List(TypeTree(ObjectTpe)),
                   emptyValDef,
                   NoMods,
                   List(),

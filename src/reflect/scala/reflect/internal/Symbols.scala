@@ -237,7 +237,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Static constructor with info set. */
     def newStaticConstructor(pos: Position): MethodSymbol =
-      newConstructor(pos, STATIC) setInfo UnitClass.tpe
+      newConstructor(pos, STATIC) setInfo UnitTpe
 
     /** Instance constructor with info set. */
     def newClassConstructor(pos: Position): MethodSymbol =
@@ -1622,7 +1622,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def makeSerializable() {
       info match {
         case ci @ ClassInfoType(_, _, _) =>
-          setInfo(ci.copy(parents = ci.parents :+ SerializableClass.tpe))
+          setInfo(ci.copy(parents = ci.parents :+ SerializableTpe))
         case i =>
           abort("Only ClassInfoTypes can be made serializable: "+ i)
       }

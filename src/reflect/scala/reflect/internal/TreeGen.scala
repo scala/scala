@@ -227,7 +227,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Cast `tree` to `pt`, unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =
-    if ((pt == UnitClass.tpe) || (tpe <:< pt)) tree
+    if ((pt == UnitTpe) || (tpe <:< pt)) tree
     else atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = true, wrapInApply = !beforeRefChecks))
 
   /** Apparently we smuggle a Type around as a Literal(Constant(tp))
@@ -253,7 +253,7 @@ abstract class TreeGen extends macros.TreeBuilder {
    *  which is appropriate to the given Type.
    */
   def mkZero(tp: Type): Tree = tp.typeSymbol match {
-    case NothingClass => mkMethodCall(Predef_???, Nil) setType NothingClass.tpe
+    case NothingClass => mkMethodCall(Predef_???, Nil) setType NothingTpe
     case _            => Literal(mkConstantZero(tp)) setType tp
   }
 

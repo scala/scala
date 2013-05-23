@@ -14,14 +14,8 @@ import scala.reflect.internal.util.Statistics
  */
 trait MatchTranslation { self: PatternMatching  =>
   import PatternMatchingStats._
-  import global.{phase, currentRun, Symbol,
-    Apply, Bind, CaseDef, ClassInfoType, Ident, Literal, Match,
-    Alternative, Constant, EmptyTree, Select, Star, This, Throw, Typed, UnApply,
-    Type, MethodType, WildcardType, PolyType, ErrorType, NoType, TypeRef, typeRef,
-    Name, NoSymbol, Position, Tree, atPos, glb, rootMirror, treeInfo, nme, Transformer,
-    elimAnonymousClass, asCompactDebugString, hasLength, devWarning}
-  import global.definitions.{ThrowableClass, SeqClass, ScalaPackageClass, BooleanClass, UnitClass, RepeatedParamClass,
-    repeatedToSeq, isRepeatedParamType, getProductArgs}
+  import global._
+  import definitions._
   import global.analyzer.{ErrorUtils, formalTypes}
 
   trait MatchTranslator extends TreeMakers {
@@ -169,7 +163,7 @@ trait MatchTranslation { self: PatternMatching  =>
           val bindersAndCases = caseDefs map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
-            val caseScrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
+            val caseScrutSym = freshSym(pos, pureType(ThrowableTpe))
             (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
@@ -179,10 +173,10 @@ trait MatchTranslation { self: PatternMatching  =>
         }
 
         val catches = if (swatches.nonEmpty) swatches else {
-          val scrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
+          val scrutSym = freshSym(pos, pureType(ThrowableTpe))
           val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 
-          val exSym = freshSym(pos, pureType(ThrowableClass.tpe), "ex")
+          val exSym = freshSym(pos, pureType(ThrowableTpe), "ex")
 
           List(
               atPos(pos) {
@@ -194,7 +188,7 @@ trait MatchTranslation { self: PatternMatching  =>
               })
         }
 
-        typer.typedCases(catches, ThrowableClass.tpe, WildcardType)
+        typer.typedCases(catches, ThrowableTpe, WildcardType)
       }
 
 
@@ -595,7 +589,7 @@ trait MatchTranslation { self: PatternMatching  =>
       def treeMaker(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
         // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
-        val binder         = freshSym(pos, pureType(resultInMonad)) // can't simplify this when subPatBinders.isEmpty, since UnitClass.tpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
+        val binder         = freshSym(pos, pureType(resultInMonad)) // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
         ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(subPatBinders, subPatRefs(binder), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted, ignoredSubPatBinders)
       }
 
@@ -623,7 +617,7 @@ trait MatchTranslation { self: PatternMatching  =>
       // what's the extractor's result type in the monad?
       // turn an extractor's result type into something `monadTypeToSubPatTypesAndRefs` understands
       protected lazy val resultInMonad: Type = if(!hasLength(tpe.paramTypes, 1)) ErrorType else {
-        if (resultType.typeSymbol == BooleanClass) UnitClass.tpe
+        if (resultType.typeSymbol == BooleanClass) UnitTpe
         else matchMonadResult(resultType)
       }
 

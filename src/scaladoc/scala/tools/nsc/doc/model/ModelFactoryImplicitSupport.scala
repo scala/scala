@@ -285,7 +285,7 @@ trait ModelFactoryImplicitSupport {
     (tparams zip constrs) flatMap {
       case (tparam, constr) => {
         uniteConstraints(constr) match {
-          case (loBounds, upBounds) => (loBounds filter (_ != NothingClass.tpe), upBounds filter (_ != AnyClass.tpe)) match {
+          case (loBounds, upBounds) => (loBounds filter (_ != NothingTpe), upBounds filter (_ != AnyTpe)) match {
             case (Nil, Nil) =>
               Nil
             case (List(lo), List(up)) if (lo == up) =>
@@ -532,7 +532,7 @@ trait ModelFactoryImplicitSupport {
   object wildcardToNothing extends TypeMap {
     def apply(tp: Type): Type = mapOver(tp) match {
       case WildcardType =>
-        NothingClass.tpe
+        NothingTpe
       case other =>
         other
     }

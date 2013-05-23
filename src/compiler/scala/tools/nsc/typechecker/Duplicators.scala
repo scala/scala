@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
  */
 abstract class Duplicators extends Analyzer {
   import global._
-  import definitions.{ AnyRefClass, AnyValClass }
+  import definitions._
 
   /** Retype the given tree in the given context. Use this method when retyping
    *  a method in a different class. The typer will replace references to the this of
@@ -346,8 +346,8 @@ abstract class Duplicators extends Analyzer {
             // Without this, AnyRef specializations crash on patterns like
             //   case _: Boolean => ...
             // Not at all sure this is safe.
-            else if (scrutTpe <:< AnyRefClass.tpe)
-              cases filterNot (_.pat.tpe <:< AnyValClass.tpe)
+            else if (scrutTpe <:< AnyRefTpe)
+              cases filterNot (_.pat.tpe <:< AnyValTpe)
             else
               cases
           }
@@ -361,7 +361,7 @@ abstract class Duplicators extends Analyzer {
         case _ =>
           debuglog("Duplicators default case: " + tree.summaryString)
           debuglog(" ---> " + tree)
-          if (tree.hasSymbolField && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
+          if (tree.hasSymbolField && tree.symbol != NoSymbol && (tree.symbol.owner == AnyClass)) {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           val ntree = castType(tree, pt)

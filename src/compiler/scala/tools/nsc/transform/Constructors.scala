@@ -165,7 +165,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             from.tpe.typeSymbol.isPrimitiveValueClass) result
         else localTyper.typedPos(to.pos) {
           // `throw null` has the same effect as `throw new NullPointerException`, see JVM spec on instruction `athrow`
-          IF (from OBJ_EQ NULL) THEN Throw(gen.mkZero(ThrowableClass.tpe)) ELSE result
+          IF (from OBJ_EQ NULL) THEN Throw(gen.mkZero(ThrowableTpe)) ELSE result
         }
       }
 
@@ -469,10 +469,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
         val methodName = currentUnit.freshTermName("delayedEndpoint$" + clazz.fullNameAsName('$').toString + "$")
         val methodSym  = clazz.newMethod(methodName, impl.pos, SYNTHETIC | FINAL)
-        methodSym setInfoAndEnter MethodType(Nil, UnitClass.tpe)
+        methodSym setInfoAndEnter MethodType(Nil, UnitTpe)
 
         // changeOwner needed because the `stats` contained in the DefDef were owned by the template, not long ago.
-        val blk       = Block(stats, gen.mkZero(UnitClass.tpe)).changeOwner(impl.symbol -> methodSym)
+        val blk       = Block(stats, gen.mkZero(UnitTpe)).changeOwner(impl.symbol -> methodSym)
         val delayedDD = localTyper typed { DefDef(methodSym, Nil, blk) }
 
         delayedDD.asInstanceOf[DefDef]
@@ -495,7 +495,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             val applyMethod: MethodSymbol = (
               closureClass
                 newMethod(nme.apply, impl.pos, FINAL)
-                setInfoAndEnter MethodType(Nil, ObjectClass.tpe)
+                setInfoAndEnter MethodType(Nil, ObjectTpe)
             )
             val outerFieldDef     = ValDef(outerField)
             val closureClassTyper = localTyper.atOwner(closureClass)

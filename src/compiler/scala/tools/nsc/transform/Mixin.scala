@@ -213,7 +213,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val newFlags   = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED
         val setter     = clazz.newMethod(setterName, field.pos, newFlags)
         // TODO preserve pre-erasure info?
-        setter setInfo MethodType(setter.newSyntheticValueParams(List(field.info)), UnitClass.tpe)
+        setter setInfo MethodType(setter.newSyntheticValueParams(List(field.info)), UnitTpe)
         if (field.needsExpandedSetterName)
           setter.name = nme.expandedSetterName(setter.name, clazz)
 

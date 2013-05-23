@@ -395,7 +395,7 @@ trait Types
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
-    def firstParent = if (parents.nonEmpty) parents.head else ObjectClass.tpe
+    def firstParent = if (parents.nonEmpty) parents.head else ObjectTpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -1462,9 +1462,9 @@ trait Types
   final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi)
 
   object TypeBounds extends TypeBoundsExtractor {
-    def empty: TypeBounds           = apply(NothingClass.tpe, AnyClass.tpe)
-    def upper(hi: Type): TypeBounds = apply(NothingClass.tpe, hi)
-    def lower(lo: Type): TypeBounds = apply(lo, AnyClass.tpe)
+    def empty: TypeBounds           = apply(NothingTpe, AnyTpe)
+    def upper(hi: Type): TypeBounds = apply(NothingTpe, hi)
+    def lower(lo: Type): TypeBounds = apply(lo, AnyTpe)
     def apply(lo: Type, hi: Type): TypeBounds = {
       unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
     }
@@ -2472,7 +2472,7 @@ trait Types
       if (!isValidForBaseClasses(period)) {
         tpe.parentsCache = tpe.thisInfo.parents map tpe.transform
       } else if (tpe.parentsCache == null) { // seems this can happen if things are corrupted enough, see #2641
-        tpe.parentsCache = List(AnyClass.tpe)
+        tpe.parentsCache = List(AnyTpe)
       }
     }
   }
@@ -3443,7 +3443,7 @@ trait Types
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = {
     if (phase.erasedTypes)
-      if (parents.isEmpty) ObjectClass.tpe else parents.head
+      if (parents.isEmpty) ObjectTpe else parents.head
     else {
       val clazz = owner.newRefinementClass(pos)
       val result = RefinedType(parents, decls, clazz)
@@ -4345,7 +4345,7 @@ trait Types
           } else {
             val args = argss map (_.head)
             if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
+            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectTpe)
             else Some(typeRef(pre, sym, List(lub(args))))
           }
         }
@@ -4484,18 +4484,18 @@ trait Types
   }
 
   def isUnboundedGeneric(tp: Type) = tp match {
-    case t @ TypeRef(_, sym, _) => sym.isAbstractType && !(t <:< AnyRefClass.tpe)
+    case t @ TypeRef(_, sym, _) => sym.isAbstractType && !(t <:< AnyRefTpe)
     case _                      => false
   }
   def isBoundedGeneric(tp: Type) = tp match {
-    case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
+    case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefTpe)
     case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
     case _                                        => false
   }
   // Add serializable to a list of parents, unless one of them already is
   def addSerializable(ps: Type*): List[Type] = (
     if (ps exists typeIsSubTypeOfSerializable) ps.toList
-    else (ps :+ SerializableClass.tpe).toList
+    else (ps :+ SerializableTpe).toList
   )
 
   /** Members of the given class, other than those inherited
@@ -4508,7 +4508,7 @@ trait Types
   def importableMembers(pre: Type): Scope = pre.members filter isImportable
 
   def objToAny(tp: Type): Type =
-    if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe
+    if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyTpe
     else tp
 
   val shorthands = Set(
@@ -4532,7 +4532,7 @@ trait Types
   private[scala] val typeHasAnnotations = (tp: Type) => tp.annotations.nonEmpty
   private[scala] val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
   private[scala] val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
-  private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableClass.tpe
+  private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
   private[scala] val typeIsNothing = (tp: Type) => tp.typeSymbolDirect eq NothingClass
   private[scala] val typeIsAny = (tp: Type) => tp.typeSymbolDirect eq AnyClass
   private[scala] val typeIsHigherKinded = (tp: Type) => tp.isHigherKinded

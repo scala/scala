@@ -457,7 +457,7 @@ abstract class CopyPropagation {
     final def simulateCall(state: copyLattice.State, method: Symbol, static: Boolean): copyLattice.State = {
       val out = new copyLattice.State(state.bindings, state.stack)
       out.stack = out.stack.drop(method.info.paramTypes.length + (if (static) 0 else 1))
-      if (method.info.resultType != definitions.UnitClass.tpe && !method.isConstructor)
+      if (method.info.resultType != definitions.UnitTpe && !method.isConstructor)
         out.stack = Unknown :: out.stack
       if (!isPureMethod(method))
         invalidateRecords(out)
