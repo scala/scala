@@ -997,22 +997,9 @@ trait Implicits {
             if (settings.Xdivergence211.value) DivergingImplicitExpansionError(tree, pt, DivergentImplicitRecovery.sym)(context)
             else throw DivergentImplicit
           }
-          else if (invalidImplicits.nonEmpty) {
-            val sym = invalidImplicits.head
-            // We don't even dare look if errors are being buffered
-            // !sym.hasFlag(LOCKED) is a hail mary between SI-2206 and SI-7486
-            def isSensibleAddendum = !sym.hasFlag(LOCKED) && (pt match {
-              case Function1(_, out) => out <:< sym.tpe.finalResultType
-              case _                 => pt <:< sym.tpe.finalResultType
-            })
-            // Don't pitch in with this theory unless it looks plausible that the
-            // implicit would have helped
-            setAddendum(pos, () =>
-              if (isSensibleAddendum)
-                s"\n Note: implicit $sym is not applicable here because it comes after the application point and it lacks an explicit result type"
-              else ""
-            )
-          }
+          setAddendum(pos, () =>
+            s"\n Note: implicit ${DivergentImplicitRecovery.sym} is not applicable here because it comes after the application point and it lacks an explicit result type"
+          )
         }
 
         best
