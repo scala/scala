@@ -28,6 +28,7 @@ package util.parsing.json
  *
  * @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
+@deprecated("This object will be removed.", "2.11.0")
 object JSON extends Parser {
 
   /**
