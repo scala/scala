@@ -89,7 +89,8 @@ class ConsoleRunner extends DirectRunner {
   private val unaryArgs = List(
     "--pack", "--all",
     "--terse", "--verbose", "--show-diff", "--show-log", "--self-test",
-    "--failed", "--update-check", "--version", "--ansi", "--debug", "--help"
+    "--failed", "--update-check", "--version", "--ansi", "--debug", "--help",
+    "--avian"
   ) ::: standardArgs
 
   private val binaryArgs = List(
@@ -107,6 +108,9 @@ class ConsoleRunner extends DirectRunner {
     // Early return on no args, version, or invalid args
     if (parsed isSet "--version") return echo(versionMsg)
     if ((argstr == "") || (parsed isSet "--help")) return NestUI.usage()
+
+    if ((parsed isSet "--avian") && !isAvian)
+      echoWarning("Running Avian-specific tests on non-Avian runtimes is not supported, tests will not be run!")
 
     val (individualTests, invalid) = parsed.residualArgs map (p => Path(p)) partition denotesTestPath
     if (invalid.nonEmpty) {
@@ -153,6 +157,7 @@ class ConsoleRunner extends DirectRunner {
     val kinds = (
       if (parsed isSet "--all") standardKinds
       else if (givenKinds.nonEmpty) givenKinds map (_ stripPrefix "--")
+      else if (givenKinds.isEmpty && (parsed isSet "--avian")) Nil
       else if (invalid.isEmpty && miscTests.isEmpty && !isRerun) standardKinds // If no kinds, --grep, or individual tests were given, assume --all
       else Nil
     )
