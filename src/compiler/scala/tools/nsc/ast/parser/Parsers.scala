@@ -1474,8 +1474,9 @@ self =>
      *  }}}
      */
     def postfixExpr(): Tree = {
-      val base = opstack
-      var top = prefixExpr()
+      val start = in.offset
+      val base  = opstack
+      var top   = prefixExpr()
 
       while (isIdent) {
         top = reduceStack(isExpr = true, base, top, precedence(in.name), leftAssoc = treeInfo.isLeftAssoc(in.name))
@@ -1493,9 +1494,7 @@ self =>
           val topinfo = opstack.head
           opstack = opstack.tail
           val od = stripParens(reduceStack(isExpr = true, base, topinfo.operand, 0, leftAssoc = true))
-          return atPos(od.pos.startOrPoint, topinfo.offset) {
-            new PostfixSelect(od, topinfo.operator.encode)
-          }
+          return makePostfixSelect(start, topinfo.offset, od, topinfo.operator)
         }
       }
       reduceStack(isExpr = true, base, top, 0, leftAssoc = true)
