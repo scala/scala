@@ -2868,18 +2868,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       tpeCache
     }
     override def typeConstructor: Type = {
-      maybeUpdateTyconCache()
+      if (tyconCacheNeedsUpdate)
+        setTyconCache(newTypeRef(Nil))
       tyconCache
     }
     override def tpeHK: Type = typeConstructor
 
-    private def maybeUpdateTyconCache() {
-      if ((tyconCache eq null) || tyconRunId != currentRunId) {
-        tyconCache = newTypeRef(Nil)
-        tyconRunId = currentRunId
-      }
-      assert(tyconCache ne null)
+    private def tyconCacheNeedsUpdate = (tyconCache eq null) || tyconRunId != currentRunId
+    private def setTyconCache(tycon: Type) {
+      tyconCache = tycon
+      tyconRunId = currentRunId
+      assert(tyconCache ne null, this)
     }
+
     private def maybeUpdateTypeCache() {
       if (tpePeriod != currentPeriod) {
         if (isValid(tpePeriod))
@@ -2896,10 +2897,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         tpePeriod = currentPeriod
 
       tpeCache = NoType // cycle marker
+      val noTypeParams = phase.erasedTypes && this != ArrayClass || unsafeTypeParams.isEmpty
       tpeCache = newTypeRef(
-        if (phase.erasedTypes && this != ArrayClass || unsafeTypeParams.isEmpty) Nil
+        if (noTypeParams) Nil
         else unsafeTypeParams map (_.typeConstructor)
       )
+      // Avoid carrying around different types in tyconCache and tpeCache
+      // for monomorphic types.
+      if (noTypeParams && tyconCacheNeedsUpdate)
+        setTyconCache(tpeCache)
     }
 
     override def info_=(tp: Type) {
