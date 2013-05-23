@@ -144,4 +144,3 @@ class Parser extends StdTokenParsers with ImplicitConversions {
   def stringVal  = accept("string", { case lexical.StringLit(n) => n} )
   def number     = accept("number", { case lexical.NumericLit(n) => numberParser.get.apply(n)} )
 }
-

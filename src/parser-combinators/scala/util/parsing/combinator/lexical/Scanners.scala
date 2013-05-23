@@ -60,4 +60,3 @@ trait Scanners extends Parsers {
     def atEnd = in.atEnd || (whitespace(in) match { case Success(_, in1) => in1.atEnd case _ => false })
   }
 }
-
