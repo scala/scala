@@ -32,9 +32,13 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed
   def byteValue()   = intValue().toByte
   def shortValue()  = intValue().toShort
 
+  /** Returns `'''this'''` if `'''this''' < that` or `that` otherwise. */
   def min(that: T): T = num.min(self, that)
+  /** Returns `'''this'''` if `'''this''' > that` or `that` otherwise. */
   def max(that: T): T = num.max(self, that)
+  /** Returns the absolute value of `'''this'''`. */
   def abs             = num.abs(self)
+  /** Returns the signum of `'''this'''`. */
   def signum          = num.signum(self)
 }
 trait ScalaWholeNumberProxy[T] extends Any with ScalaNumberProxy[T] {
