@@ -128,7 +128,7 @@ trait MatchCodeGen extends Interface {
       //  __match.guard(`cond`, `res`).flatMap(`nextBinder` => `next`)
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree = flatMap(guard(cond, res), nextBinder, next)
       //  __match.guard(`guardTree`, ()).flatMap((_: P[Unit]) => `next`)
-      def flatMapGuard(guardTree: Tree, next: Tree): Tree = flatMapCond(guardTree, CODE.UNIT, freshSym(guardTree.pos, pureType(UnitClass.tpe)), next)
+      def flatMapGuard(guardTree: Tree, next: Tree): Tree = flatMapCond(guardTree, CODE.UNIT, freshSym(guardTree.pos, pureType(UnitTpe)), next)
     }
   }
 

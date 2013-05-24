@@ -127,15 +127,15 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Boolean_or  = getMemberMethod(BooleanClass, nme.ZOR)
       lazy val Boolean_not = getMemberMethod(BooleanClass, nme.UNARY_!)
 
-    lazy val UnitTpe    = UnitClass.toTypeConstructor
-    lazy val ByteTpe    = ByteClass.toTypeConstructor
-    lazy val ShortTpe   = ShortClass.toTypeConstructor
-    lazy val CharTpe    = CharClass.toTypeConstructor
-    lazy val IntTpe     = IntClass.toTypeConstructor
-    lazy val LongTpe    = LongClass.toTypeConstructor
-    lazy val FloatTpe   = FloatClass.toTypeConstructor
-    lazy val DoubleTpe  = DoubleClass.toTypeConstructor
-    lazy val BooleanTpe = BooleanClass.toTypeConstructor
+    lazy val UnitTpe      = UnitClass.tpe
+    lazy val ByteTpe      = ByteClass.tpe
+    lazy val ShortTpe     = ShortClass.tpe
+    lazy val CharTpe      = CharClass.tpe
+    lazy val IntTpe       = IntClass.tpe
+    lazy val LongTpe      = LongClass.tpe
+    lazy val FloatTpe     = FloatClass.tpe
+    lazy val DoubleTpe    = DoubleClass.tpe
+    lazy val BooleanTpe   = BooleanClass.tpe
 
     lazy val ScalaNumericValueClasses = ScalaValueClasses filterNot Set[Symbol](UnitClass, BooleanClass)
     lazy val ScalaValueClassesNoUnit  = ScalaValueClasses filterNot (_ eq UnitClass)
@@ -177,16 +177,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
     lazy val RuntimePackage       = getPackage("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
-
-    // convenient one-argument parameter lists
-    lazy val anyparam     = List(AnyClass.tpe)
-    lazy val anyvalparam  = List(AnyValClass.typeConstructor)
-    lazy val anyrefparam  = List(AnyRefClass.typeConstructor)
-
-    // private parameter conveniences
-    private def booltype    = BooleanClass.tpe
-    private def inttype     = IntClass.tpe
-    private def stringtype  = StringClass.tpe
 
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
       case java.lang.Void.TYPE      => UnitClass
@@ -252,9 +242,9 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Is this type equivalent to Any, AnyVal, or AnyRef? */
     def isTrivialTopType(tp: Type) = (
-         tp =:= AnyClass.tpe
-      || tp =:= AnyValClass.tpe
-      || tp =:= AnyRefClass.tpe
+         tp =:= AnyTpe
+      || tp =:= AnyValTpe
+      || tp =:= AnyRefTpe
     )
 
     private def fixupAsAnyTrait(tpe: Type): Type = tpe match {
@@ -262,7 +252,7 @@ trait Definitions extends api.StandardDefinitions {
         if (parents.head.typeSymbol == AnyClass) tpe
         else {
           assert(parents.head.typeSymbol == ObjectClass, parents)
-          ClassInfoType(AnyClass.tpe :: parents.tail, decls, clazz)
+          ClassInfoType(AnyTpe :: parents.tail, decls, clazz)
         }
       case PolyType(tparams, restpe) =>
         PolyType(tparams, fixupAsAnyTrait(restpe))
@@ -270,11 +260,20 @@ trait Definitions extends api.StandardDefinitions {
 
     // top types
     lazy val AnyClass    = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
-    lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.tpe)
+    lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectTpe)
     lazy val ObjectClass = getRequiredClass(sn.Object.toString)
-    lazy val AnyTpe     = definitions.AnyClass.toTypeConstructor
-    lazy val AnyRefTpe  = definitions.AnyRefClass.toTypeConstructor
-    lazy val ObjectTpe  = definitions.ObjectClass.toTypeConstructor
+
+    // Cached types for core monomorphic classes
+    lazy val AnyRefTpe       = AnyRefClass.tpe
+    lazy val AnyTpe          = AnyClass.tpe
+    lazy val AnyValTpe       = AnyValClass.tpe
+    lazy val BoxedUnitTpe    = BoxedUnitClass.tpe
+    lazy val NothingTpe      = NothingClass.tpe
+    lazy val NullTpe         = NullClass.tpe
+    lazy val ObjectTpe       = ObjectClass.tpe
+    lazy val SerializableTpe = SerializableClass.tpe
+    lazy val StringTpe       = StringClass.tpe
+    lazy val ThrowableTpe    = ThrowableClass.tpe
 
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
@@ -283,12 +282,11 @@ trait Definitions extends api.StandardDefinitions {
     def Predef_AnyRef = AnyRefModule
 
     lazy val AnyValClass: ClassSymbol = (ScalaPackageClass.info member tpnme.AnyVal orElse {
-      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, AnyClass.tpe :: Nil, ABSTRACT)
+      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, AnyTpe :: Nil, ABSTRACT)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
       anyval
     }).asInstanceOf[ClassSymbol]
-    lazy val AnyValTpe  = definitions.AnyValClass.toTypeConstructor
       def AnyVal_getClass = getMemberMethod(AnyValClass, nme.getClass_)
 
     // bottom types
@@ -311,8 +309,6 @@ trait Definitions extends api.StandardDefinitions {
         || (that ne NothingClass) && (that isSubClass ObjectClass)
       )
     }
-    lazy val NothingTpe = definitions.NothingClass.toTypeConstructor
-    lazy val NullTpe    = definitions.NullClass.toTypeConstructor
 
     // exceptions and other throwables
     lazy val ClassCastExceptionClass        = requiredClass[ClassCastException]
@@ -393,7 +389,7 @@ trait Definitions extends api.StandardDefinitions {
       def delayedInitMethod = getMemberMethod(DelayedInitClass, nme.delayedInit)
 
     lazy val TypeConstraintClass   = requiredClass[scala.annotation.TypeConstraint]
-    lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, anyparam, ABSTRACT | TRAIT | FINAL)
+    lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, AnyTpe :: Nil, ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = requiredClass[scala.Serializable]
     lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
@@ -403,7 +399,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val RemoteInterfaceClass  = requiredClass[java.rmi.Remote]
     lazy val RemoteExceptionClass  = requiredClass[java.rmi.RemoteException]
 
-    lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyClass.tpe)
+    lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyTpe)
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))
     lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.tpe))
 
@@ -447,7 +443,7 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     def isReferenceArray(tp: Type) = tp match {
-      case TypeRef(_, ArrayClass, arg :: Nil) => arg <:< AnyRefClass.tpe
+      case TypeRef(_, ArrayClass, arg :: Nil) => arg <:< AnyRefTpe
       case _                                  => false
     }
     def isArrayOfSymbol(tp: Type, elem: Symbol) = tp match {
@@ -597,7 +593,7 @@ trait Definitions extends api.StandardDefinitions {
       case BooleanClass => nme.wrapBooleanArray
       case UnitClass    => nme.wrapUnitArray
       case _        =>
-        if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol)) nme.wrapRefArray
+        if ((elemtp <:< AnyRefTpe) && !isPhantomClass(elemtp.typeSymbol)) nme.wrapRefArray
         else nme.genericWrapArray
     }
 
@@ -733,12 +729,12 @@ trait Definitions extends api.StandardDefinitions {
       existentialAbstraction(clazz.unsafeTypeParams, clazz.tpe_*)
 
     // members of class scala.Any
-    lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
-    lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
-    lazy val Any_equals   = enterNewMethod(AnyClass, nme.equals_, anyparam, booltype)
-    lazy val Any_hashCode = enterNewMethod(AnyClass, nme.hashCode_, Nil, inttype)
-    lazy val Any_toString = enterNewMethod(AnyClass, nme.toString_, Nil, stringtype)
-    lazy val Any_##       = enterNewMethod(AnyClass, nme.HASHHASH, Nil, inttype, FINAL)
+    lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Any_equals   = enterNewMethod(AnyClass, nme.equals_, AnyTpe :: Nil, BooleanTpe)
+    lazy val Any_hashCode = enterNewMethod(AnyClass, nme.hashCode_, Nil, IntTpe)
+    lazy val Any_toString = enterNewMethod(AnyClass, nme.toString_, Nil, StringTpe)
+    lazy val Any_##       = enterNewMethod(AnyClass, nme.HASHHASH, Nil, IntTpe, FINAL)
 
     // Any_getClass requires special handling.  The return type is determined on
     // a per-call-site basis as if the function being called were actually:
@@ -750,7 +746,7 @@ trait Definitions extends api.StandardDefinitions {
     // participation.  At the "Any" level, the return type is Class[_] as it is in
     // java.lang.Object.  Java also special cases the return type.
     lazy val Any_getClass     = enterNewMethod(AnyClass, nme.getClass_, Nil, getMemberMethod(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
-    lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => booltype)
+    lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => BooleanTpe)
     lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
 
   // A type function from T => Class[U], used to determine the return
@@ -774,7 +770,7 @@ trait Definitions extends api.StandardDefinitions {
       else {
         val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
         val upperBound = (
-          if (isPhantomClass(sym)) AnyClass.tpe
+          if (isPhantomClass(sym)) AnyTpe
           else if (sym.isLocalClass) erasure.intersectionDominator(tp.parents)
           else tp.widen
         )
@@ -834,17 +830,17 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // members of class java.lang.{ Object, String }
-    lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
-    lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, anyrefparam, booltype, FINAL)
-    lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, anyrefparam, booltype, FINAL)
-    lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, anyrefparam, booltype, FINAL)
-    lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
-    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => booltype)
+    lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, IntTpe, FINAL)
+    lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, AnyRefTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyRefTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, AnyRefTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, AnyRefTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => BooleanTpe)
     lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
     lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
-    lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
+    lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, AnyTpe :: Nil, StringTpe, FINAL)
 
     def Object_getClass  = getMemberMethod(ObjectClass, nme.getClass_)
     def Object_clone     = getMemberMethod(ObjectClass, nme.clone_)
@@ -1044,7 +1040,7 @@ trait Definitions extends api.StandardDefinitions {
     private def specialPolyClass(name: TypeName, flags: Long)(parentFn: Symbol => Type): ClassSymbol = {
       val clazz   = enterNewClass(ScalaPackageClass, name, Nil)
       val tparam  = clazz.newSyntheticTypeParam("T0", flags)
-      val parents = List(AnyRefClass.tpe, parentFn(tparam))
+      val parents = List(AnyRefTpe, parentFn(tparam))
 
       clazz setInfo GenPolyType(List(tparam), ClassInfoType(parents, newScope, clazz))
     }

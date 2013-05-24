@@ -143,7 +143,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     }
     class ReusedCondTreeMaker(prevBinder: Symbol, val nextBinder: Symbol, cond: Tree, res: Tree, val pos: Position) extends TreeMaker { import CODE._
       lazy val localSubstitution        = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
-      lazy val storedCond               = freshSym(pos, BooleanClass.tpe, "rc") setFlag MUTABLE
+      lazy val storedCond               = freshSym(pos, BooleanTpe, "rc") setFlag MUTABLE
       lazy val treesToHoist: List[Tree] = {
         nextBinder setFlag MUTABLE
         List(storedCond, nextBinder) map { b => VAL(b) === codegen.mkZero(b.info) }
@@ -503,7 +503,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     }
 
     class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
-      val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
+      val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe)
       val alternativesSupported = true
       val canJump = true
 
@@ -543,7 +543,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         else {
           // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
           val scrutToInt: Tree =
-            if (scrutSym.tpe =:= IntClass.tpe) REF(scrutSym)
+            if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             VAL(scrutSym) === scrut,
@@ -571,16 +571,16 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }
 
       def isDefault(x: CaseDef): Boolean = x match {
-        case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe)          => true
-        case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) => true
+        case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableTpe)          => true
+        case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) if (tpt.tpe =:= ThrowableTpe) => true
         case CaseDef(Ident(nme.WILDCARD), EmptyTree, _)                                                          => true
         case _ => false
       }
 
-      lazy val defaultSym: Symbol = freshSym(NoPosition, ThrowableClass.tpe)
+      lazy val defaultSym: Symbol = freshSym(NoPosition, ThrowableTpe)
       def defaultBody: Tree       = Throw(CODE.REF(defaultSym))
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
-        (CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableClass.tpe)))) IF guard) ==> body
+        (CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableTpe)))) IF guard) ==> body
       }}
     }
 

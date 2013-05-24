@@ -52,7 +52,9 @@ import scala.annotation.tailrec
  */
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import global._
+  import definitions._
   import Flags._
+
   /** the name of the phase: */
   val phaseName: String = "specialize"
 
@@ -68,13 +70,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private implicit val typeOrdering: Ordering[Type] = Ordering[String] on ("" + _.typeSymbol.name)
 
-  import definitions.{
-    BooleanClass, UnitClass, ArrayClass,
-    ScalaValueClasses, isPrimitiveValueClass, isPrimitiveValueType,
-    SpecializedClass, UnspecializedClass, AnyRefClass, ObjectClass,
-    GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
-  }
-  import rootMirror.RootClass
 
   /** TODO - this is a lot of maps.
    */
@@ -136,14 +131,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  // If we replace `isBoundedGeneric` with (tp <:< AnyRefClass.tpe),
+  // If we replace `isBoundedGeneric` with (tp <:< AnyRefTpe),
   // then pos/spec-List.scala fails - why? Does this kind of check fail
   // for similar reasons? Does `sym.isAbstractType` make a difference?
   private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = {
     specializedOn(sym).exists(s => !isPrimitiveValueClass(s)) &&
     !isPrimitiveValueClass(tp.typeSymbol) &&
     isBoundedGeneric(tp)
-    //(tp <:< AnyRefClass.tpe)
+    //(tp <:< AnyRefTpe)
   }
 
   object TypeEnv {
@@ -164,7 +159,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def includes(t1: TypeEnv, t2: TypeEnv) = t1 forall {
       case (sym, tpe) =>
         t2 get sym exists { t2tp =>
-          (tpe == t2tp) || !(isPrimitiveValueType(tpe) || isPrimitiveValueType(t2tp)) // u.t.b. (t2tp <:< AnyRefClass.tpe)
+          (tpe == t2tp) || !(isPrimitiveValueType(tpe) || isPrimitiveValueType(t2tp)) // u.t.b. (t2tp <:< AnyRefTpe)
         }
     }
 
@@ -180,7 +175,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       env forall { case (tvar, tpe) =>
         tvar.isSpecialized && (concreteTypes(tvar) contains tpe) && {
           (sym.typeParams contains tvar) ||
-          (sym.owner != RootClass && (sym.owner.typeParams contains tvar))
+          (sym.owner != rootMirror.RootClass && (sym.owner.typeParams contains tvar))
         }
       }
     }
@@ -294,7 +289,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // when searching for a specialized class, take care to map all
         // type parameters that are subtypes of AnyRef to AnyRef
         val args1 = map2(args, sym.info.typeParams)((tp, orig) =>
-          if (isSpecializedAnyRefSubtype(tp, orig)) AnyRefClass.tpe
+          if (isSpecializedAnyRefSubtype(tp, orig)) AnyRefTpe
           else tp
         )
         specializedClass.get((sym, TypeEnv.fromSpecialization(sym, args1))) match {
@@ -333,8 +328,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     else {
       val (base, cs, ms) = nme.splitSpecializedName(name)
       newTermName(base.toString + "$"
-                  + "m" + ms + types1.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "")
-                  + "c" + cs + types2.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "$sp"))
+                  + "m" + ms + types1.map(t => abbrvTag(t.typeSymbol)).mkString("", "", "")
+                  + "c" + cs + types2.map(t => abbrvTag(t.typeSymbol)).mkString("", "", "$sp"))
     }
   )
 
@@ -360,7 +355,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specializedOn(sym) map (s => specializesClass(s).tpe) sorted
 
     if (isBoundedGeneric(sym.tpe) && (types contains AnyRefClass))
-      reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
+      reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefTpe + ".")
 
     types
   }
@@ -380,7 +375,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     // zip the keys with each permutation to create a TypeEnv.
     // If we don't exclude the "all AnyRef" specialization, we will
     // incur duplicate members and crash during mixin.
-    loop(keys map concreteTypes) filterNot (_ forall (_ <:< AnyRefClass.tpe)) map (xss => Map(keys zip xss: _*))
+    loop(keys map concreteTypes) filterNot (_ forall (_ <:< AnyRefTpe)) map (xss => Map(keys zip xss: _*))
   }
 
   /** Does the given 'sym' need to be specialized in the environment 'env'?
@@ -412,7 +407,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     loop(immutable.Set.empty, tpes)
   }
   def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] = (
-    if (definitions.neverHasTypeParameters(sym)) immutable.Set.empty
+    if (neverHasTypeParameters(sym)) immutable.Set.empty
     else enteringTyper(specializedTypeVars(sym.info))
   )
 
@@ -454,7 +449,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     sClassMap.getOrElseUpdate(tparam,
       tparam.cloneSymbol(sClass, tparam.flags, tparam.name append tpnme.SPECIALIZED_SUFFIX)
-        modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
+        modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefTpe))
     ).tpe
   }
 
@@ -488,7 +483,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     foreach2(syms, cloned) { (orig, cln) =>
       cln.removeAnnotation(SpecializedClass)
       if (env.contains(orig))
-        cln modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
+        cln modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefTpe))
     }
     cloned map (_ substInfo (syms, cloned))
   }
@@ -497,7 +492,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  the specialized symbol (class (specialization) or member (normalization)), leaves everything else as-is.
    */
   private def mapAnyRefsInSpecSym(env: TypeEnv, origsym: Symbol, specsym: Symbol): TypeEnv = env map {
-    case (sym, tp) if tp == AnyRefClass.tpe && sym.owner == origsym => (sym, typeParamSubAnyRef(sym, specsym))
+    case (sym, AnyRefTpe) if sym.owner == origsym => (sym, typeParamSubAnyRef(sym, specsym))
     case x => x
   }
 
@@ -505,8 +500,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  the original class, leaves everything else as-is.
    */
   private def mapAnyRefsInOrigCls(env: TypeEnv, origcls: Symbol): TypeEnv = env map {
-    case (sym, tp) if (tp == AnyRefClass.tpe) && sym.owner == origcls => (sym, sym.tpe)
-    case x => x
+    case (sym, AnyRefTpe) if sym.owner == origcls => (sym, sym.tpe)
+    case x                                        => x
   }
 
   /** Specialize 'clazz', in the environment `outerEnv`. The outer
@@ -733,7 +728,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val specSetter = mkAccessor(specVal, specGetter.setterName)
                 .resetFlag(STABLE)
               specSetter.setInfo(MethodType(specSetter.newSyntheticValueParams(List(specVal.info)),
-                                            UnitClass.tpe))
+                                            UnitTpe))
               val origSetter = overrideIn(sClass, m.setter(clazz))
               info(origSetter) = Forward(specSetter)
               enterMember(specSetter)
@@ -1150,7 +1145,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     )
 
   private def unspecializableClass(tp: Type) = (
-       definitions.isRepeatedParamType(tp)  // ???
+       isRepeatedParamType(tp)  // ???
     || tp.typeSymbol.isJavaDefined
     || tp.typeSymbol.isPackageClass
   )
@@ -1744,10 +1739,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
       if (hasSpecializedFields) {
         val isSpecializedInstance = sClass :: sClass.parentSymbols exists (_ hasFlag SPECIALIZED)
-        val sym = sClass.newMethod(nme.SPECIALIZED_INSTANCE, sClass.pos) setInfoAndEnter MethodType(Nil, BooleanClass.tpe)
+        val sym = sClass.newMethod(nme.SPECIALIZED_INSTANCE, sClass.pos) setInfoAndEnter MethodType(Nil, BooleanTpe)
 
         mbrs += atPos(sym.pos) {
-          DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanClass.tpe)).setType(NoType)
+          DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanTpe)).setType(NoType)
         }
       }
       mbrs.toList

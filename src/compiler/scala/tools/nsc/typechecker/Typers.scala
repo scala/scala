@@ -1147,7 +1147,7 @@ trait Typers extends Adaptations with Tags {
         if (mode.typingExprNotFun) {
           // The <: Any requirement inhibits attempts to adapt continuation types
           // to non-continuation types.
-          if (tree.tpe <:< AnyClass.tpe) pt.dealias match {
+          if (tree.tpe <:< AnyTpe) pt.dealias match {
             case TypeRef(_, UnitClass, _) => // (12)
               if (settings.warnValueDiscard)
                 context.unit.warning(tree.pos, "discarded non-Unit value")
@@ -1284,10 +1284,10 @@ trait Typers extends Adaptations with Tags {
      */
     def instantiateExpectingUnit(tree: Tree, mode: Mode): Tree = {
       val savedUndetparams = context.undetparams
-      silent(_.instantiate(tree, mode, UnitClass.tpe)) orElse { _ =>
+      silent(_.instantiate(tree, mode, UnitTpe)) orElse { _ =>
         context.undetparams = savedUndetparams
         val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
-        typed(valueDiscard, mode, UnitClass.tpe)
+        typed(valueDiscard, mode, UnitTpe)
       }
     }
 
@@ -1708,7 +1708,7 @@ trait Typers extends Adaptations with Tags {
         }
 
     def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
-      case Nil => List(atPos(templ.pos)(TypeTree(AnyRefClass.tpe)))
+      case Nil => List(atPos(templ.pos)(TypeTree(AnyRefTpe)))
       case first :: rest =>
         try {
           val supertpts = fixDuplicateSyntheticParents(normalizeFirstParent(
@@ -1734,7 +1734,7 @@ trait Typers extends Adaptations with Tags {
           log("Type error calculating parents in template " + templ)
           log("Error: " + ex)
           ParentTypesError(templ, ex)
-          List(TypeTree(AnyRefClass.tpe))
+          List(TypeTree(AnyRefTpe))
       }
     }
 
@@ -1820,7 +1820,7 @@ trait Typers extends Adaptations with Tags {
       for (tparam <- clazz.typeParams) {
         if (classinfo.expansiveRefs(tparam) contains tparam) {
           val newinfo = ClassInfoType(
-            classinfo.parents map (_.instantiateTypeParams(List(tparam), List(AnyRefClass.tpe))),
+            classinfo.parents map (_.instantiateTypeParams(List(tparam), List(AnyRefTpe))),
             classinfo.decls,
             clazz)
           clazz.setInfo {
@@ -1886,7 +1886,7 @@ trait Typers extends Adaptations with Tags {
           if (noSerializable) Nil
           else {
             clazz.makeSerializable()
-            List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
+            List(TypeTree(SerializableTpe) setPos clazz.pos.focus)
           }
         )
       })
@@ -2377,7 +2377,7 @@ trait Typers extends Adaptations with Tags {
         case ldef @ LabelDef(_, _, _) =>
           if (ldef.symbol == NoSymbol)
             ldef.symbol = namer.enterInScope(
-              context.owner.newLabel(ldef.name, ldef.pos) setInfo MethodType(List(), UnitClass.tpe))
+              context.owner.newLabel(ldef.name, ldef.pos) setInfo MethodType(List(), UnitTpe))
         case _ =>
       }
     }
@@ -2500,7 +2500,7 @@ trait Typers extends Adaptations with Tags {
           namer.enterIfNotThere(bind.symbol)
 
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
-                         else typed(cdef.guard, BooleanClass.tpe)
+                         else typed(cdef.guard, BooleanTpe)
       var body1: Tree = typed(cdef.body, pt)
 
       if (context.enclosingCaseDef.savedTypeBounds.nonEmpty) {
@@ -2597,7 +2597,7 @@ trait Typers extends Adaptations with Tags {
       val argTp :: resTp :: Nil = targs
 
       // targs must conform to Any for us to synthesize an applyOrElse (fallback to apply otherwise -- typically for @cps annotated targs)
-      val targsValidParams = targs forall (_ <:< AnyClass.tpe)
+      val targsValidParams = targs forall (_ <:< AnyTpe)
 
       val anonClass = (context.owner
         newAnonymousFunctionClass tree.pos
@@ -2725,12 +2725,12 @@ trait Typers extends Adaptations with Tags {
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
         methodBodyTyper.context.scope enter paramSym
-        methodSym setInfo MethodType(List(paramSym), BooleanClass.tpe)
+        methodSym setInfo MethodType(List(paramSym), BooleanTpe)
 
         val defaultCase = mkDefaultCase(FALSE)
-        val match_ = methodBodyTyper.typedMatch(selector, casesTrue :+ defaultCase, mode, BooleanClass.tpe)
+        val match_ = methodBodyTyper.typedMatch(selector, casesTrue :+ defaultCase, mode, BooleanTpe)
 
-        DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, BooleanClass.tpe))
+        DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, BooleanTpe))
       }
 
       // only used for @cps annotated partial functions
@@ -2739,7 +2739,7 @@ trait Typers extends Adaptations with Tags {
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL | OVERRIDE)
         val paramSym = mkParam(methodSym)
 
-        methodSym setInfo MethodType(List(paramSym), AnyClass.tpe)
+        methodSym setInfo MethodType(List(paramSym), AnyTpe)
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
         // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
@@ -3106,11 +3106,11 @@ trait Typers extends Adaptations with Tags {
           // less expensive than including them in inferMethodAlternative (see below).
           def shapeType(arg: Tree): Type = arg match {
             case Function(vparams, body) =>
-              functionType(vparams map (_ => AnyClass.tpe), shapeType(body))
+              functionType(vparams map (_ => AnyTpe), shapeType(body))
             case AssignOrNamedArg(Ident(name), rhs) =>
               NamedType(name, shapeType(rhs))
             case _ =>
-              NothingClass.tpe
+              NothingTpe
           }
           val argtypes = args map shapeType
           val pre = fun.symbol.tpe.prefix
@@ -3872,7 +3872,7 @@ trait Typers extends Adaptations with Tags {
           // as we don't know which alternative to choose... here we do
           map2Conserve(args, tparams) {
             //@M! the polytype denotes the expected kind
-            (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyClass.tpe))
+            (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
           }
         } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
          // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
@@ -3893,7 +3893,7 @@ trait Typers extends Adaptations with Tags {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
               val scrutineeType = fun match {
                 case Select(qual, _) => qual.tpe
-                case _               => AnyClass.tpe
+                case _               => AnyTpe
               }
               checkCheckable(tree, targs.head, scrutineeType, inPattern = false)
             }
@@ -4218,7 +4218,7 @@ trait Typers extends Adaptations with Tags {
 //        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
         if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
-          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
+          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
           val rhs1 = typedByValueExpr(rhs)
@@ -4229,10 +4229,10 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedIf(tree: If): If = {
-        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanClass.tpe))
+        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanTpe))
         // One-legged ifs don't need a lot of analysis
         if (tree.elsep.isEmpty)
-          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitClass.tpe), tree.elsep) setType UnitClass.tpe
+          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
 
         val thenp1 = typed(tree.thenp, pt)
         val elsep1 = typed(tree.elsep, pt)
@@ -4313,7 +4313,7 @@ trait Typers extends Adaptations with Tags {
                 unit.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded")
             }
             val res = treeCopy.Return(tree, checkDead(expr1)).setSymbol(enclMethod.owner)
-            val tp = pluginsTypedReturn(NothingClass.tpe, this, res, restpt.tpe)
+            val tp = pluginsTypedReturn(NothingTpe, this, res, restpt.tpe)
             res.setType(tp)
           }
         }
@@ -4916,7 +4916,7 @@ trait Typers extends Adaptations with Tags {
                 // if symbol hasn't been fully loaded, can't check kind-arity
               else map2Conserve(args, tparams) { (arg, tparam) =>
                 //@M! the polytype denotes the expected kind
-                typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyClass.tpe))
+                typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
               }
             val argtypes = args1 map (_.tpe)
 
@@ -5038,8 +5038,8 @@ trait Typers extends Adaptations with Tags {
       def typedTry(tree: Try) = {
         val Try(block, catches, fin) = tree
         val block1   = typed(block, pt)
-        val catches1 = typedCases(catches, ThrowableClass.tpe, pt)
-        val fin1     = if (fin.isEmpty) fin else typed(fin, UnitClass.tpe)
+        val catches1 = typedCases(catches, ThrowableTpe, pt)
+        val fin1     = if (fin.isEmpty) fin else typed(fin, UnitTpe)
 
         def finish(ownType: Type) = treeCopy.Try(tree, block1, catches1, fin1) setType ownType
 
@@ -5058,8 +5058,8 @@ trait Typers extends Adaptations with Tags {
       }
 
       def typedThrow(tree: Throw) = {
-        val expr1 = typedByValueExpr(tree.expr, ThrowableClass.tpe)
-        treeCopy.Throw(tree, expr1) setType NothingClass.tpe
+        val expr1 = typedByValueExpr(tree.expr, ThrowableTpe)
+        treeCopy.Throw(tree, expr1) setType NothingTpe
       }
 
       def typedTyped(tree: Typed) = {
@@ -5145,7 +5145,7 @@ trait Typers extends Adaptations with Tags {
         // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
         val args1 = if (sameLength(args, tparams)) map2Conserve(args, tparams) {
           //@M! the polytype denotes the expected kind
-          (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyClass.tpe))
+          (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
         }
         else {
           //@M  this branch is correctly hit for an overloaded polymorphic type. It also has to handle erroneous cases.
@@ -5163,9 +5163,9 @@ trait Typers extends Adaptations with Tags {
 
       def typedApplyDynamic(tree: ApplyDynamic) = {
         assert(phase.erasedTypes)
-        val qual1 = typed(tree.qual, AnyRefClass.tpe)
-        val args1 = tree.args mapConserve (arg => typed(arg, AnyRefClass.tpe))
-        treeCopy.ApplyDynamic(tree, qual1, args1) setType AnyRefClass.tpe
+        val qual1 = typed(tree.qual, AnyRefTpe)
+        val args1 = tree.args mapConserve (arg => typed(arg, AnyRefTpe))
+        treeCopy.ApplyDynamic(tree, qual1, args1) setType AnyRefTpe
       }
 
       def typedReferenceToBoxed(tree: ReferenceToBoxed) = {
@@ -5207,14 +5207,14 @@ trait Typers extends Adaptations with Tags {
           warnMissingInterpolator(tree)
 
         tree setType (
-          if (tree.value.tag == UnitTag) UnitClass.tpe
+          if (tree.value.tag == UnitTag) UnitTpe
           else ConstantType(tree.value))
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
         val refTyped =
           context.withImplicitsDisabled {
-            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefClass.tpe)
+            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefTpe)
           }
 
         if (!refTyped.isErrorTyped)
@@ -5257,7 +5257,7 @@ trait Typers extends Adaptations with Tags {
           // we should get here only when something before failed
           // and we try again (@see tryTypedApply). In that case we can assign
           // whatever type to tree; we just have to survive until a real error message is issued.
-          tree setType AnyClass.tpe
+          tree setType AnyTpe
       }
       def typedFunction(fun: Function) = {
         if (fun.symbol == NoSymbol)
@@ -5534,7 +5534,7 @@ trait Typers extends Adaptations with Tags {
 
       val isMacroBodyOkay = !tree.symbol.isErroneous && !(tree1 exists (_.isErroneous)) && tree1 != EmptyTree
       val shouldInheritMacroImplReturnType = ddef.tpt.isEmpty
-      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImpl(ddef, tree1.symbol) else AnyClass.tpe
+      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImpl(ddef, tree1.symbol) else AnyTpe
     }
 
     def transformedOr(tree: Tree, op: => Tree): Tree = transformed remove tree match {

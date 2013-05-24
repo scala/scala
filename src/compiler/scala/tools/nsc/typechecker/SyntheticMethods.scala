@@ -100,7 +100,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           case tp                                            => tp
         }
       }
-      else AnyClass.tpe
+      else AnyTpe
     )
 
     def forwardToRuntime(method: Symbol): Tree =
@@ -131,7 +131,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree =
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
-    // def productElementNameMethod = perElementMethod(nme.productElementName, StringClass.tpe)(x => LIT(x.name.toString))
+    // def productElementNameMethod = perElementMethod(nme.productElementName, StringTpe)(x => LIT(x.name.toString))
 
     var syntheticCanEqual = false
 
@@ -140,7 +140,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      */
     def canEqualMethod: Tree = {
       syntheticCanEqual = true
-      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m =>
+      createMethod(nme.canEqual_, List(AnyTpe), BooleanTpe)(m =>
         Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
     }
 
@@ -200,7 +200,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      *      }
      *   }
      */
-    def equalsCaseClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
+    def equalsCaseClassMethod: Tree = createMethod(nme.equals_, List(AnyTpe), BooleanTpe) { m =>
       if (accessors.isEmpty)
         if (clazz.isFinal) thatTest(m)
         else thatTest(m) AND ((thatCast(m) DOT nme.canEqual_)(mkThis))
@@ -214,14 +214,14 @@ trait SyntheticMethods extends ast.TreeDSL {
      *    val x$1 = that.asInstanceOf[this.C]
      *    (this.underlying == that.underlying
      */
-    def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
+    def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyTpe), BooleanTpe) { m =>
       equalsCore(m, List(clazz.derivedValueClassUnbox))
     }
 
     /* The hashcode method for value classes
      * def hashCode(): Int = this.underlying.hashCode
      */
-    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
+    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { m =>
       Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
     }
 
@@ -265,8 +265,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     def specializedHashcode = {
-      createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
-        val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntClass.tpe
+      createMethod(nme.hashCode_, Nil, IntTpe) { m =>
+        val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntTpe
         val valdef      = ValDef(accumulator, Literal(Constant(0xcafebabe)))
         val mixes       = accessors map (acc =>
           Assign(
@@ -356,7 +356,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           // This method should be generated as private, but apparently if it is, then
           // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
           // For sure special methods like "readResolve" should not be mangled.
-          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
+          List(createMethod(nme.readResolve, Nil, ObjectTpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
         }
         else Nil
       )

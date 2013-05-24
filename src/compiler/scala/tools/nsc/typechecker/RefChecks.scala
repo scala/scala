@@ -748,7 +748,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // Have to use matchingSymbol, not a method involving overridden symbols,
           // because the scala type system understands that an abstract method here does not
           // override a concrete method in Object. The jvm, however, does not.
-          val overridden = decl.matchingSymbol(ObjectClass, ObjectClass.tpe)
+          val overridden = decl.matchingSymbol(ObjectClass, ObjectTpe)
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
@@ -996,7 +996,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // equals method inherited from Object or a case class synthetic equals (for
         // which we know the logic.)
         def isWarnable           = isReferenceOp || (isUsingDefaultScalaOp && isUsingWarnableEquals)
-        def isEitherNullable     = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+        def isEitherNullable     = (NullTpe <:< receiver.info) || (NullTpe <:< actual.info)
         def isEitherValueClass   = actual.isDerivedValueClass || receiver.isDerivedValueClass
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
@@ -1081,7 +1081,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // better to have lubbed and lost
           def warnIfLubless(): Unit = {
             val common = global.lub(List(actual.tpe, receiver.tpe))
-            if (ObjectClass.tpe <:< common)
+            if (ObjectTpe <:< common)
               unrelatedTypes()
           }
           // warn if actual has a case parent that is not same as receiver's;
@@ -1533,7 +1533,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
-        if (t == EmptyTree) Literal(Constant(())).setPos(tree.pos).setType(UnitClass.tpe) else t
+        if (t == EmptyTree) Literal(Constant(())).setPos(tree.pos).setType(UnitTpe) else t
 
       cond.tpe match {
         case ConstantType(value) =>

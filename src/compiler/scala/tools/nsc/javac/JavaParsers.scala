@@ -251,15 +251,15 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def basicType(): Tree =
       atPos(in.pos) {
         in.token match {
-          case BYTE => in.nextToken(); TypeTree(ByteClass.tpe)
-          case SHORT => in.nextToken(); TypeTree(ShortClass.tpe)
-          case CHAR => in.nextToken(); TypeTree(CharClass.tpe)
-          case INT => in.nextToken(); TypeTree(IntClass.tpe)
-          case LONG => in.nextToken(); TypeTree(LongClass.tpe)
-          case FLOAT => in.nextToken(); TypeTree(FloatClass.tpe)
-          case DOUBLE => in.nextToken(); TypeTree(DoubleClass.tpe)
-          case BOOLEAN => in.nextToken(); TypeTree(BooleanClass.tpe)
-          case _ => syntaxError("illegal start of type", skipIt = true); errorTypeTree
+          case BYTE    => in.nextToken(); TypeTree(ByteTpe)
+          case SHORT   => in.nextToken(); TypeTree(ShortTpe)
+          case CHAR    => in.nextToken(); TypeTree(CharTpe)
+          case INT     => in.nextToken(); TypeTree(IntTpe)
+          case LONG    => in.nextToken(); TypeTree(LongTpe)
+          case FLOAT   => in.nextToken(); TypeTree(FloatTpe)
+          case DOUBLE  => in.nextToken(); TypeTree(DoubleTpe)
+          case BOOLEAN => in.nextToken(); TypeTree(BooleanTpe)
+          case _       => syntaxError("illegal start of type", skipIt = true); errorTypeTree
         }
       }
 
@@ -462,7 +462,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       var rtpt =
         if (isVoid) {
           in.nextToken()
-          TypeTree(UnitClass.tpe) setPos in.pos
+          TypeTree(UnitTpe) setPos in.pos
         } else typ()
       var pos = in.currentPos
       val rtptName = rtpt match {
@@ -785,7 +785,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           blankExpr),
         DefDef(
           Modifiers(Flags.JAVA | Flags.STATIC), nme.valueOf, List(),
-          List(List(makeParam("x", TypeTree(StringClass.tpe)))),
+          List(List(makeParam("x", TypeTree(StringTpe)))),
           enumType,
           blankExpr))
       accept(RBRACE)

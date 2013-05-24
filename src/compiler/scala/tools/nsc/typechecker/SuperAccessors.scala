@@ -30,7 +30,7 @@ import symtab.Flags._
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   import global._
-  import definitions.{ UnitClass, ObjectClass, isRepeatedParamType, isByNameParamType, Any_asInstanceOf }
+  import definitions._
   import analyzer.{ restrictionError }
 
   /** the following two members override abstract members in Transform */
@@ -458,7 +458,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val protAcc      = clazz.newMethod(accName, field.pos, newFlags = ARTIFACT)
         val paramTypes   = List(clazz.typeOfThis, field.tpe)
         val params       = protAcc newSyntheticValueParams paramTypes
-        val accessorType = MethodType(params, UnitClass.tpe)
+        val accessorType = MethodType(params, UnitTpe)
 
         protAcc setInfoAndEnter accessorType
         val obj :: value :: Nil = params

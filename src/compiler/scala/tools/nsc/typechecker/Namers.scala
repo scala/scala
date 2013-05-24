@@ -765,7 +765,7 @@ trait Namers extends MethodSynthesis {
     def accessorTypeCompleter(tree: ValDef, isSetter: Boolean) = mkTypeCompleter(tree) { sym =>
       logAndValidate(sym) {
         sym setInfo {
-          val tp = if (isSetter) MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitClass.tpe)
+          val tp = if (isSetter) MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitTpe)
                    else NullaryMethodType(typeSig(tree))
           pluginsTypeSigAccessor(tp, typer, tree, sym)
         }
@@ -863,7 +863,7 @@ trait Namers extends MethodSynthesis {
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
-        if (tpt.tpe.isError) AnyRefClass.tpe
+        if (tpt.tpe.isError) AnyRefTpe
         else tpt.tpe
       }
 
@@ -1493,8 +1493,8 @@ trait Namers extends MethodSynthesis {
     private object RestrictJavaArraysMap extends TypeMap {
       def apply(tp: Type): Type = tp match {
         case TypeRef(pre, ArrayClass, List(elemtp))
-        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectClass.tpe) =>
-          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, ObjectClass.tpe))))
+        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectTpe) =>
+          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, ObjectTpe))))
         case _ =>
           mapOver(tp)
       }

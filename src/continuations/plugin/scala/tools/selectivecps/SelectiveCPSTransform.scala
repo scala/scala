@@ -189,7 +189,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           val targettp = transformCPSType(tree.tpe)
 
           val pos = catches.head.pos
-          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass, ThrowableClass.tpe, targettp))
+          val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass, ThrowableTpe, targettp))
           val funDef = localTyper.typedPos(pos) {
             ValDef(funSym, Match(EmptyTree, catches1))
           }
@@ -197,7 +197,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym)))
           }
 
-          val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
+          val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableTpe)
 
           import CODE._
           // generate a case that is supported directly by the back-end
@@ -207,8 +207,8 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 IF ((REF(funSym) DOT nme.isDefinedAt)(REF(exSym))) THEN (REF(funSym) APPLY (REF(exSym))) ELSE Throw(REF(exSym))
               )
 
-          val catch2 = localTyper.typedCases(List(catchIfDefined), ThrowableClass.tpe, targettp)
-          //typedCases(tree, catches, ThrowableClass.tpe, pt)
+          val catch2 = localTyper.typedCases(List(catchIfDefined), ThrowableTpe, targettp)
+          //typedCases(tree, catches, ThrowableTpe, pt)
 
           patmatTransformer.transform(localTyper.typed(Block(List(funDef), treeCopy.Try(tree, treeCopy.Block(block1, stms, expr2), catch2, finalizer1))))
 

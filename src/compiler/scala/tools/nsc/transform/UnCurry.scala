@@ -142,7 +142,7 @@ abstract class UnCurry extends InfoTransform
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
       nonLocalReturnKeys.getOrElseUpdate(meth,
-        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectClass.tpe
+        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectTpe
       )
 
     /** Generate a non-local return throw with given return expression from given method.
@@ -184,7 +184,7 @@ abstract class UnCurry extends InfoTransform
           THEN ((ex DOT nme.value)())
           ELSE (Throw(Ident(ex)))
         )
-        val keyDef   = ValDef(key, New(ObjectClass.tpe))
+        val keyDef   = ValDef(key, New(ObjectTpe))
         val tryCatch = Try(body, pat -> rhs)
 
         for (Try(t, catches, _) <- body ; cdef <- catches ; if treeInfo catchesThrowable cdef)
@@ -291,7 +291,7 @@ abstract class UnCurry extends InfoTransform
           def getClassTag(tp: Type): Tree = {
             val tag = localTyper.resolveClassTag(tree.pos, tp)
             // Don't want bottom types getting any further than this (SI-4024)
-            if (tp.typeSymbol.isBottomClass) getClassTag(AnyClass.tpe)
+            if (tp.typeSymbol.isBottomClass) getClassTag(AnyTpe)
             else if (!tag.isEmpty) tag
             else if (tp.bounds.hi ne tp) getClassTag(tp.bounds.hi)
             else localTyper.TyperErrorGen.MissingClassTagError(tree, tp)
@@ -547,7 +547,7 @@ abstract class UnCurry extends InfoTransform
 
       def isThrowable(pat: Tree): Boolean = pat match {
         case Typed(Ident(nme.WILDCARD), tpt) =>
-          tpt.tpe =:= ThrowableClass.tpe
+          tpt.tpe =:= ThrowableTpe
         case Bind(_, pat) =>
           isThrowable(pat)
         case _ =>
@@ -735,7 +735,7 @@ abstract class UnCurry extends InfoTransform
         //   becomes     def foo[T](a: Int, b: Array[Object])
         //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
         arrayType(
-          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectClass.tpe
+          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectTpe
           else arg
         )
       }

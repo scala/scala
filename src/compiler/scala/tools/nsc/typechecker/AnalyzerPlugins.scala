@@ -146,7 +146,7 @@ trait AnalyzerPlugins { self: Analyzer =>
 
     /**
      * Modify the type of a return expression. By default, return expressions have type
-     * NothingClass.tpe.
+     * NothingTpe.
      *
      * @param tpe   The type of the return expression
      * @param typer The typer that was used for typing the return tree

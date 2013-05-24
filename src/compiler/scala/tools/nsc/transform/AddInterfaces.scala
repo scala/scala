@@ -143,7 +143,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
 
         decls enter (
           implClass.newMethod(nme.MIXIN_CONSTRUCTOR, implClass.pos)
-            setInfo MethodType(Nil, UnitClass.tpe)
+            setInfo MethodType(Nil, UnitTpe)
         )
       }
 
@@ -189,7 +189,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         case ClassInfoType(parents, decls, _) =>
           assert(phase == implClassPhase, tp)
           // Impl class parents: Object first, matching interface last.
-          val implParents = ObjectClass.tpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass)) :+ iface.tpe
+          val implParents = ObjectTpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass)) :+ iface.tpe
           ClassInfoType(implParents, implDecls(implSym, decls), implSym)
         case PolyType(_, restpe) =>
           implType(restpe)
@@ -209,7 +209,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
         case Nil      => Nil
         case hd :: tl =>
           assert(!hd.typeSymbol.isTrait, clazz)
-          if (clazz.isTrait) erasedTypeRef(ObjectClass) :: tl
+          if (clazz.isTrait) ObjectTpe :: tl
           else parents
       }
       val decls1 = scopeTransform(clazz)(
