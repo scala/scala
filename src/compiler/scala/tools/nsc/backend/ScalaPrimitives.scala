@@ -567,11 +567,9 @@ abstract class ScalaPrimitives {
     import definitions._
     val code = getPrimitive(fun)
 
-    def elementType = enteringTyper {
-      val arrayParent = tpe :: tpe.parents collectFirst {
-        case TypeRef(_, ArrayClass, elem :: Nil) => elem
-      }
-      arrayParent getOrElse sys.error(fun.fullName + " : " + (tpe :: tpe.baseTypeSeq.toList).mkString(", "))
+    def elementType = enteringTyper(arrayElementType(tpe)) match {
+      case NoType => tpe.parents.iterator map arrayElementType find (_ != NoType) getOrElse abort(s"getPrimitive($fun, $tpe)")
+      case elem   => elem
     }
 
     code match {
