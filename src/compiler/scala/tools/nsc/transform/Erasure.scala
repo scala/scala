@@ -974,7 +974,6 @@ abstract class Erasure extends AddInterfaces
           case Select(qual, _) => qual
           case TypeApply(Select(qual, _), _) => qual
         }
-
         def preEraseAsInstanceOf = {
           (fn: @unchecked) match {
             case TypeApply(Select(qual, _), List(targ)) =>
@@ -1032,8 +1031,9 @@ abstract class Erasure extends AddInterfaces
           preEraseAsInstanceOf
         } else if (fn.symbol == Any_isInstanceOf) {
           preEraseIsInstanceOf
-        } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
-          // !!! Another spot where we produce overloaded types (see test run/t6301)
+        } else if (fn.symbol.isOnlyRefinementMember) {
+          // !!! Another spot where we produce overloaded types (see test pos/t6301)
+          log(s"${fn.symbol.fullLocationString} originates in refinement class - call will be implemented via reflection.")
           ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
         } else if (fn.symbol.isMethodWithExtension && !fn.symbol.tpe.isErroneous) {
           Apply(gen.mkAttributedRef(extensionMethods.extensionMethod(fn.symbol)), qualifier :: args)
@@ -1161,12 +1161,19 @@ abstract class Erasure extends AddInterfaces
           preErase(fun)
 
         case Select(qual, name) =>
-          val owner = tree.symbol.owner
-          // println("preXform: "+ (tree, tree.symbol, tree.symbol.owner, tree.symbol.owner.isRefinementClass))
+          val sym = tree.symbol
+          val owner = sym.owner
           if (owner.isRefinementClass) {
-            val overridden = tree.symbol.nextOverriddenSymbol
-            assert(overridden != NoSymbol, tree.symbol)
-            tree.symbol = overridden
+            sym.allOverriddenSymbols filterNot (_.owner.isRefinementClass) match {
+              case overridden :: _ =>
+                log(s"${sym.fullLocationString} originates in refinement class - replacing with ${overridden.fullLocationString}.")
+                tree.symbol = overridden
+              case Nil =>
+                // Ideally this should not be reached or reachable; anything which would
+                // get here should have been caught in the surrounding Apply.
+                devWarning(s"Failed to rewrite reflective apply - now don't know what to do with " + tree)
+                return treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name)
+            }
           }
 
           def isAccessible(sym: Symbol) = localTyper.context.isAccessible(sym, sym.owner.thisType)

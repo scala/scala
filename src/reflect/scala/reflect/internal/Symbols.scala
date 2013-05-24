@@ -892,16 +892,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this a term symbol only defined in a refinement (so that it needs
      *  to be accessed by reflection)?
      */
-    def isOnlyRefinementMember: Boolean = (
-       isTerm && // type members are not affected
-       owner.isRefinementClass && // owner must be a refinement class
-       (owner.info decl name) == this && // symbol must be explicitly declared in the refinement (not synthesized from glb)
-       !isOverridingSymbol && // symbol must not override a symbol in a base class
-       !isConstant // symbol must not be a constant. Question: Can we exclude @inline methods as well?
+    def isOnlyRefinementMember = (
+         isTerm                  // Type members are unaffected
+      && owner.isRefinementClass // owner must be a refinement class
+      && isPossibleInRefinement  // any overridden symbols must also have refinement class owners
+      && !isConstant             // Must not be a constant. Question: Can we exclude @inline methods as well?
+      && isDeclaredByOwner       // Must be explicitly declared in the refinement (not synthesized from glb)
     )
+    // "(owner.info decl name) == this" is inadequate, because "name" might
+    // be overloaded in owner - and this might be an overloaded symbol.
+    // TODO - make this cheaper and see where else we should be doing something similar.
+    private def isDeclaredByOwner = (owner.info decl name).alternatives exists (alternatives contains _)
 
     final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
-    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
+    final def isPossibleInRefinement       = (
+         !isConstructor
+      && allOverriddenSymbols.forall(_.owner.isRefinementClass) // this includes allOverriddenSymbols.isEmpty
+    )
 
     /** A a member of class `base` is incomplete if
      *  (1) it is declared deferred or
@@ -3430,7 +3437,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   @tailrec private[scala] final
   def allSymbolsHaveOwner(syms: List[Symbol], owner: Symbol): Boolean = syms match {
     case sym :: rest => sym.owner == owner && allSymbolsHaveOwner(rest, owner)
-    case _ => true
+    case _           => true
   }
 
 
