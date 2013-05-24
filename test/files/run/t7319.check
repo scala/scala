@@ -32,7 +32,14 @@ argument expression's type is not compatible with formal parameter type;
               convert(Some[Int](0))
                                ^
 
+scala> Range(1,2).toArray: Seq[_]
+<console>:11: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [B >: Int]Array[B]
+ required: Seq[_]
+              Range(1,2).toArray: Seq[_]
+                         ^
+
 scala> 0
-res1: Int = 0
+res2: Int = 0
 
 scala> 
