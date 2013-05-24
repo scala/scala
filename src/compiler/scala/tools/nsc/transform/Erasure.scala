@@ -42,26 +42,18 @@ abstract class Erasure extends AddInterfaces
 
   private object NeedsSigCollector extends TypeCollector(false) {
     def traverse(tp: Type) {
-      if (!result) {
-        tp match {
-          case st: SubType =>
-            traverse(st.supertype)
-          case TypeRef(pre, sym, args) =>
-            if (sym == ArrayClass) args foreach traverse
-            else if (sym.isTypeParameterOrSkolem || sym.isExistentiallyBound || !args.isEmpty) result = true
-            else if (sym.isClass) traverse(rebindInnerClass(pre, sym)) // #2585
-            else if (!sym.isTopLevel) traverse(pre)
-          case PolyType(_, _) | ExistentialType(_, _) =>
-            result = true
-          case RefinedType(parents, _) =>
-            parents foreach traverse
-          case ClassInfoType(parents, _, _) =>
-            parents foreach traverse
-          case AnnotatedType(_, atp, _) =>
-            traverse(atp)
-          case _ =>
-            mapOver(tp)
-        }
+      if (result) return
+      tp match {
+        case PolyType(_, _) | ExistentialType(_, _)                                        => result = true
+        case TypeRef(_, ArrayClass, arg :: Nil)                                            => traverse(arg)
+        case TypeRef(_, _, args) if args.nonEmpty                                          => result = true
+        case TypeRef(_, sym, _) if sym.isTypeParameterOrSkolem || sym.isExistentiallyBound => result = true
+        case TypeRef(pre, sym, _) if sym.isClass                                           => traverse(rebindInnerClass(pre, sym))
+        case TypeRef(pre, sym, _) if  !sym.isTopLevel                                      => traverse(pre)
+        case st: SubType                                                                   => traverse(st.supertype)
+        case tp: CompoundType                                                              => tp.parents foreach traverse
+        case AnnotatedType(_, atp, _)                                                      => traverse(atp)
+        case _                                                                             => mapOver(tp)
       }
     }
   }
@@ -127,8 +119,7 @@ abstract class Erasure extends AddInterfaces
           else squashBoxed(tp1)
         }
         if (sym == ArrayClass && args.nonEmpty)
-          if (unboundedGenericArrayLevel(tp1) == 1) ObjectTpe
-          else mapOver(tp1)
+          scalaErasure.bestErasureForArrayElement(mapOver(args.head))
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
           ObjectTpe
         else if (sym == UnitClass)
@@ -247,8 +238,10 @@ abstract class Erasure extends AddInterfaces
 
           // If args isEmpty, Array is being used as a type constructor
           if (sym == ArrayClass && args.nonEmpty) {
-            if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectTpe)
-            else ARRAY_TAG.toString+(args map (jsig(_))).mkString
+            scalaErasure.bestErasureForArrayElement(args.head) match {
+              case TypeRef(_, ArrayClass, elem :: Nil) => s"${ARRAY_TAG}${jsig(elem)}"
+              case _                                   => jsig(ObjectTpe)
+            }
           }
           else if (isTypeParameterInSig(sym, sym0)) {
             assert(!sym.isAliasType, "Unexpected alias type: " + sym)
@@ -621,19 +614,14 @@ abstract class Erasure extends AddInterfaces
     }
 
     /** Generate a synthetic cast operation from tree.tpe to pt.
-     *  @pre pt eq pt.normalize
      */
-    private def cast(tree: Tree, pt: Type): Tree = logResult(s"cast($tree, $pt)") {
-      if (pt.typeSymbol == UnitClass) {
-        // See SI-4731 for one example of how this occurs.
-        log("Attempted to cast to Unit: " + tree)
-        tree.duplicate setType pt
-      } else if (tree.tpe != null && tree.tpe.typeSymbol == ArrayClass && pt.typeSymbol == ArrayClass) {
-        // See SI-2386 for one example of when this might be necessary.
-        val needsExtraCast = isPrimitiveValueType(tree.tpe.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
-        val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
-        gen.mkAttributedCast(tree1, pt)
-      } else gen.mkAttributedCast(tree, pt)
+    private def cast(tree: Tree, pt: Type): Tree = {
+      def mustBox = isPrimitiveArray(tree.tpe) && !isPrimitiveArray(pt)
+      pt.typeSymbol match {
+        case UnitClass             => logResult("Attempted to cast to Unit")(tree.duplicate setType pt) // SI-4731
+        case ArrayClass if mustBox => logResult(s"convert($tree)")(gen.mkAttributedCast(gen.mkRuntimeCall(nme.toObjectArray, tree :: Nil), pt)) // SI-2386
+        case _                     => logResult(s"cast($tree, $pt)")(gen.mkAttributedCast(tree, pt))
+      }
     }
 
     /** Adapt `tree` to expected type `pt`.
@@ -1038,10 +1026,12 @@ abstract class Erasure extends AddInterfaces
       }
 
       private def preEraseApply(tree: Apply) = {
+        def isTypeTest = tree.fun.symbol match {
+          case Any_isInstanceOf | Object_isInstanceOf => true
+          case _                                      => false
+        }
         tree.fun match {
-          case TypeApply(fun @ Select(qual, name), args @ List(arg))
-          if ((fun.symbol == Any_isInstanceOf || fun.symbol == Object_isInstanceOf) &&
-              unboundedGenericArrayLevel(arg.tpe) > 0) => // !!! todo: simplify by having GenericArray also extract trees
+          case TypeApply(fun @ Select(qual, name), arg :: Nil) if isTypeTest && unboundedGenericArrayLevel(arg.tpe) > 0 =>
             val level = unboundedGenericArrayLevel(arg.tpe)
             def isArrayTest(arg: Tree) =
               gen.mkRuntimeCall(nme.isArray, List(arg, Literal(Constant(level))))
@@ -1063,29 +1053,25 @@ abstract class Erasure extends AddInterfaces
           case fn @ Select(qual, name) =>
             val args = tree.args
             if (fn.symbol.owner == ArrayClass) {
-              // Have to also catch calls to abstract types which are bounded by Array.
-              if (unboundedGenericArrayLevel(qual.tpe.widen) == 1 || qual.tpe.typeSymbol.isAbstractType) {
-                // convert calls to apply/update/length on generic arrays to
-                // calls of ScalaRunTime.array_xxx method calls
-                global.typer.typedPos(tree.pos) {
-                  val arrayMethodName = name match {
-                    case nme.apply  => nme.array_apply
-                    case nme.length => nme.array_length
-                    case nme.update => nme.array_update
-                    case nme.clone_ => nme.array_clone
-                    case _          => unit.error(tree.pos, "Unexpected array member, no translation exists.") ; nme.NO_NAME
-                  }
-                  gen.mkRuntimeCall(arrayMethodName, qual :: args)
-                }
-              } else {
-                // store exact array erasure in map to be retrieved later when we might
-                // need to do the cast in adaptMember
-                // Note: No specialErasure needed here because we simply cast, on
-                // elimination of SelectFromArray, no boxing or unboxing is done there.
-                treeCopy.Apply(
-                  tree,
-                  SelectFromArray(qual, name, erasure(tree.symbol)(qual.tpe)).copyAttrs(fn),
-                  args)
+              // convert calls to apply/update/length/clone on generic arrays to
+              // calls of ScalaRunTime.array_xxx method calls
+              def arrayMethodName = name match {
+                case nme.apply  => nme.array_apply
+                case nme.length => nme.array_length
+                case nme.update => nme.array_update
+                case nme.clone_ => nme.array_clone
+                case name       => abort(s"Unrecognized name `$name` in Array rewrite.")
+              }
+
+              scalaErasure.bestErasureForApparentArray(qual.tpe) match {
+                case ObjectTpe => global.typer.typedPos(tree.pos)(gen.mkRuntimeCall(arrayMethodName, qual :: args))
+                case best      =>
+                  // store exact array erasure in map to be retrieved later when we might
+                  // need to do the cast in adaptMember
+                  // Note: No specialErasure needed here because we simply cast, on
+                  // elimination of SelectFromArray, no boxing or unboxing is done there.
+                  val arraySel = SelectFromArray(qual, name, erasure(tree.symbol)(qual.tpe)) copyAttrs fn
+                  treeCopy.Apply(tree, arraySel, args)
               }
             }
             else if (args.isEmpty && interceptedMethods(fn.symbol)) {
@@ -1220,6 +1206,11 @@ abstract class Erasure extends AddInterfaces
           tree
       }
 
+      private def eraseInArray(tp: Type) = tp match {
+        case TypeRef(pre, sym, _) if sym.isDerivedValueClass => specialScalaErasure.eraseNormalClassRef(pre, sym)
+        case _                                               => specialScalaErasure(tp)
+      }
+
       override def transform(tree: Tree): Tree = {
         // Reply to "!!! needed?" which adorned the next line: without it, build fails with:
         //   Exception in thread "main" scala.tools.nsc.symtab.Types$TypeError:
@@ -1235,7 +1226,7 @@ abstract class Erasure extends AddInterfaces
               tree1 setType specialScalaErasure(tree1.tpe)
             case ArrayValue(elemtpt, trees) =>
               treeCopy.ArrayValue(
-                tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform).clearType()
+                tree1, elemtpt setType eraseInArray(elemtpt.tpe), trees map transform).clearType()
             case DefDef(_, _, _, _, tpt, _) =>
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
