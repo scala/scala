@@ -1,5 +1,5 @@
 /*
- * filter: inliner warning(s); re-run with -Yinline-warnings for details
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
  */
 import scala.util.parsing.json._
 import scala.collection.immutable.TreeMap

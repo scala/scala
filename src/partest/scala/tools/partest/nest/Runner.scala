@@ -368,10 +368,27 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       pathFinder replaceAllIn (s, m => ellipsis + squashSlashes(m group 1))
     )
 
-    val filters    = toolArgs("filter", split = false)
-    def lineFilter(s: String): Boolean  = !(filters exists (s contains _))
+    def masters    = {
+      val files = List(new File(parentFile, "filters"), new File(PathSettings.srcDir.path, "filters"))
+      files filter (_.exists) flatMap (_.fileLines) map (_.trim) filter (s => !(s startsWith "#"))
+    }
+    val filters    = toolArgs("filter", split = false) ++ masters
+    val elisions   = ListBuffer[String]()
+    //def lineFilter(s: String): Boolean  = !(filters exists (s contains _))
+    def lineFilter(s: String): Boolean  = (
+      filters map (_.r) forall { r =>
+        val res = (r findFirstIn s).isEmpty
+        if (!res) elisions += s
+        res
+      }
+    )
 
     logFile.mapInPlace(canonicalize)(lineFilter)
+    if (isPartestVerbose && elisions.nonEmpty) {
+      import NestUI.color._
+      val emdash = bold(yellow("--"))
+      pushTranscript(s"filtering ${logFile.getName}$EOL${elisions mkString (emdash, EOL + emdash, EOL)}")
+    }
   }
 
   def diffIsOk: Boolean = {
