@@ -876,8 +876,9 @@ trait Typers extends Modes with Adaptations with Tags {
               case SilentResultValue(result) =>
                 result
               case _ =>
-                debuglog("fallback on implicits: " + tree + "/" + resetAllAttrs(original))
-                val tree1 = typed(resetAllAttrs(original), mode, WildcardType)
+                val resetTree = resetLocalAttrs(original)
+                debuglog(s"fallback on implicits: ${tree}/$resetTree")
+                val tree1 = typed(resetTree, mode, WildcardType)
                 // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
                 // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
                 tree1.tpe = pluginsTyped(tree1.tpe, this, tree1, mode, pt)
