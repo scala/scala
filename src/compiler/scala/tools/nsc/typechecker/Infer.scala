@@ -531,7 +531,7 @@ trait Infer extends Checkable {
         def unapply(m: Result): Some[(List[Symbol], List[Type], List[Type], List[Symbol])] = Some(toLists{
           val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
           val (okArgs, okTparams) = ok.unzip
-          (okArgs, okTparams, m.values.map(_.getOrElse(NothingClass.tpe)), nok.keys)
+          (okArgs, okTparams, m.values.map(_.getOrElse(NothingTpe)), nok.keys)
         })
       }
 
@@ -581,7 +581,7 @@ trait Infer extends Checkable {
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.
     *  If this is not possible, throw a `NoInstance` exception.
-    *  Undetermined type arguments are represented by `definitions.NothingClass.tpe`.
+    *  Undetermined type arguments are represented by `definitions.NothingTpe`.
     *  No check that inferred parameters conform to their bounds is made here.
     *
     *  @param   tparams         the type parameters of the method
@@ -725,7 +725,7 @@ trait Infer extends Checkable {
           if (pos == -1) {
             if (positionalAllowed) { // treat assignment as positional argument
               argPos(index) = index
-              res = UnitClass.tpe
+              res = UnitTpe
             } else                   // unknown parameter name
               namesOK = false
           } else if (argPos.contains(pos)) { // parameter specified twice
@@ -773,10 +773,10 @@ trait Infer extends Checkable {
      *  @pre: the argument list is eligible for tuple conversion.
      */
     private def typeAfterTupleConversion(argtpes: List[Type]): Type = (
-      if (argtpes.isEmpty) UnitClass.tpe           // aka "Tuple0"
+      if (argtpes.isEmpty) UnitTpe                 // aka "Tuple0"
       else tupleType(argtpes map {
-        case NamedType(name, tp) => UnitClass.tpe  // not a named arg - only assignments here
-        case RepeatedType(tp)    => tp             // but probably shouldn't be tupling a call containing :_*
+        case NamedType(name, tp) => UnitTpe  // not a named arg - only assignments here
+        case RepeatedType(tp)    => tp       // but probably shouldn't be tupling a call containing :_*
         case tp                  => tp
       })
     )

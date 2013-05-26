@@ -15,7 +15,7 @@ import scala.reflect.internal.util.StringOps.longestCommonPrefix
 class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput {
   val global: intp.global.type = intp.global
   import global._
-  import definitions.{ PredefModule, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
+  import definitions._
   import rootMirror.{ RootClass, getModuleIfDefined }
   type ExecResult = Any
   import intp.{ debugging }
@@ -39,7 +39,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
     // for some reason any's members don't show up in subclasses, which
     // we need so 5.<tab> offers asInstanceOf etc.
-    private def anyMembers = AnyClass.tpe.nonPrivateMembers
+    private def anyMembers = AnyTpe.nonPrivateMembers
     def anyRefMethodsToShow = Set("isInstanceOf", "asInstanceOf", "toString")
 
     def tos(sym: Symbol): String = sym.decodedName
@@ -152,7 +152,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   }
 
   // not for completion but for excluding
-  object anyref extends TypeMemberCompletion(AnyRefClass.tpe) { }
+  object anyref extends TypeMemberCompletion(AnyRefTpe) { }
 
   // the unqualified vals/defs/etc visible in the repl
   object ids extends CompletionAware {

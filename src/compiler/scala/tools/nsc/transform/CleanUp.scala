@@ -169,11 +169,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         def testForName(name: Name): Tree => Tree = t => (
           if (nme.CommonOpNames(name))
-            gen.mkMethodCall(definitions.Boxes_isNumberOrBool, t :: Nil)
+            gen.mkMethodCall(Boxes_isNumberOrBool, t :: Nil)
           else if (nme.BooleanOpNames(name))
             t IS_OBJ BoxedBooleanClass.tpe
           else
-            gen.mkMethodCall(definitions.Boxes_isNumber, t :: Nil)
+            gen.mkMethodCall(Boxes_isNumber, t :: Nil)
         )
 
         /*  The Tree => Tree function in the return is necessary to prevent the original qual
@@ -188,7 +188,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             else if (params.tail.isEmpty) nme.primitiveInfixMethodName(name)
             else nme.NO_NAME
           )
-          definitions.getDeclIfDefined(BoxesRunTimeClass, methodName) match {
+          getDeclIfDefined(BoxesRunTimeClass, methodName) match {
             case NoSymbol => None
             case sym      => assert(!sym.isOverloaded, sym) ; Some((sym, testForName(name)))
           }
@@ -226,11 +226,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             // If there's any chance this signature could be met by an Array.
             val isArrayMethodSignature = {
               def typesMatchApply = paramTypes match {
-                case List(tp) => tp <:< IntClass.tpe
+                case List(tp) => tp <:< IntTpe
                 case _        => false
               }
               def typesMatchUpdate = paramTypes match {
-                case List(tp1, tp2) => (tp1 <:< IntClass.tpe) && isMaybeUnit
+                case List(tp1, tp2) => (tp1 <:< IntTpe) && isMaybeUnit
                 case _              => false
               }
 
@@ -267,7 +267,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val invokeName  = MethodClass.tpe member nme.invoke_                                  // scala.reflect.Method.invoke(...)
               def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))     // cache Symbol
               def lookup      = Apply(cache, List(qual1() GETCLASS()))                                // get Method object from cache
-              def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
+              def invokeArgs  = ArrayValue(TypeTree(ObjectTpe), params)                       // args for invocation
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
               // exception catching machinery

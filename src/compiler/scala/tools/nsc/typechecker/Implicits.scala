@@ -131,7 +131,7 @@ trait Implicits {
     val tvars = tpars map (TypeVar untouchable _)
     val tpSubsted = tp.subst(tpars, tvars)
 
-    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyClass.tpe), true, context.makeImplicit(reportAmbiguousErrors = false))
+    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, context.makeImplicit(reportAmbiguousErrors = false))
 
     search.allImplicitsPoly(tvars)
   }
@@ -1259,8 +1259,8 @@ trait Implicits {
             // looking for a manifest of a type parameter that hasn't been inferred by now,
             // can't do much, but let's not fail
             else if (undetParams contains sym) {
-              // #3859: need to include the mapping from sym -> NothingClass.tpe in the SearchResult
-              mot(NothingClass.tpe, sym :: from, NothingClass.tpe :: to)
+              // #3859: need to include the mapping from sym -> NothingTpe in the SearchResult
+              mot(NothingTpe, sym :: from, NothingTpe :: to)
             } else {
               // a manifest should have been found by normal searchImplicit
               EmptyTree

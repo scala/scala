@@ -478,7 +478,7 @@ abstract class ClassfileParser {
         u2                    // skip superclass
         val ifaces = u2
         in.bp += ifaces * 2   // .. and iface count interfaces
-        List(AnyRefClass.tpe) // dummy superclass, will be replaced by pickled information
+        List(AnyRefTpe) // dummy superclass, will be replaced by pickled information
       }
       else raiseLoaderLevel {
         val superType = if (jflags.isAnnotation) { u2; AnnotationClass.tpe }
@@ -657,15 +657,15 @@ abstract class ClassfileParser {
     def sig2type(tparams: immutable.Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig.charAt(index); index += 1
       tag match {
-        case BYTE_TAG   => ByteClass.tpe
-        case CHAR_TAG   => CharClass.tpe
-        case DOUBLE_TAG => DoubleClass.tpe
-        case FLOAT_TAG  => FloatClass.tpe
-        case INT_TAG    => IntClass.tpe
-        case LONG_TAG   => LongClass.tpe
-        case SHORT_TAG  => ShortClass.tpe
-        case VOID_TAG   => UnitClass.tpe
-        case BOOL_TAG   => BooleanClass.tpe
+        case BYTE_TAG   => ByteTpe
+        case CHAR_TAG   => CharTpe
+        case DOUBLE_TAG => DoubleTpe
+        case FLOAT_TAG  => FloatTpe
+        case INT_TAG    => IntTpe
+        case LONG_TAG   => LongTpe
+        case SHORT_TAG  => ShortTpe
+        case VOID_TAG   => UnitTpe
+        case BOOL_TAG   => BooleanTpe
         case 'L' =>
           def processInner(tp: Type): Type = tp match {
             case TypeRef(pre, sym, args) if (!sym.isStatic) =>
@@ -739,8 +739,8 @@ abstract class ClassfileParser {
           // NOTE that the comparison to Object only works for abstract types bounded by classes that are strict subclasses of Object
           // if the bound is exactly Object, it will have been converted to Any, and the comparison will fail
           // see also RestrictJavaArraysMap (when compiling java sources directly)
-          if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectClass.tpe)) {
-            elemtp = intersectionType(List(elemtp, ObjectClass.tpe))
+          if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectTpe)) {
+            elemtp = intersectionType(List(elemtp, ObjectTpe))
           }
 
           arrayType(elemtp)
@@ -761,7 +761,7 @@ abstract class ClassfileParser {
         case 'T' =>
           val n = subName(';'.==).toTypeName
           index += 1
-          if (skiptvs) AnyClass.tpe
+          if (skiptvs) AnyTpe
           else tparams(n).typeConstructor
       }
     } // sig2type(tparams, skiptvs)

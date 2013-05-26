@@ -74,7 +74,7 @@ trait TreeDSL {
         if (opSym == NoSymbol) ANY_==(other)
         else fn(target, opSym, other)
       }
-      def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS ObjectClass.tpe)
+      def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS ObjectTpe)
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def ANY_!=  (other: Tree)     = fn(target, Any_!=, other)
       def OBJ_!=  (other: Tree)     = fn(target, Object_!=, other)

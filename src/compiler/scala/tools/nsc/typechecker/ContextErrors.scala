@@ -71,7 +71,7 @@ trait ContextErrors {
     extends TreeTypeError {
     def errMsg: String   = errMsgForPt(pt0)
     def withPt(pt: Type): AbsTypeError = this.copy(pt0 = pt)
-    private def errMsgForPt(pt: Type) = 
+    private def errMsgForPt(pt: Type) =
       s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
   }
 
@@ -1145,7 +1145,7 @@ trait ContextErrors {
             // failures which have nothing to do with implicit conversions
             // per se, but which manifest as implicit conversion conflicts
             // involving Any, are further explained from foundReqMsg.
-            if (AnyRefClass.tpe <:< req) (
+            if (AnyRefTpe <:< req) (
               if (sym == AnyClass || sym == UnitClass) (
                  sm"""|Note: ${sym.name} is not implicitly converted to AnyRef.  You can safely
                       |pattern match `x: AnyRef` or cast `x.asInstanceOf[AnyRef]` to do so."""

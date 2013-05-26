@@ -253,7 +253,7 @@ trait TypeDiagnostics {
   // For found/required errors where AnyRef would have sufficed:
   // explain in greater detail.
   def explainAnyVsAnyRef(found: Type, req: Type): String = {
-    if (AnyRefClass.tpe <:< req) notAnyRefMessage(found) else ""
+    if (AnyRefTpe <:< req) notAnyRefMessage(found) else ""
   }
 
   // TODO - figure out how to avoid doing any work at all

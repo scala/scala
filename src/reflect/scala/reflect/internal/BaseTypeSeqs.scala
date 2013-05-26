@@ -181,7 +181,7 @@ trait BaseTypeSeqs {
       def nextRawElem(i: Int): Type = {
         val j = index(i)
         val pbts = pbtss(i)
-        if (j < pbts.length) pbts.rawElem(j) else AnyClass.tpe
+        if (j < pbts.length) pbts.rawElem(j) else AnyTpe
       }
       var minSym: Symbol = NoSymbol
       while (minSym != AnyClass) {

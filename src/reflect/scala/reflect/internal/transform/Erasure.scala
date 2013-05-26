@@ -56,7 +56,7 @@ trait Erasure {
   }
 
   protected def unboundedGenericArrayLevel(tp: Type): Int = tp match {
-    case GenericArray(level, core) if !(core <:< AnyRefClass.tpe) => level
+    case GenericArray(level, core) if !(core <:< AnyRefTpe) => level
     case _ => 0
   }
 
@@ -106,9 +106,6 @@ trait Erasure {
   }
 
   abstract class ErasureMap extends TypeMap {
-    private lazy val ObjectArray  = arrayType(ObjectClass.tpe)
-    private lazy val ErasedObject = erasedTypeRef(ObjectClass)
-
     def mergeParents(parents: List[Type]): Type
 
     def eraseNormalClassRef(pre: Type, clazz: Symbol): Type =
@@ -123,11 +120,11 @@ trait Erasure {
         apply(st.supertype)
       case tref @ TypeRef(pre, sym, args) =>
         if (sym == ArrayClass)
-          if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
-          else if (args.head.typeSymbol.isBottomClass) ObjectArray
+          if (unboundedGenericArrayLevel(tp) == 1) ObjectTpe
+          else if (args.head.typeSymbol.isBottomClass) arrayType(ObjectTpe)
           else typeRef(apply(pre), sym, args map applyInArray)
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ErasedObject
-        else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ObjectTpe
+        else if (sym == UnitClass) BoxedUnitTpe
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(pre, sym)
@@ -139,7 +136,7 @@ trait Erasure {
       case mt @ MethodType(params, restpe) =>
         MethodType(
           cloneSymbolsAndModify(params, ErasureMap.this),
-          if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
+          if (restpe.typeSymbol == UnitClass) UnitTpe
           // this replaces each typeref that refers to an argument
           // by the type `p.tpe` of the actual argument p (p in params)
           else apply(mt.resultType(mt.paramTypes)))
@@ -150,7 +147,7 @@ trait Erasure {
       case ClassInfoType(parents, decls, clazz) =>
         ClassInfoType(
           if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
-          else if (clazz == ArrayClass) List(ErasedObject)
+          else if (clazz == ArrayClass) ObjectTpe :: Nil
           else removeLaterObjects(parents map this),
           decls, clazz)
       case _ =>
@@ -253,7 +250,7 @@ trait Erasure {
      *  An intersection such as `Object with Trait` erases to Object.
      */
     def mergeParents(parents: List[Type]): Type =
-      if (parents.isEmpty) ObjectClass.tpe
+      if (parents.isEmpty) ObjectTpe
       else parents.head
   }
 
@@ -301,7 +298,7 @@ trait Erasure {
    *  - Otherwise, the dominator is the first element of the span.
    */
   def intersectionDominator(parents: List[Type]): Type = {
-    if (parents.isEmpty) ObjectClass.tpe
+    if (parents.isEmpty) ObjectTpe
     else {
       val psyms = parents map (_.typeSymbol)
       if (psyms contains ArrayClass) {
@@ -322,10 +319,6 @@ trait Erasure {
       }
     }
   }
-
-  /** Type reference after erasure */
-  def erasedTypeRef(sym: Symbol): Type =
-    typeRef(erasure(sym)(sym.owner.tpe), sym, Nil)
 
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *
@@ -354,8 +347,7 @@ trait Erasure {
       else if (sym.name == nme.update)
         (tp: @unchecked) match {
           case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe)), tvar),
-                       erasedTypeRef(UnitClass))
+            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe)), tvar), UnitTpe)
         }
       else specialErasure(sym)(tp)
     } else if (

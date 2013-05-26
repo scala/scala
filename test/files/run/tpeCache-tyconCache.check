@@ -1,0 +1,19 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> 
+
+scala> AnyRefClass.tpe eq AnyRefClass.typeConstructor
+res0: Boolean = true
+
+scala> AnyRefClass.tpe eq AnyRefClass.typeConstructor
+res1: Boolean = true
+
+scala> 
