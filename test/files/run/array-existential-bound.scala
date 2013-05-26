@@ -10,8 +10,8 @@ object Test extends Fooz[Array[Int]] {
   
   def main(args: Array[String]): Unit = {
     println(f1.f0(Array[String]("a", "b")))
-    println(f2.f0(1 to 1000 toArray))
+    println(f2.f0((1 to 1000).toArray))
     println(f3.f0((1 to 1000).toArray[Any]))
-    println(f4.f0('a' to 'z' toArray))
+    println(f4.f0(('a' to 'z').toArray))
   }
 }

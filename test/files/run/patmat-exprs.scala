@@ -1,3 +1,5 @@
+
+import scala.language.{ implicitConversions }
 import runtime.ScalaRunTime
 
 object Test {

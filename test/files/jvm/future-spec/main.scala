@@ -17,6 +17,12 @@ object Test {
   
 }
 
+trait Features {
+  implicit def implicitously = scala.language.implicitConversions
+  implicit def reflectively  = scala.language.reflectiveCalls
+  implicit def postulously   = scala.language.postfixOps
+}
+
 
 trait Output {
   val buffer = new StringBuilder
@@ -27,7 +33,7 @@ trait Output {
 }
 
 
-trait MinimalScalaTest extends Output {
+trait MinimalScalaTest extends Output with Features {
   
   val throwables = mutable.ArrayBuffer[Throwable]()
   
@@ -70,7 +76,7 @@ trait MinimalScalaTest extends Output {
       throw new Exception("Exception of type %s was not thrown".format(manifest[T]))
     } catch {
       case t: Throwable =>
-        if (manifest[T].erasure != t.getClass) throw t
+        if (manifest[T].runtimeClass != t.getClass) throw t
         else t.asInstanceOf[T]
     }
   }

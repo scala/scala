@@ -1,3 +1,6 @@
+
+import scala.language.postfixOps
+
 import scala.collection.{ mutable, immutable, generic }
 import collection.TraversableView
 

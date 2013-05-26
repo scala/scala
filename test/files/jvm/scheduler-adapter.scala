@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{Actor, SchedulerAdapter}
 
 trait AdaptedActor extends Actor {
@@ -36,7 +40,6 @@ object Two extends AdaptedActor {
   }
 }
 
-object Test {
   val adapted =
     new SchedulerAdapter {
       def execute(block: => Unit) {

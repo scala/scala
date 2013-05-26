@@ -1,6 +1,10 @@
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
 import scala.tools.nsc._
 import scala.tools.partest.CompilerTest
 import scala.collection.{ mutable, immutable, generic }
+import scala.language.postfixOps
 
 /** It's too messy but it's better than not having it.
  */
@@ -117,6 +121,5 @@ package ll {
           println(sigs.mkString(x + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
       }
     }
-    true
   }
 }

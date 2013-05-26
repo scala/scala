@@ -1,3 +1,5 @@
+
+import scala.language.postfixOps
 import scala.tools.nsc._
 import io.Path
 

@@ -13,7 +13,7 @@ object Test {
     x + 1
     
   
-  def main(args: Array[String]): Any = {
+  def main(args: Array[String]): Unit = {
     println(reset(test(7)))
     println(reset(test(8)))
   }

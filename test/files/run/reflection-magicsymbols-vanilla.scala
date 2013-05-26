@@ -1,3 +1,5 @@
+import scala.language.postfixOps
+
 class A {
   def foo1(x: Int*) = ???
   def foo2(x: => Int) = ???

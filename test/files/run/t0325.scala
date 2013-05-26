@@ -24,7 +24,7 @@ object Test {
       else
         println(ret)
     } catch {
-      case e@_ => println(which + " failed with " + e.getClass)
+      case e: Throwable => println(which + " failed with " + e.getClass)
     }
   }
      

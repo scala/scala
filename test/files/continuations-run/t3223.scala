@@ -6,7 +6,7 @@ object Test {
       throw new Exception
       shiftUnit0[Int,Int](7)
     } catch {
-      case ex =>  
+      case ex: Throwable =>  
         val g = (a:Int)=>a
         9
     }

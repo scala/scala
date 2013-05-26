@@ -82,7 +82,7 @@ object Test {
     
     val sameElementsInputs = (
       List(List(1,2,3,4,5)),
-      List(Nil, List(1), List(1,2), List(2,3,4), List(2,3,4,5), List(2,3,4,5,1), List(1,2,3,5,4), seq reverse)
+      List(Nil, List(1), List(1,2), List(2,3,4), List(2,3,4,5), List(2,3,4,5,1), List(1,2,3,5,4), seq.reverse)
     )
   }
   

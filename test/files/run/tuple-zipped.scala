@@ -1,3 +1,6 @@
+
+import scala.language.postfixOps
+
 object Test {
   val xs1 = List.range(1, 100)
   val xs2 = xs1.view

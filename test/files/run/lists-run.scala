@@ -2,6 +2,8 @@
  *
  *  @author Stephane Micheloud
  */
+import scala.language.postfixOps
+
 object Test {
   def main(args: Array[String]) {
     Test_multiset.run() // multiset operations: union, intersect, diff 
@@ -153,7 +155,7 @@ object Test3 {
       List.range(1, 10, 0)
     } catch {
       case e: IllegalArgumentException => ()
-      case _ => throw new Error("List.range(1, 10, 0)")
+      case _: Throwable => throw new Error("List.range(1, 10, 0)")
     }
     assert(List.range(10, 0, -2) == List(10, 8, 6, 4, 2))
   }

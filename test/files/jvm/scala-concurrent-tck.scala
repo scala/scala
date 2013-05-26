@@ -728,7 +728,7 @@ trait Blocking extends TestBase {
       Await.result(f, Duration(500, "ms"))
       assert(false)
     } catch {
-      case t =>
+      case t: Throwable =>
         assert(t == cause)
         done()
     }

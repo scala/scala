@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import java.util.concurrent.Executors
 import scala.actors.{Actor, SchedulerAdapter}
 import Actor._
@@ -50,7 +54,6 @@ object Two extends AdaptedActor {
   }
 }
 
-object Test {
   val executor =
     Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 

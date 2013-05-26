@@ -444,7 +444,7 @@ object Test  {
     try {
       test;
     } catch {
-      case exception =>
+      case exception: Throwable =>
         Console.print("Exception in thread \"" + Thread.currentThread + "\" " + exception);
         Console.println;
         errors += 1

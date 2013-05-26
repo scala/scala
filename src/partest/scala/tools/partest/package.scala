@@ -56,8 +56,8 @@ package object partest {
       f.toString split """[/\\]+""" takeRight 2 mkString "/" // e.g. pos/t1234
     }
 
-    def mapInPlace(mapFn: String => String): Unit =
-      writeAll(fileLines.map(x => mapFn(x) + "\n"): _*)
+    def mapInPlace(mapFn: String => String)(filterFn: String => Boolean = _ => true): Unit =
+      writeAll(fileLines filter filterFn map (x => mapFn(x) + EOL): _*)
 
     def appendAll(strings: String*): Unit = sf.appendAll(strings: _*)
     def writeAll(strings: String*): Unit = sf.writeAll(strings: _*)

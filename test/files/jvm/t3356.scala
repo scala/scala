@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{Actor, Exit, !, UncaughtException}
 import Actor._
 
@@ -10,7 +14,6 @@ case class ImageInfo(text: String) {
 case class ImageData(text: String)
 case class Download(info: ImageInfo)
 
-object Test {
 
   def scanForImageInfo(url: String): List[ImageInfo] =
     List(ImageInfo("A"), ImageInfo("B"))

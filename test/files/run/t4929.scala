@@ -2,6 +2,7 @@ import scala.util.parsing.json._
 import java.util.concurrent._
 import collection.JavaConversions._
 
+@deprecated("Suppress warnings", since="2.11")
 object Test extends App {
 
   val LIMIT = 2000

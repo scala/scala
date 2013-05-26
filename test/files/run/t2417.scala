@@ -8,7 +8,7 @@ object Test {
         try {
           block
           } catch {
-            case x => failure = x
+            case x: Throwable => failure = x
           }
         }
       })

@@ -48,7 +48,7 @@ object Test {
 
   // TODO: check whether this also applies to a::shift { k => ... }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     testMono()
     testPoly()
   }

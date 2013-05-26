@@ -1,5 +1,6 @@
 import scala.reflect.classTag
 
+@deprecated("Suppress warnings", since="2.11")
 object Test extends App {
   println(classManifest[scala.List[_]])
   println(classTag[scala.List[_]])

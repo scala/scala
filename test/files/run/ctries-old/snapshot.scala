@@ -5,6 +5,7 @@
 import collection._
 import collection.concurrent.TrieMap
 
+import Test.Spec
 
 
 object SnapshotSpec extends Spec {

@@ -5,6 +5,7 @@
 
 
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
 
   def main(args: Array[String]) {
@@ -14,10 +15,12 @@ object Test {
     SnapshotSpec.test()
   }
 
-}
 
 
 trait Spec {
+
+  implicit def implicitously = scala.language.implicitConversions
+  implicit def reflectively  = scala.language.reflectiveCalls
 
   implicit def str2ops(s: String) = new {
     def in[U](body: =>U) {
@@ -35,11 +38,12 @@ trait Spec {
       var produced = false
       try body
       catch {
-        case e => if (e.getClass == implicitly[ClassManifest[T]].erasure) produced = true
+        case e: Throwable => if (e.getClass == implicitly[ClassManifest[T]].erasure) produced = true
       } finally {
         assert(produced, "Did not produce exception of type: " + implicitly[ClassManifest[T]])
       }
     }
   }
 
+}
 }

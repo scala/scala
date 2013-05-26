@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.reflect.internal.FatalError
-import scala.sys.process.Process
+import scala.sys.process.{ Process, ProcessLogger }
 import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile }
@@ -222,7 +222,25 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
    *  error out to output file.
    */
   private def runCommand(args: Seq[String], outFile: File): Boolean = {
-    (Process(args) #> outFile !) == 0
+    //(Process(args) #> outFile !) == 0 or (Process(args) ! pl) == 0
+    val pl = ProcessLogger(outFile)
+    val nonzero = 17     // rounding down from 17.3
+    def run: Int = {
+      val p = Process(args) run pl
+      try p.exitValue
+      catch {
+        case e: InterruptedException =>
+          NestUI verbose s"Interrupted waiting for command to finish (${args mkString " "})"
+          p.destroy
+          nonzero
+        case t: Throwable =>
+          NestUI verbose s"Exception waiting for command to finish: $t (${args mkString " "})"
+          p.destroy
+          throw t
+      }
+      finally pl.close()
+    }
+    (pl buffer run) == 0
   }
 
   private def execTest(outDir: File, logFile: File): Boolean = {
@@ -272,11 +290,17 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     val prefix = "#partest"
     val margin = "> "
     val leader = margin + prefix
-    // use lines in block so labeled? Default to sure, go ahead.
-    def retainOn(f: String) = f match {
-      case "java7"  => javaVersion startsWith "1.7"
-      case "java6"  => javaVersion startsWith "1.6"
-      case _        => true
+    // use lines in block so labeled? Default to sorry, Charlie.
+    def retainOn(f: String) = {
+      val (invert, token) =
+        if (f startsWith "!") (true, f drop 1) else (false, f)
+      val cond = token match {
+        case "java7"  => javaVersion startsWith "1.7"
+        case "java6"  => javaVersion startsWith "1.6"
+        case "true"   => true
+        case _        => false
+      }
+      if (invert) !cond else cond
     }
     if (d contains prefix) {
       val sb = new StringBuilder
@@ -314,23 +338,62 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     catch { case t: Exception => None }
   }
 
-  /** This does something about absolute paths and file separator
-   *  chars before diffing.
+  /** Normalize the log output by applying test-specific filters
+   *  and fixing filesystem-specific paths.
+   *
+   *  Line filters are picked up from `filter: pattern` at the top of sources.
+   *  The filtered line is detected with a simple "contains" test,
+   *  and yes, "filter" means "filter out" in this context.
+   *
+   *  File paths are detected using the absolute path of the test root.
+   *  A string that looks like a file path is normalized by replacing
+   *  the leading segments (the root) with "$ROOT" and by replacing
+   *  any Windows backslashes with the one true file separator char.
    */
   def normalizeLog() {
-    // squashing // in paths also munges line comments, so save this innovation for another time.
-    // (There are line comments in the "stub implementations" error output.)
-    //val slashes   = """[/\\]+""".r
-    //def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
-    def squashSlashes(s: String) = s replace ('\\', '/')
-    val base      = squashSlashes(parentFile.getAbsolutePath + File.separator)
-    val quoted    = """\Q%s\E""" format base
-    val baseless  = (if (isWin) "(?i)" + quoted else quoted).r
-    def canonicalize(s: String)  = baseless replaceAllIn (squashSlashes(s), "")
-    logFile mapInPlace canonicalize
+    // Apply judiciously; there are line comments in the "stub implementations" error output.
+    val slashes    = """[/\\]+""".r
+    def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
+
+    // this string identifies a path and is also snipped from log output.
+    // to preserve more of the path, could use fileManager.testRootPath
+    val elided     = parentFile.getAbsolutePath
+
+    // something to mark the elision in the log file (disabled)
+    val ellipsis   = "" //".../"    // using * looks like a comment
+
+    // no spaces in test file paths below root, because otherwise how to detect end of path string?
+    val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\w]*)""".r
+    def canonicalize(s: String): String = (
+      pathFinder replaceAllIn (s, m => ellipsis + squashSlashes(m group 1))
+    )
+
+    def masters    = {
+      val files = List(new File(parentFile, "filters"), new File(PathSettings.srcDir.path, "filters"))
+      files filter (_.exists) flatMap (_.fileLines) map (_.trim) filter (s => !(s startsWith "#"))
+    }
+    val filters    = toolArgs("filter", split = false) ++ masters
+    val elisions   = ListBuffer[String]()
+    //def lineFilter(s: String): Boolean  = !(filters exists (s contains _))
+    def lineFilter(s: String): Boolean  = (
+      filters map (_.r) forall { r =>
+        val res = (r findFirstIn s).isEmpty
+        if (!res) elisions += s
+        res
+      }
+    )
+
+    logFile.mapInPlace(canonicalize)(lineFilter)
+    if (isPartestVerbose && elisions.nonEmpty) {
+      import NestUI.color._
+      val emdash = bold(yellow("--"))
+      pushTranscript(s"filtering ${logFile.getName}$EOL${elisions mkString (emdash, EOL + emdash, EOL)}")
+    }
   }
 
   def diffIsOk: Boolean = {
+    // always normalize the log first
+    normalizeLog()
     val diff = currentDiff
     // if diff is not empty, is update needed?
     val updating: Option[Boolean] = (
@@ -372,16 +435,21 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   }
 
   /** Grouped files in group order, and lex order within each group. */
-  def groupedFiles(files: List[File]): List[List[File]] = (
-    if (files.tail.nonEmpty) {
-      val grouped = files filter (_.isJavaOrScala) groupBy (_.group)
+  def groupedFiles(sources: List[File]): List[List[File]] = (
+    if (sources.tail.nonEmpty) {
+      val grouped = sources groupBy (_.group)
       grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
     }
-    else List(files)
+    else List(sources)
   )
 
   /** Source files for the given test file. */
-  def sources(file: File): List[File] = if (file.isDirectory) file.listFiles.toList else List(file)
+  def sources(file: File): List[File] = (
+    if (file.isDirectory)
+      file.listFiles.toList filter (_.isJavaOrScala)
+    else
+      List(file)
+  )
 
   def newCompiler = new DirectCompiler(fileManager)
 
@@ -401,6 +469,23 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       sources flatMap { f => SFile(Path(f) changeExtension "flags").safeSlurp map argsplitter getOrElse Nil }
     } else Nil
     perTest ++ perGroup
+  }
+
+  def toolArgs(tool: String, split: Boolean = true): List[String] = {
+    def argsplitter(s: String) = if (split) words(s) filter (_.nonEmpty) else List(s)
+    def argsFor(f: File): List[String] = {
+      import scala.util.matching.Regex
+      val p    = new Regex(s"(?:.*\\s)?${tool}:(?:\\s*)(.*)?", "args")
+      val max  = 10
+      val src  = Path(f).toFile.chars(codec)
+      val args = try {
+        src.getLines take max collectFirst {
+          case s if (p findFirstIn s).nonEmpty => for (m <- p findFirstMatchIn s) yield m group "args"
+        }
+      } finally src.close()
+      args.flatten map argsplitter getOrElse Nil
+    }
+    sources(testFile) flatMap argsFor
   }
 
   abstract class CompileRound {
@@ -455,7 +540,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
     def checked(r: CompileRound) = r.result match {
       case Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => false
-      case _ => normalizeLog(); diffIsOk
+      case _ => diffIsOk
     }
 
     failing map (checked) getOrElse nextTestActionFailing("expected compilation failure")
@@ -529,22 +614,6 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     }
     val logWriter = new PrintStream(new FileOutputStream(logFile), true)
 
-    def toolArgs(tool: String): List[String] = {
-      def argsplitter(s: String) = words(s) filter (_.nonEmpty)
-      def argsFor(f: File): List[String] = {
-        import scala.util.matching.Regex
-        val p    = new Regex(s"(?:.*\\s)?${tool}:(.*)?", "args")
-        val max  = 10
-        val src  = Path(f).toFile.chars(codec)
-        val args = try {
-          src.getLines take max collectFirst {
-            case s if (p findFirstIn s).nonEmpty => for (m <- p findFirstMatchIn s) yield m group "args"
-          }
-        } finally src.close()
-        args.flatten map argsplitter getOrElse Nil
-      }
-      sources(testFile) flatMap argsFor
-    }
     def runInFramework(): Boolean = {
       import org.scalatools.testing._
       val f: Framework = loader.instantiate[Framework]("org.scalacheck.ScalaCheckFramework")
@@ -647,7 +716,6 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     if (!Output.withRedirected(logWriter)(try loop() finally resReader.close()))
       setLastState(genPass())
 
-    normalizeLog     // put errors in a normal form
     (diffIsOk, LogContext(logFile, swr, wr))
   }
 

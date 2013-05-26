@@ -3588,7 +3588,7 @@ object Test {
         errors = errors + 1;
       }
     } catch {
-      case exception => {
+      case exception: Throwable => {
         Console.print(name + " raised exception " + exception);
         Console.println;
         errors = errors + 1;

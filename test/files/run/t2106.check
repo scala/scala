@@ -1,0 +1,3 @@
+t2106.scala:7: warning: Could not inline required method foo because access level required by callee not matched by caller.
+  def main(args: Array[String]): Unit = x.foo
+                                          ^

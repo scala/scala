@@ -1,3 +1,5 @@
+
+import scala.language.{ reflectiveCalls }
 import java.util.concurrent.Executor
 import scala.concurrent._
 import scala.util.control.NoStackTrace

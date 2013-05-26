@@ -24,3 +24,4 @@ true
 
 node=<elem key="<b>hello</b>"/>, key=Some(<b>hello</b>)
 node=<elem/>, key=None
+<a>Š</a>

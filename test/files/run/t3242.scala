@@ -1,3 +1,6 @@
+
+import scala.language.{ higherKinds }
+
 object Test {
 
  def benchmarkA(num: Int) {

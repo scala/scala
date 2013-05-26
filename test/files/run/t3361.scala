@@ -57,7 +57,7 @@ object Test extends App {
       DoubleLinkedList().insert(ten)
     } catch {
       case _: IllegalArgumentException => require(true)
-      case _ => require(false)
+      case _: Throwable => require(false)
     }
     val zero = DoubleLinkedList(0)
     zero.insert(ten)
@@ -87,7 +87,7 @@ object Test extends App {
       DoubleLinkedList().append(ten)
     } catch {
       case _: IllegalArgumentException => require(true)
-      case _ => require(false)
+      case _: Throwable => require(false)
     }
     val zero = DoubleLinkedList(0)
     zero.append(ten)

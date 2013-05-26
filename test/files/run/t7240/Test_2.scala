@@ -1,3 +1,3 @@
 object Test extends App {
-  bakery.Bakery.failure
+  val v = bakery.Bakery.failure
 }

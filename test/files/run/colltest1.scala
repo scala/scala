@@ -1,4 +1,8 @@
-import collection._
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
+import scala.collection._
+import scala.language.postfixOps
 
 object Test extends App {
 

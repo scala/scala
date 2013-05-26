@@ -1,8 +1,10 @@
-import scala.actors.{Actor, DaemonActor}
 
 /* Test that a daemon Actor that hasn't finished does not prevent termination */
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
 
+  import scala.actors.{Actor, DaemonActor}
   class MyDaemon extends DaemonActor {
     def act() {
       try {

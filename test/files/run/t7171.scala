@@ -16,7 +16,7 @@ object Test extends App {
   val a1 = new t1.A()
   val a2 = new t1.A()
   assert(t1.foo(a1))
-  // as noted in the unchecked warning (tested in the corresponding neg test),
+  // as noted in the unchecked warning (also tested in the corresponding neg test),
   // the outer pointer isn't checked
   assert(t1.foo(a2))
 }

@@ -1,3 +1,5 @@
+
+import scala.language.{ postfixOps }
 object Test {
   def shortName(x: AnyRef) = x.getClass.getName split '.' last
   type Handler[+T] = PartialFunction[Throwable, T]
@@ -27,7 +29,7 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     try f1
-    catch { case x => println(shortName(x) + " slipped by.") }
+    catch { case x: Throwable => println(shortName(x) + " slipped by.") }
     
     f2
   }

@@ -2,6 +2,7 @@
  *
  *  @author Stephane Micheloud
  */
+import scala.language.{ postfixOps }
 object Test {
   def main(args: Array[String]) {
     Test1.run() //ctor, reverse

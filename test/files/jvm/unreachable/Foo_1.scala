@@ -1,3 +1,5 @@
+import scala.sys.error
+
 class Foo_1 {
   def unreachableNormalExit: Int = {
     return 42

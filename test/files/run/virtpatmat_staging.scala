@@ -1,3 +1,6 @@
+
+import scala.language.{ higherKinds, implicitConversions }
+
 trait Intf {
  type Rep[+T]
  type M[+T] = Rep[Maybe[T]]
@@ -9,7 +12,7 @@ trait Intf {
 
    def zero: M[Nothing]
    def one[T](x: Rep[T]): M[T]
-   def guard[T](cond: Rep[Boolean], then: => Rep[T]): M[T]
+   def guard[T](cond: Rep[Boolean], dann: => Rep[T]): M[T]
    def isSuccess[T, U](x: Rep[T])(f: Rep[T] => M[U]): Rep[Boolean] // used for isDefinedAt
  }
 
@@ -33,7 +36,7 @@ trait Impl extends Intf {
    def runOrElse[T, U](in: Rep[T])(matcher: Rep[T] => M[U]): Rep[U] = ("runOrElse("+ in +", ?" + matcher("?") + ")")
    def zero: M[Nothing]                                             = "zero"
    def one[T](x: Rep[T]): M[T]                                      = "one("+x.toString+")"
-   def guard[T](cond: Rep[Boolean], then: => Rep[T]): M[T]          = "guard("+cond+","+then+")"
+   def guard[T](cond: Rep[Boolean], dann: => Rep[T]): M[T]          = s"guard($cond,$dann)"
    def isSuccess[T, U](x: Rep[T])(f: Rep[T] => M[U]): Rep[Boolean]  = ("isSuccess("+x+", ?" + f("?") + ")")
  }
 

@@ -1,6 +1,7 @@
 import scala.tools.nsc._
-import io.{ AbstractFile }
-import util.{ SourceFile, BatchSourceFile, stringFromStream }
+import scala.reflect.io.AbstractFile
+import scala.tools.nsc.util.stringFromStream
+import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
 import scala.tools.nsc.reporters.ConsoleReporter
 
 object Test {
@@ -53,7 +54,7 @@ object Bippy {
       val run = new compiler.Run()
       run.compileSources(List(src))
     }
-    output split "\\n" toList
+    (output split "\\n").toList
   }
   def showClass(name: String) = lines("-Yshow:typer", "-Xshow-class", name)
   def showObject(name: String) = lines("-Yshow:typer", "-Xshow-object", name)

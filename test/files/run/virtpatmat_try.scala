@@ -8,7 +8,7 @@ object Test extends App {
   } catch { // this should emit a "catch-switch"
     case y: A => println(y.x)
     case (_ : A | _ : B)  => println("B")
-    case _ => println("other")
+    case _: Throwable => println("other")
   }
 
   try {
@@ -17,7 +17,7 @@ object Test extends App {
     // case A(x) => println(x)
     case y: A => println(y.x)
     case x@((_ : A) | (_ : B))  => println(x)
-    case _ => println("other")
+    case _: Throwable => println("other")
   }
 
  def simpleTry {
@@ -34,7 +34,7 @@ object Test extends App {
   }
 
   def wildcardTry {
-    try { bla } catch { case _ => bla }
+    try { bla } catch { case _: Throwable => bla }
   }
 
   def tryPlusFinally {

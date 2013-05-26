@@ -1,3 +1,5 @@
+
+import scala.language.{ implicitConversions }
 abstract class BaseList {
   type Node <: NodeImpl;
   implicit def convertNode(ni : NodeImpl) = ni.asInstanceOf[Node];
