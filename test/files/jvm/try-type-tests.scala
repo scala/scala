@@ -49,6 +49,7 @@ trait TryStandard {
 		n match {
 			case Success(v) => assert(false)
 			case Failure(e: NoSuchElementException) => assert(true)
+      case _          => assert(false)
 		}
 	}
 

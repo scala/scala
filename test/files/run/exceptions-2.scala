@@ -42,7 +42,7 @@ object NoExcep {
   def method4 = try {
     Console.println("..");
   } catch {
-    case _ => sys.error("..");
+    case _: Throwable => sys.error("..");
   }
 }
 
@@ -136,7 +136,7 @@ object Test {
       try {
         sys.error("a");
       } catch {
-        case _ => Console.println("Silently ignore exception in finally");
+        case _: Throwable => Console.println("Silently ignore exception in finally");
       }
     }
   }
@@ -146,7 +146,7 @@ object Test {
     } finally {
       val fin = "Abc";
       Console.println(fin);
-    };
+    }
 
   def tryAndValInFinally: Unit =
     try {
@@ -154,8 +154,8 @@ object Test {
       val fin = "Abc";
       try {
         Console.println(fin);
-      } catch { case _ => () }
-    };
+      } catch { case _: Throwable => () }
+    }
 
   def returnInBody: Unit = try {
     try {
@@ -249,7 +249,7 @@ object Test {
   def execute(f: => Unit) = try {
     f;
   } catch {
-    case _ => ();
+    case _: Throwable => ()
   }
 
 

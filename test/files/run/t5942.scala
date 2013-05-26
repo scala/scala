@@ -5,6 +5,6 @@ import scala.tools.reflect._
 object Test extends App {
   val tb = cm.mkToolBox()
   tb.parse("def x = {}")
-  try { tb.parse("def x = {") } catch { case _ => }
+  try { tb.parse("def x = {") } catch { case _: Throwable => }
   tb.parse("def x = {}")
 }

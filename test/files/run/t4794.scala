@@ -7,6 +7,7 @@ class Arr[@specialized A](val arr: Array[A]) {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    println(classOf[Arr[_]].getMethods filter (_.getName contains "quux") size) // expect 10, not 1
+    def quuxae = classOf[Arr[_]].getMethods filter (_.getName contains "quux")
+    println(quuxae.size) // expect 10, not 1
   }
 }

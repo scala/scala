@@ -1,3 +1,11 @@
+/**
+ * Ping pong example for Reactor.
+ *
+ * @author  Philipp Haller
+ */
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 
 import scala.actors.Reactor
 
@@ -5,19 +13,12 @@ case class Ping(from: Reactor[Any])
 case object Pong
 case object Stop
 
-/**
- * Ping pong example for Reactor.
- *
- * @author  Philipp Haller
- */
-object Test {
   def main(args: Array[String]) {
     val pong = new PongActor
     val ping = new PingActor(100000, pong)
     ping.start
     pong.start
   }
-}
 
 class PingActor(count: Int, pong: Reactor[Any]) extends Reactor[Any] {
   def act() {
@@ -67,4 +68,5 @@ class PongActor extends Reactor[Any] {
         e.printStackTrace()
     }
   }
+}
 }

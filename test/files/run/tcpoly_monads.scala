@@ -1,3 +1,6 @@
+
+import scala.language.{ higherKinds, implicitConversions }
+
 trait Monads {
   /**
    * class Monad m where

@@ -4,6 +4,8 @@
 
 //############################################################################
 
+import scala.language.postfixOps
+
 object Test {
 
   def check_from: Int = {

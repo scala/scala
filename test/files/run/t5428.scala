@@ -23,7 +23,7 @@ object Test {
     
     println(a)
     
-    a pop
+    a.pop
   }
   
 }

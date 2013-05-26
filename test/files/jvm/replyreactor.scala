@@ -1,6 +1,8 @@
-import scala.actors.ReplyReactor
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.ReplyReactor
   def main(args: Array[String]) {
     val a = new ReplyReactor {
       def act() {

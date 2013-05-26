@@ -1,3 +1,4 @@
+import scala.language.postfixOps
 object Test {
   def main(args: Array[String]): Unit = {
     assert(1 to 10 drop 10 isEmpty)

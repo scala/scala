@@ -1,8 +1,9 @@
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.Actor
 
 /* This test is a regression test for SI-4759.
  */
-object Test { 
   val Runs = 5
   
   def main(args: Array[String]) = {
@@ -14,7 +15,6 @@ object Test {
     }
     //println("done sending to A1")
   }
-}
 
 object A2 extends Actor {
   this.start()
@@ -44,4 +44,5 @@ object A1 extends Actor {
       }
     }
   }
+}
 }

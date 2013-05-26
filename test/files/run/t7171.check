@@ -1,0 +1,3 @@
+t7171.scala:2: warning: The outer reference in this type test cannot be checked at run time.
+  final case class A()
+                   ^

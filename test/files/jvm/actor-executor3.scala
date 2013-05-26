@@ -1,3 +1,8 @@
+
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.Actor
 import scala.actors.scheduler.ExecutorScheduler
 import java.util.concurrent.Executors
@@ -48,7 +53,6 @@ trait AdaptedActor extends Actor {
     Test.scheduler
 }
 
-object Test {
   val NUM_MSG = 100000
 
   val executor =

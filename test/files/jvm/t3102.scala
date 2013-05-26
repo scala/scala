@@ -1,7 +1,10 @@
-import scala.actors.{Actor, TIMEOUT}
-import Actor._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.{Actor, TIMEOUT}
+  import Actor._
+
   def main(args: Array[String]) {
     val a = actor {
       try {

@@ -1,2 +1,8 @@
+td3651.scala:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    b.a
+      ^
+td3651.scala:16: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    der.a
+        ^
 0
 0

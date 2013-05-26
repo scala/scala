@@ -1,5 +1,5 @@
 import scala.tools.partest.DirectTest
-import scala.tools.nsc.util.BatchSourceFile
+import scala.reflect.internal.util.BatchSourceFile
 
 object Test extends DirectTest {
   // Java code

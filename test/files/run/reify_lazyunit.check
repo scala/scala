@@ -1,3 +1,6 @@
+reify_lazyunit.scala:6: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    lazy val x = { 0; println("12")}
+                   ^
 12
 one
 two

@@ -1,6 +1,8 @@
 import scala.util.continuations._
 import scala.collection.generic.CanBuildFrom
 
+import scala.language.{ implicitConversions }
+
 object Test {
 
   class ExecutionContext
@@ -43,7 +45,7 @@ object Test {
 
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val p = new PromiseStream[Int]
     println(Future.flow(p << (Future(1), Future(2), Future(3), Future(4), Future(5))))
   }

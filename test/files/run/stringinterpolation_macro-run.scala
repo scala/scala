@@ -1,3 +1,6 @@
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
 object Test extends App {
 
 // 'b' / 'B' (category: general)

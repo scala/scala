@@ -1,3 +1,5 @@
+
+import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
 
 class C {

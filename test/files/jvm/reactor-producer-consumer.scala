@@ -1,6 +1,8 @@
-import scala.actors.Reactor
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.Reactor
   case class Stop()
   case class Get(from: Reactor[Any])
   case class Put(x: Int)

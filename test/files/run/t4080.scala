@@ -1,4 +1,5 @@
 import scala.collection.mutable.LinkedList
+import java.util.NoSuchElementException
 
 object Test {
   def main(args: Array[String]) {
@@ -6,7 +7,7 @@ object Test {
     ll.insert(LinkedList(0))
     println(ll)
     val ll2 = LinkedList[Int]()
-    try println(ll2.head)
-    catch { case _ => () }
+    try println("Empty head? " + ll2.head)
+    catch { case _: NoSuchElementException => () }
   }
 }

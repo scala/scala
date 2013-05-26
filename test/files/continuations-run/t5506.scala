@@ -42,7 +42,7 @@ z
 }
 
 
-def main(args: Array[String]) = {
+def main(args: Array[String]) {
   reset {
     println(fp10)
     println(fp11)

@@ -1,3 +1,6 @@
+
+import scala.language.{ reflectiveCalls }
+
 object Test
 {
   type Foo = { def update(x: Int, value: String): Unit }

@@ -45,7 +45,7 @@ object Test extends AnyRef with App {
       instance = try {
         "" //new String();
       } catch {
-        case _ =>
+        case _: Throwable =>
           val cs = "aaa";
           if (cs.length() > 0) {
             "" //new String();
@@ -65,13 +65,13 @@ object Test extends AnyRef with App {
       1+1;
       ()
     } catch {
-      case _ =>
+      case _: Throwable =>
         Console.println("2");
         sys.error("for good");
     }
     Console.println("a");
   } catch {
-    case _ => ();
+    case _: Throwable => ();
   }
 
   class A {
@@ -95,7 +95,7 @@ object Test extends AnyRef with App {
      try {
        null
      } catch {
-       case _ => null
+       case _: Throwable => null
      }
 
     new AnyRef {

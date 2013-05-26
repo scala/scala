@@ -1,3 +1,6 @@
+
+import scala.language.{ higherKinds, reflectiveCalls }
+
 object Test1 {
   class Foo {
     @remote

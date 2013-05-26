@@ -1,4 +1,5 @@
 object Macros {
+  import scala.language.implicitConversions
   implicit def foo(x: String): Option[Int] = macro Impls.foo
 }
 

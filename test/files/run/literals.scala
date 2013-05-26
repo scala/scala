@@ -105,7 +105,7 @@ object Test {
 
     // float
     check_success("1e1f == 10.0f", 1e1f, 10.0f)
-    check_success("2.f == 2.0f", 2.f, 2.0f)
+    //check_success("2.f == 2.0f", 2.f, 2.0f)
     check_success(".3f == 0.3f", .3f, 0.3f)
     check_success("0f == 0.0f", 0f, 0.0f)
     check_success("3.14f == 3.14f", 3.14f, 3.14f)
@@ -118,8 +118,8 @@ object Test {
 
     // double
     check_success("1e1 == 10.0", 1e1, 10.0)
-    check_success("2. == 2.0", 2., 2.0)
-    check_success("2.d == 2.0", 2.d, 2.0)
+    //check_success("2. == 2.0", 2., 2.0)
+    //check_success("2.d == 2.0", 2.d, 2.0)
     check_success(".3 == 0.3", .3, 0.3)
     check_success("0.0 == 0.0", 0.0, 0.0)
     check_success("0d == 0.0", 0d, 0.0)

@@ -281,6 +281,7 @@ object Test2_immutable {
 //############################################################################
 // Test classes in package "scala.collection.mutable"
 
+@deprecated("Suppress warnings", since="2.11")
 object Test3_mutable {
   import scala.reflect.ClassManifest
   import scala.collection.mutable.{
@@ -593,6 +594,7 @@ object Test8 {
 //############################################################################
 // Test code
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
   def main(args: Array[String]) {
     Test1_scala
@@ -678,7 +680,7 @@ object Test10_util {
   import scala.util.Random
   def rep[A](n: Int)(f: => A) { if (n > 0) { f; rep(n-1)(f) } }
 
-  try {
+  {
     val random = new Random(345)
     val random2: Random = read(write(random))
     rep(5) { assert(random.nextInt == random2.nextInt) }

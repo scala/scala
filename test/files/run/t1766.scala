@@ -1,3 +1,6 @@
+
+import scala.language.{ reflectiveCalls }
+
 object Test extends App {
   
   class C(s: String) {

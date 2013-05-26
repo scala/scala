@@ -1,3 +1,6 @@
+import scala.language.{ higherKinds, postfixOps }
+
+@deprecated("Suppress warnings", since="2.11")
 object Test
 {
   object Variances extends Enumeration {

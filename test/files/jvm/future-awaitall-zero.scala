@@ -1,7 +1,9 @@
-import scala.actors.Futures._
-import scala.actors.Actor._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.Futures._
+  import scala.actors.Actor._
   def main(args: Array[String]) {
     try {
     val ft1 = future { reactWithin(10000) {

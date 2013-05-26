@@ -1,1 +1,15 @@
+t5472.scala:12: warning: expression case4(){
+  if (x1.ne(null))
+    matchEnd3(true)
+  else
+    case5()
+} is cps-transformed unexpectedly
+          (location, accessors) <- new ContinuationizedParallelIterable(map)
+                                   ^
+t5472.scala:12: warning: expression matchEnd3(x: Int){
+  x
+} is cps-transformed unexpectedly
+          (location, accessors) <- new ContinuationizedParallelIterable(map)
+                                ^
+warning: there were 1 deprecation warning(s); re-run with -deprecation for details
 List(23, 23)

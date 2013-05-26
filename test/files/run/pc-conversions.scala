@@ -1,4 +1,6 @@
-
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
 
 import collection._
 

@@ -1,5 +1,7 @@
 import java.security._
 
+import scala.language.{ reflectiveCalls }
+
 object Test {
   trait Bar { def bar: Unit }
   

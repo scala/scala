@@ -1,6 +1,7 @@
 /** Test matrix multiplication with specialization.
  */
 
+@deprecated("Suppress warnings", since="2.11")
 class Matrix[@specialized A: ClassManifest](val rows: Int, val cols: Int) {
   private val arr: Array[Array[A]] = Array.ofDim[A](rows, cols)
   
@@ -25,6 +26,7 @@ class Matrix[@specialized A: ClassManifest](val rows: Int, val cols: Int) {
   }
 }
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
   def main(args: Array[String]) {
     val m = randomMatrix(200, 100)

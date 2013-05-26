@@ -1,7 +1,5 @@
 object Test {
-  Console.setErr(Console.out)
-  
-  def main(args: Array[String]): Unit = { 
+  def main(args: Array[String]): Unit = Console.withErr(Console.out) { 
     try {
       xml.parsing.ConstructingParser.fromSource(io.Source.fromString("<foo>"), false).document()
     } catch {
