@@ -255,16 +255,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  private def findToolsJar() = {
-    val jdkPath = Directory(jdkHome)
-    val jar     = jdkPath / "lib" / "tools.jar" toFile
+  private def findToolsJar() = PathResolver.SupplementalLocations.platformTools
 
-    if (jar isFile)
-      Some(jar)
-    else if (jdkPath.isDirectory)
-      jdkPath.deepFiles find (_.name == "tools.jar")
-    else None
-  }
   private def addToolsJarToLoader() = {
     val cl = findToolsJar() match {
       case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
