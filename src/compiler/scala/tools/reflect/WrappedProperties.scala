@@ -25,6 +25,7 @@ trait WrappedProperties extends PropertiesTrait {
   override def clearProp(name: String)               = wrap(super.clearProp(name)).orNull
   override def envOrElse(name: String, alt: String)  = wrap(super.envOrElse(name, alt)) getOrElse alt
   override def envOrNone(name: String)               = wrap(super.envOrNone(name)).flatten
+  override def envOrSome(name: String, alt: Option[String]) = wrap(super.envOrNone(name)).flatten orElse alt
 
   def systemProperties: Iterator[(String, String)] = {
     import scala.collection.JavaConverters._
