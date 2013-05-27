@@ -604,8 +604,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           def stubImplementations: List[String] = {
             // Grouping missing methods by the declaring class
             val regrouped = missingMethods.groupBy(_.owner).toList
-            def membersStrings(members: List[Symbol]) =
-              members.sortBy("" + _.name) map (m => m.defStringSeenAs(clazz.tpe memberType m) + " = ???")
+            def membersStrings(members: List[Symbol]) = {
+              members foreach fullyInitializeSymbol
+              members.sortBy(_.name) map (m => m.defStringSeenAs(clazz.tpe_* memberType m) + " = ???")
+            }
 
             if (regrouped.tail.isEmpty)
               membersStrings(regrouped.head._2)
