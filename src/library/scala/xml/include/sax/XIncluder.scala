@@ -95,7 +95,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
         // However, it is required if text contains ]]>
         // (The end CDATA section delimiter)
         else if (c == '>') out.write("&gt;")
-        else out.write(c)
+        else out.write(c.toInt)
         i += 1
       }
     }

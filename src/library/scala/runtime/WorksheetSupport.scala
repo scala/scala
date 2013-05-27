@@ -21,7 +21,7 @@ object WorksheetSupport {
     private var lastFlush: Long = 0L
     private var col = -1
     override def write(b: Array[Byte], off: Int, len: Int) = {
-      for (idx <- off until (off + len min b.length)) writeOne(b(idx))
+      for (idx <- off until (off + len min b.length)) writeOne(b(idx).toInt)
       flush()
     }
     override def write(c: Int) {

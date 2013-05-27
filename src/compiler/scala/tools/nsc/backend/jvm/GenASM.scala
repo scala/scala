@@ -1661,8 +1661,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
         case BooleanTag => jcode.boolconst(const.booleanValue)
 
-        case ByteTag    => jcode.iconst(const.byteValue)
-        case ShortTag   => jcode.iconst(const.shortValue)
+        case ByteTag    => jcode.iconst(const.byteValue.toInt)
+        case ShortTag   => jcode.iconst(const.shortValue.toInt)
         case CharTag    => jcode.iconst(const.charValue)
         case IntTag     => jcode.iconst(const.intValue)
 
@@ -1709,6 +1709,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       final def boolconst(b: Boolean) { iconst(if(b) 1 else 0) }
 
+      def iconst(cst: Char) { iconst(cst.toInt) }
       def iconst(cst: Int) {
         if (cst >= -1 && cst <= 5) {
           jmethod.visitInsn(Opcodes.ICONST_0 + cst)
@@ -1859,7 +1860,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         val isDenseEnough: Boolean = {
           /* Calculate in long to guard against overflow. TODO what overflow??? */
           val keyRangeD: Double = (keyMax.asInstanceOf[Long] - keyMin + 1).asInstanceOf[Double]
-          val klenD:     Double = keys.length
+          val klenD:     Double = keys.length.toDouble
           val kdensity:  Double = (klenD / keyRangeD)
 
           kdensity >= minDensity

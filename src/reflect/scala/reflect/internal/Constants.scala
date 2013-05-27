@@ -212,7 +212,7 @@ trait Constants extends api.Constants {
       case '"'  => "\\\""
       case '\'' => "\\\'"
       case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\0" + toOctalString(ch) else String.valueOf(ch)
+      case _    => if (ch.isControl) "\\0" + toOctalString(ch.toInt) else String.valueOf(ch)
     }
 
     def escapedStringValue: String = {

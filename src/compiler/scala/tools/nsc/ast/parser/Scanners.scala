@@ -561,7 +561,7 @@ trait Scanners extends ScannersCommon {
               nextChar()
               getOperatorRest()
             } else {
-              syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch: Int)) + "'")
+              syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch.toInt)) + "'")
               nextChar()
             }
           }
@@ -884,7 +884,7 @@ trait Scanners extends ScannersCommon {
      */
     def intVal(negated: Boolean): Long = {
       if (token == CHARLIT && !negated) {
-        charVal
+        charVal.toLong
       } else {
         var value: Long = 0
         val divider = if (base == 10) 1 else 2

@@ -2067,7 +2067,7 @@ self =>
           if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", skipIt = false)
           in.token match {
             case v @ (VAL | VAR) =>
-              mods = mods withPosition (in.token, tokenRange(in))
+              mods = mods withPosition (in.token.toLong, tokenRange(in))
               if (v == VAR) mods |= Flags.MUTABLE
               in.nextToken()
             case _ =>
@@ -2105,7 +2105,7 @@ self =>
             expr()
           } else EmptyTree
         atPos(start, if (name == nme.ERROR) start else nameOffset) {
-          ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
+          ValDef((mods | implicitmod.toLong | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
         }
       }
       def paramClause(): List[ValDef] = {
@@ -2970,7 +2970,7 @@ self =>
     def localDef(implicitMod: Int): List[Tree] = {
       val annots = annotations(skipNewLines = true)
       val pos = in.offset
-      val mods = (localModifiers() | implicitMod) withAnnotations annots
+      val mods = (localModifiers() | implicitMod.toLong) withAnnotations annots
       val defs =
         if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
         else List(tmplDef(pos, mods))

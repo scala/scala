@@ -98,7 +98,7 @@ class DotProcess(settings: doc.Settings) {
       assert(!inputString.isSet)
       assert(!outputString.isSet)
       inputString.put(input)
-      var result = outputString.take(settings.docDiagramsDotTimeout.value * 1000)
+      var result = outputString.take(settings.docDiagramsDotTimeout.value * 1000L)
       if (error) result = null
 
       result

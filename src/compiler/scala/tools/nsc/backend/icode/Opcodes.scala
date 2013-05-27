@@ -407,7 +407,7 @@ trait Opcodes { self: ICodes =>
      * there's been a serious misunderstanding
      */
     // TODO do the real thing
-    case class INVOKE_DYNAMIC(poolEntry: Char) extends Instruction {
+    case class INVOKE_DYNAMIC(poolEntry: Int) extends Instruction {
       private def error = sys.error("INVOKE_DYNAMIC is not fully implemented and should not be analyzed")
       override def consumed = error
       override def produced = error

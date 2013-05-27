@@ -57,9 +57,9 @@ abstract class ClassfileParser {
   // They are an unsigned byte, unsigned char, and unsigned int respectively.
   // We bitmask u1 into an Int to make sure it's 0-255 (and u1 isn't used
   // for much beyond tags) but leave u2 alone as it's already unsigned.
-  protected final def u1(): Int  = in.nextByte & 0xFF
-  protected final def u2(): Char = in.nextChar
-  protected final def u4(): Int  = in.nextInt
+  protected final def u1(): Int = in.nextByte & 0xFF
+  protected final def u2(): Int = in.nextChar.toInt
+  protected final def u4(): Int = in.nextInt
 
   private def readInnerClassFlags() = readClassFlags()
   private def readClassFlags()      = JavaAccFlags classFlags u2
@@ -145,7 +145,7 @@ abstract class ClassfileParser {
       while (i < starts.length) {
         starts(i) = in.bp
         i += 1
-        (u1.toInt: @switch) match {
+        (u1: @switch) match {
           case CONSTANT_UTF8 | CONSTANT_UNICODE                                => in skip u2
           case CONSTANT_CLASS | CONSTANT_STRING | CONSTANT_METHODTYPE          => in skip 2
           case CONSTANT_METHODHANDLE                                           => in skip 3
@@ -177,7 +177,7 @@ abstract class ClassfileParser {
         case name: Name => name
         case _          =>
           val start = firstExpecting(index, CONSTANT_UTF8)
-          recordAtIndex(newTermName(in.buf, start + 2, in.getChar(start)), index)
+          recordAtIndex(newTermName(in.buf, start + 2, in.getChar(start).toInt), index)
       }
     )
 
@@ -210,7 +210,7 @@ abstract class ClassfileParser {
      */
     def getClassName(index: Int): Name = {
       val start = firstExpecting(index, CONSTANT_CLASS)
-      getExternalName(in getChar start)
+      getExternalName((in getChar start).toInt)
     }
 
     /** Return the symbol of the class member at `index`.
@@ -231,16 +231,16 @@ abstract class ClassfileParser {
         if (first != CONSTANT_FIELDREF &&
             first != CONSTANT_METHODREF &&
             first != CONSTANT_INTFMETHODREF) errorBadTag(start)
-        val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
+        val ownerTpe = getClassOrArrayType(in.getChar(start + 1).toInt)
         debuglog("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
-        val (name0, tpe0) = getNameAndType(in.getChar(start + 3), ownerTpe)
+        val (name0, tpe0) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
         debuglog("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
 
         forceMangledName(tpe0.typeSymbol.name, module = false)
-        val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
+        val (name, tpe) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
         if (name == nme.MODULE_INSTANCE_FIELD) {
-          val index = in.getChar(start + 1)
-          val name = getExternalName(in.getChar(starts(index) + 1))
+          val index = in.getChar(start + 1).toInt
+          val name = getExternalName(in.getChar(starts(index).toInt + 1).toInt)
           //assert(name.endsWith("$"), "Not a module class: " + name)
           f = forceMangledName(name dropRight 1, module = true)
           if (f == NoSymbol)
@@ -335,6 +335,7 @@ abstract class ClassfileParser {
         case _                => errorBadTag(start)
       })
     }
+    def getConstant(index: Char): Constant = getConstant(index.toInt)
     def getConstant(index: Int): Constant = (
       if (index <= 0 || len <= index) errorBadIndex(index)
       else values(index) match {
@@ -358,7 +359,7 @@ abstract class ClassfileParser {
         case xs: Array[Byte] => xs
         case _               =>
           val start = firstExpecting(index, CONSTANT_UTF8)
-          val len   = in getChar start
+          val len   = (in getChar start).toInt
           val bytes = new Array[Byte](len)
           System.arraycopy(in.buf, start + 2, bytes, 0, len)
           recordAtIndex(getSubArray(bytes), index)
@@ -373,7 +374,7 @@ abstract class ClassfileParser {
           val arr: Array[Byte] = indices.toArray flatMap { index =>
             if (index <= 0 || ConstantPool.this.len <= index) errorBadIndex(index)
             val start = firstExpecting(index, CONSTANT_UTF8)
-            val len   = in getChar start
+            val len   = (in getChar start).toInt
             in.buf drop start + 2 take len
           }
           recordAtIndex(getSubArray(arr), head)
@@ -951,7 +952,7 @@ abstract class ClassfileParser {
         for (i <- 0 until stringCount) yield {
           val stag = u1
           assert(stag == STRING_TAG, stag)
-          u2.toInt
+          u2
         }
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
     }
@@ -959,7 +960,7 @@ abstract class ClassfileParser {
     /* Parse and return a single annotation.  If it is malformed,
      * return None.
      */
-    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = try {
+    def parseAnnotation(attrNameIndex: Int): Option[AnnotationInfo] = try {
       val attrType = pool.getType(attrNameIndex)
       val nargs = u2
       val nvpairs = new ListBuffer[(Name, ClassfileAnnotArg)]

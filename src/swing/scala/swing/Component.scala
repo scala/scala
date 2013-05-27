@@ -83,9 +83,9 @@ abstract class Component extends UIElement {
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
    * align components relative to each other.
    */
-  def xLayoutAlignment: Double = peer.getAlignmentX
+  def xLayoutAlignment: Double = peer.getAlignmentX.toDouble
   def xLayoutAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
-  def yLayoutAlignment: Double = peer.getAlignmentY
+  def yLayoutAlignment: Double = peer.getAlignmentY.toDouble
   def yLayoutAlignment_=(y: Double) = peer.setAlignmentY(y.toFloat)
 
   def border: Border = peer.getBorder
