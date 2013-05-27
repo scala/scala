@@ -77,7 +77,7 @@ private[hashing] class MurmurHash3 {
       h = mix(h, data)
       i += 2
     }
-    if (i < str.length) h = mixLast(h, str.charAt(i))
+    if (i < str.length) h = mixLast(h, str.charAt(i).toInt)
     finalizeHash(h, str.length)
   }
 

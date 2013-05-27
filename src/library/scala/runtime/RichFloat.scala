@@ -15,22 +15,22 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   protected def integralNum = scala.math.Numeric.FloatAsIfIntegral
 
   def round: Int   = math.round(self)
-  def ceil: Float  = math.ceil(self).toFloat
-  def floor: Float = math.floor(self).toFloat
+  def ceil: Float  = math.ceil(self.toDouble).toFloat
+  def floor: Float = math.floor(self.toDouble).toFloat
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
    *
    *  @return the measurement of the angle `x` in radians.
    */
-  def toRadians: Float = math.toRadians(self).toFloat
+  def toRadians: Float = math.toRadians(self.toDouble).toFloat
 
   /** Converts an angle measured in radians to an approximately equivalent
    *  angle measured in degrees.
    *
    *  @return the measurement of the angle `x` in degrees.
    */
-  def toDegrees: Float = math.toDegrees(self).toFloat
+  def toDegrees: Float = math.toDegrees(self.toDouble).toFloat
 
   // isNaN is provided by the implicit conversion to java.lang.Float
   // def isNaN: Boolean = java.lang.Float.isNaN(self)

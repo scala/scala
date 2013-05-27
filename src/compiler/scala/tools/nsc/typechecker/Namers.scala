@@ -1267,7 +1267,7 @@ trait Namers extends MethodSynthesis {
 
             val defaultTree = atPos(vparam.pos.focus) {
               DefDef(
-                Modifiers(meth.flags & DefaultGetterFlags) | SYNTHETIC | DEFAULTPARAM | oflag,
+                Modifiers(meth.flags & DefaultGetterFlags) | (SYNTHETIC | DEFAULTPARAM | oflag).toLong,
                 name, deftParams, defvParamss, defTpt, defRhs)
             }
             if (!isConstr)
@@ -1516,7 +1516,7 @@ trait Namers extends MethodSynthesis {
           AbstractMemberWithModiferError(sym, flag)
       }
       def checkNoConflict(flag1: Int, flag2: Int) {
-        if (sym hasAllFlags flag1 | flag2)
+        if (sym hasAllFlags flag1.toLong | flag2)
           IllegalModifierCombination(sym, flag1, flag2)
       }
       if (sym.isImplicit) {

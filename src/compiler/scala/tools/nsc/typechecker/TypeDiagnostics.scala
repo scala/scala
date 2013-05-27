@@ -126,7 +126,7 @@ trait TypeDiagnostics {
     else if (!member.isDeferred) member.accessed
     else {
       val getter = if (member.isSetter) member.getter(member.owner) else member
-      val flags  = if (getter.setter(member.owner) != NoSymbol) DEFERRED | MUTABLE else DEFERRED
+      val flags  = if (getter.setter(member.owner) != NoSymbol) DEFERRED.toLong | MUTABLE else DEFERRED
 
       getter.owner.newValue(getter.name.toTermName, getter.pos, flags) setInfo getter.tpe.resultType
     }

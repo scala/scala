@@ -128,7 +128,7 @@ object ByteCodecs {
     var j = 0
     val dstlen = (srclen * 7 + 7) / 8
     while (i + 7 < srclen) {
-      var out: Int = src(i)
+      var out: Int = src(i).toInt
       var in: Byte = src(i + 1)
       src(j) = (out | (in & 0x01) << 7).toByte
       out = in >>> 1
@@ -153,7 +153,7 @@ object ByteCodecs {
       j += 7
     }
     if (i < srclen) {
-      var out: Int = src(i)
+      var out: Int = src(i).toInt
       if (i + 1 < srclen) {
         var in: Byte = src(i + 1)
         src(j) = (out | (in & 0x01) << 7).toByte; j += 1

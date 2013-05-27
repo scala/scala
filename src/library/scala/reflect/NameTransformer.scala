@@ -30,9 +30,9 @@ object NameTransformer {
   private val op2code = new Array[String](nops)
   private val code2op = new Array[OpCodes](ncodes)
   private def enterOp(op: Char, code: String) = {
-    op2code(op) = code
+    op2code(op.toInt) = code
     val c = (code.charAt(1) - 'a') * 26 + code.charAt(2) - 'a'
-    code2op(c) = new OpCodes(op, code, code2op(c))
+    code2op(c.toInt) = new OpCodes(op, code, code2op(c))
   }
 
   /* Note: decoding assumes opcodes are only ever lowercase. */
@@ -66,12 +66,12 @@ object NameTransformer {
     var i = 0
     while (i < len) {
       val c = name charAt i
-      if (c < nops && (op2code(c) ne null)) {
+      if (c < nops && (op2code(c.toInt) ne null)) {
         if (buf eq null) {
           buf = new StringBuilder()
           buf.append(name.substring(0, i))
         }
-        buf.append(op2code(c))
+        buf.append(op2code(c.toInt))
       /* Handle glyphs that are not valid Java/JVM identifiers */
       }
       else if (!Character.isJavaIdentifierPart(c)) {

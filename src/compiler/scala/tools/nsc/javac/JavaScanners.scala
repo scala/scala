@@ -724,7 +724,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
      */
     def intVal(negated: Boolean): Long = {
       if (token == CHARLIT && !negated) {
-        if (name.length > 0) name.charAt(0) else 0
+        if (name.length > 0) name.charAt(0).toLong else 0
       } else {
         var value: Long = 0
         val divider = if (base == 10) 1 else 2

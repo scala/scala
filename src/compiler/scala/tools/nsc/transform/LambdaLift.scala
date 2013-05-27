@@ -304,7 +304,7 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
-              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags) setInfo fv.info
+              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags.toLong) setInfo fv.info
               if (owner.isClass) owner.info.decls enter proxy
               proxy
             }

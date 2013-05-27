@@ -505,7 +505,7 @@ abstract class ICodeReader extends ClassfileParser {
           // TODO, this is just a place holder. A real implementation must parse the class constant entry
           debuglog("Found JVM invokedynamic instructionm, inserting place holder ICode INVOKE_DYNAMIC.")
           containsInvokeDynamic = true
-          val poolEntry = in.nextChar
+          val poolEntry = in.nextChar.toInt
           in.skip(2)
           code.emit(INVOKE_DYNAMIC(poolEntry))
 
@@ -919,6 +919,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
 
     /** Return the local at given index, with the given type. */
+    def getLocal(idx: Char, kind: TypeKind): Local = getLocal(idx.toInt, kind)
     def getLocal(idx: Int, kind: TypeKind): Local = {
       assert(idx < maxLocals, "Index too large for local variable.")
 
