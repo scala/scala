@@ -284,11 +284,13 @@ trait NamesDefaults { self: Analyzer =>
               case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
               case _                                       => seqType(arg.tpe)
             }
-            else
-              // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
-              // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
-              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe).deconst
-          )
+            else {
+              // TODO In 83c9c764b, we tried to a stable type here to fix SI-7234. But the resulting TypeTree over a
+              //      singleton type without an original TypeTree fails to retypecheck after a resetLocalAttrs (SI-7516),
+              //      which is important for (at least) macros.
+              arg.tpe
+            }
+          ).widen // have to widen or types inferred from literal defaults will be singletons
           val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
             if (byName) functionType(Nil, argTpe) else argTpe
           )
