@@ -98,7 +98,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     signature: List[List[Int]],
     // type arguments part of a macro impl ref (the right-hand side of a macro definition)
     // these trees don't refer to a macro impl, so we can pickle them as is
-    targs: List[Tree])
+    targs: List[Tree]) {
+
+    // Was this binding derived from a `def ... = macro ???` definition?
+    def is_??? = className == Predef_???.owner.javaClassName && methName == Predef_???.name.encoded
+  }
 
   final val IMPLPARAM_TAG = 0 // actually it's zero and above, this is just a lower bound for >= checks
   final val IMPLPARAM_OTHER = -1
@@ -353,9 +357,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         else MacroTooFewArgumentListsError(expandee)
       }
       else {
-        val binding = loadMacroImplBinding(macroDef)
-        if (binding.className == Predef_???.owner.javaClassName && binding.methName == Predef_???.name.encoded) Nil
-        else {
+        def calculateMacroArgs(binding: MacroImplBinding) = {
           val signature = if (binding.isBundle) binding.signature else binding.signature.tail
           macroLogVerbose(s"binding: $binding")
 
@@ -427,6 +429,10 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           // that's because macro impls can't have implicit parameters other than c.WeakTypeTag[T]
           (trees :+ tags).flatten
         }
+
+        val binding = loadMacroImplBinding(macroDef)
+        if (binding.is_???) Nil
+        else calculateMacroArgs(binding)
       }
     macroLogVerbose(s"macroImplArgs: $macroImplArgs")
     MacroArgs(context, macroImplArgs)
