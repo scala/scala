@@ -173,50 +173,33 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       omittables ++= paramCandidatesForElision
       omittables ++= outerCandidatesForElision
 
-      val bodyOfOuterAccessor: Map[Symbol, DefDef] = {
-        val outers = (defBuf collect { case dd: DefDef if outerCandidatesForElision.contains(dd.symbol) => dd })
-        Map(outers.map { dd => (dd.symbol, dd) } : _*)
-      }
+      val bodyOfOuterAccessor: Map[Symbol, DefDef] =
+        defBuf collect { case dd: DefDef if outerCandidatesForElision(dd.symbol) => dd.symbol -> dd } toMap
 
-      class UsagesDetector extends Traverser {
-        var done = false
-        override def traverse(tree: Tree) {
-          if (done) { return }
+      // no point traversing further once omittables is empty, all candidates ruled out already.
+      object detectUsages extends Traverser {
+        private def markUsage(sym: Symbol) {
+          omittables -= debuglogResult("omittables -= ")(sym)
+          // recursive call to mark as needed the field supporting the outer-accessor-method.
+          bodyOfOuterAccessor get sym foreach (this traverse _.rhs)
+        }
+        override def traverse(tree: Tree): Unit = if (omittables.nonEmpty) {
+          def sym = tree.symbol
           tree match {
-            case DefDef(_, _, _, _, _, body) if outerCandidatesForElision.contains(tree.symbol) =>
-              () // don't mark as "needed" the field supporting this outer-accessor, ie not just yet.
-            case Select(_, _) =>
-              val sym = tree.symbol
-              if (omittables contains sym) {
-                debuglog("omittables -= " + sym.fullName)
-                omittables   -= sym
-                bodyOfOuterAccessor.get(sym) match {
-                  case Some(dd) => traverse(dd.rhs) // recursive call to mark as needed the field supporting the outer-accessor-method.
-                  case _        => ()
-                }
-                if (omittables.isEmpty) {
-                  done = true
-                  return // no point traversing further, all candidates ruled out already.
-                }
-              }
-              super.traverse(tree)
-            case _ =>
-              super.traverse(tree)
+            // don't mark as "needed" the field supporting this outer-accessor, ie not just yet.
+            case _: DefDef if outerCandidatesForElision(sym) => ()
+            case _: Select if omittables(sym)                => markUsage(sym) ; super.traverse(tree)
+            case _                                           => super.traverse(tree)
           }
         }
+        def walk(xs: Seq[Tree]) = xs.iterator foreach traverse
       }
-
       if (omittables.nonEmpty) {
-        val usagesDetector = new UsagesDetector
-
-        for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator) {
-          usagesDetector.traverse(stat)
-        }
+        detectUsages walk defBuf
+        detectUsages walk auxConstructorBuf
       }
-
     }
-
-    def mustbeKept(sym: Symbol) = (!omittables(sym))
+    def mustbeKept(sym: Symbol) = !omittables(sym)
 
   } // OmittablesHelper
 
