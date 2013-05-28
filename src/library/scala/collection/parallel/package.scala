@@ -114,7 +114,9 @@ package parallel {
     def toParArray: ParArray[T]
   }
 
+  @deprecated("This trait will be removed.", "2.11.0")
   trait ThrowableOps {
+    @deprecated("This method will be removed.", "2.11.0")
     def alongWith(that: Throwable): Throwable
   }
 
@@ -133,9 +135,8 @@ package parallel {
   }
 
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
-  final case class CompositeThrowable(
-                                       throwables: Set[Throwable]
-  ) extends Exception(
+  @deprecated("This class will be removed.", "2.11.0")
+  final case class CompositeThrowable(throwables: Set[Throwable]) extends Exception(
     "Multiple exceptions thrown during a parallel computation: " +
       throwables.map(t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")
   )
