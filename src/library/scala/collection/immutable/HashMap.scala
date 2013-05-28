@@ -247,7 +247,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
       if (hash == this.hash) {
         val kvs1 = kvs - key
-        if (kvs1.isEmpty)
+        if (kvs1 eq kvs)
+          this
+        else if (kvs1.isEmpty)
           HashMap.empty[A,B]
         else if(kvs1.tail.isEmpty) {
           val kv = kvs1.head
