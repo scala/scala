@@ -407,10 +407,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))
     lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.tpe))
 
-    def dropByName(tp: Type): Type = tp match {
-      case TypeRef(_, ByNameParamClass, arg :: Nil) => arg
-      case _                                        => tp
-    }
     def isByNameParamType(tp: Type)        = tp.typeSymbol == ByNameParamClass
     def isScalaRepeatedParamType(tp: Type) = tp.typeSymbol == RepeatedParamClass
     def isJavaRepeatedParamType(tp: Type)  = tp.typeSymbol == JavaRepeatedParamClass
@@ -431,29 +427,15 @@ trait Definitions extends api.StandardDefinitions {
       case _                           => false
     }
 
-    def repeatedToSingle(tp: Type): Type = tp match {
-      case TypeRef(_, RepeatedParamClass, arg :: Nil) => arg
-      case _                                          => tp
-    }
-
-    def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-      case TypeRef(_, RepeatedParamClass, arg :: Nil) => seqType(arg)
-      case _                                          => tp
-    }
-
-    def seqToRepeated(tp: Type): Type = (tp baseType SeqClass) match {
-      case TypeRef(_, SeqClass, arg :: Nil) => scalaRepeatedType(arg)
-      case _                                => tp
-    }
-
-    def isReferenceArray(tp: Type) = tp match {
-      case TypeRef(_, ArrayClass, arg :: Nil) => arg <:< AnyRefTpe
-      case _                                  => false
-    }
-    def isArrayOfSymbol(tp: Type, elem: Symbol) = tp match {
-      case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol == elem
-      case _                                  => false
-    }
+    // wrapping and unwrapping
+    def dropByName(tp: Type): Type                           = elementExtract(ByNameParamClass, tp) orElse tp
+    def repeatedToSingle(tp: Type): Type                     = elementExtract(RepeatedParamClass, tp) orElse tp
+    def repeatedToSeq(tp: Type): Type                        = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
+    def seqToRepeated(tp: Type): Type                        = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
+    def isReferenceArray(tp: Type)                           = elementTest(ArrayClass, tp)(_ <:< AnyRefTpe)
+    def isArrayOfSymbol(tp: Type, elem: Symbol)              = elementTest(ArrayClass, tp)(_.typeSymbol == elem)
+    def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
+    object ExprClassOf { def unapply(tp: Type): Option[Type] = elementExtractOption(ExprClass, tp) }
 
     // collections classes
     lazy val ConsClass          = requiredClass[scala.collection.immutable.::[_]]
@@ -512,13 +494,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ExprClass             = ExprsClass.map(sym => getMemberClass(sym, tpnme.Expr))
          def ExprSplice            = ExprClass.map(sym => getMemberMethod(sym, nme.splice))
          def ExprValue             = ExprClass.map(sym => getMemberMethod(sym, nme.value))
-    object ExprClassOf {
-      def unapply(tpe: Type): Option[Type] = tpe.dealias match {
-        case ExistentialType(_, underlying) => unapply(underlying)
-        case TypeRef(_, ExprClass, t :: Nil) => Some(t)
-        case _ => None
-      }
-    }
 
     lazy val ClassTagModule         = requiredModule[scala.reflect.ClassTag[_]]
     lazy val ClassTagClass          = requiredClass[scala.reflect.ClassTag[_]]
@@ -705,11 +680,6 @@ trait Definitions extends api.StandardDefinitions {
     def isPartialFunctionType(tp: Type): Boolean = {
       val sym = tp.typeSymbol
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
-    }
-
-    def elementType(container: Symbol, tp: Type): Type = tp match {
-      case TypeRef(_, `container`, arg :: Nil)  => arg
-      case _                                    => NoType
     }
 
     def arrayType(arg: Type)         = appliedType(ArrayClass, arg)

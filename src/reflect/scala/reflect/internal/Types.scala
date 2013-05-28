@@ -2436,6 +2436,7 @@ trait Types
       else
         super.prefixString
     )
+    def copy(pre: Type = this.pre, sym: Symbol = this.sym, args: List[Type] = this.args) = TypeRef(pre, sym, args)
     override def kind = "TypeRef"
   }
 
@@ -3699,6 +3700,43 @@ trait Types
   object        unwrapToClass extends ClassUnwrapper(existential = true) { }
   object  unwrapToStableClass extends ClassUnwrapper(existential = false) { }
   object   unwrapWrapperTypes extends  TypeUnwrapper(true, true, true, true) { }
+
+  def elementExtract(container: Symbol, tp: Type): Type = {
+    assert(!container.isAliasType, container)
+    unwrapWrapperTypes(tp baseType container).dealiasWiden match {
+      case TypeRef(_, `container`, arg :: Nil)  => arg
+      case _                                    => NoType
+    }
+  }
+  def elementExtractOption(container: Symbol, tp: Type): Option[Type] = {
+    elementExtract(container, tp) match {
+      case NoType => None
+      case tp => Some(tp)
+    }
+  }
+  def elementTest(container: Symbol, tp: Type)(f: Type => Boolean): Boolean = {
+    elementExtract(container, tp) match {
+      case NoType => false
+      case tp => f(tp)
+    }
+  }
+  def elementTransform(container: Symbol, tp: Type)(f: Type => Type): Type = {
+    elementExtract(container, tp) match {
+      case NoType => NoType
+      case tp => f(tp)
+    }
+  }
+
+  def transparentShallowTransform(container: Symbol, tp: Type)(f: Type => Type): Type = {
+    def loop(tp: Type): Type = tp match {
+      case tp @ AnnotatedType(_, underlying, _)     => tp.copy(underlying = loop(underlying))
+      case tp @ ExistentialType(_, underlying)      => tp.copy(underlying = loop(underlying))
+      case tp @ PolyType(_, resultType)             => tp.copy(resultType = loop(resultType))
+      case tp @ NullaryMethodType(resultType)       => tp.copy(resultType = loop(resultType))
+      case tp                                       => elementTransform(container, tp)(el => appliedType(container, f(el))).orElse(f(tp))
+    }
+    loop(tp)
+  }
 
   /** Repack existential types, otherwise they sometimes get unpacked in the
    *  wrong location (type inference comes up with an unexpected skolem)
