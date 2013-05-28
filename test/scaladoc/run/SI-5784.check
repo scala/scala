@@ -1,1 +1,4 @@
+newSource:18: warning: Declaring an abstract method without result type is deprecated.
+    trait FooExtractor { def apply(foo: Int); def unapply(t: Foo): Option[Int] }
+                                            ^
 Done.

@@ -1,0 +1,9 @@
+t7523-deprecation.scala:1: warning: Declaring an abstract method without result type is deprecated.
+trait Foo { def foo }
+                   ^
+t7523-deprecation.scala:2: warning: Declaring an abstract method without result type is deprecated.
+abstract class Bar { def bar }
+                            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

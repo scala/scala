@@ -1,3 +1,6 @@
+names-defaults-neg.scala:115: warning: Declaring an abstract method without result type is deprecated.
+  def foo(b: String = "lskdfj")
+                               ^
 names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
 Unspecified value parameter b.
   val fac = Fact(1)(2, 3)
@@ -164,5 +167,5 @@ in the current scope. The resulting type inference error (see above) can be fixe
 names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
-four warnings found
+5 warnings found
 41 errors found

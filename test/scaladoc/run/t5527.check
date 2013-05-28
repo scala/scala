@@ -7,6 +7,9 @@ newSource1.scala:64: warning: discarding unmoored doc comment
 newSource1.scala:73: warning: discarding unmoored doc comment
         val i = 10 */** Important!
                    ^
+newSource1.scala:99: warning: Declaring an abstract method without result type is deprecated.
+        def f(i: Int)
+                     ^
 [[syntax trees at end of                    parser]] // newSource1.scala
 package <empty> {
   object UselessComments extends scala.AnyRef {
