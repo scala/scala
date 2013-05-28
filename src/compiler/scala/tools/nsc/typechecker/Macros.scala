@@ -14,6 +14,8 @@ import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
+import scala.runtime.ScalaRunTime
+import Fingerprint._
 
 /**
  *  Code to deal with macros, namely with:
@@ -94,8 +96,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     //   * c.WeakTypeTag[T] => index of the type parameter corresponding to that type tag
     //   * everything else (e.g. scala.reflect.macros.Context) => IMPLPARAM_OTHER
     // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: Context)(x: c.Expr[T], y: c.Tree): (U, V) = ???
-    // `signature` will be equal to List(List(-1), List(-1, -2), List(0, 2))
-    signature: List[List[Int]],
+    // `signature` will be equal to List(List(Other), List(Lifted, Other), List(Tagged(0), Tagged(2)))
+    signature: List[List[Fingerprint]],
     // type arguments part of a macro impl ref (the right-hand side of a macro definition)
     // these trees don't refer to a macro impl, so we can pickle them as is
     targs: List[Tree]) {
@@ -103,10 +105,6 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     // Was this binding derived from a `def ... = macro ???` definition?
     def is_??? = className == Predef_???.owner.javaClassName && methName == Predef_???.name.encoded
   }
-
-  final val IMPLPARAM_TAG = 0 // actually it's zero and above, this is just a lower bound for >= checks
-  final val IMPLPARAM_OTHER = -1
-  final val IMPLPARAM_EXPR = -2
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
@@ -120,28 +118,30 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *    @scala.reflect.macros.internal.macroImpl(
    *      `macro`(
    *        "isBundle" = false,
-   *        "signature" = List(-1),
+   *        "signature" = List(Other),
    *        "methodName" = "impl",
    *        "versionFormat" = <current version format>,
    *        "className" = "Macros$"))
    */
   object MacroImplBinding {
-    val versionFormat = 3
+    val versionFormat = 4.0
 
     def pickleAtom(obj: Any): Tree =
       obj match {
         case list: List[_] => Apply(Ident(ListModule), list map pickleAtom)
         case s: String => Literal(Constant(s))
-        case i: Int => Literal(Constant(i))
+        case d: Double => Literal(Constant(d))
         case b: Boolean => Literal(Constant(b))
+        case f: Fingerprint => Literal(Constant(f.value))
       }
 
     def unpickleAtom(tree: Tree): Any =
       tree match {
         case Apply(list @ Ident(_), args) if list.symbol == ListModule => args map unpickleAtom
         case Literal(Constant(s: String)) => s
-        case Literal(Constant(i: Int)) => i
+        case Literal(Constant(d: Double)) => d
         case Literal(Constant(b: Boolean)) => b
+        case Literal(Constant(i: Int)) => new Fingerprint(i)
       }
 
     def pickle(macroImplRef: Tree): Tree = {
@@ -161,15 +161,15 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         loop(owner)
       }
 
-      def signature: List[List[Int]] = {
-        def fingerprint(tpe: Type): Int = tpe.dealiasWiden match {
+      def signature: List[List[Fingerprint]] = {
+        def fingerprint(tpe: Type): Fingerprint = tpe.dealiasWiden match {
           case TypeRef(_, RepeatedParamClass, underlying :: Nil) => fingerprint(underlying)
-          case ExprClassOf(_) => IMPLPARAM_EXPR
-          case _ => IMPLPARAM_OTHER
+          case ExprClassOf(_) => Lifted
+          case _ => Other
         }
 
         val transformed = transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => tparam)
-        mmap(transformed)(p => if (p.isTerm) fingerprint(p.info) else p.paramPos)
+        mmap(transformed)(p => if (p.isTerm) fingerprint(p.info) else Tagged(p.paramPos))
       }
 
       val payload = List[(String, Any)](
@@ -214,13 +214,25 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       val Apply(_, pickledPayload) = wrapped
       val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
 
-      val pickleVersionFormat = payload("versionFormat").asInstanceOf[Int]
-      if (versionFormat != pickleVersionFormat) throw new Error(s"macro impl binding format mismatch: expected $versionFormat, actual $pickleVersionFormat")
+      def fail(msg: String) = abort(s"bad macro impl binding: $msg")
+      def unpickle[T](field: String, clazz: Class[T]): T = {
+        def failField(msg: String) = fail(s"$field $msg")
+        if (!payload.contains(field)) failField("is supposed to be there")
+        val raw: Any = payload(field)
+        if (raw == null) failField(s"is not supposed to be null")
+        val expected = ScalaRunTime.box(clazz)
+        val actual = raw.getClass
+        if (!expected.isAssignableFrom(actual)) failField(s"has wrong type: expected $expected, actual $actual")
+        raw.asInstanceOf[T]
+      }
 
-      val isBundle = payload("isBundle").asInstanceOf[Boolean]
-      val className = payload("className").asInstanceOf[String]
-      val methodName = payload("methodName").asInstanceOf[String]
-      val signature = payload("signature").asInstanceOf[List[List[Int]]]
+      val pickleVersionFormat = unpickle("versionFormat", classOf[Double])
+      if (versionFormat != pickleVersionFormat) fail(s"expected version format $versionFormat, actual $pickleVersionFormat")
+
+      val isBundle = unpickle("isBundle", classOf[Boolean])
+      val className = unpickle("className", classOf[String])
+      val methodName = unpickle("methodName", classOf[String])
+      val signature = unpickle("signature", classOf[List[List[Fingerprint]]])
       MacroImplBinding(isBundle, className, methodName, signature, targs)
     }
   }
@@ -376,7 +388,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
               val fingerprint = implParams(min(j, implParams.length - 1))
               fingerprint match {
-                case IMPLPARAM_EXPR => context.Expr[Nothing](arg)(TypeTag.Nothing) // TODO: SI-5752
+                case Lifted => context.Expr[Nothing](arg)(TypeTag.Nothing) // TODO: SI-5752
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
               }
@@ -406,7 +418,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           // then T and U need to be inferred from the lexical scope of the call using `asSeenFrom`
           // whereas V won't be resolved by asSeenFrom and need to be loaded directly from `expandee` which needs to contain a TypeApply node
           // also, macro implementation reference may contain a regular type as a type argument, then we pass it verbatim
-          val tags = signature.flatten filter (_ >= IMPLPARAM_TAG) map (paramPos => {
+          val tags = signature.flatten collect { case f if f.isTag => f.paramPos } map (paramPos => {
             val targ = binding.targs(paramPos).tpe.typeSymbol
             val tpe = if (targ.isTypeParameterOrSkolem) {
               if (targ.owner == macroDef) {
@@ -786,4 +798,22 @@ object MacrosStats {
   import scala.reflect.internal.TypesStats.typerNanos
   val macroExpandCount    = Statistics.newCounter ("#macro expansions", "typer")
   val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
+}
+
+class Fingerprint(val value: Int) extends AnyVal {
+  def paramPos = { assert(isTag, this); value }
+  def isTag = value >= 0
+  def isOther = this == Other
+  def isExpr = this == Lifted
+  override def toString = this match {
+    case Other => "Other"
+    case Lifted => "Expr"
+    case _ => s"Tag($value)"
+  }
+}
+
+object Fingerprint {
+  def Tagged(tparamPos: Int) = new Fingerprint(tparamPos)
+  val Other = new Fingerprint(-1)
+  val Lifted = new Fingerprint(-2)
 }
