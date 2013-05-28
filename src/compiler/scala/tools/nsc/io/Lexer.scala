@@ -23,7 +23,7 @@ object Lexer {
   /** A subclass of `Token` representing single-character delimiters
    *  @param char the delimiter character making up this token
    */
-  case class Delim(char: Char) extends Token("'"+char.toString+"'")
+  case class Delim(char: Char) extends Token(s"'$char'")
 
   /** A subclass of token representing integer literals */
   case class IntLit(override val str: String) extends Token(str)
@@ -88,7 +88,7 @@ object Lexer {
       case '\\' => buf ++= "\\\\"
       case _ =>
         if (' ' <= ch && ch < 128) buf += ch
-        else buf ++= "\\u" += toUDigit(ch >>> 12) += toUDigit(ch >>> 8) += toUDigit(ch >>> 4) += toUDigit(ch)
+        else buf ++= "\\u" += toUDigit(ch >>> 12) += toUDigit(ch >>> 8) += toUDigit(ch >>> 4) += toUDigit(ch.toInt)
     }
   }
 

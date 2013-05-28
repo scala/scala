@@ -63,7 +63,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
       while (true) {
         this.synchronized {
           try {
-            wait(CHECK_FREQ)
+            wait(CHECK_FREQ.toLong)
           } catch {
             case _: InterruptedException =>
           }

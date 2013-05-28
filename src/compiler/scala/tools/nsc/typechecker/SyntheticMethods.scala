@@ -254,13 +254,14 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def hashcodeImplementation(sym: Symbol): Tree = {
       sym.tpe.finalResultType.typeSymbol match {
-        case UnitClass | NullClass                         => Literal(Constant(0))
-        case BooleanClass                                  => If(Ident(sym), Literal(Constant(1231)), Literal(Constant(1237)))
-        case IntClass | ShortClass | ByteClass | CharClass => Ident(sym)
-        case LongClass                                     => callStaticsMethod("longHash")(Ident(sym))
-        case DoubleClass                                   => callStaticsMethod("doubleHash")(Ident(sym))
-        case FloatClass                                    => callStaticsMethod("floatHash")(Ident(sym))
-        case _                                             => callStaticsMethod("anyHash")(Ident(sym))
+        case UnitClass | NullClass              => Literal(Constant(0))
+        case BooleanClass                       => If(Ident(sym), Literal(Constant(1231)), Literal(Constant(1237)))
+        case IntClass                           => Ident(sym)
+        case ShortClass | ByteClass | CharClass => Select(Ident(sym), nme.toInt)
+        case LongClass                          => callStaticsMethod("longHash")(Ident(sym))
+        case DoubleClass                        => callStaticsMethod("doubleHash")(Ident(sym))
+        case FloatClass                         => callStaticsMethod("floatHash")(Ident(sym))
+        case _                                  => callStaticsMethod("anyHash")(Ident(sym))
       }
     }
 

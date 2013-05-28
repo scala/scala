@@ -172,7 +172,7 @@ object MurmurHash {
       k = nextMagicB(k)
       j += 2
     }
-    if (j < s.length) h = extendHash(h,s.charAt(j),c,k)
+    if (j < s.length) h = extendHash(h,s.charAt(j).toInt,c,k)
     finalizeHash(h)
   }
 

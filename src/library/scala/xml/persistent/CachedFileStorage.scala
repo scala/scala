@@ -112,7 +112,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread {
   override def run = {
     log("[run]\nstarting storage thread, checking every "+interval+" ms")
     while (true) {
-      Thread.sleep( this.interval )
+      Thread.sleep( this.interval.toLong )
       save()
     }
   }

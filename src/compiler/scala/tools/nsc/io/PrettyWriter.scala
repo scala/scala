@@ -16,7 +16,7 @@ class PrettyWriter(wr: Writer) extends Writer {
       str(off) match {
         case '{' | '[' | '(' =>
           indent += 1
-          wr.write(str(off))
+          wr.write(str(off).toInt)
           newLine()
           wr.write(str, off + 1, len - 1)
         case '}' | ']' | ')' =>

@@ -44,6 +44,7 @@ object BigDecimal {
    */
   def valueOf(d: Double): BigDecimal = apply(BigDec valueOf d)
   def valueOf(d: Double, mc: MathContext): BigDecimal = apply(BigDec valueOf d, mc)
+  def valueOf(x: Long): BigDecimal = apply(x.toDouble)
 
   /** Constructs a `BigDecimal` whose value is equal to that of the
    *  specified `Integer` value.
@@ -56,10 +57,10 @@ object BigDecimal {
     if (mc == defaultMathContext && minCached <= i && i <= maxCached) {
       val offset = i - minCached
       var n = cache(offset)
-      if (n eq null) { n = new BigDecimal(BigDec.valueOf(i), mc); cache(offset) = n }
+      if (n eq null) { n = new BigDecimal(BigDec.valueOf(i.toLong), mc); cache(offset) = n }
       n
     }
-    else new BigDecimal(BigDec.valueOf(i), mc)
+    else new BigDecimal(BigDec.valueOf(i.toLong), mc)
 
   /** Constructs a `BigDecimal` whose value is equal to that of the
    *  specified long value.
@@ -98,6 +99,9 @@ object BigDecimal {
   // a MathContext, but we should be duplicating its logic, modulo caching.
   def apply(d: Double, mc: MathContext): BigDecimal =
     new BigDecimal(new BigDec(jl.Double.toString(d), mc), mc)
+
+  def apply(x: Float): BigDecimal = apply(x.toDouble)
+  def apply(x: Float, mc: MathContext): BigDecimal = apply(x.toDouble, mc)
 
   /** Translates a character array representation of a `BigDecimal`
    *  into a `BigDecimal`.
@@ -193,7 +197,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     */
   def isValidFloat = {
     val f = toFloat
-    !f.isInfinity && bigDecimal.compareTo(new java.math.BigDecimal(f)) == 0
+    !f.isInfinity && bigDecimal.compareTo(new java.math.BigDecimal(f.toDouble)) == 0
   }
   /** Returns `true` iff this can be represented exactly by [[scala.Double]]; otherwise returns `false`.
     */

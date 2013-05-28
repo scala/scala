@@ -78,7 +78,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             if (isFinal) FINAL else 0
           )
 
-          val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags) setInfoAndEnter forType
+          val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags.toLong) setInfoAndEnter forType
           if (!isFinal)
             varSym.addAnnotation(VolatileAttr)
 

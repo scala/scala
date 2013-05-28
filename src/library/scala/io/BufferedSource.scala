@@ -55,7 +55,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
       // immediately on the source.
       if (charReaderCreated && iter.hasNext) {
         val pb = new PushbackReader(charReader)
-        pb unread iter.next()
+        pb unread iter.next().toInt
         new BufferedReader(pb, bufferSize)
       }
       else charReader

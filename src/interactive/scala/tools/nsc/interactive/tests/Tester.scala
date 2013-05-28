@@ -26,7 +26,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     while (!res.isComplete && !res.isCancelled) {
       if (System.currentTimeMillis() > limit) {
         print("c"); res.cancel()
-      } else res.get(TIMEOUT) match {
+      } else res.get(TIMEOUT.toLong) match {
         case Some(Left(t)) =>
           /**/
           if (settings.verbose) println(t)

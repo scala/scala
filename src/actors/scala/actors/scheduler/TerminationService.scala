@@ -39,7 +39,7 @@ private[scheduler] trait TerminationService extends TerminationMonitor {
       while (true) {
         this.synchronized {
           try {
-            wait(CHECK_FREQ)
+            wait(CHECK_FREQ.toLong)
           } catch {
             case _: InterruptedException =>
           }

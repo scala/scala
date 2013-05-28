@@ -62,7 +62,7 @@ package object math {
   def sqrt(x: Double): Double = java.lang.Math.sqrt(x)
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
 
-  def ceil(x: Double): Double = java.lang.Math.ceil(x)
+  def ceil(x: Double): Double  = java.lang.Math.ceil(x)
   def floor(x: Double): Double = java.lang.Math.floor(x)
 
   /** Returns the `double` value that is closest in value to the
@@ -100,24 +100,30 @@ package object math {
    */
   def round(x: Float): Int = java.lang.Math.round(x)
   def round(x: Double): Long = java.lang.Math.round(x)
-  def abs(x: Int): Int = java.lang.Math.abs(x)
-  def abs(x: Long): Long = java.lang.Math.abs(x)
-  def abs(x: Float): Float = java.lang.Math.abs(x)
+
+  def abs(x: Int): Int       = java.lang.Math.abs(x)
+  def abs(x: Long): Long     = java.lang.Math.abs(x)
+  def abs(x: Float): Float   = java.lang.Math.abs(x)
   def abs(x: Double): Double = java.lang.Math.abs(x)
 
-  def max(x: Int, y: Int): Int = java.lang.Math.max(x, y)
-  def max(x: Long, y: Long): Long = java.lang.Math.max(x, y)
-  def max(x: Float, y: Float): Float = java.lang.Math.max(x, y)
+  def max(x: Int, y: Int): Int          = java.lang.Math.max(x, y)
+  def max(x: Long, y: Long): Long       = java.lang.Math.max(x, y)
+  def max(x: Float, y: Float): Float    = java.lang.Math.max(x, y)
   def max(x: Double, y: Double): Double = java.lang.Math.max(x, y)
 
-  def min(x: Int, y: Int): Int = java.lang.Math.min(x, y)
-  def min(x: Long, y: Long): Long  = java.lang.Math.min(x, y)
-  def min(x: Float, y: Float): Float  = java.lang.Math.min(x, y)
+  def min(x: Int, y: Int): Int          = java.lang.Math.min(x, y)
+  def min(x: Long, y: Long): Long       = java.lang.Math.min(x, y)
+  def min(x: Float, y: Float): Float    = java.lang.Math.min(x, y)
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
-  def signum(x: Int): Int = java.lang.Integer.signum(x)
-  def signum(x: Long): Long = java.lang.Long.signum(x)
-  def signum(x: Float): Float = java.lang.Math.signum(x)
+  /** Note that these are not pure forwarders to the java versions.
+   *  In particular, the return type of java.lang.Long.signum is Int,
+   *  but here it is widened to Long so that each overloaded variant
+   *  will return the same numeric type it is passed.
+   */
+  def signum(x: Int): Int       = java.lang.Integer.signum(x)
+  def signum(x: Long): Long     = java.lang.Long.signum(x)
+  def signum(x: Float): Float   = java.lang.Math.signum(x)
   def signum(x: Double): Double = java.lang.Math.signum(x)
 
   // -----------------------------------------------------------------------
