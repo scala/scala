@@ -59,17 +59,28 @@ trait Importers extends api.Importers { to: SymbolTable =>
 
     // ============== SYMBOLS ==============
 
-    protected def recreatedSymbolCompleter(their: from.Symbol) = {
-      val mytypeParams = their.typeParams map importSymbol
-      new LazyPolyType(mytypeParams) with FlagAgnosticCompleter {
-        override def complete(my: to.Symbol): Unit = {
-          val theirCore = their.info match {
-            case from.PolyType(_, core) => core
-            case core => core
+    protected def recreatedSymbolCompleter(my: to.Symbol, their: from.Symbol) = {
+      // we lock the symbol that is imported for a very short period of time
+      // i.e. only for when type parameters of the symbol are being imported
+      // the lock is used to communicate to the recursive importSymbol calls
+      // that type parameters need to be created from scratch
+      // because otherwise type parameters are imported by looking into owner.typeParams
+      // which is obviously unavailable while the completer is being created
+      try {
+        my setFlag Flags.LOCKED
+        val mytypeParams = their.typeParams map importSymbol
+        new LazyPolyType(mytypeParams) with FlagAgnosticCompleter {
+          override def complete(my: to.Symbol): Unit = {
+            val theirCore = their.info match {
+              case from.PolyType(_, core) => core
+              case core => core
+            }
+            my setInfo GenPolyType(mytypeParams, importType(theirCore))
+            my setAnnotations (their.annotations map importAnnotationInfo)
           }
-          my setInfo GenPolyType(mytypeParams, importType(theirCore))
-          my setAnnotations (their.annotations map importAnnotationInfo)
         }
+      } finally {
+        my resetFlag Flags.LOCKED
       }
     }
 
@@ -121,9 +132,7 @@ trait Importers extends api.Importers { to: SymbolTable =>
           myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
       }
       symMap.weakUpdate(their, my)
-      my setFlag Flags.LOCKED
-      my setInfo recreatedSymbolCompleter(their)
-      my resetFlag Flags.LOCKED
+      my setInfo recreatedSymbolCompleter(my, their)
     }
 
     def importSymbol(their0: from.Symbol): Symbol = {
@@ -142,53 +151,50 @@ trait Importers extends api.Importers { to: SymbolTable =>
         else if (their.isRoot)
           rootMirror.RootClass // !!! replace with actual mirror when we move importers to the mirror
         else {
+          val isModuleClass = their.isModuleClass
+          val isTparam = their.isTypeParameter && their.paramPos >= 0
+          val isOverloaded = their.isOverloaded
+
           var theirscope = if (their.owner.isClass && !their.owner.isRefinementClass) their.owner.info else from.NoType
-          var theirexisting = theirscope.decl(their.name)
-          if (their.isModuleClass) theirexisting = theirexisting.moduleClass
+          val theirexisting = if (isModuleClass) theirscope.decl(their.name).moduleClass else theirscope.decl(their.name)
           if (!theirexisting.exists) theirscope = from.NoType
 
           val myname = importName(their.name)
           val myowner = importSymbol(their.owner)
           val myscope = if (theirscope != from.NoType && !(myowner hasFlag Flags.LOCKED)) myowner.info else NoType
-          var myexisting = if (myscope != NoType) myscope.decl(myname) else NoSymbol // cannot load myexisting in general case, because it creates cycles for methods
-
-          if (their.isModuleClass)
-            myexisting = importSymbol(their.sourceModule).moduleClass
-
-          if (!their.isOverloaded && myexisting.isOverloaded) {
-            myexisting =
-              if (their.isMethod) {
-                val localCopy = cachedRecreateSymbol(their)
-                myexisting filter (_.tpe matches localCopy.tpe)
-              } else {
-                myexisting filter (!_.isMethod)
+          val myexisting = {
+            if (isModuleClass) importSymbol(their.sourceModule).moduleClass
+            else if (isTparam) (if (myowner hasFlag Flags.LOCKED) NoSymbol else myowner.typeParams(their.paramPos))
+            else if (isOverloaded) myowner.newOverloaded(myowner.thisType, their.alternatives map importSymbol)
+            else {
+              def disambiguate(my: Symbol) = {
+                val result =
+                  if (their.isMethod) {
+                    val localCopy = cachedRecreateSymbol(their)
+                    my filter (_.tpe matches localCopy.tpe)
+                  } else {
+                    my filter (!_.isMethod)
+                  }
+                assert(!result.isOverloaded,
+                    "import failure: cannot determine unique overloaded method alternative from\n "+
+                    (result.alternatives map (_.defString) mkString "\n")+"\n that matches "+their+":"+their.tpe)
+                result
               }
-            assert(!myexisting.isOverloaded,
-                "import failure: cannot determine unique overloaded method alternative from\n "+
-                (myexisting.alternatives map (_.defString) mkString "\n")+"\n that matches "+their+":"+their.tpe)
-          }
 
-          val my = {
-            if (their.isOverloaded) {
-              myowner.newOverloaded(myowner.thisType, their.alternatives map importSymbol)
-            } else if (their.isTypeParameter && their.paramPos >= 0 && !(myowner hasFlag Flags.LOCKED)) {
-              assert(myowner.typeParams.length > their.paramPos,
-                  "import failure: cannot determine parameter "+their+" (#"+their.paramPos+") in "+
-                  myowner+typeParamsString(myowner.rawInfo)+"\n original symbol was: "+
-                  their.owner+from.typeParamsString(their.owner.info))
-              myowner.typeParams(their.paramPos)
-            } else {
-              myexisting.orElse {
-                val my = cachedRecreateSymbol(their)
-                if (myscope != NoType) {
-                  assert(myscope.decls.lookup(myname) == NoSymbol, myname+" "+myscope.decl(myname)+" "+myexisting)
-                  myscope.decls enter my
-                }
-                my
-              }
+              val myexisting = if (myscope != NoType) myscope.decl(myname) else NoSymbol
+              if (myexisting.isOverloaded) disambiguate(myexisting)
+              else myexisting
             }
           }
-          my
+
+          myexisting.orElse {
+            val my = cachedRecreateSymbol(their)
+            if (myscope != NoType) {
+              assert(myscope.decls.lookup(myname) == NoSymbol, myname+" "+myscope.decl(myname)+" "+myexisting)
+              myscope.decls enter my
+            }
+            my
+          }
         }
       } // end recreateOrRelink
 
