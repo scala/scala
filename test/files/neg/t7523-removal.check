@@ -1,0 +1,7 @@
+t7523-removal.scala:1: error: Abstract method declaration is missing result type.
+trait Foo { def foo }
+                   ^
+t7523-removal.scala:2: error: Abstract method declaration is missing result type.
+abstract class Bar { def bar }
+                            ^
+two errors found

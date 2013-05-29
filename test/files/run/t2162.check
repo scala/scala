@@ -1,2 +1,3 @@
+warning: there were 1 deprecation warning(s); re-run with -deprecation for details
 B.foo[Bar]
 A.foo[Bar]

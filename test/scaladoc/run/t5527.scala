@@ -7,7 +7,7 @@ import scala.tools.nsc.reporters.ConsoleReporter
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Xprint:parser -Yrangepos -Ystop-after:parser -d " + testOutput.path
+  override def extraSettings: String = "-deprecation -usejavacp -Xprint:parser -Yrangepos -Ystop-after:parser -d " + testOutput.path
 
   override def code = """
     // SI-5527

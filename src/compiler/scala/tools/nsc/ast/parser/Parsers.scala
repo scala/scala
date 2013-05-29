@@ -2487,9 +2487,15 @@ self =>
         val tparams = typeParamClauseOpt(name, contextBoundBuf)
         val vparamss = paramClauses(name, contextBoundBuf.toList, ofCaseClass = false)
         newLineOptWhenFollowedBy(LBRACE)
-        var restype = fromWithinReturnType(typedOpt())
+        val givenResType = typedOpt()
+        var restype = fromWithinReturnType(givenResType)
         val rhs =
           if (isStatSep || in.token == RBRACE) {
+            if (givenResType.isEmpty)
+              if (settings.future)
+                syntaxError(in.lastOffset, "Abstract method declaration is missing result type.")
+              else
+                deprecationWarning(in.lastOffset, "Declaring an abstract method without result type is deprecated.")
             if (restype.isEmpty) restype = scalaUnitConstr
             newmods |= Flags.DEFERRED
             EmptyTree
