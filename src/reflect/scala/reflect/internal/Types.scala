@@ -3218,10 +3218,9 @@ trait Types extends api.Types { self: SymbolTable =>
           sameLength(typeArgs, tp.typeArgs) && {
             val lhs = if (isLowerBound) tp.typeArgs else typeArgs
             val rhs = if (isLowerBound) typeArgs else tp.typeArgs
-            // this is a higher-kinded type var with same arity as tp.
-            // side effect: adds the type constructor itself as a bound
-            addBound(tp.typeConstructor)
-            isSubArgs(lhs, rhs, params, AnyDepth)
+            // This is a higher-kinded type var with same arity as tp.
+            // If so (see SI-7517), side effect: adds the type constructor itself as a bound.
+            isSubArgs(lhs, rhs, params, AnyDepth) && { addBound(tp.typeConstructor); true }
           }
         }
         // The type with which we can successfully unify can be hidden
