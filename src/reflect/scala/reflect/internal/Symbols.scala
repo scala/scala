@@ -89,6 +89,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isJava: Boolean = isJavaDefined
     def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
     def isVar: Boolean = isTerm && !isModule && !isMethod && !isLazy && isMutable
+    def isAbstract: Boolean = isAbstractClass || isDeferred || isAbstractType
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)

@@ -481,6 +481,12 @@ trait Symbols { self: Universe =>
      */
     def isOverride: Boolean
 
+    /** Is this symbol abstract (i.e. an abstract class, an abstract method, value or type member)?
+     *
+     *  @group Tests
+     */
+    def isAbstract: Boolean
+
     /** Is this symbol labelled as "abstract override"?
      *
      *  @group Tests
@@ -744,6 +750,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Type
      */
+    @deprecated("Use isAbstract instead", "2.11.0")
     def isAbstractType : Boolean
 
     /** Does this symbol represent an existentially bound type?
@@ -877,6 +884,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Class
      */
+    @deprecated("Use isAbstract instead", "2.11.0")
     def isAbstractClass: Boolean
 
     /** Does this symbol represent a case class?
