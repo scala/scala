@@ -44,8 +44,6 @@ abstract class ClassfileParser {
 
   def srcfile = srcfile0
 
-  private def currentIsTopLevel = !(currentClass.decodedName containsChar '$')
-
   private object unpickler extends scala.reflect.internal.pickling.UnPickler {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
@@ -515,8 +513,10 @@ abstract class ClassfileParser {
       }
     }
 
-    val c = if (currentIsTopLevel) pool.getClassSymbol(nameIdx) else clazz
-    if (currentIsTopLevel) {
+    val isTopLevel = !(currentClass containsChar '$') // Java class name; *don't* try to to use Scala name decoding (SI-7532)
+
+    val c = if (isTopLevel) pool.getClassSymbol(nameIdx) else clazz
+    if (isTopLevel) {
       if (c != clazz) {
         if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
         else mismatchError(c)
