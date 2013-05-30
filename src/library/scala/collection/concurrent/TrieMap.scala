@@ -1011,8 +1011,11 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
    */
   protected def subdivide(): Seq[Iterator[(K, V)]] = if (subiter ne null) {
     // the case where an LNode is being iterated
-    val it = subiter
-    subiter = null
+    val it = newIterator(level + 1, ct, _mustInit = false)
+    it.depth = -1
+    it.subiter = this.subiter
+    it.current = null
+    this.subiter = null
     advance()
     this.level += 1
     Seq(it, this)
