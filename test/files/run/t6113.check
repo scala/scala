@@ -1,1 +1,1 @@
-Foo[[X](Int, X)]
+Foo[AnyRef{type l[X] = (Int, X)}#l]
