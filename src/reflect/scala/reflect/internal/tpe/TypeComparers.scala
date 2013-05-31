@@ -4,7 +4,7 @@ package internal
 package tpe
 
 import scala.collection.{ mutable }
-import util.Statistics
+import util.{ Statistics, TriState }
 import scala.annotation.tailrec
 
 trait TypeComparers {
@@ -294,6 +294,32 @@ trait TypeComparers {
     // if (subsametypeRecursions == 0) undoLog.clear()
   }
 
+  /** Check whether the subtype or type equivalence relationship
+   *  between the argument is predetermined. Returns a tri-state
+   *  value: True means the arguments are always sub/same types,
+   *  False means they never are, and Unknown means the caller
+   *  will have to figure things out.
+   */
+  private def typeRelationPreCheck(tp1: Type, tp2: Type): TriState = {
+    def isTrue = (
+         (tp1 eq tp2)
+      || isErrorOrWildcard(tp1)
+      || isErrorOrWildcard(tp2)
+      || (tp1 eq NoPrefix) && tp2.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
+      || (tp2 eq NoPrefix) && tp1.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
+    )
+    // isFalse, assuming !isTrue
+    def isFalse = (
+         (tp1 eq NoType)
+      || (tp2 eq NoType)
+      || (tp1 eq NoPrefix)
+      || (tp2 eq NoPrefix)
+    )
+
+    if (isTrue) TriState.True
+    else if (isFalse) TriState.False
+    else TriState.Unknown
+  }
   private def isPolySubType(tp1: PolyType, tp2: PolyType): Boolean = {
     val PolyType(tparams1, res1) = tp1
     val PolyType(tparams2, res2) = tp2
