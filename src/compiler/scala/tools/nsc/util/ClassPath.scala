@@ -211,8 +211,6 @@ abstract class ClassPath[T] {
   def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.charAt(0) != '.')
   def validSourceFile(name: String) = endsScala(name) || endsJava(name)
 
-  def isEmptyOfClassfiles: Boolean = classes.isEmpty && packages.forall(_.isEmptyOfClassfiles)
-
   /**
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
    * Does not support nested classes on .NET
