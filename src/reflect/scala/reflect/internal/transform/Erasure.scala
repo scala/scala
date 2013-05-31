@@ -55,9 +55,13 @@ trait Erasure {
     }
   }
 
+  /** Arrays despite their finality may turn up as refined type parents,
+   *  e.g. with "tagged types" like Array[Int] with T.
+   */
   protected def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefTpe) => level
-    case _ => 0
+    case RefinedType(ps, _) if ps.nonEmpty                  => logResult(s"Unbounded generic level for $tp is")(ps map unboundedGenericArrayLevel max)
+    case _                                                  => 0
   }
 
   // @M #2585 when generating a java generic signature that includes
