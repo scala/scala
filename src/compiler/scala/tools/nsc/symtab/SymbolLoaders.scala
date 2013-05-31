@@ -234,14 +234,10 @@ abstract class SymbolLoaders {
         }
       }
       if (!root.isEmptyPackageClass) {
-        // Only enter packages which contain a class or a non-empty package
         for (pkg <- classpath.packages) {
-          if (pkg.isEmptyOfClassfiles) {
-            log(s"Discarding $root/$pkg as it contains no classfiles.")
-          }
-          else
-            enterPackage(root, pkg.name, new PackageLoader(pkg))
+          enterPackage(root, pkg.name, new PackageLoader(pkg))
         }
+
         openPackageModule(root)
       }
     }
