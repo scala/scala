@@ -358,8 +358,10 @@ trait TypeComparers {
 
   /** Does type `tp1` conform to `tp2`? */
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
+    def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
+
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2))
-      return (tp1 =:= tp2)
+      return (tp1 =:= tp2) || retry(tp1.underlying, tp2)
 
     if (tp1.isHigherKinded || tp2.isHigherKinded)
       return isHKSubType(tp1, tp2, depth)
