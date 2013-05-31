@@ -208,6 +208,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
                 setAnnotations origMeth.annotations
             )
+            origMeth.removeAnnotation(TailrecClass) // it's on the extension method, now.
             companion.info.decls.enter(extensionMeth)
           }
 
@@ -221,13 +222,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val extensionParams = allParameters(extensionMono)
           val extensionThis   = gen.mkAttributedStableRef(thiz setPos extensionMeth.pos)
 
-          val extensionBody = (
-            rhs
+          val extensionBody: Tree = {
+            val tree1 = rhs
               .substituteSymbols(origTpeParams, extensionTpeParams)
               .substituteSymbols(origParams, extensionParams)
               .substituteThis(origThis, extensionThis)
               .changeOwner(origMeth -> extensionMeth)
-          )
+            new SubstututeRecursion(origMeth, extensionMeth, origThis, unit).transform(tree1)
+          }
 
           // Record the extension method ( FIXME: because... ? )
           extensionDefs(companion) += atPos(tree.pos)(DefDef(extensionMeth, extensionBody))
@@ -263,5 +265,29 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         case stat =>
           stat
       }
+  }
+
+  class SubstututeRecursion(origMeth: Symbol, extensionMeth: Symbol, origThis: Symbol, unit: CompilationUnit) extends TypingTransformer(unit) {
+    override def transform(tree: Tree): Tree = tree match {
+      // SI-6574 rewrite recursive calls against the extension method so they can
+      //         be tail call optimized later.
+      //
+      //         // Source
+      //         class C[C] { def meth[M](a: A) = { { <expr>: C[C'] }.meth[M'] } }
+      //
+      //         // Translation
+      //         class C[C] { def meth[M](a: A) = { { <expr>: C[C'] }.meth[M'](a1) } }
+      //         object C   { def meth$extension[M, C](this$: C[C], a: A)
+      //                        = { meth$extension[M', C']({ <expr>: C[C'] })(a1) } }
+      case treeInfo.Applied(sel @ Select(qual, _), targs, argss) if sel.symbol == origMeth =>
+        localTyper.typedPos(tree.pos) {
+          val allArgss = List(qual) :: argss
+          val baseType = qual.tpe.baseType(origThis)
+          val allTargs = targs.map(_.tpe) ::: baseType.typeArgs
+          val fun = gen.mkAttributedTypeApply(EmptyTree, extensionMeth, allTargs)
+          allArgss.foldLeft(fun)(Apply(_, _))
+        }
+      case _ => super.transform(tree)
+    }
   }
 }
