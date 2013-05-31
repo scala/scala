@@ -1064,7 +1064,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       )
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
-      val jgensig = if (m.isDeferred) null else getGenericSignature(m, module); // only add generic signature if method concrete; bug #1745
+      val jgensig = (
+        // only add generic signature if method concrete; bug #1745
+        if (m.isDeferred) null else {
+          val clazz = module.linkedClassOfClass
+          val m1 = (
+            if ((clazz.info member m.name) eq NoSymbol)
+              enteringErasure(m.cloneSymbol(clazz, Flags.METHOD | Flags.STATIC))
+            else m
+          )
+          getGenericSignature(m1, clazz)
+        }
+      )
       addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
       val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
