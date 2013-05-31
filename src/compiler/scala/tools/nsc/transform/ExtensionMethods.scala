@@ -208,6 +208,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
                 setAnnotations origMeth.annotations
             )
+            origMeth.removeAnnotation(TailrecClass) // it's on the extension method, now.
             companion.info.decls.enter(extensionMeth)
           }
 
@@ -221,15 +222,16 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val extensionParams = allParameters(extensionMono)
           val extensionThis   = gen.mkAttributedStableRef(thiz setPos extensionMeth.pos)
 
-          val extensionBody = (
-            rhs
+          val extensionBody: Tree = {
+            val tree = rhs
               .substituteSymbols(origTpeParams, extensionTpeParams)
               .substituteSymbols(origParams, extensionParams)
               .substituteThis(origThis, extensionThis)
               .changeOwner(origMeth -> extensionMeth)
-          )
+            new SubstututeRecursion(origMeth, extensionMeth, unit).transform(tree)
+          }
 
-          // Record the extension method ( FIXME: because... ? )
+          // Record the extension method. Later, in `Extender#transformStats`, these will be added to the companion object.
           extensionDefs(companion) += atPos(tree.pos)(DefDef(extensionMeth, extensionBody))
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
@@ -263,5 +265,34 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         case stat =>
           stat
       }
+  }
+
+  final class SubstututeRecursion(origMeth: Symbol, extensionMeth: Symbol,
+                            unit: CompilationUnit) extends TypingTransformer(unit) {
+    override def transform(tree: Tree): Tree = tree match {
+      // SI-6574 Rewrite recursive calls against the extension method so they can
+      //         be tail call optimized later. The tailcalls phases comes before
+      //         erasure, which performs this translation more generally at all call
+      //         sites.
+      //
+      //         // Source
+      //         class C[C] { def meth[M](a: A) = { { <expr>: C[C'] }.meth[M'] } }
+      //
+      //         // Translation
+      //         class C[C] { def meth[M](a: A) = { { <expr>: C[C'] }.meth[M'](a1) } }
+      //         object C   { def meth$extension[M, C](this$: C[C], a: A)
+      //                        = { meth$extension[M', C']({ <expr>: C[C'] })(a1) } }
+      case treeInfo.Applied(sel @ Select(qual, _), targs, argss) if sel.symbol == origMeth =>
+        import gen.CODE._
+        localTyper.typedPos(tree.pos) {
+          val allArgss = List(qual) :: argss
+          val origThis = extensionMeth.owner.companionClass
+          val baseType = qual.tpe.baseType(origThis)
+          val allTargs = targs.map(_.tpe) ::: baseType.typeArgs
+          val fun = gen.mkAttributedTypeApply(THIS(extensionMeth.owner), extensionMeth, allTargs)
+          allArgss.foldLeft(fun)(Apply(_, _))
+        }
+      case _ => super.transform(tree)
+    }
   }
 }
