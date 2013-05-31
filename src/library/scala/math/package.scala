@@ -16,12 +16,12 @@ package object math {
   /** The `double` value that is closer than any other to `e`, the base of
    *  the natural logarithms.
    */
-  val E = java.lang.Math.E
+  @inline final val E = java.lang.Math.E
 
   /** The `double` value that is closer than any other to `pi`, the ratio of
    *  the circumference of a circle to its diameter.
    */
-  val Pi = java.lang.Math.PI
+  @inline final val Pi = java.lang.Math.PI
 
   /** Returns a `double` value with a positive sign, greater than or equal
    *  to `0.0` and less than `1.0`.
