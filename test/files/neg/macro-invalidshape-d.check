@@ -1,8 +1,0 @@
-Macros_Test_2.scala:2: warning: macro is now a reserved word; usage as an identifier is deprecated
-  def foo(x: Any) = {2; macro Impls.foo}
-                        ^
-Macros_Test_2.scala:2: error: ';' expected but '.' found.
-  def foo(x: Any) = {2; macro Impls.foo}
-                                   ^
-one warning found
-one error found

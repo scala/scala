@@ -1,6 +1,6 @@
 package scala.tools.reflect
 
-import scala.reflect.macros.runtime.Context
+import scala.reflect.macros.contexts.Context
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
 import scala.reflect.internal.util.OffsetPosition

@@ -1,8 +1,10 @@
-object Macros {
-  def foo(x: Int) = macro Impls.foo
-}
+object Macros { def foo(x: Int) = macro Impls.foo }
+import Macros._
 
 object Test extends App {
-  import Macros._
-  val s: String = foo("42")
+  foo("42")
+  foo
+  foo(4)(2)
+  foo()
+  foo(4, 2)
 }

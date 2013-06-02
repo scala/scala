@@ -10,7 +10,7 @@ trait StdAttachments {
    *  At times we need to store this info, because macro expansion can be delayed until its targs are inferred.
    *  After a macro application has been successfully expanded, this attachment is destroyed.
    */
-  type UnaffiliatedMacroContext = scala.reflect.macros.runtime.Context
+  type UnaffiliatedMacroContext = scala.reflect.macros.contexts.Context
   type MacroContext = UnaffiliatedMacroContext { val universe: self.global.type }
   case class MacroRuntimeAttachment(delayed: Boolean, typerContext: Context, macroContext: Option[MacroContext])
 
@@ -127,4 +127,31 @@ trait StdAttachments {
   /** Determines whether the given tree has an associated SuperArgsAttachment.
    */
   def hasSuperArgs(tree: Tree): Boolean = superArgs(tree).nonEmpty
+
+  /** @see markMacroImplRef
+   */
+  case object MacroImplRefAttachment
+
+  /** Marks the tree as a macro impl reference, which is a naked reference to a method.
+   *
+   *  This is necessary for typechecking macro impl references (see `DefaultMacroCompiler.defaultResolveMacroImpl`),
+   *  because otherwise typing a naked reference will result in the "follow this method with `_' if you want to
+   *  treat it as a partially applied function" errors.
+   *
+   *  This mark suppresses adapt except for when the annottee is a macro application.
+   */
+  def markMacroImplRef(tree: Tree): Tree = tree.updateAttachment(MacroImplRefAttachment)
+
+  /** Unmarks the tree as a macro impl reference (see `markMacroImplRef` for more information).
+   *
+   *  This is necessary when a tree that was previously deemed to be a macro impl reference,
+   *  typechecks to be a macro application. Then we need to unmark it, expand it and try to treat
+   *  its expansion as a macro impl reference.
+   */
+  def unmarkMacroImplRef(tree: Tree): Tree = tree.removeAttachment[MacroImplRefAttachment.type]
+
+  /** Determines whether a tree should or should not be adapted,
+   *  because someone has put MacroImplRefAttachment on it.
+   */
+  def isMacroImplRef(tree: Tree): Boolean = tree.attachments.get[MacroImplRefAttachment.type].isDefined
 }
