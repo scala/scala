@@ -782,7 +782,7 @@ trait ContextErrors {
       }
 
       def MacroExpansionHasInvalidTypeError(expandee: Tree, expanded: Any) = {
-        val expected = "expr"
+        val expected = "expr or tree"
         val isPathMismatch = expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
         macroExpansionError(expandee,
           s"macro must return a compiler-specific $expected; returned value is " + (
