@@ -5108,7 +5108,7 @@ trait Typers extends Adaptations with Tags {
             if (mode.inPatternMode) {
               val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
               // make fully defined to avoid bounded wildcard types that may be in pt from calling dropExistential (SI-2038)
-              val ptDefined = ensureFullyDefined(pt)
+              val ptDefined = ensureFullyDefined(pt) // FIXME this is probably redundant now that we don't dropExistenial in pattern mode.
               val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, ptDefined, canRemedy = uncheckedTypeExtractor.nonEmpty)
               treeTyped setType ownType
 
@@ -5342,7 +5342,12 @@ trait Typers extends Adaptations with Tags {
               "context.owner"    -> context.owner
             )
           )
-          typed1(tree, mode, dropExistential(ptPlugins))
+          val ptWild = if (mode.inPatternMode)
+            ptPlugins // SI-5022 don't widen pt for patterns as types flow from it to the case body.
+          else
+            dropExistential(ptPlugins) // FIXME: document why this is done.
+
+          typed1(tree, mode, ptWild)
         }
         // Can happen during erroneous compilation - error(s) have been
         // reported, but we need to avoid causing an NPE with this tree
