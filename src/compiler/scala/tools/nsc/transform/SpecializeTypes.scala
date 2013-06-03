@@ -1388,10 +1388,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       /* The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
       def specSym(qual: Tree): Symbol = {
         val env = unify(symbol.tpe, tree.tpe, emptyEnv, false)
-        def isMatch(member: Symbol) = (
-             doesConform(symbol, tree.tpe, qual.tpe memberType member, env)
-          && TypeEnv.includes(typeEnv(member), env)
-        )
+        def isMatch(member: Symbol) = {
+          val memberType = qual.tpe memberType member
+
+          val residualTreeType = tree match {
+            case TypeApply(fun, targs) if fun.symbol == symbol =>
+              // SI-6308 Handle methods with only some type parameters specialized.
+              //         drop the specialized type parameters from the PolyType, and
+              //         substitute in the type environment.
+              val GenPolyType(tparams, tpe) = fun.tpe
+              val (from, to) = env.toList.unzip
+              val residualTParams = tparams.filterNot(env.contains)
+              GenPolyType(residualTParams, tpe).substituteTypes(from, to)
+            case _ => tree.tpe
+          }
+
+          (
+               doesConform(symbol, residualTreeType, memberType, env)
+            && TypeEnv.includes(typeEnv(member), env)
+          )
+        }
         if (env.isEmpty) NoSymbol
         else qual.tpe member specializedName(symbol, env) suchThat isMatch
       }
