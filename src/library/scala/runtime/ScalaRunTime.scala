@@ -350,4 +350,17 @@ object ScalaRunTime {
       }
     }
   }
+
+  def box[T](clazz: jClass[T]): jClass[_] = clazz match {
+    case java.lang.Byte.TYPE => classOf[java.lang.Byte]
+    case java.lang.Short.TYPE => classOf[java.lang.Short]
+    case java.lang.Character.TYPE => classOf[java.lang.Character]
+    case java.lang.Integer.TYPE => classOf[java.lang.Integer]
+    case java.lang.Long.TYPE => classOf[java.lang.Long]
+    case java.lang.Float.TYPE => classOf[java.lang.Float]
+    case java.lang.Double.TYPE => classOf[java.lang.Double]
+    case java.lang.Void.TYPE => classOf[scala.runtime.BoxedUnit]
+    case java.lang.Boolean.TYPE => classOf[java.lang.Boolean]
+    case _ => clazz
+  }
 }
