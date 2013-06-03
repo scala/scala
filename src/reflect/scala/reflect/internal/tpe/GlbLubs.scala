@@ -80,11 +80,11 @@ private[internal] trait GlbLubs {
     var lubListDepth = 0
     // This catches some recursive situations which would otherwise
     // befuddle us, e.g. pos/hklub0.scala
-    def isHotForTs(xs: List[Type]) = ts exists (_.typeParams == xs.map(_.typeSymbol))
+    def isHotForTs(xs: List[Type]) = ts exists (_.typeParams == xs.map(_.typeSymbolDirect))
 
     def elimHigherOrderTypeParam(tp: Type) = tp match {
       case TypeRef(_, _, args) if args.nonEmpty && isHotForTs(args) =>
-        logResult("Retracting dummies from " + tp + " in lublist")(tp.typeConstructor)
+        logResult(s"Retracting dummies from $tp in lublist")(tp.typeConstructor)
       case _ => tp
     }
     // pretypes is a tail-recursion-preserving accumulator.
@@ -101,7 +101,7 @@ private[internal] trait GlbLubs {
 
         // Is the frontier made up of types with the same symbol?
         val isUniformFrontier = (ts0: @unchecked) match {
-          case t :: ts  => ts forall (_.typeSymbol == t.typeSymbol)
+          case t :: ts  => ts forall (_.typeSymbolDirect == t.typeSymbolDirect)
         }
 
         // Produce a single type for this frontier by merging the prefixes and arguments of those
@@ -112,11 +112,11 @@ private[internal] trait GlbLubs {
         if (isUniformFrontier) {
           val fbounds     = findRecursiveBounds(ts0) map (_._2)
           val tcLubList   = typeConstructorLubList(ts0)
-          def isRecursive(tp: Type) = tp.typeSymbol.typeParams exists fbounds.contains
+          def isRecursive(tp: Type) = tp.typeSymbolDirect.typeParams exists fbounds.contains
 
           val ts1 = ts0 map { t =>
             if (isRecursive(t)) {
-              tcLubList map (t baseType _.typeSymbol) find (t => !isRecursive(t)) match {
+              tcLubList map (t baseType _.typeSymbolDirect) find (t => !isRecursive(t)) match {
                 case Some(tp) => logResult(s"Breaking recursion in lublist, substituting weaker type.\n  Was: $t\n  Now")(tp)
                 case _        => t
               }
@@ -133,7 +133,7 @@ private[internal] trait GlbLubs {
           // frontier is not uniform yet, move it beyond the current minimal symbol;
           // lather, rinSe, repeat
           val sym    = minSym(ts0)
-          val newtps = tsBts map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts)
+          val newtps = tsBts map (ts => if (ts.head.typeSymbolDirect == sym) ts.tail else ts)
           if (printLubs) {
             val str = (newtps.zipWithIndex map { case (tps, idx) =>
               tps.map("        " + _ + "\n").mkString("   (" + idx + ")\n", "", "\n")
@@ -157,9 +157,7 @@ private[internal] trait GlbLubs {
 
   /** The minimal symbol of a list of types (as determined by `Symbol.isLess`). */
   private def minSym(tps: List[Type]): Symbol =
-    (tps.head.typeSymbol /: tps.tail) {
-      (sym1, tp2) => if (tp2.typeSymbol isLess sym1) tp2.typeSymbol else sym1
-    }
+    tps.iterator map (_.typeSymbolDirect) reduceLeft ((x, y) => if (x isLess y) x else y)
 
   /** A minimal type list which has a given list of types as its base type sequence */
   def spanningTypes(ts: List[Type]): List[Type] = ts match {
