@@ -1172,6 +1172,14 @@ trait Types extends api.Types { self: SymbolTable =>
         continue = false
         val bcs0 = baseClasses
         var bcs = bcs0
+        // omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+        def admitPrivateLocal(owner: Symbol): Boolean = {
+          val selectorClass = this match {
+            case tt: ThisType => tt.sym // SI-7507 the first base class is not necessarily the selector class.
+            case _            => bcs0.head
+          }
+          selectorClass.hasTransOwner(owner)
+        }
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
           var entry = decls.lookupEntry(name)
@@ -1181,10 +1189,10 @@ trait Types extends api.Types { self: SymbolTable =>
             if ((flags & required) == required) {
               val excl = flags & excluded
               if (excl == 0L &&
-                    (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
+                    (
                   (bcs eq bcs0) ||
                   (flags & PrivateLocal) != PrivateLocal ||
-                  (bcs0.head.hasTransOwner(bcs.head)))) {
+                  admitPrivateLocal(bcs.head))) {
                 if (name.isTypeName || stableOnly && sym.isStable) {
                   if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
                   if (suspension ne null) suspension foreach (_.suspended = false)
