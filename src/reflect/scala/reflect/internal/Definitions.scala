@@ -111,8 +111,10 @@ trait Definitions extends api.StandardDefinitions {
     /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol) = ScalaNumericValueClasses contains sym
 
-    def isGetClass(sym: Symbol) =
-      (sym.name == nme.getClass_) && flattensToEmpty(sym.paramss)
+    def isGetClass(sym: Symbol) = (
+         sym.name == nme.getClass_ // this condition is for performance only, this is called from `Typer#stabliize`.
+      && getClassMethods(sym)
+    )
 
     lazy val UnitClass    = valueClassSymbol(tpnme.Unit)
     lazy val ByteClass    = valueClassSymbol(tpnme.Byte)
@@ -776,6 +778,12 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Any_getClass     = enterNewMethod(AnyClass, nme.getClass_, Nil, getMemberMethod(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
     lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => BooleanTpe)
     lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
+
+    lazy val primitiveGetClassMethods = Set[Symbol](Any_getClass, AnyVal_getClass) ++ (
+      ScalaValueClasses map (_.tpe member nme.getClass_)
+    )
+
+    lazy val getClassMethods: Set[Symbol] = primitiveGetClassMethods + Object_getClass
 
   // A type function from T => Class[U], used to determine the return
     // type of getClass calls.  The returned type is:
