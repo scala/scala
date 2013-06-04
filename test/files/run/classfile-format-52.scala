@@ -61,17 +61,14 @@ class Driver extends HasDefaultMethod {
     System.setErr(System.out)
     try {
       // this test is only valid under JDK 1.8+
-      // cheat a little by using 'ScalaVersion' because it can parse java versions just as well
-      val requiredJavaVersion = ScalaVersion("1.8")
-      val executingJavaVersion = ScalaVersion(System.getProperty("java.specification.version"))
-      if (executingJavaVersion >= requiredJavaVersion) {
+      testUnderJavaAtLeast("1.8") {
         generateInterface()
         compile()
         Class.forName("Driver").newInstance()
-      } else {
-        // under other versions just dump the expected results
+        ()   
+      } otherwise {
         println("hello from publicMethod")
-        println("hello from staticMethod")
+        println("hello from staticMethod")        
       }
     } 
     finally
