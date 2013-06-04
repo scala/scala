@@ -1,0 +1,7 @@
+t6889.scala:16: error: the result type of an implicit conversion must be more specific than AnyRef
+  def f(x: Dingo): AnyRef = x   // fail - no conversion to AnyRef
+                            ^
+t6889.scala:17: error: an expression of type Null is ineligible for implicit conversion
+  var x: Int = null             // fail - no conversion from Null
+               ^
+two errors found
