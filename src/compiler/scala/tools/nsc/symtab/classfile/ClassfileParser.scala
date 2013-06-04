@@ -491,8 +491,10 @@ abstract class ClassfileParser {
       }
     }
 
-    val c = if (currentIsTopLevel) pool.getClassSymbol(nameIdx) else clazz
-    if (currentIsTopLevel) {
+    val isTopLevel = !(currentClass containsChar '$') // Java class name; *don't* try to to use Scala name decoding (SI-7532)
+
+    val c = if (isTopLevel) pool.getClassSymbol(nameIdx) else clazz
+    if (isTopLevel) {
       if (c != clazz) {
         if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
         else mismatchError(c)

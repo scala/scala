@@ -46,10 +46,13 @@ package object reify {
   def reifyType(global: Global)(typer: global.analyzer.Typer,universe: global.Tree, mirror: global.Tree, tpe: global.Type, concrete: Boolean = false): global.Tree =
     mkReifier(global)(typer, universe, mirror, tpe, concrete = concrete).reification.asInstanceOf[global.Tree]
 
-  def reifyRuntimeClass(global: Global)(typer0: global.analyzer.Typer, tpe: global.Type, concrete: Boolean = true): global.Tree = {
+  def reifyRuntimeClass(global: Global)(typer0: global.analyzer.Typer, tpe0: global.Type, concrete: Boolean = true): global.Tree = {
     import global._
     import definitions._
     import analyzer.enclosingMacroPosition
+
+    // SI-7375
+    val tpe = tpe0.dealiasWiden
 
     if (tpe.isSpliceable) {
       val classTagInScope = typer0.resolveClassTag(enclosingMacroPosition, tpe, allowMaterialization = false)
