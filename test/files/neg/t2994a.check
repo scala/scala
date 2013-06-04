@@ -1,7 +1,0 @@
-t2994a.scala:24: error: kinds of the type arguments (m#a,s) do not conform to the expected kinds of the type parameters (type n,type s) in trait curry.
-m#a's type parameters do not match type n's expected parameters:
-type _'s bounds <: Naturals.NAT are stricter than type _'s declared bounds >: Nothing <: Any, type z's bounds <: Naturals.NAT are stricter than type _'s declared bounds >: Nothing <: Any, s's type parameters do not match type s's expected parameters:
-type _'s bounds <: Naturals.NAT are stricter than type _ (in trait curry)'s declared bounds >: Nothing <: Any
-    type a[s[_ <: NAT] <: NAT, z <: NAT] = n#a[curry[m#a, s]#f, z]
-                                             ^
-one error found

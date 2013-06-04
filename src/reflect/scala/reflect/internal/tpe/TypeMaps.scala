@@ -12,6 +12,19 @@ private[internal] trait TypeMaps {
   self: SymbolTable =>
   import definitions._
 
+  /** Normalize any type aliases within this type (@see Type#normalize).
+    *  Note that this depends very much on the call to "normalize", not "dealias",
+    *  so it is no longer carries the too-stealthy name "deAlias".
+    */
+  object normalizeAliases extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(_, sym, _) if sym.isAliasType =>
+        def msg = if (tp.isHigherKinded) s"Normalizing type alias function $tp" else s"Dealiasing type alias $tp"
+        mapOver(logResult(msg)(tp.normalize))
+      case _                                     => mapOver(tp)
+    }
+  }
+
   /** Remove any occurrence of type <singleton> from this type and its parents */
   object dropSingletonType extends TypeMap {
     def apply(tp: Type): Type = {
@@ -376,7 +389,7 @@ private[internal] trait TypeMaps {
         case TypeRef(pre, sym, args) if tparams contains sym =>
           val repl = if (variance.isPositive) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
           val count = occurCount(sym)
-          val containsTypeParam = tparams exists repl.contains
+          val containsTypeParam = tparams exists (repl contains _)
           def msg = {
             val word = if (variance.isPositive) "upper" else "lower"
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
