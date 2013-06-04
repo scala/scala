@@ -4,7 +4,7 @@ package internal
 package tpe
 
 import scala.collection.{ mutable }
-import util.Statistics
+import util.{ Statistics, TriState }
 import scala.annotation.tailrec
 
 trait TypeComparers {
@@ -118,30 +118,20 @@ trait TypeComparers {
     // if (subsametypeRecursions == 0) undoLog.clear()
   }
 
-  private def isSameType1(tp1: Type, tp2: Type): Boolean = {
-    if ((tp1 eq tp2) ||
-      (tp1 eq ErrorType) || (tp1 eq WildcardType) ||
-      (tp2 eq ErrorType) || (tp2 eq WildcardType))
-      true
-    else if ((tp1 eq NoType) || (tp2 eq NoType))
-      false
-    else if (tp1 eq NoPrefix) // !! I do not see how this would be warranted by the spec
-      tp2.typeSymbol.isPackageClass
-    else if (tp2 eq NoPrefix) // !! I do not see how this would be warranted by the spec
-      tp1.typeSymbol.isPackageClass
-    else if (tp1.isInstanceOf[AnnotatedType] || tp2.isInstanceOf[AnnotatedType])
-      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && (tp1.withoutAnnotations =:= tp2.withoutAnnotations)
-    else {
-      // We flush out any AnnotatedTypes before calling isSameType2 because
-      // unlike most other subclasses of Type, we have to allow for equivalence of any
-      // combination of { tp1, tp2 } { is, is not } an AnnotatedType - this because the
-      // logic of "annotationsConform" is arbitrary and unknown.
-      isSameType2(tp1, tp2) || {
-        val tp1n = normalizePlus(tp1)
-        val tp2n = normalizePlus(tp2)
-        ((tp1n ne tp1) || (tp2n ne tp2)) && isSameType(tp1n, tp2n)
-      }
-    }
+  // @pre: at least one argument has annotations
+  private def sameAnnotatedTypes(tp1: Type, tp2: Type) = (
+       annotationsConform(tp1, tp2)
+    && annotationsConform(tp2, tp1)
+    && (tp1.withoutAnnotations =:= tp2.withoutAnnotations)
+  )
+  // We flush out any AnnotatedTypes before calling isSameType2 because
+  // unlike most other subclasses of Type, we have to allow for equivalence of any
+  // combination of { tp1, tp2 } { is, is not } an AnnotatedType - this because the
+  // logic of "annotationsConform" is arbitrary and unknown.
+  private def isSameType1(tp1: Type, tp2: Type): Boolean = typeRelationPreCheck(tp1, tp2) match {
+    case state if state.isKnown                                  => state.booleanValue
+    case _ if typeHasAnnotations(tp1) || typeHasAnnotations(tp2) => sameAnnotatedTypes(tp1, tp2)
+    case _                                                       => isSameType2(tp1, tp2)
   }
 
   private def isSameHKTypes(tp1: Type, tp2: Type) = (
@@ -186,6 +176,8 @@ trait TypeComparers {
   }
 
   def isSameType2(tp1: Type, tp2: Type): Boolean = {
+    def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSameType(lhs, rhs)
+
     /*  Here we highlight those unfortunate type-like constructs which
      *  are hidden bundles of mutable state, cruising the type system picking
      *  up any type constraints naive enough to get into their hot rods.
@@ -236,6 +228,7 @@ trait TypeComparers {
       || sameSingletonType
       || mutateNonTypeConstructs(tp1, tp2)
       || mutateNonTypeConstructs(tp2, tp1)
+      || retry(normalizePlus(tp1), normalizePlus(tp2))
     )
   }
 
@@ -276,12 +269,12 @@ trait TypeComparers {
           else
             try {
               pendingSubTypes += p
-              isSubType2(tp1, tp2, depth)
+              isSubType1(tp1, tp2, depth)
             } finally {
               pendingSubTypes -= p
             }
         } else {
-          isSubType2(tp1, tp2, depth)
+          isSubType1(tp1, tp2, depth)
         }
       } finally if (!result) undoLog.undoTo(before)
 
@@ -292,6 +285,39 @@ trait TypeComparers {
     // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)
     // it doesn't help to keep separate recursion counts for the three methods that now share it
     // if (subsametypeRecursions == 0) undoLog.clear()
+  }
+
+  /** Check whether the subtype or type equivalence relationship
+   *  between the argument is predetermined. Returns a tri-state
+   *  value: True means the arguments are always sub/same types,
+   *  False means they never are, and Unknown means the caller
+   *  will have to figure things out.
+   */
+  private def typeRelationPreCheck(tp1: Type, tp2: Type): TriState = {
+    def isTrue = (
+         (tp1 eq tp2)
+      || isErrorOrWildcard(tp1)
+      || isErrorOrWildcard(tp2)
+      || (tp1 eq NoPrefix) && tp2.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
+      || (tp2 eq NoPrefix) && tp1.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
+    )
+    // isFalse, assuming !isTrue
+    def isFalse = (
+         (tp1 eq NoType)
+      || (tp2 eq NoType)
+      || (tp1 eq NoPrefix)
+      || (tp2 eq NoPrefix)
+    )
+
+    if (isTrue) TriState.True
+    else if (isFalse) TriState.False
+    else TriState.Unknown
+  }
+
+  private def isSubType1(tp1: Type, tp2: Type, depth: Int): Boolean = typeRelationPreCheck(tp1, tp2) match {
+    case state if state.isKnown                                  => state.booleanValue
+    case _ if typeHasAnnotations(tp1) || typeHasAnnotations(tp2) => annotationsConform(tp1, tp2) && (tp1.withoutAnnotations <:< tp2.withoutAnnotations)
+    case _                                                       => isSubType2(tp1, tp2, depth)
   }
 
   private def isPolySubType(tp1: PolyType, tp2: PolyType): Boolean = {
@@ -332,12 +358,13 @@ trait TypeComparers {
 
   /** Does type `tp1` conform to `tp2`? */
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
-    if ((tp1 eq tp2) || isErrorOrWildcard(tp1) || isErrorOrWildcard(tp2)) return true
-    if ((tp1 eq NoType) || (tp2 eq NoType)) return false
-    if (tp1 eq NoPrefix) return (tp2 eq NoPrefix) || tp2.typeSymbol.isPackageClass // !! I do not see how the "isPackageClass" would be warranted by the spec
-    if (tp2 eq NoPrefix) return tp1.typeSymbol.isPackageClass
-    if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
-    if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType(tp1, tp2, depth)
+    def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
+
+    if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2))
+      return (tp1 =:= tp2) || retry(tp1.underlying, tp2)
+
+    if (tp1.isHigherKinded || tp2.isHigherKinded)
+      return isHKSubType(tp1, tp2, depth)
 
     /* First try, on the right:
      *   - unwrap Annotated types, BoundedWildcardTypes,
