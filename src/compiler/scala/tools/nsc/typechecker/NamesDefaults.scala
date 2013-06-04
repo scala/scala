@@ -284,11 +284,13 @@ trait NamesDefaults { self: Analyzer =>
               case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
               case _                                       => seqType(arg.tpe)
             }
-            else
-              // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
-              // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
-              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe).deconst
-          )
+            else {
+              // TODO In 83c9c764b, we tried to a stable type here to fix SI-7234. But the resulting TypeTree over a
+              //      singleton type without an original TypeTree fails to retypecheck after a resetLocalAttrs (SI-7516),
+              //      which is important for (at least) macros.
+              arg.tpe
+            }
+          ).widen // have to widen or types inferred from literal defaults will be singletons
           val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
             if (byName) functionType(Nil, argTpe) else argTpe
           )
@@ -333,9 +335,12 @@ trait NamesDefaults { self: Analyzer =>
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
           typedApp match {
-            // Extract the typed arguments, restore the call-site evaluation order (using
-            // ValDef's in the block), change the arguments to these local values.
-            case Apply(expr, typedArgs) if !(typedApp :: typedArgs).exists(_.isErrorTyped) => // bail out with erroneous args, see SI-7238
+            case Apply(expr, typedArgs) if (typedApp :: typedArgs).exists(_.isErrorTyped) =>
+              setError(tree) // bail out with and erroneous Apply *or* erroneous arguments, see SI-7238, SI-7509
+            case Apply(expr, typedArgs) =>
+              // Extract the typed arguments, restore the call-site evaluation order (using
+              // ValDef's in the block), change the arguments to these local values.
+
               // typedArgs: definition-site order
               val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, removeByName = false, removeRepeated = false)
               // valDefs: call-site order
