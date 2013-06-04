@@ -794,8 +794,7 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `subst` method. */
-  class SubstTypeMap(from: List[Symbol], to: List[Type])
-    extends SubstMap(from, to) {
+  class SubstTypeMap(val from: List[Symbol], val to: List[Type]) extends SubstMap(from, to) {
     protected def toType(fromtp: Type, tp: Type) = tp
 
     override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {
