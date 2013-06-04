@@ -602,10 +602,8 @@ trait Typers extends Adaptations with Tags {
       // type of the qualifier is inaccessible, we can cause private types to
       // escape scope here, e.g. pos/t1107. I'm not sure how to properly handle
       // this so for now it requires the type symbol be public.
-      def isGetClassCall = (
-           (sym == Any_getClass || sym == Object_getClass)
-        && pre.typeSymbol.isPublic
-      )
+      def isGetClassCall = isGetClass(sym) && pre.typeSymbol.isPublic
+
       def narrowIf(tree: Tree, condition: Boolean) =
         if (condition) tree setType singleType(pre, sym) else tree
 

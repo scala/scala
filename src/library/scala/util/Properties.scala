@@ -122,8 +122,7 @@ private[scala] trait PropertiesTrait {
    */
   def lineSeparator         = propOrElse("line.separator", "\n")
 
-  /** Various well-known properties.
-   */
+  /* Various well-known properties. */
   def javaClassPath         = propOrEmpty("java.class.path")
   def javaHome              = propOrEmpty("java.home")
   def javaVendor            = propOrEmpty("java.vendor")
@@ -139,10 +138,13 @@ private[scala] trait PropertiesTrait {
   def userHome              = propOrEmpty("user.home")
   def userName              = propOrEmpty("user.name")
 
-  /** Some derived values.
-   */
+  /* Some derived values. */
+  /** Returns `true` iff the underlying operating system is a version of Microsoft Windows. */
   def isWin                 = osName startsWith "Windows"
-  def isMac                 = javaVendor startsWith "Apple"
+  // See http://mail.openjdk.java.net/pipermail/macosx-port-dev/2012-November/005148.html for
+  // the reason why we don't follow developer.apple.com/library/mac/#technotes/tn2002/tn2110.
+  /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
+  def isMac                 = osName startsWith "Mac OS X" 
 
   // This is looking for javac, tools.jar, etc.
   // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,
