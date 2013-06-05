@@ -12,4 +12,9 @@ Macros_Test_2.scala:4: error: missing arguments for method foo in object Impls;
 follow this method with `_' if you want to treat it as a partially applied function
   def foo3(x: Any) = macro {2; Impls.foo}
                                      ^
-three errors found
+Macros_Test_2.scala:7: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+    def foo = macro impl
+        ^
+four errors found
