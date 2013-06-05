@@ -39,7 +39,7 @@ abstract class ExplicitOuter extends InfoTransform
     new ExplicitOuterTransformer(unit)
 
   /** Is given clazz an inner class? */
-  private def isInner(clazz: Symbol) =
+  def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
   private def haveSameOuter(parent: Type, clazz: Symbol) = {
