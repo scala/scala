@@ -462,7 +462,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     extends Transformer
     with    DelayedInitHelper
     with    OmittablesHelper
-    with    GuardianOfCtorStmts {
+    with    GuardianOfCtorStmts
+    with    JumpOverOuters {
 
     val clazz = impl.symbol.owner  // the transformed class
     val stats = impl.body          // the transformed template body
@@ -678,6 +679,18 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         constrStatBuf += intoConstructor(impl.symbol, stat)
     }
 
+    // ----------------------------- by now triaging completed -----------------------------
+
+    val JumpOverOutersInfo(cachedOuterFieldDecls, cachingFieldInits) = jumpOverRedundantOuters()
+
+    defBuf ++= cachedOuterFieldDecls
+
+    if (cachingFieldInits.nonEmpty) {
+      debuglog(
+        s"In class ${clazz.debugLocationString}, multi-step navigation over outer replaced: ${cachingFieldInits.mkString("; ")}"
+      )
+    }
+
     populateOmittables()
 
     // Initialize all parameters fields that must be kept.
@@ -706,12 +719,15 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
     rewriteDelayedInit()
 
+    val ctorStmsAfterParamInits = {
+      constrPrefixBuf.toList ::: uptoSuperStats ::: guardSpecializedInitializer(remainingConstrStats)
+    }
+
     // Assemble final constructor
     defBuf += deriveDefDef(constr)(_ =>
       treeCopy.Block(
         constrBody,
-        paramInits ::: constrPrefixBuf.toList ::: uptoSuperStats :::
-          guardSpecializedInitializer(remainingConstrStats),
+        paramInits ::: cachingFieldInits ::: ctorStmsAfterParamInits,
         constrBody.expr))
 
     // Followed by any auxiliary constructors
@@ -725,5 +741,402 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     val transformed: Template = deriveTemplate(impl)(_ => defBuf.toList filter (stat => mustbeKept(stat.symbol)))
 
   } // TemplateTransformer
+
+  /*
+   * Motivation
+   * ----------
+   *
+   * This transformation
+   *   - shortens navigation-paths over outer-instances to minimize heap retention at runtime,
+   *   - by caching not the direct outer-instance but the nearest outer-instance that's actually needed.
+   *
+   * In particular, this transformation benefits actors, which usually hand out closures that outlive the actor.
+   *
+   *
+   * Before and after this transformation
+   * ------------------------------------
+   *
+   * For an inner class C fulfilling the preconditions detailed in `preconds()` (for example, an anonymous-closure),
+   * it's possible to visit all usages of outer-accessors to find
+   * the innermost outer-instance of C that's actually needed (there's only one, details in `jumpOverRedundantOuters()).
+   * That's the outer-instance to be cached in place of the direct outer-instance.
+   *
+   * Before this transformation:
+   *   - C holds its direct-outer in C's outer-field
+   *
+   * After this transformation:
+   *   - C holds the nearest outer-instance that's actually needed in a field named "cachedOuter$"
+   *   - accesses over outer-chains are simplified to take as starting point the cached outer-instance
+   *   - the original outer-field isn't removed by this transformation but by `OmittablesHelper`
+   *
+   *
+   * Interplay with other transforms, Performance impact
+   * ---------------------------------------------------
+   *
+   * This transformation is self-contained (in the constructors phase) ie none of the other compilation phases
+   * need perform additional work in support of `JumpOverOuters`.
+   *
+   * Irrespective of object size and lifetime, this transformation never degrades performance nor increases memory footprint,
+   * thus it's always applied when conditions are fulfilled.
+   *
+   *
+   * Overview of the implementation
+   * ------------------------------
+   *
+   * Once triaging of template-members has been completed,
+   * and before unused outer-fields are elided, it's `JumpOverOuters` time.
+   *
+   * The implementation is easier to grok from its entry point: `jumpOverRedundantOuters()`
+   * Its description summarizes the utility methods at play (also documented)
+   * and the role played by the `LinksCollector` utility class.
+   *
+   */
+  private trait JumpOverOuters { self: TemplateTransformer =>
+
+    // ----------- inspector methods -----------
+
+    private def isOuterLoad(expr: Tree): Boolean = (
+      expr.isInstanceOf[Apply]  && expr.symbol.isOuterAccessor ||
+      expr.isInstanceOf[Select] && expr.symbol.isOuterField
+    )
+
+    private def isSelOnOuter(tree: Tree): Boolean = tree match {
+      case sel: Select => isOuterLoad(sel.qualifier)
+      case _           => false
+    }
+
+    // ----------- wrappers -----------
+
+    /*
+     * An `OuterLoad` demarcates an expression in rhs position that evaluates to an outer-instance.
+     * An `OuterLoad` comes in two shapes:
+     *   - Apply:  ie invocation of an outer-accessor
+     *   - Select: of an outer-field
+     * A third shape, Ident, can only occur in the body of a constructor, denoting *the* outer-value received via a param.
+     * For the purposes of retaining less heap, there's no gain in shortening access-chains-over-outer-instances
+     * in constructors, which aren't visted as part of this analysis. Therefore that third shape doesn't show up.
+     */
+    class OuterLoad(val expr: Tree) {
+
+      def symbol = expr.symbol
+
+      def isWellFormed = (isOuterLoad(expr) && isRootedAtThis)
+
+      @scala.annotation.tailrec final def isRootedAtThis: Boolean = driller(expr) match {
+        case NonValidOuterLoad => false
+        case RootOuterLoad     => true
+        case load              => load.isRootedAtThis
+      }
+
+      val driller: Tree => OuterLoad = {
+        case Apply(Select(quali, _), Nil) if isOuterLoad(quali) => OuterLoad(quali)
+        case s @ Select(t : This, _)      if t.symbol == clazz  => RootOuterLoad
+        case Select(quali, _)             if isOuterLoad(quali) => OuterLoad(quali)
+        case _                                                  => NonValidOuterLoad
+      }
+
+      def prevOuterLink: OuterLoad = driller(expr) match {
+        case NonValidOuterLoad => abort(s"For the purposes of JumpOverOuters, an access-chain over outer-accessors isn't supposed to be like $expr")
+        case load              => load
+      }
+
+      /*
+       * The navigation path this OuterLoad builds upon. This OuterLoad isn't part of it.
+       * In terms of the source code for an access-path with this OuterLoad as last link,
+       * the first element returned would appears next-to-last.
+       */
+      def baseStack: List[OuterLoad] = prevOuterLink match {
+        case RootOuterLoad => Nil
+        case load          => load :: load.baseStack
+      }
+
+      override def equals(that: Any): Boolean = that match {
+        case load: OuterLoad =>
+          if (load eq this) true
+          else if (this.expr == null || load.expr == null) {
+            this eq load
+          }
+          else {
+            (load.expr == this.expr)
+          }
+        case _ => false
+      }
+
+      override def hashCode() = (if (expr == null) 0 else expr.hashCode())
+
+      override def toString = s"OuterLoad($expr)"
+
+    }
+    object OuterLoad { def apply(expr: Tree) = new OuterLoad(expr) }
+
+    // represents a non-valid OuterLoad (theme: "avoid needless Options")
+    object NonValidOuterLoad extends OuterLoad(null) { override def toString = "NonValidOuterLoad" }
+    // represents the starting point of an access-chain over outer-references (ie obtained from This)
+    object     RootOuterLoad extends OuterLoad(null) { override def toString = "RootOuterLoad" }
+
+    /*
+     * A `SelOnOuter` denotes an expression in rhs position that selects a member on an outer-instance.
+     * For the purposes of this analyis, `SelOnOuter` are distinguished:
+     *   - selecting an outer-instance (thus forming a chain of outer-accessors)
+     *   - selecting anything else.
+     */
+    private case class SelOnOuter(sel: Select) {
+      def symbol = sel.symbol
+      def nestedOuterLoad: OuterLoad  = OuterLoad(sel.qualifier)
+      def isPartOfOuterChain: Boolean = (sel.symbol.isOuterAccessor || sel.symbol.isOuterField)
+    }
+
+    // ----------- collecting individual links of outer-chains -----------
+
+    class LinksCollector extends Traverser {
+
+      private val selsOnOuter = mutable.Set.empty[SelOnOuter]
+      private val outerLoads  = mutable.Set.empty[OuterLoad]
+
+      // on purpose `paramInits` aren't visited to avoid trivial "shortest chains"
+      // on purpose `constrStatBuf` not visited because *the* outer value is always available (as param-value) in the primary-ctor
+      traverseTrees(defBuf.toList)
+      traverseTrees(auxConstructorBuf.toList)
+
+      private val outersPartOfNonOuterSelection = selsOnOuter filterNot (_.isPartOfOuterChain) map (_.nestedOuterLoad)
+
+      /*
+       * `initialLeaves`: Usages of outer-getters and outer-fields, with the property that
+       *   an outer-instance thus obtained is in turn used:
+       *     (a) to grab some non-outer member, or
+       *     (b) the outer-instance is used as-is.
+       * An OuterLoad in `leaves` appears as the last link in an access chain (aka "leaf").
+       */
+      val Pair(initialLeaves, inUseByOthers) = {
+        val outersNotNavigatedFurther = {
+          val isNavigatedFurther = (selsOnOuter map (_.nestedOuterLoad))
+          outerLoads filterNot isNavigatedFurther
+        }
+        (outersPartOfNonOuterSelection ++ outersNotNavigatedFurther) partition (_.isRootedAtThis)
+      }
+
+      override def traverse(tree: Tree) {
+        tree match {
+
+          case dd: DefDef =>
+            // don't count field-reads in outer-getters otherwise a trivial "shortest chain"
+            if (!dd.symbol.isOuterAccessor) { super.traverse(dd) }
+
+          case _ =>
+            if (isSelOnOuter(tree)) {
+              selsOnOuter += SelOnOuter(tree.asInstanceOf[Select])
+            }
+            else if (isOuterLoad(tree)) {
+              outerLoads += OuterLoad(tree)
+            }
+            super.traverse(tree)
+
+        }
+      }
+
+    }
+
+    /*
+     * Applicability conditions
+     * ------------------------
+     *
+     * An inner-class C is a candidate for the JumpOverOuters transformation only if it fulfills all of:
+     *   - final
+     *         (thus we know all usage-sites of outer-references)
+     *   - doesn't own nested classes itself
+     *         (which simplifies the analysis, not an inherent limitation)
+     *   - doesn't extend an inner-class
+     *         (to avoid rare corner cases, details in `preconds()`)
+     */
+    private def preconds = {
+
+      def hasNestedClass = (defBuf exists (_.isInstanceOf[ClassDef]))
+
+      // `mustbeKept()` as of yet not well-defined because `populateOmittables()` runs after `jumpOverRedundantOuters()`
+      // thus it might well happen `hasOuter == true` yet it's not in use.
+      // No problem: JumpOverOuters can deal with that (it changes nothing in that case).
+      def hasOuter = (clazz.info.decls exists (_.isOuterField))
+
+      /*
+       * To simplify the analysis of outer-chains, we focus on the (by far most common ) case where no outer-field is inherited.
+       * For example, class N below is not eligible for this transformation because it extends an inner-class:
+       *
+       *     class O {
+       *       class I1
+       *       class I2 {
+       *         class N extends I1
+       *       }
+       *     }
+       *
+       * In detail, N declares an outer field in addition to the outer-field inherited from I1
+       * (I1 and N have different owners, and the inherited outer-field has protected access-level)
+       *
+       */
+      def extendsInnerClass = (clazz.ancestors exists explicitOuter.isInner)
+
+
+      (!isDelayedInitSubclass && clazz.isEffectivelyFinal && !hasNestedClass && hasOuter && !extendsInnerClass)
+    }
+
+    /*
+     * Entry point for the JumpOverOuters transformation
+     * -------------------------------------------------
+     *
+     * Rewrites template-members (other than the primary constructor)
+     * to shorten access-chains over outer-instances. This involves several steps:
+     *
+     *   (1) checking preconditions
+     *
+     *   (2) collecting outer-chains via `LinksCollector`
+     *
+     *   (3) inspecting outer-chains to find the longest outer-chains that aren't navigated further,
+     *       either because a non-outer member is selected on the last link of the chain;
+     *       or because the outer-instance given by the last link is used as-is.
+     *
+     *   (4) in case the thus found "nearmost outer-instance that's actually needed"
+     *       is different from the direct-outer (ie, it lies beyond the direct-outer)
+     *         - a field is added to cache it,
+     *         - an assignment statement to initialize the newly added field will be added to the primary constructor,
+     *         - access-chains are rewritten
+     *
+     */
+    def jumpOverRedundantOuters(): JumpOverOutersInfo = {
+
+      if (!preconds) { return NoJumpOverOutersInfo }
+
+      val linksCollector = new LinksCollector
+
+      if (linksCollector.inUseByOthers.nonEmpty) {
+        // sample snippet to get here:
+        //   if (x1.$isInstanceOf[reflect.internal.Trees#Tree]().&&((x1.$asInstanceOf[reflect.internal.Trees#Tree]()).$outer().eq($anonfun$1.this.$outer.global())))
+        return NoJumpOverOutersInfo
+      }
+
+      val leaves = mutable.Set.empty[OuterLoad] ++ linksCollector.initialLeaves
+
+      /*
+       * Symbols for members (fields, getters) that provide an outer-instance,
+       * such that those members appear in at least one access-chain.
+       *
+       * Initially this set contains candidates, which are removed as other already-cached outer-instances
+       * are discovered that can be used to access the removed candidate.
+       */
+      val isCached = mutable.Set.empty[Symbol] ++ (leaves map (_.symbol))
+
+      def notCached(load: OuterLoad) = !isCached(load.symbol)
+
+      def dontCache(load: OuterLoad) { isCached -= load.symbol }
+
+      /*
+       * Caching the outer-instance given by an OuterLoad `load` makes sense
+       * only if it never appears in an access chain after another outer-instance `prev` already being cached.
+       * For in that case we're not making GC any easier, and we could navigate our way from `prev` to `load`.
+       *
+       * Starting with outer-chains as gathered by `LinksCollector` (called `leaves` below)
+       * they are progressively shortened (following the strategy described above).
+       * What remains is a bunch of access-chains all ending at the "nearest outer-instance that's actually needed".
+       */
+      var shrinked = false
+      do {
+        shrinked = false
+        val snapshot = leaves.toList
+        for(leaf <- snapshot) {
+          // let's see whether any "nearer" outer-instance is being cached, to remove as caching-candidates those reachable from it.
+          val prefix = leaf.baseStack.reverse
+          val fstRetainedAndTheRest = (prefix dropWhile notCached)
+          fstRetainedAndTheRest match {
+            case nearestMustRetain :: reachableFromNearest =>
+              shrinked    = true
+              leaves     -= leaf
+              leaves     += nearestMustRetain
+              (leaf :: reachableFromNearest) foreach dontCache
+            case _ =>
+              ()
+          }
+        }
+      } while (shrinked)
+
+      /*
+       * Not all "leaf" expressions should be shortened. For example, `this.$outer` is already in "cached-form".
+       * The `longForms` picked below are those leaf expressions consisting of at least an additional navigation step.
+       * Each such longForm will be replaced by a read of the newly added field (ie, the cache).
+       */
+      val longForms: collection.Set[Tree] =
+        for(
+          leaf <- leaves;
+          steppingStones = leaf.baseStack.reverse filterNot (_ == RootOuterLoad);
+          if steppingStones.nonEmpty
+        ) yield leaf.expr
+
+      if (longForms.isEmpty) { return NoJumpOverOutersInfo }
+
+      /*
+       * More than one longForm may denote the same outer-instance. A single field should cache it.
+       */
+      val cachingField = mutable.Map.empty[/*Outer*/ Symbol, /*Field*/ Symbol]
+
+      /*
+       * After `paramInits` goes the initialization of fields caching outer-instances (ie in the primary constructor).
+       */
+      var cachingFieldInits: List[Assign] = Nil
+
+      for(longForm <- longForms; osym = longForm.symbol; if !cachingField.isDefinedAt(osym)) {
+
+        val fieldName = unit.freshTermName("cachedOuter$")
+        val fsym = clazz.newValue(fieldName, NoPosition, SYNTHETIC | FINAL | PRIVATE)
+        fsym.setInfoAndEnter(osym.tpe.resultType)
+
+        cachingField += (osym -> fsym)
+
+        cachingFieldInits ::= {
+          // no need to emit `if ($outer.eq(null)) throw null ...`
+          // because the same effect will occur upon initialization of the cached non-direct outer-instance
+          // for example: $anonfun$xyz.this.cachedOuter$1 = $outer.$outer();
+          val initTree = mkAssign(fsym, intoConstructor(oldowner = null, tree = longForm))
+          resetPos traverse initTree
+          initTree
+        }
+      }
+
+      val cachedOuterFieldDecls: List[ValDef] =
+        for (fsym <- cachingField.values.toList)
+        yield {
+          (localTyper typed ValDef(fsym)).asInstanceOf[ValDef]
+        }
+
+      object longToShortForm extends Transformer {
+        private def getfield(expr: Tree): Select = {
+          val osym = expr.symbol
+          val fsym = cachingField(osym)
+          val sel  = localTyper.typedPos(expr.pos) { Select(This(clazz), fsym) }
+          sel.asInstanceOf[Select]
+        }
+        override def transform(tree: Tree): Tree = tree match {
+          case sel: Select if longForms(sel) => getfield(sel)
+          case app: Apply  if longForms(app) => getfield(app)
+          case other                         => super.transform(other)
+        }
+      }
+
+      val inDef  = defBuf.toList
+      val inAux  = auxConstructorBuf.toList
+      val outDef = (longToShortForm transformTrees inDef)
+      val outAux = (longToShortForm transformTrees inAux)
+      if (inDef ne outDef) {
+        defBuf.clear(); defBuf ++= outDef
+      }
+      if (inAux ne outAux) {
+        auxConstructorBuf.clear(); auxConstructorBuf ++= outAux
+      }
+
+      JumpOverOutersInfo(cachedOuterFieldDecls, cachingFieldInits)
+
+    } // method jumpOverRedundantOuters()
+
+    case class JumpOverOutersInfo(cachedOuterFieldDecls: List[ValDef], cachingFieldInits: List[Assign])
+
+    val NoJumpOverOutersInfo = JumpOverOutersInfo(Nil, Nil)
+
+  } // JumpOverOuters
 
 }
