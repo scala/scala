@@ -594,11 +594,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       sym.owner.info        //todo: needed?
       sym.owner.owner.info  //todo: needed?
 
-      assert(
-        sym.owner.sourceModule ne NoSymbol,
-        "" + sym.fullLocationString + " in " + sym.owner.owner + " " + sym.owner.owner.info.decls
-      )
-      REF(sym.owner.sourceModule) DOT sym
+      if (sym.owner.sourceModule eq NoSymbol)
+        abort(s"Cannot create static reference to $sym because ${sym.safeOwner} has no source module")
+      else
+        REF(sym.owner.sourceModule) DOT sym
     }
 
     def needsInitAndHasOffset(sym: Symbol) =
