@@ -223,7 +223,7 @@ self =>
   def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
 
   /**
-   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable boolean.
+   * @throws `java.lang.IllegalArgumentException` - If the string does not contain a parsable boolean.
    */
   def toBoolean: Boolean = parseBoolean(toString)
   /**
