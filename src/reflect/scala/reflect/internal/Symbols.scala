@@ -752,7 +752,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isMonomorphicType =
       isType && {
         val info = originalInfo
-        info.isComplete && !info.isHigherKinded
+        (    (info eq null)
+          || (info.isComplete && !info.isHigherKinded)
+        )
       }
 
     def isStrictFP          = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
