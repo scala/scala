@@ -869,14 +869,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       )
       lineNumber(tree)
       genLoadModule(module)
-      asmClassType(module)
+      symInfoTK(module)
     }
 
     def genLoadModule(module: Symbol) {
       if (claszSymbol == module.moduleClass && jMethodName != "readResolve") {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
       } else {
-        val mbt  = asmClassType(module)
+        val mbt  = symInfoTK(module)
         mnode.visitFieldInsn(
           asm.Opcodes.GETSTATIC,
           mbt.getInternalName /* + "$" */ ,
