@@ -107,6 +107,18 @@ trait Types
 
   protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
+  /** Caching the most recent map has a 75-90% hit rate. */
+  private object substTypeMapCache {
+    private[this] var cached: SubstTypeMap = new SubstTypeMap(Nil, Nil)
+
+    def apply(from: List[Symbol], to: List[Type]): SubstTypeMap = {
+      if ((cached.from ne from) || (cached.to ne to))
+        cached = new SubstTypeMap(from, to)
+
+      cached
+    }
+  }
+
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
@@ -698,8 +710,7 @@ trait Types
      *  symbols `from` in this type.
      */
     def subst(from: List[Symbol], to: List[Type]): Type =
-      if (from.isEmpty) this
-      else new SubstTypeMap(from, to) apply this
+      if (from.isEmpty) this else substTypeMapCache(from, to)(this)
 
     /** Substitute symbols `to` for occurrences of symbols `from` in this type.
      *
