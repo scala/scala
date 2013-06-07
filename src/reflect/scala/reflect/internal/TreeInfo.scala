@@ -837,11 +837,12 @@ abstract class TreeInfo {
 
     def unapply(tree: Tree) = refPart(tree) match {
       case ref: RefTree => {
-        val isBundle = definitions.isMacroBundleType(ref.qualifier.tpe)
+        val qual = ref.qualifier
+        val isBundle = definitions.isMacroBundleType(qual.tpe)
         val owner =
-          if (isBundle) ref.qualifier.tpe.typeSymbol
+          if (isBundle) qual.tpe.typeSymbol
           else {
-            val sym = ref.qualifier.symbol
+            val sym = if (qual.hasSymbolField) qual.symbol else NoSymbol
             if (sym.isModule) sym.moduleClass else sym
           }
         Some((isBundle, owner, ref.symbol, dissectApplied(tree).targs))

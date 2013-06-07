@@ -92,11 +92,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     methName: String,
     // flattens the macro impl's parameter lists having symbols replaced with their fingerprints
     // currently fingerprints are calculated solely from types of the symbols:
-    //   * c.Expr[T] => IMPLPARAM_EXPR
-    //   * c.WeakTypeTag[T] => index of the type parameter corresponding to that type tag
-    //   * everything else (e.g. scala.reflect.macros.Context) => IMPLPARAM_OTHER
+    //   * c.Expr[T] => LiftedTyped
+    //   * c.Tree => LiftedUntyped
+    //   * c.WeakTypeTag[T] => Tagged(index of the type parameter corresponding to that type tag)
+    //   * everything else (e.g. scala.reflect.macros.Context) => Other
     // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: Context)(x: c.Expr[T], y: c.Tree): (U, V) = ???
-    // `signature` will be equal to List(List(Other), List(Lifted, Other), List(Tagged(0), Tagged(2)))
+    // `signature` will be equal to List(List(Other), List(LiftedTyped, LiftedUntyped), List(Tagged(0), Tagged(2)))
     signature: List[List[Fingerprint]],
     // type arguments part of a macro impl ref (the right-hand side of a macro definition)
     // these trees don't refer to a macro impl, so we can pickle them as is
@@ -124,7 +125,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *        "className" = "Macros$"))
    */
   object MacroImplBinding {
-    val versionFormat = 4.0
+    val versionFormat = 5.0
 
     def pickleAtom(obj: Any): Tree =
       obj match {
@@ -164,7 +165,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       def signature: List[List[Fingerprint]] = {
         def fingerprint(tpe: Type): Fingerprint = tpe.dealiasWiden match {
           case TypeRef(_, RepeatedParamClass, underlying :: Nil) => fingerprint(underlying)
-          case ExprClassOf(_) => Lifted
+          case ExprClassOf(_) => LiftedTyped
+          case TreeType() => LiftedUntyped
           case _ => Other
         }
 
@@ -388,7 +390,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
               val fingerprint = implParams(min(j, implParams.length - 1))
               fingerprint match {
-                case Lifted => context.Expr[Nothing](arg)(TypeTag.Nothing) // TODO: SI-5752
+                case LiftedTyped => context.Expr[Nothing](arg)(TypeTag.Nothing) // TODO: SI-5752
+                case LiftedUntyped => arg
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
               }
@@ -690,6 +693,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           }
           expanded match {
             case expanded: Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
+            case expanded: Tree if expandee.symbol.isTermMacro => validateResultingTree(expanded)
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }
         } catch {
@@ -804,10 +808,12 @@ class Fingerprint(val value: Int) extends AnyVal {
   def paramPos = { assert(isTag, this); value }
   def isTag = value >= 0
   def isOther = this == Other
-  def isExpr = this == Lifted
+  def isExpr = this == LiftedTyped
+  def isTree = this == LiftedUntyped
   override def toString = this match {
     case Other => "Other"
-    case Lifted => "Expr"
+    case LiftedTyped => "Expr"
+    case LiftedUntyped => "Tree"
     case _ => s"Tag($value)"
   }
 }
@@ -815,5 +821,6 @@ class Fingerprint(val value: Int) extends AnyVal {
 object Fingerprint {
   def Tagged(tparamPos: Int) = new Fingerprint(tparamPos)
   val Other = new Fingerprint(-1)
-  val Lifted = new Fingerprint(-2)
+  val LiftedTyped = new Fingerprint(-2)
+  val LiftedUntyped = new Fingerprint(-3)
 }

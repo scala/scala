@@ -54,7 +54,7 @@ trait Helpers {
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
-  def increaseMetalevel(pre: Type, tp: Type): Type = dealiasAndRewrap(tp) {
+  def increaseMetalevel(pre: Type, tp: Type): Type = transparentShallowTransform(RepeatedParamClass, tp) {
     case tp => typeRef(pre, MacroContextExprClass, List(tp))
   }
 
@@ -64,8 +64,8 @@ trait Helpers {
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
-  def decreaseMetalevel(tp: Type): Type = dealiasAndRewrap(tp) {
+  def decreaseMetalevel(tp: Type): Type = transparentShallowTransform(RepeatedParamClass, tp) {
     case ExprClassOf(runtimeType) => runtimeType
-    case _ => AnyClass.tpe // so that macro impls with rhs = ??? don't screw up our inference
+    case _ => AnyTpe // so that macro impls with rhs = ??? don't screw up our inference
   }
 }
