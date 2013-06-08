@@ -116,7 +116,7 @@ object Versions {
 
   def getGitDate(git: GitRunner, baseDirectory: File, s: TaskStreams): String = {
     val lines = getGitLines("log","-1","--format=\"%ci\"")(git,baseDirectory, s)
-    val line = if(lines.isEmpty) sys.error("Could not retreive git commit sha!") else lines.head
+    val line = if(lines.isEmpty) sys.error("Could not retrieve git commit sha!") else lines.head
     // Lines *always* start with " for some reason...
     line drop 1 split "\\s+" match {
       case Array(date, time, _*) =>  "%s-%s" format (date.replaceAll("\\-", ""), time.replaceAll(":",""))
@@ -126,7 +126,7 @@ object Versions {
 
   def getGitSha(git: GitRunner, baseDirectory: File, s: TaskStreams): String = {
     val lines = getGitLines("log","-1","--format=\"%H\"", "HEAD")(git,baseDirectory, s)
-    val line = if(lines.isEmpty) sys.error("Could not retreive git commit sha!") else lines.head
+    val line = if(lines.isEmpty) sys.error("Could not retrieve git commit sha!") else lines.head
     val noquote = if(line startsWith "\"") line drop 1 else line
     val nog = if(noquote startsWith "g") noquote drop 1 else noquote
     nog take 10
