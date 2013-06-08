@@ -588,10 +588,14 @@ abstract class ClassfileParser {
       // sealed java enums
       if (jflags.isEnum) {
         val enumClass = sym.owner.linkedClassOfClass
-        if (!enumClass.isSealed)
-          enumClass setFlag (SEALED | ABSTRACT)
-
-        enumClass addChild sym
+        enumClass match {
+          case NoSymbol =>
+            devWarning(s"no linked class for java enum $sym in ${sym.owner}. A referencing class file might be missing an InnerClasses entry.")
+          case linked =>
+            if (!linked.isSealed)
+              linked setFlag (SEALED | ABSTRACT)
+            linked addChild sym
+        }
       }
     }
   }

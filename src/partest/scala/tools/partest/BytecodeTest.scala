@@ -2,10 +2,9 @@ package scala.tools.partest
 
 import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
-import scala.tools.asm
-import asm.{ ClassReader }
-import asm.tree.{ClassNode, MethodNode, InsnList}
-import java.io.InputStream
+import scala.tools.asm.{ClassWriter, ClassReader}
+import scala.tools.asm.tree.{ClassNode, MethodNode, InsnList}
+import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
 import AsmNode._
 
 /**
@@ -125,5 +124,33 @@ abstract class BytecodeTest extends ASMConverters {
     // logic inspired by scala.tools.util.PathResolver implementation
     val containers = DefaultJavaContext.classesInExpandedPath(Defaults.javaUserClassPath)
     new JavaClassPath(containers, DefaultJavaContext)
+  }
+}
+
+object BytecodeTest {
+  /** Parse `file` as a class file, transforms the ASM representation with `f`,
+   *  and overwrites the orginal file.
+   */
+  def modifyClassFile(file: JFile)(f: ClassNode => ClassNode) {
+    val rfile = new reflect.io.File(file)
+    def readClass: ClassNode = {
+      val cr = new ClassReader(rfile.toByteArray())
+      val cn = new ClassNode()
+      cr.accept(cn, 0)
+      cn
+    }
+
+    def writeClass(cn: ClassNode) {
+      val writer = new ClassWriter(0)
+      cn.accept(writer)
+      val os = rfile.bufferedOutput()
+      try {
+        os.write(writer.toByteArray)
+      } finally {
+        os.close()
+      }
+    }
+
+    writeClass(f(readClass))
   }
 }
