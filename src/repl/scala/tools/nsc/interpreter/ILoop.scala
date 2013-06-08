@@ -642,10 +642,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def loopPostInit() {
-    in match {
-      case x: JLineReader => x.consoleReader.postInit
-      case _              =>
-    }
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
     intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
@@ -660,6 +656,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       replProps.power setValue true
       unleashAndSetPhase()
       asyncMessage(power.banner)
+    }
+    // SI-7418 Now, and only now, can we enable TAB completion.
+    in match {
+      case x: JLineReader => x.consoleReader.postInit
+      case _              =>
     }
   }
   def process(settings: Settings): Boolean = savingContextLoader {
