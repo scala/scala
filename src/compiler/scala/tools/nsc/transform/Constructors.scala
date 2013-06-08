@@ -687,7 +687,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
     if (cachingFieldInits.nonEmpty) {
       debuglog(
-        s"In class ${clazz.debugLocationString}, multi-step navigation over outer replaced: ${cachingFieldInits.mkString("; ")}"
+        s"In class ${clazz.fullLocationString}, multi-step navigation over outer replaced: ${cachingFieldInits.mkString("; ")}"
       )
     }
 
@@ -895,8 +895,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // on purpose `paramInits` aren't visited to avoid trivial "shortest chains"
       // on purpose `constrStatBuf` not visited because *the* outer value is always available (as param-value) in the primary-ctor
+      // on purpose `auxConstructorBuf` not visited because outer-param always available in auxiliary-ctor.
       traverseTrees(defBuf.toList)
-      traverseTrees(auxConstructorBuf.toList)
 
       private val outersPartOfNonOuterSelection = selsOnOuter filterNot (_.isPartOfOuterChain) map (_.nestedOuterLoad)
 
