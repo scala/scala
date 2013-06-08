@@ -77,14 +77,14 @@ trait ExistentialsAndSkolems {
    *  also replaced, except for term symbols of an Ident tree, where
    *  only the type of the Ident is changed.
    */
-  final def existentialTransform[T](rawSyms: List[Symbol], tp: Type, rawOwner: Option[Symbol] = None)(creator: (List[Symbol], Type) => T): T = {
+  final def existentialTransform[T](rawSyms: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol)(creator: (List[Symbol], Type) => T): T = {
     val allBounds = existentialBoundsExcludingHidden(rawSyms)
     val typeParams: List[Symbol] = rawSyms map { sym =>
       val name = sym.name match {
         case x: TypeName  => x
         case x            => tpnme.singletonName(x)
       }
-      def rawOwner0  = rawOwner.getOrElse(abort(s"no owner provided for existential transform over raw parameter: $sym"))
+      def rawOwner0  = rawOwner orElse abort(s"no owner provided for existential transform over raw parameter: $sym")
       val bound      = allBounds(sym)
       val sowner     = if (isRawParameter(sym)) rawOwner0 else sym.owner
       val quantified = sowner.newExistential(name, sym.pos)
@@ -106,7 +106,7 @@ trait ExistentialsAndSkolems {
    * @param hidden   The original type
    * @param rawOwner The owner for Java raw types.
    */
-  final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Option[Symbol] = None): Type =
+  final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type =
     if (hidden.isEmpty) tp
     else existentialTransform(hidden, tp, rawOwner)(existentialAbstraction)
 }

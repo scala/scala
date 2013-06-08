@@ -137,20 +137,20 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = stableTypeFor(tree) match {
-    case Some(tp) => tree setType tp
-    case _        => tree
+    case NoType => tree
+    case tp     => tree setType tp
   }
 
   /** Computes stable type for a tree if possible */
-  def stableTypeFor(tree: Tree): Option[Type] =
-    if (treeInfo.admitsTypeSelection(tree))
-      tree match {
-        case This(_)         => Some(ThisType(tree.symbol))
-        case Ident(_)        => Some(singleType(tree.symbol.owner.thisType, tree.symbol))
-        case Select(qual, _) => Some(singleType(qual.tpe, tree.symbol))
-        case _               => None
-      }
-    else None
+  def stableTypeFor(tree: Tree): Type = (
+    if (!treeInfo.admitsTypeSelection(tree)) NoType
+    else tree match {
+      case This(_)         => ThisType(tree.symbol)
+      case Ident(_)        => singleType(tree.symbol.owner.thisType, tree.symbol)
+      case Select(qual, _) => singleType(qual.tpe, tree.symbol)
+      case _               => NoType
+    }
+  )
 
   /** Builds a reference with stable type to given symbol */
   def mkAttributedStableRef(pre: Type, sym: Symbol): Tree =
