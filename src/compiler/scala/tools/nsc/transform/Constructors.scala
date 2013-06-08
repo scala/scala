@@ -523,7 +523,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
       def splitAtSuper(stats: List[Tree]) = {
-        def isConstr(tree: Tree) = (tree.symbol ne null) && tree.symbol.isConstructor
+        def isConstr(tree: Tree): Boolean = tree match {
+          case Block(_, expr) => isConstr(expr)  // SI-6481 account for named argument blocks
+          case _              => (tree.symbol ne null) && tree.symbol.isConstructor
+        }
         val (pre, rest0) = stats span (!isConstr(_))
         val (supercalls, rest) = rest0 span (isConstr(_))
         (pre ::: supercalls, rest)
