@@ -3186,7 +3186,7 @@ trait Typers extends Adaptations with Tags {
            * to that. This is the last thing which is tried (after
            * default arguments)
            */
-          def tryTupleApply: Option[Tree] = (
+          def tryTupleApply: Tree = (
             if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
@@ -3195,14 +3195,15 @@ trait Typers extends Adaptations with Tags {
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
                   // Depending on user options, may warn or error here if
                   // a Unit or tuple was inserted.
-                  Some(t) filter (tupledTree =>
+                  val keepTree = (
                        !mode.typingExprNotFun
-                    || tupledTree.symbol == null
-                    || checkValidAdaptation(tupledTree, args)
+                    || t.symbol == null
+                    || checkValidAdaptation(t, args)
                   )
-              } orElse { _ => context.undetparams = savedUndetparams ; None }
-              }
-            else None
+                  if (keepTree) t else EmptyTree
+              } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
+            }
+            else EmptyTree
           )
 
           /* Treats an application which uses named or default arguments.
@@ -3215,7 +3216,7 @@ trait Typers extends Adaptations with Tags {
 
             def checkNotMacro() = {
               if (treeInfo.isMacroApplication(fun))
-                tryTupleApply getOrElse duplErrorTree(NamedAndDefaultArgumentsNotSupportedForMacros(tree, fun))
+                tryTupleApply orElse duplErrorTree(NamedAndDefaultArgumentsNotSupportedForMacros(tree, fun))
             }
 
             if (mt.isErroneous) duplErrTree
@@ -3223,7 +3224,7 @@ trait Typers extends Adaptations with Tags {
               // #2064
               duplErrorTree(WrongNumberOfArgsError(tree, fun))
             } else if (lencmp > 0) {
-              tryTupleApply getOrElse duplErrorTree(TooManyArgsNamesDefaultsError(tree, fun))
+              tryTupleApply orElse duplErrorTree(TooManyArgsNamesDefaultsError(tree, fun))
             } else if (lencmp == 0) {
               // we don't need defaults. names were used, so this application is transformed
               // into a block (@see transformNamedApplication in NamesDefaults)
@@ -3276,7 +3277,7 @@ trait Typers extends Adaptations with Tags {
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
-                  tryTupleApply getOrElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))
+                  tryTupleApply orElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))
                 }
               }
             }
@@ -3312,7 +3313,7 @@ trait Typers extends Adaptations with Tags {
                 // instantiate dependent method types, must preserve singleton types where possible (stableTypeFor) -- example use case:
                 // val foo = "foo"; def precise(x: String)(y: x.type): x.type = {...}; val bar : foo.type = precise(foo)(foo)
                 // precise(foo) : foo.type => foo.type
-                val restpe = mt.resultType(args1 map (arg => gen.stableTypeFor(arg) getOrElse arg.tpe))
+                val restpe = mt.resultType(args1 map (arg => gen stableTypeFor arg orElse arg.tpe))
                 def ifPatternSkipFormals(tp: Type) = tp match {
                   case MethodType(_, rtp) if (mode.inPatternMode) => rtp
                   case _ => tp
@@ -3730,7 +3731,7 @@ trait Typers extends Adaptations with Tags {
 
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
-    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, Some(context0.owner))
+    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context0.owner)
 
     def isReferencedFrom(ctx: Context, sym: Symbol): Boolean = (
       ctx.owner.isTerm &&

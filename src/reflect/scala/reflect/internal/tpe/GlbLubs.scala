@@ -125,8 +125,8 @@ private[internal] trait GlbLubs {
           }
           val tails = tsBts map (_.tail)
           mergePrefixAndArgs(elimSub(ts1, depth) map elimHigherOrderTypeParam, Covariant, depth) match {
-            case Some(tp) => loop(tp :: pretypes, tails)
-            case _        => loop(pretypes, tails)
+            case NoType => loop(pretypes, tails)
+            case tp     => loop(tp :: pretypes, tails)
           }
         }
         else {

@@ -4380,12 +4380,11 @@ trait Types
   /** Compute lub (if `variance == Covariant`) or glb (if `variance == Contravariant`) of given list
    *  of types `tps`. All types in `tps` are typerefs or singletypes
    *  with the same symbol.
-   *  Return `Some(x)` if the computation succeeds with result `x`.
-   *  Return `None` if the computation fails.
+   *  Return `x` if the computation succeeds with result `x`.
+   *  Return `NoType` if the computation fails.
    */
-  def mergePrefixAndArgs(tps: List[Type], variance: Variance, depth: Int): Option[Type] = tps match {
-    case List(tp) =>
-      Some(tp)
+  def mergePrefixAndArgs(tps: List[Type], variance: Variance, depth: Int): Type = tps match {
+    case tp :: Nil => tp
     case TypeRef(_, sym, _) :: rest =>
       val pres = tps map (_.prefix) // prefix normalizes automatically
       val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
@@ -4397,12 +4396,13 @@ trait Types
           // if argss contain one value type and some other type, the lub is Object
           // if argss contain several reference types, the lub is an array over lub of argtypes
           if (argss exists typeListIsEmpty) {
-            None  // something is wrong: an array without a type arg.
-          } else {
+            NoType  // something is wrong: an array without a type arg.
+          }
+          else {
             val args = argss map (_.head)
-            if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectTpe)
-            else Some(typeRef(pre, sym, List(lub(args))))
+            if (args.tail forall (_ =:= args.head)) typeRef(pre, sym, List(args.head))
+            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) ObjectTpe
+            else typeRef(pre, sym, List(lub(args)))
           }
         }
         else transposeSafe(argss) match {
@@ -4411,7 +4411,7 @@ trait Types
             // catching just in case (shouldn't happen, but also doesn't cost us)
             // [JZ] It happens: see SI-5683.
             debuglog(s"transposed irregular matrix!? tps=$tps argss=$argss")
-            None
+            NoType
           case Some(argsst) =>
             val args = map2(sym.typeParams, argsst) { (tparam, as0) =>
               val as = as0.distinct
@@ -4442,22 +4442,22 @@ trait Types
                 }
               }
             }
-            if (args contains NoType) None
-            else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
+            if (args contains NoType) NoType
+            else existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args))
         }
       } catch {
-        case ex: MalformedType => None
+        case ex: MalformedType => NoType
       }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (_.prefix)
       val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
-      try {
-        Some(singleType(pre, sym))
-      } catch {
-        case ex: MalformedType => None
-      }
+      try singleType(pre, sym)
+      catch { case ex: MalformedType => NoType }
     case ExistentialType(tparams, quantified) :: rest =>
-      mergePrefixAndArgs(quantified :: rest, variance, depth) map (existentialAbstraction(tparams, _))
+      mergePrefixAndArgs(quantified :: rest, variance, depth) match {
+        case NoType => NoType
+        case tpe    => existentialAbstraction(tparams, tpe)
+      }
     case _ =>
       abort(s"mergePrefixAndArgs($tps, $variance, $depth): unsupported tps")
   }
