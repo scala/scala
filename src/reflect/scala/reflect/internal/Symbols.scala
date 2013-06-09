@@ -3413,6 +3413,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   def mapParamss[T](sym: Symbol)(f: Symbol => T): List[List[T]] = mmap(sym.info.paramss)(f)
 
+  def existingSymbols(syms: List[Symbol]): List[Symbol] =
+    syms filter (s => (s ne null) && (s ne NoSymbol))
+
   /** Return closest enclosing method, unless shadowed by an enclosing class. */
   // TODO Move back to ExplicitOuter when the other call site is removed.
   // no use of closures here in the interest of speed.
