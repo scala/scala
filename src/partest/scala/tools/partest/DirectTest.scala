@@ -6,6 +6,7 @@
 package scala.tools.partest
 
 import scala.tools.nsc._
+import settings.ScalaVersion
 import io.Directory
 import util.{ SourceFile, BatchSourceFile, CommandLineParser }
 import reporters.{Reporter, ConsoleReporter}
@@ -100,5 +101,31 @@ abstract class DirectTest extends App {
 
   final def log(msg: => Any) {
     if (isDebug) Console.err println msg
+  }
+
+  /**
+   * Run a test only if the current java version is at least the version specified.
+   */
+  def testUnderJavaAtLeast[A](version: String)(yesRun: =>A) = new TestUnderJavaAtLeast(version, { yesRun })
+
+  class TestUnderJavaAtLeast[A](version: String, yesRun: => A) {
+    val javaVersion = System.getProperty("java.specification.version")
+
+    // the "ScalaVersion" class parses Java specification versions just fine
+    val requiredJavaVersion = ScalaVersion(version)
+    val executingJavaVersion = ScalaVersion(javaVersion)
+    val shouldRun = executingJavaVersion >= requiredJavaVersion
+    val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
+
+    def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
+ 
+   /*
+    * If the current java version is at least 'version' then 'yesRun' is evaluated
+    * otherwise 'fallback' is 
+    */
+    def otherwise(fallback: =>A): A = {
+      logInfo()
+      if (shouldRun) yesRun else fallback
+    }
   }
 }
