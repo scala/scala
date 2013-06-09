@@ -9,7 +9,7 @@ class ABC extends A with B with C {
   private def reflected = (
     Thread.currentThread.getStackTrace
       takeWhile (_.getMethodName != "main")
-      exists (_.toString contains "java.lang.reflect.")
+      exists (_.toString contains "sun.reflect.")
   )
   lazy val y: PQ = new PQ(reflected)
 }
