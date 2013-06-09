@@ -831,8 +831,9 @@ trait Typers extends Adaptations with Tags {
                 else tpr.typed(withImplicitArgs, mode, pt)
               }
               orElse { _ =>
-                debuglog("fallback on implicits: " + tree + "/" + resetAllAttrs(original))
-                val tree1 = typed(resetAllAttrs(original), mode)
+                val resetTree = resetLocalAttrs(original)
+                debuglog(s"fallback on implicits: ${tree}/$resetTree")
+                val tree1 = typed(resetTree, mode)
                 // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
                 // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
                 tree1 setType pluginsTyped(tree1.tpe, this, tree1, mode, pt)
