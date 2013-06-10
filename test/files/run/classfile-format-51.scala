@@ -112,12 +112,12 @@ object Driver {
     System.setErr(System.out)
     try {
       // this test is only valid under JDK 1.7+
-      // cheat a little by using 'ScalaVersion' because it can parse java versions just as well
-      val requiredJavaVersion = ScalaVersion("1.7")
-      val executingJavaVersion = ScalaVersion(System.getProperty("java.specification.version"))
-      if (executingJavaVersion >= requiredJavaVersion) {
+      testUnderJavaAtLeast("1.7") {  
         generateClass()
         compile()
+        ()
+      } otherwise {
+        ()
       }
     } 
     finally
