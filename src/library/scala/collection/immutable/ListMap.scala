@@ -121,12 +121,14 @@ extends AbstractMap[A, B]
       def hasNext = !self.isEmpty
       def next(): (A,B) =
         if (!hasNext) throw new NoSuchElementException("next on empty iterator")
-        else { val res = (self.key, self.value); self = self.tail; res }
+        else { val res = (self.key, self.value); self = self.next; res }
     }.toList.reverseIterator
 
   protected def key: A = throw new NoSuchElementException("empty map")
   protected def value: B = throw new NoSuchElementException("empty map")
-  override def tail: ListMap[A, B] = throw new NoSuchElementException("empty map")
+  protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map")
+  // Stub to preserve binary compatibility in 2.10, remove it in 2.11.
+  override def tail: ListMap[A, B] = super.tail
 
   /** This class represents an entry in the `ListMap`.
    */
@@ -140,7 +142,7 @@ extends AbstractMap[A, B]
     override def size: Int = size0(this, 0)
 
     // to allow tail recursion and prevent stack overflows
-    @tailrec private def size0(cur: ListMap[A, B1], acc: Int): Int = if (cur.isEmpty) acc else size0(cur.tail, acc + 1)
+    @tailrec private def size0(cur: ListMap[A, B1], acc: Int): Int = if (cur.isEmpty) acc else size0(cur.next, acc + 1)
 
     /** Is this an empty map?
      *
@@ -156,12 +158,11 @@ extends AbstractMap[A, B]
      *  @return     the value associated with the given key.
      */
     override def apply(k: A): B1 = apply0(this, k)
- 
     
     @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 = 
       if (cur.isEmpty) throw new NoSuchElementException("key not found: "+k)
       else if (k == cur.key) cur.value
-      else apply0(cur.tail, k)  
+      else apply0(cur.next, k)  
 
     /** Checks if this map maps `key` to a value and return the
      *  value if it exists.
@@ -173,7 +174,7 @@ extends AbstractMap[A, B]
 
     @tailrec private def get0(cur: ListMap[A, B1], k: A): Option[B1] =
       if (k == cur.key) Some(cur.value)
-      else if (cur.tail.nonEmpty) get0(cur.tail, k) else None
+      else if (cur.next.nonEmpty) get0(cur.next, k) else None
 
     /** This method allows one to create a new map with an additional mapping
      *  from `key` to `value`. If the map contains already a mapping for `key`,
@@ -202,7 +203,7 @@ extends AbstractMap[A, B]
       var lst: List[(A, B1)] = Nil
       while (cur.nonEmpty) {
         if (k != cur.key) lst ::= ((cur.key, cur.value))
-        cur = cur.tail
+        cur = cur.next
       }
       var acc = ListMap[A, B1]()
       while (lst != Nil) {
@@ -215,6 +216,6 @@ extends AbstractMap[A, B]
     }
 
 
-    override def tail: ListMap[A, B1] = ListMap.this
+    override protected def next: ListMap[A, B1] = ListMap.this
   }
 }
