@@ -37,6 +37,7 @@ abstract class Duplicators extends Analyzer {
 
     envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
     debuglog("retyped with env: " + env)
+
     newBodyDuplicator(context).typed(tree)
   }
 
