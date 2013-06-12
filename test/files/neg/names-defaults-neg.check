@@ -125,9 +125,12 @@ names-defaults-neg.scala:134: error: missing parameter type for expanded functio
 names-defaults-neg.scala:135: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:136: error: wrong number of parameters; expected = 2
+names-defaults-neg.scala:136: error: missing parameter type for expanded function ((x$3) => testAnnFun(x$3, ((x$4) => b = x$4)))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
-                                              ^
+                                               ^
+names-defaults-neg.scala:136: error: missing parameter type for expanded function ((x$4) => b = x$4)
+  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+                                                      ^
 names-defaults-neg.scala:144: error: variable definition needs type because 'x' is used as a named argument in its body.
   def t3 { var x = t.f(x = 1) }
                ^
@@ -165,4 +168,4 @@ names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a m
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
 four warnings found
-41 errors found
+42 errors found
