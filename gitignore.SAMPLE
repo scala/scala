@@ -5,13 +5,6 @@
 *.jar
 *~
 
-#sbt
-/project/target/
-/project/project/target
-
-/target/
-/src/jline/target/
-
 # target directories for ant build
 /build/
 /dists/
