@@ -553,6 +553,12 @@ abstract class TreeInfo {
     })
   )
 
+  /** Is this CaseDef synthetically generated, e.g. by `MatchTranslation.translateTry`? */
+  def isSyntheticCase(cdef: CaseDef) = cdef.pat.exists {
+    case dt: DefTree => dt.symbol.isSynthetic
+    case _           => false
+  }
+
   /** Is this pattern node a catch-all or type-test pattern? */
   def isCatchCase(cdef: CaseDef) = cdef match {
     case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) =>

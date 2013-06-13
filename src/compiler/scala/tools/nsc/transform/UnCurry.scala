@@ -187,8 +187,14 @@ abstract class UnCurry extends InfoTransform
         val keyDef   = ValDef(key, New(ObjectTpe))
         val tryCatch = Try(body, pat -> rhs)
 
-        for (Try(t, catches, _) <- body ; cdef <- catches ; if treeInfo catchesThrowable cdef)
+        import treeInfo.{catchesThrowable, isSyntheticCase}
+        for {
+          Try(t, catches, _) <- body
+          cdef <- catches
+          if catchesThrowable(cdef) && !isSyntheticCase(cdef)
+        } {
           unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
+        }
 
         Block(List(keyDef), tryCatch)
       }
