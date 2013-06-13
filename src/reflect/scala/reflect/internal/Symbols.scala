@@ -80,6 +80,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
   protected def originalEnclosingMethod(sym: Symbol): Symbol = {
     if (sym.isMethod || sym == NoSymbol) sym
+    else if (sym.isValue && !sym.isLocal) sym.getter(sym.owner)
     else {
       val owner = originalOwner.getOrElse(sym, sym.rawowner)
       if (sym.isLocalDummy) owner.enclClass.primaryConstructor
@@ -1981,6 +1982,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Return the original enclosing method of this symbol. It should return
      *  the same thing as enclMethod when called before lambda lift,
      *  but it preserves the original nesting when called afterwards.
+     *
+     *  If this symbol is enclosed in a field, the getter of that
+     *  field is returned.
      *
      *  @note This method is NOT available in the presentation compiler run. The
      *        originalOwner map is not populated for memory considerations (the symbol
