@@ -7,7 +7,7 @@ object Test extends IcodeTest {
 
   override def code =
     """class Foo {
-      def randomBoolean = util.Random.nextInt % 2 == 0
+      def randomBoolean = scala.util.Random.nextInt % 2 == 0
       def bar = {
         var kept1 = new Object
         val result = new java.lang.ref.WeakReference(kept1)
