@@ -11,7 +11,7 @@ package <empty> {
     def foo(methodParam: Int): Function0 = {
       val methodLocal: Int = 0;
       {
-        (new anonymous class $anonfun$foo$1(T.this, methodParam, methodLocal): Function0)
+        (new <$anon: Function0>(T.this, methodParam, methodLocal): Function0)
       }
     };
     def bar(barParam: Int): Object = {
@@ -21,11 +21,11 @@ package <empty> {
     def tryy(tryyParam: Int): Function0 = {
       var tryyLocal: runtime.IntRef = scala.runtime.IntRef.create(0);
       {
-        (new anonymous class $anonfun$tryy$1(T.this, tryyParam, tryyLocal): Function0)
+        (new <$anon: Function0>(T.this, tryyParam, tryyLocal): Function0)
       }
     };
     @SerialVersionUID(0) final <synthetic> class $anonfun$foo$1 extends runtime.AbstractFunction0$mcI$sp with Serializable {
-      def <init>($outer: T, methodParam$1: Int, methodLocal$1: Int): anonymous class $anonfun$foo$1 = {
+      def <init>($outer: T, methodParam$1: Int, methodLocal$1: Int): <$anon: Function0> = {
         $anonfun$foo$1.super.<init>();
         ()
       };
@@ -61,7 +61,7 @@ package <empty> {
       scala.this.Predef.print(scala.Int.box(barParam$1))
     };
     @SerialVersionUID(0) final <synthetic> class $anonfun$tryy$1 extends runtime.AbstractFunction0$mcV$sp with Serializable {
-      def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): anonymous class $anonfun$tryy$1 = {
+      def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): <$anon: Function0> = {
         $anonfun$tryy$1.super.<init>();
         ()
       };
