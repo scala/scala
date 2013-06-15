@@ -580,10 +580,11 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
+
     lazy val ProductClass: Array[ClassSymbol] = prepend(UnitClass, mkArityArray("Product", MaxProductArity, 1))
-    lazy val TupleClass: Array[Symbol] = prepend(NoSymbol, mkArityArray("Tuple", MaxTupleArity, 1))
-    lazy val FunctionClass         = mkArityArray("Function", MaxFunctionArity, 0)
-    lazy val AbstractFunctionClass = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
+    lazy val TupleClass: Array[Symbol]        = prepend(null, mkArityArray("Tuple", MaxTupleArity, 1))
+    lazy val FunctionClass                    = mkArityArray("Function", MaxFunctionArity, 0)
+    lazy val AbstractFunctionClass            = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
 
     /** Creators for TupleN, ProductN, FunctionN. */
     def tupleType(elems: List[Type])                            = aritySpecificType(TupleClass, elems)
@@ -608,6 +609,9 @@ trait Definitions extends api.StandardDefinitions {
     // NOTE: returns true for NoSymbol since it's included in the TupleClass array -- is this intensional?
     def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
     def isProductNClass(sym: Symbol) = ProductClass contains sym
+    def tupleField(n: Int, j: Int) = getMemberValue(TupleClass(n), nme.productAccessorName(j))
+    def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
+    def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
@@ -618,31 +622,8 @@ trait Definitions extends api.StandardDefinitions {
       }
       else sym
     }
-
-    // Checks whether the given type is true for the given condition,
-    // or if it is a specialized subtype of a type for which it is true.
-    //
-    // Origins notes:
-    // An issue was introduced with specialization in that the implementation
-    // of "isTupleType" in Definitions relied upon sym == TupleClass(elems.length).
-    // This test is untrue for specialized tuples, causing mysterious behavior
-    // because only some tuples are specialized.
-    def isPossiblySpecializedType(tp: Type)(cond: Type => Boolean) = {
-      cond(tp) || (tp match {
-        case TypeRef(pre, sym, args) if sym hasFlag SPECIALIZED =>
-          cond(tp baseType unspecializedSymbol(sym))
-        case _ =>
-          false
-      })
-    }
-    // No normalization.
-    def isTupleTypeDirect(tp: Type) = isPossiblySpecializedType(tp) {
-      case TypeRef(_, sym, args) if args.nonEmpty =>
-        val len = args.length
-        len <= MaxTupleArity && sym == TupleClass(len)
-      case _ => false
-    }
-    def isTupleType(tp: Type) = isTupleTypeDirect(tp.dealiasWiden)
+    def unspecializedTypeArgs(tp: Type): List[Type] =
+      (tp baseType unspecializedSymbol(tp.typeSymbolDirect)).typeArgs
 
     def isMacroBundleType(tp: Type) = {
       val isNonTrivial = tp != ErrorType && tp != NothingTpe && tp != NullTpe
@@ -654,6 +635,16 @@ trait Definitions extends api.StandardDefinitions {
 
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
 
+    // These "direct" calls perform no dealiasing. They are most needed when
+    // printing types when one wants to preserve the true nature of the type.
+    def isFunctionTypeDirect(tp: Type) = isFunctionSymbol(tp.typeSymbolDirect)
+    def isTupleTypeDirect(tp: Type)    = isTupleSymbol(tp.typeSymbolDirect)
+
+    // Note that these call .dealiasWiden and not .normalize, the latter of which
+    // tends to change the course of events by forcing types.
+    def isFunctionType(tp: Type)       = isFunctionTypeDirect(tp.dealiasWiden)
+    def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
+
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)
       def Product_productElement        = getMemberMethod(ProductRootClass, nme.productElement)
@@ -662,9 +653,13 @@ trait Definitions extends api.StandardDefinitions {
       def Product_canEqual              = getMemberMethod(ProductRootClass, nme.canEqual_)
 
       def productProj(z:Symbol, j: Int): TermSymbol = getMemberValue(z, nme.productAccessorName(j))
+      def productProj(n: Int,   j: Int): TermSymbol = productProj(ProductClass(n), j)
+
+      /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
+      def isExactProductType(tp: Type): Boolean = isProductNSymbol(tp.typeSymbol)
 
     /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
-    def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNClass match {
+    def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
       case Some(x)  => tpe.baseType(x).typeArgs
       case _        => Nil
     }
@@ -683,13 +678,9 @@ trait Definitions extends api.StandardDefinitions {
       assert(isFunctionType(tp), tp)
       abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
     }
-
-    def isFunctionType(tp: Type): Boolean = tp.dealiasWiden match {
-      case TypeRef(_, sym, args) if args.nonEmpty =>
-        val arity = args.length - 1   // -1 is the return type
-        arity <= MaxFunctionArity && sym == FunctionClass(arity)
-      case _ =>
-        false
+    def functionNBaseType(tp: Type): Type = tp.baseClasses find isFunctionSymbol match {
+      case Some(sym) => tp baseType unspecializedSymbol(sym)
+      case _         => tp
     }
 
     def isPartialFunctionType(tp: Type): Boolean = {
