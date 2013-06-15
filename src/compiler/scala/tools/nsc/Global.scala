@@ -359,6 +359,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   lazy val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
+
+    override protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
+      owner.info.decls.lookup(member.name) andAlso { existing =>
+        log(s"Unlinking early-load symbol $existing.")
+        owner.info.decls unlink existing
+      }
+      super.enterIfNew(owner, member, completer)
+    }
   }
 
   /** Returns the mirror that loaded given symbol */
@@ -1139,6 +1147,21 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def newUnitScanner(unit: CompilationUnit): UnitScanner = new UnitScanner(unit)
   def newUnitParser(unit: CompilationUnit): UnitParser   = new UnitParser(unit)
   def newUnitParser(code: String): UnitParser            = newUnitParser(newCompilationUnit(code))
+
+  override def missingHook(owner: Symbol, name: Name): Symbol = {
+    currentRun.units foreach { unit =>
+      for (PackageDef(pid, stats) <- unit.body) {
+        if (owner.fullName.toString == pid.toString) {
+          loaders.enterToplevelsFromSource(owner, name.toString, unit.source.file)
+          val member = owner.info decl name
+          member.associatedFile = unit.source.file
+          log(s"Early load of source symbol for $member with file ${member.associatedFile}")
+          return member
+        }
+      }
+    }
+    super.missingHook(owner, name)
+  }
 
   /** A Run is a single execution of the compiler on a sets of units
    */
