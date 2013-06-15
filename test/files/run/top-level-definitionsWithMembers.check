@@ -1,0 +1,62 @@
+[namer] 3 top level definitions  (+3)
++  --     ClassDef                              class  s.B
++  --     ClassDef                              trait  s.A
++  --     ModuleDef                             class  s.C
+
+[packageobjects] no changes
+[typer] no changes
+[patmat] 3 top level definitions
+*  7222   ClassDef/ClassSymbol                  trait  s.A                (7   members)  +3
+*  7223   ClassDef/ClassSymbol                  class  s.B                (7   members)  +3
+*  7224   ModuleDef/ModuleSymbol                object s.C                (7   members)  +3
+
+[superaccessors] no changes
+[extmethods] no changes
+[pickler] no changes
+[refchecks] no changes
+[uncurry] 3 top level definitions
+*  7222   ClassDef/ClassSymbol                  trait  s.A                (9   members)  +2
+*  7223   ClassDef/ClassSymbol                  class  s.B                (9   members)  +2
++  7225   ClassDef/ModuleClassSymbol   <module> class  s.C
+-  7224   ModuleDef/ModuleSymbol                object s.C
+
+[tailcalls] no changes
+[specialize] no changes
+[explicitouter] no changes
+[erasure] no changes
+[posterasure] 4 top level definitions  (+1)
+   7223   ClassDef/ClassSymbol                  class  s.B
+   7225   ClassDef/ModuleClassSymbol   <module> class  s.C
+*  7222   ClassDef/ClassSymbol                  trait  s.A                (5   members)  -4
++  19022  ClassDef/ImplClassSymbol       <impl> class  s.A$class
+
+[lazyvals] no changes
+[lambdalift] no changes
+[constructors] no changes
+[flatten] no changes
+[mixin] 5 top level definitions  (+1)
+   19022  ClassDef/ImplClassSymbol       <impl> class  s.A$class
+*  7222   ClassDef/ClassSymbol                  trait  s.A                (4   members)  -1
+*  7223   ClassDef/ClassSymbol                  class  s.B                (8   members)  -1
+*  7225   ClassDef/ModuleClassSymbol   <module> class  s.C                (6   members)  -1
++  7233   ClassDef/ModuleClassSymbol   <module> class  s.Z
++  7241   ClassDef/ModuleClassSymbol   <module> class  s.Z
++  7249   ClassDef/ModuleClassSymbol   <module> class  s.Z
+
+[cleanup] 7 top level definitions
+   7222   ClassDef/ClassSymbol                  trait  s.A
+   7233   ClassDef/ModuleClassSymbol   <module> class  s.A$Z
+   7241   ClassDef/ModuleClassSymbol   <module> class  s.B$Z
+   7249   ClassDef/ModuleClassSymbol   <module> class  s.C$Z
+*  19022  ClassDef/ImplClassSymbol     <module> class  s.A$class          (2   members)  -6
+*  7223   ClassDef/ClassSymbol                  class  s.B                (11  members)  +3
+*  7225   ClassDef/ModuleClassSymbol   <module> class  s.C                (8   members)  +2
+
+[icode] no changes
+[inliner] no changes
+[inlinehandlers] no changes
+[closelim] no changes
+[constopt] no changes
+[dce] no changes
+[jvm] no changes
+[terminal] no changes
