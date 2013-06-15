@@ -50,7 +50,9 @@ abstract class SymbolTable extends macros.Universe
   def warning(msg: String): Unit     = Console.err.println(msg)
   def inform(msg: String): Unit      = Console.err.println(msg)
   def globalError(msg: String): Unit = abort(msg)
-  def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
+
+  def abort(msg: String): Nothing                    = abort(msg, new FatalError(msg))
+  def abort(msg: String, caught: Throwable): Nothing = throw new CompileRunAborted(msg, caught)
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
@@ -68,9 +70,6 @@ abstract class SymbolTable extends macros.Universe
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
   def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
-
-  /** Overridden when we know more about what was happening during a failure. */
-  def supplementErrorMessage(msg: String): String = msg
 
   private[scala] def printCaller[T](msg: String)(result: T) = {
     Console.err.println("%s: %s\nCalled from: %s".format(msg, result,

@@ -15,7 +15,8 @@ import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
-import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.{ CompileRunAborted }
+import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile, shortClassOfInstance }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.reflect.io.VirtualFile
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -231,7 +232,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def assert(assertion: Boolean, message: => Any) {
     // calling Predef.assert would send a freshly allocated closure wrapping the one received as argument.
     if (!assertion)
-      throw new java.lang.AssertionError("assertion failed: "+ supplementErrorMessage("" + message))
+      throw new java.lang.AssertionError(s"assertion failed: $message")
+      // abort(s"assertion failed: $message")
   }
   @inline final def assert(assertion: Boolean) {
     assert(assertion, "")
@@ -239,16 +241,21 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def require(requirement: Boolean, message: => Any) {
     // calling Predef.require would send a freshly allocated closure wrapping the one received as argument.
     if (!requirement)
-      throw new IllegalArgumentException("requirement failed: "+ supplementErrorMessage("" + message))
+      throw new IllegalArgumentException(s"requirement failed: $message")
+      // abort(s"requirement failed: $message")
   }
+
   @inline final def require(requirement: Boolean) {
     require(requirement, "")
   }
 
-  // Needs to call error to make sure the compile fails.
-  override def abort(msg: String): Nothing = {
-    error(msg)
-    super.abort(msg)
+  override def abort(msg: String, caught: Throwable): Nothing = {
+    // Needs to call error to make sure the compile fails.
+    if (!reporter.hasErrors)
+      reporter.ERROR.count += 1
+
+    // globalError(msg)
+    throw caught
   }
 
   @inline final def ifDebug(body: => Unit) {
@@ -1065,52 +1072,81 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     if (sym == null) ""
     else sym.ownerChain takeWhile (!_.isPackageClass) mkString " -> "
   )
-
+  // Noise limiting: filter out pairs where the value is null or ""
   private def formatExplain(pairs: (String, Any)*): String = (
-    pairs.toList collect { case (k, v) if v != null => "%20s: %s".format(k, v) } mkString "\n"
+    pairs.toList collect { case (k, v) if v != null && v != "" => "%20s: %s".format(k, v) } mkString "\n"
   )
 
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
-  override def supplementErrorMessage(errorMessage: String): String = {
-    if (currentRun.supplementedError) errorMessage
-    else try {
-      currentRun.supplementedError = true
-      val tree      = analyzer.lastTreeToTyper
-      val sym       = tree.symbol
+  def supplementErrorMessage(caught: Throwable): String = {
+    val msg = caught.getMessage match {
+      case null => s"Uncaught ${shortClassOfInstance(caught)} during compilation"
+      case msg  => msg
+    }
+    supplementErrorMessage(msg, caught)
+  }
+  def supplementErrorMessage(errorMessage: String, caught: Throwable): String = {
+    def tree = analyzer.lastTreeToTyper
+    def phaseMsg = if (globalPhase eq phase) "" + phase else s"globalPhase=$globalPhase, entering=$phase"
+    def stackCrashInfo = {
+      val frames0 = caught.getStackTrace.toList
+      val frames  = if (settings.debug) frames0 else frames0 dropWhile (_.getFileName == "Global.scala") take 10
+      frames map ("  at " + _ ) mkString ("\n", "\n", "\n")
+    }
+    // Info which is useful even when there's no tree.
+    def baselineCrashInfo = List(
+      stackCrashInfo,
+      formatExplain(
+        "while compiling"    -> currentSource.path,
+        "during phase"       -> phaseMsg,
+        "library version"    -> scala.util.Properties.versionString,
+        "compiler version"   -> scala.tools.nsc.Properties.versionString,
+        "reconstructed args" -> settings.recreateArgs.mkString(" ")
+      )
+    ).mkString("\n")
+    // Only considered when typerTreeDepth > 0 so we don't offer lots of irrelevant
+    // tree info unless trees are being typed.
+    def treeCrashInfo = {
+      val optSym    = Option(tree.symbol)
       val tpe       = tree.tpe
       val site      = lastSeenContext.enclClassOrMethod.owner
       val pos_s     = if (tree.pos.isDefined) s"line ${tree.pos.line} of ${tree.pos.source.file}" else "<unknown>"
-      val context_s = try {
-        // Taking 3 before, 3 after the fingered line.
-        val start = 0 max (tree.pos.line - 3)
-        val xs = scala.reflect.io.File(tree.pos.source.file.file).lines drop start take 7
-        val strs = xs.zipWithIndex map { case (line, idx) => f"${start + idx}%6d $line" }
-        strs.mkString("== Source file context for tree position ==\n\n", "\n", "")
-      }
-      catch { case t: Exception => devWarning("" + t) ; "<Cannot read source file>" }
 
-      val info1 = formatExplain(
-        "while compiling"    -> currentSource.path,
-        "during phase"       -> ( if (globalPhase eq phase) phase else "globalPhase=%s, enteringPhase=%s".format(globalPhase, phase) ),
-        "library version"    -> scala.util.Properties.versionString,
-        "compiler version"   -> Properties.versionString,
-        "reconstructed args" -> settings.recreateArgs.mkString(" ")
-      )
-      val info2 = formatExplain(
+      formatExplain(
         "last tree to typer" -> tree.summaryString,
         "tree position"      -> pos_s,
         "tree tpe"           -> tpe,
-        "symbol"             -> Option(sym).fold("null")(_.debugLocationString),
-        "symbol definition"  -> Option(sym).fold("null")(s => s.defString + s" (a ${s.shortSymbolClass})"),
-        "symbol package"     -> sym.enclosingPackage.fullName,
-        "symbol owners"      -> ownerChainString(sym),
+        "symbol"             -> optSym.fold("")(_.debugLocationString),
+        "symbol definition"  -> optSym.fold("")(s => s.defString + s" (a ${s.shortSymbolClass})"),
+        "symbol package"     -> optSym.fold("")(_.enclosingPackage.fullName),
+        "symbol owners"      -> optSym.fold("")(ownerChainString),
         "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
       )
-      ("\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
     }
-    catch { case _: Exception | _: TypeError => errorMessage }
+    def fileCrashInfo = {
+      // Taking 3 before, 3 after the fingered line.
+      def start = 0 max (tree.pos.line - 3)
+      def xs    = scala.reflect.io.File(tree.pos.source.file.file).lines drop start take 7
+      def strs  = xs.zipWithIndex map { case (line, idx) => f"${start + idx}%6d $line" }
+
+      try strs.mkString("== Source file context for tree position ==\n\n", "\n", "")
+      catch { case t: Exception => devWarning("" + t) ; "<Cannot read source file>" }
+    }
+    def supplemental = (
+      if (currentRun.reportedCrash) ""
+      else try {
+        currentRun.reportedCrash = true
+        val sections = analyzer.typerTreeDepth match {
+          case 0 => baselineCrashInfo :: Nil
+          case _ => baselineCrashInfo :: treeCrashInfo :: fileCrashInfo :: Nil
+        }
+        sections.mkString("\n", "\n\n", "\n")
+      }
+      catch { case _: Exception | _: TypeError => "" }
+    )
+    errorMessage + supplemental
   }
 
   /** The id of the currently active run
@@ -1167,8 +1203,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** Has any macro expansion used a fallback during this run? */
     var seenMacroExpansionsFallingBack = false
 
-    /** Have we already supplemented the error message of a compiler crash? */
-    private[nsc] final var supplementedError = false
+    /** Have we already reported a compiler crash? Be very selective about
+     *  pouring out stack traces once this is true.
+     */
+    private[nsc] final var reportedCrash = false
 
     private val unitbuf = new mutable.ListBuffer[CompilationUnit]
     val compiledFiles   = new mutable.HashSet[String]
@@ -1184,7 +1222,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     private var _unitbufSize = 0
 
     def size = _unitbufSize
-    override def toString = "scalac Run for:\n  " + compiledFiles.toList.sorted.mkString("\n  ")
+    override def toString = (
+        "scalac Run(%h) {\n  ".format(System identityHashCode this)
+      + compiledFiles.toList.sorted.mkString("\n  ")
+      + "\n}"
+    )
 
     // Calculate where to stop based on settings -Ystop-before or -Ystop-after.
     // Slightly complicated logic due to wanting -Ystop-before:parser to fail rather
@@ -1499,8 +1541,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       compileUnits(sources map (new CompilationUnit(_)), firstPhase)
     }
 
-    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =
-      compileUnitsInternal(units, fromPhase)
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
+      try compileUnitsInternal(units, fromPhase)
+      catch {
+        case CompileRunAborted(msg, caught) if !reportedCrash => globalError(supplementErrorMessage(msg, caught))
+        case CompileRunAborted(msg, caught)                   => devWarning(s"Discarding already reported abort message $msg")
+        case ex: Throwable if !reportedCrash                  => globalError(supplementErrorMessage(ex))
+        case ex: Throwable                                    => devWarning(s"Rethrowing uncaught exception $ex") ; throw ex
+      }
+    }
 
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       doInvalidation()

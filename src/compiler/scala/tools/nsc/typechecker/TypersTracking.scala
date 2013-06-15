@@ -23,7 +23,24 @@ trait TypersTracking {
   // TODO - this only catches trees which go through def typed,
   // but there are all kinds of back ways - typedClassDef, etc. etc.
   // Funnel everything through one doorway.
-  var lastTreeToTyper: Tree = EmptyTree
+  private var _lastTreeToTyper: Tree = EmptyTree
+  private var _typerTreeDepth: Int = 0
+  // Track the depth of the "typed" stack so we know whether the
+  // last tree to typer is an interesting thing to report on when the
+  // compiler crashes.
+  def typerTreeDepth: Int = _typerTreeDepth
+  def lastTreeToTyper = _lastTreeToTyper
+  def pushLastTreeToTyper(tree: Tree) {
+    _lastTreeToTyper = tree
+    _typerTreeDepth += 1
+  }
+  def popLastTreeToTyper() {
+    _typerTreeDepth -= 1
+  }
+  def clearLastTreeToTyper() {
+    _lastTreeToTyper = EmptyTree
+    _typerTreeDepth = 0
+  }
 
   def fullSiteString(context: Context): String = {
     def owner_long_s = (
