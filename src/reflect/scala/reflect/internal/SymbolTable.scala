@@ -294,15 +294,24 @@ abstract class SymbolTable extends macros.Universe
 
   /** if there's a `package` member object in `pkgClass`, enter its members into it. */
   def openPackageModule(pkgClass: Symbol) {
-
     val pkgModule = pkgClass.info.decl(nme.PACKAGEkw)
-    def fromSource = pkgModule.rawInfo match {
-      case ltp: SymLoader => ltp.fromSource
-      case _ => false
-    }
-    if (pkgModule.isModule && !fromSource) {
-      // println("open "+pkgModule)//DEBUG
-      openPackageModule(pkgModule, pkgClass)
+    if (pkgModule.isModule) {
+      val fromSource = pkgModule.rawInfo match {
+        case ltp: SymLoader if ltp.fromSource =>
+          // As nearly as I can tell, this condition never happens.
+          // Leaving it in case it's doing something for the IDE.
+          log(s"$pkgModule is from source, no forcing.") ; true
+        case _                                =>
+          // Must force the info here before we assume there is no source file
+          // associated with this package object.  See SI-4695 among others.
+          log(s"forcing info of $pkgModule to ensure there's no source.")
+          pkgModule.info
+          (pkgModule.associatedFile ne null) && (pkgModule.associatedFile hasExtension "scala")
+      }
+      if (!fromSource) {
+        log(s"Opening binary package module $pkgModule (file = ${pkgModule.associatedFile})")
+        openPackageModule(pkgModule, pkgClass)
+      }
     }
   }
 

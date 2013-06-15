@@ -27,7 +27,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
 
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
-      assert(sym == clazz || sym == module || sym == module.moduleClass)
+      assert(sym == clazz || sym == module || sym == module.moduleClass, sym.defString)
 //      try {
       enteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
