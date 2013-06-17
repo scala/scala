@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>test-junit</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.scala-ide.sdt.core.scalabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.scala-ide.sdt.core.scalanature</nature>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>build-test-junit</name>
+			<type>2</type>
+			<locationURI>SCALA_BASEDIR/build/junit/classes</locationURI>
+		</link>
+		<link>
+			<name>lib</name>
+			<type>2</type>
+			<locationURI>SCALA_BASEDIR/lib</locationURI>
+		</link>
+		<link>
+			<name>test-junit</name>
+			<type>2</type>
+			<locationURI>SCALA_BASEDIR/test/junit</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
