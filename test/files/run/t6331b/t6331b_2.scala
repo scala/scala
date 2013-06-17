@@ -5,7 +5,7 @@ import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.reporters.ConsoleReporter
 
-import scala.tools.partest.trace
+import tracing.trace
 import scala.util.control.Exception._
 
 
