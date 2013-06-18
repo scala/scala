@@ -37,13 +37,11 @@ abstract class Duplicators extends Analyzer {
 
     envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
     debuglog("retyped with env: " + env)
+
     newBodyDuplicator(context).typed(tree)
   }
 
   protected def newBodyDuplicator(context: Context) = new BodyDuplicator(context)
-
-  def retypedMethod(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol): Tree =
-    (newBodyDuplicator(context)).retypedMethod(tree.asInstanceOf[DefDef], oldThis, newThis)
 
   /** Return the special typer for duplicate method bodies. */
   override def newTyper(context: Context): Typer =
@@ -184,20 +182,6 @@ abstract class Duplicators extends Analyzer {
 
     private def invalidateAll(stats: List[Tree], owner: Symbol = NoSymbol) {
       stats.foreach(invalidate(_, owner))
-    }
-
-    def retypedMethod(ddef: DefDef, oldThis: Symbol, newThis: Symbol): Tree = {
-      oldClassOwner = oldThis
-      newClassOwner = newThis
-      invalidateAll(ddef.tparams)
-      mforeach(ddef.vparamss) { vdef =>
-        invalidate(vdef)
-        vdef.tpe = null
-      }
-      ddef.symbol = NoSymbol
-      enterSym(context, ddef)
-      debuglog("remapping this of " + oldClassOwner + " to " + newClassOwner)
-      typed(ddef)
     }
 
     private def inspectTpe(tpe: Type) = {
@@ -401,7 +385,8 @@ abstract class Duplicators extends Analyzer {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           val ntree = castType(tree, pt)
-          super.typed(ntree, mode, pt)
+          val res = super.typed(ntree, mode, pt)
+          res
       }
     }
 
