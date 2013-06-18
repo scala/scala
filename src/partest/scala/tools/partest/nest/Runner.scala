@@ -286,7 +286,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
    *  might be failing, in the normal case.
    */
   def diffilter(d: String) = {
-    import scala.util.Properties.javaVersion
+    import scala.util.Properties.{javaVersion, isAvian}
     val prefix = "#partest"
     val margin = "> "
     val leader = margin + prefix
@@ -297,6 +297,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       val cond = token match {
         case "java7"  => javaVersion startsWith "1.7"
         case "java6"  => javaVersion startsWith "1.6"
+        case "avian"  => isAvian
         case "true"   => true
         case _        => false
       }

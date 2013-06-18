@@ -14,4 +14,5 @@ package utils
 object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "partest"
   protected def pickJarBasedOn  = classOf[nest.RunnerManager]
+  override def isAvian = super.isAvian
 }

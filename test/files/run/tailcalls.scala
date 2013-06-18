@@ -307,7 +307,7 @@ object Test {
   def main(args: Array[String]) {
     // compute min and max iteration number
     val min = 16;
-    val max = calibrate;
+    val max = if (scala.tools.partest.utils.Properties.isAvian) 10000 else calibrate
 
     // test tail calls in different contexts
     val Final     = new Final()
