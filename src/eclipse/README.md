@@ -11,6 +11,9 @@ IMPORTANT
 Preferences/General/Workspace/Linked Resources. The value should be the absolute 
 path to your scala checkout. All paths in project files are relative to this one,
 so nothing will work before you do so.
+Additionally, we start using Maven dependencies (e.g. junit) so you need to define
+`classpath variable` inside Eclipse. Define `M2_REPO` in Java/Build Path/Classpath Variables
+to point to your local Maven repository (e.g. $HOME/.m2/repository).
 
 2. The Eclipse Java compiler does not allow certain calls to restricted APIs in the
 JDK. The Scala library uses such APIs, so you'd see this error:
