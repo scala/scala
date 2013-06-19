@@ -415,7 +415,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     val INNER_CLASSES_FLAGS =
       (asm.Opcodes.ACC_PUBLIC    | asm.Opcodes.ACC_PRIVATE | asm.Opcodes.ACC_PROTECTED |
-       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
+       asm.Opcodes.ACC_STATIC    | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT | asm.Opcodes.ACC_FINAL)
 
     // -----------------------------------------------------------------------------------------
     // factory methods
@@ -648,11 +648,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
         // sort them so inner classes succeed their enclosing class to satisfy the Eclipse Java compiler
         for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
-          val flags = mkFlags(
+          val flagsWithFinal: Int = mkFlags(
             if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
             javaFlags(innerSym),
             if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
           ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
+          val flags = if (innerSym.isModuleClass) flagsWithFinal & ~asm.Opcodes.ACC_FINAL else flagsWithFinal // For SI-5676, object overriding.
           val jname = javaName(innerSym)  // never null
           val oname = outerName(innerSym) // null when method-enclosed
           val iname = innerName(innerSym) // null for anonymous inner class
