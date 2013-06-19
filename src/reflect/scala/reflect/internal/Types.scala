@@ -1096,41 +1096,53 @@ trait Types
               val flags = sym.flags
               if ((flags & required) == required) {
                 val excl = flags & excluded
-                if (excl == 0L &&
-                      (
-                    (bcs eq bcs0) ||
-                    (flags & PrivateLocal) != PrivateLocal ||
-                    admitPrivateLocal(bcs.head))) {
+                val isMember = (
+                     excl == 0L
+                  && (    (bcs eq bcs0)
+                       || (flags & PrivateLocal) != PrivateLocal
+                       || admitPrivateLocal(bcs.head)
+                     )
+                )
+                if (isMember) {
                   if (name.isTypeName || (stableOnly && sym.isStable && !sym.hasVolatileType)) {
                     if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
                     return sym
-                  } else if (member eq NoSymbol) {
+                  } else if (member eq NoSymbol) { // The first found member
                     member = sym
-                  } else if (members eq null) {
-                    if ((member ne sym) &&
-                      ((member.owner eq sym.owner) ||
-                        (flags & PRIVATE) != 0 || {
-                          if (self eq null) self = narrowForFindMember(this)
-                          if (membertpe eq null) membertpe = self.memberType(member)
-                          !(membertpe matches self.memberType(sym))
-                        })) {
+                  } else if (members eq null) { // Already found one member
+                    @inline def computeSelfAndMemberType() = {
+                      if (self eq null)     self       = narrowForFindMember(this)
+                      if (membertpe eq null) membertpe = self.memberType(member)
+                    }
+                    val isNewMember = (    (member ne sym)
+                                        && (     (member.owner eq sym.owner)
+                                             ||  (flags & PRIVATE) != 0
+                                             ||  { computeSelfAndMemberType(); !(membertpe matches self.memberType(sym))}
+                                           )
+                                      )
+
+                    if (isNewMember) {
                       lastM = new ::(sym, null)
                       members = member :: lastM
                     }
-                  } else {
+                  } else { // Already found 2 or more members
                     var others: List[Symbol] = members
                     var symtpe: Type = null
-                    while ((others ne null) && {
-                      val other = others.head
-                      (other ne sym) &&
-                        ((other.owner eq sym.owner) ||
-                          (flags & PRIVATE) != 0 || {
-                            if (self eq null) self = narrowForFindMember(this)
-                            if (symtpe eq null) symtpe = self.memberType(sym)
-                            !(self.memberType(other) matches symtpe)
-                               })}) {
-                      others = others.tail
+                    @inline def computeSelfAndSymtpe() = {
+                      if (self eq null)   self   = narrowForFindMember(this)
+                      if (symtpe eq null) symtpe = self.memberType(sym)
                     }
+                    while (    (others ne null)
+                            && {
+                                  val other = others.head
+                                  (    (other ne sym)
+                                    && (    (other.owner eq sym.owner)
+                                         || (flags & PRIVATE) != 0
+                                         || { computeSelfAndSymtpe(); !(self.memberType(other) matches symtpe)}
+                                       )
+                                  )
+                               }
+                          ) others = others.tail
                     if (others eq null) {
                       val lastM1 = new ::(sym, null)
                       lastM.tl = lastM1
