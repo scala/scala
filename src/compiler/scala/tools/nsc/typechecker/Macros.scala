@@ -624,20 +624,20 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
 
   /** Captures statuses of macro expansions performed by `macroExpand1'.
    */
-  private sealed abstract class MacroStatus(val result: Tree)
-  private case class Success(expanded: Tree) extends MacroStatus(expanded)
-  private case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.seenMacroExpansionsFallingBack = true }
-  private case class Delayed(delayed: Tree) extends MacroStatus(delayed)
-  private case class Skipped(skipped: Tree) extends MacroStatus(skipped)
-  private case class Failure(failure: Tree) extends MacroStatus(failure)
-  private def Delay(expanded: Tree) = Delayed(expanded)
-  private def Skip(expanded: Tree) = Skipped(expanded)
-  private def Cancel(expandee: Tree) = Failure(expandee)
+  sealed abstract class MacroStatus(val result: Tree)
+  case class Success(expanded: Tree) extends MacroStatus(expanded)
+  case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.seenMacroExpansionsFallingBack = true }
+  case class Delayed(delayed: Tree) extends MacroStatus(delayed)
+  case class Skipped(skipped: Tree) extends MacroStatus(skipped)
+  case class Failure(failure: Tree) extends MacroStatus(failure)
+  def Delay(expanded: Tree) = Delayed(expanded)
+  def Skip(expanded: Tree) = Skipped(expanded)
+  def Cancel(expandee: Tree) = Failure(expandee)
 
   /** Does the same as `macroExpand`, but without typechecking the expansion
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
-  private def macroExpand1(typer: Typer, expandee: Tree): MacroStatus = {
+  def macroExpand1(typer: Typer, expandee: Tree): MacroStatus = {
     // verbose printing might cause recursive macro expansions, so I'm shutting it down here
     withInfoLevel(nodePrinters.InfoLevel.Quiet) {
       if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {

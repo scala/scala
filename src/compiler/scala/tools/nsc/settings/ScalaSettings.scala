@@ -190,6 +190,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Yreifydebug             = BooleanSetting("-Yreify-debug", "Trace reification.")
   val Ytyperdebug             = BooleanSetting("-Ytyper-debug", "Trace all type assignments.")
   val Ypatmatdebug            = BooleanSetting("-Ypatmat-debug", "Trace pattern matching translation.")
+  val Yquasiquotedebug        = BooleanSetting("-Yquasiquote-debug", "Trace quasiquote-related activities.")
 
   /** Groups of Settings.
    */

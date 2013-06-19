@@ -112,7 +112,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       else AppliedTypeTree(Ident(clazz), targs map TypeTree)
     ))
   }
-  def mkSuperInitCall: Select = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
 
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }

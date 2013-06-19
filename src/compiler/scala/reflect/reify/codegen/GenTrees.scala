@@ -42,12 +42,6 @@ trait GenTrees {
     // the second prototype reified external types, but avoided reifying local ones => this created an ugly irregularity
     // current approach is uniform and compact
     var rtree = tree match {
-      case global.EmptyTree =>
-        reifyMirrorObject(EmptyTree)
-      case global.emptyValDef =>
-        mirrorSelect(nme.emptyValDef)
-      case global.pendingSuperCall =>
-        mirrorSelect(nme.pendingSuperCall)
       case FreeDef(_, _, _, _, _) =>
         reifyNestedFreeDef(tree)
       case FreeRef(_, _) =>
@@ -56,12 +50,8 @@ trait GenTrees {
         reifyBoundTerm(tree)
       case BoundType(tree) =>
         reifyBoundType(tree)
-      case Literal(const @ Constant(_)) =>
-        mirrorCall(nme.Literal, reifyProduct(const))
-      case Import(expr, selectors) =>
-        mirrorCall(nme.Import, reify(expr), mkList(selectors map reifyProduct))
       case _ =>
-        reifyProduct(tree)
+        reifyBasicTree(tree)
     }
 
     // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
@@ -76,6 +66,21 @@ trait GenTrees {
     }
 
     rtree
+  }
+
+  def reifyBasicTree(tree: Tree) = tree match {
+    case global.EmptyTree =>
+      reifyMirrorObject(EmptyTree)
+    case global.emptyValDef =>
+      mirrorSelect(nme.emptyValDef)
+    case global.pendingSuperCall =>
+      mirrorSelect(nme.pendingSuperCall)
+    case Literal(const @ Constant(_)) =>
+      mirrorCall(nme.Literal, reifyProduct(const))
+    case Import(expr, selectors) =>
+      mirrorCall(nme.Import, reify(expr), mkList(selectors map reifyProduct))
+    case _ =>
+      reifyProduct(tree)
   }
 
   def reifyModifiers(m: global.Modifiers) =
