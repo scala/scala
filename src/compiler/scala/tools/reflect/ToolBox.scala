@@ -102,6 +102,16 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    */
   def compile(tree: u.Tree): () => Any
 
+  /** Defines a top-level class, trait or module in this ToolBox,
+   *  putting it into a uniquely-named package and returning a symbol that references the defined entity.
+   *  For a ClassDef, a ClassSymbol is returned, and for a ModuleDef, a ModuleSymbol is returned (not a module class, but a module itself).
+   *
+   *  This method can be used to generate definitions that will later be re-used by subsequent calls to
+   *  `compile`, `define` or `eval`. To refer to the generated definition, use the resulting symbol
+   *  by wrapping it into an `Ident`.
+   */
+  def define(tree: u.ImplDef): u.Symbol
+
   /** Compiles and runs a tree using this ToolBox.
    *  Is equivalent to `compile(tree)()`.
    */

@@ -193,6 +193,19 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
+      private def wrapInPackageAndCompile(packageName: TermName, tree: ImplDef): Symbol = {
+        val pdef = PackageDef(Ident(packageName), List(tree))
+        val unit = new CompilationUnit(NoSourceFile)
+        unit.body = pdef
+
+        val run = new Run
+        reporter.reset()
+        run.compileUnits(List(unit), run.namerPhase)
+        throwIfErrors()
+
+        tree.symbol
+      }
+
       def compile(expr0: Tree): () => Any = {
         val expr = wrapIntoTerm(expr0)
 
@@ -200,7 +213,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val thunks = freeTerms map (fte => () => fte.value) // need to be lazy in order not to distort evaluation order
         verify(expr)
 
-        def wrap(expr0: Tree): ModuleDef = {
+        def wrapInModule(expr0: Tree): ModuleDef = {
           val (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = true)
 
           val (obj, _) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
@@ -241,17 +254,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           cleanedUp.asInstanceOf[ModuleDef]
         }
 
-        val mdef = wrap(expr)
-        val pdef = PackageDef(Ident(mdef.name), List(mdef))
-        val unit = new CompilationUnit(NoSourceFile)
-        unit.body = pdef
+        val mdef = wrapInModule(expr)
+        val msym = wrapInPackageAndCompile(mdef.name, mdef)
 
-        val run = new Run
-        reporter.reset()
-        run.compileUnits(List(unit), run.namerPhase)
-        throwIfErrors()
-
-        val className = mdef.symbol.fullName
+        val className = msym.fullName
         if (settings.debug) println("generated: "+className)
         def moduleFileName(className: String) = className + "$"
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
@@ -276,6 +282,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           if (jmeth.getReturnType == java.lang.Void.TYPE) ()
           else result
         }
+      }
+
+      def define(tree: ImplDef): Symbol = {
+        val freeTerms = tree.freeTerms
+        if (freeTerms.nonEmpty) throw ToolBoxError(s"reflective toolbox has failed: cannot have free terms in a top-level definition")
+        verify(tree)
+        wrapInPackageAndCompile(nextWrapperModuleName(), tree)
       }
 
       def parse(code: String): Tree = {
@@ -419,6 +432,18 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       if (compiler.settings.verbose) println("compiling "+ctree)
       compiler.compile(ctree)
+    }
+
+    def define(tree: u.ImplDef): u.Symbol = withCompilerApi { compilerApi =>
+      import compilerApi._
+
+      if (compiler.settings.verbose) println("importing "+tree)
+      val ctree: compiler.ImplDef = importer.importTree(tree).asInstanceOf[compiler.ImplDef]
+
+      if (compiler.settings.verbose) println("defining "+ctree)
+      val csym: compiler.Symbol = compiler.define(ctree)
+      val usym = exporter.importSymbol(csym)
+      usym
     }
 
     def eval(tree: u.Tree): Any = compile(tree)()
