@@ -346,19 +346,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
   implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
 
-  // These next eight implicits exist solely to exclude AnyRef methods from the
-  // eight implicits above so that primitives are not coerced to AnyRefs.  They
-  // only create such conflict for AnyRef methods, so the methods on the java.lang
-  // boxed types are unambiguously reachable.
-  implicit def byte2ByteConflict(x: Byte)           = new AnyRef
-  implicit def short2ShortConflict(x: Short)        = new AnyRef
-  implicit def char2CharacterConflict(x: Char)      = new AnyRef
-  implicit def int2IntegerConflict(x: Int)          = new AnyRef
-  implicit def long2LongConflict(x: Long)           = new AnyRef
-  implicit def float2FloatConflict(x: Float)        = new AnyRef
-  implicit def double2DoubleConflict(x: Double)     = new AnyRef
-  implicit def boolean2BooleanConflict(x: Boolean)  = new AnyRef
-
   implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
   implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
   implicit def Character2char(x: java.lang.Character): Char   = x.charValue
@@ -480,24 +467,6 @@ private[scala] abstract class LowPriorityImplicits {
   @inline implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
   @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
   @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
-
-  // These eight implicits exist solely to exclude Null from the domain of
-  // the boxed types, so that e.g. "var x: Int = null" is a compile time
-  // error rather than a delayed null pointer exception by way of the
-  // conversion from java.lang.Integer.  If defined in the same template as
-  // Integer2int, they would have higher priority because Null is a subtype
-  // of Integer.  We balance that out and create conflict by moving the
-  // definition into the superclass.
-  //
-  // Caution: do not adjust tightrope tension without safety goggles in place.
-  implicit def Byte2byteNullConflict(x: Null): Byte          = sys.error("value error")
-  implicit def Short2shortNullConflict(x: Null): Short       = sys.error("value error")
-  implicit def Character2charNullConflict(x: Null): Char     = sys.error("value error")
-  implicit def Integer2intNullConflict(x: Null): Int         = sys.error("value error")
-  implicit def Long2longNullConflict(x: Null): Long          = sys.error("value error")
-  implicit def Float2floatNullConflict(x: Null): Float       = sys.error("value error")
-  implicit def Double2doubleNullConflict(x: Null): Double    = sys.error("value error")
-  implicit def Boolean2booleanNullConflict(x: Null): Boolean = sys.error("value error")
 
   implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
     if (xs eq null) null

@@ -1,10 +1,4 @@
-no-implicit-to-anyref.scala:11: error: type mismatch;
- found   : Int(1)
- required: AnyRef
-Note: an implicit exists from scala.Int => java.lang.Integer, but
-methods inherited from Object are rendered ambiguous.  This is to avoid
-a blanket implicit which would convert any scala.Int to any AnyRef.
-You may wish to use a type ascription: `x: java.lang.Integer`.
+no-implicit-to-anyref.scala:11: error: the result type of an implicit conversion must be more specific than AnyRef
     1: AnyRef
     ^
 no-implicit-to-anyref.scala:17: error: type mismatch;

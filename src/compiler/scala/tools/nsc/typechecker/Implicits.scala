@@ -144,6 +144,15 @@ trait Implicits {
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
 
+  private def isInvalidConversionTarget(tpe: Type): Boolean = tpe match {
+    case Function1(_, out) => AnyRefClass.tpe <:< out
+    case _                 => false
+  }
+  private def isInvalidConversionSource(tpe: Type): Boolean = tpe match {
+    case Function1(in, _) => in <:< NullClass.tpe
+    case _                => false
+  }
+
   def resetImplicits() {
     implicitsCache.clear()
     infoMapCache.clear()
@@ -1357,10 +1366,10 @@ trait Implicits {
 
         val wasAmbigious = result.isAmbiguousFailure // SI-6667, never search companions after an ambiguous error in in-scope implicits
         result = materializeImplicit(pt)
-
         // `materializeImplicit` does some preprocessing for `pt`
         // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
-        if (result.isFailure && !wasAmbigious) result = searchImplicit(implicitsOfExpectedType, isLocal = false)
+        if (result.isFailure && !wasAmbigious)
+          result = searchImplicit(implicitsOfExpectedType, isLocal = false)
 
         if (result.isFailure) {
           context.updateBuffer(previousErrs)
@@ -1370,9 +1379,18 @@ trait Implicits {
           if (Statistics.canEnable) Statistics.incCounter(oftypeImplicitHits)
         }
       }
-
-      if (result.isFailure && settings.debug)
-        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
+      if (result.isSuccess && isView) {
+        if (isInvalidConversionTarget(pt)) {
+          context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, "the result type of an implicit conversion must be more specific than AnyRef"))
+          result = SearchFailure
+        }
+        else if (isInvalidConversionSource(pt)) {
+          context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, "an expression of type Null is ineligible for implicit conversion"))
+          result = SearchFailure
+        }
+      }
+      if (result.isFailure)
+        debuglog("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
 
       result
     }
