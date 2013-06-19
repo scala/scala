@@ -8,9 +8,8 @@ package transform
 
 import symtab._
 import Flags._
-import util.TreeSet
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet }
+import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet, TreeSet }
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -56,6 +55,8 @@ abstract class LambdaLift extends InfoTransform {
 
   class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
 
+    private type SymSet = TreeSet[Symbol]
+
     /** A map storing free variables of functions and classes */
     private val free = new LinkedHashMap[Symbol, SymSet]
 
@@ -67,6 +68,12 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Symbols that are called from an inner class. */
     private val calledFromInner = new LinkedHashSet[Symbol]
+
+    private val ord = Ordering.fromLessThan[Symbol](_ isLess _)
+    private def newSymSet = TreeSet.empty[Symbol](ord)
+
+    private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet =
+      f.getOrElseUpdate(sym, newSymSet)
 
     /** The set of symbols that need to be renamed. */
     private val renamable = newSymSet
@@ -106,13 +113,6 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new LinkedHashMap[Symbol, List[Tree]]
-
-    private type SymSet = TreeSet[Symbol]
-
-    private def newSymSet = new TreeSet[Symbol](_ isLess _)
-
-    private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet =
-      f.getOrElseUpdate(sym, newSymSet)
 
     private def isSameOwnerEnclosure(sym: Symbol) =
       sym.owner.logicallyEnclosingMember == currentOwner.logicallyEnclosingMember
@@ -155,8 +155,8 @@ abstract class LambdaLift extends InfoTransform {
         else {
           val ss = symSet(free, enclosure)
           if (!ss(sym)) {
-            ss addEntry sym
-            renamable addEntry sym
+            ss += sym
+            renamable += sym
             changedFreeVars = true
             debuglog("" + sym + " is free in " + enclosure)
             if (sym.isVariable) sym setFlag CAPTURED
@@ -168,7 +168,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def markCalled(sym: Symbol, owner: Symbol) {
       debuglog("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
-      symSet(called, owner) addEntry sym
+      symSet(called, owner) += sym
       if (sym.enclClass != owner.enclClass) calledFromInner += sym
     }
 
@@ -195,17 +195,17 @@ abstract class LambdaLift extends InfoTransform {
               if (sym.isImplClass)
                 localImplClasses((sym.owner, tpnme.interfaceName(sym.name))) = sym
               else {
-                renamable addEntry sym
+                renamable += sym
                 if (sym.isTrait)
                   localTraits((sym, sym.name)) = sym.owner
               }
             }
           case DefDef(_, _, _, _, _, _) =>
             if (sym.isLocal) {
-              renamable addEntry sym
+              renamable += sym
               sym setFlag (PrivateLocal | FINAL)
             } else if (sym.isPrimaryConstructor) {
-              symSet(called, sym) addEntry sym.owner
+              symSet(called, sym) += sym.owner
             }
           case Ident(name) =>
             if (sym == NoSymbol) {
@@ -214,7 +214,7 @@ abstract class LambdaLift extends InfoTransform {
               val owner = currentOwner.logicallyEnclosingMember
               if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
               else if (sym.isMethod) markCalled(sym, owner)
-                //symSet(called, owner) addEntry sym
+                //symSet(called, owner) += sym
             }
           case Select(_, _) =>
             if (sym.isConstructor && sym.owner.isLocal)
@@ -224,7 +224,7 @@ abstract class LambdaLift extends InfoTransform {
         super.traverse(tree)
        } catch {//debug
          case ex: Throwable =>
-           Console.println("exception when traversing " + tree)
+           Console.println(s"$ex while traversing $tree")
            throw ex
        }
       }
