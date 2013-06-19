@@ -334,7 +334,9 @@ abstract class UnPickler {
         case THIStpe =>
           ThisType(readSymbolRef())
         case SINGLEtpe =>
-          SingleType(readTypeRef(), readSymbolRef()) // !!! was singleType
+          val pre = readTypeRef()
+          val sym = readSymbolRef().filter(_.paramss.isEmpty) // SI-7596 cut overloaded symbols down to size.
+          SingleType(pre, sym) // !!! was singleType
         case SUPERtpe =>
           val thistpe = readTypeRef()
           val supertpe = readTypeRef()
