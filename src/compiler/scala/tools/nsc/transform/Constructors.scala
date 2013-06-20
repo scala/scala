@@ -80,8 +80,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
           else {
             checkUninitializedReads(cd)
-            val tplTransformer = new TemplateTransformer(unit, impl0)
-            treeCopy.ClassDef(cd, mods0, name0, tparams0, tplTransformer.transformed)
+            val impl: Template = (new TemplateTransformer(unit, impl0)).transformed
+            treeCopy.ClassDef(cd, mods0, name0, tparams0, impl)
           }
         case _ =>
           super.transform(tree)
@@ -523,16 +523,16 @@ abstract class Constructors extends Transform with ast.TreeDSL {
      */
     private class IntoCtorTransformer extends Transformer {
 
-      private def isParamRef(sym: Symbol) = { sym.isParamAccessor && sym.owner == clazz }
+      private def isParamRef(sym: Symbol) = (sym.isParamAccessor && sym.owner == clazz)
 
       /*
        * Terminology: a stationary location is never written after being read.
        */
-      private def isStationaryParamRef(sym: Symbol) = {
+      private def isStationaryParamRef(sym: Symbol) = (
         isParamRef(sym) &&
         !(sym.isGetter && sym.accessed.isVariable) &&
         !sym.isSetter
-      }
+      )
 
       private def possiblySpecialized(s: Symbol) = specializeTypes.specializedTypeVars(s).nonEmpty
 
@@ -544,7 +544,11 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        *         (b.2) the constructor in the specialized (sub-)class.
        *   (c) isn't part of a DelayedInit subclass.
        */
-      private def canBeSupplanted(sym: Symbol) = { !isDelayedInitSubclass && isStationaryParamRef(sym) && !possiblySpecialized(sym) }
+      private def canBeSupplanted(sym: Symbol) = (
+        !isDelayedInitSubclass    &&
+        isStationaryParamRef(sym) &&
+        !possiblySpecialized(sym)
+      )
 
       override def transform(tree: Tree): Tree = tree match {
 
@@ -587,8 +591,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     }
 
     // Create an assignment to class field `to` with rhs `from`
-    def mkAssign(to: Symbol, from: Tree): Tree =
-      localTyper.typedPos(to.pos) { Assign(Select(This(clazz), to), from) }
+    def mkAssign(to: Symbol, from: Tree): Assign = {
+      val res = localTyper.typedPos(to.pos) { Assign(Select(This(clazz), to), from) }
+      res.asInstanceOf[Assign]
+    }
 
     // Create code to copy parameter to parameter accessor field.
     // If parameter is $outer, check that it is not null so that we NPE
