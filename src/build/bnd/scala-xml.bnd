@@ -1,0 +1,5 @@
+Bundle-Name: Scala XML Library
+Bundle-SymbolicName: org.scala-lang.scala-xml
+ver: @VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}

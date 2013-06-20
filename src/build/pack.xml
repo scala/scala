@@ -153,6 +153,7 @@ MAIN DISTRIBUTION PACKAGING
     </macrodef>
     <mvn-copy-lib mvn.artifact.name="jline"/>
     <mvn-copy-lib mvn.artifact.name="scala-library"/>
+    <mvn-copy-lib mvn.artifact.name="scala-xml"/>
     <mvn-copy-lib mvn.artifact.name="scala-reflect"/>
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
@@ -201,6 +202,10 @@ MAIN DISTRIBUTION PACKAGING
     </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
+      <include name="**/*"/>
+    </jar>
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-xml/scala-xml-docs.jar"
+         basedir="${build-docs.dir}/xml">
       <include name="**/*"/>
     </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-compiler/scala-compiler-docs.jar"
