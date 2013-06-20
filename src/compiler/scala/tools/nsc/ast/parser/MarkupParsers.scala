@@ -10,7 +10,7 @@ import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
-import scala.xml.parsing.MarkupParserCommon
+import scala.tools.nsc.ast.parser.xml.{MarkupParserCommon, Utility}
 import scala.reflect.internal.Chars.{ SU, LF }
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
@@ -41,7 +41,7 @@ trait MarkupParsers {
   import global._
 
   class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends MarkupParserCommon {
-
+    import Utility.{ isNameStart, isSpace }
     import Tokens.{ LBRACE, RBRACE }
 
     type PositionType = Position

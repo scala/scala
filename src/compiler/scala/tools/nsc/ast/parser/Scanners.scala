@@ -12,7 +12,7 @@ import Tokens._
 import scala.annotation.{ switch, tailrec }
 import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, ArrayBuffer }
-import scala.xml.Utility.{ isNameStart }
+import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 import scala.language.postfixOps
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
