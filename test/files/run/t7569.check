@@ -1,0 +1,12 @@
+source-newSource1.scala,line-3,offset=49 A.this.one
+source-newSource1.scala,line-3,offset=49 A.this
+source-newSource1.scala,line-4,offset=67 A.super.<init>()
+source-newSource1.scala,line-4,offset=67 A.super.<init>
+source-newSource1.scala,line-4,offset=67 this
+source-newSource1.scala,line-3,offset=49 A.this.one
+source-newSource1.scala,line-3,offset=49 A.this
+RangePosition(newSource1.scala, 55, 57, 65) scala.Int.box(1).toString()
+RangePosition(newSource1.scala, 55, 57, 65) scala.Int.box(1).toString
+RangePosition(newSource1.scala, 55, 55, 56) scala.Int.box(1)
+NoPosition      scala.Int.box
+NoPosition      scala.Int
