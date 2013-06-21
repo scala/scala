@@ -1,4 +1,4 @@
-import org.scalacheck.Prop.forAll
+import org.scalacheck.Prop.{forAll, throws}
 import org.scalacheck.Properties
 import org.scalacheck.ConsoleReporter.testStatsEx
 import org.scalacheck.Gen
@@ -64,4 +64,7 @@ object Test extends Properties("Mutable TreeSet") {
       view.filter(_ < 50) == Set[Int]() && view.filter(_ >= 150) == Set[Int]()
     }
   }
+
+  property("ordering must not be null") =
+    throws(mutable.TreeSet.empty[Int](null), classOf[NullPointerException])
 }

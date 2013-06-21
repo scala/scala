@@ -52,6 +52,9 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
 class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
+  if (ordering eq null)
+    throw new NullPointerException("ordering must not be null")
+
   override def stringPrefix = "TreeSet"
 
   override def size = RB.count(tree)
