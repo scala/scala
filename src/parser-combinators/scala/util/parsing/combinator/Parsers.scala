@@ -531,10 +531,6 @@ trait Parsers {
     }
   }
 
-	/*trait ElemFun
-  case class EFCons(hd: Elem => ElemFun, tl: ElemFun) extends ElemFun
-  case class EFNil(res: Boolean) extends ElemFun*/
-
   /** A parser matching input elements that satisfy a given predicate.
    *
    *  `elem(kind, p)` succeeds if the input starts with an element `e` for which `p(e)` is true.

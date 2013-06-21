@@ -31,5 +31,3 @@ trait TokenParsers extends Parsers {
   type Elem = lexical.Token
 
 }
-
-

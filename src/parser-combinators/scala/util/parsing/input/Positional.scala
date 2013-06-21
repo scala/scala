@@ -26,5 +26,3 @@ trait Positional {
     this
   }
 }
-
-

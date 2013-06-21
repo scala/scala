@@ -48,5 +48,3 @@ trait StdTokenParsers extends TokenParsers {
   def ident: Parser[String] =
     elem("identifier", _.isInstanceOf[Identifier]) ^^ (_.chars)
 }
-
-
