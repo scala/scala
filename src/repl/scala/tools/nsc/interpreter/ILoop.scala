@@ -22,6 +22,7 @@ import scala.reflect.classTag
 import StdReplTags._
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
+import scala.reflect.internal.util.BatchSourceFile
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -530,8 +531,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def pasteCommand(): Result = {
     echo("// Entering paste mode (ctrl-D to finish)\n")
     val code = readWhile(_ => true) mkString "\n"
-    echo("\n// Exiting paste mode, now interpreting.\n")
-    intp interpret code
+    if (code.trim.isEmpty) {
+      echo("\n// Nothing pasted, nothing gained.\n")
+    } else {
+      echo("\n// Exiting paste mode, now interpreting.\n")
+      val res = intp interpret code
+      // if input is incomplete, let the compiler try to say why
+      if (res == IR.Incomplete) {
+        echo("The pasted code is incomplete!\n")
+        // Remembrance of Things Pasted in an object
+        val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
+        if (errless) echo("...but compilation found no error? Good luck with that.")
+      }
+    }
     ()
   }
 
