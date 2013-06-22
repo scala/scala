@@ -245,7 +245,7 @@ abstract class TreeBuilder {
   /** Tree for `od op`, start is start0 if od.pos is borked. */
   def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
     val start = if (od.pos.isDefined) od.pos.startOrPoint else start0
-    atPos(r2p(start, end, end)) { new PostfixSelect(od, op.encode) }
+    atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
   }
 
   /** A type tree corresponding to (possibly unary) intersection type */
