@@ -10,7 +10,6 @@
 
 package scala.runtime;
 
-import java.io.*;
 import scala.math.ScalaNumber;
 
 /** An object (static class) that defines methods used for creating,
