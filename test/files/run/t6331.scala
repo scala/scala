@@ -1,7 +1,7 @@
 import scala.tools.partest._
 import java.io._
 import scala.tools.nsc._
-import scala.tools.nsc.util.CommandLineParser
+import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.reporters.ConsoleReporter
 

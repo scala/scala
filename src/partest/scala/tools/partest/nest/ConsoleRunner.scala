@@ -9,7 +9,7 @@ package nest
 
 import utils.Properties._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
-import scala.tools.nsc.util.CommandLineParser
+import scala.tools.nsc.util.CommandLine
 import scala.collection.{ mutable, immutable }
 import PathSettings.srcDir
 import TestKinds._
@@ -97,7 +97,7 @@ class ConsoleRunner extends DirectRunner {
   )
 
   def main(argstr: String) {
-    val parsed = CommandLineParser(argstr) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
+    val parsed = (new CommandLine(argstr)) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
 
     if (parsed isSet "--debug") NestUI.setDebug()
     if (parsed isSet "--verbose") NestUI.setVerbose()
