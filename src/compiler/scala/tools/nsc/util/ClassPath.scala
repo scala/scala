@@ -17,6 +17,9 @@ import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 import scala.reflect.runtime.ReflectionUtils
+import ClassPath._
+import scala.reflect.io.FileZipArchive
+import scala.tools.nsc.classpath.ZipFileIndexClasspath
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -141,7 +144,12 @@ object ClassPath {
       assert(endsClass(name), name)
       name.substring(0, name.length - 6)
     }
-    def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
+    def newClassPath(dir: AbstractFile): ClassPath[AbstractFile] = {
+      if (dir.isInstanceOf[FileZipArchive])
+        ZipFileIndexClasspath.create(dir.file, this)
+      else
+        new DirectoryClassPath(dir, this)
+    }
   }
 
   object DefaultJavaContext extends JavaContext
@@ -160,7 +168,6 @@ object ClassPath {
     else throw new FatalError("Unexpected source file ending: " + name)
   }
 }
-import ClassPath._
 
 /**
  * Represents a package which contains classes and other packages
@@ -221,8 +228,9 @@ abstract class ClassPath[T] {
    */
   def findClass(name: String): Option[AnyClassRep] =
     splitWhere(name, _ == '.', doDropIndex = true) match {
-      case Some((pkg, rest)) =>
-        val rep = packages find (_.name == pkg) flatMap (_ findClass rest)
+      case Some((pkgName, rest)) =>
+        val pkg = packages find (_.name == pkgName)
+        val rep = pkg flatMap (_ findClass rest)
         rep map {
           case x: ClassRep  => x
           case x            => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
