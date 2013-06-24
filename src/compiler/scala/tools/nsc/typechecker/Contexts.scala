@@ -16,7 +16,7 @@ import scala.reflect.internal.util.shortClassOfInstance
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{ JavaLangPackage, ScalaPackage, PredefModule }
+  import definitions.{ JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
   import ContextMode._
 
   object NoContext
@@ -93,9 +93,31 @@ trait Contexts { self: Analyzer =>
     else RootImports.completeList
   }
 
+
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, erasedTypes: Boolean = false): Context = {
     val rootImportsContext = (startContext /: rootImports(unit))((c, sym) => c.make(gen.mkWildcardImport(sym)))
-    val c = rootImportsContext.make(tree, unit = unit)
+
+    // there must be a scala.xml package when xml literals were parsed in this unit
+    if (unit.hasXml && ScalaXmlPackage == NoSymbol)
+      unit.error(unit.firstXmlPos, "XML literals may only be used if the package scala.xml is present in the compilation classpath.")
+
+    // TODO: remove the def below and drop `|| predefDefinesDollarScope` in the condition for `contextWithXML`
+    // as soon as 2.11.0-M4 is released and used as STARR (and $scope is no longer defined in Predef)
+    // Until then, to allow compiling quick with pre-2.11.0-M4 STARR,
+    // which relied on Predef defining `val $scope`, we've left it in place.
+    // Since the new scheme also imports $scope (as an alias for scala.xml.TopScope),
+    // we must check whether it is still there and not import the alias to avoid ambiguity.
+    // (All of this is only necessary to compile the full quick stage with STARR.
+    //  if using locker, Predef.$scope is no longer needed.)
+    def predefDefinesDollarScope = definitions.getMemberIfDefined(PredefModule, nme.dollarScope) != NoSymbol
+
+    // hack for the old xml library (detected by looking for scala.xml.TopScope, which needs to be in scope as $scope)
+    // import scala.xml.{TopScope => $scope}
+    val contextWithXML =
+      if (!unit.hasXml || ScalaXmlTopScope == NoSymbol || predefDefinesDollarScope) rootImportsContext
+      else rootImportsContext.make(gen.mkImport(ScalaXmlPackage, nme.TopScope, nme.dollarScope))
+
+    val c = contextWithXML.make(tree, unit = unit)
     if (erasedTypes) c.setThrowErrors() else c.setReportErrors()
     c(EnrichmentEnabled | ImplicitsEnabled) = !erasedTypes
     c

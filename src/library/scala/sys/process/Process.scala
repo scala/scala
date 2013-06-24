@@ -127,15 +127,6 @@ trait ProcessCreation {
     */
   def apply(url: URL): URLBuilder                     = new URLImpl(url)
 
-  /** Creates a [[scala.sys.process.ProcessBuilder]] from a Scala XML Element.
-    * This can be used as a way to template strings.
-    *
-    * @example {{{
-    * apply(<x> {dxPath.absolutePath} --dex --output={classesDexPath.absolutePath} {classesMinJarPath.absolutePath}</x>)
-    * }}}
-    */
-  def apply(command: scala.xml.Elem): ProcessBuilder  = apply(command.text.trim)
-
   /** Creates a [[scala.sys.process.ProcessBuilder]] from a `Boolean`. This can be
     * to force an exit value.
     */
@@ -219,14 +210,6 @@ trait ProcessImplicits {
     * }}}
     */
   implicit def urlToProcess(url: URL): URLBuilder                         = apply(url)
-
-  /** Implicitly convert a [[scala.xml.Elem]] into a
-    * [[scala.sys.process.ProcessBuilder]]. This is done by obtaining the text
-    * elements of the element, trimming spaces, and then converting the result
-    * from string to a process. Importantly, tags are completely ignored, so
-    * they cannot be used to separate parameters.
-    */
-  implicit def xmlToProcess(command: scala.xml.Elem): ProcessBuilder      = apply(command)
 
   /** Implicitly convert a `String` into a [[scala.sys.process.ProcessBuilder]]. */
   implicit def stringToProcess(command: String): ProcessBuilder           = apply(command)

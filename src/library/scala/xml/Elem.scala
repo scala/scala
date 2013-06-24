@@ -35,7 +35,30 @@ object Elem {
     case _: SpecialNode | _: Group  => None
     case _                          => Some((n.prefix, n.label, n.attributes, n.scope, n.child))
   }
+
+  import scala.sys.process._
+  /** Implicitly convert a [[scala.xml.Elem]] into a
+    * [[scala.sys.process.ProcessBuilder]]. This is done by obtaining the text
+    * elements of the element, trimming spaces, and then converting the result
+    * from string to a process. Importantly, tags are completely ignored, so
+    * they cannot be used to separate parameters.
+    */
+  @deprecated("To create a scala.sys.process.Process from an xml.Elem, please use Process(elem.text.trim).", "2.11.0")
+  implicit def xmlToProcess(command: scala.xml.Elem): ProcessBuilder = Process(command.text.trim)
+
+  @deprecated("To create a scala.sys.process.Process from an xml.Elem, please use Process(elem.text.trim).", "2.11.0")
+  implicit def processXml(p: Process.type) = new {
+    /** Creates a [[scala.sys.process.ProcessBuilder]] from a Scala XML Element.
+      * This can be used as a way to template strings.
+      *
+      * @example {{{
+      * apply(<x> {dxPath.absolutePath} --dex --output={classesDexPath.absolutePath} {classesMinJarPath.absolutePath}</x>)
+      * }}}
+      */
+    def apply(command: Elem): ProcessBuilder = Process(command.text.trim)
+  }
 }
+
 
 /** The case class `Elem` extends the `Node` class,
  *  providing an immutable data object representing an XML element.

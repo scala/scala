@@ -176,6 +176,9 @@ trait Mirrors extends api.Mirrors {
     def getPackage(fullname: TermName): ModuleSymbol =
       ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname), allowModules = true)
 
+    def getPackageIfDefined(fullname: TermName): Symbol =
+      wrapMissing(getPackage(fullname))
+
     @deprecated("Use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
       getPackage(newTermNameCached(fullname))
 
