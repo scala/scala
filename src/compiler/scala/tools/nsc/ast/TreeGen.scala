@@ -19,11 +19,20 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   import global._
   import definitions._
 
-  /** Builds a fully attributed wildcard import node.
+  /** Builds a fully attributed, synthetic wildcard import node.
    */
-  def mkWildcardImport(pkg: Symbol): Import = {
-    assert(pkg ne null, this)
-    val qual = gen.mkAttributedStableRef(pkg)
+  def mkWildcardImport(pkg: Symbol): Import =
+    mkImportFromSelector(pkg, ImportSelector.wildList)
+
+  /** Builds a fully attributed, synthetic import node.
+    * import `qualSym`.{`name` => `toName`}
+    */
+  def mkImport(qualSym: Symbol, name: Name, toName: Name): Import =
+    mkImportFromSelector(qualSym, ImportSelector(name, 0, toName, 0) :: Nil)
+
+  private def mkImportFromSelector(qualSym: Symbol, selector: List[ImportSelector]): Import = {
+    assert(qualSym ne null, this)
+    val qual = gen.mkAttributedStableRef(qualSym)
     val importSym = (
       NoSymbol
         newImport NoPosition
@@ -31,7 +40,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
           setInfo analyzer.ImportType(qual)
     )
     val importTree = (
-      Import(qual, ImportSelector.wildList)
+      Import(qual, selector)
         setSymbol importSym
           setType NoType
     )

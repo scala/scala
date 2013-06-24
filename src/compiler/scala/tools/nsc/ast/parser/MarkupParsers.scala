@@ -10,8 +10,7 @@ import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
-import scala.xml.TextBuffer
-import scala.xml.parsing.MarkupParserCommon
+import scala.tools.nsc.ast.parser.xml.{MarkupParserCommon, Utility}
 import scala.reflect.internal.Chars.{ SU, LF }
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
@@ -42,7 +41,7 @@ trait MarkupParsers {
   import global._
 
   class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends MarkupParserCommon {
-
+    import Utility.{ isNameStart, isSpace }
     import Tokens.{ LBRACE, RBRACE }
 
     type PositionType = Position
@@ -172,12 +171,21 @@ trait MarkupParsers {
       xTakeUntil(handle.comment, () => r2p(start, start, curOffset), "-->")
     }
 
-    def appendText(pos: Position, ts: Buffer[Tree], txt: String) {
-      val toAppend =
-        if (preserveWS) Seq(txt)
-        else TextBuffer.fromString(txt).toText map (_.text)
+    def appendText(pos: Position, ts: Buffer[Tree], txt: String): Unit = {
+      def append(t: String) = ts append handle.text(pos, t)
 
-      toAppend foreach (t => ts append handle.text(pos, t))
+      if (preserveWS) append(txt)
+      else {
+        val sb = new StringBuilder()
+
+        txt foreach { c =>
+          if (!isSpace(c)) sb append c
+          else if (sb.isEmpty || !isSpace(sb.last)) sb append ' '
+        }
+
+        val trimmed = sb.toString.trim
+        if (!trimmed.isEmpty) append(trimmed)
+      }
     }
 
     /** adds entity/character to ts as side-effect

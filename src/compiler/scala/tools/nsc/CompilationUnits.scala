@@ -34,6 +34,20 @@ trait CompilationUnits { self: Global =>
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
 
+    /** The position of the first xml literal encountered while parsing this compilation unit.
+     * NoPosition if there were none. Write-once.
+     */
+    private[this] var _firstXmlPos: Position = NoPosition
+
+    /** Record that we encountered XML. Should only be called once. */
+    protected[nsc] def encounteredXml(pos: Position) = _firstXmlPos = pos
+
+    /** Does this unit contain XML? */
+    def hasXml = _firstXmlPos ne NoPosition
+
+    /** Position of first XML literal in this unit. */
+    def firstXmlPos = _firstXmlPos
+
     def exists = source != NoSourceFile && source != null
 
     /** Note: depends now contains toplevel classes.

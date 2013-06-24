@@ -166,11 +166,18 @@ self =>
     def syntaxError(offset: Int, msg: String): Unit = throw new MalformedInput(offset, msg)
     def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
 
-    /** the markup parser */
-    lazy val xmlp = new MarkupParser(this, preserveWS = true)
-
     object symbXMLBuilder extends SymbolicXMLBuilder(this, preserveWS = true) { // DEBUG choices
       val global: self.global.type = self.global
+    }
+
+    /** the markup parser
+     * The first time this lazy val is accessed, we assume we were trying to parse an xml literal.
+     * The current position is recorded for later error reporting if it turns out
+     * that we don't have the xml library on the compilation classpath.
+     */
+    private[this] lazy val xmlp = {
+      currentUnit.encounteredXml(o2p(in.offset))
+      new MarkupParser(this, preserveWS = true)
     }
 
     def xmlLiteral() : Tree = xmlp.xLiteral

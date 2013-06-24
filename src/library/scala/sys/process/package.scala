@@ -80,10 +80,7 @@ package scala.sys {
     * spaces -- no escaping of spaces is possible -- or out of a
     * [[scala.collection.Seq]], where the first element represents the command
     * name, and the remaining elements are arguments to it. In this latter case,
-    * arguments may contain spaces.  One can also implicitly convert
-    * [[scala.xml.Elem]] and `java.lang.ProcessBuilder` into a `ProcessBuilder`.
-    * In the introductory example, the strings were converted into
-    * `ProcessBuilder` implicitly.
+    * arguments may contain spaces.
     *
     * To further control what how the process will be run, such as specifying
     * the directory in which it will be run, see the factories on

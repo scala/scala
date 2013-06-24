@@ -14,7 +14,6 @@ import java.util.zip.ZipException
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{ Try, Success, Failure }
-import scala.xml.XML
 
 /** Information about a plugin loaded from a jar file.
  *
@@ -81,14 +80,14 @@ object Plugin {
   private def loadDescriptionFromJar(jarp: Path): Try[PluginDescription] = {
     // XXX Return to this once we have more ARM support
     def read(is: Option[InputStream]) = is match {
-      case None => throw new RuntimeException(s"Missing $PluginXML in $jarp")
-      case _    => PluginDescription fromXML (XML load is.get)
+      case None     => throw new RuntimeException(s"Missing $PluginXML in $jarp")
+      case Some(is) => PluginDescription.fromXML(is)
     }
     Try(new Jar(jarp.jfile).withEntryStream(PluginXML)(read))
   }
 
   private def loadDescriptionFromFile(f: Path): Try[PluginDescription] =
-    Try(XML loadFile f.jfile) map (PluginDescription fromXML _)
+    Try(PluginDescription.fromXML(new java.io.FileInputStream(f.jfile)))
 
   type AnyClass = Class[_]
 
