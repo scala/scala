@@ -43,9 +43,9 @@
 			<version>@VERSION@</version>
 		</dependency>
     <dependency>
-      <groupId>org.scala-lang</groupId>
+      <groupId>jline</groupId>
       <artifactId>jline</artifactId>
-      <version>@VERSION@</version>
+      <version>@JLINE_VERSION@</version>
       <optional>true</optional>
     </dependency>
 	</dependencies>

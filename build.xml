@@ -123,7 +123,6 @@ TODO:
   <property name="library.starr.jar"       value="${lib.dir}/scala-library.jar"/>
   <property name="reflect.starr.jar"       value="${lib.dir}/scala-reflect.jar"/>
   <property name="compiler.starr.jar"      value="${lib.dir}/scala-compiler.jar"/>
-  <property name="jline.jar"               value="${lib.dir}/jline.jar"/>
   <property name="ant.jar"                 value="${ant.home}/lib/ant.jar"/>
   <property name="scalacheck.jar"          value="${lib.dir}/scalacheck.jar"/>
 
@@ -152,6 +151,8 @@ TODO:
 
   <property name="copyright.string"        value="Copyright 2002-2013, LAMP/EPFL"/>
   <property name="partest.version.number"  value="0.9.3"/>
+
+  <property name="jline.version"           value="2.11"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
@@ -236,6 +237,10 @@ TODO:
       <artifact:dependencies pathId="partest.extras.classpath" filesetId="partest.extras.fileset" versionsId="partest.extras.versions">
         <dependency groupId="com.googlecode.java-diff-utils" artifactId="diffutils" version="1.3.0"/>
         <dependency groupId="org.scala-tools.testing" artifactId="test-interface" version="0.5" />
+      </artifact:dependencies>
+
+      <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.deps.fileset" versionsId="repl.deps.versions">
+        <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
       </artifact:dependencies>
 
       <!-- BND support -->
@@ -529,7 +534,7 @@ TODO:
     <path id="quick.repl.build.path">
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
-      <pathelement location="${jline.jar}"/>
+      <path refid="repl.deps.classpath"/>
     </path>
 
     <path id="quick.xml.build.path">
@@ -610,7 +615,7 @@ TODO:
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
-      <pathelement location="${build-pack.dir}/lib/jline.jar"/>
+      <path refid="repl.deps.classpath"/>
       <path refid="aux.libs"/>
     </path>
 
@@ -740,7 +745,7 @@ TODO:
       <pathelement location="${build-palo.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-palo.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-palo.dir}/lib/scala-compiler.jar"/>
-      <pathelement location="${build-palo.dir}/lib/jline.jar"/>
+      <path refid="repl.deps.classpath"/>
     </path>
 
     <path id="test.positions.sub.build.path" path="${build-quick.dir}/classes/library"/>
@@ -1265,7 +1270,10 @@ TODO:
   <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <pre> <!-- TODO the files copied here do not influence actuality of this target (nor does the manifest) -->
-        <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
+        <copy todir="${build-pack.dir}/lib">
+          <resources refid="repl.deps.fileset"/>
+          <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper" from="${repl.deps.versions}" to="flatten"/>
+        </copy>
         <copy todir="${build-pack.dir}/lib">
           <fileset dir="${lib-extra.dir}">
             <include name="**/*.jar"/>
@@ -1340,7 +1348,10 @@ TODO:
       <fileset dir="${build-locker.dir}/classes/compiler"/>
       <fileset dir="${asm-classes}"/>
     </jar>
-    <copy file="${jline.jar}" toDir="${build-palo.dir}/lib"/>
+    <copy todir="${build-palo.dir}/lib">
+      <resources refid="repl.deps.fileset"/>
+      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper" from="${repl.deps.versions}" to="flatten"/>
+    </copy>
   </target>
 
   <target name="palo.bin" depends="palo.done"> <staged-bin stage="palo"/></target>
@@ -1738,13 +1749,6 @@ TODO:
     </staged-docs>
   </target>
 
-  <target name="docs.jline" depends="docs.start">
-    <staged-docs project="jline" dir="jline/src/main/java" title="Scala JLine">
-      <include name="**/*.scala"/>
-      <include name="**/*.java"/>
-    </staged-docs>
-  </target>
-
   <target name="docs.scalap" depends="docs.start">
     <staged-docs project="scalap" title="Scalap">
       <include name="**/*.scala"/>
@@ -1800,7 +1804,7 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="docs.done" depends="docs.jline, docs.comp, docs.man, docs.lib, docs.xml, docs.parser-combinators, docs.scalap, docs.partest, docs.continuations-plugin"/>
+  <target name="docs.done" depends="docs.comp, docs.man, docs.lib, docs.xml, docs.parser-combinators, docs.scalap, docs.partest, docs.continuations-plugin"/>
 
 <!-- ===========================================================================
                                   DISTRIBUTION
@@ -1828,7 +1832,6 @@ TODO:
     <mkdir dir="${dist.dir}/lib"/>
     <copy toDir="${dist.dir}/lib">
       <fileset dir="${build-pack.dir}/lib">
-        <include name="jline.jar"/>
         <include name="scalacheck.jar"/>
         <include name="scala-partest.jar"/>
         <include name="scalap.jar"/>
@@ -1839,6 +1842,12 @@ TODO:
       <resources refid="partest.extras.fileset"/>
       <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
               from="${partest.extras.versions}" to="flatten"/>
+    </copy>
+
+    <copy todir="${dist.dir}/lib">
+      <resources refid="repl.deps.fileset"/>
+      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
+              from="${repl.deps.versions}" to="flatten"/>
     </copy>
 
     <mkdir dir="${dist.dir}/bin"/>

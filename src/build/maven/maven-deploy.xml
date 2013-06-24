@@ -57,6 +57,7 @@
             <filter token="VERSION" value="@{version}" />
             <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
             <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
+            <filter token="JLINE_VERSION" value="${jline.version}" />
           </filterset>
         </copy>
         <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
@@ -104,7 +105,6 @@
       <attribute name="signed" default="false"/>
 
       <sequential>
-        <deploy-one                name="jline"          version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-actors"   version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-compiler" version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-library"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>

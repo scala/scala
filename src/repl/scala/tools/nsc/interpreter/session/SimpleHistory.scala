@@ -46,6 +46,11 @@ class SimpleHistory extends JLineHistory {
   def entries(): JListIterator[JEntry]         = toEntries().asJava.listIterator()
   def iterator: JIterator[JEntry]              = toEntries().iterator.asJava
 
+  def remove(idx: Int): CharSequence        = buf remove idx
+  def removeFirst(): CharSequence           = buf remove 0
+  def removeLast(): CharSequence            = buf remove lastIndex
+  def set(idx: Int, to: CharSequence): Unit = buf(idx) = to
+
   def current()         = if (index >= 0 && index < buf.size) buf(index) else fail("current()")
   def previous()        = (index > 0) && minusOne
   def next()            = (index <= lastIndex) && plusOne

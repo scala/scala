@@ -115,7 +115,7 @@ if [[ -n "$cygwin$mingw" ]]; then
     case "$TERM" in
         rxvt* | xterm*)
             stty -icanon min 1 -echo
-            WINDOWS_OPT="-Djline.terminal=scala.tools.jline.UnixTerminal"
+            WINDOWS_OPT="-Djline.terminal=unix"
         ;;
     esac
 fi
