@@ -1455,8 +1455,8 @@ trait Typers extends Modes with Adaptations with Tags {
               implRestriction(tree, "nested object")
             //see https://issues.scala-lang.org/browse/SI-6444
             //see https://issues.scala-lang.org/browse/SI-6463
-            case _: ClassDef =>
-              implRestriction(tree, "nested class")
+            case cd: ClassDef if !cd.symbol.isAnonymousClass => // Don't warn about partial functions, etc. SI-7571
+              implRestriction(tree, "nested class") // avoiding Type Tests that might check the $outer pointer.
             case Select(sup @ Super(qual, mix), selector) if selector != nme.CONSTRUCTOR && qual.symbol == clazz && mix != tpnme.EMPTY =>
               //see https://issues.scala-lang.org/browse/SI-6483
               implRestriction(sup, "qualified super reference")
