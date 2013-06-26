@@ -107,7 +107,7 @@ class MutableSettings(val errorFn: String => Unit)
 
   /** Split the given line into parameters.
    */
-  def splitParams(line: String) = cmd.Parser.tokenize(line, errorFn)
+  def splitParams(line: String) = cmd.CommandLineParser.tokenize(line, errorFn)
 
   /** Returns any unprocessed arguments.
    */

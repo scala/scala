@@ -3,27 +3,16 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package util
+package scala.tools
+package nsc.util
 
-import scala.util.parsing.combinator._
-import scala.util.parsing.input.CharArrayReader.EofCh
 import scala.collection.mutable.ListBuffer
 
-/** A simple command line parser to replace the several different
- *  simple ones spread around trunk.
- *
+/**
  *  XXX Note this has been completely obsolesced by scala.tools.cmd.
  *  I checked it back in as part of rolling partest back a month
  *  rather than go down the rabbit hole of unravelling dependencies.
  */
-
-trait ParserUtil extends Parsers {
-  protected implicit class ParserPlus[+T](underlying: Parser[T]) {
-    def !~>[U](p: => Parser[U]): Parser[U] = (underlying ~! p) ^^ { case a~b  => b }
-  }
-}
-
 case class CommandLine(
   args: List[String],
   unaryArguments: List[String],
@@ -31,7 +20,7 @@ case class CommandLine(
 ) {
   def this(args: List[String]) = this(args, Nil, Nil)
   def this(args: Array[String]) = this(args.toList, Nil, Nil)
-  def this(line: String) = this(CommandLineParser tokenize line, Nil, Nil)
+  def this(line: String) = this(cmd.CommandLineParser tokenize line, Nil, Nil)
 
   def withUnaryArgs(xs: List[String]) = copy(unaryArguments = xs)
   def withBinaryArgs(xs: List[String]) = copy(binaryArguments = xs)
@@ -106,34 +95,4 @@ case class CommandLine(
   def apply(arg: String) = argMap(arg)
 
   override def toString() = "CommandLine(\n%s)\n" format (args map ("  " + _ + "\n") mkString)
-}
-
-object CommandLineParser extends RegexParsers with ParserUtil {
-  override def skipWhitespace = false
-
-  def elemExcept(xs: Elem*): Parser[Elem] = elem("elemExcept", x => x != EofCh && !(xs contains x))
-  def escaped(ch: Char): Parser[String] = "\\" + ch
-  def mkQuoted(ch: Char): Parser[String] = (
-      elem(ch) !~> rep(escaped(ch) | elemExcept(ch)) <~ ch ^^ (_.mkString)
-    | failure("Unmatched %s in input." format ch)
-  )
-
-  /** Apparently windows can't deal with the quotes sticking around. */
-  lazy val squoted: Parser[String] = mkQuoted('\'')   // ^^ (x => "'%s'" format x)
-  lazy val dquoted: Parser[String] = mkQuoted('"')    // ^^ (x => "\"" + x + "\"")
-  lazy val token: Parser[String]   = """\S+""".r
-
-  lazy val argument: Parser[String] = squoted | dquoted | token
-  lazy val commandLine: Parser[List[String]] = phrase(repsep(argument, whiteSpace))
-
-  class ParseException(msg: String) extends RuntimeException(msg)
-
-  def tokenize(line: String): List[String] = tokenize(line, x => throw new ParseException(x))
-  def tokenize(line: String, errorFn: String => Unit): List[String] = {
-    parse(commandLine, line.trim) match {
-      case Success(args, _)     => args
-      case NoSuccess(msg, rest) => errorFn(msg) ; Nil
-    }
-  }
-  def apply(line: String) = new CommandLine(tokenize(line))
 }
