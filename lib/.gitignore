@@ -1,0 +1,15 @@
+ant-contrib.jar
+ant-dotnet-1.0.jar
+ant.jar
+fjbg.jar
+forkjoin.jar
+jline.jar
+maven-ant-tasks-2.1.1.jar
+msil.jar
+scala-compiler.jar
+scala-compiler-src.jar
+scala-library.jar
+scala-library-src.jar
+scala-reflect.jar
+scala-reflect-src.jar
+vizant.jar
