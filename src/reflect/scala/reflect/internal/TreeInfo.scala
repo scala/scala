@@ -98,7 +98,7 @@ abstract class TreeInfo {
    */
   def isStableIdentifier(tree: Tree, allowVolatile: Boolean): Boolean =
     tree match {
-      case Ident(_)        => symOk(tree.symbol) && tree.symbol.isStable && !tree.symbol.hasVolatileType // TODO SPEC: not required by spec
+      case i @ Ident(_)    => isStableIdent(i)
       case Select(qual, _) => isStableMemberOf(tree.symbol, qual, allowVolatile) && isPath(qual, allowVolatile)
       case Apply(Select(free @ Ident(_), nme.apply), _) if free.symbol.name endsWith nme.REIFY_FREE_VALUE_SUFFIX =>
         // see a detailed explanation of this trick in `GenSymbols.reifyFreeTerm`
@@ -117,6 +117,13 @@ abstract class TreeInfo {
   def isStableMemberOf(sym: Symbol, tree: Tree, allowVolatile: Boolean): Boolean = (
     symOk(sym)       && (!sym.isTerm   || (sym.isStable && (allowVolatile || !sym.hasVolatileType))) &&
     typeOk(tree.tpe) && (allowVolatile || !hasVolatileType(tree)) && !definitions.isByNameParamType(tree.tpe)
+  )
+
+  private def isStableIdent(tree: Ident): Boolean = (
+       symOk(tree.symbol)
+    && tree.symbol.isStable
+    && !definitions.isByNameParamType(tree.tpe)
+    && !tree.symbol.hasVolatileType // TODO SPEC: not required by spec
   )
 
   /** Is `tree`'s type volatile? (Ignored if its symbol has the @uncheckedStable annotation.)
@@ -201,7 +208,7 @@ abstract class TreeInfo {
       }
       def isWarnableSymbol = {
         val sym = tree.symbol
-        (sym == null) || !(sym.isModule || sym.isLazy) || {
+        (sym == null) || !(sym.isModule || sym.isLazy || definitions.isByNameParamType(sym.tpe_*)) || {
           debuglog("'Pure' but side-effecting expression in statement position: " + tree)
           false
         }
