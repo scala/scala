@@ -313,8 +313,8 @@ trait Namers extends MethodSynthesis {
         case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(name.toTypeName, pos, flags)
         case TypeDef(_, _, _, _)                    => owner.newTypeSymbol(name.toTypeName, pos, flags)
         case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => owner.newConstructor(pos, flags)
-        case DefDef(_, _, _, _, _, _)               => owner.newMethod(name.toTermName, pos, flags)
-        case ClassDef(_, _, _, _)                   => owner.newClassSymbol(name.toTypeName, pos, flags)
+        case DefDef(_, _, tparams, _, _, _)         => owner.newMethod(name.toTermName, pos, flags) setPolyArity tparams.size.toByte
+        case ClassDef(_, _, tparams, _)             => owner.newClassSymbol(name.toTypeName, pos, flags) setPolyArity tparams.size.toByte
         case ModuleDef(_, _, _)                     => owner.newModule(name.toTermName, pos, flags)
         case PackageDef(pid, _)                     => createPackageSymbol(pos, pid)
         case ValDef(_, _, _, _)                     =>

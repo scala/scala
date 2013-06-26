@@ -141,6 +141,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // Rename as little as possible.  Enforce invariants on all renames.
     type TypeOfClonedSymbol >: Null <: Symbol { type NameType = Symbol.this.NameType }
 
+    def polyArity: Byte = -1
+
     // Abstract here so TypeSymbol and TermSymbol can have a private[this] field
     // with the proper specific type.
     def rawname: NameType
@@ -696,10 +698,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     def isClassLocalToConstructor = false
 
-    final def isDerivedValueClass =
-      isClass && !hasFlag(PACKAGE | TRAIT) &&
-      info.firstParent.typeSymbol == AnyValClass && !isPrimitiveValueClass
-
+    final def isDerivedValueClass = (
+         isClass
+      && !isTrait
+      && !isPrimitiveValueClass
+      && info.firstParent.typeSymbol == AnyValClass
+    )
     final def isMethodWithExtension =
       isMethod && owner.isDerivedValueClass && !isParamAccessor && !isConstructor && !hasFlag(SUPERACCESSOR) && !isMacro
 
@@ -732,8 +736,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
     final def isOmittablePrefix = /*!settings.debug.value &&*/ (
-         UnqualifiedOwners(skipPackageObject)
-      || isEmptyPrefix
+         isEmptyPrefix
+      || UnqualifiedOwners(skipPackageObject)
     )
     def isEmptyPrefix = (
          isEffectiveRoot                      // has no prefix for real, <empty> or <root>
@@ -847,7 +851,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Does this symbol denote a class that defines static symbols? */
     final def isStaticOwner: Boolean =
-      isPackageClass || isModuleClass && isStatic
+      isPackageClass || isModuleClass && owner.isStaticOwner
+      // isPackageClass || isModuleClass && isStatic
 
     /** A helper function for isEffectivelyFinal. */
     private def isNotOverridden = (
@@ -2721,7 +2726,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
-  extends TermSymbol(initOwner, initPos, initName) with MethodSymbolApi {
+  extends TermSymbol(initOwner, initPos, initName) with MethodSymbolApi with PolyTypeCarryingSymbol {
     private[this] var mtpePeriod       = NoPeriod
     private[this] var mtpePre: Type    = _
     private[this] var mtpeResult: Type = _
@@ -2999,7 +3004,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** A class for class symbols */
   class ClassSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
-  extends TypeSymbol(initOwner, initPos, initName) with ClassSymbolApi {
+  extends TypeSymbol(initOwner, initPos, initName) with ClassSymbolApi with PolyTypeCarryingSymbol {
     type TypeOfClonedSymbol = ClassSymbol
 
     private[this] var flatname: TypeName            = _
@@ -3246,6 +3251,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || info.parents.exists(_.typeSymbol hasTransOwner sym)
     )
   }
+
+  /** A trait shared by symbols which might have a PolyType as info
+   *  (specifically, ClassSymbol and MethodSymbol.)
+   */
+  trait PolyTypeCarryingSymbol extends Symbol {
+    private var recordedPolyArity: Byte = -1
+    override def polyArity: Byte = recordedPolyArity
+    def setPolyArity(num: Int): this.type = { recordedPolyArity = num.toByte ; this }
+    override def setInfo(info: Type): this.type  = {
+      super.setInfo(info)
+      if (polyArity >= 0) this else info match {
+        case PolyType(tparams, _)   => this setPolyArity tparams.size
+        case MethodType(_, _)       => this setPolyArity 0
+        case ClassInfoType(_, _, _) => this setPolyArity 0
+        case _                      => this
+      }
+    }
+  }
+
   trait StubSymbol extends Symbol {
     devWarning("creating stub symbol to defer error: " + missingMessage)
 
@@ -3441,6 +3465,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       "TypeHistory(" + phaseOf(validFrom)+":"+runId(validFrom) + "," + info + "," + prev + ")"
 
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
+    def isOriginallyMonomorphic: Boolean = (
+      if (prev eq null)
+        info.isComplete && !info.isHigherKinded
+      else
+        prev.isOriginallyMonomorphic
+    )
   }
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------

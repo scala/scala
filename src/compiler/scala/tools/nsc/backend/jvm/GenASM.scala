@@ -824,15 +824,33 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
      */
     def getGenericSignature(sym: Symbol, owner: Symbol): String = {
 
-      if (!needsGenericSignature(sym)) { return null }
+      if (!needsGenericSignature(sym)) {
+        val defn = enteringErasure(sym defStringSeenAs (owner.thisType memberInfo sym))
+        log(s"No generic signature required for $sym in $owner: $defn")
+        return null
+      }
 
-      val memberTpe = enteringErasure(owner.thisType.memberInfo(sym))
+      val memberTpe = enteringErasure(owner.thisType memberInfo sym)
+      if (sym.isSpecialized) {
+        val unspecialized = enteringErasure {
+          unspecializedSymbol(sym) match {
+            case NoSymbol => NoType
+            case base     => (owner.thisType memberInfo sym).asSeenFrom(owner.thisType, base)
+          }
+        }
+        if ((unspecialized eq NoType) || (memberTpe =:= unspecialized)) ()
+        else devWarning(
+          sm"""|Specialized member's type does not match as seen from unspecialized:
+               |      memberTpe: $memberTpe
+               |  unspecialized: $unspecialized"""
+        )
+      }
 
       val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe)
       if (jsOpt.isEmpty) { return null }
 
       val sig = jsOpt.get
-      log(sig) // This seems useful enough in the general case.
+      log(s"$sym in $owner has signature:\n  $sig") // This seems useful enough in the general case.
 
           def wrap(op: => Unit) = {
             try   { op; true }

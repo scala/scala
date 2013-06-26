@@ -2059,6 +2059,7 @@ trait Types
     require(sym.isPackageClass, sym)
     override def isStable = true
     override protected def finishPrefix(rest: String) = packagePrefix + rest
+    override def safeToString: String = sym.fullName
   }
   class RefinementTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
     require(sym.isRefinementClass, sym)
