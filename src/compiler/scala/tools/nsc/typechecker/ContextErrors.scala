@@ -21,13 +21,13 @@ trait ContextErrors {
   import global._
   import definitions._
 
-  abstract class AbsTypeError extends Throwable {
+  sealed abstract class AbsTypeError extends Throwable {
     def errPos: Position
     def errMsg: String
     override def toString() = "[Type error at:" + errPos + "] " + errMsg
   }
 
-  abstract class TreeTypeError extends AbsTypeError {
+  sealed abstract class TreeTypeError extends AbsTypeError {
     def underlyingTree: Tree
     def errPos = underlyingTree.pos
   }

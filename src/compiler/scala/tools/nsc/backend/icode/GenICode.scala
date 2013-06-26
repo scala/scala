@@ -1747,7 +1747,7 @@ abstract class GenICode extends SubComponent  {
 
     /////////////////////// Context ////////////////////////////////
 
-    abstract class Cleanup(val value: AnyRef) {
+    sealed abstract class Cleanup(val value: AnyRef) {
       def contains(x: AnyRef) = value == x
     }
     case class MonitorRelease(m: Local) extends Cleanup(m) { }

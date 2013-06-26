@@ -10,7 +10,7 @@ import model._
  *  @author Damien Obrist
  *  @author Vlad Ureche
  */
-abstract class Diagram {
+sealed abstract class Diagram {
   def nodes: List[Node]
   def edges: List[(Node, List[Node])]
   def isContentDiagram = false     // Implemented by ContentDiagram
@@ -44,7 +44,7 @@ trait DepthInfo {
   def maxDepth: Int
 }
 
-abstract class Node {
+sealed abstract class Node {
   def name = tpe.name
   def tpe: TypeEntity
   def tpl: Option[TemplateEntity]
