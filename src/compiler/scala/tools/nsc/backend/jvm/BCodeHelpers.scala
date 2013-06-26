@@ -240,7 +240,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
   /*
    * Populates the InnerClasses JVM attribute with `refedInnerClasses`.
-   * In additiona to inner classes mentioned somewhere in `jclass` (where `jclass` is a class file being emitted)
+   * In addition to inner classes mentioned somewhere in `jclass` (where `jclass` is a class file being emitted)
    * `refedInnerClasses` should contain those inner classes defined as direct member classes of `jclass`
    * but otherwise not mentioned in `jclass`.
    *
@@ -1000,6 +1000,9 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
   trait BCClassGen extends BCInnerClassGen {
 
+    // Used as threshold above which a tableswitch bytecode instruction is preferred over a lookupswitch.
+    // There's a space tradeoff between these multi-branch instructions (details in the JVM spec).
+    // The particular value in use for `MIN_SWITCH_DENSITY` reflects a heuristic.
     val MIN_SWITCH_DENSITY = 0.7
 
     /*

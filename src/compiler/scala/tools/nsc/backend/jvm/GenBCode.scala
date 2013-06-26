@@ -43,7 +43,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
   class BCodePhase(prev: Phase) extends StdPhase(prev) {
 
     override def name = phaseName
-    override def description = "Generate bytecode from ASTs"
+    override def description = "Generate bytecode from ASTs using the ASM library"
     override def erasedTypes = true
 
     private var bytecodeWriter  : BytecodeWriter   = null

@@ -406,6 +406,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       if (entryPoints != null) &&
          genBCode.isJavaEntryPoint(tree.symbol, currentUnit)
       =>
+        // collecting symbols for entry points here (as opposed to GenBCode where they are used)
+        // has the advantage of saving an additional pass over all ClassDefs.
         entryPoints ::= tree.symbol
         super.transform(tree)
 
