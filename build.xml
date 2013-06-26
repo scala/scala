@@ -7,11 +7,16 @@
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
 
-<!-- HINTS
+<!--
+ Since Scala 2.11 we're using a released version of Scala (specified in starr.number) to build the compiler.
+ Also, we now only build the compiler once (this used to be called the "quick" stage).
+ We used to first build a locker compiler with the STARR compiler (STARR is downloaded as separate jars of a custom-built compiler),
+ and then use locker to build quick.
 
- - for faster builds, have a build.properties in the same directory as build.xml that says:
-      locker.skip=1
-      starr.use.released=1
+ To enable this old, fully layered approach, set the following properties (in build.properties or on the command line).
+
+      locker.enable=1
+      starr.custom=1
 
 -->
 
@@ -139,6 +144,7 @@ TODO:
   <property name="build-osgi.dir"          value="${build.dir}/osgi"/>
   <property name="build-junit.dir"         value="${build.dir}/junit"/>
   <property name="build-strap.dir"         value="${build.dir}/strap"/>
+  <property name="build-restrap.dir"       value="${build.dir}/restrap"/>
   <property name="build-docs.dir"          value="${build.dir}/scaladoc"/>
   <property name="build-sbt.dir"           value="${build.dir}/sbt-interface"/>
 
@@ -241,23 +247,26 @@ TODO:
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
-      <!-- Download STARR via maven if `starr.use.released` is set,
-           and `starr.version` is specified (see the starr.number properties file).
-           Want to slow down STARR changes, using only released versions. -->
-      <if><isset property="starr.use.released"/><then>
-        <echo message="Using Scala ${starr.version} for STARR."/>
-        <artifact:dependencies pathId="starr.core.path">
-          <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
-        </artifact:dependencies></then>
-      <else>
+      <!-- Determine compiler to use for compiling the compiler (historically called the STARR compiler).
+        Unless `starr.custom` is set, we use Scala ${starr.version}. (See the starr.number properties file)
+        We want to slow down STARR changes, using only released versions if possible.
+        The old STARR infrastructure is still here, but only be used if absolutely necessary.
+      -->
+      <if><isset property="starr.custom"/><then>
+        <echo message="Using custom STARR."/> <!-- downloaded via pull-binary-libs.sh -->
         <path id="starr.core.path">
           <pathelement location="${library.starr.jar}"/>
           <pathelement location="${reflect.starr.jar}"/>
           <pathelement location="${compiler.starr.jar}"/>
-        </path></else>
-      </if>
+        </path>
+      </then><else>
+        <echo message="Using Scala ${starr.version} for STARR."/> <!-- resolved using maven -->
+        <artifact:dependencies pathId="starr.core.path">
+          <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
+          <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
+          <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
+        </artifact:dependencies>
+      </else></if>
 
       <property name="maven-deps-done"     value="yep!"/>
     </then></if>
@@ -380,6 +389,7 @@ TODO:
     <property name="scalac.args.locker"    value="${scalac.args.all}"/>
     <property name="scalac.args.quick"     value="${scalac.args.all}"/>
     <property name="scalac.args.strap"     value="${scalac.args.quick}"/>
+    <property name="scalac.args.restrap"   value="${scalac.args.strap}"/>
 
     <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
@@ -447,7 +457,7 @@ TODO:
 
     <!-- Compilers to use for the various stages.
 
-      There must be a variable of the shape @{stage}.compiler.path  for all @{stage} in starr, locker, quick, strap.
+      There must be a variable of the shape @{stage}.compiler.path for all @{stage} in starr, locker, quick, strap.
     -->
     <path id="starr.compiler.path">
       <path refid="starr.core.path"/>
@@ -455,16 +465,24 @@ TODO:
       <path refid="aux.libs"/>
     </path>
 
-    <!-- To skip locker, use -Dlocker.skip=1 -->
-    <if><isset property="locker.skip"/><then>
+    <!-- To enable building locker, use -Dlocker.enable=1.
+      Note: it's built only once irrespective of source changes.
+      Force a rebuild using the `unlocklocker` target.
+    -->
+    <if><isset property="locker.enable"/><then>
+      <echo message="Using locker to build the quick stage."/>
+      <path id="locker.compiler.path"><path refid="locker.compiler.build.path"/></path>
+    </then><else>
       <echo message="Using STARR to build the quick stage (skipping locker)."/>
       <path id="locker.compiler.path" refid="starr.compiler.path"/>
-      <property name="locker.locked" value="locker skipped"/></then>
-    <else>
-      <path id="locker.compiler.path"><path refid="locker.compiler.build.path"/></path></else></if>
+      <property name="locker.locked" value="locker skipped"/>
+    </else></if>
 
     <!-- compilerpathref for compiling with quick -->
     <path id="quick.compiler.path"> <path refid="quick.compiler.build.path"/></path>
+
+    <!-- compilerpathref for compiling with strap -->
+    <path id="strap.compiler.path"> <path refid="strap.compiler.build.path"/></path>
 
 
     <!-- What to have on the compilation path when compiling during certain phases.
@@ -652,6 +670,24 @@ TODO:
     <path id="strap.compiler.build.path">
       <path refid="strap.reflect.build.path"/>
       <pathelement location="${build-strap.dir}/classes/compiler"/>
+      <path refid="asm.classpath"/>
+    </path>
+
+    <!-- RESTRAP -->
+    <path id="restrap.library.build.path">
+      <pathelement location="${build-restrap.dir}/classes/library"/>
+      <path refid="forkjoin.classpath"/>
+      <path refid="aux.libs"/>
+    </path>
+
+    <path id="restrap.reflect.build.path">
+      <path refid="restrap.library.build.path"/>
+      <pathelement location="${build-restrap.dir}/classes/reflect"/>
+    </path>
+
+    <path id="restrap.compiler.build.path">
+      <path refid="restrap.reflect.build.path"/>
+      <pathelement location="${build-restrap.dir}/classes/compiler"/>
       <path refid="asm.classpath"/>
     </path>
 
@@ -871,7 +907,7 @@ TODO:
 
   <macrodef name="staged-scalac" >
     <attribute name="with"/>           <!-- will use path `@{with}.compiler.path` to locate scalac -->
-    <attribute name="stage"/>          <!-- current stage (locker, quick, strap) -->
+    <attribute name="stage"/>          <!-- current stage (locker, quick, strap, restrap) -->
     <attribute name="project"/>        <!-- project: library/reflect/compiler/actors -->
     <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library -->
     <attribute name="args" default=""/>                  <!-- additional args -->
@@ -939,7 +975,7 @@ TODO:
 
   <macrodef name="staged-build" >
     <attribute name="with"/>           <!-- will use path `@{with}.compiler.path` to locate scalac -->
-    <attribute name="stage"/>          <!-- current stage (locker, quick, strap) -->
+    <attribute name="stage"/>          <!-- current stage (locker, quick, strap, restrap) -->
     <attribute name="project"/>        <!-- project: library/reflect/compiler/actors -->
     <attribute name="srcpath"       default="NOT SET"/>        <!-- needed to compile the library -->
     <attribute name="args"          default=""/>                  <!-- additional args -->
@@ -1276,6 +1312,15 @@ TODO:
     <staged-build with="pack" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/>
     <staged-build with="pack" stage="strap" project="reflect"/>
     <staged-build with="pack" stage="strap" project="compiler"/>
+    <!-- if we didn't build locker, must do an additional bootstrap step,
+      as we want to test for the given compiler sources whether:
+      the sources of {library|reflect|compiler} built with a compiler built from these sources by the STARR compiler generates the same bytecode as
+      the sources of {library|reflect|compiler} built with a compiler built from these sources by a compiler built from these sources by the STARR compiler -->
+    <if><not><isset property="locker.enable"/></not><then>
+      <staged-build with="strap" stage="restrap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/>
+      <staged-build with="strap" stage="restrap" project="reflect"/>
+      <staged-build with="strap" stage="restrap" project="compiler"/>
+    </then></if>
   </target>
 
   <target name="strap-opt" description="Optimized version of strap.done."> <optimized name="strap.done"/></target>
@@ -1373,7 +1418,15 @@ TODO:
 ============================================================================ -->
   <!-- bootstrapping stability: compare {quick,strap}/(lib|reflect|comp) -->
   <target name="test.stability" depends="strap.done">
-    <exec osfamily="unix" vmlauncher="false" executable="${basedir}/tools/stability-test.sh" failonerror="true" />
+    <if><isset property="locker.enable"/><then>
+      <!-- compare build/quick/classes and build/strap/classes if we performed the locker phase -->
+      <exec osfamily="unix" vmlauncher="false" executable="${basedir}/tools/stability-test.sh" failonerror="true" />
+    </then><else>
+      <!-- if we skipped locker, compare build/strap/classes and build/restrap/classes -->
+      <exec osfamily="unix" vmlauncher="false" executable="${basedir}/tools/stability-test.sh" failonerror="true">
+        <arg line="strap restrap"/>
+      </exec>
+    </else></if>
     <!-- I think doing it this way means it will auto-pass on windows... that's the idea. If not, something like this. -->
     <!-- <exec osfamily="windows" executable="foo" failonerror="false" failifexecutionfails="false" /> -->
   </target>
@@ -1908,7 +1961,7 @@ TODO:
   </target>
 
   <target name="starr.removesha1" depends="starr.src">
-    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
+    <!-- remove SHA1 files for no starr, so we don't lose artifacts. -->
     <delete>
       <fileset dir="${lib.dir}">
         <include name="scala-compiler.jar.desired.sha1"/>
