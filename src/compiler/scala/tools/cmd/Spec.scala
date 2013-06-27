@@ -15,7 +15,7 @@ trait Spec {
   def programInfo: Spec.Info
 
   protected def help(str: => String): Unit
-  protected def heading(str: => String): Unit = help("\n  " + str)
+  protected def heading(str: => String): Unit = help(s"\n  $str")
 
   type OptionMagic <: Opt.Implicit
   protected implicit def optionMagicAdditions(s: String): OptionMagic
