@@ -9,7 +9,7 @@ import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
+import scala.tools.nsc.io.{ AbstractFile }
 import scala.tools.nsc.util.MultiHashMap
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._

@@ -7,10 +7,10 @@ package interactive
 
 import util.InterruptReq
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
-import io.{ AbstractFile, PlainFile, Pickler, CondPickler }
+import io.{ AbstractFile, PlainFile }
 import util.EmptyAction
 import scala.reflect.internal.util.{ RangePosition, OffsetPosition, TransparentPosition }
-import io.Pickler._
+import Pickler._
 import scala.collection.mutable
 import mutable.ListBuffer
 
