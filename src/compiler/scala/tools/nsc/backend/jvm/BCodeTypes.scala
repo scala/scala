@@ -337,9 +337,9 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   def getSuperInterfaces(csym: Symbol): List[Symbol] = {
 
     // Additional interface parents based on annotations and other cues
-    def newParentForAttr(attr: Symbol): Option[Symbol] = attr match {
-      case definitions.RemoteAttr => Some(definitions.RemoteInterfaceClass)
-      case _ => None
+    def newParentForAttr(ann: AnnotationInfo): Symbol = ann.symbol match {
+      case definitions.RemoteAttr => definitions.RemoteInterfaceClass
+      case _                      => NoSymbol
     }
 
     /* Drop redundant interfaces (which are implemented by some other parent) from the immediate parents.
@@ -362,11 +362,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     }
 
     val superInterfaces0: List[Symbol] = csym.mixinClasses
-    val superInterfaces:  List[Symbol] = {
-      val sups = (superInterfaces0 ++ csym.annotations.flatMap(ann => newParentForAttr(ann.symbol)))
-
-      sups.distinct
-    };
+    val superInterfaces = existingSymbols(superInterfaces0 ++ csym.annotations.map(newParentForAttr)).distinct
 
     assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString}")
     assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString}")
