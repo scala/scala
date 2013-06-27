@@ -115,7 +115,7 @@ private[concurrent] object ExecutionContextImpl {
 
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutionContextExecutorService =
     new ExecutionContextImpl(es, reporter) with ExecutionContextExecutorService {
-      final def asExecutorService: ExecutorService = executor.right.asInstanceOf[ExecutorService]
+      final def asExecutorService: ExecutorService = executor.right.get.asInstanceOf[ExecutorService]
       override def execute(command: Runnable) = executor.right.get.execute(command)
       override def shutdown() { asExecutorService.shutdown() }
       override def shutdownNow() = asExecutorService.shutdownNow()
