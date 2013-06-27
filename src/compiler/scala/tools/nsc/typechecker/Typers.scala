@@ -4057,6 +4057,7 @@ trait Typers extends Modes with Adaptations with Tags {
           findSelection(cxTree) match {
             case Some((opName, treeInfo.Applied(_, targs, _))) =>
               val fun = gen.mkTypeApply(Select(qual, opName), targs)
+              if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // SI-7617
               atPos(qual.pos)(Apply(fun, Literal(Constant(name.decode)) :: Nil))
             case _ =>
               setError(tree)
@@ -4229,7 +4230,9 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
-        val lhs1    = typed(lhs, EXPRmode | LHSmode, WildcardType)
+        // see SI-7617 for an explanation of why macro expansion is suppressed
+        def typedLhs(lhs: Tree) = typed(lhs, EXPRmode | LHSmode, WildcardType)
+        val lhs1    = unsuppressMacroExpansion(typedLhs(suppressMacroExpansion(lhs)))
         val varsym  = lhs1.symbol
 
         // see #2494 for double error message example
