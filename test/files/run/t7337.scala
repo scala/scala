@@ -1,6 +1,6 @@
 import scala.tools.partest._
 import scala.tools.nsc._
-import util.{CommandLineParser}
+import scala.tools.cmd.CommandLineParser
 
 object Test extends DirectTest {
   override def code = "class C"
