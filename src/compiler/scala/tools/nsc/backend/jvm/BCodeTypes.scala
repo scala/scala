@@ -766,7 +766,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
   val INNER_CLASSES_FLAGS =
     (asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED |
-     asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT)
+     asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT  | asm.Opcodes.ACC_FINAL)
 
   /*
    * @param name the internal name of an inner class.
@@ -876,11 +876,12 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         innerSym.rawname + innerSym.moduleSuffix
     }
 
-    val access = mkFlags(
+    val flagsWithFinal: Int = mkFlags(
       if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
       javaFlags(innerSym),
       if (isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
     ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
+    val flags = if (innerSym.isModuleClass) flagsWithFinal & ~asm.Opcodes.ACC_FINAL else flagsWithFinal // For SI-5676, object overriding.
 
     val jname = innerSym.javaBinaryName.toString // never null
     val oname = { // null when method-enclosed
@@ -892,7 +893,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       if (in == null) null else in.toString
     }
 
-    InnerClassEntry(jname, oname, iname, access)
+    InnerClassEntry(jname, oname, iname, flags)
   }
 
   // --------------------------------------------
