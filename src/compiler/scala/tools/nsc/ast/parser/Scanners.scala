@@ -939,9 +939,8 @@ trait Scanners extends ScannersCommon {
         }
         if (value > limit)
           syntaxError("floating point number too large")
-        if (isDeprecatedForm) {
-          deprecationWarning("This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.")
-        }
+        if (isDeprecatedForm)
+          syntaxError("floating point number is missing digit after dot")
 
         if (negated) -value else value
       } catch {
@@ -997,10 +996,8 @@ trait Scanners extends ScannersCommon {
         val lookahead = lookaheadReader
         val c = lookahead.getc()
 
-        /* As of scala 2.11, it isn't a number unless c here is a digit, so
-         * settings.future.value excludes the rest of the logic.
-         */
-        if (settings.future && !isDigit(c))
+        /* Prohibit 1. */
+        if (!isDigit(c))
           return setStrVal()
 
         val isDefinitelyNumber = (c: @switch) match {
