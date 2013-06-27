@@ -144,34 +144,8 @@ object NestUI {
   }
 
   def usage() {
-    println("Usage: NestRunner [options] [test test ...]")
-    println
-    println("  Test categories:")
-    println("    --all           run all tests")
-    println("    --pos           run compilation tests (success)")
-    println("    --neg           run compilation tests (failure)")
-    println("    --run           run interpreter and backend tests")
-    println("    --jvm           run JVM backend tests")
-    println("    --res           run resident compiler tests")
-    println("    --scalacheck    run ScalaCheck tests")
-    println("    --instrumented  run instrumented tests")
-    println("    --presentation  run presentation compiler tests")
-    println
-    println("  Other options:")
-    println("    --pack       pick compiler/reflect/library in build/pack, and run all tests")
-    println("    --grep <expr> run all tests whose source file contains <expr>")
-    println("    --failed     run only those tests that failed during the last run")
-    println("    --update-check instead of failing tests with output change, update checkfile. (Use with care!)")
-    println("    --verbose    show progress information")
-    println("    --buildpath  set (relative) path to build jars")
-    println("                 ex.: --buildpath build/pack")
-    println("    --classpath  set (absolute) path to build classes")
-    println("    --srcpath    set (relative) path to test source files")
-    println("                 ex.: --srcpath pending")
-    println("    --debug      enable debugging output")
-    println
-    println(utils.Properties.versionString)
-    println("maintained by Philipp Haller (EPFL)")
+    println(ConsoleRunnerSpec.programInfo.usage)
+    println(ConsoleRunnerSpec.helpMsg)
     sys.exit(1)
   }
 
