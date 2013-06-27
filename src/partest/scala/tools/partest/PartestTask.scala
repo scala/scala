@@ -19,6 +19,7 @@ import java.lang.reflect.Method
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{Path, Reference, FileSet}
 import org.apache.tools.ant.types.Commandline.Argument
+import scala.tools.ant.ScalaTask
 
 /** An Ant task to execute the Scala test suite (NSC).
  *
@@ -54,7 +55,7 @@ import org.apache.tools.ant.types.Commandline.Argument
  *
  * @author Philippe Haller
  */
-class PartestTask extends Task with CompilationPathProperty {
+class PartestTask extends Task with CompilationPathProperty with ScalaTask {
 
   def addConfiguredPosTests(input: FileSet) {
     posFiles = Some(input)
@@ -406,7 +407,7 @@ class PartestTask extends Task with CompilationPathProperty {
     val allFailures = _results map (_._2) sum
     val allFailedPaths = _results flatMap (_._3)
 
-    def f = if (errorOnFailed && allFailures > 0) (sys error _) else log(_: String)
+    def f = if (errorOnFailed && allFailures > 0) buildError(_: String) else log(_: String)
     def s = if (allFailures > 1) "s" else ""
     val msg =
       if (allFailures > 0)
