@@ -16,8 +16,9 @@ public class VolatileObjectRef<T> implements java.io.Serializable {
 
     volatile public T elem;
     public VolatileObjectRef(T elem) { this.elem = elem; }
+    @Override
     public String toString() { return String.valueOf(elem); }
 
-    public static <U> VolatileObjectRef create(U e) { return new VolatileObjectRef(e); }
-    public static VolatileObjectRef zero() { return new VolatileObjectRef(null); }
+    public static <U> VolatileObjectRef<U> create(U e) { return new VolatileObjectRef<U>(e); }
+    public static VolatileObjectRef<Object> zero() { return new VolatileObjectRef<Object>(null); }
 }
