@@ -1027,6 +1027,26 @@ trait ExecutionContextPrepare extends TestBase {
   testMap()
 }
 
+trait ExecutorServiceExecutionContext extends TestBase {
+  import java.util.concurrent.Executors
+  import scala.concurrent.duration._
+
+  def testExecutorServiceEC(): Unit =
+    once { done =>
+      val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool)
+      val p = Promise[Boolean]()
+      ec.execute(new Runnable {
+        def run(): Unit = p.success(true)
+      })
+      assert(Await.result(p.future, 2.seconds))
+      ec.shutdown()
+      assert(true)
+      done()
+    }
+
+  testExecutorServiceEC()
+}
+
 object Test
 extends App
 with FutureCallbacks
@@ -1037,6 +1057,7 @@ with BlockContexts
 with Exceptions
 with CustomExecutionContext
 with ExecutionContextPrepare
+with ExecutorServiceExecutionContext
 {
   System.exit(0)
 }
