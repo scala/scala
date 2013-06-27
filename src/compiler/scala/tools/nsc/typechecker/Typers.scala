@@ -1147,7 +1147,7 @@ trait Typers extends Modes with Adaptations with Tags {
           else if (
               inExprModeButNot(mode, FUNmode) && !tree.isDef &&   // typechecking application
               tree.symbol != null && tree.symbol.isTermMacro &&   // of a macro
-              !tree.attachments.get[SuppressMacroExpansionAttachment.type].isDefined)
+              !isMacroExpansionSuppressed(tree))
             macroExpand(this, tree, mode, pt)
           else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
             adaptConstrPattern()
@@ -5352,7 +5352,7 @@ trait Typers extends Modes with Adaptations with Tags {
             // that typecheck must not trigger macro expansions, so we explicitly prohibit them
             // however we cannot do `context.withMacrosDisabled`
             // because `expr` might contain nested macro calls (see SI-6673)
-            val exprTyped = typed1(expr updateAttachment SuppressMacroExpansionAttachment, mode, pt)
+            val exprTyped = typed1(suppressMacroExpansion(expr), mode, pt)
             exprTyped match {
               case macroDef if macroDef.symbol != null && macroDef.symbol.isTermMacro && !macroDef.symbol.isErroneous =>
                 MacroEtaError(exprTyped)
