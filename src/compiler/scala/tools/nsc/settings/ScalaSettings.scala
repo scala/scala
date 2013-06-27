@@ -201,9 +201,9 @@ trait ScalaSettings extends AbsScalaSettings
   /**
    * Settings motivated by GenBCode
    */
-  val neo         = ChoiceSetting ("-neo", "choice of bytecode emitter", "Choice of bytecode emitter.",
-                                   List("GenASM", "GenBCode"),
-                                   "GenASM")
+  val Ybackend = ChoiceSetting ("-Ybackend", "choice of bytecode emitter", "Choice of bytecode emitter.",
+                                List("GenASM", "GenBCode"),
+                                "GenASM")
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
 
@@ -231,7 +231,7 @@ trait ScalaSettings extends AbsScalaSettings
    * Helper utilities for use by checkConflictingSettings()
    */
   def isBCodeActive   = !isICodeAskedFor
-  def isBCodeAskedFor = (neo.value != "GenASM")
-  def isICodeAskedFor = { (neo.value == "GenASM") || optimiseSettings.exists(_.value) || writeICode.isSetByUser }
+  def isBCodeAskedFor = (Ybackend.value != "GenASM")
+  def isICodeAskedFor = ((Ybackend.value == "GenASM") || optimiseSettings.exists(_.value) || writeICode.isSetByUser)
 
 }
