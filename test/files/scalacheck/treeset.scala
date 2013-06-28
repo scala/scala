@@ -149,4 +149,7 @@ object Test extends Properties("TreeSet") {
     val result = subject.foldLeft(subject)((acc, elt) => acc - elt)
     result.isEmpty
   }
+  
+  property("ordering must not be null") =
+    throws(TreeSet.empty[Int](null), classOf[NullPointerException])
 }
