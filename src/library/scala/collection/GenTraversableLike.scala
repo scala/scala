@@ -324,7 +324,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  @tparam K    the type of keys returned by the discriminator function.
    *  @return      A map from keys to ${coll}s such that the following invariant holds:
    *               {{{
-   *                 (xs partition f)(k) = xs filter (x => f(x) == k)
+   *                 (xs groupBy f)(k) = xs filter (x => f(x) == k)
    *               }}}
    *               That is, every key `k` is bound to a $coll of those elements `x`
    *               for which `f(x)` equals `k`.
