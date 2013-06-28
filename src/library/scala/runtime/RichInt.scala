@@ -9,7 +9,6 @@
 package scala
 package runtime
 
-
 import scala.collection.immutable.Range
 
 // Note that this does not implement IntegralProxy[Int] so that it can return
@@ -17,13 +16,32 @@ import scala.collection.immutable.Range
 final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] with RangedProxy[Int] {
   protected def num = scala.math.Numeric.IntIsIntegral
   protected def ord = scala.math.Ordering.Int
-  type ResultWithoutStep = Range
 
-  /**
-    * @return `'''true'''` if this number has no decimal component.
-    *         Always returns `'''true'''` for `RichInt`.
+  override def doubleValue() = self.toDouble
+  override def floatValue()  = self.toFloat
+  override def longValue()   = self.toLong
+  override def intValue()    = self
+  override def byteValue()   = self.toByte
+  override def shortValue()  = self.toShort
+
+  /** Returns `'''true'''` if this number has no decimal component.
+    * Always `'''true'''` for `RichInt`.
     */
   def isWhole() = true
+
+  override def isValidInt   = true
+  def isValidLong  = true
+
+  override def abs: Int            = math.abs(self)
+  override def max(that: Int): Int = math.max(self, that)
+  override def min(that: Int): Int = math.min(self, that)
+  override def signum: Int         = math.signum(self)
+
+  def toBinaryString: String = java.lang.Integer.toBinaryString(self)
+  def toHexString: String    = java.lang.Integer.toHexString(self)
+  def toOctalString: String  = java.lang.Integer.toOctalString(self)
+
+  type ResultWithoutStep = Range
 
   /**
     * @param end The final bound of the range to make.
@@ -55,23 +73,4 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
     *         and including `end`.
     */
   def to(end: Int, step: Int): Range.Inclusive = Range.inclusive(self, end, step)
-
-  /**
-    * @return `'''this'''` if `'''this''' < that` or `that` otherwise
-    */
-  override def min(that: Int): Int = if (self < that) self else that
-
-  /**
-    * @return `'''this'''` if `'''this''' > that` or `that` otherwise
-    */
-  override def max(that: Int): Int = if (self > that) self else that
-
-  /**
-    * Computes the absolute value of `'''this'''`.
-    */
-  override def abs: Int = if (self < 0) -self else self
-
-  def toBinaryString: String = java.lang.Integer.toBinaryString(self)
-  def toHexString: String = java.lang.Integer.toHexString(self)
-  def toOctalString: String = java.lang.Integer.toOctalString(self)
 }

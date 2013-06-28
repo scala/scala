@@ -9,20 +9,31 @@
 package scala
 package runtime
 
-
 final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   protected def num = scala.math.Numeric.LongIsIntegral
   protected def ord = scala.math.Ordering.Long
 
-  def toBinaryString: String = java.lang.Long.toBinaryString(self)
-  def toHexString: String = java.lang.Long.toHexString(self)
-  def toOctalString: String = java.lang.Long.toOctalString(self)
+  override def doubleValue() = self.toDouble
+  override def floatValue()  = self.toFloat
+  override def longValue()   = self
+  override def intValue()    = self.toInt
+  override def byteValue()   = self.toByte
+  override def shortValue()  = self.toShort
 
-  override def isValidByte = self.toByte.toLong == self
+  override def isValidByte  = self.toByte.toLong == self
   override def isValidShort = self.toShort.toLong == self
-  override def isValidChar = self.toChar.toLong == self
-  override def isValidInt = self.toInt.toLong == self
-  // override def isValidLong = true
+  override def isValidChar  = self.toChar.toLong == self
+  override def isValidInt   = self.toInt.toLong == self
+           def isValidLong  = true
   // override def isValidFloat = self.toFloat.toLong == self && self != Long.MaxValue
   // override def isValidDouble = self.toDouble.toLong == self && self != Long.MaxValue
+
+  override def abs: Long             = math.abs(self)
+  override def max(that: Long): Long = math.max(self, that)
+  override def min(that: Long): Long = math.min(self, that)
+  override def signum: Int           = math.signum(self).toInt
+
+  def toBinaryString: String = java.lang.Long.toBinaryString(self)
+  def toHexString: String    = java.lang.Long.toHexString(self)
+  def toOctalString: String  = java.lang.Long.toOctalString(self)
 }
