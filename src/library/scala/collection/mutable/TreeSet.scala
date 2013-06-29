@@ -37,9 +37,12 @@ object TreeSet extends MutableSortedSetFactory[TreeSet] {
  * @author Lucien Pereira
  *
  */
-class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A], until: Option[A])(implicit val ordering: Ordering[A]) 
+class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A], until: Option[A])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SetLike[A, TreeSet[A]]
   with SortedSetLike[A, TreeSet[A]] with Set[A] with Serializable {
+
+  if (ordering eq null)
+    throw new NullPointerException("ordering must not be null")
 
   def this()(implicit ordering: Ordering[A]) = this(new ObjectRef(null), None, None)
 
@@ -53,13 +56,13 @@ class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A],
     case (Some(newB), Some(oldB)) => Some(comparison(newB, oldB))
     case (None, _) => oldBound
     case _ => newBound
-  }      
-    
+  }
+
   override def rangeImpl(fromArg: Option[A], untilArg: Option[A]): TreeSet[A] = {
     val newFrom = pickBound(ordering.max, fromArg, from)
     val newUntil = pickBound(ordering.min, untilArg, until)
-    
-    new TreeSet(treeRef, newFrom, newUntil) 
+
+    new TreeSet(treeRef, newFrom, newUntil)
   }
 
   override def -=(elem: A): this.type = {
@@ -78,9 +81,9 @@ class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A],
    * the clone. So clone complexity in time is O(1).
    *
    */
-  override def clone(): TreeSet[A] = 
+  override def clone(): TreeSet[A] =
     new TreeSet[A](new ObjectRef(treeRef.elem), from, until)
-    
+
   private val notProjection = !(from.isDefined || until.isDefined)
 
   override def contains(elem: A): Boolean = {
@@ -92,16 +95,16 @@ class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A],
     def rightAcceptable: Boolean = until match {
       case Some(ub) => ordering.lt(elem, ub)
       case _ => true
-    }    
-    
+    }
+
     (notProjection || (leftAcceptable && rightAcceptable)) &&
       RB.contains(treeRef.elem, elem)
   }
 
   override def iterator: Iterator[A] = iteratorFrom(None)
-  
+
   override def keysIteratorFrom(start: A) = iteratorFrom(Some(start))
-  
+
   private def iteratorFrom(start: Option[A]) = {
     val it = RB.keysIterator(treeRef.elem, pickBound(ordering.max, from, start))
     until match {
