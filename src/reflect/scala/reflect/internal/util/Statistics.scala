@@ -133,6 +133,12 @@ quant)
       if (this.value < that.value) -1
       else if (this.value > that.value) 1
       else 0
+    override def equals(that: Any): Boolean =
+      that match {
+        case that: Counter => (this compare that) == 0
+        case _ => false
+      }
+    override def hashCode = value
     override def toString = value.toString
   }
 
@@ -184,6 +190,12 @@ quant)
       if (this.specificNanos < that.specificNanos) -1
       else if (this.specificNanos > that.specificNanos) 1
       else 0
+    override def equals(that: Any): Boolean =
+      that match {
+        case that: StackableTimer => (this compare that) == 0
+        case _ => false
+      }
+    override def hashCode = specificNanos.##
     override def toString = s"${super.toString} aggregate, ${show(specificNanos)} specific"
   }
 

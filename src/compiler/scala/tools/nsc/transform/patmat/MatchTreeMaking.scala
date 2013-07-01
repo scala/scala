@@ -79,7 +79,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       def chainBefore(next: Tree)(casegen: Casegen): Tree
     }
 
-    trait NoNewBinders extends TreeMaker {
+    sealed trait NoNewBinders extends TreeMaker {
       protected val localSubstitution: Substitution = EmptySubstitution
     }
 
@@ -105,12 +105,12 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       override def toString = "S"+ localSubstitution
     }
 
-    abstract class FunTreeMaker extends TreeMaker {
+    sealed abstract class FunTreeMaker extends TreeMaker {
       val nextBinder: Symbol
       def pos = nextBinder.pos
     }
 
-    abstract class CondTreeMaker extends FunTreeMaker {
+    sealed abstract class CondTreeMaker extends FunTreeMaker {
       val prevBinder: Symbol
       val nextBinderTp: Type
       val cond: Tree
@@ -126,7 +126,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     // unless we're optimizing, emit local variable bindings for all subpatterns of extractor/case class patterns
     protected val debugInfoEmitVars = !settings.optimise.value
 
-    trait PreserveSubPatBinders extends TreeMaker {
+    sealed trait PreserveSubPatBinders extends TreeMaker {
       val subPatBinders: List[Symbol]
       val subPatRefs: List[Tree]
       val ignoredSubPatBinders: Set[Symbol]

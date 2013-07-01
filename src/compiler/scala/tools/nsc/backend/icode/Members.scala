@@ -108,6 +108,14 @@ trait Members {
       if (symbol eq other.symbol) 0
       else if (symbol isLess other.symbol) -1
       else 1
+
+    override def equals(other: Any): Boolean =
+      other match {
+        case other: IMember => (this compare other) == 0
+        case _ => false
+      }
+
+    override def hashCode = symbol.##
   }
 
   /** Represent a class in ICode */
