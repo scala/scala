@@ -905,7 +905,7 @@ trait Types
         if (sym == btssym) return mid
         else if (sym isLess btssym) hi = mid - 1
         else if (btssym isLess sym) lo = mid + 1
-        else abort()
+        else abort(s"Discovered fourth possibility for comparisons! " + ((sym, btssym)))
       }
       -1
     }

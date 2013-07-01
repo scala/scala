@@ -386,8 +386,8 @@ trait Definitions extends api.StandardDefinitions {
       def arrayClassMethod = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
 
     // classes with special meanings
-    lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
-    lazy val ArrowAssocClass            = getRequiredClass("scala.Predef.ArrowAssoc") // SI-5731
+    lazy val StringAddClass             = requiredClass[scala.Predef.StringAdd[_]]
+    lazy val ArrowAssocClass            = requiredClass[scala.Predef.ArrowAssoc[_]]
     lazy val StringAdd_+                = getMemberMethod(StringAddClass, nme.PLUS)
     lazy val ScalaNumberClass           = requiredClass[scala.math.ScalaNumber]
     lazy val TraitSetterAnnotationClass = requiredClass[scala.runtime.TraitSetter]
