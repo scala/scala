@@ -1408,11 +1408,20 @@ trait Namers extends MethodSynthesis {
         if (!annotated.isInitialized) tree match {
           case defn: MemberDef =>
             val ainfos = defn.mods.annotations filterNot (_ eq null) map { ann =>
+              val ctx    = typer.context
+              val annCtx = ctx.make(ann)
+              annCtx.setReportErrors()
               // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
               AnnotationInfo lazily {
-                val context1 = typer.context.make(ann)
-                context1.setReportErrors()
-                enteringTyper(newTyper(context1) typedAnnotation ann)
+                if (typer.context ne ctx)
+                  log(sm"""|The var `typer.context` in ${Namer.this} was mutated before the annotation ${ann} was forced.
+                           |
+                           |current value  = ${typer.context}
+                           |original value = $ctx
+                           |
+                           |This confirms the hypothesis for the cause of SI-7603. If you see this message, please comment on that ticket.""")
+
+                enteringTyper(newTyper(annCtx) typedAnnotation ann)
               }
             }
             if (ainfos.nonEmpty) {

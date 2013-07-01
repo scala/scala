@@ -32,6 +32,7 @@ abstract class Duplicators extends Analyzer {
 
     envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
     debuglog("retyped with env: " + env)
+
     newBodyDuplicator(context).typed(tree)
   }
 
@@ -365,7 +366,8 @@ abstract class Duplicators extends Analyzer {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           val ntree = castType(tree, pt)
-          super.typed(ntree, mode, pt)
+          val res = super.typed(ntree, mode, pt)
+          res
       }
     }
 
