@@ -11,7 +11,7 @@ package tools.nsc.settings
  * Represents a single Scala version in a manner that
  * supports easy comparison and sorting.
  */
-abstract class ScalaVersion extends Ordered[ScalaVersion] {
+sealed abstract class ScalaVersion extends Ordered[ScalaVersion] {
   def unparse: String
 }
 

@@ -12,9 +12,9 @@ package dtd
 
 import Utility.sbToString
 
-abstract class Decl
+sealed abstract class Decl
 
-abstract class MarkupDecl extends Decl {
+sealed abstract class MarkupDecl extends Decl {
   def buildString(sb: StringBuilder): StringBuilder
 }
 
@@ -52,7 +52,7 @@ case class AttrDecl(name: String, tpe: String, default: DefaultDecl) {
 }
 
 /** an entity declaration */
-abstract class EntityDecl extends MarkupDecl
+sealed abstract class EntityDecl extends MarkupDecl
 
 /** a parsed general entity declaration */
 case class ParsedEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
@@ -85,7 +85,7 @@ case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl {
   }
 }
 
-abstract class EntityDef {
+sealed abstract class EntityDef {
   def buildString(sb: StringBuilder): StringBuilder
 }
 
@@ -133,7 +133,7 @@ case class PEReference(ent:String) extends MarkupDecl {
 
 // default declarations for attributes
 
-abstract class DefaultDecl {
+sealed abstract class DefaultDecl {
   override def toString(): String
   def buildString(sb: StringBuilder): StringBuilder
 }
