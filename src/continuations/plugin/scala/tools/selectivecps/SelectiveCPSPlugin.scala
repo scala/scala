@@ -11,22 +11,18 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
   val name = "continuations"
   val description = "applies selective cps conversion"
 
-  val anfPhase = new SelectiveANFTransform() {
-    val global = SelectiveCPSPlugin.this.global
+  val anfPhase = new {val global = SelectiveCPSPlugin.this.global } with SelectiveANFTransform() {
     val runsAfter = List("pickler")
   }
 
-  val cpsPhase = new SelectiveCPSTransform() {
-    val global = SelectiveCPSPlugin.this.global
+  val cpsPhase = new {val global = SelectiveCPSPlugin.this.global } with SelectiveCPSTransform() {
     val runsAfter = List("selectiveanf")
     override val runsBefore = List("uncurry")
   }
 
   val components = List[PluginComponent](anfPhase, cpsPhase)
 
-  val checker = new CPSAnnotationChecker {
-    val global: SelectiveCPSPlugin.this.global.type = SelectiveCPSPlugin.this.global
-  }
+  val checker = new { val global: SelectiveCPSPlugin.this.global.type = SelectiveCPSPlugin.this.global } with CPSAnnotationChecker
   global.addAnnotationChecker(checker.checker)
   global.analyzer.addAnalyzerPlugin(checker.plugin)
 
