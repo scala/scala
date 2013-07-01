@@ -85,10 +85,9 @@ class ReflectiveRunner {
 
     try {
       val sepRunnerClass  = sepLoader loadClass sepRunnerClassName
-      val sepRunner       = sepRunnerClass.newInstance()
-      val sepMainMethod   = sepRunnerClass.getMethod("main", Array(classOf[String]): _*)
-      val cargs: Array[AnyRef] = Array(args)
-      sepMainMethod.invoke(sepRunner, cargs: _*)
+      val sepMainMethod   = sepRunnerClass.getMethod("main", classOf[Array[String]])
+      val cargs: Array[AnyRef] = Array(Array(args))
+      sepMainMethod.invoke(null, cargs: _*)
     }
     catch {
       case cnfe: ClassNotFoundException =>

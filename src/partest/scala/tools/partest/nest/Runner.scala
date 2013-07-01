@@ -772,15 +772,8 @@ trait DirectRunner {
 
   import PartestDefaults.{ numThreads, waitTime }
 
-  Thread.setDefaultUncaughtExceptionHandler(
-    new Thread.UncaughtExceptionHandler {
-      def uncaughtException(thread: Thread, t: Throwable) {
-        val t1 = Exceptional unwrap t
-        System.err.println(s"Uncaught exception on thread $thread: $t1")
-        t1.printStackTrace()
-      }
-    }
-  )
+  setUncaughtHandler
+  
   def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
 
     NestUI.resetTestNumber(kindFiles.size)

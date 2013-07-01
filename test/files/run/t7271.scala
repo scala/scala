@@ -1,5 +1,4 @@
 import scala.tools.partest._
-import java.io._
 import scala.tools.nsc._
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
