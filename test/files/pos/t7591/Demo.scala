@@ -3,9 +3,7 @@
  * @author  Paul Phillips
  */
 
-package scala
-package tools
-package cmd
+import scala.tools.cmd._
 
 /** A sample command specification for illustrative purposes.
  *  First take advantage of the meta-options:
