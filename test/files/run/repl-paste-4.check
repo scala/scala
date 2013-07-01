@@ -1,0 +1,12 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :paste repl-paste-4.pastie
+Pasting file repl-paste-4.pastie...
+defined class Foo
+defined object Foo
+
+scala> Foo(new Foo)
+res0: Int = 7
+
+scala> 
