@@ -1,3 +1,0 @@
-scala-concurrent-tck.scala:429: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
-    f
-    ^

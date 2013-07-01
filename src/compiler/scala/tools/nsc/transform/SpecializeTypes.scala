@@ -1267,7 +1267,35 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     protected override def newBodyDuplicator(context: Context) = new BodyDuplicator(context)
+  }
 
+  /** Introduced to fix SI-7343: Phase ordering problem between Duplicators and Specialization.
+   * brief explanation: specialization rewires class parents during info transformation, and
+   * the new info then guides the tree changes. But if a symbol is created during duplication,
+   * which runs after specialization, its info is not visited and thus the corresponding tree
+   * is not specialized. One manifestation is the following:
+   * ```
+   * object Test {
+   *   class Parent[@specialized(Int) T]
+   *
+   *   def spec_method[@specialized(Int) T](t: T, expectedXSuper: String) = {
+   *     class X extends Parent[T]()
+   *     // even in the specialized variant, the local X class
+   *     // doesn't extend Parent$mcI$sp, since its symbol has
+   *     // been created after specialization and was not seen
+   *     // by specialzation's info transformer.
+   *     ...
+   *   }
+   * }
+   * ```
+   * We fix this by forcing duplication to take place before specialization.
+   *
+   * Note: The constructors phase (which also uses duplication) comes after erasure and uses the
+   * post-erasure typer => we must protect it from the beforeSpecialization phase shifting.
+   */
+  class SpecializationDuplicator(casts: Map[Symbol, Type]) extends Duplicator(casts) {
+    override def retyped(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol, env: scala.collection.Map[Symbol, Type]): Tree =
+      enteringSpecialize(super.retyped(context, tree, oldThis, newThis, env))
   }
 
   /** A tree symbol substituter that substitutes on type skolems.
@@ -1664,7 +1692,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val tree1 = deriveValDef(tree)(_ => body(symbol.alias).duplicate)
           debuglog("now typing: " + tree1 + " in " + tree.symbol.owner.fullName)
 
-          val d = new Duplicator(emptyEnv)
+          val d = new SpecializationDuplicator(emptyEnv)
           val newValDef = d.retyped(
             localTyper.context1.asInstanceOf[d.Context],
             tree1,
@@ -1723,7 +1751,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val symbol = tree.symbol
       val meth   = addBody(tree, source)
 
-      val d = new Duplicator(castmap)
+      val d = new SpecializationDuplicator(castmap)
       debuglog("-->d DUPLICATING: " + meth)
       d.retyped(
         localTyper.context1.asInstanceOf[d.Context],
