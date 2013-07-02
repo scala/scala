@@ -9,8 +9,7 @@ import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.{ AbstractFile }
-import scala.tools.nsc.util.MultiHashMap
+import scala.tools.nsc.io.AbstractFile
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
@@ -181,7 +180,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
     new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
 
-  class ResponseMap extends MultiHashMap[SourceFile, Response[Tree]] {
+  class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
+    override def default(key: SourceFile): Set[Response[Tree]] = Set()
     override def += (binding: (SourceFile, Set[Response[Tree]])) = {
       assert(interruptsEnabled, "delayed operation within an ask")
       super.+=(binding)
