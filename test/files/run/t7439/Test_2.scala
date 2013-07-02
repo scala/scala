@@ -23,7 +23,8 @@ object Test extends StoreReporterDirectTest {
     val a1Class = new File(testOutput.path, "A_1.class")
     assert(a1Class.exists)
     assert(a1Class.delete())
-    println(s"Recompiling after deleting $a1Class")
+    // testIdent normalizes to separate names using '/' regardless of platform, drops all but last two parts
+    println(s"Recompiling after deleting ${a1Class.testIdent}")
 
     // bad symbolic reference error expected (but no stack trace!)
     compileCode(C)
