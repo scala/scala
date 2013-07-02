@@ -37,8 +37,7 @@ import util.Exceptional.unwrap
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-class ScriptRunner extends HasCompileSocket {
-  lazy val compileSocket = CompileSocket
+class ScriptRunner {
 
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
@@ -54,21 +53,6 @@ class ScriptRunner extends HasCompileSocket {
     if (scriptFile endsWith ".jar") scriptFile
     else scriptFile.stripSuffix(".scala") + ".jar"
   )
-
-  /** Compile a script using the fsc compilation daemon.
-   */
-  private def compileWithDaemon(settings: GenericRunnerSettings, scriptFileIn: String) = {
-    val scriptFile       = Path(scriptFileIn).toAbsolute.path
-    val compSettingNames = new Settings(sys.error).visibleSettings.toList map (_.name)
-    val compSettings     = settings.visibleSettings.toList filter (compSettingNames contains _.name)
-    val coreCompArgs     = compSettings flatMap (_.unparse)
-    val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
-
-    CompileSocket getOrCreateSocket "" match {
-      case Some(sock) => compileOnServer(sock, compArgs)
-      case _          => false
-    }
-  }
 
   protected def newGlobal(settings: Settings, reporter: Reporter) =
     Global(settings, reporter)
@@ -96,19 +80,15 @@ class ScriptRunner extends HasCompileSocket {
 
       settings.outdir.value = compiledPath.path
 
-      if (settings.nc) {
-        /* Setting settings.script.value informs the compiler this is not a
-         * self contained compilation unit.
-         */
-        settings.script.value = mainClass
-        val reporter = new ConsoleReporter(settings)
-        val compiler = newGlobal(settings, reporter)
+      /* Setting settings.script.value informs the compiler this is not a
+       * self contained compilation unit.
+       */
+      settings.script.value = mainClass
+      val reporter = new ConsoleReporter(settings)
+      val compiler = newGlobal(settings, reporter)
 
-        new compiler.Run compile List(scriptFile)
-        if (reporter.hasErrors) None else Some(compiledPath)
-      }
-      else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath)
-      else None
+      new compiler.Run compile List(scriptFile)
+      if (reporter.hasErrors) None else Some(compiledPath)
     }
 
     /* The script runner calls sys.exit to communicate a return value, but this must

@@ -80,7 +80,6 @@ Other startup options:
  -i <file>    preload <file> before starting the repl
  -e <string>  execute <string> as if entered in the repl
  -save        save the compiled script in a jar for future use
- -nc          no compilation daemon: do not use the fsc offline compiler
 
 A file argument will be run as a scala script unless it contains only
 self-contained compilation units (classes and objects) and exactly one

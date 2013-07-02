@@ -1004,7 +1004,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }}
 
-     * Then, fsc -Xexperimental clears the nsc project between successive runs of `fsc`.
      */
 
   /** Remove the current run when not needed anymore. Used by the build
