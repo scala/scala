@@ -517,7 +517,7 @@ abstract class ClassfileParser {
     skipMembers() // methods
     if (!isScala) {
       clazz setFlag sflags
-      propagatePackageBoundary(jflags, clazz, staticModule)
+      propagatePackageBoundary(jflags, clazz, staticModule, staticModule.moduleClass)
       clazz setInfo classInfo
       moduleClass setInfo staticInfo
       staticModule setInfo moduleClass.tpe
