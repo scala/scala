@@ -2,18 +2,14 @@ README
 ======
 
 Test cases in directory test/files/ant/ are executed by invoking an
-Ant script whose name ends with "build.xml" (eg. "fsc001-build.xml").
+Ant script whose name ends with "build.xml" (eg. "scalac001-build.xml").
 
-The Scala Ant tasks fsc/scalac/scaladoc are instantiated from various
+The Scala Ant tasks scalac/scaladoc are instantiated from various
 binaries (quick/pack/latest/installed) and are executed with different
 combinations of Ant attributes/elements:
 
             +---------------------------+--------------------------+
             |       Attributes          |      Nested elements     |
-------------+---------------------------+--------------------------+
-fsc001      | srcdir,classpath      (1) | compilerarg              |
-fsc002      | srcref,classpathref   (1) | compilerarg              |
-fsc003      |                       (2) | compilerarg,src,include  |
 ------------+---------------------------+--------------------------+
 scalac001   | srcdir,classpath      (1) |                          |
 scalac002   | srcref,classpathref   (1) |                          |

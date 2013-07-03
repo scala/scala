@@ -12,7 +12,6 @@ know which version of Java you have, run the command "java -version".
 Scala Tools
 -----------
 
-- fsc         Scala offline compiler
 - scalac      Scala compiler
 - scaladoc    Scala API documentation generator
 - scala       Scala interactive interpreter

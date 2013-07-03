@@ -17,7 +17,7 @@ object scala extends Command {
   val name = Section("NAME",
 
     MBold(command) & " " & NDash & " Run code in the " &
-    Link("Scala 2", "http://scala-lang.org/") &
+    Link("Scala", "http://scala-lang.org/") &
     " language")
 
   val synopsis = Section("SYNOPSIS",
@@ -59,10 +59,6 @@ object scala extends Command {
         "script but with an extension of " & Mono(".jar") & ".  On subsequent " &
         "runs of the same script, the pre-compiled " & Mono(".jar") & " file " &
         "will be used if it is newer than the script file."),
-
-      Definition(
-        CmdOption("nocompdaemon"),
-        "Do not use the " & MBold("fsc") & " offline compiler."),
 
       Definition(
         CmdOptionBound("D", "property=value"),
@@ -249,16 +245,15 @@ object scala extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
     Link(Bold("scalap") & "(1)", "scalap.html"))
 
   def manpage = new Document {
     title = command
-    date = "April 2007"
+    date = "July 2013"
     author = "Stephane Micheloud"
-    version = "0.5"
+    version = "2.11"
     sections = List(
       name,
       synopsis,

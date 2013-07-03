@@ -996,19 +996,16 @@ TODO:
             <mk-bin file="${build-@{stage}.dir}/bin/scala"    class="scala.tools.nsc.MainGenericRunner" javaFlags="${java.flags}"/>
             <mk-bin file="${build-@{stage}.dir}/bin/scalac"   class="scala.tools.nsc.Main"              javaFlags="${java.flags}"/>
             <mk-bin file="${build-@{stage}.dir}/bin/scaladoc" class="scala.tools.nsc.ScalaDoc"          javaFlags="${java.flags}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/fsc"      class="scala.tools.nsc.CompileClient"     javaFlags="${java.flags}"/>
             <mk-bin file="${build-@{stage}.dir}/bin/scalap"   class="scala.tools.scalap.Main"           javaFlags="${java.flags}"/>
           </then><else>
             <mk-bin file="${build-@{stage}.dir}/bin/scala"    class="scala.tools.nsc.MainGenericRunner" javaFlags="${java.flags}" classpathref="@{classpathref}"/>
             <mk-bin file="${build-@{stage}.dir}/bin/scalac"   class="scala.tools.nsc.Main"              javaFlags="${java.flags}" classpathref="@{classpathref}"/>
             <mk-bin file="${build-@{stage}.dir}/bin/scaladoc" class="scala.tools.nsc.ScalaDoc"          javaFlags="${java.flags}" classpathref="@{classpathref}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/fsc"      class="scala.tools.nsc.CompileClient"     javaFlags="${java.flags}" classpathref="@{classpathref}"/>
             <mk-bin file="${build-@{stage}.dir}/bin/scalap"   class="scala.tools.scalap.Main"           javaFlags="${java.flags}" classpathref="@{classpathref}"/>
           </else></if>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scala"/>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scalac"/>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scaladoc"/>
-          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/fsc"/>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scalap"/>
         </do>
       </staged-uptodate>
@@ -1722,7 +1719,7 @@ TODO:
         <taskdef name="genman"
                  classname="scala.tools.docutil.ManMaker"
                  classpathref="manual.classpath"/>
-        <genman command="fsc, scala, scalac, scaladoc, scalap"
+        <genman command="scala, scalac, scaladoc, scalap"
                 htmlout="${build-docs.dir}/manual/html"
                 manout="${build-docs.dir}/manual/genman"/>
         <!-- On Windows source and target files can't be the same ! -->
@@ -1797,7 +1794,6 @@ TODO:
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scala"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
-    <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
     <mkdir dir="${dist.dir}/misc/scala-devel/plugins"/>
     <copy-plugin-bundle name="continuations"/>
