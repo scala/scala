@@ -7,22 +7,22 @@ package scala
 package tools.nsc
 package interpreter
 
-import Predef.{ println => _, _ }
-import java.io.{ BufferedReader, FileReader }
-import session._
+import scala.language.{ implicitConversions, existentials }
 import scala.annotation.tailrec
-import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
-import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
-import io.{ File, Directory }
-import util.ScalaClassLoader
-import ScalaClassLoader._
-import scala.tools.util._
-import scala.language.{implicitConversions, existentials}
-import scala.reflect.classTag
+import Predef.{ println => _, _ }
+import interpreter.session._
 import StdReplTags._
+import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
+import scala.tools.nsc.util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
+import scala.reflect.classTag
+import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader }
+import ScalaClassLoader._
+import scala.reflect.io.{ File, Directory }
+import scala.tools.util._
+import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
-import scala.reflect.internal.util.BatchSourceFile
+import java.io.{ BufferedReader, FileReader }
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -221,6 +221,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("replay", "reset execution and replay all previous commands", replay),
     nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
     shCommand,
+    cmd("settings", "[+|-]<options>", "+enable/-disable flags, set compiler options", changeSettings),
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
     cmd("kind", "[-v] <expr>", "display the kind of expression's type", kindCommand),
@@ -298,6 +299,49 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       "Can't find any cached warnings."
     else
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
+  }
+
+  private def changeSettings(args: String): Result = {
+    def showSettings() = {
+      for (s <- settings.userSetSettings.toSeq.sorted) echo(s.toString)
+    }
+    def updateSettings() = {
+      // put aside +flag options
+      val (pluses, rest) = (args split "\\s+").toList partition (_.startsWith("+"))
+      val tmps = new Settings
+      val (ok, leftover) = tmps.processArguments(rest, processAll = true)
+      if (!ok) echo("Bad settings request.")
+      else if (leftover.nonEmpty) echo("Unprocessed settings.")
+      else {
+        // boolean flags set-by-user on tmp copy should be off, not on
+        val offs = tmps.userSetSettings filter (_.isInstanceOf[Settings#BooleanSetting])
+        val (minuses, nonbools) = rest partition (arg => offs exists (_ respondsTo arg))
+        // update non-flags
+        settings.processArguments(nonbools, processAll = true)
+        // also snag multi-value options for clearing, e.g. -Ylog: and -language:
+        for {
+          s <- settings.userSetSettings
+          if s.isInstanceOf[Settings#MultiStringSetting] || s.isInstanceOf[Settings#PhasesSetting]
+          if nonbools exists (arg => arg.head == '-' && arg.last == ':' && (s respondsTo arg.init))
+        } s match {
+          case c: Clearable => c.clear()
+          case _ =>
+        }
+        def update(bs: Seq[String], name: String=>String, setter: Settings#Setting=>Unit) = {
+          for (b <- bs)
+            settings.lookupSetting(name(b)) match {
+              case Some(s) =>
+                if (s.isInstanceOf[Settings#BooleanSetting]) setter(s)
+                else echo(s"Not a boolean flag: $b")
+              case _ =>
+                echo(s"Not an option: $b")
+            }
+        }
+        update(minuses, identity, _.tryToSetFromPropertyValue("false"))  // turn off
+        update(pluses, "-" + _.drop(1), _.tryToSet(Nil))                 // turn on
+      }
+    }
+    if (args.isEmpty) showSettings() else updateSettings()
   }
 
   private def javapCommand(line: String): Result = {
