@@ -1,4 +1,4 @@
-package scala.tools.nsc.io
+package scala.tools.nsc.interactive
 
 import java.io.Writer
 
