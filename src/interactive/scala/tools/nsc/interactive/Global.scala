@@ -10,7 +10,6 @@ import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
-import scala.tools.nsc.util.MultiHashMap
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
@@ -181,8 +180,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
     new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
 
+  type MultiHashMap[K, V] = mutable.HashMap[K, Set[V]]
+  type Responses = Set[Response[Tree]]
+
   class ResponseMap extends MultiHashMap[SourceFile, Response[Tree]] {
-    override def += (binding: (SourceFile, Set[Response[Tree]])) = {
+    override def default(key: SourceFile): Responses = Set()
+    override def += (binding: (SourceFile, Responses)) = {
       assert(interruptsEnabled, "delayed operation within an ask")
       super.+=(binding)
     }
