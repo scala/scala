@@ -35,8 +35,4 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
     BooleanSetting(
       "-save",
       "save the compiled script (assumes the code is a script)") withAbbreviation "-savecompiled"
-
-  val nc = BooleanSetting(
-      "-nc",
-      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon"
 }

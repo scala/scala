@@ -17,7 +17,7 @@ object scalac extends Command {
   val name = Section("NAME",
 
     MBold(command) & " " & NDash & " Compiler for the " &
-    Link("Scala 2", "http://scala-lang.org/") & " language")
+    Link("Scala", "http://scala-lang.org/") & " language")
 
   val synopsis = Section("SYNOPSIS",
 
@@ -401,16 +401,15 @@ object scalac extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
     Link(Bold("scala") & "(1)", "scala.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
     Link(Bold("scalap") & "(1)", "scalap.html"))
 
   def manpage = new Document {
     title = command
-    date = "March 2012"
+    date = "July 2013"
     author = "Stephane Micheloud"
-    version = "1.0"
+    version = "2.11"
     sections = List(
       name,
       synopsis,

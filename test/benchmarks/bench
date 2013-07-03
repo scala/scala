@@ -21,7 +21,7 @@ SRC_DIR=src/
 TARGET_DIR=target
 CLASS_DIR=$TARGET_DIR/classes
 
-FSC=$SCALA_BUILD_DIR/bin/fsc
+SCALAC=$SCALA_BUILD_DIR/bin/scalac
 SCALA_LIBS_PATH=$SCALA_BUILD_DIR/lib
 CLASSPATH=$SCALA_LIBS_PATH/scala-library.jar:lib/jsr166_and_extra.jar
 
@@ -34,8 +34,8 @@ then
   # fetch source file list
   find $SRC_DIR -name *.scala -print > source.list
   
-  # recompile with fsc
-  $FSC -cp $CLASSPATH -d $CLASS_DIR @source.list
+  # recompile with scalac
+  $SCALAC -cp $CLASSPATH -d $CLASS_DIR @source.list
   
   # copy files
   cd $SRC_DIR

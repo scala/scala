@@ -139,16 +139,15 @@ object scaladoc extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
-    Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
     Link(Bold("scala") & "(1)", "scala.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scalap") & "(1)", "scalap.html"))
 
   def manpage = new Document {
     title = command
-    date = "June 2010"
+    date = "July 2013"
     author = "Gilles Dubochet"
-    version = "2.0"
+    version = "2.11"
     sections = List(
       name,
       synopsis,
