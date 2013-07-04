@@ -1,0 +1,12 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> j.J.copyOf[String](new java.util.ArrayList[String]: java.util.Collection[_ <: String])
+res0: java.util.List[String] = null
+
+scala> j.J.copyOf[String](new java.util.ArrayList[String]: java.util.Collection[_ <: String])
+res1: java.util.List[String] = null
+
+scala> 
