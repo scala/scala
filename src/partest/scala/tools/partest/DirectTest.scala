@@ -115,10 +115,10 @@ abstract class DirectTest extends App {
     val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
 
     def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
- 
+
    /*
     * If the current java version is at least 'version' then 'yesRun' is evaluated
-    * otherwise 'fallback' is 
+    * otherwise 'fallback' is
     */
     def otherwise(fallback: =>A): A = {
       logInfo()
