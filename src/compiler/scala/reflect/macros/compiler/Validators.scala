@@ -11,8 +11,6 @@ trait Validators {
   import global._
   import analyzer._
   import definitions._
-  import treeInfo._
-  import typer.infer._
 
   def validateMacroImplRef() = {
     sanityCheck()

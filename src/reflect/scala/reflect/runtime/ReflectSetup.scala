@@ -2,7 +2,7 @@ package scala
 package reflect
 package runtime
 
-import internal.{SomePhase, NoPhase, Phase, TreeGen}
+import internal.{SomePhase, NoPhase, Phase}
 
 /** A helper trait to initialize things that need to be set before JavaMirrors and other
  *  reflect specific traits are initialized */

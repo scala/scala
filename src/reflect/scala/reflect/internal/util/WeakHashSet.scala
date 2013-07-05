@@ -4,7 +4,7 @@ package reflect.internal.util
 import java.lang.ref.{WeakReference, ReferenceQueue}
 import scala.annotation.tailrec
 import scala.collection.generic.Clearable
-import scala.collection.mutable.{Set => mSet}
+import scala.collection.mutable.{Set => MSet}
 
 /**
  * A HashSet where the elements are stored weakly. Elements in this set are elligible for GC if no other
@@ -16,8 +16,8 @@ import scala.collection.mutable.{Set => mSet}
  * This set implmeentation is not in general thread safe without external concurrency control. However it behaves
  * properly when GC concurrently collects elements in this set.
  */
-final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends Set[A] with Function1[A, Boolean] with mSet[A] {
-  
+final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends Set[A] with Function1[A, Boolean] with MSet[A] {
+
   import WeakHashSet._
 
   def this() = this(initialCapacity = WeakHashSet.defaultInitialCapacity, loadFactor = WeakHashSet.defaultLoadFactor)
@@ -47,7 +47,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
       candidate  *= 2
     }
     candidate
-  } 
+  }
 
   /**
    * the underlying table of entries which is an array of Entry linked lists
@@ -65,7 +65,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
    * find the bucket associated with an elements's hash code
    */
   private[this] def bucketFor(hash: Int): Int = {
-    // spread the bits around to try to avoid accidental collisions using the 
+    // spread the bits around to try to avoid accidental collisions using the
     // same algorithm as java.util.HashMap
     var h = hash
     h ^= h >>> 20 ^ h >>> 12
@@ -98,7 +98,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     def poll(): Entry[A] = queue.poll().asInstanceOf[Entry[A]]
 
     @tailrec
-    def queueLoop {
+    def queueLoop(): Unit = {
       val stale = poll()
       if (stale != null) {
         val bucket = bucketFor(stale.hash)
@@ -109,11 +109,11 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
         linkedListLoop(null, table(bucket))
 
-        queueLoop
+        queueLoop()
       }
     }
-    
-    queueLoop
+
+    queueLoop()
   }
 
   /**
@@ -123,7 +123,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     val oldTable = table
     table = new Array[Entry[A]](oldTable.size * 2)
     threshhold = computeThreshHold
-    
+
     @tailrec
     def tableLoop(oldBucket: Int): Unit = if (oldBucket < oldTable.size) {
       @tailrec
@@ -225,7 +225,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   def +=(elem: A) = this + elem
 
   // from scala.reflect.interanl.Set
-  override def addEntry(x: A) { this += x }  
+  override def addEntry(x: A) { this += x }
 
   // remove an element from this set and return this set
   override def -(elem: A): this.type = elem match {
@@ -274,6 +274,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
   override def foreach[U](f: A => U): Unit = iterator foreach f
 
+  // It has the `()` because iterator runs `removeStaleEntries()`
   override def toList(): List[A] = iterator.toList
 
   // Iterator over all the elements in this set in no particular order
@@ -292,7 +293,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
        */
       private[this] var entry: Entry[A] = null
 
-      /** 
+      /**
        * the element that will be the result of the next call to next()
        */
       private[this] var lookaheadelement: A = null.asInstanceOf[A]
@@ -339,7 +340,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
      * the entries must be stable. If any are garbage collected during validation
      * then an assertion may inappropriately fire.
      */
-    def fullyValidate {
+    def fullyValidate: Unit = {
       var computedCount = 0
       var bucket = 0
       while (bucket < table.size) {
@@ -407,10 +408,10 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
         e = e.tail
       }
       count
-    }  
+    }
   }
 
-  private[util] def diagnostics = new Diagnostics 
+  private[util] def diagnostics = new Diagnostics
 }
 
 /**
