@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// DO NOT EDIT, CHANGES WILL BE LOST.
+// DO NOT EDIT, CHANGES WILL BE LOST
+// This auto-generated code can be modified in scala.tools.cmd.gen.
+// Afterwards, running tools/codegen-anyvals regenerates this source file.
 
 package scala
-
-import scala.language.implicitConversions
 
 /** `Boolean` (equivalent to Java's `boolean` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Boolean` are not
@@ -21,13 +21,13 @@ import scala.language.implicitConversions
  */
 final abstract class Boolean private extends AnyVal {
   /**
-   * Negates a Boolean expression.
-   *
-   * - `!a` results in `false` if and only if `a` evaluates to `true` and
-   * - `!a` results in `true` if and only if `a` evaluates to `false`.
-   *
-   * @return the negated expression
-   */
+    * Negates a Boolean expression.
+    *
+    * - `!a` results in `false` if and only if `a` evaluates to `true` and
+    * - `!a` results in `true` if and only if `a` evaluates to `false`.
+    *
+    * @return the negated expression
+    */
   def unary_! : Boolean
 
   /**
@@ -135,8 +135,7 @@ object Boolean extends AnyValCompanion {
    */
   def unbox(x: java.lang.Object): Boolean = x.asInstanceOf[java.lang.Boolean].booleanValue()
 
-  /** The String representation of the scala.Boolean companion object.
-   */
+  /** The String representation of the scala.Boolean companion object. */
   override def toString = "object scala.Boolean"
 
 }
