@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-        <classpathentry kind="src" path="repl"/>
-        <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-        <classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
-        <classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
-        <classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
-        <classpathentry kind="var" path="SCALA_BASEDIR/lib/jline.jar"/>
-        <classpathentry combineaccessrules="false" kind="src" path="/asm"/>
-        <classpathentry kind="output" path="build-quick-repl"/>
+	<classpathentry kind="src" path="repl"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
+	<classpathentry kind="var" path="M2_REPO/jline/jline/2.11/jline-2.11.jar"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="build-quick-repl"/>
 </classpath>
