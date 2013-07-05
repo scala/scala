@@ -11,7 +11,6 @@ package tools.scalap
 
 
 class ByteArrayReader(content: Array[Byte]) {
-  import java.io._
 
   /** the buffer containing the file
    */
