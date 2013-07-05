@@ -47,7 +47,7 @@ trait ScratchPadMaker { self: Global =>
       toPrint.clear()
     }
 
-    /** The position where to insert an instrumentation statement in front of giuven statement.
+    /** The position where to insert an instrumentation statement in front of given statement.
      *  This is at the latest `stat.pos.start`. But in order not to mess with column numbers
      *  in position we try to insert it at the end of the previous token instead.
      *  Furthermore, `(' tokens have to be skipped because they do not show up
