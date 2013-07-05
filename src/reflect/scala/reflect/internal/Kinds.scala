@@ -380,7 +380,7 @@ trait Kinds {
   object TypeConKind {
     def apply(args: Seq[TypeConKind.Argument]): TypeConKind = this(TypeBounds.empty, args)
     def apply(bounds: TypeBounds, args: Seq[TypeConKind.Argument]): TypeConKind = new TypeConKind(bounds, args)
-    def unapply(tck: TypeConKind): Some[(TypeBounds, Seq[TypeConKind.Argument])] = Some(tck.bounds, tck.args)
+    def unapply(tck: TypeConKind): Some[(TypeBounds, Seq[TypeConKind.Argument])] = Some((tck.bounds, tck.args))
     case class Argument(variance: Variance, kind: Kind)(val sym: Symbol) {}
   }
 
