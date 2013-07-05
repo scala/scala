@@ -40,16 +40,16 @@ object CommandLineParser {
   // parse `in` for an argument, return it and the remainder of the input (or an error message)
   // (argument may be in single/double quotes, taking escaping into account, quotes are stripped)
   private def argument(in: String): Either[String, (String, String)] = in match {
-    case DoubleQuoted(arg, rest) => Right(arg, rest)
-    case SingleQuoted(arg, rest) => Right(arg, rest)
-    case Word(arg, rest)         => Right(arg, rest)
-    case _                       => Left("Illegal argument: "+ in)
+    case DoubleQuoted(arg, rest) => Right((arg, rest))
+    case SingleQuoted(arg, rest) => Right((arg, rest))
+    case Word(arg, rest)         => Right((arg, rest))
+    case _                       => Left(s"Illegal argument: $in")
   }
 
   // parse a list of whitespace-separated arguments (ignoring whitespace in quoted arguments)
   @tailrec private def commandLine(in: String, accum: List[String] = Nil): Either[String, (List[String], String)] = {
     val trimmed = in.trim
-    if (trimmed.isEmpty) Right(accum.reverse, "")
+    if (trimmed.isEmpty) Right((accum.reverse, ""))
     else argument(trimmed) match {
       case Right((arg, next)) =>
         (next span Character.isWhitespace) match {

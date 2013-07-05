@@ -8,8 +8,8 @@ package tools
 package util
 
 import scala.tools.reflect.WrappedProperties.AccessControl
-import scala.tools.nsc.{ Settings, GenericRunnerSettings }
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
+import scala.tools.nsc.{ Settings }
+import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt

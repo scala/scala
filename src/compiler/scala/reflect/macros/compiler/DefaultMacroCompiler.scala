@@ -2,7 +2,6 @@ package scala.reflect.macros
 package compiler
 
 import scala.tools.nsc.Global
-import scala.reflect.macros.contexts.Context
 
 abstract class DefaultMacroCompiler extends Resolvers
                                        with Validators
@@ -11,7 +10,6 @@ abstract class DefaultMacroCompiler extends Resolvers
   import global._
 
   val typer: global.analyzer.Typer
-  private implicit val context0 = typer.context
   val context = typer.context
 
   val macroDdef: DefDef
