@@ -374,7 +374,7 @@ TODO:
     <property name="scalac.args"           value=""/>
     <property name="javac.args"            value=""/>
 
-    <property name="scalac.args.always"    value="" />
+    <property name="scalac.args.always"    value="-feature" />
     <property name="scalac.args.optimise"  value=""/> <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.all"       value="${scalac.args.always} ${scalac.args} ${scalac.args.optimise}"/>
     <property name="scalac.args.locker"    value="${scalac.args.all}"/>
