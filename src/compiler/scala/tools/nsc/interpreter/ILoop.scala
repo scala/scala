@@ -11,7 +11,7 @@ import java.io.{ BufferedReader, FileReader }
 import java.util.concurrent.locks.ReentrantLock
 import scala.sys.process.Process
 import session._
-import scala.tools.util.{ Signallable, Javap }
+import scala.tools.util.{ Signallable, Javap, StringOps }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
@@ -595,12 +595,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     val f = File(filename)
 
     if (f.exists) action(f)
-    else echo("That file does not exist")
+    else echo("\"" + filename + "\" does not appear to exist")
   }
 
   def loadCommand(arg: String) = {
+    val smartArg = if (File(arg).exists) arg else arg.trim
     var shouldReplay: Option[String] = None
-    withFile(arg)(f => {
+    withFile(smartArg)(f => {
       interpretAllFrom(f)
       shouldReplay = Some(":load " + arg)
     })
@@ -641,9 +642,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     * if any. */
   def command(line: String): Result = {
     if (line startsWith ":") {
-      val cmd = line.tail takeWhile (x => !x.isWhitespace)
+      val lineNoColon = line.tail
+      val (cmd, arg) = StringOps.splitLeft(lineNoColon, ' ').getOrElse((lineNoColon, ""))
       uniqueCommand(cmd) match {
-        case Some(lc) => lc(line.tail stripPrefix cmd dropWhile (_.isWhitespace))
+        case Some(lc) => lc(arg)
         case _        => ambiguousError(cmd)
       }
     }
