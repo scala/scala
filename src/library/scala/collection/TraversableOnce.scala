@@ -221,13 +221,37 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.maxBy")
 
-    reduceLeft((x, y) => if (cmp.gteq(f(x), f(y))) x else y)
+    var maxF: B = null.asInstanceOf[B]
+    var maxElem: A = null.asInstanceOf[A]
+    var first = true
+
+    for (elem <- self) {
+      val fx = f(elem)
+      if (first || cmp.gt(fx, maxF)) {
+        maxElem = elem
+        maxF = fx
+        first = false
+      }
+    }
+    maxElem
   }
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.minBy")
 
-    reduceLeft((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
+    var minF: B = null.asInstanceOf[B]
+    var minElem: A = null.asInstanceOf[A]
+    var first = true
+    
+    for (elem <- self) {
+      val fx = f(elem)
+      if (first || cmp.lt(fx, minF)) {
+        minElem = elem
+        minF = fx
+        first = false
+      }
+    }
+    minElem
   }
 
   /** Copies all elements of this $coll to a buffer.
