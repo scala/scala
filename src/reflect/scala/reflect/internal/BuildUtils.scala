@@ -2,7 +2,10 @@ package scala
 package reflect
 package internal
 
+import Flags._
+
 trait BuildUtils { self: SymbolTable =>
+  import definitions.{TupleClass, MaxTupleArity, ScalaPackage, UnitClass}
 
   class BuildImpl extends BuildApi {
 
@@ -52,6 +55,12 @@ trait BuildUtils { self: SymbolTable =>
 
     def Ident(sym: Symbol): Ident = self.Ident(sym)
 
+    def Block(stats: List[Tree]): Block = stats match {
+      case Nil => self.Block(Nil, Literal(Constant(())))
+      case elem :: Nil => self.Block(Nil, elem)
+      case elems => self.Block(elems.init, elems.last)
+    }
+
     def TypeTree(tp: Type): TypeTree = self.TypeTree(tp)
 
     def thisPrefix(sym: Symbol): Type = sym.thisPrefix
@@ -59,6 +68,127 @@ trait BuildUtils { self: SymbolTable =>
     def setType[T <: Tree](tree: T, tpe: Type): T = { tree.setType(tpe); tree }
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
+
+    def mkAnnotatorCtor(tree: Tree, args: List[Tree]): Tree = tree match {
+      case ident: Ident => Apply(self.Select(New(ident), nme.CONSTRUCTOR: TermName), args)
+      case call @ Apply(Select(New(ident: Ident), nme.CONSTRUCTOR), _) =>
+        if(args.nonEmpty)
+          throw new IllegalArgumentException("Can't splice annotation that already contains args with extra args.")
+        call
+      case _ => throw new IllegalArgumentException("Tree ${showRaw(tree)} isn't a correct representation of annotation.")
+    }
+
+    object FlagsAsBits extends FlagsAsBitsExtractor {
+      def unapply(flags: Long): Option[Long] = Some(flags)
+    }
+
+    object EmptyValDefLike extends EmptyValDefExtractor {
+      def unapply(t: Tree): Boolean = t eq emptyValDef
+    }
+
+    object PendingSuperCallLike extends PendingSuperCallExtractor {
+      def unapply(t: Tree): Boolean = t eq pendingSuperCall
+    }
+
+    object Applied extends AppliedExtractor {
+      def unapply(tree: Tree): Option[(Tree, List[Tree], List[List[Tree]])] = tree match {
+        case treeInfo.Applied(fun, targs, argss) => Some((fun, targs, argss))
+        case _ => None
+      }
+    }
+
+    object Applied2 extends Applied2Extractor {
+      def unapply(tree: Tree): Option[(Tree, List[List[Tree]])] = tree match {
+        case treeInfo.Applied(fun, targs, argss) =>
+          if(targs.length > 0)
+            Some((TypeApply(fun, targs), argss))
+          else
+            Some((fun, argss))
+        case _ => None
+      }
+    }
+
+    object SyntacticClassDef extends SyntacticClassDefExtractor {
+      def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
+                constrMods: Modifiers, vparamss: List[List[ValDef]], parents: List[Tree],
+                selfdef: ValDef, body: List[Tree]): Tree =
+        ClassDef(mods, name, tparams, gen.mkTemplate(parents, selfdef, constrMods, vparamss, body, NoPosition))
+
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers,
+                                       List[List[ValDef]], List[Tree], ValDef, List[Tree])] = tree match {
+        case ClassDef(mods, name, tparams, Template(parents, selfdef, tbody)) =>
+          // extract generated fieldDefs and constructor
+          val (defs, (ctor: DefDef) :: body) = tbody.splitAt(tbody.indexWhere {
+            case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => true
+            case _ => false
+          })
+          val (earlyDefs, fieldDefs) = defs.span(treeInfo.isEarlyDef)
+
+          // undo conversion from (implicit ... ) to ()(implicit ... ) when its the only parameter section
+          val vparamssRestoredImplicits = ctor.vparamss match {
+            case Nil :: rest if !rest.isEmpty && !rest.head.isEmpty && rest.head.head.mods.isImplicit => rest
+            case other => other
+          }
+
+          // undo flag modifications by mergeing flag info from constructor args and fieldDefs
+          val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
+          val vparamss = mmap(vparamssRestoredImplicits) { vd =>
+            val originalMods = modsMap(vd.name) | (vd.mods.flags & DEFAULTPARAM)
+            atPos(vd.pos)(ValDef(originalMods, vd.name, vd.tpt, vd.rhs))
+          }
+
+          Some((mods, name, tparams, ctor.mods, vparamss, parents, selfdef, earlyDefs ::: body))
+        case _ =>
+          None
+      }
+    }
+
+    object TupleN extends TupleNExtractor {
+      def apply(args: List[Tree]): Tree = args match {
+        case Nil      => Literal(Constant(()))
+        case _        =>
+          require(args.length <= MaxTupleArity, s"Tuples with arity bigger than $MaxTupleArity aren't supported")
+          self.Apply(TupleClass(args.length).companionModule, args: _*)
+      }
+
+      def unapply(tree: Tree): Option[List[Tree]] = tree match {
+        case Literal(Constant(())) =>
+          Some(Nil)
+        case Apply(id: Ident, args)
+          if args.length <= MaxTupleArity && id.symbol == TupleClass(args.length).companionModule =>
+          Some(args)
+        case Apply(Select(id @ Ident(nme.scala_), TermName(tuple)), args)
+          if args.length <= MaxTupleArity && id.symbol == ScalaPackage && tuple == TupleClass(args.length).name =>
+          Some(args)
+        case _ =>
+          None
+      }
+    }
+
+    object TupleTypeN extends TupleNExtractor {
+      def apply(args: List[Tree]): Tree = args match {
+        case Nil => self.Select(self.Ident(nme.scala_), tpnme.Unit)
+        case _   =>
+          require(args.length <= MaxTupleArity, s"Tuples with arity bigger than $MaxTupleArity aren't supported")
+          AppliedTypeTree(Ident(TupleClass(args.length)), args)
+      }
+
+      def unapply(tree: Tree): Option[List[Tree]] =  tree match {
+        case Select(Ident(nme.scala_), tpnme.Unit) =>
+          Some(Nil)
+        case AppliedTypeTree(id: Ident, args)
+          if args.length <= MaxTupleArity && id.symbol == TupleClass(args.length) =>
+          Some(args)
+        case AppliedTypeTree(Select(id @ Ident(nme.scala_), TermName(tuple)), args)
+          if args.length <= MaxTupleArity && id.symbol == ScalaPackage && tuple == TupleClass(args.length).name =>
+          Some(args)
+        case _ =>
+          None
+      }
+    }
+
+    def True  = setType(Literal(Constant(true)), ConstantType(Constant(true)))
+    def False = setType(Literal(Constant(false)), ConstantType(Constant(false)))
   }
 
   val build: BuildApi = new BuildImpl

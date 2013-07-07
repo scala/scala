@@ -71,17 +71,33 @@ trait Scanners extends ScannersCommon {
     /** the base of a number */
     var base: Int = 0
 
-    def copyFrom(td: TokenData) = {
+    def copyFrom(td: TokenData): this.type = {
       this.token = td.token
       this.offset = td.offset
       this.lastOffset = td.lastOffset
       this.name = td.name
       this.strVal = td.strVal
       this.base = td.base
+      this
     }
   }
 
-  abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
+  trait ScannerData extends TokenData {
+    var ch: Char
+    var charOffset: Int
+    var lineStartOffset: Int
+    var lastLineStartOffset: Int
+    def copyFrom(sd: ScannerData): this.type = {
+      this.ch = sd.ch
+      this.charOffset = sd.charOffset
+      this.lineStartOffset = sd.lineStartOffset
+      this.lastLineStartOffset = sd.lastLineStartOffset
+      super.copyFrom(sd)
+      this
+    }
+  }
+
+  abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
 
     private var openComments = 0
