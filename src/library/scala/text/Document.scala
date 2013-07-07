@@ -10,11 +10,17 @@ package scala.text
 
 import java.io.Writer
 
+@deprecated("This object will be removed.", "2.11.0")
 case object DocNil extends Document
+@deprecated("This object will be removed.", "2.11.0")
 case object DocBreak extends Document
+@deprecated("This class will be removed.", "2.11.0")
 case class DocText(txt: String) extends Document
+@deprecated("This class will be removed.", "2.11.0")
 case class DocGroup(doc: Document) extends Document
+@deprecated("This class will be removed.", "2.11.0")
 case class DocNest(indent: Int, doc: Document) extends Document
+@deprecated("This class will be removed.", "2.11.0")
 case class DocCons(hd: Document, tl: Document) extends Document
 
 /**
@@ -24,6 +30,7 @@ case class DocCons(hd: Document, tl: Document) extends Document
  * @author Michel Schinz
  * @version 1.0
  */
+@deprecated("This class will be removed.", "2.11.0")
 abstract class Document {
   def ::(hd: Document): Document = DocCons(hd, this)
   def ::(hd: String): Document = DocCons(DocText(hd), this)
@@ -96,6 +103,7 @@ abstract class Document {
   }
 }
 
+@deprecated("This object will be removed.", "2.11.0")
 object Document {
   /** The empty document */
   def empty = DocNil
