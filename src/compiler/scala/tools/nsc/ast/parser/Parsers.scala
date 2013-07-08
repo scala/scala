@@ -614,6 +614,8 @@ self =>
       case _ => false
     }
 
+    def isAnnotation: Boolean = in.token == AT
+
     def isLocalModifier: Boolean = in.token match {
       case ABSTRACT | FINAL | SEALED | IMPLICIT | LAZY => true
       case _ => false
@@ -741,7 +743,7 @@ self =>
     }
     @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, sepFirst = false, part)
     @inline final def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, sepFirst = true, part)
-    @inline final def readAnnots[T](part: => T): List[T] = tokenSeparated(AT, sepFirst = true, part)
+    def readAnnots(part: => Tree): List[Tree] = tokenSeparated(AT, sepFirst = true, part)
 
 /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
@@ -1375,7 +1377,7 @@ self =>
               } else {
                 syntaxErrorOrIncomplete("`*' expected", skipIt = true)
               }
-            } else if (in.token == AT) {
+            } else if (isAnnotation) {
               t = (t /: annotations(skipNewLines = false))(makeAnnotated)
             } else {
               t = atPos(t.pos.startOrPoint, colonPos) {
@@ -1612,13 +1614,16 @@ self =>
      */
     def block(): Tree = makeBlock(blockStatSeq())
 
+    def caseClause(): CaseDef =
+      atPos(in.offset)(makeCaseDef(pattern(), guard(), caseBlock()))
+
     /** {{{
      *  CaseClauses ::= CaseClause {CaseClause}
      *  CaseClause  ::= case Pattern [Guard] `=>' Block
      *  }}}
      */
     def caseClauses(): List[CaseDef] = {
-      val cases = caseSeparated { atPos(in.offset)(makeCaseDef(pattern(), guard(), caseBlock())) }
+      val cases = caseSeparated { caseClause() }
       if (cases.isEmpty)  // trigger error if there are no cases
         accept(CASE)
 
@@ -2060,6 +2065,8 @@ self =>
 
 /* -------- PARAMETERS ------------------------------------------- */
 
+    def allowTypelessParams = false
+
     /** {{{
      *  ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
      *  ParamClause       ::= [nl] `(' [Params] `)'
@@ -2096,7 +2103,7 @@ self =>
         val name = ident()
         var bynamemod = 0
         val tpt =
-          if (settings.YmethodInfer && !owner.isTypeName && in.token != COLON) {
+          if (((settings.YmethodInfer && !owner.isTypeName) || allowTypelessParams) && in.token != COLON) {
             TypeTree()
           } else { // XX-METHOD-INFER
             accept(COLON)
@@ -2877,7 +2884,7 @@ self =>
           case IMPORT =>
             in.flushDoc
             importClause()
-          case x if x == AT || isTemplateIntro || isModifier =>
+          case x if isAnnotation || isTemplateIntro || isModifier =>
             joinComment(topLevelTmplDef :: Nil)
           case _ =>
             if (isStatSep) Nil
@@ -2933,11 +2940,11 @@ self =>
         if (in.token == IMPORT) {
           in.flushDoc
           stats ++= importClause()
+        } else if (isDefIntro || isModifier || isAnnotation) {
+          stats ++= joinComment(nonLocalDefOrDcl)
         } else if (isExprIntro) {
           in.flushDoc
           stats += statement(InTemplate)
-        } else if (isDefIntro || isModifier || in.token == AT) {
-          stats ++= joinComment(nonLocalDefOrDcl)
         } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of definition", skipIt = true)
         }
@@ -3017,7 +3024,7 @@ self =>
           stats += statement(InBlock)
           if (in.token != RBRACE && in.token != CASE) acceptStatSep()
         }
-        else if (isDefIntro || isLocalModifier || in.token == AT) {
+        else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
             val start = in.skipToken()
             if (isIdent) stats += implicitClosure(start, InBlock)
