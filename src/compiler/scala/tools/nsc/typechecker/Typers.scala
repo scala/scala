@@ -2797,16 +2797,11 @@ trait Typers extends Adaptations with Tags {
       if (numVparams > definitions.MaxFunctionArity)
         return MaxFunctionArityError(fun)
 
-      def decompose(pt: Type): (Symbol, List[Type], Type) =
-        if ((isFunctionType(pt) || (pt.typeSymbol == PartialFunctionClass && numVparams == 1 && fun.body.isInstanceOf[Match])) && // see bug901 for a reason why next conditions are needed
-            (  pt.dealiasWiden.typeArgs.length - 1 == numVparams
-            || fun.vparams.exists(_.tpt.isEmpty)
-            ))
-          (pt.typeSymbol, pt.dealiasWiden.typeArgs.init, pt.dealiasWiden.typeArgs.last)
-        else
-          (FunctionClass(numVparams), fun.vparams map (x => NoType), WildcardType)
-
-      val (clazz, argpts, respt) = decompose(pt)
+      val FunctionSymbol = FunctionClass(numVparams)
+      val (argpts, respt) = pt baseType FunctionSymbol match {
+        case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
+        case _                                       => (fun.vparams map (_ => NoType), WildcardType)
+      }
       if (argpts.lengthCompare(numVparams) != 0)
         WrongNumberOfParametersError(fun, argpts)
       else {
@@ -2856,7 +2851,7 @@ trait Typers extends Adaptations with Tags {
             val formals = vparamSyms map (_.tpe)
             val body1 = typed(fun.body, respt)
             val restpe = packedType(body1, fun.symbol).deconst.resultType
-            val funtpe  = appliedType(clazz, formals :+ restpe: _*)
+            val funtpe  = appliedType(FunctionSymbol, formals :+ restpe: _*)
 
             treeCopy.Function(fun, vparams, body1) setType funtpe
         }
