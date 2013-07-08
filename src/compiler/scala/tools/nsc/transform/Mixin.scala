@@ -119,7 +119,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  @param mixinClass The mixin class that produced the superaccessor
    */
   private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
-    afterPickler {
+    afterSpecialize {
       var bcs = base.info.baseClasses.dropWhile(mixinClass != _).tail
       var sym: Symbol = NoSymbol
       debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
