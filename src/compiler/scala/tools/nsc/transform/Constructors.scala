@@ -147,7 +147,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
    * (the primary constructor) into a dedicated synthetic method that an anon-closure may invoke, as required by DelayedInit.
    *
    */
-  trait OmittablesHelper { self: TemplateTransformer =>
+  private trait OmittablesHelper { self: TemplateTransformer =>
 
     /*
      * Initially populated with all elision candidates.
@@ -264,7 +264,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
    *  @return the DefDef for (c) above
    *
    * */
-  trait DelayedInitHelper { self: TemplateTransformer =>
+  private trait DelayedInitHelper { self: TemplateTransformer =>
 
     private def delayedEndpointDef(stats: List[Tree]): DefDef = {
 
@@ -355,7 +355,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
   } // DelayedInitHelper
 
-  class TemplateTransformer(val unit: CompilationUnit, val impl: Template)
+  private class TemplateTransformer(val unit: CompilationUnit, val impl: Template)
     extends Transformer
     with    DelayedInitHelper
     with    OmittablesHelper {
