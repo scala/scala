@@ -33,13 +33,13 @@ trait Names {
    *  Enables an alternative notation `"map": TermName` as opposed to `newTermName("map")`.
    *  @group Names
    */
-  implicit def stringToTermName(s: String): TermName = newTermName(s)
+  implicit def stringToTermName(s: String): TermName = TermName(s)
 
   /** An implicit conversion from String to TypeName.
    *  Enables an alternative notation `"List": TypeName` as opposed to `newTypeName("List")`.
    *  @group Names
    */
-  implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
+  implicit def stringToTypeName(s: String): TypeName = TypeName(s)
 
   /** The abstract type of names.
    *  @group Names
