@@ -1,0 +1,268 @@
+#partest java6
+class JString
+   bridge     in JString def     javaArrayGet_aa():  jl.Object             /  jl.Object JString.javaArrayGet_aa()
+              in JString def     javaArrayGet_aa():  jl.String             /  jl.String JString.javaArrayGet_aa()
+   bridge     in JString def     javaArrayGet_ac():  jl.Object             /  jl.Object JString.javaArrayGet_ac()
+              in JString def     javaArrayGet_ac():  jl.String             /  jl.String JString.javaArrayGet_ac()
+   bridge     in JString def         javaArray_a():  [Ljl.Object;          /  jl.Object[] JString.javaArray_a()
+              in JString def         javaArray_a():  [Ljl.String;          /  jl.String[] JString.javaArray_a()
+              in JString def       javaVarargs_a():  void                  /  void JString.javaVarargs_a(jl.String[])
+              in JString def       javaVarargs_a():  void                  /  void JString.javaVarargs_a(sc.Seq<jl.String>)
+              in JString def            toString():  jl.String             /  jl.String JString.toString()
+                  in J_1 def     javaArrayGet_ca():  jl.Object (T)         /  T J_1.javaArrayGet_ca()
+                  in J_1 def     javaArrayGet_cc():  jl.Object (T)         /  T J_1.javaArrayGet_cc()
+                  in J_1 def         javaArray_c():  [Ljl.Object; (T[])    /  T[] J_1.javaArray_c()
+                  in J_1 def    javaArray_static():  [Ljl.Object; (U[])    /  static <U> U[] J_1.javaArray_static()
+                  in J_1 def       javaVarargs_a():  void                  /  abstract void J_1.javaVarargs_a(T...)
+                  in J_1 def       javaVarargs_c():  void                  /  void J_1.javaVarargs_c(T...)
+
+class JLongBox
+             in JLongBox def     javaArrayGet_aa():  jl.Long               /  jl.Long JLongBox.javaArrayGet_aa()
+   bridge    in JLongBox def     javaArrayGet_aa():  jl.Object             /  jl.Object JLongBox.javaArrayGet_aa()
+             in JLongBox def     javaArrayGet_ac():  jl.Long               /  jl.Long JLongBox.javaArrayGet_ac()
+   bridge    in JLongBox def     javaArrayGet_ac():  jl.Object             /  jl.Object JLongBox.javaArrayGet_ac()
+             in JLongBox def         javaArray_a():  [Ljl.Long;            /  jl.Long[] JLongBox.javaArray_a()
+   bridge    in JLongBox def         javaArray_a():  [Ljl.Object;          /  jl.Object[] JLongBox.javaArray_a()
+             in JLongBox def       javaVarargs_a():  void                  /  void JLongBox.javaVarargs_a(jl.Long[])
+             in JLongBox def       javaVarargs_a():  void                  /  void JLongBox.javaVarargs_a(sc.Seq<jl.Long>)
+             in JLongBox def            toString():  jl.String             /  jl.String JLongBox.toString()
+                  in J_1 def     javaArrayGet_ca():  jl.Object (T)         /  T J_1.javaArrayGet_ca()
+                  in J_1 def     javaArrayGet_cc():  jl.Object (T)         /  T J_1.javaArrayGet_cc()
+                  in J_1 def         javaArray_c():  [Ljl.Object; (T[])    /  T[] J_1.javaArray_c()
+                  in J_1 def    javaArray_static():  [Ljl.Object; (U[])    /  static <U> U[] J_1.javaArray_static()
+                  in J_1 def       javaVarargs_a():  void                  /  abstract void J_1.javaVarargs_a(T...)
+                  in J_1 def       javaVarargs_c():  void                  /  void J_1.javaVarargs_c(T...)
+
+class SString
+                  in J_0 def       javaVarargs_a():  void                  /  abstract void J_0.javaVarargs_a(T...)
+                  in J_0 def       javaVarargs_c():  void                  /  abstract void J_0.javaVarargs_c(T...)
+              in SString def       javaVarargs_a():  void                  /  void SString.javaVarargs_a(jl.String[])
+              in SString def       javaVarargs_a():  void                  /  void SString.javaVarargs_a(sc.Seq<jl.String>)
+              in SString def       javaVarargs_c():  void                  /  void SString.javaVarargs_c(jl.String[])
+              in SString def       javaVarargs_c():  void                  /  void SString.javaVarargs_c(sc.Seq<jl.String>)
+   bridge     in SString def    scalaArrayGet_aa():  jl.Object             /  jl.Object SString.scalaArrayGet_aa()
+              in SString def    scalaArrayGet_aa():  jl.String             /  jl.String SString.scalaArrayGet_aa()
+   bridge     in SString def    scalaArrayGet_ac():  jl.Object             /  jl.Object SString.scalaArrayGet_ac()
+              in SString def    scalaArrayGet_ac():  jl.String             /  jl.String SString.scalaArrayGet_ac()
+   bridge     in SString def        scalaArray_a():  jl.Object             /  jl.Object SString.scalaArray_a()
+              in SString def        scalaArray_a():  [Ljl.String;          /  jl.String[] SString.scalaArray_a()
+              in SString def      scalaVarargs_a():  void                  /  void SString.scalaVarargs_a(sc.Seq<jl.String>)
+                  in S_2 def    scalaArrayGet_ca():  jl.Object (T)         /  T S_2.scalaArrayGet_ca()
+                  in S_2 def    scalaArrayGet_cc():  jl.Object (T)         /  T S_2.scalaArrayGet_cc()
+                  in S_2 def        scalaArray_c():  jl.Object             /  jl.Object S_2.scalaArray_c()
+                  in S_2 def   scalaArray_static():  jl.Object             /  static <U> jl.Object S_2.scalaArray_static()
+                  in S_2 def      scalaVarargs_c():  void                  /  void S_2.scalaVarargs_c(sc.Seq<T>)
+                  in S_2 def            toString():  jl.String             /  jl.String S_2.toString()
+                  in S_2 def          varargsAll():  void                  /  void S_2.varargsAll()
+                  in S_2 def         varargsArgs():  void                  /  void S_2.varargsArgs(T,T)
+                  in S_2 def        varargsArray():  void                  /  void S_2.varargsArray(jl.Object)
+                  in S_2 def          varargsSeq():  void                  /  void S_2.varargsSeq(sc.Seq<T>)
+
+class SLong
+                  in J_0 def       javaVarargs_a():  void                  /  abstract void J_0.javaVarargs_a(T...)
+                  in J_0 def       javaVarargs_c():  void                  /  abstract void J_0.javaVarargs_c(T...)
+                in SLong def       javaVarargs_a():  void                  /  void SLong.javaVarargs_a(long[])
+                in SLong def       javaVarargs_a():  void                  /  void SLong.javaVarargs_a(sc.Seq<jl.Object>)
+                in SLong def       javaVarargs_c():  void                  /  void SLong.javaVarargs_c(long[])
+                in SLong def       javaVarargs_c():  void                  /  void SLong.javaVarargs_c(sc.Seq<jl.Object>)
+   bridge       in SLong def    scalaArrayGet_aa():  jl.Object             /  jl.Object SLong.scalaArrayGet_aa()
+                in SLong def    scalaArrayGet_aa():  long                  /  long SLong.scalaArrayGet_aa()
+   bridge       in SLong def    scalaArrayGet_ac():  jl.Object             /  jl.Object SLong.scalaArrayGet_ac()
+                in SLong def    scalaArrayGet_ac():  long                  /  long SLong.scalaArrayGet_ac()
+   bridge       in SLong def        scalaArray_a():  jl.Object             /  jl.Object SLong.scalaArray_a()
+                in SLong def        scalaArray_a():  [J                    /  long[] SLong.scalaArray_a()
+                in SLong def      scalaVarargs_a():  void                  /  void SLong.scalaVarargs_a(sc.Seq<jl.Object>)
+                  in S_2 def    scalaArrayGet_ca():  jl.Object (T)         /  T S_2.scalaArrayGet_ca()
+                  in S_2 def    scalaArrayGet_cc():  jl.Object (T)         /  T S_2.scalaArrayGet_cc()
+                  in S_2 def        scalaArray_c():  jl.Object             /  jl.Object S_2.scalaArray_c()
+                  in S_2 def   scalaArray_static():  jl.Object             /  static <U> jl.Object S_2.scalaArray_static()
+                  in S_2 def      scalaVarargs_c():  void                  /  void S_2.scalaVarargs_c(sc.Seq<T>)
+                  in S_2 def            toString():  jl.String             /  jl.String S_2.toString()
+                  in S_2 def          varargsAll():  void                  /  void S_2.varargsAll()
+                  in S_2 def         varargsArgs():  void                  /  void S_2.varargsArgs(T,T)
+                  in S_2 def        varargsArray():  void                  /  void S_2.varargsArray(jl.Object)
+                  in S_2 def          varargsSeq():  void                  /  void S_2.varargsSeq(sc.Seq<T>)
+
+class SLongBox
+                  in J_0 def       javaVarargs_a():  void                  /  abstract void J_0.javaVarargs_a(T...)
+                  in J_0 def       javaVarargs_c():  void                  /  abstract void J_0.javaVarargs_c(T...)
+             in SLongBox def       javaVarargs_a():  void                  /  void SLongBox.javaVarargs_a(jl.Long[])
+             in SLongBox def       javaVarargs_a():  void                  /  void SLongBox.javaVarargs_a(sc.Seq<jl.Long>)
+             in SLongBox def       javaVarargs_c():  void                  /  void SLongBox.javaVarargs_c(jl.Long[])
+             in SLongBox def       javaVarargs_c():  void                  /  void SLongBox.javaVarargs_c(sc.Seq<jl.Long>)
+             in SLongBox def    scalaArrayGet_aa():  jl.Long               /  jl.Long SLongBox.scalaArrayGet_aa()
+   bridge    in SLongBox def    scalaArrayGet_aa():  jl.Object             /  jl.Object SLongBox.scalaArrayGet_aa()
+             in SLongBox def    scalaArrayGet_ac():  jl.Long               /  jl.Long SLongBox.scalaArrayGet_ac()
+   bridge    in SLongBox def    scalaArrayGet_ac():  jl.Object             /  jl.Object SLongBox.scalaArrayGet_ac()
+             in SLongBox def        scalaArray_a():  [Ljl.Long;            /  jl.Long[] SLongBox.scalaArray_a()
+   bridge    in SLongBox def        scalaArray_a():  jl.Object             /  jl.Object SLongBox.scalaArray_a()
+             in SLongBox def      scalaVarargs_a():  void                  /  void SLongBox.scalaVarargs_a(sc.Seq<jl.Long>)
+                  in S_2 def    scalaArrayGet_ca():  jl.Object (T)         /  T S_2.scalaArrayGet_ca()
+                  in S_2 def    scalaArrayGet_cc():  jl.Object (T)         /  T S_2.scalaArrayGet_cc()
+                  in S_2 def        scalaArray_c():  jl.Object             /  jl.Object S_2.scalaArray_c()
+                  in S_2 def   scalaArray_static():  jl.Object             /  static <U> jl.Object S_2.scalaArray_static()
+                  in S_2 def      scalaVarargs_c():  void                  /  void S_2.scalaVarargs_c(sc.Seq<T>)
+                  in S_2 def            toString():  jl.String             /  jl.String S_2.toString()
+                  in S_2 def          varargsAll():  void                  /  void S_2.varargsAll()
+                  in S_2 def         varargsArgs():  void                  /  void S_2.varargsArgs(T,T)
+                  in S_2 def        varargsArray():  void                  /  void S_2.varargsArray(jl.Object)
+                  in S_2 def          varargsSeq():  void                  /  void S_2.varargsSeq(sc.Seq<T>)
+
+bippy, bippy, bippy, bippy
+14653490, 14653490, 14653490, 14653490
+bippy, bippy, bippy, bippy
+14653490, 14653490, 14653490, 14653490
+14653490, 14653490, 14653490, 14653490
+bippy
+bippy
+bippy
+bippy
+bippy bippy
+bippy bippy
+14653490
+14653490
+14653490
+14653490
+14653490 14653490
+14653490 14653490
+14653490
+14653490
+14653490
+14653490
+14653490 14653490
+14653490 14653490
+
+#partest !java6
+class JString
+   bridge     in JString def     javaArrayGet_aa():  jl.Object             /  jl.Object JString.javaArrayGet_aa()
+              in JString def     javaArrayGet_aa():  jl.String             /  jl.String JString.javaArrayGet_aa()
+   bridge     in JString def     javaArrayGet_ac():  jl.Object             /  jl.Object JString.javaArrayGet_ac()
+              in JString def     javaArrayGet_ac():  jl.String             /  jl.String JString.javaArrayGet_ac()
+   bridge     in JString def         javaArray_a():  [Ljl.Object;          /  jl.Object[] JString.javaArray_a()
+              in JString def         javaArray_a():  [Ljl.String;          /  jl.String[] JString.javaArray_a()
+              in JString def       javaVarargs_a():  void                  /  void JString.javaVarargs_a(jl.String[])
+              in JString def       javaVarargs_a():  void                  /  void JString.javaVarargs_a(sc.Seq<jl.String>)
+              in JString def            toString():  jl.String             /  jl.String JString.toString()
+                  in J_1 def     javaArrayGet_ca():  jl.Object (T)         /  T J_1.javaArrayGet_ca()
+                  in J_1 def     javaArrayGet_cc():  jl.Object (T)         /  T J_1.javaArrayGet_cc()
+                  in J_1 def         javaArray_c():  [Ljl.Object; (T[])    /  T[] J_1.javaArray_c()
+                  in J_1 def    javaArray_static():  [Ljl.Object; (U[])    /  static <U> U[] J_1.javaArray_static()
+                  in J_1 def       javaVarargs_a():  void                  /  abstract void J_1.javaVarargs_a(T[])
+                  in J_1 def       javaVarargs_c():  void                  /  void J_1.javaVarargs_c(T[])
+
+class JLongBox
+             in JLongBox def     javaArrayGet_aa():  jl.Long               /  jl.Long JLongBox.javaArrayGet_aa()
+   bridge    in JLongBox def     javaArrayGet_aa():  jl.Object             /  jl.Object JLongBox.javaArrayGet_aa()
+             in JLongBox def     javaArrayGet_ac():  jl.Long               /  jl.Long JLongBox.javaArrayGet_ac()
+   bridge    in JLongBox def     javaArrayGet_ac():  jl.Object             /  jl.Object JLongBox.javaArrayGet_ac()
+             in JLongBox def         javaArray_a():  [Ljl.Long;            /  jl.Long[] JLongBox.javaArray_a()
+   bridge    in JLongBox def         javaArray_a():  [Ljl.Object;          /  jl.Object[] JLongBox.javaArray_a()
+             in JLongBox def       javaVarargs_a():  void                  /  void JLongBox.javaVarargs_a(jl.Long[])
+             in JLongBox def       javaVarargs_a():  void                  /  void JLongBox.javaVarargs_a(sc.Seq<jl.Long>)
+             in JLongBox def            toString():  jl.String             /  jl.String JLongBox.toString()
+                  in J_1 def     javaArrayGet_ca():  jl.Object (T)         /  T J_1.javaArrayGet_ca()
+                  in J_1 def     javaArrayGet_cc():  jl.Object (T)         /  T J_1.javaArrayGet_cc()
+                  in J_1 def         javaArray_c():  [Ljl.Object; (T[])    /  T[] J_1.javaArray_c()
+                  in J_1 def    javaArray_static():  [Ljl.Object; (U[])    /  static <U> U[] J_1.javaArray_static()
+                  in J_1 def       javaVarargs_a():  void                  /  abstract void J_1.javaVarargs_a(T[])
+                  in J_1 def       javaVarargs_c():  void                  /  void J_1.javaVarargs_c(T[])
+
+class SString
+                  in J_0 def       javaVarargs_a():  void                  /  abstract void J_0.javaVarargs_a(T[])
+                  in J_0 def       javaVarargs_c():  void                  /  abstract void J_0.javaVarargs_c(T[])
+              in SString def       javaVarargs_a():  void                  /  void SString.javaVarargs_a(jl.String[])
+              in SString def       javaVarargs_a():  void                  /  void SString.javaVarargs_a(sc.Seq<jl.String>)
+              in SString def       javaVarargs_c():  void                  /  void SString.javaVarargs_c(jl.String[])
+              in SString def       javaVarargs_c():  void                  /  void SString.javaVarargs_c(sc.Seq<jl.String>)
+   bridge     in SString def    scalaArrayGet_aa():  jl.Object             /  jl.Object SString.scalaArrayGet_aa()
+              in SString def    scalaArrayGet_aa():  jl.String             /  jl.String SString.scalaArrayGet_aa()
+   bridge     in SString def    scalaArrayGet_ac():  jl.Object             /  jl.Object SString.scalaArrayGet_ac()
+              in SString def    scalaArrayGet_ac():  jl.String             /  jl.String SString.scalaArrayGet_ac()
+   bridge     in SString def        scalaArray_a():  jl.Object             /  jl.Object SString.scalaArray_a()
+              in SString def        scalaArray_a():  [Ljl.String;          /  jl.String[] SString.scalaArray_a()
+              in SString def      scalaVarargs_a():  void                  /  void SString.scalaVarargs_a(sc.Seq<jl.String>)
+                  in S_2 def    scalaArrayGet_ca():  jl.Object (T)         /  T S_2.scalaArrayGet_ca()
+                  in S_2 def    scalaArrayGet_cc():  jl.Object (T)         /  T S_2.scalaArrayGet_cc()
+                  in S_2 def        scalaArray_c():  jl.Object             /  jl.Object S_2.scalaArray_c()
+                  in S_2 def   scalaArray_static():  jl.Object             /  static <U> jl.Object S_2.scalaArray_static()
+                  in S_2 def      scalaVarargs_c():  void                  /  void S_2.scalaVarargs_c(sc.Seq<T>)
+                  in S_2 def            toString():  jl.String             /  jl.String S_2.toString()
+                  in S_2 def          varargsAll():  void                  /  void S_2.varargsAll()
+                  in S_2 def         varargsArgs():  void                  /  void S_2.varargsArgs(T,T)
+                  in S_2 def        varargsArray():  void                  /  void S_2.varargsArray(jl.Object)
+                  in S_2 def          varargsSeq():  void                  /  void S_2.varargsSeq(sc.Seq<T>)
+
+class SLong
+                  in J_0 def       javaVarargs_a():  void                  /  abstract void J_0.javaVarargs_a(T[])
+                  in J_0 def       javaVarargs_c():  void                  /  abstract void J_0.javaVarargs_c(T[])
+                in SLong def       javaVarargs_a():  void                  /  void SLong.javaVarargs_a(long[])
+                in SLong def       javaVarargs_a():  void                  /  void SLong.javaVarargs_a(sc.Seq<jl.Object>)
+                in SLong def       javaVarargs_c():  void                  /  void SLong.javaVarargs_c(long[])
+                in SLong def       javaVarargs_c():  void                  /  void SLong.javaVarargs_c(sc.Seq<jl.Object>)
+   bridge       in SLong def    scalaArrayGet_aa():  jl.Object             /  jl.Object SLong.scalaArrayGet_aa()
+                in SLong def    scalaArrayGet_aa():  long                  /  long SLong.scalaArrayGet_aa()
+   bridge       in SLong def    scalaArrayGet_ac():  jl.Object             /  jl.Object SLong.scalaArrayGet_ac()
+                in SLong def    scalaArrayGet_ac():  long                  /  long SLong.scalaArrayGet_ac()
+   bridge       in SLong def        scalaArray_a():  jl.Object             /  jl.Object SLong.scalaArray_a()
+                in SLong def        scalaArray_a():  [J                    /  long[] SLong.scalaArray_a()
+                in SLong def      scalaVarargs_a():  void                  /  void SLong.scalaVarargs_a(sc.Seq<jl.Object>)
+                  in S_2 def    scalaArrayGet_ca():  jl.Object (T)         /  T S_2.scalaArrayGet_ca()
+                  in S_2 def    scalaArrayGet_cc():  jl.Object (T)         /  T S_2.scalaArrayGet_cc()
+                  in S_2 def        scalaArray_c():  jl.Object             /  jl.Object S_2.scalaArray_c()
+                  in S_2 def   scalaArray_static():  jl.Object             /  static <U> jl.Object S_2.scalaArray_static()
+                  in S_2 def      scalaVarargs_c():  void                  /  void S_2.scalaVarargs_c(sc.Seq<T>)
+                  in S_2 def            toString():  jl.String             /  jl.String S_2.toString()
+                  in S_2 def          varargsAll():  void                  /  void S_2.varargsAll()
+                  in S_2 def         varargsArgs():  void                  /  void S_2.varargsArgs(T,T)
+                  in S_2 def        varargsArray():  void                  /  void S_2.varargsArray(jl.Object)
+                  in S_2 def          varargsSeq():  void                  /  void S_2.varargsSeq(sc.Seq<T>)
+
+class SLongBox
+                  in J_0 def       javaVarargs_a():  void                  /  abstract void J_0.javaVarargs_a(T[])
+                  in J_0 def       javaVarargs_c():  void                  /  abstract void J_0.javaVarargs_c(T[])
+             in SLongBox def       javaVarargs_a():  void                  /  void SLongBox.javaVarargs_a(jl.Long[])
+             in SLongBox def       javaVarargs_a():  void                  /  void SLongBox.javaVarargs_a(sc.Seq<jl.Long>)
+             in SLongBox def       javaVarargs_c():  void                  /  void SLongBox.javaVarargs_c(jl.Long[])
+             in SLongBox def       javaVarargs_c():  void                  /  void SLongBox.javaVarargs_c(sc.Seq<jl.Long>)
+             in SLongBox def    scalaArrayGet_aa():  jl.Long               /  jl.Long SLongBox.scalaArrayGet_aa()
+   bridge    in SLongBox def    scalaArrayGet_aa():  jl.Object             /  jl.Object SLongBox.scalaArrayGet_aa()
+             in SLongBox def    scalaArrayGet_ac():  jl.Long               /  jl.Long SLongBox.scalaArrayGet_ac()
+   bridge    in SLongBox def    scalaArrayGet_ac():  jl.Object             /  jl.Object SLongBox.scalaArrayGet_ac()
+             in SLongBox def        scalaArray_a():  [Ljl.Long;            /  jl.Long[] SLongBox.scalaArray_a()
+   bridge    in SLongBox def        scalaArray_a():  jl.Object             /  jl.Object SLongBox.scalaArray_a()
+             in SLongBox def      scalaVarargs_a():  void                  /  void SLongBox.scalaVarargs_a(sc.Seq<jl.Long>)
+                  in S_2 def    scalaArrayGet_ca():  jl.Object (T)         /  T S_2.scalaArrayGet_ca()
+                  in S_2 def    scalaArrayGet_cc():  jl.Object (T)         /  T S_2.scalaArrayGet_cc()
+                  in S_2 def        scalaArray_c():  jl.Object             /  jl.Object S_2.scalaArray_c()
+                  in S_2 def   scalaArray_static():  jl.Object             /  static <U> jl.Object S_2.scalaArray_static()
+                  in S_2 def      scalaVarargs_c():  void                  /  void S_2.scalaVarargs_c(sc.Seq<T>)
+                  in S_2 def            toString():  jl.String             /  jl.String S_2.toString()
+                  in S_2 def          varargsAll():  void                  /  void S_2.varargsAll()
+                  in S_2 def         varargsArgs():  void                  /  void S_2.varargsArgs(T,T)
+                  in S_2 def        varargsArray():  void                  /  void S_2.varargsArray(jl.Object)
+                  in S_2 def          varargsSeq():  void                  /  void S_2.varargsSeq(sc.Seq<T>)
+
+bippy, bippy, bippy, bippy
+14653490, 14653490, 14653490, 14653490
+bippy, bippy, bippy, bippy
+14653490, 14653490, 14653490, 14653490
+14653490, 14653490, 14653490, 14653490
+bippy
+bippy
+bippy
+bippy
+bippy bippy
+bippy bippy
+14653490
+14653490
+14653490
+14653490
+14653490 14653490
+14653490 14653490
+14653490
+
+14653490
+14653490
+14653490
+14653490 14653490
+14653490 14653490
