@@ -442,7 +442,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       //   postfix = postfix.tail
       // }
 
-      if (usesSpecializedField && shouldGuard && stats.nonEmpty) {
+      if (shouldGuard && usesSpecializedField && stats.nonEmpty) {
         // save them for duplication in the specialized subclass
         guardedCtorStats(clazz) = stats
         ctorParams(clazz) = constrInfo.constrParams
@@ -522,6 +522,15 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       }
     }
 
+    /*
+     * `usesSpecializedField` makes a difference in deciding whether constructor-statements
+     * should be guarded in a `shouldGuard` class, ie in a class that's the generic super-class of
+     * one or more specialized sub-classes.
+     *
+     * Given that `usesSpecializedField` isn't read for any other purpose than the one described above,
+     * we skip setting `usesSpecializedField` in case the current class isn't `shouldGuard` to start with.
+     * That way, trips to a map in `specializeTypes` are saved.
+     */
     var usesSpecializedField: Boolean = false
 
     // A transformer for expressions that go into the constructor
@@ -564,9 +573,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           // references to parameter accessor field of own class become references to parameters
           gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
 
-        case Select(_, _) =>
-          if (possiblySpecialized(tree.symbol))
+        case Select(_, _) if shouldGuard => // reasoning behind this guard in the docu of `usesSpecializedField`
+          if (possiblySpecialized(tree.symbol)) {
             usesSpecializedField = true
+          }
           super.transform(tree)
 
         case _ =>
