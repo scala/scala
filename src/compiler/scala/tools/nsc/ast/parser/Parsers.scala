@@ -2832,7 +2832,7 @@ self =>
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents0, self, anyvalConstructor :: body)
         else
-          Template(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
+          gen.mkTemplate(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 
