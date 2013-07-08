@@ -1,0 +1,29 @@
+#partest java6
+warning: there were 3 feature warning(s); re-run with -feature for details
+f1: scala.Tuple4<int[], int[], int[], java.lang.Object>
+f2: scala.Tuple3<java.lang.String[], java.lang.String[], java.lang.String[]>
+f3: scala.Tuple3<int[][][], int[][][], int[][][]>
+f4: scala.Tuple4<java.lang.Object[], java.lang.Object[], java.lang.Object[], T>
+liftToTag1: class java.lang.Object
+liftToTag2: class java.lang.Object
+main: void
+([I@2f242b11,[I@6f878144,[I@2937d090,3)
+(null,null,null)
+(null,null,null)
+([[I@5097eded,null,null,1)
+([[Ljava.lang.String;@26858bf1,null,null,)
+
+#partest !java6
+warning: there were 3 feature warning(s); re-run with -feature for details
+f1: scala.Tuple4<[I, [I, [I, java.lang.Object>
+f2: scala.Tuple3<[Ljava.lang.String;, [Ljava.lang.String;, [Ljava.lang.String;>
+f3: scala.Tuple3<[[[I, [[[I, [[[I>
+f4: scala.Tuple4<[Ljava.lang.Object;, [Ljava.lang.Object;, [Ljava.lang.Object;, T>
+liftToTag1: class java.lang.Object
+liftToTag2: class java.lang.Object
+main: void
+([I@2f242b11,[I@6f878144,[I@2937d090,3)
+(null,null,null)
+(null,null,null)
+([[I@5097eded,null,null,1)
+([[Ljava.lang.String;@26858bf1,null,null,)
