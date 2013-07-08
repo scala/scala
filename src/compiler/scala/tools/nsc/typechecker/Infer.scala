@@ -698,7 +698,7 @@ trait Infer extends Checkable {
         tp nonPrivateMember nme.apply match {
           case NoSymbol                                 => tp
           case sym if !sym.isOverloaded && sym.isPublic => OverloadedType(tp, sym.alternatives)
-          case sym                                      => OverloadedType(tp, sym filter (_.isPublic) alternatives)
+          case sym                                      => OverloadedType(tp, sym.filter(_.isPublic).alternatives)
         }
     }
 

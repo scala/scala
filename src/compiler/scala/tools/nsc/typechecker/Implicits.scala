@@ -850,7 +850,7 @@ trait Implicits {
           if (search.isDivergent && countdown > 0) {
             countdown -= 1
             implicitSym = i.sym
-            log("discarding divergent implicit ${implicitSym} during implicit search")
+            log(s"discarding divergent implicit $implicitSym during implicit search")
             SearchFailure
           } else search
       }

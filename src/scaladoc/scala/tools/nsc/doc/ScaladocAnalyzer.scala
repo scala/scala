@@ -7,12 +7,10 @@ package scala.tools.nsc
 package doc
 
 import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
-import scala.reflect.internal.Chars._
-import symtab._
 import typechecker.Analyzer
+import scala.reflect.internal.Chars._
 import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
 import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo, LinkToExternal }
-import scala.language.postfixOps
 
 trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
@@ -168,7 +166,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       }
 
       override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] = None
-      override def chooseLink(links: List[LinkTo]): LinkTo = links.headOption orNull
+      override def chooseLink(links: List[LinkTo]): LinkTo = links.headOption.orNull
       override def toString(link: LinkTo): String = "No link"
       override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = None
       override def warnNoLink: Boolean = false

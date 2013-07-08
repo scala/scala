@@ -93,7 +93,7 @@ class Settings {
     case _ => false
   }
 
-  override lazy val hashCode: Int = Seq(
+  override lazy val hashCode: Int = Seq[Any](
     gBf,
     uncheckedBf,
     classpathBf,

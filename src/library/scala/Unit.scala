@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// DO NOT EDIT, CHANGES WILL BE LOST.
+// DO NOT EDIT, CHANGES WILL BE LOST
+// This auto-generated code can be modified in scala.tools.cmd.gen.
+// Afterwards, running tools/codegen-anyvals regenerates this source file.
 
 package scala
-
-import scala.language.implicitConversions
 
 
 /** `Unit` is a subtype of [[scala.AnyVal]]. There is only one value of type
@@ -41,8 +41,7 @@ object Unit extends AnyValCompanion {
    */
   def unbox(x: java.lang.Object): Unit = ()
 
-  /** The String representation of the scala.Unit companion object.
-   */
+  /** The String representation of the scala.Unit companion object. */
   override def toString = "object scala.Unit"
 }
 

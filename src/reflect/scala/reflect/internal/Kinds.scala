@@ -233,7 +233,7 @@ trait Kinds {
 
   /**
    * The data structure describing the kind of a given type.
-   * 
+   *
    * Proper types are represented using ProperTypeKind.
    *
    * Type constructors are reprented using TypeConKind.
@@ -251,7 +251,7 @@ trait Kinds {
      * it uses prescribed letters for each level: A, F, X, Y, Z.
      */
     def scalaNotation: String
-    
+
     /** Kind notation used in http://adriaanm.github.com/files/higher.pdf.
      * Proper types are expressed as *.
      * Type constructors are expressed * -> *(lo, hi) -(+)-> *.
@@ -261,13 +261,13 @@ trait Kinds {
     /** Contains bounds either as part of itself or its arguments.
      */
     def hasBounds: Boolean = !bounds.isEmptyBounds
-    
+
     private[internal] def buildState(sym: Symbol, v: Variance)(s: StringState): StringState
   }
   object Kind {
     private[internal] sealed trait ScalaNotation
     private[internal] sealed case class Head(order: Int, n: Option[Int], alias: Option[String]) extends ScalaNotation {
-      override def toString: String = { 
+      override def toString: String = {
         alias getOrElse {
           typeAlias(order) + n.map(_.toString).getOrElse("")
         }
@@ -285,7 +285,7 @@ trait Kinds {
     }
     private[internal] sealed case class Text(value: String) extends ScalaNotation {
       override def toString: String = value
-    } 
+    }
     private[internal] case class StringState(tokens: Seq[ScalaNotation]) {
       override def toString: String = tokens.mkString
       def append(value: String): StringState = StringState(tokens :+ Text(value))
@@ -310,7 +310,7 @@ trait Kinds {
             ts map {
               case Head(`o`, _, a) => Head(o, None, a)
               case t               => t
-            } 
+            }
           else ts
         })
       }
@@ -332,7 +332,7 @@ trait Kinds {
     val order = 0
     private[internal] def buildState(sym: Symbol, v: Variance)(s: StringState): StringState = {
       s.append(v.symbolicString).appendHead(order, sym).append(bounds.scalaNotation(_.toString))
-    } 
+    }
     def scalaNotation: String = Kind.Head(order, None, None) + bounds.scalaNotation(_.toString)
     def starNotation: String = "*" + bounds.starNotation(_.toString)
   }
@@ -344,7 +344,7 @@ trait Kinds {
 
   class TypeConKind(val bounds: TypeBounds, val args: Seq[TypeConKind.Argument]) extends Kind {
     import Kind.StringState
-    val order = (args map {_.kind.order} max) + 1
+    val order = (args map (_.kind.order)).max + 1
     def description: String =
       if (order == 1) "This is a type constructor: a 1st-order-kinded type."
       else  "This is a type constructor that takes type constructor(s): a higher-kinded type."
@@ -380,7 +380,7 @@ trait Kinds {
   object TypeConKind {
     def apply(args: Seq[TypeConKind.Argument]): TypeConKind = this(TypeBounds.empty, args)
     def apply(bounds: TypeBounds, args: Seq[TypeConKind.Argument]): TypeConKind = new TypeConKind(bounds, args)
-    def unapply(tck: TypeConKind): Some[(TypeBounds, Seq[TypeConKind.Argument])] = Some(tck.bounds, tck.args)
+    def unapply(tck: TypeConKind): Some[(TypeBounds, Seq[TypeConKind.Argument])] = Some((tck.bounds, tck.args))
     case class Argument(variance: Variance, kind: Kind)(val sym: Symbol) {}
   }
 
@@ -389,7 +389,7 @@ trait Kinds {
    */
   object inferKind {
     import TypeConKind.Argument
-    
+
     abstract class InferKind {
       protected def infer(tpe: Type, owner: Symbol, topLevel: Boolean): Kind
       protected def infer(sym: Symbol, topLevel: Boolean): Kind = infer(sym.tpeHK, sym.owner, topLevel)
@@ -398,7 +398,7 @@ trait Kinds {
     }
 
     def apply(pre: Type): InferKind = new InferKind {
-      protected def infer(tpe: Type, owner: Symbol, topLevel: Boolean): Kind = {        
+      protected def infer(tpe: Type, owner: Symbol, topLevel: Boolean): Kind = {
         val bounds = if (topLevel) TypeBounds.empty
                      else tpe.asSeenFrom(pre, owner).bounds
         if(!tpe.isHigherKinded) ProperTypeKind(bounds)

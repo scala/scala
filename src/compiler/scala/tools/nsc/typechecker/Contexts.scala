@@ -1349,6 +1349,7 @@ trait Contexts { self: Analyzer =>
 }
 
 object ContextMode {
+  import scala.language.implicitConversions
   private implicit def liftIntBitsToContextState(bits: Int): ContextMode = apply(bits)
   def apply(bits: Int): ContextMode = new ContextMode(bits)
   final val NOmode: ContextMode                   = 0

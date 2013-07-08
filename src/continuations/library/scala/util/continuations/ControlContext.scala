@@ -240,7 +240,7 @@ final class ControlContext[+A,-B,+C](val fun: (A => B, Exception => B) => C, val
             case t1: Exception if captureExceptions => thr1(t1)
           }
         }
-        fun(ret, thr1)
+        fun(ret, thr)
       }
       new ControlContext(fun1, null.asInstanceOf[A])
     }
