@@ -156,6 +156,17 @@ self =>
 
     def newScanner(): Scanner = new SourceFileScanner(source)
 
+    /** Scoping operator used to temporarily look into the future.
+     *  Backs up scanner data before evaluating a block and restores it after.
+     */
+    def lookingAhead[T](body: => T): T = {
+      val snapshot = (new ScannerData{}).copyFrom(in)
+      in.nextToken()
+      val res = body
+      in copyFrom snapshot
+      res
+    }
+
     val in = newScanner()
     in.init()
 
