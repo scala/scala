@@ -355,10 +355,129 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
   } // DelayedInitHelper
 
+  private trait GuardianOfCtorStmts { self: TemplateTransformer =>
+
+    /* Return a single list of statements, merging the generic class constructor with the
+     * specialized stats. The original statements are retyped in the current class, and
+     * assignments to generic fields that have a corresponding specialized assignment in
+     * `specializedStats` are replaced by the specialized assignment.
+     */
+    private def mergeConstructors(genericClazz: Symbol, originalStats: List[Tree], specializedStats: List[Tree]): List[Tree] = {
+      val specBuf = new ListBuffer[Tree]
+      specBuf ++= specializedStats
+
+      def specializedAssignFor(sym: Symbol): Option[Tree] =
+        specializedStats find {
+          case Assign(sel @ Select(This(_), _), _) =>
+            sel.symbol.isSpecialized && (nme.unspecializedName(sel.symbol.getterName) == sym.getterName)
+          case _ => false
+        }
+
+      /* Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
+       * Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
+       * variable, but after specialization this is a concrete primitive type, so it would
+       * be an error to pass it to array_update(.., .., Object).
+       */
+      def rewriteArrayUpdate(tree: Tree): Tree = {
+        val adapter = new Transformer {
+          override def transform(t: Tree): Tree = t match {
+            case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>
+              localTyper.typed(Apply(gen.mkAttributedSelect(xs, arrayUpdateMethod), List(idx, v)))
+            case _ => super.transform(t)
+          }
+        }
+        adapter.transform(tree)
+      }
+
+      log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
+      val res = for (s <- originalStats; stat = s.duplicate) yield {
+        log("merge: looking at " + stat)
+        val stat1 = stat match {
+          case Assign(sel @ Select(This(_), field), _) =>
+            specializedAssignFor(sel.symbol).getOrElse(stat)
+          case _ => stat
+        }
+        if (stat1 ne stat) {
+          log("replaced " + stat + " with " + stat1)
+          specBuf -= stat1
+        }
+
+        if (stat1 eq stat) {
+          assert(ctorParams(genericClazz).length == constrInfo.constrParams.length)
+          // this is just to make private fields public
+          (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), constrInfo.constrParams, null, true))(stat1)
+
+          val stat2 = rewriteArrayUpdate(stat1)
+          // statements coming from the original class need retyping in the current context
+          debuglog("retyping " + stat2)
+
+          val d = new specializeTypes.Duplicator(Map[Symbol, Type]())
+          d.retyped(localTyper.context1.asInstanceOf[d.Context],
+                    stat2,
+                    genericClazz,
+                    clazz,
+                    Map.empty)
+        } else
+          stat1
+      }
+      if (specBuf.nonEmpty)
+        println("residual specialized constructor statements: " + specBuf)
+      res
+    }
+
+    /* Add an 'if' around the statements coming after the super constructor. This
+     * guard is necessary if the code uses specialized fields. A specialized field is
+     * initialized in the subclass constructor, but the accessors are (already) overridden
+     * and pointing to the (empty) fields. To fix this, a class with specialized fields
+     * will not run its constructor statements if the instance is specialized. The specialized
+     * subclass includes a copy of those constructor statements, and runs them. To flag that a class
+     * has specialized fields, and their initialization should be deferred to the subclass, method
+     * 'specInstance$' is added in phase specialize.
+     */
+    def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
+      // // split the statements in presuper and postsuper
+      // var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
+      // if (postfix.nonEmpty) {
+      //   prefix = prefix :+ postfix.head
+      //   postfix = postfix.tail
+      // }
+
+      if (usesSpecializedField && shouldGuard && stats.nonEmpty) {
+        // save them for duplication in the specialized subclass
+        guardedCtorStats(clazz) = stats
+        ctorParams(clazz) = constrInfo.constrParams
+
+        val tree =
+          If(
+            Apply(
+              CODE.NOT (
+               Apply(gen.mkAttributedRef(specializedFlag), List())),
+              List()),
+            Block(stats, Literal(Constant(()))),
+            EmptyTree)
+
+        List(localTyper.typed(tree))
+      }
+      else if (clazz.hasFlag(SPECIALIZED)) {
+        // add initialization from its generic class constructor
+        val genericName  = nme.unspecializedName(clazz.name)
+        val genericClazz = clazz.owner.info.decl(genericName.toTypeName)
+        assert(genericClazz != NoSymbol, clazz)
+
+        guardedCtorStats.get(genericClazz) match {
+          case Some(stats1) => mergeConstructors(genericClazz, stats1, stats)
+          case None => stats
+        }
+      } else stats
+    }
+
+  } // GuardianOfCtorStmts
+
   private class TemplateTransformer(val unit: CompilationUnit, val impl: Template)
     extends Transformer
     with    DelayedInitHelper
-    with    OmittablesHelper {
+    with    OmittablesHelper
+    with    GuardianOfCtorStmts {
 
     val clazz = impl.symbol.owner  // the transformed class
     val stats = impl.body          // the transformed template body
@@ -567,120 +686,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         unit.error(acc.pos, "parameter '%s' requires field but conflicts with %s".format(acc.name, conflict.fullLocationString))
 
       copyParam(acc, parameter(acc))
-    }
-
-    /* Return a single list of statements, merging the generic class constructor with the
-     * specialized stats. The original statements are retyped in the current class, and
-     * assignments to generic fields that have a corresponding specialized assignment in
-     * `specializedStats` are replaced by the specialized assignment.
-     */
-    def mergeConstructors(genericClazz: Symbol, originalStats: List[Tree], specializedStats: List[Tree]): List[Tree] = {
-      val specBuf = new ListBuffer[Tree]
-      specBuf ++= specializedStats
-
-      def specializedAssignFor(sym: Symbol): Option[Tree] =
-        specializedStats find {
-          case Assign(sel @ Select(This(_), _), _) =>
-            sel.symbol.isSpecialized && (nme.unspecializedName(sel.symbol.getterName) == sym.getterName)
-          case _ => false
-        }
-
-      /* Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
-       * Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
-       * variable, but after specialization this is a concrete primitive type, so it would
-       * be an error to pass it to array_update(.., .., Object).
-       */
-      def rewriteArrayUpdate(tree: Tree): Tree = {
-        val adapter = new Transformer {
-          override def transform(t: Tree): Tree = t match {
-            case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>
-              localTyper.typed(Apply(gen.mkAttributedSelect(xs, arrayUpdateMethod), List(idx, v)))
-            case _ => super.transform(t)
-          }
-        }
-        adapter.transform(tree)
-      }
-
-      log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
-      val res = for (s <- originalStats; stat = s.duplicate) yield {
-        log("merge: looking at " + stat)
-        val stat1 = stat match {
-          case Assign(sel @ Select(This(_), field), _) =>
-            specializedAssignFor(sel.symbol).getOrElse(stat)
-          case _ => stat
-        }
-        if (stat1 ne stat) {
-          log("replaced " + stat + " with " + stat1)
-          specBuf -= stat1
-        }
-
-        if (stat1 eq stat) {
-          assert(ctorParams(genericClazz).length == constrParams.length)
-          // this is just to make private fields public
-          (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), constrParams, null, true))(stat1)
-
-          val stat2 = rewriteArrayUpdate(stat1)
-          // statements coming from the original class need retyping in the current context
-          debuglog("retyping " + stat2)
-
-          val d = new specializeTypes.Duplicator(Map[Symbol, Type]())
-          d.retyped(localTyper.context1.asInstanceOf[d.Context],
-                    stat2,
-                    genericClazz,
-                    clazz,
-                    Map.empty)
-        } else
-          stat1
-      }
-      if (specBuf.nonEmpty)
-        println("residual specialized constructor statements: " + specBuf)
-      res
-    }
-
-    /* Add an 'if' around the statements coming after the super constructor. This
-     * guard is necessary if the code uses specialized fields. A specialized field is
-     * initialized in the subclass constructor, but the accessors are (already) overridden
-     * and pointing to the (empty) fields. To fix this, a class with specialized fields
-     * will not run its constructor statements if the instance is specialized. The specialized
-     * subclass includes a copy of those constructor statements, and runs them. To flag that a class
-     * has specialized fields, and their initialization should be deferred to the subclass, method
-     * 'specInstance$' is added in phase specialize.
-     */
-    def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
-      // // split the statements in presuper and postsuper
-      // var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
-      // if (postfix.nonEmpty) {
-      //   prefix = prefix :+ postfix.head
-      //   postfix = postfix.tail
-      // }
-
-      if (usesSpecializedField && shouldGuard && stats.nonEmpty) {
-        // save them for duplication in the specialized subclass
-        guardedCtorStats(clazz) = stats
-        ctorParams(clazz) = constrParams
-
-        val tree =
-          If(
-            Apply(
-              CODE.NOT (
-               Apply(gen.mkAttributedRef(specializedFlag), List())),
-              List()),
-            Block(stats, Literal(Constant(()))),
-            EmptyTree)
-
-        List(localTyper.typed(tree))
-      }
-      else if (clazz.hasFlag(SPECIALIZED)) {
-        // add initialization from its generic class constructor
-        val genericName  = nme.unspecializedName(clazz.name)
-        val genericClazz = clazz.owner.info.decl(genericName.toTypeName)
-        assert(genericClazz != NoSymbol, clazz)
-
-        guardedCtorStats.get(genericClazz) match {
-          case Some(stats1) => mergeConstructors(genericClazz, stats1, stats)
-          case None => stats
-        }
-      } else stats
     }
 
     /* Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
