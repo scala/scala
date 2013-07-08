@@ -215,7 +215,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("implicits", "[-v]", "show the implicits in scope", intp.implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
     cmd("load", "<path>", "interpret lines in a file", loadCommand),
-    cmd("paste", "[path]", "enter paste mode or paste a file", pasteCommand),
+    cmd("paste", "[-raw] [path]", "enter paste mode or paste a file", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
@@ -529,24 +529,38 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   def pasteCommand(arg: String): Result = {
     var shouldReplay: Option[String] = None
-    val code = (
-      if (arg.nonEmpty) {
-        withFile(arg)(f => {
+    def result = Result(keepRunning = true, shouldReplay)
+    val (raw, file) =
+      if (arg.isEmpty) (false, None)
+      else {
+        val r = """(-raw)?(\s+)?([^\-]\S*)?""".r
+        arg match {
+          case r(flag, sep, name) =>
+            if (flag != null && name != null && sep == null)
+              echo(s"""I assume you mean "$flag $name"?""")
+            (flag != null, Option(name))
+          case _ =>
+            echo("usage: :paste -raw file")
+            return result
+        }
+      }
+    val code = file match {
+      case Some(name) =>
+        withFile(name)(f => {
           shouldReplay = Some(s":paste $arg")
           val s = f.slurp.trim
           if (s.isEmpty) echo(s"File contains no code: $f")
           else echo(s"Pasting file $f...")
           s
         }) getOrElse ""
-      } else {
+      case None =>
         echo("// Entering paste mode (ctrl-D to finish)\n")
         val text = (readWhile(_ => true) mkString "\n").trim
         if (text.isEmpty) echo("\n// Nothing pasted, nothing gained.\n")
         else echo("\n// Exiting paste mode, now interpreting.\n")
         text
-      }
-    )
-    if (code.nonEmpty) {
+    }
+    def interpretCode() = {
       val res = intp interpret code
       // if input is incomplete, let the compiler try to say why
       if (res == IR.Incomplete) {
@@ -556,7 +570,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         if (errless) echo("...but compilation found no error? Good luck with that.")
       }
     }
-    Result(keepRunning = true, shouldReplay)
+    def compileCode() = {
+      val errless = intp compileSources new BatchSourceFile("<pastie>", code)
+      if (!errless) echo("There were compilation errors!")
+    }
+    if (code.nonEmpty) {
+      if (raw) compileCode() else interpretCode()
+    }
+    result
   }
 
   private object paste extends Pasted {
