@@ -257,14 +257,71 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        *
        */
 
+      val isDelayedInitSubclass = (clazz isSubClass DelayedInitClass)
+
+      def isParamCandidateForElision(sym: Symbol) = (sym.isParamAccessor && sym.isPrivateLocal)
+      def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol)
+
+      val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (clazz.info.decls.toSet filter isParamCandidateForElision)
+      val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (clazz.info.decls.toSet filter isOuterCandidateForElision)
+
+      /*
+       * Initially populated with all elision candidates.
+       * Trees are traversed, and those candidates are removed which are actually needed.
+       * After that, `omittables` doesn't shrink anymore: each symbol it contains can be unlinked from clazz.info.decls.
+       */
+      val omittables = mutable.Set.empty[Symbol] ++ paramCandidatesForElision ++ outerCandidatesForElision
+      if(isDelayedInitSubclass) { omittables.clear }
+
+      val bodyOfOuterAccessor: Map[Symbol, DefDef] = {
+        val outers = (defBuf collect { case dd: DefDef if outerCandidatesForElision.contains(dd.symbol) => dd })
+        Map(outers.map { dd => (dd.symbol, dd) } : _*)
+      }
+
+      class UsagesDetector extends Traverser {
+        var done = false
+        override def traverse(tree: Tree) {
+          if (done) { return }
+          tree match {
+            case DefDef(_, _, _, _, _, body) if outerCandidatesForElision.contains(tree.symbol) =>
+              () // don't mark as "needed" the field supporting this outer-accessor, ie not just yet.
+            case Select(_, _) =>
+              val sym = tree.symbol
+              if (omittables contains sym) {
+                debuglog("omittables -= " + sym.fullName)
+                omittables   -= sym
+                bodyOfOuterAccessor.get(sym) match {
+                  case Some(dd) => traverse(dd.rhs) // recursive call to mark as needed the field supporting the outer-accessor-method.
+                  case _        => ()
+                }
+                if (omittables.isEmpty) {
+                  done = true
+                  return // no point traversing further, all candidates ruled out already.
+                }
+              }
+              super.traverse(tree)
+            case _ =>
+              super.traverse(tree)
+          }
+        }
+      }
+
+      if (omittables.nonEmpty) {
+        val usagesDetector = new UsagesDetector
+
+        for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator) {
+          usagesDetector.traverse(stat)
+        }
+      }
+
+      // TODO for now both old and new implementations of elision coexist, allowing cross-checking their results. In the next commit only the new one will remain.
+
       // A sorted set of symbols that are known to be accessed outside the primary constructor.
       val ord = Ordering.fromLessThan[Symbol](_ isLess _)
       val accessedSyms = mutable.TreeSet.empty[Symbol](ord)
 
       // a list of outer accessor symbols and their bodies
       var outerAccessors: List[(Symbol, Tree)] = List()
-
-      val isDelayedInitSubclass = (clazz isSubClass DelayedInitClass)
 
       // Could symbol's definition be omitted, provided it is not accessed?
       // This is the case if the symbol is defined in the current class, and
@@ -312,6 +369,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // outer accessor in the same class.
       for ((accSym, accBody) <- outerAccessors)
         if (mustbeKept(accSym)) accessTraverser.traverse(accBody)
+
+      // TODO cross-checking with new implementation.
+      for(sym <- clazz.info.decls.toList) {
+        val oldImplSays = mustbeKept(sym)
+        val newImplSays = !omittables(sym)
+
+        assert(oldImplSays == newImplSays)
+      }
 
       // Initialize all parameters fields that must be kept.
       val paramInits = paramAccessors filter mustbeKept map { acc =>
