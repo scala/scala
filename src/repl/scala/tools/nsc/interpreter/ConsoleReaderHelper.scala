@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.jline.console.{ ConsoleReader, CursorBuffer }
+import jline.console.{ ConsoleReader, CursorBuffer }
 
 trait ConsoleReaderHelper extends ConsoleReader {
   def terminal    = getTerminal()

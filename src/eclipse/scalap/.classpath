@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="scalap"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/ant/ant.jar"/>
-	<classpathentry kind="lib" path="lib/jline.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
 	<classpathentry kind="output" path="build-quick-scalap"/>
 </classpath>

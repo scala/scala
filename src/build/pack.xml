@@ -151,8 +151,9 @@ MAIN DISTRIBUTION PACKAGING
         </copy>
       </sequential>
     </macrodef>
-    <mvn-copy-lib mvn.artifact.name="jline"/>
     <mvn-copy-lib mvn.artifact.name="scala-library"/>
+    <mvn-copy-lib mvn.artifact.name="scala-xml"/>
+    <mvn-copy-lib mvn.artifact.name="scala-parser-combinators"/>
     <mvn-copy-lib mvn.artifact.name="scala-reflect"/>
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
@@ -170,8 +171,8 @@ MAIN DISTRIBUTION PACKAGING
           <fileset dir="${dist.dir}/misc/scala-devel/plugins/">
             <filename name="@{mvn.artifact.name}.jar"/>
           </fileset>
-          <fileset dir="${src.dir}/build/maven/">
-            <filename name="@{mvn.artifact.name}-plugin-pom.xml"/>
+          <fileset dir="${src.dir}/build/maven/plugins/">
+            <filename name="@{mvn.artifact.name}-pom.xml"/>
           </fileset>
         </copy>
       </sequential>
@@ -181,12 +182,6 @@ MAIN DISTRIBUTION PACKAGING
 
   <target name="pack-maven.srcs" depends="pack-maven.libs">
     <!-- Add missing src jars. -->
-    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/jline/jline-src.jar"
-         basedir="${src.dir}/jline/src/main/java">
-      <include name="**/*"/>
-    </jar>
-
-
     <!-- Continuations plugin -->
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-src.jar"
          basedir="${src.dir}/continuations/plugin">
@@ -195,12 +190,16 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
-    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/jline/jline-docs.jar"
-         basedir="${build-docs.dir}/jline">
-      <include name="**/*"/>
-    </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
+      <include name="**/*"/>
+    </jar>
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-xml/scala-xml-docs.jar"
+         basedir="${build-docs.dir}/xml">
+      <include name="**/*"/>
+    </jar>
+    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-parser-combinators/scala-parser-combinators-docs.jar"
+         basedir="${build-docs.dir}/parser-combinators">
       <include name="**/*"/>
     </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-compiler/scala-compiler-docs.jar"
@@ -242,6 +241,8 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-maven.scripts" depends="pack-maven.latest.unix,pack-maven.latest.win,pack-maven.srcs">
+    <copy todir="${dists.dir}/maven/${version.number}"
+          file="${lib-ant.dir}/ant-contrib.jar"/>
     <copy todir="${dists.dir}/maven/${version.number}"
           file="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar"/>
     <copy tofile="${dists.dir}/maven/${version.number}/build.xml"

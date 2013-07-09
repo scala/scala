@@ -68,12 +68,14 @@ trait FileManager extends FileUtil {
     else
       (SFile(LATEST_LIB).parent.parent / "classes" / what).toAbsolute.path
   }
+  def latestParserCBLib = relativeToLibrary("parser-combinators")
+  def latestXmlLib      = relativeToLibrary("xml")
   def latestScaladoc    = relativeToLibrary("scaladoc")
   def latestInteractive = relativeToLibrary("interactive")
   def latestScalapFile  = relativeToLibrary("scalap")
   def latestPaths       = List(
         LATEST_LIB, LATEST_REFLECT, LATEST_COMP, LATEST_PARTEST, LATEST_ACTORS,
-        latestScalapFile, latestScaladoc, latestInteractive
+        latestParserCBLib, latestXmlLib, latestScalapFile, latestScaladoc, latestInteractive
   )
   def latestFiles       = latestPaths map (p => new java.io.File(p))
   def latestUrls        = latestFiles map (_.toURI.toURL)
