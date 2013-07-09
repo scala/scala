@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>continuations-library</name>
+	<name>scala-xml</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -17,14 +17,14 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>build-quick-continuations-library</name>
+			<name>build-quick-xml</name>
 			<type>2</type>
-			<locationURI>SCALA_BASEDIR/build/quick/classes/continuations/library</locationURI>
+			<locationURI>SCALA_BASEDIR/build/quick/classes/xml</locationURI>
 		</link>
 		<link>
-			<name>continuations-library</name>
+			<name>src-xml</name>
 			<type>2</type>
-			<locationURI>SCALA_BASEDIR/src/continuations/library</locationURI>
+			<locationURI>SCALA_BASEDIR/src/xml</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

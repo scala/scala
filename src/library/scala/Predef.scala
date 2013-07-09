@@ -134,15 +134,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
-  // TODO: remove `val $scope = ...` as soon as 2.11.0-M4 is released and used as STARR
-  // As it has a '$' in its name, we don't have to deprecate first.
-  // The compiler now aliases `scala.xml.TopScope` to `$scope` (unless Predef.$scope is still there).
-  // This definition left in place for older compilers and to compile quick with pre-2.11.0-M4 STARR.
-  // In principle we don't need it to compile library/reflect/compiler (there's no xml left there),
-  // so a new locker can be built without this definition, and locker can build quick
-  // (partest, scaladoc still require xml).
-  val $scope = scala.xml.TopScope
-
   // errors and asserts -------------------------------------------------
 
   // !!! Remove this when possible - ideally for 2.11.

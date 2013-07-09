@@ -64,7 +64,7 @@ if [ -z "$EXT_CLASSPATH" ] ; then
             fi
         done
     elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
-        for lib in `echo "scala-partest scala-library scala-reflect scala-compiler diffutils"`; do
+        for lib in `echo "scala-partest scala-library scala-parser-combinators scala-xml scala-reflect scala-compiler diffutils"`; do
             ext="$SCALA_HOME/build/pack/lib/$lib.jar"
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
