@@ -159,7 +159,7 @@ object BigDecimal {
  *  @author  Stephane Micheloud
  *  @version 1.0
  */
-@deprecatedInheritance("This class will me made final.", "2.10.0")
+@deprecatedInheritance("This class will be made final.", "2.10.0")
 class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)
