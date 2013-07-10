@@ -217,7 +217,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
           val moduledef = ModuleDef(
               obj,
-              Template(
+              gen.mkTemplate(
                   List(TypeTree(ObjectTpe)),
                   emptyValDef,
                   NoMods,

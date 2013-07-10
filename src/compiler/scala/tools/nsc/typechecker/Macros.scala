@@ -142,7 +142,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         case Literal(Constant(s: String)) => s
         case Literal(Constant(d: Double)) => d
         case Literal(Constant(b: Boolean)) => b
-        case Literal(Constant(i: Int)) => new Fingerprint(i)
+        case Literal(Constant(i: Int)) => Fingerprint(i)
       }
 
     def pickle(macroImplRef: Tree): Tree = {
@@ -464,9 +464,9 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
 
   /** Describes the role that the macro expandee is performing.
    */
-  type MacroRole = String
-  final def APPLY_ROLE: MacroRole = "APPLY_ROLE"
-  private val roleNames = Map(APPLY_ROLE -> "apply")
+  type MacroRole = scala.tools.nsc.typechecker.MacroRole
+  final def APPLY_ROLE = MacroRole.Apply
+  final def UNAPPLY_ROLE = MacroRole.Unapply
 
   /** Performs macro expansion:
    *
@@ -482,9 +482,10 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  ========= Macro expansion =========
    *
    *  First of all `macroExpandXXX`:
-   *    1) If necessary desugars the `expandee` to fit into `macroExpand1`
+   *    1) If necessary desugars the `expandee` to fit into the default expansion scheme
+   *       that is understood by `macroExpandWithRuntime` / `macroExpandWithoutRuntime`
    *
-   *  Then `macroExpand1`:
+   *  Then `macroExpandWithRuntime`:
    *    2) Checks whether the expansion needs to be delayed
    *    3) Loads macro implementation using `macroMirror`
    *    4) Synthesizes invocation arguments for the macro implementation
@@ -532,26 +533,41 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       def summary() = s"expander = $this, expandee = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
       assert(allowExpandee(expandee), summary())
+      linkExpandeeAndDesugared(expandee, desugared, role)
 
       val start = if (Statistics.canEnable) Statistics.startTimer(macroExpandNanos) else null
       if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
       try {
-        linkExpandeeAndDesugared(expandee, desugared, role)
-        macroExpand1(typer, desugared) match {
-          case Success(expanded) =>
-            if (allowExpanded(expanded)) {
-              // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
-              val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
-              if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
-              if (allowResult(expanded1)) expanded1 else onFailure(expanded)
-            } else {
-              typer.TyperErrorGen.MacroInvalidExpansionError(expandee, roleNames(role), allowedExpansions)
-              onFailure(expanded)
+        withInfoLevel(nodePrinters.InfoLevel.Quiet) { // verbose printing might cause recursive macro expansions
+          if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
+            val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
+            macroLogVerbose(s"cancelled macro expansion because of $reason: $expandee")
+            onFailure(typer.infer.setError(expandee))
+          } else try {
+            val expanded = {
+              val runtime = macroRuntime(expandee.symbol)
+              if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
+              else macroExpandWithoutRuntime(typer, expandee)
             }
-          case Fallback(fallback) => onFallback(fallback)
-          case Delayed(delayed) => onDelayed(delayed)
-          case Skipped(skipped) => onSkipped(skipped)
-          case Failure(failure) => onFailure(failure)
+            expanded match {
+              case Success(expanded) =>
+                if (allowExpanded(expanded)) {
+                  // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
+                  val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
+                  if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
+                  if (allowResult(expanded1)) expanded1 else onFailure(expanded)
+                } else {
+                  typer.TyperErrorGen.MacroInvalidExpansionError(expandee, role.name, allowedExpansions)
+                  onFailure(expanded)
+                }
+              case Fallback(fallback) => onFallback(fallback)
+              case Delayed(delayed) => onDelayed(delayed)
+              case Skipped(skipped) => onSkipped(skipped)
+              case Failure(failure) => onFailure(failure)
+            }
+          } catch {
+            case typer.TyperErrorGen.MacroExpansionException => onFailure(expandee)
+          }
         }
       } finally {
         if (Statistics.canEnable) Statistics.stopTimer(macroExpandNanos, start)
@@ -622,8 +638,21 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     expander(expandee)
   }
 
-  /** Captures statuses of macro expansions performed by `macroExpand1'.
+  /** Expands a term macro used in unapply role as `u.Quasiquote(StringContext("", "")).q.unapply(x)` in `case q"$x" => ...`.
+   *  @see MacroExpander
    */
+  def macroExpandUnapply(typer: Typer, original: Tree, fun: Tree, unapply: Symbol, args: List[Tree], mode: Mode, pt: Type) = {
+    val expandee = treeCopy.Apply(original, gen.mkAttributedSelect(fun, unapply), args)
+    object expander extends TermMacroExpander(UNAPPLY_ROLE, typer, expandee, mode, pt) {
+      override def allowedExpansions: String = "unapply trees"
+      override def allowExpandee(expandee: Tree) = expandee.isInstanceOf[Apply]
+      private def unsupported(what: String) = abort("unapply macros currently don't support " + what)
+      override def onFallback(fallback: Tree) = unsupported("fallback")
+      override def onDelayed(delayed: Tree) = unsupported("advanced interaction with type inference")
+   }
+    expander(original)
+  }
+
   private sealed abstract class MacroStatus(val result: Tree)
   private case class Success(expanded: Tree) extends MacroStatus(expanded)
   private case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.seenMacroExpansionsFallingBack = true }
@@ -632,28 +661,6 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   private case class Failure(failure: Tree) extends MacroStatus(failure)
   private def Delay(expanded: Tree) = Delayed(expanded)
   private def Skip(expanded: Tree) = Skipped(expanded)
-  private def Cancel(expandee: Tree) = Failure(expandee)
-
-  /** Does the same as `macroExpand`, but without typechecking the expansion
-   *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
-   */
-  private def macroExpand1(typer: Typer, expandee: Tree): MacroStatus = {
-    // verbose printing might cause recursive macro expansions, so I'm shutting it down here
-    withInfoLevel(nodePrinters.InfoLevel.Quiet) {
-      if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
-        val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
-        macroLogVerbose(s"cancelled macro expansion because of $reason: $expandee")
-        Cancel(typer.infer.setError(expandee))
-      }
-      else try {
-        val runtime = macroRuntime(expandee.symbol)
-        if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
-        else macroExpandWithoutRuntime(typer, expandee)
-      } catch {
-        case typer.TyperErrorGen.MacroExpansionException => Failure(expandee)
-      }
-    }
-  }
 
   /** Expands a macro when a runtime (i.e. the macro implementation) can be successfully loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
@@ -804,7 +811,7 @@ object MacrosStats {
   val macroExpandNanos    = Statistics.newSubTimer("time spent in macroExpand", typerNanos)
 }
 
-class Fingerprint(val value: Int) extends AnyVal {
+class Fingerprint private[Fingerprint](val value: Int) extends AnyVal {
   def paramPos = { assert(isTag, this); value }
   def isTag = value >= 0
   def isOther = this == Other
@@ -819,8 +826,18 @@ class Fingerprint(val value: Int) extends AnyVal {
 }
 
 object Fingerprint {
+  def apply(value: Int) = new Fingerprint(value)
   def Tagged(tparamPos: Int) = new Fingerprint(tparamPos)
   val Other = new Fingerprint(-1)
   val LiftedTyped = new Fingerprint(-2)
   val LiftedUntyped = new Fingerprint(-3)
+}
+
+class MacroRole private[MacroRole](val name: String) extends AnyVal {
+  override def toString = name
+}
+
+object MacroRole {
+  val Apply = new MacroRole("apply")
+  val Unapply = new MacroRole("unapply")
 }
