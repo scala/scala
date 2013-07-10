@@ -222,6 +222,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
     nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
+    cmd("save", "<path>", "save replayable session to a file", saveCommand),
     shCommand,
     cmd("settings", "[+|-]<options>", "+enable/-disable flags, set compiler options", changeSettings),
     nullary("silent", "disable/enable automatic printing of results", verbosity),
@@ -599,6 +600,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     })
     Result(keepRunning = true, shouldReplay)
   }
+
+  def saveCommand(filename: String): Result = (
+    if (filename.isEmpty) echo("File name is required.")
+    else if (replayCommandStack.isEmpty) echo("No replay commands in session")
+    else File(filename).printlnAll(replayCommands: _*)
+  )
 
   def addClasspath(arg: String): Unit = {
     val f = File(arg).normalize
