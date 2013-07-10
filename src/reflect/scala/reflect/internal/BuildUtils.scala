@@ -79,7 +79,7 @@ trait BuildUtils { self: SymbolTable =>
     }
 
     object FlagsAsBits extends FlagsAsBitsExtractor {
-      def unapply(flags: Long): Option[Long] = Some(flags)
+      def unapply(flags: Long): Some[Long] = Some(flags)
     }
 
     object TypeApplied extends TypeAppliedExtractor {
