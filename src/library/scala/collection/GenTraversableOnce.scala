@@ -341,7 +341,7 @@ trait GenTraversableOnce[+A] extends Any {
    *
    *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   A1    The type over which the ordering is defined.
-   *  @return   the smallest element of this $coll with respect to the ordering `cmp`.
+   *  @return   the smallest element of this $coll with respect to the ordering `ord`.
    *
    *  @usecase def min: A
    *    @inheritdoc
@@ -354,7 +354,7 @@ trait GenTraversableOnce[+A] extends Any {
    *
    *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   A1    The type over which the ordering is defined.
-   *  @return   the largest element of this $coll with respect to the ordering `cmp`.
+   *  @return   the largest element of this $coll with respect to the ordering `ord`.
    *
    *  @usecase def max: A
    *    @inheritdoc
