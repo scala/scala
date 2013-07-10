@@ -442,6 +442,7 @@ trait Definitions extends api.StandardDefinitions {
     // collections classes
     lazy val ConsClass          = requiredClass[scala.collection.immutable.::[_]]
     lazy val IteratorClass      = requiredClass[scala.collection.Iterator[_]]
+    lazy val IterableClass      = requiredClass[scala.collection.Iterable[_]]
     lazy val ListClass          = requiredClass[scala.collection.immutable.List[_]]
     lazy val SeqClass           = requiredClass[scala.collection.Seq[_]]
     lazy val StringBuilderClass = requiredClass[scala.collection.mutable.StringBuilder]
@@ -491,10 +492,8 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TreesClass            = getClassIfDefined("scala.reflect.api.Trees") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreesTreeType         = TreesClass.map(sym => getTypeMember(sym, tpnme.Tree))
-    object TreeType {
-      def unapply(tpe: Type): Boolean = unapply(tpe.typeSymbol)
-      def unapply(sym: Symbol): Boolean = sym.overrideChain contains TreesTreeType
-    }
+    object TreeType { def unapply(tpe: Type): Boolean = tpe.typeSymbol.overrideChain contains TreesTreeType }
+    object SubtreeType { def unapply(tpe: Type): Boolean = tpe.typeSymbol.overrideChain exists (_.tpe <:< TreesTreeType.tpe) }
 
     lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
     lazy val ExprClass             = ExprsClass.map(sym => getMemberClass(sym, tpnme.Expr))
@@ -520,6 +519,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TypeCreatorClass      = getClassIfDefined("scala.reflect.api.TypeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
+    lazy val LiftableClass         = getClassIfDefined("scala.reflect.api.Liftable")    // defined in scala-reflect.jar, so we need to be careful
 
     lazy val MacroClass                   = getClassIfDefined("scala.reflect.macros.Macro") // defined in scala-reflect.jar, so we need to be careful
     lazy val MacroContextClass            = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
@@ -533,6 +533,11 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val StringContextClass           = requiredClass[scala.StringContext]
          def StringContext_f              = getMemberMethod(StringContextClass, nme.f)
+
+    lazy val QuasiquoteClass             = if (ApiUniverseClass != NoSymbol) getMember(ApiUniverseClass, tpnme.Quasiquote) else NoSymbol
+    lazy val QuasiquoteClass_api         = if (QuasiquoteClass != NoSymbol) getMember(QuasiquoteClass, tpnme.api) else NoSymbol
+    lazy val QuasiquoteClass_api_apply   = if (QuasiquoteClass_api != NoSymbol) getMember(QuasiquoteClass_api, nme.apply) else NoSymbol
+    lazy val QuasiquoteClass_api_unapply = if (QuasiquoteClass_api != NoSymbol) getMember(QuasiquoteClass_api, nme.unapply) else NoSymbol
 
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
@@ -644,6 +649,10 @@ trait Definitions extends api.StandardDefinitions {
       val isMacroCompatible = MacroClass != NoSymbol && tp <:< MacroClass.tpe
       isNonTrivial && isMacroCompatible
     }
+
+    def isLiftableType(tp: Type) = tp <:< classExistentialType(LiftableClass)
+
+    def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
 
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)
@@ -1185,5 +1194,28 @@ trait Definitions extends api.StandardDefinitions {
       val _ = symbolsNotPresentInBytecode
       isInitialized = true
     } //init
+
+    class UniverseDependentTypes(universe: Tree) {
+      lazy val universeType = universe.tpe
+      lazy val universeSym = universe.symbol
+      lazy val nameType = universeMemberType(tpnme.Name)
+      lazy val termNameType = universeMemberType(tpnme.TypeName)
+      lazy val typeNameType = universeMemberType(tpnme.TermName)
+      lazy val modsType = universeMemberType(tpnme.Modifiers)
+      lazy val flagsType = universeMemberType(tpnme.FlagSet)
+      lazy val symbolType = universeMemberType(tpnme.Symbol)
+      lazy val treeType0 = universeMemberType(tpnme.Tree)
+      lazy val treeType = universeMemberType(tpnme.Tree)
+      lazy val typeDefType = universeMemberType(tpnme.TypeDef)
+      lazy val caseDefType = universeMemberType(tpnme.CaseDef)
+      lazy val iterableTreeType = appliedType(IterableClass, treeType)
+      lazy val iterableCaseDefType = appliedType(IterableClass, caseDefType)
+      lazy val iterableIterableTreeType = appliedType(IterableClass, iterableTreeType)
+      lazy val listTreeType = appliedType(ListClass, treeType)
+      lazy val listListTreeType = appliedType(ListClass, listTreeType)
+      lazy val optionTreeType = appliedType(OptionClass, treeType)
+      lazy val optionNameType = appliedType(OptionClass, nameType)
+      def universeMemberType(name: TypeName) = universe.tpe.memberType(getTypeMember(universe.symbol, name))
+    }
   }
 }

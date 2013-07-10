@@ -51,6 +51,14 @@ trait Unapplies extends ast.TreeDSL
     case NoSymbol => tp member nme.unapplySeq
     case unapp    => unapp
   }
+
+  object ExtractorType {
+    def unapply(tp: Type): Option[Symbol] = {
+      val member = unapplyMember(tp)
+      if (member.exists) Some(member) else None
+    }
+  }
+
   /** returns unapply member's parameter type. */
   def unapplyParameterType(extractor: Symbol) = extractor.tpe.params match {
     case p :: Nil => p.tpe.typeSymbol
@@ -142,7 +150,7 @@ trait Unapplies extends ast.TreeDSL
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
+      gen.mkTemplate(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

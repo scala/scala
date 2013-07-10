@@ -26,12 +26,21 @@ import util.FreshNameCreator
  *  the beginnings of a campaign against this latest incursion by Cutty
  *  McPastington and his army of very similar soldiers.
  */
-trait ParsersCommon extends ScannersCommon {
+trait ParsersCommon extends ScannersCommon { self =>
   val global : Global
   import global._
 
   def newLiteral(const: Any) = Literal(Constant(const))
   def literalUnit            = newLiteral(())
+
+  class ParserTreeBuilder extends TreeBuilder {
+    val global: self.global.type = self.global
+    def freshName(prefix: String): Name               = freshTermName(prefix)
+    def freshTermName(prefix: String): TermName       = currentUnit.freshTermName(prefix)
+    def freshTypeName(prefix: String): TypeName       = currentUnit.freshTypeName(prefix)
+    def o2p(offset: Int): Position                    = new OffsetPosition(currentUnit.source, offset)
+    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(currentUnit.source, start, mid, end)
+  }
 
   /** This is now an abstract class, only to work around the optimizer:
    *  methods in traits are never inlined.
@@ -146,6 +155,17 @@ self =>
       else () => scriptBody()
 
     def newScanner(): Scanner = new SourceFileScanner(source)
+
+    /** Scoping operator used to temporarily look into the future.
+     *  Backs up scanner data before evaluating a block and restores it after.
+     */
+    def lookingAhead[T](body: => T): T = {
+      val snapshot = (new ScannerData{}).copyFrom(in)
+      in.nextToken()
+      val res = body
+      in copyFrom snapshot
+      res
+    }
 
     val in = newScanner()
     in.init()
@@ -290,6 +310,7 @@ self =>
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
 
+    val treeBuilder = new ParserTreeBuilder
     import treeBuilder.{global => _, _}
 
     /** The types of the context bounds of type parameters of the surrounding class
@@ -399,7 +420,7 @@ self =>
       def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
       def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.argv, mainParamType, EmptyTree))
       def mainSetArgv   = List(ValDef(NoMods, nme.args, TypeTree(), Ident(nme.argv)))
-      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, makeAnonymousNew(stmts)))
+      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, gen.mkAnonymousNew(stmts)))
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
@@ -604,6 +625,8 @@ self =>
       case _ => false
     }
 
+    def isAnnotation: Boolean = in.token == AT
+
     def isLocalModifier: Boolean = in.token match {
       case ABSTRACT | FINAL | SEALED | IMPLICIT | LAZY => true
       case _ => false
@@ -731,7 +754,7 @@ self =>
     }
     @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, sepFirst = false, part)
     @inline final def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, sepFirst = true, part)
-    @inline final def readAnnots[T](part: => T): List[T] = tokenSeparated(AT, sepFirst = true, part)
+    def readAnnots(part: => Tree): List[Tree] = tokenSeparated(AT, sepFirst = true, part)
 
 /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
@@ -1365,7 +1388,7 @@ self =>
               } else {
                 syntaxErrorOrIncomplete("`*' expected", skipIt = true)
               }
-            } else if (in.token == AT) {
+            } else if (isAnnotation) {
               t = (t /: annotations(skipNewLines = false))(makeAnnotated)
             } else {
               t = atPos(t.pos.startOrPoint, colonPos) {
@@ -1501,7 +1524,7 @@ self =>
             val pname = freshName("x$")
             in.nextToken()
             val id = atPos(start) (Ident(pname))
-            val param = atPos(id.pos.focus){ makeSyntheticParam(pname.toTermName) }
+            val param = atPos(id.pos.focus){ gen.mkSyntheticParam(pname.toTermName) }
             placeholderParams = param :: placeholderParams
             id
           case LPAREN =>
@@ -1516,7 +1539,7 @@ self =>
             val tstart = in.offset
             val (parents, self, stats) = template()
             val cpos = r2p(tstart, tstart, in.lastOffset max tstart)
-            makeNew(parents, self, stats, npos, cpos)
+            gen.mkNew(parents, self, stats, npos, cpos)
           case _ =>
             syntaxErrorOrIncompleteAnd("illegal start of simple expression", skipIt = true)(errorTermTree)
         }
@@ -1602,13 +1625,16 @@ self =>
      */
     def block(): Tree = makeBlock(blockStatSeq())
 
+    def caseClause(): CaseDef =
+      atPos(in.offset)(makeCaseDef(pattern(), guard(), caseBlock()))
+
     /** {{{
      *  CaseClauses ::= CaseClause {CaseClause}
      *  CaseClause  ::= case Pattern [Guard] `=>' Block
      *  }}}
      */
     def caseClauses(): List[CaseDef] = {
-      val cases = caseSeparated { atPos(in.offset)(makeCaseDef(pattern(), guard(), caseBlock())) }
+      val cases = caseSeparated { caseClause() }
       if (cases.isEmpty)  // trigger error if there are no cases
         accept(CASE)
 
@@ -2050,6 +2076,8 @@ self =>
 
 /* -------- PARAMETERS ------------------------------------------- */
 
+    def allowTypelessParams = false
+
     /** {{{
      *  ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
      *  ParamClause       ::= [nl] `(' [Params] `)'
@@ -2086,7 +2114,7 @@ self =>
         val name = ident()
         var bynamemod = 0
         val tpt =
-          if (settings.YmethodInfer && !owner.isTypeName && in.token != COLON) {
+          if (((settings.YmethodInfer && !owner.isTypeName) || allowTypelessParams) && in.token != COLON) {
             TypeTree()
           } else { // XX-METHOD-INFER
             accept(COLON)
@@ -2804,7 +2832,7 @@ self =>
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents0, self, anyvalConstructor :: body)
         else
-          Template(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
+          gen.mkTemplate(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 
@@ -2867,7 +2895,7 @@ self =>
           case IMPORT =>
             in.flushDoc
             importClause()
-          case x if x == AT || isTemplateIntro || isModifier =>
+          case x if isAnnotation || isTemplateIntro || isModifier =>
             joinComment(topLevelTmplDef :: Nil)
           case _ =>
             if (isStatSep) Nil
@@ -2923,11 +2951,11 @@ self =>
         if (in.token == IMPORT) {
           in.flushDoc
           stats ++= importClause()
+        } else if (isDefIntro || isModifier || isAnnotation) {
+          stats ++= joinComment(nonLocalDefOrDcl)
         } else if (isExprIntro) {
           in.flushDoc
           stats += statement(InTemplate)
-        } else if (isDefIntro || isModifier || in.token == AT) {
-          stats ++= joinComment(nonLocalDefOrDcl)
         } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of definition", skipIt = true)
         }
@@ -3007,7 +3035,7 @@ self =>
           stats += statement(InBlock)
           if (in.token != RBRACE && in.token != CASE) acceptStatSep()
         }
-        else if (isDefIntro || isLocalModifier || in.token == AT) {
+        else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
             val start = in.skipToken()
             if (isIdent) stats += implicitClosure(start, InBlock)
