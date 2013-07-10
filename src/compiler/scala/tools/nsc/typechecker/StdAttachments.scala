@@ -100,15 +100,17 @@ trait StdAttachments {
   /** Determines whether a tree should not be expanded, because someone has put SuppressMacroExpansionAttachment on it or one of its children.
    */
   def isMacroExpansionSuppressed(tree: Tree): Boolean =
-    if (tree.attachments.get[SuppressMacroExpansionAttachment.type].isDefined) true
-    else tree match {
-      // we have to account for the fact that during typechecking an expandee might become wrapped,
-      // i.e. surrounded by an inferred implicit argument application or by an inferred type argument application.
-      // in that case the expandee itself will no longer be suppressed and we need to look at the core
-      case Apply(fn, _) => isMacroExpansionSuppressed(fn)
-      case TypeApply(fn, _) => isMacroExpansionSuppressed(fn)
-      case _ => false
-    }
+    (  settings.Ymacronoexpand.value // SI-6812
+    || tree.attachments.get[SuppressMacroExpansionAttachment.type].isDefined
+    || (tree match {
+        // we have to account for the fact that during typechecking an expandee might become wrapped,
+        // i.e. surrounded by an inferred implicit argument application or by an inferred type argument application.
+        // in that case the expandee itself will no longer be suppressed and we need to look at the core
+        case Apply(fn, _)     => isMacroExpansionSuppressed(fn)
+        case TypeApply(fn, _) => isMacroExpansionSuppressed(fn)
+        case _                => false
+      })
+    )
 
   /** After being synthesized by the parser, primary constructors aren't fully baked yet.
    *  A call to super in such constructors is just a fill-me-in-later dummy resolved later
