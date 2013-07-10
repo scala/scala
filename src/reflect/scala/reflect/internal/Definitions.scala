@@ -492,10 +492,8 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TreesClass            = getClassIfDefined("scala.reflect.api.Trees") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreesTreeType         = TreesClass.map(sym => getTypeMember(sym, tpnme.Tree))
-    object TreeType {
-      def unapply(tpe: Type): Boolean = unapply(tpe.typeSymbol)
-      def unapply(sym: Symbol): Boolean = sym.overrideChain contains TreesTreeType
-    }
+    object TreeType { def unapply(tpe: Type): Boolean = tpe.typeSymbol.overrideChain contains TreesTreeType }
+    object SubtreeType { def unapply(tpe: Type): Boolean = tpe.typeSymbol.overrideChain exists (_.tpe <:< TreesTreeType.tpe) }
 
     lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
     lazy val ExprClass             = ExprsClass.map(sym => getMemberClass(sym, tpnme.Expr))

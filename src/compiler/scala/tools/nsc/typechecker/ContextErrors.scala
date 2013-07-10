@@ -697,7 +697,7 @@ trait ContextErrors {
       protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
-        if (msg != null) context.error(pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
+        if (msg != null) context.error(if (pos.isDefined) pos else expandee.pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
         setError(expandee)
         throw MacroExpansionException
       }
@@ -782,13 +782,16 @@ trait ContextErrors {
       }
 
       def MacroExpansionHasInvalidTypeError(expandee: Tree, expanded: Any) = {
+        def isUnaffiliatedExpr = expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+        def isUnaffiliatedTree = expanded.isInstanceOf[scala.reflect.api.Trees#TreeApi]
         val expected = "expr or tree"
-        val isPathMismatch = expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+        val actual = if (isUnaffiliatedExpr) "an expr" else if (isUnaffiliatedTree) "a tree" else "unexpected"
+        val isPathMismatch = expanded != null && (isUnaffiliatedExpr || isUnaffiliatedTree)
         macroExpansionError(expandee,
           s"macro must return a compiler-specific $expected; returned value is " + (
             if (expanded == null) "null"
-            else if (isPathMismatch) s" $expected, but it doesn't belong to this compiler"
-            else " of " + expanded.getClass
+            else if (isPathMismatch) s"$actual, but it doesn't belong to this compiler's universe"
+            else "of " + expanded.getClass
         ))
       }
 
