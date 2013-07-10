@@ -103,6 +103,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       typer.typed(mkCast(tree, pt))
   }
 
+  /** A spare instance of TreeBuilder left for backwards compatibility. */
+  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new syntaxAnalyzer.ParserTreeBuilder
+
   /** Fold constants */
   object constfold extends {
     val global: Global.this.type = Global.this
