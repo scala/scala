@@ -208,12 +208,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Standard commands **/
   lazy val standardCommands = List(
     cmd("cp", "<path>", "add a jar or directory to the classpath", addClasspath),
+    cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
     cmd("h?", "<string>", "search the history", searchHistory),
     cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
     cmd("implicits", "[-v]", "show the implicits in scope", intp.implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
+    cmd("line", "<id>|<line>", "place line(s) at the end of history", lineCommand),
     cmd("load", "<path>", "load and interpret a Scala file", loadCommand),
     nullary("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
@@ -440,6 +442,90 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def reset() {
     intp.reset()
     unleashAndSetPhase()
+  }
+
+  def lineCommand(what: String): Result = editCommand(what, None)
+
+  // :edit id or :edit line
+  def editCommand(what: String): Result = editCommand(what, Properties.envOrNone("EDITOR"))
+
+  def editCommand(what: String, editor: Option[String]): Result = {
+    def diagnose(code: String) = {
+      echo("The edited code is incomplete!\n")
+      val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
+      if (errless) echo("The compiler reports no errors.")
+    }
+    def historicize(text: String) = history match {
+      case jlh: JLineHistory => text.lines foreach jlh.add ; jlh.moveToEnd() ; true
+      case _ => false
+    }
+    def edit(text: String): Result = editor match {
+      case Some(ed) =>
+        val tmp = File.makeTemp()
+        tmp.writeAll(text)
+        try {
+          val pr = new ProcessResult(s"$ed ${tmp.path}")
+          pr.exitCode match {
+            case 0 =>
+              tmp.safeSlurp() match {
+                case Some(edited) if edited.trim.isEmpty => echo("Edited text is empty.")
+                case Some(edited) =>
+                  echo(edited.lines map ("+" + _) mkString "\n")
+                  val res = intp interpret edited
+                  if (res == IR.Incomplete) diagnose(edited)
+                  else {
+                    historicize(edited)
+                    Result(lineToRecord = Some(edited), keepRunning = true)
+                  }
+                case None => echo("Can't read edited text. Did you delete it?")
+              }
+            case x => echo(s"Error exit from $ed ($x), ignoring")
+          }
+        } finally {
+          tmp.delete()
+        }
+      case None =>
+        if (historicize(text)) echo("Placing text in recent history.")
+        else echo(f"No EDITOR defined and you can't change history, echoing your text:%n$text")
+    }
+
+    // if what is a number, use it as a line number or range in history
+    def isNum = what forall (c => c.isDigit || c == '-' || c == '+')
+    // except that "-" means last value
+    def isLast = (what == "-")
+    if (isLast || !isNum) {
+      val name = if (isLast) intp.mostRecentVar else what
+      val sym = intp.symbolOfIdent(name)
+      intp.prevRequestList collectFirst { case r if r.defines contains sym => r } match {
+        case Some(req) => edit(req.line)
+        case None      => echo(s"No symbol in scope: $what")
+      }
+    } else try {
+      val s = what
+      // line 123, 120+3, -3, 120-123, 120-, note -3 is not 0-3 but (cur-3,cur)
+      val (start, len) = 
+        if ((s indexOf '+') > 0) {
+          val (a,b) = s splitAt (s indexOf '+')
+          (a.toInt, b.drop(1).toInt)
+        } else {
+          (s indexOf '-') match {
+            case -1 => (s.toInt, 1)
+            case 0  => val n = s.drop(1).toInt ; (history.index - n, n)
+            case _ if s.last == '-' => val n = s.init.toInt ; (n, history.index - n)
+            case i  => val n = s.take(i).toInt ; (n, s.drop(i+1).toInt - n)
+          }
+        }
+      import scala.collection.JavaConverters._
+      val index = (start - 1) max 0
+      val text = history match {
+        case jlh: JLineHistory => jlh.entries(index).asScala.take(len) map (_.value) mkString "\n"
+        case _ => history.asStrings.slice(index, index + len) mkString "\n"
+      }
+      edit(text)
+    } catch {
+      case _: NumberFormatException => echo(s"Bad range '$what'")
+        echo("Use line 123, 120+3, -3, 120-123, 120-, note -3 is not 0-3 but (cur-3,cur)")
+    }
   }
 
   /** fork a shell and run a command */
