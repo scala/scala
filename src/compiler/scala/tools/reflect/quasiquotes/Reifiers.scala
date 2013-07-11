@@ -15,11 +15,11 @@ trait Reifiers { self: Quasiquotes =>
 
   abstract class Reifier extends {
     val global: self.global.type = self.global
+    val universe = self.universe
+    val reifee = EmptyTree
+    val mirror = EmptyTree
+    val concrete = false
   } with ReflectReifier {
-    val reifee     = EmptyTree
-    val universe   = self.universe
-    val mirror     = EmptyTree
-    val concrete   = false
     lazy val typer = throw new UnsupportedOperationException
 
     def isReifyingExpressions: Boolean
