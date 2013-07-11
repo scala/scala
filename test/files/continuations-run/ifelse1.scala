@@ -15,7 +15,7 @@ object Test {
   else
     shift { k: (Int=>Int) => k(k(k(x))) }
 
-  def main(args: Array[String]): Any = {
+  def main(args: Array[String]): Unit = {
     println(reset(1 + test1(7)))
     println(reset(1 + test1(8)))
     println(reset(1 + test2(7)))

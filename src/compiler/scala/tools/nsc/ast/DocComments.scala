@@ -366,7 +366,10 @@ trait DocComments { self: Global =>
             case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym + " in " + site)
+                case None              =>
+                  val pos = docCommentPos(sym)
+                  val loc = pos withPoint (pos.start + vstart + 1)
+                  reporter.warning(loc, s"Variable $vname undefined in comment for $sym in $site")
               }
             }
         }

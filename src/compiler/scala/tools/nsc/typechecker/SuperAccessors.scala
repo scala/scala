@@ -4,7 +4,8 @@
  * @author Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package typechecker
 
 import scala.collection.{ mutable, immutable }
@@ -29,7 +30,7 @@ import symtab.Flags._
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   import global._
-  import definitions.{ UnitClass, ObjectClass, isRepeatedParamType, isByNameParamType, Any_asInstanceOf }
+  import definitions._
   import analyzer.{ restrictionError }
 
   /** the following two members override abstract members in Transform */
@@ -64,8 +65,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         debuglog(s"add super acc ${sym.fullLocationString} to $clazz")
         val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | ARTIFACT) setAlias sym
         val tpe = clazz.thisType memberType sym match {
-          case t if sym.isModule && !sym.isMethod => NullaryMethodType(t)
-          case t                                  => t
+          case t if sym.isModuleNotMethod => NullaryMethodType(t)
+          case t                          => t
         }
         acc setInfoAndEnter (tpe cloneInfo acc)
         // Diagnostic for SI-7091
@@ -81,30 +82,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private def transformArgs(params: List[Symbol], args: List[Tree]) = {
       treeInfo.mapMethodParamsAndArgs(params, args) { (param, arg) =>
         if (isByNameParamType(param.tpe))
-          withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
+          withInvalidOwner(transform(arg))
         else transform(arg)
       }
-    }
-
-    private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
-      def typeError(typer: analyzer.Typer, pos: Position, found: Type, req: Type) {
-        if (!found.isErroneous && !req.isErroneous) {
-          val msg = analyzer.ErrorUtils.typeErrorMsg(found, req, typer.infer.isPossiblyMissingArgs(found, req))
-          typer.context.error(pos, analyzer.withAddendum(pos)(msg))
-          if (settings.explaintypes)
-            explainTypes(found, req)
-        }
-      }
-
-      if (tree.tpe exists (_.typeSymbol.isExistentialSkolem)) {
-        val packed = localTyper.packedType(tree, NoSymbol)
-        if (!(packed <:< pt)) {
-          val errorContext = localTyper.context.make(localTyper.context.tree)
-          errorContext.setReportErrors()
-          typeError(analyzer.newTyper(errorContext), tree.pos, packed, pt)
-        }
-      }
-      tree
     }
 
     /** Check that a class and its companion object to not both define
@@ -256,9 +236,16 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 }
               }
 
-              // direct calls to aliases of param accessors to the superclass in order to avoid
+
+              def isAccessibleFromSuper(sym: Symbol) = {
+                val pre = SuperType(sym.owner.tpe, qual.tpe)
+                localTyper.context.isAccessible(sym, pre, superAccess = true)
+              }
+
+              // Direct calls to aliases of param accessors to the superclass in order to avoid
               // duplicating fields.
-              if (sym.isParamAccessor && sym.alias != NoSymbol) {
+              // ... but, only if accessible (SI-6793)
+              if (sym.isParamAccessor && sym.alias != NoSymbol && isAccessibleFromSuper(sym.alias)) {
                 val result = (localTyper.typedPos(tree.pos) {
                   Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
                 }).asInstanceOf[Select]
@@ -471,7 +458,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val protAcc      = clazz.newMethod(accName, field.pos, newFlags = ARTIFACT)
         val paramTypes   = List(clazz.typeOfThis, field.tpe)
         val params       = protAcc newSyntheticValueParams paramTypes
-        val accessorType = MethodType(params, UnitClass.tpe)
+        val accessorType = MethodType(params, UnitTpe)
 
         protAcc setInfoAndEnter accessorType
         val obj :: value :: Nil = params

@@ -6,7 +6,9 @@
 **                                                                      **
 \*                                                                      */
 
-package scala.runtime
+package scala
+package runtime
+
 
 /** A wrapper class that adds a `formatted` operation to any value
  */

@@ -51,7 +51,7 @@ object Test {
     assert({ () => x }.apply == "42")
   }
   def tryCatch() = {
-    var x = try { "42" } catch { case _ => "43" }
+    var x = try { "42" } catch { case _: Throwable => "43" }
     assert({ () => x }.apply == "42")
   }
   def `if`() = {
@@ -85,7 +85,7 @@ object Test {
   def nested() = {
     var x = {
       val y = 42
-        if(true) try "42" catch {case _ => "43"}
+        if(true) try "42" catch {case _: Throwable => "43"}
         else "44"       
     }
     assert({ () => x }.apply == "42")

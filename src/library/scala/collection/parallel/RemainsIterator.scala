@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
-
-
+package scala
+package collection.parallel
 
 import scala.collection.Parallel
 import scala.collection.generic.Signalling
@@ -20,8 +18,6 @@ import scala.collection.mutable.Builder
 import scala.collection.Iterator.empty
 import scala.collection.GenTraversableOnce
 import scala.collection.parallel.immutable.repetition
-
-
 
 private[collection] trait RemainsIterator[+T] extends Iterator[T] {
   /** The number of elements this iterator has yet to iterate.
@@ -34,7 +30,6 @@ private[collection] trait RemainsIterator[+T] extends Iterator[T] {
    */
   def isRemainingCheap = true
 }
-
 
 /** Augments iterators with additional methods, mostly transformers,
  *  assuming they iterate an iterable collection.
@@ -532,9 +527,7 @@ self =>
   }
 
   def zipAllParSeq[S, U >: T, R >: S](that: SeqSplitter[S], thisElem: U, thatElem: R) = new ZippedAll[U, R](that, thisElem, thatElem)
-
 }
-
 
 /** Parallel sequence iterators allow splitting into arbitrary subsets.
  *
@@ -676,37 +669,3 @@ self =>
   def patchParSeq[U >: T](from: Int, patchElems: SeqSplitter[U], replaced: Int) = new Patched(from, patchElems, replaced)
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

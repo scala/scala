@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.io
+package scala
+package io
 
 /** The object Position provides convenience methods to encode
  *  line and column number in one single integer.  The encoded line

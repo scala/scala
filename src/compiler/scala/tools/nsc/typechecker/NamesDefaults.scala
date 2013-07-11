@@ -19,6 +19,7 @@ trait NamesDefaults { self: Analyzer =>
   import global._
   import definitions._
   import NamesDefaultsErrorsGen._
+  import treeInfo.WildcardStarArg
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -201,7 +202,7 @@ trait NamesDefaults { self: Analyzer =>
           if (module == NoSymbol) None
           else {
             val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
-            if (module.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
+            if (treeInfo.admitsTypeSelection(ref))  // fixes #4524. the type checker does the same for
               ref.setType(singleType(pre, module))  // typedSelect, it calls "stabilize" on the result.
             Some(ref)
           }
@@ -278,14 +279,16 @@ trait NamesDefaults { self: Analyzer =>
           val repeated = isScalaRepeatedParamType(paramTpe)
           val argTpe = (
             if (repeated) arg match {
-              case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => expr.tpe
-              case _                                       => seqType(arg.tpe)
+              case WildcardStarArg(expr) => expr.tpe
+              case _                     => seqType(arg.tpe)
             }
-            else
-              // Note stabilizing can lead to a non-conformant argument when existentials are involved, e.g. neg/t3507-old.scala, hence the filter.
-              gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe)
-          // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
-          ).deconst
+            else {
+              // TODO In 83c9c764b, we tried to a stable type here to fix SI-7234. But the resulting TypeTree over a
+              //      singleton type without an original TypeTree fails to retypecheck after a resetLocalAttrs (SI-7516),
+              //      which is important for (at least) macros.
+              arg.tpe
+            }
+          ).widen // have to widen or types inferred from literal defaults will be singletons
           val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo (
             if (byName) functionType(Nil, argTpe) else argTpe
           )
@@ -302,11 +305,8 @@ trait NamesDefaults { self: Analyzer =>
             } else {
               new ChangeOwnerTraverser(context.owner, sym) traverse arg // fixes #4502
               if (repeated) arg match {
-                case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
-                  expr
-                case _ =>
-                  val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
-                  blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
+                case WildcardStarArg(expr) => expr
+                case _                     => blockTyper typed gen.mkSeqApply(resetLocalAttrs(arg))
               } else arg
             }
           Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))
@@ -330,9 +330,12 @@ trait NamesDefaults { self: Analyzer =>
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
           typedApp match {
-            // Extract the typed arguments, restore the call-site evaluation order (using
-            // ValDef's in the block), change the arguments to these local values.
-            case Apply(expr, typedArgs) if !(typedApp :: typedArgs).exists(_.isErrorTyped) => // bail out with erroneous args, see SI-7238
+            case Apply(expr, typedArgs) if (typedApp :: typedArgs).exists(_.isErrorTyped) =>
+              setError(tree) // bail out with and erroneous Apply *or* erroneous arguments, see SI-7238, SI-7509
+            case Apply(expr, typedArgs) =>
+              // Extract the typed arguments, restore the call-site evaluation order (using
+              // ValDef's in the block), change the arguments to these local values.
+
               // typedArgs: definition-site order
               val formals = formalTypes(expr.tpe.paramTypes, typedArgs.length, removeByName = false, removeRepeated = false)
               // valDefs: call-site order
@@ -369,6 +372,8 @@ trait NamesDefaults { self: Analyzer =>
 
     }
   }
+
+  def makeNamedTypes(syms: List[Symbol]) = syms map (sym => NamedType(sym.name, sym.tpe))
 
   def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOfNamedArg _): (List[Symbol], Boolean) = {
     val namedArgs = args.dropWhile(arg => {
@@ -451,20 +456,6 @@ trait NamesDefaults { self: Analyzer =>
     } else NoSymbol
   }
 
-  private def savingUndeterminedTParams[T](context: Context)(fn: List[Symbol] => T): T = {
-    val savedParams    = context.extractUndetparams()
-    val savedReporting = context.ambiguousErrors
-
-    context.setAmbiguousErrors(false)
-    try fn(savedParams)
-    finally {
-      context.setAmbiguousErrors(savedReporting)
-      //@M note that we don't get here when an ambiguity was detected (during the computation of res),
-      // as errorTree throws an exception
-      context.undetparams = savedParams
-    }
-  }
-
   /** A full type check is very expensive; let's make sure there's a name
    *  somewhere which could potentially be ambiguous before we go that route.
    */
@@ -479,12 +470,10 @@ trait NamesDefaults { self: Analyzer =>
       //   def f[T](x: T) = x
       //   var x = 0
       //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
-      savingUndeterminedTParams(context) { udp =>
+      val udp = context.undetparams
+      context.savingUndeterminedTypeParams(reportAmbiguous = false) {
         val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
-          override def apply(tp: Type): Type = super.apply(tp match {
-            case TypeRef(_, ByNameParamClass, x :: Nil) => x
-            case _                                      => tp
-          })
+          override def apply(tp: Type): Type = super.apply(dropByName(tp))
         }
         // This throws an exception which is caught in `tryTypedApply` (as it
         // uses `silent`) - unfortunately, tryTypedApply recovers from the

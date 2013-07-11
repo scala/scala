@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.collection.{ mutable, immutable }
 import scala.annotation.tailrec
@@ -208,3 +209,5 @@ trait Collections {
     case _: IllegalArgumentException => None
   }
 }
+
+object Collections extends Collections

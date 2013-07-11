@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 import scala.collection.{ SeqView, Parallel, Iterator }
 import scala.collection.generic.CanCombineFrom

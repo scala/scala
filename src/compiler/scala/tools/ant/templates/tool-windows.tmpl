@@ -14,8 +14,9 @@ set _LINE_TOOLCP=
 
 :another_param
 
-if "%1%"=="-toolcp" (
-    set _LINE_TOOLCP=%2%
+rem Use "%~1" to handle spaces in paths. See http://ss64.com/nt/syntax-args.html
+if "%~1"=="-toolcp" (
+    set _LINE_TOOLCP=%~2
 	shift
 	shift
 	goto another_param

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 /** An implementation of Austin Appleby's MurmurHash 3.0 algorithm
  *  (32 bit version); reference: http://code.google.com/p/smhasher
@@ -81,6 +82,7 @@ class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T =>
  *  needs to be called to finalize the hash.
  */
 @deprecated("Use the object MurmurHash3 instead.", "2.10.0")
+// NOTE: Used by SBT 0.13.0-M2 and below
 object MurmurHash {
   // Magic values used for MurmurHash's 32 bit hash.
   // Don't change these without consulting a hashing expert!
@@ -170,7 +172,7 @@ object MurmurHash {
       k = nextMagicB(k)
       j += 2
     }
-    if (j < s.length) h = extendHash(h,s.charAt(j),c,k)
+    if (j < s.length) h = extendHash(h,s.charAt(j).toInt,c,k)
     finalizeHash(h)
   }
 

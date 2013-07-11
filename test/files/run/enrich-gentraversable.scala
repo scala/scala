@@ -1,3 +1,6 @@
+import scala.language.implicitConversions
+import scala.language.postfixOps
+
 object Test extends App {
   import scala.collection.{GenTraversableOnce,GenTraversableLike}
   import scala.collection.generic._

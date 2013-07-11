@@ -3,7 +3,9 @@
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 package doc
 package html
 package page
@@ -15,6 +17,7 @@ import model._
 import model.diagram._
 import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 import scala.language.postfixOps
+import scala.collection.mutable. { Set, HashSet }
 
 import model._
 import model.diagram._
@@ -636,13 +639,23 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     }
 
     val subclasses = mbr match {
-      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.allSubClasses.nonEmpty =>
-        <div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent">{
-            templatesToHtml(dtpl.allSubClasses.sortBy(_.name), scala.xml.Text(", "))
-          }</div>
-        </div>
+      case dtpl: DocTemplateEntity if isSelf && !isReduced =>
+        val subs: Set[DocTemplateEntity] = HashSet.empty
+        def transitive(dtpl: DocTemplateEntity) {
+          for (sub <- dtpl.directSubClasses if !(subs contains sub)) {
+            subs add sub
+            transitive(sub)
+          }
+        }
+        transitive(dtpl)
+        if (subs.nonEmpty)
+          <div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent">{
+              templatesToHtml(subs.toList.sortBy(_.name), scala.xml.Text(", "))
+            }</div>
+          </div>
+        else NodeSeq.Empty
       case _ => NodeSeq.Empty
     }
 

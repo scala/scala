@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import java.lang.{ StringBuilder => JavaStringBuilder }
@@ -255,8 +256,8 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @return     This StringBuilder.
    */
   def append(x: Boolean): StringBuilder = { underlying append x ; this }
-  def append(x: Byte): StringBuilder = { underlying append x ; this }
-  def append(x: Short): StringBuilder = { underlying append x ; this }
+  def append(x: Byte): StringBuilder = append(x.toInt)
+  def append(x: Short): StringBuilder = append(x.toInt)
   def append(x: Int): StringBuilder = { underlying append x ; this }
   def append(x: Long): StringBuilder = { underlying append x ; this }
   def append(x: Float): StringBuilder = { underlying append x ; this }
@@ -359,8 +360,8 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @return       this StringBuilder.
    */
   def insert(index: Int, x: Boolean): StringBuilder = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Byte): StringBuilder    = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Short): StringBuilder   = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Byte): StringBuilder    = insert(index, x.toInt)
+  def insert(index: Int, x: Short): StringBuilder   = insert(index, x.toInt)
   def insert(index: Int, x: Int): StringBuilder     = insert(index, String.valueOf(x))
   def insert(index: Int, x: Long): StringBuilder    = insert(index, String.valueOf(x))
   def insert(index: Int, x: Float): StringBuilder   = insert(index, String.valueOf(x))

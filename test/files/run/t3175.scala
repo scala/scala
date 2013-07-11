@@ -1,6 +1,9 @@
 /** A bit down the road this test will examine
  *  the bytecode.
  */
+
+import scala.language.reflectiveCalls
+
 object Test {
   def len(x:{ def length: Int }) = x.length
   def f1(x:{ def apply(x: Int): Long }) = x(0)

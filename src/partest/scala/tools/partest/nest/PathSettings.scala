@@ -5,10 +5,9 @@
 package scala.tools.partest
 package nest
 
-import scala.tools.nsc.Properties.{ setProp, propOrEmpty, propOrNone, propOrElse }
 import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.io
-import io.{ Path, File, Directory }
+import scala.tools.nsc.io.{ Path, File, Directory }
+import Path._
 
 object PathSettings {
   import PartestDefaults.{ testRootDir, srcDirName }
@@ -18,6 +17,8 @@ object PathSettings {
   private def findJar(d: Directory, name: String): Option[File] = findJar(d.files, name)
   private def findJar(files: Iterator[File], name: String): Option[File] =
     files filter (_ hasExtension "jar") find { _.name startsWith name }
+  private def findJarOrFail(name: String, ds: Directory*): File = findJar(ds flatMap (_.files) iterator, name) getOrElse
+    sys.error(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
 
   // Directory <root>/test
   lazy val testRoot: Directory = testRootDir getOrElse {
@@ -26,8 +27,8 @@ object PathSettings {
     candidates find isPartestDir getOrElse sys.error("Directory 'test' not found.")
   }
 
-  // Directory <root>/test/files
-  lazy val srcDir = Directory(testRoot / srcDirName toCanonical)
+  // Directory <root>/test/files or .../scaladoc
+  def srcDir = Directory(testRoot / srcDirName toCanonical)
 
   // Directory <root>/test/files/lib
   lazy val srcLibDir = Directory(srcDir / "lib")
@@ -72,8 +73,14 @@ object PathSettings {
       sys.error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
     }
 
+  lazy val testInterface: File = findJarOrFail("test-interface", buildPackLibDir, srcLibDir)
+
   lazy val diffUtils: File =
     findJar(buildPackLibDir.files, "diffutils") getOrElse sys.error(s"No diffutils.jar found in '$buildPackLibDir'.")
+
+  /** The platform-specific support jar, `tools.jar`.
+   */
+  lazy val platformTools: Option[File] = PathResolver.SupplementalLocations.platformTools
 }
 
 class PathSettings() {

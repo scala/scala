@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 
 import scala.reflect.macros.ReificationException
 import scala.tools.nsc.Global
@@ -31,7 +32,7 @@ package object reify {
       // If we're in the constructor of an object or others don't have easy access to `this`, we have no good way to grab
       // the class of that object.  Instead, we construct an anonymous class and grab his class file, assuming
       // this is enough to get the correct class loadeer for the class we *want* a mirror for, the object itself.
-      rClassTree orElse Apply(Select(treeBuilder.makeAnonymousNew(Nil), sn.GetClass), Nil)
+      rClassTree orElse Apply(Select(gen.mkAnonymousNew(Nil), sn.GetClass), Nil)
     }
     // JavaUniverse is defined in scala-reflect.jar, so we must be very careful in case someone reifies stuff having only scala-library.jar on the classpath
     val isJavaUniverse = JavaUniverseClass != NoSymbol && universe.tpe <:< JavaUniverseClass.toTypeConstructor
@@ -45,10 +46,13 @@ package object reify {
   def reifyType(global: Global)(typer: global.analyzer.Typer,universe: global.Tree, mirror: global.Tree, tpe: global.Type, concrete: Boolean = false): global.Tree =
     mkReifier(global)(typer, universe, mirror, tpe, concrete = concrete).reification.asInstanceOf[global.Tree]
 
-  def reifyRuntimeClass(global: Global)(typer0: global.analyzer.Typer, tpe: global.Type, concrete: Boolean = true): global.Tree = {
+  def reifyRuntimeClass(global: Global)(typer0: global.analyzer.Typer, tpe0: global.Type, concrete: Boolean = true): global.Tree = {
     import global._
     import definitions._
     import analyzer.enclosingMacroPosition
+
+    // SI-7375
+    val tpe = tpe0.dealiasWiden
 
     if (tpe.isSpliceable) {
       val classTagInScope = typer0.resolveClassTag(enclosingMacroPosition, tpe, allowMaterialization = false)

@@ -19,11 +19,20 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   import global._
   import definitions._
 
-  /** Builds a fully attributed wildcard import node.
+  /** Builds a fully attributed, synthetic wildcard import node.
    */
-  def mkWildcardImport(pkg: Symbol): Import = {
-    assert(pkg ne null, this)
-    val qual = gen.mkAttributedStableRef(pkg)
+  def mkWildcardImport(pkg: Symbol): Import =
+    mkImportFromSelector(pkg, ImportSelector.wildList)
+
+  /** Builds a fully attributed, synthetic import node.
+    * import `qualSym`.{`name` => `toName`}
+    */
+  def mkImport(qualSym: Symbol, name: Name, toName: Name): Import =
+    mkImportFromSelector(qualSym, ImportSelector(name, 0, toName, 0) :: Nil)
+
+  private def mkImportFromSelector(qualSym: Symbol, selector: List[ImportSelector]): Import = {
+    assert(qualSym ne null, this)
+    val qual = gen.mkAttributedStableRef(qualSym)
     val importSym = (
       NoSymbol
         newImport NoPosition
@@ -31,7 +40,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
           setInfo analyzer.ImportType(qual)
     )
     val importTree = (
-      Import(qual, ImportSelector.wildList)
+      Import(qual, selector)
         setSymbol importSym
           setType NoType
     )
@@ -103,7 +112,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       else AppliedTypeTree(Ident(clazz), targs map TypeTree)
     ))
   }
-  def mkSuperInitCall: Select = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
 
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }
@@ -246,4 +254,52 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       attrThis,
       If(cond, Block(syncBody: _*), EmptyTree)) ::
       stats: _*)
+
+  /** Creates a tree representing new Object { stats }.
+   *  To make sure an anonymous subclass of Object is created,
+   *  if there are no stats, a () is added.
+   */
+  def mkAnonymousNew(stats: List[Tree]): Tree = {
+    val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
+    mkNew(Nil, emptyValDef, stats1, NoPosition, NoPosition)
+  }
+
+  /** Create positioned tree representing an object creation <new parents { stats }
+   *  @param npos  the position of the new
+   *  @param cpos  the position of the anonymous class starting with parents
+   */
+  def mkNew(parents: List[Tree], self: ValDef, stats: List[Tree],
+              npos: Position, cpos: Position): Tree =
+    if (parents.isEmpty)
+      mkNew(List(scalaAnyRefConstr), self, stats, npos, cpos)
+    else if (parents.tail.isEmpty && stats.isEmpty) {
+      // `Parsers.template` no longer differentiates tpts and their argss
+      // e.g. `C()` will be represented as a single tree Apply(Ident(C), Nil)
+      // instead of parents = Ident(C), argss = Nil as before
+      // this change works great for things that are actually templates
+      // but in this degenerate case we need to perform postprocessing
+      val app = treeInfo.dissectApplied(parents.head)
+      atPos(npos union cpos) { New(app.callee, app.argss) }
+    } else {
+      val x = tpnme.ANON_CLASS_NAME
+      atPos(npos union cpos) {
+        Block(
+          List(
+            atPos(cpos) {
+              ClassDef(
+                Modifiers(FINAL), x, Nil,
+                mkTemplate(parents, self, NoMods, ListOfNil, stats, cpos.focus))
+            }),
+          atPos(npos) {
+            New(
+              Ident(x) setPos npos.focus,
+              Nil)
+          }
+        )
+      }
+    }
+
+  def mkSyntheticParam(pname: TermName) =
+    ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
+
 }

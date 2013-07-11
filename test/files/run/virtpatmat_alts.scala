@@ -1,3 +1,6 @@
+/*
+ * filter: It would fail on the following input
+ */
 object Test extends App {
   (true, true) match {
     case (true, true) | (false, false) => 1

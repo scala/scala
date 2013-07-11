@@ -1,6 +1,8 @@
-import scala.actors._, scala.actors.Actor._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors._, scala.actors.Actor._
 
   def main(args: Array[String]) {
     for (i <- 1 to 10) {

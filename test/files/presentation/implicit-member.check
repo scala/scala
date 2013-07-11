@@ -2,41 +2,41 @@ reload: ImplicitMember.scala
 
 askTypeCompletion at ImplicitMember.scala(7,7)
 ================================================================================
-[response] aksTypeCompletion at (7,7)
+[response] askCompletionAt (7,7)
 retrieved 38 members
-[accessible:  true] `class AppliedImplicitImplicit.AppliedImplicit`
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(Implicit.type, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method AppliedImplicit[A](x: A)Implicit.AppliedImplicit[A]`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method clone()Object`
-[accessible:  true] `method ensuring(cond: Boolean)Implicit.type`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)Implicit.type`
-[accessible:  true] `method ensuring(cond: Implicit.type => Boolean)Implicit.type`
-[accessible:  true] `method ensuring(cond: Implicit.type => Boolean, msg: => Any)Implicit.type`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method finalize()Unit`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(Implicit.type, B)`
-[accessible:  true] `value __leftOfArrowImplicit.type`
-[accessible:  true] `value __resultOfEnsuringImplicit.type`
-[accessible:  true] `value __stringToFormatImplicit.type`
-[accessible:  true] `value __thingToAddImplicit.type`
-[accessible:  true] `value xImplicit.type`
+def +(other: String): String
+def ->[B](y: B): (Implicit.type, B)
+def ensuring(cond: Boolean): Implicit.type
+def ensuring(cond: Boolean,msg: => Any): Implicit.type
+def ensuring(cond: Implicit.type => Boolean): Implicit.type
+def ensuring(cond: Implicit.type => Boolean,msg: => Any): Implicit.type
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def toString(): String
+def →[B](y: B): (Implicit.type, B)
+final class AppliedImplicit[A] extends AnyRef
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+implicit def AppliedImplicit[A](x: A): Implicit.AppliedImplicit[A]
+private[this] val __leftOfArrow: Implicit.type
+private[this] val __resultOfEnsuring: Implicit.type
+private[this] val __stringToFormat: Implicit.type
+private[this] val __thingToAdd: Implicit.type
+private[this] val x: Implicit.type
+protected[package lang] def clone(): Object
+protected[package lang] def finalize(): Unit
 ================================================================================

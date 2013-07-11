@@ -3,7 +3,7 @@
  */
 object Test {
   val alphabet = 'a' to 'z' mkString ""
-  val alphaList = 'a' to 'z' toList
+  val alphaList = ('a' to 'z').toList
   def shuffled = util.Random.shuffle(alphaList)
   
   def main(args: Array[String]): Unit = {

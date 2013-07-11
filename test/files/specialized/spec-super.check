@@ -1,3 +1,6 @@
+spec-super.scala:18: warning: class Base must be a trait. Specialized version of class Extended will inherit generic Base[Int]
+class Extended [@specialized(Int) T](t: T) extends Base[T](t) {
+      ^
 s
 1
 2

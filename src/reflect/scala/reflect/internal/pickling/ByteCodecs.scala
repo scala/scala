@@ -5,7 +5,8 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.reflect.internal.pickling
+package scala
+package reflect.internal.pickling
 
 object ByteCodecs {
 
@@ -127,7 +128,7 @@ object ByteCodecs {
     var j = 0
     val dstlen = (srclen * 7 + 7) / 8
     while (i + 7 < srclen) {
-      var out: Int = src(i)
+      var out: Int = src(i).toInt
       var in: Byte = src(i + 1)
       src(j) = (out | (in & 0x01) << 7).toByte
       out = in >>> 1
@@ -152,7 +153,7 @@ object ByteCodecs {
       j += 7
     }
     if (i < srclen) {
-      var out: Int = src(i)
+      var out: Int = src(i).toInt
       if (i + 1 < srclen) {
         var in: Byte = src(i + 1)
         src(j) = (out | (in & 0x01) << 7).toByte; j += 1
@@ -195,10 +196,10 @@ object ByteCodecs {
    *
    * Sometimes returns (length+1) of the decoded array. Example:
    *
-   *   scala> val enc = reflect.generic.ByteCodecs.encode(Array(1,2,3))
+   *   scala> val enc = scala.reflect.generic.ByteCodecs.encode(Array(1,2,3))
    *   enc: Array[Byte] = Array(2, 5, 13, 1)
    *
-   *   scala> reflect.generic.ByteCodecs.decode(enc)
+   *   scala> scala.reflect.generic.ByteCodecs.decode(enc)
    *   res43: Int = 4
    *
    *   scala> enc

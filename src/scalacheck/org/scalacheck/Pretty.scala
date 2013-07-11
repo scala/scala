@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2013 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -96,7 +96,7 @@ object Pretty {
   }
 
   implicit def prettyTestRes(res: Test.Result) = Pretty { prms =>
-    def labels(ls: scala.collection.immutable.Set[String]) =
+    def labels(ls: collection.immutable.Set[String]) =
       if(ls.isEmpty) ""
       else "> Labels of failing property: " / ls.mkString("\n")
     val s = res.status match {

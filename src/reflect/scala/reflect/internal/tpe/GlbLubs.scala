@@ -1,8 +1,10 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 package tpe
 
-import scala.collection.{ mutable }
+import scala.collection.mutable
+import scala.annotation.tailrec
 import util.Statistics
 import Variance._
 
@@ -11,7 +13,7 @@ private[internal] trait GlbLubs {
   import definitions._
   import TypesStats._
 
-  private final val printLubs = sys.props contains "scalac.debug.lub"
+  private final val printLubs = scala.sys.props contains "scalac.debug.lub"
 
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
@@ -86,7 +88,7 @@ private[internal] trait GlbLubs {
       case _ => tp
     }
     // pretypes is a tail-recursion-preserving accumulator.
-    @annotation.tailrec def loop(pretypes: List[Type], tsBts: List[List[Type]]): List[Type] = {
+    @tailrec def loop(pretypes: List[Type], tsBts: List[List[Type]]): List[Type] = {
       lubListDepth += 1
 
       if (tsBts.isEmpty || (tsBts exists typeListIsEmpty)) pretypes.reverse
@@ -123,8 +125,8 @@ private[internal] trait GlbLubs {
           }
           val tails = tsBts map (_.tail)
           mergePrefixAndArgs(elimSub(ts1, depth) map elimHigherOrderTypeParam, Covariant, depth) match {
-            case Some(tp) => loop(tp :: pretypes, tails)
-            case _        => loop(pretypes, tails)
+            case NoType => loop(pretypes, tails)
+            case tp     => loop(tp :: pretypes, tails)
           }
         }
         else {
@@ -214,17 +216,40 @@ private[internal] trait GlbLubs {
     (strippedTypes, quantified)
   }
 
-  def weakLub(ts: List[Type]) =
-    if (ts.nonEmpty && (ts forall isNumericValueType)) (numericLub(ts), true)
-    else if (ts exists typeHasAnnotations)
-      (annotationsLub(lub(ts map (_.withoutAnnotations)), ts), true)
-    else (lub(ts), false)
+  /** Does this set of types have the same weak lub as
+   *  it does regular lub? This is exposed so lub callers
+   *  can discover whether the trees they are typing will
+   *  may require further adaptation. It may return false
+   *  negatives, but it will not return false positives.
+   */
+  def sameWeakLubAsLub(tps: List[Type]) = tps match {
+    case Nil       => true
+    case tp :: Nil => !typeHasAnnotations(tp)
+    case tps       => !(tps exists typeHasAnnotations) && !(tps forall isNumericValueType)
+  }
+
+  /** If the arguments are all numeric value types, the numeric
+   *  lub according to the weak conformance spec. If any argument
+   *  has type annotations, take the lub of the unannotated type
+   *  and call the analyzerPlugin method annotationsLub so it can
+   *  be further altered. Otherwise, the regular lub.
+   */
+  def weakLub(tps: List[Type]): Type = (
+    if (tps.isEmpty)
+      NothingTpe
+    else if (tps forall isNumericValueType)
+      numericLub(tps)
+    else if (tps exists typeHasAnnotations)
+      annotationsLub(lub(tps map (_.withoutAnnotations)), tps)
+    else
+      lub(tps)
+  )
 
   def numericLub(ts: List[Type]) =
     ts reduceLeft ((t1, t2) =>
       if (isNumericSubType(t1, t2)) t2
       else if (isNumericSubType(t2, t1)) t1
-      else IntClass.tpe)
+      else IntTpe)
 
   private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
   private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
@@ -247,9 +272,9 @@ private[internal] trait GlbLubs {
   }
 
   def lub(ts: List[Type]): Type = ts match {
-    case List() => NothingClass.tpe
-    case List(t) => t
-    case _ =>
+    case Nil      => NothingTpe
+    case t :: Nil => t
+    case _        =>
       if (Statistics.canEnable) Statistics.incCounter(lubCount)
       val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {
@@ -276,7 +301,7 @@ private[internal] trait GlbLubs {
   /** The least upper bound wrt <:< of a list of types */
   protected[internal] def lub(ts: List[Type], depth: Int): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
-      case List() => NothingClass.tpe
+      case List() => NothingTpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
@@ -291,12 +316,12 @@ private[internal] trait GlbLubs {
       case ts @ AnnotatedType(annots, tpe, _) :: rest =>
         annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
-        lubResults get (depth, ts) match {
+        lubResults get ((depth, ts)) match {
           case Some(lubType) =>
             lubType
           case None =>
-            lubResults((depth, ts)) = AnyClass.tpe
-            val res = if (depth < 0) AnyClass.tpe else lub1(ts)
+            lubResults((depth, ts)) = AnyTpe
+            val res = if (depth < 0) AnyTpe else lub1(ts)
             lubResults((depth, ts)) = res
             res
         }
@@ -412,7 +437,7 @@ private[internal] trait GlbLubs {
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */
   def glb(ts: List[Type]): Type = elimSuper(ts) match {
-    case List() => AnyClass.tpe
+    case List() => AnyTpe
     case List(t) => t
     case ts0 =>
       if (Statistics.canEnable) Statistics.incCounter(lubCount)
@@ -427,7 +452,7 @@ private[internal] trait GlbLubs {
   }
 
   protected[internal] def glb(ts: List[Type], depth: Int): Type = elimSuper(ts) match {
-    case List() => AnyClass.tpe
+    case List() => AnyTpe
     case List(t) => t
     case ts0 => glbNorm(ts0, depth)
   }
@@ -436,7 +461,7 @@ private[internal] trait GlbLubs {
     *  with regard to `elimSuper`. */
   protected def glbNorm(ts: List[Type], depth: Int): Type = {
     def glb0(ts0: List[Type]): Type = ts0 match {
-      case List() => AnyClass.tpe
+      case List() => AnyTpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
@@ -449,12 +474,12 @@ private[internal] trait GlbLubs {
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
       case ts =>
-        glbResults get (depth, ts) match {
+        glbResults get ((depth, ts)) match {
           case Some(glbType) =>
             glbType
           case _ =>
-            glbResults((depth, ts)) = NothingClass.tpe
-            val res = if (depth < 0) NothingClass.tpe else glb1(ts)
+            glbResults((depth, ts)) = NothingTpe
+            val res = if (depth < 0) NothingTpe else glb1(ts)
             glbResults((depth, ts)) = res
             res
         }
@@ -531,8 +556,8 @@ private[internal] trait GlbLubs {
         existentialAbstraction(tparams, glbType)
       } catch {
         case GlbFailure =>
-          if (ts forall (t => NullClass.tpe <:< t)) NullClass.tpe
-          else NothingClass.tpe
+          if (ts forall (t => NullTpe <:< t)) NullTpe
+          else NothingTpe
       }
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG

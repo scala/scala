@@ -1,1 +1,21 @@
+tcpoly_parseridioms.scala:18: warning: match may not be exhaustive.
+It would fail on the following input: ParseResult()
+        case Success(next, x) => b(next) match {
+                                  ^
+tcpoly_parseridioms.scala:17: warning: match may not be exhaustive.
+It would fail on the following input: ParseResult()
+      def apply(in: Input): ParseResult[Pair[T, U]] = a(in) match {
+                                                       ^
+tcpoly_parseridioms.scala:30: warning: match may not be exhaustive.
+It would fail on the following input: ParseResult()
+      case Failure(_, _) => b(in) match {
+                             ^
+tcpoly_parseridioms.scala:28: warning: match may not be exhaustive.
+It would fail on the following input: ParseResult()
+    def apply(in: Input): ParseResult[T] = a(in) match {
+                                            ^
+tcpoly_parseridioms.scala:39: warning: match may not be exhaustive.
+It would fail on the following input: ParseResult()
+    def apply(in: Input): ParseResult[U] = a(in) match {
+                                            ^
 Success(List(),Plus(1,2))

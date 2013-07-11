@@ -190,50 +190,6 @@ abstract class TreeBuilder {
     }
   }
 
-  /** Creates a tree representing new Object { stats }.
-   *  To make sure an anonymous subclass of Object is created,
-   *  if there are no stats, a () is added.
-   */
-  def makeAnonymousNew(stats: List[Tree]): Tree = {
-    val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
-    makeNew(Nil, emptyValDef, stats1, NoPosition, NoPosition)
-  }
-
-  /** Create positioned tree representing an object creation <new parents { stats }
-   *  @param npos  the position of the new
-   *  @param cpos  the position of the anonymous class starting with parents
-   */
-  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree],
-              npos: Position, cpos: Position): Tree =
-    if (parents.isEmpty)
-      makeNew(List(scalaAnyRefConstr), self, stats, npos, cpos)
-    else if (parents.tail.isEmpty && stats.isEmpty) {
-      // `Parsers.template` no longer differentiates tpts and their argss
-      // e.g. `C()` will be represented as a single tree Apply(Ident(C), Nil)
-      // instead of parents = Ident(C), argss = Nil as before
-      // this change works great for things that are actually templates
-      // but in this degenerate case we need to perform postprocessing
-      val app = treeInfo.dissectApplied(parents.head)
-      atPos(npos union cpos) { New(app.callee, app.argss) }
-    } else {
-      val x = tpnme.ANON_CLASS_NAME
-      atPos(npos union cpos) {
-        Block(
-          List(
-            atPos(cpos) {
-              ClassDef(
-                Modifiers(FINAL), x, Nil,
-                Template(parents, self, NoMods, ListOfNil, stats, cpos.focus))
-            }),
-          atPos(npos) {
-            New(
-              Ident(x) setPos npos.focus,
-              Nil)
-          }
-        )
-      }
-    }
-
   /** Create a tree representing an assignment <lhs = rhs> */
   def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
     case Apply(fn, args) =>
@@ -242,14 +198,25 @@ abstract class TreeBuilder {
       Assign(lhs, rhs)
   }
 
+  /** Tree for `od op`, start is start0 if od.pos is borked. */
+  def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
+    val start = if (od.pos.isDefined) od.pos.startOrPoint else start0
+    atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
+  }
+
   /** A type tree corresponding to (possibly unary) intersection type */
   def makeIntersectionTypeTree(tps: List[Tree]): Tree =
     if (tps.tail.isEmpty) tps.head
     else CompoundTypeTree(Template(tps, emptyValDef, Nil))
 
   /** Create tree representing a while loop */
-  def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
-    val continu = atPos(o2p(body.pos pointOrElse wrappingPos(List(cond, body)).pos.endOrPoint)) { Apply(Ident(lname), Nil) }
+  def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
+    val lname = freshTermName(nme.WHILE_PREFIX)
+    def default = wrappingPos(List(cond, body)) match {
+      case p if p.isDefined => p.endOrPoint
+      case _                => startPos
+    }
+    val continu = atPos(o2p(body.pos pointOrElse default)) { Apply(Ident(lname), Nil) }
     val rhs = If(cond, Block(List(body), continu), Literal(Constant(())))
     LabelDef(lname, Nil, rhs)
   }
@@ -291,9 +258,6 @@ abstract class TreeBuilder {
 
   def makeParam(pname: TermName, tpe: Tree) =
     ValDef(Modifiers(PARAM), pname, tpe, EmptyTree)
-
-  def makeSyntheticParam(pname: TermName) =
-    ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 
   def makeSyntheticTypeParam(pname: TypeName, bounds: Tree) =
     TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, Nil, bounds)
@@ -456,7 +420,7 @@ abstract class TreeBuilder {
     val x   = freshTermName(prefix)
     val id  = Ident(x)
     val sel = if (checkExhaustive) id else gen.mkUnchecked(id)
-    Function(List(makeSyntheticParam(x)), Match(sel, cases))
+    Function(List(gen.mkSyntheticParam(x)), Match(sel, cases))
   }
 
   /** Create tree for case definition <case pat if guard => rhs> */

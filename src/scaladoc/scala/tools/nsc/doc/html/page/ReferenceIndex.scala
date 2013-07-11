@@ -3,10 +3,13 @@
  * @author  Pedro Furlanetto
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 package doc
 package html
 package page
+
 import doc.model._
 
 class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends HtmlPage {

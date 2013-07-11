@@ -7,12 +7,13 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
 import scala.annotation.migration
-import parallel.mutable.ParMap
+import scala.collection.parallel.mutable.ParMap
 
 /** A template trait for mutable maps.
  *  $mapNote

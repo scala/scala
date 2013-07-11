@@ -87,12 +87,4 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
     case DocDef(_, definition) => isPureDef(definition)
     case _ => super.isPureDef(tree)
   }
-
- /** Does list of trees start with a definition of
-   *  a class of module with given name (ignoring imports)
-   */
-  override def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
-    case ClassDef(_, `name`, _, _) :: Nil => true
-    case _ => super.firstDefinesClassOrObject(trees, name)
-  }
 }

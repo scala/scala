@@ -606,6 +606,8 @@ object Long extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxToLong`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+   *
    *  @param  x   the Long to be boxed
    *  @return     a java.lang.Long offering `x` as its underlying value.
    */
@@ -614,6 +616,8 @@ object Long extends AnyValCompanion {
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Long.
+   *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxToLong`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
    *
    *  @param  x   the java.lang.Long to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Long

@@ -12,7 +12,10 @@ package scala.swing
 
 object Orientable {
   trait Wrapper extends Oriented.Wrapper with Orientable {
-    def orientation_=(o: Orientation.Value) { peer.setOrientation(o.id) }
+    def orientation_=(o: Orientation.Value) {
+      import scala.language.reflectiveCalls
+      peer.setOrientation(o.id)
+    }
   }
 }
 

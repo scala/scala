@@ -1,3 +1,6 @@
+
+import scala.language.reflectiveCalls
+
 object Test extends App {
   val str = "ABCDEFGHIJKLMABCDEFGHIJKLM"
   val surrogateStr = "an old Turkic letter: \uD803\uDC22"
@@ -33,8 +36,8 @@ object Test extends App {
   sameAnswers(_.lastIndexOf("KLM", 22))
   
   // testing that the "reverse" implementation avoids reversing surrogate pairs
-  val jsb = new JavaStringBuilder(surrogateStr) reverse
-  val ssb = new ScalaStringBuilder(surrogateStr) reverseContents ;
+  val jsb = new JavaStringBuilder(surrogateStr).reverse
+  val ssb = new ScalaStringBuilder(surrogateStr).reverseContents
   
   assert(jsb.toString == ssb.toString)
 }

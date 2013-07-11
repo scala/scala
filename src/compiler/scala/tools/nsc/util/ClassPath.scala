@@ -281,11 +281,24 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
   private def traverse() = {
     val classBuf   = immutable.Vector.newBuilder[ClassRep]
     val packageBuf = immutable.Vector.newBuilder[DirectoryClassPath]
-    dir foreach { f =>
-      if (!f.isDirectory && validClassFile(f.name))
-        classBuf += ClassRep(Some(f), None)
-      else if (f.isDirectory && validPackage(f.name))
-        packageBuf += new DirectoryClassPath(f, context)
+    dir foreach {
+      f =>
+        // Optimization: We assume the file was not changed since `dir` called
+        // `Path.apply` and categorized existent files as `Directory`
+        // or `File`.
+        val isDirectory = f match {
+          case pf: io.PlainFile => pf.givenPath match {
+            case _: io.Directory => true
+            case _: io.File      => false
+            case _               => f.isDirectory
+          }
+          case _ =>
+            f.isDirectory
+        }
+        if (!isDirectory && validClassFile(f.name))
+          classBuf += ClassRep(Some(f), None)
+        else if (isDirectory && validPackage(f.name))
+          packageBuf += new DirectoryClassPath(f, context)
     }
     (packageBuf.result(), classBuf.result())
   }

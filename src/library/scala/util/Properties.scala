@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.util
+package scala
+package util
 
 import java.io.{ IOException, PrintWriter }
 import java.util.jar.Attributes.{ Name => AttributeName }
@@ -59,6 +60,8 @@ private[scala] trait PropertiesTrait {
   def envOrElse(name: String, alt: String)      = Option(System getenv name) getOrElse alt
   def envOrNone(name: String)                   = Option(System getenv name)
 
+  def envOrSome(name: String, alt: Option[String])       = envOrNone(name) orElse alt
+
   // for values based on propFilename
   def scalaPropOrElse(name: String, alt: String): String = scalaProps.getProperty(name, alt)
   def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
@@ -72,7 +75,7 @@ private[scala] trait PropertiesTrait {
    *  it is an RC, Beta, etc. or was built from source, or if the version
    *  cannot be read.
    */
-  val releaseVersion = 
+  val releaseVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if !(v endsWith "-SNAPSHOT")
@@ -86,7 +89,7 @@ private[scala] trait PropertiesTrait {
    *  @return Some(version) if this is a non-final version, None if this
    *  is a final release or the version cannot be read.
    */
-  val developmentVersion = 
+  val developmentVersion =
     for {
       v <- scalaPropOrNone("maven.version.number")
       if v endsWith "-SNAPSHOT"
@@ -119,8 +122,7 @@ private[scala] trait PropertiesTrait {
    */
   def lineSeparator         = propOrElse("line.separator", "\n")
 
-  /** Various well-known properties.
-   */
+  /* Various well-known properties. */
   def javaClassPath         = propOrEmpty("java.class.path")
   def javaHome              = propOrEmpty("java.home")
   def javaVendor            = propOrEmpty("java.vendor")
@@ -136,10 +138,16 @@ private[scala] trait PropertiesTrait {
   def userHome              = propOrEmpty("user.home")
   def userName              = propOrEmpty("user.name")
 
-  /** Some derived values.
-   */
+  /* Some derived values. */
+  /** Returns `true` iff the underlying operating system is a version of Microsoft Windows. */
   def isWin                 = osName startsWith "Windows"
-  def isMac                 = javaVendor startsWith "Apple"
+  // See http://mail.openjdk.java.net/pipermail/macosx-port-dev/2012-November/005148.html for
+  // the reason why we don't follow developer.apple.com/library/mac/#technotes/tn2002/tn2110.
+  /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
+  def isMac                 = osName startsWith "Mac OS X" 
+
+  /* Some runtime values. */
+  private[scala] def isAvian = javaVmName contains "Avian"
 
   // This is looking for javac, tools.jar, etc.
   // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,

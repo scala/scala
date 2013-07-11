@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package generic
 
 import mutable.Builder
@@ -73,11 +74,20 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
   /** Converts this $coll of pairs into two collections of the first and second
    *  half of each pair.
    *
+   *    {{{
+   *    val xs = $Coll(
+   *               (1, "one"),
+   *               (2, "two"),
+   *               (3, "three")).unzip
+   *    // xs == ($Coll(1, 2, 3),
+   *    //        $Coll(one, two, three))
+   *    }}}
+   *
    *  @tparam A1    the type of the first half of the element pairs
    *  @tparam A2    the type of the second half of the element pairs
    *  @param asPair an implicit conversion which asserts that the element type
    *                of this $coll is a pair.
-   *  @return       a pair ${coll}s, containing the first, respectively second
+   *  @return       a pair of ${coll}s, containing the first, respectively second
    *                half of each element pair of this $coll.
    */
   def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
@@ -94,12 +104,22 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
   /** Converts this $coll of triples into three collections of the first, second,
    *  and third element of each triple.
    *
+   *    {{{
+   *    val xs = $Coll(
+   *               (1, "one", '1'),
+   *               (2, "two", '2'),
+   *               (3, "three", '3')).unzip3
+   *    // xs == ($Coll(1, 2, 3),
+   *    //        $Coll(one, two, three),
+   *    //        $Coll(1, 2, 3))
+   *    }}}
+   *
    *  @tparam A1       the type of the first member of the element triples
    *  @tparam A2       the type of the second member of the element triples
    *  @tparam A3       the type of the third member of the element triples
    *  @param asTriple  an implicit conversion which asserts that the element type
    *                   of this $coll is a triple.
-   *  @return          a triple ${coll}s, containing the first, second, respectively
+   *  @return          a triple of ${coll}s, containing the first, second, respectively
    *                   third member of each element triple of this $coll.
    */
   def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
@@ -133,10 +153,16 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
    *    static type of $coll. For example:
    *
    *    {{{
-   *    val xs = List(Set(1, 2, 3), Set(1, 2, 3))
+   *    val xs = List(
+   *               Set(1, 2, 3),
+   *               Set(1, 2, 3)
+   *             ).flatten
    *    // xs == List(1, 2, 3, 1, 2, 3)
    *
-   *    val ys = Set(List(1, 2, 3), List(3, 2, 1))
+   *    val ys = Set(
+   *               List(1, 2, 3),
+   *               List(3, 2, 1)
+   *             ).flatten
    *    // ys == Set(1, 2, 3)
    *    }}}
    */
@@ -149,6 +175,27 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
 
   /** Transposes this $coll of traversable collections into
    *  a $coll of ${coll}s.
+   *
+   *    The resulting collection's type will be guided by the
+   *    static type of $coll. For example:
+   *
+   *    {{{
+   *    val xs = List(
+   *               Set(1, 2, 3),
+   *               Set(4, 5, 6)).transpose
+   *    // xs == List(
+   *    //         List(1, 4),
+   *    //         List(2, 5),
+   *    //         List(3, 6))
+   *
+   *    val ys = Vector(
+   *               List(1, 2, 3),
+   *               List(4, 5, 6)).transpose
+   *    // ys == Vector(
+   *    //         Vector(1, 4),
+   *    //         Vector(2, 5),
+   *    //         Vector(3, 6))
+   *    }}}
    *
    *  @tparam B the type of the elements of each traversable collection.
    *  @param  asTraversable an implicit conversion which asserts that the

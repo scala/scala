@@ -3,7 +3,7 @@ import scala.reflect.macros.Context
 object Macros {
   def impl(c: Context) = {
     import c.universe._
-    val Apply(fun, args) = c.enclosingImplicits(0)._2
+    val Apply(fun, args) = c.enclosingImplicits(0).tree
     val fileName = fun.pos.source.file.file.getName
     val line = fun.pos.line
     val charOffset = fun.pos.point

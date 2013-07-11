@@ -1,10 +1,11 @@
 import java.io.StringReader
 import org.xml.sax.InputSource
 
-import scala.util.logging._
 import scala.xml._
 
 object Test extends App {
+  def Elem(prefix: String, label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*): Elem =
+    scala.xml.Elem.apply(prefix, label, attributes, scope, minimizeEmpty = true, child: _*)
   val e:  scala.xml.MetaData         = Null  //Node.NoAttributes
   val sc: scala.xml.NamespaceBinding = TopScope
 

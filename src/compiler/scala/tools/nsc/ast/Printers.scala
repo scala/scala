@@ -42,7 +42,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     }
   }
 
-  // overflow cases missing from TreePrinter in reflect.api
+  // overflow cases missing from TreePrinter in scala.reflect.api
   override def xprintTree(treePrinter: super.TreePrinter, tree: Tree) = tree match {
     case DocDef(comment, definition) =>
       treePrinter.print(comment.raw)

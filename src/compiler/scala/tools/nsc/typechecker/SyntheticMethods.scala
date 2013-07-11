@@ -9,6 +9,7 @@ package typechecker
 import scala.collection.{ mutable, immutable }
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 /** Synthetic method implementations for case classes and case objects.
  *
@@ -94,12 +95,12 @@ trait SyntheticMethods extends ast.TreeDSL {
     // which they shouldn't.
     val accessorLub  = (
       if (settings.Xexperimental) {
-        global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
+        global.weakLub(accessors map (_.tpe.finalResultType)) match {
           case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
           case tp                                            => tp
         }
       }
-      else AnyClass.tpe
+      else AnyTpe
     )
 
     def forwardToRuntime(method: Symbol): Tree =
@@ -130,7 +131,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree =
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
-    // def productElementNameMethod = perElementMethod(nme.productElementName, StringClass.tpe)(x => LIT(x.name.toString))
+    // def productElementNameMethod = perElementMethod(nme.productElementName, StringTpe)(x => LIT(x.name.toString))
 
     var syntheticCanEqual = false
 
@@ -139,7 +140,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      */
     def canEqualMethod: Tree = {
       syntheticCanEqual = true
-      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m =>
+      createMethod(nme.canEqual_, List(AnyTpe), BooleanTpe)(m =>
         Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
     }
 
@@ -199,7 +200,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      *      }
      *   }
      */
-    def equalsCaseClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
+    def equalsCaseClassMethod: Tree = createMethod(nme.equals_, List(AnyTpe), BooleanTpe) { m =>
       if (accessors.isEmpty)
         if (clazz.isFinal) thatTest(m)
         else thatTest(m) AND ((thatCast(m) DOT nme.canEqual_)(mkThis))
@@ -213,14 +214,14 @@ trait SyntheticMethods extends ast.TreeDSL {
      *    val x$1 = that.asInstanceOf[this.C]
      *    (this.underlying == that.underlying
      */
-    def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
+    def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyTpe), BooleanTpe) { m =>
       equalsCore(m, List(clazz.derivedValueClassUnbox))
     }
 
     /* The hashcode method for value classes
      * def hashCode(): Int = this.underlying.hashCode
      */
-    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
+    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { m =>
       Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
     }
 
@@ -253,19 +254,20 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def hashcodeImplementation(sym: Symbol): Tree = {
       sym.tpe.finalResultType.typeSymbol match {
-        case UnitClass | NullClass                         => Literal(Constant(0))
-        case BooleanClass                                  => If(Ident(sym), Literal(Constant(1231)), Literal(Constant(1237)))
-        case IntClass | ShortClass | ByteClass | CharClass => Ident(sym)
-        case LongClass                                     => callStaticsMethod("longHash")(Ident(sym))
-        case DoubleClass                                   => callStaticsMethod("doubleHash")(Ident(sym))
-        case FloatClass                                    => callStaticsMethod("floatHash")(Ident(sym))
-        case _                                             => callStaticsMethod("anyHash")(Ident(sym))
+        case UnitClass | NullClass              => Literal(Constant(0))
+        case BooleanClass                       => If(Ident(sym), Literal(Constant(1231)), Literal(Constant(1237)))
+        case IntClass                           => Ident(sym)
+        case ShortClass | ByteClass | CharClass => Select(Ident(sym), nme.toInt)
+        case LongClass                          => callStaticsMethod("longHash")(Ident(sym))
+        case DoubleClass                        => callStaticsMethod("doubleHash")(Ident(sym))
+        case FloatClass                         => callStaticsMethod("floatHash")(Ident(sym))
+        case _                                  => callStaticsMethod("anyHash")(Ident(sym))
       }
     }
 
     def specializedHashcode = {
-      createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
-        val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntClass.tpe
+      createMethod(nme.hashCode_, Nil, IntTpe) { m =>
+        val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntTpe
         val valdef      = ValDef(accumulator, Literal(Constant(0xcafebabe)))
         val mixes       = accessors map (acc =>
           Assign(
@@ -336,11 +338,13 @@ trait SyntheticMethods extends ast.TreeDSL {
         def shouldGenerate(m: Symbol) = {
           !hasOverridingImplementation(m) || {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
-              if (settings.lint) {
-                (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
-                  currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
-                }
-              }
+              // Without a means to suppress this warning, I've thought better of it.
+              //
+              // if (settings.lint) {
+              //   (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
+              //     currentUnit.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+              //   }
+              // }
               true
             }
           }
@@ -353,7 +357,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           // This method should be generated as private, but apparently if it is, then
           // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
           // For sure special methods like "readResolve" should not be mangled.
-          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
+          List(createMethod(nme.readResolve, Nil, ObjectTpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
         }
         else Nil
       )

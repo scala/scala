@@ -30,9 +30,8 @@ trait Plugins {
     val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map injectDefault map Path.apply
     val maybes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
     val (goods, errors) = maybes partition (_.isSuccess)
-    errors foreach (_ recover {
-      case e: Exception => inform(e.getMessage)
-    })
+    // Explicit parameterization of recover to suppress -Xlint warning about inferred Any
+    errors foreach (_.recover[Any] { case e: Exception => inform(e.getMessage) })
     val classes = goods map (_.get)  // flatten
 
     // Each plugin must only be instantiated once. A common pattern

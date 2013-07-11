@@ -16,21 +16,18 @@ private[tests] trait CoreTestDefs
     extends PresentationCompilerTestDef
     with AskCompletionAt {
 
-    def memberPrinter(member: compiler.Member): String =
-        "[accessible: %5s] ".format(member.accessible) + "`" + (member.sym.toString.trim + member.tpe.toString()).trim + "`"
-
     override def runTest() {
       askAllSources(CompletionMarker) { pos =>
         askCompletionAt(pos)
       } { (pos, members) =>
         withResponseDelimiter {
-          reporter.println("[response] aksTypeCompletion at " + format(pos))
+          reporter.println("[response] askCompletionAt " + format(pos))
           // we skip getClass because it changed signature between 1.5 and 1.6, so there is no
           // universal check file that we can provide for this to work
           reporter.println("retrieved %d members".format(members.size))
           compiler ask { () =>
             val filtered = members.filterNot(member => (member.sym.name string_== "getClass") || member.sym.isConstructor)
-            reporter.println(filtered.map(memberPrinter).sortBy(_.toString()).mkString("\n"))
+            reporter println (filtered.map(_.forceInfoString).sorted mkString "\n")
           }
         }
       }
@@ -48,7 +45,7 @@ private[tests] trait CoreTestDefs
         askTypeAt(pos)
       } { (pos, tree) =>
         withResponseDelimiter {
-          reporter.println("[response] askTypeAt at " + format(pos))
+          reporter.println("[response] askTypeAt " + format(pos))
           compiler.ask(() => reporter.println(tree))
         }
       }

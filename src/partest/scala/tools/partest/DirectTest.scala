@@ -6,8 +6,10 @@
 package scala.tools.partest
 
 import scala.tools.nsc._
-import util.{BatchSourceFile, CommandLineParser}
+import settings.ScalaVersion
+import util.{ SourceFile, BatchSourceFile }
 import reporters.{Reporter, ConsoleReporter}
+import scala.tools.cmd.CommandLineParser
 
 /** A class for testing code which is embedded as a string.
  *  It allows for more complete control over settings, compiler
@@ -45,18 +47,32 @@ abstract class DirectTest extends App {
 
   def reporter(settings: Settings): Reporter = new ConsoleReporter(settings)
 
-  def newSources(sourceCodes: String*) = sourceCodes.toList.zipWithIndex map {
-    case (src, idx) => new BatchSourceFile("newSource" + (idx + 1), src)
-  }
+  private def newSourcesWithExtension(ext: String)(codes: String*): List[BatchSourceFile] =
+    codes.toList.zipWithIndex map {
+      case (src, idx) => new BatchSourceFile(s"newSource${idx + 1}.$ext", src)
+    }
+
+  def newJavaSources(codes: String*) = newSourcesWithExtension("java")(codes: _*)
+  def newSources(codes: String*)     = newSourcesWithExtension("scala")(codes: _*)
+
   def compileString(global: Global)(sourceCode: String): Boolean = {
     withRun(global)(_ compileSources newSources(sourceCode))
     !global.reporter.hasErrors
   }
-  def compilationUnits(global: Global)(sourceCodes: String*): List[global.CompilationUnit] = {
-    val units = withRun(global) { run =>
-      run compileSources newSources(sourceCodes: _*)
+
+  def javaCompilationUnits(global: Global)(sourceCodes: String*) = {
+    sourceFilesToCompiledUnits(global)(newJavaSources(sourceCodes: _*))
+  }
+
+  def sourceFilesToCompiledUnits(global: Global)(files: List[SourceFile]) = {
+    withRun(global) { run =>
+      run compileSources files
       run.units.toList
     }
+  }
+
+  def compilationUnits(global: Global)(sourceCodes: String*): List[global.CompilationUnit] = {
+    val units = sourceFilesToCompiledUnits(global)(newSources(sourceCodes: _*))
     if (global.reporter.hasErrors) {
       global.reporter.flush()
       sys.error("Compilation failure.")
@@ -82,5 +98,31 @@ abstract class DirectTest extends App {
 
   final def log(msg: => Any) {
     if (isDebug) Console.err println msg
+  }
+
+  /**
+   * Run a test only if the current java version is at least the version specified.
+   */
+  def testUnderJavaAtLeast[A](version: String)(yesRun: =>A) = new TestUnderJavaAtLeast(version, { yesRun })
+
+  class TestUnderJavaAtLeast[A](version: String, yesRun: => A) {
+    val javaVersion = System.getProperty("java.specification.version")
+
+    // the "ScalaVersion" class parses Java specification versions just fine
+    val requiredJavaVersion = ScalaVersion(version)
+    val executingJavaVersion = ScalaVersion(javaVersion)
+    val shouldRun = executingJavaVersion >= requiredJavaVersion
+    val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
+
+    def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
+ 
+   /*
+    * If the current java version is at least 'version' then 'yesRun' is evaluated
+    * otherwise 'fallback' is 
+    */
+    def otherwise(fallback: =>A): A = {
+      logInfo()
+      if (shouldRun) yesRun else fallback
+    }
   }
 }

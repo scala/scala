@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel.mutable
+package scala
+package collection.parallel.mutable
 
 
 

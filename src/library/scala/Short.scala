@@ -606,6 +606,8 @@ object Short extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxToShort`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+   *
    *  @param  x   the Short to be boxed
    *  @return     a java.lang.Short offering `x` as its underlying value.
    */
@@ -614,6 +616,8 @@ object Short extends AnyValCompanion {
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Short.
+   *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxToShort`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
    *
    *  @param  x   the java.lang.Short to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Short

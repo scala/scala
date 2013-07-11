@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 package tpe
 
@@ -87,8 +88,8 @@ private[internal] trait TypeConstraints {
   /** @PP: Unable to see why these apparently constant types should need vals
     *  in every TypeConstraint, I lifted them out.
     */
-  private lazy val numericLoBound = IntClass.tpe
-  private lazy val numericHiBound = intersectionType(List(ByteClass.tpe, CharClass.tpe), ScalaPackageClass)
+  private lazy val numericLoBound = IntTpe
+  private lazy val numericHiBound = intersectionType(List(ByteTpe, CharTpe), ScalaPackageClass)
 
   /** A class expressing upper and lower bounds constraints of type variables,
     * as well as their instantiations.

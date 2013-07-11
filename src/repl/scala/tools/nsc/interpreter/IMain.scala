@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interpreter
 
 import Predef.{ println => _, _ }
@@ -29,6 +30,7 @@ import java.util.concurrent.Future
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import StdReplTags._
+import scala.language.implicitConversions
 
 /** An interpreter for Scala code.
  *
@@ -555,7 +557,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   @throws(classOf[ScriptException])
   def compile(script: String): CompiledScript = {
     if (!bound) {
-      quietBind("engine", this.asInstanceOf[ScriptEngine])
+      quietBind("engine" -> this.asInstanceOf[ScriptEngine])
       bound = true
     }
     val cat = code + script
@@ -595,11 +597,19 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private class WrappedRequest(val req: Request) extends CompiledScript {
     var recorded = false
 
+    /** In Java we would have to wrap any checked exception in the declared
+     *  ScriptException. Runtime exceptions and errors would be ok and would
+     *  not need to be caught. So let us do the same in Scala : catch and
+     *  wrap any checked exception, and let runtime exceptions and errors
+     *  escape. We could have wrapped runtime exceptions just like other
+     *  exceptions in ScriptException, this is a choice.
+     */
     @throws(classOf[ScriptException])
     def eval(context: ScriptContext): Object = {
       val result = req.lineRep.evalEither match {
+        case Left(e: RuntimeException) => throw e
         case Left(e: Exception) => throw new ScriptException(e)
-        case Left(_) => throw new ScriptException("run-time error")
+        case Left(e) => throw e
         case Right(result) => result.asInstanceOf[Object]
       }
       if (!recorded) {
@@ -897,7 +907,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       val preamble = """
       |object %s {
       |  %s
-      |  val %s: String = %s {
+      |  lazy val %s: String = %s {
       |    %s
       |    (""
       """.stripMargin.format(

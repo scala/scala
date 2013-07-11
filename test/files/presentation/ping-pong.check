@@ -2,101 +2,101 @@ reload: PingPong.scala
 
 askTypeCompletion at PingPong.scala(10,23)
 ================================================================================
-[response] aksTypeCompletion at (10,23)
+[response] askCompletionAt (10,23)
 retrieved 39 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(Pong, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method ensuring(cond: Boolean)Pong`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)Pong`
-[accessible:  true] `method ensuring(cond: Pong => Boolean)Pong`
-[accessible:  true] `method ensuring(cond: Pong => Boolean, msg: => Any)Pong`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method poke()Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(Pong, B)`
-[accessible:  true] `value __leftOfArrowPong`
-[accessible:  true] `value __resultOfEnsuringPong`
-[accessible:  true] `value __stringToFormatPong`
-[accessible:  true] `value __thingToAddPong`
-[accessible:  true] `value nameString`
-[accessible: false] `method clone()Object`
-[accessible: false] `method finalize()Unit`
-[accessible: false] `value pingPing`
+[inaccessible] private[this] val ping: Ping
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (Pong, B)
+def ensuring(cond: Boolean): Pong
+def ensuring(cond: Boolean,msg: => Any): Pong
+def ensuring(cond: Pong => Boolean): Pong
+def ensuring(cond: Pong => Boolean,msg: => Any): Pong
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def poke(): Unit
+def →[B](y: B): (Pong, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+override def toString(): String
+private[this] val __leftOfArrow: Pong
+private[this] val __resultOfEnsuring: Pong
+private[this] val __stringToFormat: Pong
+private[this] val __thingToAdd: Pong
+private[this] val name: String
 ================================================================================
 
 askTypeCompletion at PingPong.scala(19,20)
 ================================================================================
-[response] aksTypeCompletion at (19,20)
+[response] askCompletionAt (19,20)
 retrieved 39 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(Ping, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method ensuring(cond: Boolean)Ping`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)Ping`
-[accessible:  true] `method ensuring(cond: Ping => Boolean)Ping`
-[accessible:  true] `method ensuring(cond: Ping => Boolean, msg: => Any)Ping`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method loop=> Unit`
-[accessible:  true] `method name=> String`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method poke=> Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(Ping, B)`
-[accessible:  true] `value __leftOfArrowPing`
-[accessible:  true] `value __resultOfEnsuringPing`
-[accessible:  true] `value __stringToFormatPing`
-[accessible:  true] `value __thingToAddPing`
-[accessible:  true] `value pongPong`
-[accessible: false] `method clone()Object`
-[accessible: false] `method finalize()Unit`
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (Ping, B)
+def ensuring(cond: Boolean): Ping
+def ensuring(cond: Boolean,msg: => Any): Ping
+def ensuring(cond: Ping => Boolean): Ping
+def ensuring(cond: Ping => Boolean,msg: => Any): Ping
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def loop: Unit
+def name: String
+def poke: Unit
+def →[B](y: B): (Ping, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+override def toString(): String
+private[this] val __leftOfArrow: Ping
+private[this] val __resultOfEnsuring: Ping
+private[this] val __stringToFormat: Ping
+private[this] val __thingToAdd: Ping
+private[this] val pong: Pong
 ================================================================================
 
 askType at PingPong.scala(8,10)
 ================================================================================
-[response] askTypeAt at (8,10)
+[response] askTypeAt (8,10)
 def loop: Unit = Ping.this.poke()
 ================================================================================
 
 askType at PingPong.scala(10,10)
 ================================================================================
-[response] askTypeAt at (10,10)
+[response] askTypeAt (10,10)
 def poke: Unit = Ping.this.pong.poke()
 ================================================================================
 
 askType at PingPong.scala(17,10)
 ================================================================================
-[response] askTypeAt at (17,10)
+[response] askTypeAt (17,10)
 private[this] val name: String = "pong"
 ================================================================================

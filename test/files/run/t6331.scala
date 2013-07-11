@@ -1,9 +1,4 @@
-import scala.tools.partest._
-import java.io._
-import scala.tools.nsc._
-import scala.tools.nsc.util.CommandLineParser
-import scala.tools.nsc.{Global, Settings, CompilerCommand}
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.partest.DirectTest
 
 // Test of Constant#equals, which must must account for floating point intricacies.
 object Test extends DirectTest {

@@ -15,7 +15,6 @@ import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil,
 import scala.collection.generic.{ Sorted }
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
-import scala.xml.{ Node, MetaData }
 import java.lang.{ Class => jClass }
 
 import java.lang.Double.doubleToLongBits
@@ -268,11 +267,10 @@ object ScalaRunTime {
     }
     def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
     def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
+    def isXmlClass(x: AnyRef)           = packageOf(x) startsWith "scala.xml."
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
-      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
-      case _: Node | _: MetaData => true
       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
@@ -281,10 +279,11 @@ object ScalaRunTime {
       case _: StringLike[_] => true
       // Don't want to evaluate any elements in a view
       case _: TraversableView[_, _] => true
+      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData] -> catch those and more by isXmlClass(x)
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x)
+      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlClass(x)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }
@@ -349,5 +348,18 @@ object ScalaRunTime {
         (new Exception).getStackTrace.drop(2).take(10).foreach(println)
       }
     }
+  }
+
+  def box[T](clazz: jClass[T]): jClass[_] = clazz match {
+    case java.lang.Byte.TYPE => classOf[java.lang.Byte]
+    case java.lang.Short.TYPE => classOf[java.lang.Short]
+    case java.lang.Character.TYPE => classOf[java.lang.Character]
+    case java.lang.Integer.TYPE => classOf[java.lang.Integer]
+    case java.lang.Long.TYPE => classOf[java.lang.Long]
+    case java.lang.Float.TYPE => classOf[java.lang.Float]
+    case java.lang.Double.TYPE => classOf[java.lang.Double]
+    case java.lang.Void.TYPE => classOf[scala.runtime.BoxedUnit]
+    case java.lang.Boolean.TYPE => classOf[java.lang.Boolean]
+    case _ => clazz
   }
 }

@@ -1,0 +1,7 @@
+t6138.scala:4: error: ambiguous reference to overloaded definition,
+both method getClass in object definitions of type (s: Int)Any
+and  method getClass in object definitions of type (s: String)Any
+match argument types (Nothing)
+  getClass(???): String
+  ^
+one error found

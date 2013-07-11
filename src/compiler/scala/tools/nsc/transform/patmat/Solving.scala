@@ -8,6 +8,7 @@ package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
+import scala.language.postfixOps
 
 // naive CNF translation and simple DPLL solver
 trait Solving extends Logic {

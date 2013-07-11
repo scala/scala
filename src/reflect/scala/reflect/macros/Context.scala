@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 // todo. introduce context hierarchy

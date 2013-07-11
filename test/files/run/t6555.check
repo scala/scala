@@ -1,4 +1,4 @@
-[[syntax trees at end of                specialize]] // newSource1
+[[syntax trees at end of                specialize]] // newSource1.scala
 package <empty> {
   class Foo extends Object {
     def <init>(): Foo = {

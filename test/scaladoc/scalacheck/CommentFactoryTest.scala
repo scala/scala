@@ -25,10 +25,10 @@ class Factory(val g: Global, val s: doc.Settings)
   }
 
   def parseComment(s: String): Option[Inline] =
-    strip(parse(s, "", scala.tools.nsc.util.NoPosition))
+    strip(parse(s, "", scala.tools.nsc.util.NoPosition, null))
 
   def createBody(s: String) =
-    parse(s, "", scala.tools.nsc.util.NoPosition).body
+    parse(s, "", scala.tools.nsc.util.NoPosition, null).body
 }
 
 object Test extends Properties("CommentFactory") {
@@ -45,7 +45,7 @@ object Test extends Properties("CommentFactory") {
       with MemberLookup)
   }
 
-  def parse(src: String, dst: Inline) = {
+  def parse(src: String, dst: Inline): Boolean = {
     factory.parseComment(src) match {
         case Some(inline) =>
           inline == dst

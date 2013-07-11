@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 package process
 
 import processInternal._
@@ -161,21 +162,29 @@ object BasicIO {
     */
   def processFully(processLine: String => Unit): InputStream => Unit = in => {
     val reader = new BufferedReader(new InputStreamReader(in))
-    processLinesFully(processLine)(reader.readLine)
-    reader.close()
+    try processLinesFully(processLine)(reader.readLine)
+    finally reader.close()
   }
 
   /** Calls `processLine` with the result of `readLine` until the latter returns
-    * `null`.
-    */
+   *  `null` or the current thread is interrupted.
+   */
   def processLinesFully(processLine: String => Unit)(readLine: () => String) {
-    def readFully() {
-      val line = readLine()
-      if (line != null) {
-        processLine(line)
-        readFully()
+    def working = (Thread.currentThread.isInterrupted == false)
+    def halting = { Thread.currentThread.interrupt(); null }
+    def readFully(): Unit =
+      if (working) {
+        val line =
+          try readLine()
+          catch {
+            case _: InterruptedException    => halting
+            case e: IOException if !working => halting
+          }
+        if (line != null) {
+          processLine(line)
+          readFully()
+        }
       }
-    }
     readFully()
   }
 

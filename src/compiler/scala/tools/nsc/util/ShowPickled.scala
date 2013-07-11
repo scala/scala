@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools
+package scala
+package tools
 package nsc
 package util
 
@@ -107,7 +108,7 @@ object ShowPickled extends Names {
     var result = 0L
     var b = 0L
     do {
-      b = data(idx)
+      b = data(idx).toLong
       idx += 1
       result = (result << 7) + (b & 0x7f)
     } while((b & 0x80) != 0L)

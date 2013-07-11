@@ -104,8 +104,15 @@ abstract class SymbolLoaders {
     val clazz = enterClass(root, name, completer)
     val module = enterModule(root, name, completer)
     if (!clazz.isAnonymousClass) {
-      assert(clazz.companionModule == module, module)
-      assert(module.companionClass == clazz, clazz)
+      // Diagnostic for SI-7147
+      def msg: String = {
+        def symLocation(sym: Symbol) = if (sym == null) "null" else s"${clazz.fullLocationString} (from ${clazz.associatedFile})"
+        sm"""Inconsistent class/module symbol pair for `$name` loaded from ${symLocation(root)}.
+            |clazz = ${symLocation(clazz)}; clazz.companionModule = ${clazz.companionModule}
+            |module = ${symLocation(module)}; module.companionClass = ${module.companionClass}"""
+      }
+      assert(clazz.companionModule == module, msg)
+      assert(module.companionClass == clazz, msg)
     }
   }
 
@@ -237,9 +244,9 @@ abstract class SymbolLoaders {
   }
 
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
-    private object classfileParser extends ClassfileParser {
+    private object classfileParser extends {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
-    }
+    } with ClassfileParser
 
     protected def description = "class file "+ classfile.toString
 

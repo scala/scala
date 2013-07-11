@@ -49,13 +49,6 @@ trait MemberLookup extends base.MemberLookupBase {
       settings.extUrlMapping get path map { url =>
         LinkToExternal(name, url + "#" + name)
       }
-    } orElse {
-      // Deprecated option.
-      settings.extUrlPackageMapping find {
-        case (pkg, _) => name startsWith pkg
-      } map {
-        case (_, url) => LinkToExternal(name, url + "#" + name)
-      }
     }
   }
 

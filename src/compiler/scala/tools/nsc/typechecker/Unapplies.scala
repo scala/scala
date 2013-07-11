@@ -33,12 +33,13 @@ trait Unapplies extends ast.TreeDSL
   /** returns type list for return type of the extraction
    * @see extractorFormalTypes
    */
-  def unapplyTypeList(pos: Position, ufn: Symbol, ufntpe: Type, nbSubPats: Int) = {
+  def unapplyTypeList(pos: Position, ufn: Symbol, ufntpe: Type, args: List[Tree]) = {
     assert(ufn.isMethod, ufn)
+    val nbSubPats = args.length
     //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
     ufn.name match {
       case nme.unapply | nme.unapplySeq =>
-        val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn)
+        val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn, treeInfo.effectivePatternArity(args))
         if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
         else formals
       case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
@@ -50,6 +51,14 @@ trait Unapplies extends ast.TreeDSL
     case NoSymbol => tp member nme.unapplySeq
     case unapp    => unapp
   }
+
+  object ExtractorType {
+    def unapply(tp: Type): Option[Symbol] = {
+      val member = unapplyMember(tp)
+      if (member.exists) Some(member) else None
+    }
+  }
+
   /** returns unapply member's parameter type. */
   def unapplyParameterType(extractor: Symbol) = extractor.tpe.params match {
     case p :: Nil => p.tpe.typeSymbol
@@ -141,7 +150,7 @@ trait Unapplies extends ast.TreeDSL
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
+      gen.mkTemplate(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

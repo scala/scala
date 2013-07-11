@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package generic
 
 /** This trait forms part of collections that can be reduced

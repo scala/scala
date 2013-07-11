@@ -1,7 +1,7 @@
-package scala.tools
+package scala
+package tools
 package reflect
 
-import scala.tools.nsc.EXPRmode
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.io.VirtualDirectory
@@ -129,7 +129,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         // it inaccessible then please put it somewhere designed for that
         // rather than polluting the empty package with synthetics.
         val ownerClass    = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
-        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
+        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectTpe), newScope, ownerClass))
         val owner         = ownerClass.newLocalDummy(expr.pos)
         val currentTyper  = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr, owner))
         val wrapper1      = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
@@ -165,7 +165,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
             trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymkinds.value))
-            currentTyper.silent(_.typed(expr, EXPRmode, pt)) match {
+            currentTyper.silent(_.typed(expr, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
                 result
@@ -180,15 +180,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         transformDuringTyper(tree, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
             trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymkinds.value))
-            val context = currentTyper.context
-            analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos) match {
-              case failure if failure.tree.isEmpty =>
-                trace("implicit search has failed. to find out the reason, turn on -Xlog-implicits: ")(failure.tree)
-                if (context.hasErrors) throw ToolBoxError("reflective implicit search has failed: %s".format(context.errBuffer.head.errMsg))
-                EmptyTree
-              case success =>
-                success.tree
-            }
+            analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
       def compile(expr0: Tree): () => Any = {
@@ -204,7 +196,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val (obj, _) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
             nextWrapperModuleName())
 
-          val minfo = ClassInfoType(List(ObjectClass.tpe), newScope, obj.moduleClass)
+          val minfo = ClassInfoType(List(ObjectTpe), newScope, obj.moduleClass)
           obj.moduleClass setInfo minfo
           obj setInfo obj.moduleClass.tpe
 
@@ -214,7 +206,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             val (fv, name) = schema
             meth.newValueParameter(name, newFlags = if (fv.hasStableFlag) STABLE else 0) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
           }
-          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyClass.tpe)
+          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyTpe)
           minfo.decls enter meth
           def defOwner(tree: Tree): Symbol = tree find (_.isDef) map (_.symbol) match {
             case Some(sym) if sym != null && sym != NoSymbol => sym.owner
@@ -225,8 +217,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
           val moduledef = ModuleDef(
               obj,
-              Template(
-                  List(TypeTree(ObjectClass.tpe)),
+              gen.mkTemplate(
+                  List(TypeTree(ObjectTpe)),
                   emptyValDef,
                   NoMods,
                   List(),

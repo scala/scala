@@ -6,10 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection
+package scala
+package collection
 package mutable
-
 
 /** An implementation class backing a `HashSet`.
  *

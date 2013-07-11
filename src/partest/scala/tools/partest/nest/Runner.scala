@@ -7,19 +7,25 @@ package nest
 
 import java.io.{ Console => _, _ }
 import java.net.URL
-import scala.tools.nsc.Properties.{ jdkHome, javaHome, propOrElse, propOrEmpty }
-import scala.util.Properties.{ envOrElse, isWin }
+import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.Duration
+import scala.io.Codec
+import scala.reflect.internal.FatalError
+import scala.sys.process.{ Process, ProcessLogger }
+import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
-import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
+import scala.tools.nsc.io.{ AbstractFile, PlainFile }
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.util.{ ClassPath, FakePos, ScalaClassLoader, stackTraceString }
-import ClassPath.{ join, split }
-import scala.tools.scalap.scalax.rules.scalasig.ByteCode
-import scala.collection.{ mutable, immutable }
-import scala.sys.process.Process
-import java.util.concurrent.{ Executors, TimeUnit, TimeoutException }
-import PartestDefaults.{ javaCmd, javacCmd }
+import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
+import scala.tools.scalap.scalax.rules.scalasig.ByteCode
+import scala.util.{ Try, Success, Failure }
+import ClassPath.{ join, split }
+import PartestDefaults.{ javaCmd, javacCmd }
+import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
 trait PartestRunSettings {
   def gitPath: Path
@@ -35,7 +41,7 @@ trait PartestRunSettings {
 
 class TestTranscript {
   import NestUI.color._
-  private val buf = mutable.ListBuffer[String]()
+  private val buf = ListBuffer[String]()
   private def pass(s: String) = bold(green("% ")) + s
   private def fail(s: String) = bold(red("% ")) + s
 
@@ -49,7 +55,8 @@ class TestTranscript {
   }
 }
 
-class Runner(val testFile: File, fileManager: FileManager) {
+/** Run a single test. Rubber meets road. */
+class Runner(val testFile: File, fileManager: FileManager, val testRunParams: TestRunParams) {
   import fileManager._
 
   // Override to true to have the outcome of this test displayed
@@ -57,12 +64,10 @@ class Runner(val testFile: File, fileManager: FileManager) {
   // except for a . per passing test to show progress.
   def isEnumeratedTest = false
 
-  def testRunParams: TestRunParams = ???
-
   private var _lastState: TestState = null
   private var _transcript = new TestTranscript
 
-  def lastState                   = if (_lastState == null) TestState.Uninitialized(testFile) else _lastState
+  def lastState                   = if (_lastState == null) Uninitialized(testFile) else _lastState
   def setLastState(s: TestState)  = _lastState = s
   def transcript: List[String]    = _transcript.fail ++ logFile.fileLines
   def pushTranscript(msg: String) = _transcript add msg
@@ -94,10 +99,11 @@ class Runner(val testFile: File, fileManager: FileManager) {
       genCrash(t)
   }
 
-  def genPass()                   = TestState.Pass(testFile)
-  def genFail(reason: String)     = TestState.Fail(testFile, reason, _transcript.fail)
-  def genTimeout()                = TestState.Fail(testFile, "timed out", _transcript.fail)
-  def genCrash(caught: Throwable) = TestState.Crash(testFile, caught, _transcript.fail)
+  def genPass()                   = Pass(testFile)
+  def genFail(reason: String)     = Fail(testFile, reason, _transcript.fail)
+  def genTimeout()                = Fail(testFile, "timed out", _transcript.fail)
+  def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail)
+  def genUpdated()                = Updated(testFile)
 
   def speclib = PathSettings.srcSpecLib.toString  // specialization lib
   def codelib = PathSettings.srcCodeLib.toString  // reify lib
@@ -151,14 +157,18 @@ class Runner(val testFile: File, fileManager: FileManager) {
     case _      => "% "
   }
 
+  /** Evaluate an action body and update the test state.
+   *  @param failFn optionally map a result to a test state.
+   */
   def nextTestAction[T](body: => T)(failFn: PartialFunction[T, TestState]): T = {
     val result = body
     setLastState( if (failFn isDefinedAt result) failFn(result) else genPass() )
     result
   }
-  def nextTestActionExpectTrue[T](reason: String, body: => Boolean): Boolean = {
+  def nextTestActionExpectTrue(reason: String, body: => Boolean): Boolean = (
     nextTestAction(body) { case false => genFail(reason) }
-  }
+  )
+  def nextTestActionFailing(reason: String): Boolean = nextTestActionExpectTrue(reason, false)
 
   private def assembleTestCommand(outDir: File, logFile: File): List[String] = {
     // check whether there is a ".javaopts" file
@@ -212,21 +222,41 @@ class Runner(val testFile: File, fileManager: FileManager) {
    *  error out to output file.
    */
   private def runCommand(args: Seq[String], outFile: File): Boolean = {
-    (Process(args) #> outFile !) == 0
+    //(Process(args) #> outFile !) == 0 or (Process(args) ! pl) == 0
+    val pl = ProcessLogger(outFile)
+    val nonzero = 17     // rounding down from 17.3
+    def run: Int = {
+      val p = Process(args) run pl
+      try p.exitValue
+      catch {
+        case e: InterruptedException =>
+          NestUI verbose s"Interrupted waiting for command to finish (${args mkString " "})"
+          p.destroy
+          nonzero
+        case t: Throwable =>
+          NestUI verbose s"Exception waiting for command to finish: $t (${args mkString " "})"
+          p.destroy
+          throw t
+      }
+      finally pl.close()
+    }
+    (pl buffer run) == 0
   }
 
   private def execTest(outDir: File, logFile: File): Boolean = {
     val cmd = assembleTestCommand(outDir, logFile)
 
-    pushTranscript(cmd.mkString(" \\\n  ") + " > " + logFile.getName)
-    nextTestActionExpectTrue("non-zero exit code", runCommand(cmd, logFile)) || {
-      _transcript append logFile.fileContents
-      false
+    pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
+    nextTestAction(runCommand(cmd, logFile)) {
+      case false =>
+        _transcript append EOL + logFile.fileContents
+        genFail("non-zero exit code")
     }
   }
 
   override def toString = s"""Test($testIdent, lastState = $lastState)"""
 
+  // result is unused
   def newTestWriters() = {
     val swr = new StringWriter
     val wr  = new PrintWriter(swr, true)
@@ -256,15 +286,22 @@ class Runner(val testFile: File, fileManager: FileManager) {
    *  might be failing, in the normal case.
    */
   def diffilter(d: String) = {
-    import scala.util.Properties.javaVersion
+    import scala.util.Properties.{javaVersion, isAvian}
     val prefix = "#partest"
     val margin = "> "
     val leader = margin + prefix
-    // use lines in block so labeled? Default to sure, go ahead.
-    def retainOn(f: String) = f match {
-      case "java7"  => javaVersion startsWith "1.7"
-      case "java6"  => javaVersion startsWith "1.6"
-      case _        => true
+    // use lines in block so labeled? Default to sorry, Charlie.
+    def retainOn(f: String) = {
+      val (invert, token) =
+        if (f startsWith "!") (true, f drop 1) else (false, f)
+      val cond = token match {
+        case "java7"  => javaVersion startsWith "1.7"
+        case "java6"  => javaVersion startsWith "1.6"
+        case "avian"  => isAvian
+        case "true"   => true
+        case _        => false
+      }
+      if (invert) !cond else cond
     }
     if (d contains prefix) {
       val sb = new StringBuilder
@@ -302,36 +339,77 @@ class Runner(val testFile: File, fileManager: FileManager) {
     catch { case t: Exception => None }
   }
 
-  /** This does something about absolute paths and file separator
-   *  chars before diffing.
+  /** Normalize the log output by applying test-specific filters
+   *  and fixing filesystem-specific paths.
+   *
+   *  Line filters are picked up from `filter: pattern` at the top of sources.
+   *  The filtered line is detected with a simple "contains" test,
+   *  and yes, "filter" means "filter out" in this context.
+   *
+   *  File paths are detected using the absolute path of the test root.
+   *  A string that looks like a file path is normalized by replacing
+   *  the leading segments (the root) with "$ROOT" and by replacing
+   *  any Windows backslashes with the one true file separator char.
    */
   def normalizeLog() {
-    // squashing // in paths also munges line comments, so save this innovation for another time.
-    // (There are line comments in the "stub implementations" error output.)
-    //val slashes   = """[/\\]+""".r
-    //def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
-    def squashSlashes(s: String) = s replace ('\\', '/')
-    val base      = squashSlashes(parentFile.getAbsolutePath + File.separator)
-    val quoted    = """\Q%s\E""" format base
-    val baseless  = (if (isWin) "(?i)" + quoted else quoted).r
-    def canonicalize(s: String)  = baseless replaceAllIn (squashSlashes(s), "")
-    logFile mapInPlace canonicalize
+    // Apply judiciously; there are line comments in the "stub implementations" error output.
+    val slashes    = """[/\\]+""".r
+    def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
+
+    // this string identifies a path and is also snipped from log output.
+    // to preserve more of the path, could use fileManager.testRootPath
+    val elided     = parentFile.getAbsolutePath
+
+    // something to mark the elision in the log file (disabled)
+    val ellipsis   = "" //".../"    // using * looks like a comment
+
+    // no spaces in test file paths below root, because otherwise how to detect end of path string?
+    val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\w]*)""".r
+    def canonicalize(s: String): String = (
+      pathFinder replaceAllIn (s, m => ellipsis + squashSlashes(m group 1))
+    )
+
+    def masters    = {
+      val files = List(new File(parentFile, "filters"), new File(PathSettings.srcDir.path, "filters"))
+      files filter (_.exists) flatMap (_.fileLines) map (_.trim) filter (s => !(s startsWith "#"))
+    }
+    val filters    = toolArgs("filter", split = false) ++ masters
+    val elisions   = ListBuffer[String]()
+    //def lineFilter(s: String): Boolean  = !(filters exists (s contains _))
+    def lineFilter(s: String): Boolean  = (
+      filters map (_.r) forall { r =>
+        val res = (r findFirstIn s).isEmpty
+        if (!res) elisions += s
+        res
+      }
+    )
+
+    logFile.mapInPlace(canonicalize)(lineFilter)
+    if (isPartestVerbose && elisions.nonEmpty) {
+      import NestUI.color._
+      val emdash = bold(yellow("--"))
+      pushTranscript(s"filtering ${logFile.getName}$EOL${elisions mkString (emdash, EOL + emdash, EOL)}")
+    }
   }
 
   def diffIsOk: Boolean = {
+    // always normalize the log first
+    normalizeLog()
     val diff = currentDiff
-    val ok: Boolean = (diff == "") || {
-      fileManager.updateCheck && {
+    // if diff is not empty, is update needed?
+    val updating: Option[Boolean] = (
+      if (diff == "") None
+      else Some(fileManager.updateCheck)
+    )
+    pushTranscript(s"diff $logFile $checkFile")
+    nextTestAction(updating) {
+      case Some(true)  =>
         NestUI.verbose("Updating checkfile " + checkFile)
         checkFile writeAll file2String(logFile)
-        true
-      }
-    }
-    pushTranscript(s"diff $logFile $checkFile")
-    nextTestAction(ok) {
-      case false =>
+        genUpdated()
+      case Some(false) =>
         // Get a word-highlighted diff from git if we can find it
-        val bestDiff = if (ok) "" else {
+        val bestDiff = if (updating.isEmpty) "" else {
           if (checkFile.canRead)
             gitDiff(logFile, checkFile) getOrElse {
               s"diff $logFile $checkFile\n$diff"
@@ -343,11 +421,13 @@ class Runner(val testFile: File, fileManager: FileManager) {
         // TestState.fail("output differs", "output differs",
         // genFail("output differs")
         // TestState.Fail("output differs", bestDiff)
-    }
+      case None        => genPass()  // redundant default case
+    } getOrElse true
   }
 
   /** 1. Creates log file and output directory.
    *  2. Runs script function, providing log file and output directory as arguments.
+   *     2b. or, just run the script without context and return a new context
    */
   def runInContext(body: => Boolean): (Boolean, LogContext) = {
     val (swr, wr) = newTestWriters()
@@ -356,11 +436,21 @@ class Runner(val testFile: File, fileManager: FileManager) {
   }
 
   /** Grouped files in group order, and lex order within each group. */
-  def groupedFiles(dir: File): List[List[File]] = {
-    val testFiles = dir.listFiles.toList filter (_.isJavaOrScala)
-    val grouped   = testFiles groupBy (_.group)
-    grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
-  }
+  def groupedFiles(sources: List[File]): List[List[File]] = (
+    if (sources.tail.nonEmpty) {
+      val grouped = sources groupBy (_.group)
+      grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
+    }
+    else List(sources)
+  )
+
+  /** Source files for the given test file. */
+  def sources(file: File): List[File] = (
+    if (file.isDirectory)
+      file.listFiles.toList filter (_.isJavaOrScala)
+    else
+      List(file)
+  )
 
   def newCompiler = new DirectCompiler(fileManager)
 
@@ -380,6 +470,23 @@ class Runner(val testFile: File, fileManager: FileManager) {
       sources flatMap { f => SFile(Path(f) changeExtension "flags").safeSlurp map argsplitter getOrElse Nil }
     } else Nil
     perTest ++ perGroup
+  }
+
+  def toolArgs(tool: String, split: Boolean = true): List[String] = {
+    def argsplitter(s: String) = if (split) words(s) filter (_.nonEmpty) else List(s)
+    def argsFor(f: File): List[String] = {
+      import scala.util.matching.Regex
+      val p    = new Regex(s"(?:.*\\s)?${tool}:(?:\\s*)(.*)?", "args")
+      val max  = 10
+      val src  = Path(f).toFile.chars(codec)
+      val args = try {
+        src.getLines take max collectFirst {
+          case s if (p findFirstIn s).nonEmpty => for (m <- p findFirstMatchIn s) yield m group "args"
+        }
+      } finally src.close()
+      args.flatten map argsplitter getOrElse Nil
+    }
+    sources(testFile) flatMap argsFor
   }
 
   abstract class CompileRound {
@@ -411,11 +518,9 @@ class Runner(val testFile: File, fileManager: FileManager) {
     lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
   }
 
-  def compilationRounds(file: File): List[CompileRound] = {
-    val grouped = if (file.isDirectory) groupedFiles(file) else List(List(file))
-
-    (grouped map mixedCompileGroup).flatten
-  }
+  def compilationRounds(file: File): List[CompileRound] = (
+    (groupedFiles(sources(file)) map mixedCompileGroup).flatten
+  )
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
     val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
     val isMixed                 = javaFiles.nonEmpty && scalaFiles.nonEmpty
@@ -429,12 +534,17 @@ class Runner(val testFile: File, fileManager: FileManager) {
   def runNegTest() = runInContext {
     val rounds = compilationRounds(testFile)
 
-    if (rounds forall (x => nextTestActionExpectTrue("compilation failed", x.isOk)))
-      nextTestActionExpectTrue("expected compilation failure", false)
-    else {
-      normalizeLog     // put errors in a normal form
-      diffIsOk
+    // failing means Does Not Compile
+    val failing = rounds find (x => nextTestActionExpectTrue("compilation failed", x.isOk) == false)
+
+    // which means passing if it checks and didn't crash the compiler
+    // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
+    def checked(r: CompileRound) = r.result match {
+      case Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => false
+      case _ => diffIsOk
     }
+
+    failing map (checked) getOrElse nextTestActionFailing("expected compilation failure")
   }
 
   def runTestCommon(andAlso: => Boolean): (Boolean, LogContext) = runInContext {
@@ -495,24 +605,52 @@ class Runner(val testFile: File, fileManager: FileManager) {
   }
 
   def runScalacheckTest() = runTestCommon {
-    NestUI.verbose("compilation of "+testFile+" succeeded\n")
+    NestUI verbose f"compilation of $testFile succeeded%n"
 
-    val outURL    = outDir.getAbsoluteFile.toURI.toURL
+    // this classloader is test specific: its parent contains library classes and others
+    val loader = {
+      import PathSettings.scalaCheck
+      val locations = List(outDir, scalaCheck.jfile) map (_.getAbsoluteFile.toURI.toURL)
+      ScalaClassLoader.fromURLs(locations, getClass.getClassLoader)
+    }
     val logWriter = new PrintStream(new FileOutputStream(logFile), true)
 
-    Output.withRedirected(logWriter) {
-      // this classloader is test specific: its parent contains library classes and others
-      ScalaClassLoader.fromURLs(List(outURL), testRunParams.scalaCheckParentClassLoader).run("Test", Nil)
+    def runInFramework(): Boolean = {
+      import org.scalatools.testing._
+      val f: Framework = loader.instantiate[Framework]("org.scalacheck.ScalaCheckFramework")
+      val logger = new Logger {
+        def ansiCodesSupported  = false //params.env.isSet("colors")
+        def error(msg: String)  = logWriter println msg
+        def warn(msg: String)   = logWriter println msg
+        def info(msg: String)   = logWriter println msg
+        def debug(msg: String)  = logWriter println msg
+        def trace(t: Throwable) = t printStackTrace logWriter
+      }
+      var bad = 0
+      val handler = new EventHandler {
+        // testName, description, result, error
+        // Result =  Success, Failure, Error, Skipped
+        def handle(event: Event): Unit = event.result match {
+          case Result.Success =>
+          //case Result.Skipped =>   // an exhausted test is skipped, therefore bad
+          case _ => bad += 1
+        }
+      }
+      val loggers     = Array(logger)
+      val r           = f.testRunner(loader, loggers).asInstanceOf[Runner2]  // why?
+      val claas       = "Test"
+      val fingerprint = f.tests collectFirst { case x: SubclassFingerprint if x.isModule => x }
+      val args        = toolArgs("scalacheck")
+      vlog(s"Run $testFile with args $args")
+      // set the context class loader for scaladoc/scalacheck tests (FIX ME)
+      ScalaClassLoader(testRunParams.scalaCheckParentClassLoader).asContext {
+        r.run(claas, fingerprint.get, handler, args.toArray)    // synchronous?
+      }
+      val ok = (bad == 0)
+      if (!ok) _transcript append logFile.fileContents
+      ok
     }
-
-    NestUI.verbose(file2String(logFile))
-    // obviously this must be improved upon
-    val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
-    lines.forall(x => !x.startsWith("!")) || {
-      NestUI.normal("ScalaCheck test failed. Output:\n")
-      lines foreach (x => NestUI.normal(x + "\n"))
-      false
-    }
+    try nextTestActionExpectTrue("ScalaCheck test failed", runInFramework()) finally logWriter.close()
   }
 
   def runResidentTest() = {
@@ -579,7 +717,6 @@ class Runner(val testFile: File, fileManager: FileManager) {
     if (!Output.withRedirected(logWriter)(try loop() finally resReader.close()))
       setLastState(genPass())
 
-    normalizeLog     // put errors in a normal form
     (diffIsOk, LogContext(logFile, swr, wr))
   }
 
@@ -624,5 +761,134 @@ class Runner(val testFile: File, fileManager: FileManager) {
       logFile.delete()
     if (!isPartestDebug)
       Directory(outDir).deleteRecursively()
+  }
+}
+
+case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
+
+/** Extended by Ant- and ConsoleRunner for running a set of tests. */
+trait DirectRunner {
+  def fileManager: FileManager
+
+  import PartestDefaults.{ numThreads, waitTime }
+
+  setUncaughtHandler
+  
+  def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
+
+    NestUI.resetTestNumber(kindFiles.size)
+
+    // this special class loader is for the benefit of scaladoc tests, which need a class path
+    import PathSettings.{ testInterface, scalaCheck }
+    val allUrls           = scalaCheck.toURL :: testInterface.toURL :: fileManager.latestUrls
+    val parentClassLoader = ScalaClassLoader fromURLs allUrls
+    // add scalacheck.jar to a special classloader, but use our loader as parent with test-interface
+    //val parentClassLoader = ScalaClassLoader fromURLs (List(scalaCheck.toURL), getClass().getClassLoader)
+    val pool              = Executors newFixedThreadPool numThreads
+    val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
+    val futures           = kindFiles map (f => pool submit callable(manager runTest f))
+
+    pool.shutdown()
+    Try (pool.awaitTermination(waitTime) {
+      throw TimeoutException(waitTime)
+    }) match {
+      case Success(_) => futures map (_.get)
+      case Failure(e) =>
+        e match {
+          case TimeoutException(d)      =>
+            NestUI warning "Thread pool timeout elapsed before all tests were complete!"
+          case ie: InterruptedException =>
+            NestUI warning "Thread pool was interrupted"
+            ie.printStackTrace()
+        }
+        pool.shutdownNow()     // little point in continuing
+        // try to get as many completions as possible, in case someone cares
+        val results = for (f <- futures) yield {
+          try {
+            Some(f.get(0, NANOSECONDS))
+          } catch {
+            case _: Throwable => None
+          }
+        }
+        results.flatten
+    }
+  }
+}
+
+case class TimeoutException(duration: Duration) extends RuntimeException
+
+class LogContext(val file: File, val writers: Option[(StringWriter, PrintWriter)])
+
+object LogContext {
+  def apply(file: File, swr: StringWriter, wr: PrintWriter): LogContext = {
+    require (file != null)
+    new LogContext(file, Some((swr, wr)))
+  }
+  def apply(file: File): LogContext = new LogContext(file, None)
+}
+
+object Output {
+  object outRedirect extends Redirecter(out)
+  object errRedirect extends Redirecter(err)
+
+  System.setOut(outRedirect)
+  System.setErr(errRedirect)
+
+  import scala.util.DynamicVariable
+  private def out = java.lang.System.out
+  private def err = java.lang.System.err
+  private val redirVar = new DynamicVariable[Option[PrintStream]](None)
+
+  class Redirecter(stream: PrintStream) extends PrintStream(new OutputStream {
+    def write(b: Int) = withStream(_ write b)
+
+    private def withStream(f: PrintStream => Unit) = f(redirVar.value getOrElse stream)
+
+    override def write(b: Array[Byte]) = withStream(_ write b)
+    override def write(b: Array[Byte], off: Int, len: Int) = withStream(_.write(b, off, len))
+    override def flush = withStream(_.flush)
+    override def close = withStream(_.close)
+  })
+
+  // this supports thread-safe nested output redirects
+  def withRedirected[T](newstream: PrintStream)(func: => T): T = {
+    // note down old redirect destination
+    // this may be None in which case outRedirect and errRedirect print to stdout and stderr
+    val saved = redirVar.value
+    // set new redirecter
+    // this one will redirect both out and err to newstream
+    redirVar.value = Some(newstream)
+
+    try func
+    finally {
+      newstream.flush()
+      redirVar.value = saved
+    }
+  }
+}
+
+/** Use a Runner to run a test. */
+class RunnerManager(kind: String, fileManager: FileManager, params: TestRunParams) {
+  import fileManager._
+  fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
+  fileManager.CLASSPATH += File.pathSeparator + PathSettings.diffUtils // needed to put diffutils on test/partest's classpath
+
+  def runTest(testFile: File): TestState = {
+    val runner = new Runner(testFile, fileManager, params)
+
+    // when option "--failed" is provided execute test only if log
+    // is present (which means it failed before)
+    if (fileManager.failed && !runner.logFile.canRead)
+      runner.genPass()
+    else {
+      val (state, elapsed) =
+        try timed(runner.run())
+        catch {
+          case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
+        }
+      NestUI.reportTest(state)
+      runner.cleanup()
+      state
+    }
   }
 }

@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend
 package icode
 
@@ -394,19 +395,19 @@ trait Opcodes { self: ICodes =>
 
       override def category = mthdsCat
     }
-    
+
     /**
      * A place holder entry that allows us to parse class files with invoke dynamic
      * instructions. Because the compiler doesn't yet really understand the
      * behavior of invokeDynamic, this op acts as a poison pill. Any attempt to analyze
      * this instruction will cause a failure. The only optimization that
      * should ever look at non-Scala generated icode is the inliner, and it
-     * has been modified to not examine any method with invokeDynamic 
+     * has been modified to not examine any method with invokeDynamic
      * instructions. So if this poison pill ever causes problems then
      * there's been a serious misunderstanding
      */
     // TODO do the real thing
-    case class INVOKE_DYNAMIC(poolEntry: Char) extends Instruction {
+    case class INVOKE_DYNAMIC(poolEntry: Int) extends Instruction {
       private def error = sys.error("INVOKE_DYNAMIC is not fully implemented and should not be analyzed")
       override def consumed = error
       override def produced = error
@@ -724,6 +725,8 @@ trait Opcodes { self: ICodes =>
       /** Is this a static method call? */
       def isStatic: Boolean = false
 
+      def isSuper: Boolean = false
+
       /** Is this an instance method call? */
       def hasInstance: Boolean = true
 
@@ -757,6 +760,7 @@ trait Opcodes { self: ICodes =>
      *  On JVM, translated to `invokespecial`.
      */
     case class SuperCall(mix: Name) extends InvokeStyle {
+      override def isSuper = true
       override def toString(): String = { "super(" + mix + ")" }
     }
   }

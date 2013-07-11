@@ -3,7 +3,8 @@
  * @author  Stephane Micheloud
  */
 
-package scala.tools.nsc.doc.html
+package scala
+package tools.nsc.doc.html
 
 import scala.xml.NodeSeq
 import scala.annotation.tailrec
@@ -259,8 +260,8 @@ private[html] object SyntaxHigh {
             parse(buf(i).toChar.toString, i+1)
         case _ =>
           if (i == 0 || (i >= 1 && !Character.isJavaIdentifierPart(buf(i-1).toChar))) {
-            if (Character.isDigit(buf(i)) ||
-                (buf(i) == '.' && i + 1 < buf.length && Character.isDigit(buf(i+1)))) {
+            if (Character.isDigit(buf(i).toInt) ||
+                (buf(i) == '.' && i + 1 < buf.length && Character.isDigit(buf(i+1).toInt))) {
               val s = numlit(i)
               parse("<span class=\"num\">"+s+"</span>", i+s.length)
             } else {

@@ -606,6 +606,8 @@ object Byte extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
    *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxToByte`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+   *
    *  @param  x   the Byte to be boxed
    *  @return     a java.lang.Byte offering `x` as its underlying value.
    */
@@ -614,6 +616,8 @@ object Byte extends AnyValCompanion {
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Byte.
+   *
+   *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxToByte`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
    *
    *  @param  x   the java.lang.Byte to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Byte

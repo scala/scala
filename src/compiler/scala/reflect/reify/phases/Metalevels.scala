@@ -11,7 +11,7 @@ trait Metalevels {
   /**
    *  Makes sense of cross-stage bindings.
    *
-   *  ================
+   *  ----------------
    *
    *  Analysis of cross-stage bindings becomes convenient if we introduce the notion of metalevels.
    *  Metalevel of a tree is a number that gets incremented every time you reify something and gets decremented when you splice something.
@@ -33,7 +33,7 @@ trait Metalevels {
    *
    *  1) symbol.metalevel < curr_metalevel. In this case reifier will generate a free variable
    *  that captures both the name of the symbol (to be compiled successfully) and its value (to be run successfully).
-   *  For example, x in Example 1 will be reified as follows: Ident(newFreeVar("x", IntClass.tpe, x))
+   *  For example, x in Example 1 will be reified as follows: Ident(newFreeVar("x", IntTpe, x))
    *
    *  2) symbol.metalevel > curr_metalevel. This leads to a metalevel breach that violates intuitive perception of splicing.
    *  As defined in macro spec, splicing takes a tree and inserts it into another tree - as simple as that.
@@ -53,7 +53,7 @@ trait Metalevels {
    *  1) Runtime eval that services dynamic splices requires scala-compiler.jar, which might not be on library classpath
    *  2) Runtime eval incurs a severe performance penalty, so it'd better to be explicit about it
    *
-   *  ================
+   *  ----------------
    *
    *  As we can see, the only problem is the fact that lhs'es of `splice` can be code blocks that can capture variables from the outside.
    *  Code inside the lhs of an `splice` is not reified, while the code from the enclosing reify is.
@@ -72,7 +72,7 @@ trait Metalevels {
    *  Since the result of the inner reify is wrapped in a splice, it won't be reified
    *  together with the other parts of the outer reify, but will be inserted into that result verbatim.
    *
-   *  The inner reify produces an Expr[Int] that wraps Ident(freeVar("x", IntClass.tpe, x)).
+   *  The inner reify produces an Expr[Int] that wraps Ident(freeVar("x", IntTpe, x)).
    *  However the freevar the reification points to will vanish when the compiler processes the outer reify.
    *  That's why we need to replace that freevar with a regular symbol that will point to reified x.
    *

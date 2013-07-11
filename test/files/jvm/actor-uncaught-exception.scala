@@ -1,10 +1,11 @@
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{Actor, Exit}
 
 class MyException(msg: String) extends Exception(msg) {
   override def fillInStackTrace() = this
 }
 
-object Test { 
 
   case object StartError extends Actor { 
     def act() { 

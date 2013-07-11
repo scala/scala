@@ -8,7 +8,8 @@ scala> // should infer List[scala.collection.immutable.Seq[Nothing]]
 scala> // but reverted that for SI-5534.
 
 scala> val x = List(List(), Vector())
-x: List[scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing]{def companion: scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq with scala.collection.AbstractSeq]; def dropRight(n: Int): scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing]{def companion: scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq with scala.collection.AbstractSeq]; def dropRight(n: Int): scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing]{def dropRight(n: Int): scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing]; def takeRight(n: Int): scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing]; def drop(n: Int): scala.collecti...
+x: List[scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing] with java.io.Serializable] = List(List(), Vector())
+
 scala> 
 
 scala> 

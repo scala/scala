@@ -1,0 +1,20 @@
+Macros_Test_2.scala:2: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+  def foo1(x: Any) = macro 2
+      ^
+Macros_Test_2.scala:3: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+  def foo2(x: Any) = macro Impls.foo(null)(null)
+      ^
+Macros_Test_2.scala:4: error: missing arguments for method foo in object Impls;
+follow this method with `_' if you want to treat it as a partially applied function
+  def foo3(x: Any) = macro {2; Impls.foo}
+                                     ^
+Macros_Test_2.scala:7: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+    def foo = macro impl
+        ^
+four errors found

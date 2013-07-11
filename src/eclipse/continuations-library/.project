@@ -22,7 +22,7 @@
 			<locationURI>SCALA_BASEDIR/build/quick/classes/continuations/library</locationURI>
 		</link>
 		<link>
-			<name>library</name>
+			<name>continuations-library</name>
 			<type>2</type>
 			<locationURI>SCALA_BASEDIR/src/continuations/library</locationURI>
 		</link>

@@ -2,39 +2,39 @@ reload: CompletionOnEmptyArgMethod.scala
 
 askTypeCompletion at CompletionOnEmptyArgMethod.scala(2,17)
 ================================================================================
-[response] aksTypeCompletion at (2,17)
+[response] askCompletionAt (2,17)
 retrieved 36 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(Foo, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method clone()Object`
-[accessible:  true] `method ensuring(cond: Boolean)Foo`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)Foo`
-[accessible:  true] `method ensuring(cond: Foo => Boolean)Foo`
-[accessible:  true] `method ensuring(cond: Foo => Boolean, msg: => Any)Foo`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method finalize()Unit`
-[accessible:  true] `method foo=> Foo`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(Foo, B)`
-[accessible:  true] `value __leftOfArrowFoo`
-[accessible:  true] `value __resultOfEnsuringFoo`
-[accessible:  true] `value __stringToFormatFoo`
-[accessible:  true] `value __thingToAddFoo`
+def +(other: String): String
+def ->[B](y: B): (Foo, B)
+def ensuring(cond: Boolean): Foo
+def ensuring(cond: Boolean,msg: => Any): Foo
+def ensuring(cond: Foo => Boolean): Foo
+def ensuring(cond: Foo => Boolean,msg: => Any): Foo
+def equals(x$1: Any): Boolean
+def foo: Foo
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def toString(): String
+def →[B](y: B): (Foo, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private[this] val __leftOfArrow: Foo
+private[this] val __resultOfEnsuring: Foo
+private[this] val __stringToFormat: Foo
+private[this] val __thingToAdd: Foo
+protected[package lang] def clone(): Object
+protected[package lang] def finalize(): Unit
 ================================================================================

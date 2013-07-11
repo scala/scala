@@ -2,7 +2,8 @@
  * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interactive
 
 import scala.reflect.internal.util._
@@ -164,7 +165,7 @@ object REPL {
           show(reloadResult)
         case "reloadAndAskType" :: file :: millis :: Nil =>
           comp.askReload(List(toSourceFile(file)), reloadResult)
-          Thread.sleep(millis.toInt)
+          Thread.sleep(millis.toLong)
           println("ask type now")
           comp.askLoadedTyped(toSourceFile(file), typedResult)
           typedResult.get

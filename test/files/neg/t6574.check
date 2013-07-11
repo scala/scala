@@ -1,0 +1,7 @@
+t6574.scala:4: error: could not optimize @tailrec annotated method notTailPos$extension: it contains a recursive call not in tail position
+    println("tail")
+    ^
+t6574.scala:8: error: could not optimize @tailrec annotated method differentTypeArgs$extension: it is called recursively with different type arguments
+    {(); new Bad[String, Unit](0)}.differentTypeArgs
+                                   ^
+two errors found

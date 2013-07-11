@@ -3,10 +3,12 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.runtime
+package scala
+package reflect.runtime
 
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
+import scala.reflect.internal.util.AbstractFileClassLoader
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -28,21 +30,12 @@ private[scala] object ReflectionUtils {
     case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
   }
 
-  private def systemProperties: Iterator[(String, String)] = {
-    import scala.collection.JavaConverters._
-    System.getProperties.asScala.iterator
-  }
-
-  private def inferBootClasspath: String = (
-    systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
-  )
-
   def show(cl: ClassLoader): String = {
     import scala.language.reflectiveCalls
 
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false
-      if (clazz.getName == "scala.tools.nsc.interpreter.AbstractFileClassLoader") return true
+      if (clazz == classOf[AbstractFileClassLoader]) return true
       isAbstractFileClassLoader(clazz.getSuperclass)
     }
     def inferClasspath(cl: ClassLoader): String = cl match {
@@ -51,7 +44,8 @@ private[scala] object ReflectionUtils {
       case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
         cl.asInstanceOf[{val root: scala.reflect.io.AbstractFile}].root.canonicalPath
       case null =>
-        inferBootClasspath
+        val loadBootCp = (flavor: String) => scala.util.Properties.propOrNone(flavor + ".boot.class.path")
+        loadBootCp("sun") orElse loadBootCp("java") getOrElse "<unknown>"
       case _ =>
         "<unknown>"
     }

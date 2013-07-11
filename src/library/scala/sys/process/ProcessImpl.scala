@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 package process
 
 import processInternal._
@@ -222,8 +223,8 @@ private[process] trait ProcessImpl {
       p.exitValue()
     }
     override def destroy() = {
-      try{
-        outputThreads foreach (_.stop())
+      try {
+        outputThreads foreach (_.interrupt()) // on destroy, don't bother consuming any more output
         p.destroy()
       }
       finally inputThread.interrupt()

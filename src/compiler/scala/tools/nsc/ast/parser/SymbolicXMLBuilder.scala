@@ -7,8 +7,6 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.{ mutable, immutable }
-import scala.xml.{ EntityRef, Text }
-import scala.xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.StringOps.splitWhere
 
@@ -143,14 +141,12 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     (buf map convertToTextPat).toList
 
   def parseAttribute(pos: Position, s: String): Tree = {
-    val ts = scala.xml.Utility.parseAttributeValue(s) map {
-      case Text(s)      => text(pos, s)
-      case EntityRef(s) => entityRef(pos, s)
-    }
-    ts.length match {
-      case 0 => gen.mkNil
-      case 1 => ts.head
-      case _ => makeXMLseq(pos, ts.toList)
+    import xml.Utility.parseAttributeValue
+
+    parseAttributeValue(s, text(pos, _), entityRef(pos, _)) match {
+      case Nil      => gen.mkNil
+      case t :: Nil => t
+      case ts       => makeXMLseq(pos, ts.toList)
     }
   }
 
@@ -198,7 +194,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
 
     /* Extract all the namespaces from the attribute map. */
     val namespaces: List[Tree] =
-      for (z <- attrMap.keys.toList ; if z startsWith xmlns) yield {
+      for (z <- attrMap.keys.toList ; if z startsWith "xmlns") yield {
         val ns = splitPrefix(z) match {
           case (Some(_), rest)  => rest
           case _                => null

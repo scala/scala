@@ -3,7 +3,8 @@
  * @author Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package reporters
 
 import java.io.{ BufferedReader, IOException, PrintWriter }

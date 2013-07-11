@@ -9,12 +9,15 @@ package nest
 
 import utils.Properties._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
-import scala.tools.nsc.util.CommandLineParser
 import scala.collection.{ mutable, immutable }
 import PathSettings.srcDir
 import TestKinds._
+import scala.reflect.internal.util.Collections.distinctBy
+import scala.tools.cmd.{ CommandLine, CommandLineParser, Instance }
 
-class ConsoleRunner extends DirectRunner {
+class ConsoleRunner(argstr: String) extends {
+  val parsed = ConsoleRunnerSpec.creator(CommandLineParser tokenize argstr)
+} with DirectRunner with ConsoleRunnerSpec with Instance {
   import NestUI._
   import NestUI.color._
 
@@ -67,11 +70,17 @@ class ConsoleRunner extends DirectRunner {
       val message   = passFail + elapsed
 
       if (failed0.nonEmpty) {
-        echo(bold(cyan("##### Transcripts from failed tests #####\n")))
-        failed0 foreach { state =>
-          comment("partest " + state.testFile)
-          echo(state.transcriptString + "\n")
+        if (isPartestVerbose) {
+          echo(bold(cyan("##### Transcripts from failed tests #####\n")))
+          failed0 foreach { state =>
+            comment("partest " + state.testFile)
+            echo(state.transcriptString + "\n")
+          }
         }
+
+        def files_s = failed0.map(_.testFile).mkString(""" \""" + "\n  ")
+        echo("# Failed test paths (this command will update checkfiles)")
+        echo("test/partest --update-check \\\n  " + files_s + "\n")
       }
 
       echo(message)
@@ -79,26 +88,15 @@ class ConsoleRunner extends DirectRunner {
     }
   }
 
-  private val unaryArgs = List(
-    "--pack", "--all",
-    "--terse", "--verbose", "--show-diff", "--show-log", "--self-test",
-    "--failed", "--update-check", "--version", "--ansi", "--debug", "--help"
-  ) ::: standardArgs
-
-  private val binaryArgs = List(
-    "--grep", "--srcpath", "--buildpath", "--classpath"
-  )
-
-  def main(argstr: String) {
-    val parsed = CommandLineParser(argstr) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
-
-    if (parsed isSet "--debug") NestUI.setDebug()
-    if (parsed isSet "--verbose") NestUI.setVerbose()
-    if (parsed isSet "--terse") NestUI.setTerse()
+  def run(): Unit = {
+    if (optDebug) NestUI.setDebug()
+    if (optVerbose) NestUI.setVerbose()
+    if (optTerse) NestUI.setTerse()
+    if (optShowDiff) NestUI.setDiffOnFail()
 
     // Early return on no args, version, or invalid args
-    if (parsed isSet "--version") return echo(versionMsg)
-    if ((argstr == "") || (parsed isSet "--help")) return NestUI.usage()
+    if (optVersion) return echo(versionMsg)
+    if ((argstr == "") || optHelp) return NestUI.usage()
 
     val (individualTests, invalid) = parsed.residualArgs map (p => Path(p)) partition denotesTestPath
     if (invalid.nonEmpty) {
@@ -108,26 +106,26 @@ class ConsoleRunner extends DirectRunner {
         echoWarning(s"Discarding ${invalid.size} invalid test paths")
     }
 
-    parsed get "--srcpath" foreach (x => setProp("partest.srcdir", x))
+    optSourcePath foreach (x => setProp("partest.srcdir", x))
+    optTimeout foreach (x => setProp("partest.timeout", x))
 
     fileManager =
-      if (parsed isSet "--buildpath") new ConsoleFileManager(parsed("--buildpath"))
-      else if (parsed isSet "--classpath") new ConsoleFileManager(parsed("--classpath"), true)
-      else if (parsed isSet "--pack") new ConsoleFileManager("build/pack")
+      if (optBuildPath.isDefined) new ConsoleFileManager(optBuildPath.get)
+      else if (optClassPath.isDefined) new ConsoleFileManager(optClassPath.get, true)
+      else if (optPack) new ConsoleFileManager("build/pack")
       else new ConsoleFileManager  // auto detection, see ConsoleFileManager.findLatest
 
-    fileManager.updateCheck = parsed isSet "--update-check"
-    fileManager.failed      = parsed isSet "--failed"
+    fileManager.updateCheck = optUpdateCheck
+    fileManager.failed      = optFailed
 
     val partestTests = (
-      if (parsed isSet "--self-test") TestKinds.testsForPartest
+      if (optSelfTest) TestKinds.testsForPartest
       else Nil
     )
 
-    val grepExpr = parsed get "--grep" getOrElse ""
+    val grepExpr = optGrep getOrElse ""
 
     // If --grep is given we suck in every file it matches.
-    var grepMessage = ""
     val greppedTests = if (grepExpr == "") Nil else {
       val paths = grepFor(grepExpr)
       if (paths.isEmpty)
@@ -136,14 +134,14 @@ class ConsoleRunner extends DirectRunner {
       paths.sortBy(_.toString)
     }
 
-    val isRerun = parsed isSet "--failed"
+    val isRerun = optFailed
     val rerunTests = if (isRerun) TestKinds.failedTests else Nil
     def miscTests = partestTests ++ individualTests ++ greppedTests ++ rerunTests
 
-    val givenKinds = standardArgs filter parsed.isSet
+    val givenKinds = standardKinds filter parsed.isSet
     val kinds = (
-      if (parsed isSet "--all") standardKinds
-      else if (givenKinds.nonEmpty) givenKinds map (_ stripPrefix "--")
+      if (optAll) standardKinds
+      else if (givenKinds.nonEmpty) givenKinds
       else if (invalid.isEmpty && miscTests.isEmpty && !isRerun) standardKinds // If no kinds, --grep, or individual tests were given, assume --all
       else Nil
     )
@@ -183,8 +181,8 @@ class ConsoleRunner extends DirectRunner {
 
     chatty(banner)
 
-    val allTests   = (miscTests ++ (kinds flatMap testsFor)).distinct
-    val grouped    = (allTests groupBy kindOf).toList sortBy (x => standardKinds indexOf x._1)
+    val allTests: List[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical) sortBy (_.toString)
+    val grouped              = (allTests groupBy kindOf).toList sortBy (x => standardKinds indexOf x._1)
 
     totalTests = allTests.size
     expectedFailures = propOrNone("partest.errors") match {
@@ -214,4 +212,13 @@ class ConsoleRunner extends DirectRunner {
     issueSummaryReport()
     System exit ( if (isSuccess) 0 else 1 )
   }
+  
+  run()
 }
+
+object ConsoleRunner {
+  def main(args: Array[String]): Unit = {
+    new ConsoleRunner(args mkString " ")
+  }
+}
+

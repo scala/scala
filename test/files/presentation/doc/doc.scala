@@ -1,9 +1,9 @@
+import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.base._
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.interactive._
 import scala.tools.nsc.interactive.tests._
-import scala.tools.nsc.util._
 
 object Test extends InteractiveTest {
   val tags = Seq(
@@ -71,7 +71,7 @@ object Test extends InteractiveTest {
             if (expanded.isEmpty)
               None
             else
-              Some(ask { () => parseAtSymbol(expanded, raw, pos, Some(sym.owner)) })
+              Some(ask { () => parseAtSymbol(expanded, raw, pos, sym.owner) })
         }
       }
     }
@@ -100,12 +100,11 @@ object Test extends InteractiveTest {
               println("Couldn't parse")
             case Some(_) =>
               val sym = compiler.ask { () =>
-                val toplevel = definitions.EmptyPackage.info.decl(newTypeName(name))
+                val toplevel = compiler.rootMirror.EmptyPackage.info.decl(TypeName(name))
                 if (toplevel eq NoSymbol) {
-                  val clazz = definitions.EmptyPackage.info.decl(newTypeName(className))
-
-                  val term = clazz.info.decl(newTermName(name))
-                  if (term eq NoSymbol) clazz.info.decl(newTypeName(name)) else
+                  val clazz = compiler.rootMirror.EmptyPackage.info.decl(TypeName(className))
+                  val term = clazz.info.decl(TermName(name))
+                  if (term eq NoSymbol) clazz.info.decl(TypeName(name)) else
                     if (term.isAccessor) term.accessed else term
                 } else toplevel
               }
@@ -133,7 +132,7 @@ object Test extends InteractiveTest {
       case c: Comment => existsText(c.body, text)
     }
     val (derived, base) = compiler.ask { () =>
-      val derived = definitions.RootPackage.info.decl(newTermName("p")).info.decl(newTypeName("Derived"))
+      val derived = compiler.rootMirror.RootPackage.info.decl(newTermName("p")).info.decl(newTypeName("Derived"))
       (derived, derived.ancestors(0))
     }
     val cmt1 = getComment(derived, derivedSource, (base, baseSource)::(derived, derivedSource)::Nil)

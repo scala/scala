@@ -17,4 +17,7 @@ public class VolatileCharRef implements java.io.Serializable {
     volatile public char elem;
     public VolatileCharRef(char elem) { this.elem = elem; }
     public String toString() { return java.lang.Character.toString(elem); }
+
+    public static VolatileCharRef create(char e) { return new VolatileCharRef(e); }
+    public static VolatileCharRef zero() { return new VolatileCharRef((char)0); }
 }

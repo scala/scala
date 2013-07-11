@@ -11,7 +11,7 @@ object Test {
   def test3[A](x: A): A @suspendable = x match { case x => x }
   def test4[A](x: List[A]): A @suspendable = x match { case List(x) => x }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     println(reset(test1()))
     println(reset(test2(List(()))))
     println(reset(test3()))

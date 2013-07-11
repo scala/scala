@@ -6,7 +6,8 @@
 */
 
 
-package scala.tools.scalap
+package scala
+package tools.scalap
 
 import java.io._
 
@@ -97,9 +98,9 @@ class CodeWriter(writer: Writer) {
 
   def print(value: Boolean): CodeWriter = print(String.valueOf(value))
 
-  def print(value: Byte): CodeWriter = print(String.valueOf(value))
+  def print(value: Byte): CodeWriter = print(String.valueOf(value.toInt))
 
-  def print(value: Short): CodeWriter = print(String.valueOf(value))
+  def print(value: Short): CodeWriter = print(String.valueOf(value.toInt))
 
   def print(value: Char): CodeWriter = print(String.valueOf(value))
 

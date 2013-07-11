@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend
 package icode
 
@@ -73,7 +74,7 @@ trait Members {
         )
         startBlock = b.successors.head
       }
-      
+
       blocks -= b
       assert(!blocks.contains(b))
       method.exh filter (_ covers b) foreach (_.covered -= b)
@@ -107,6 +108,14 @@ trait Members {
       if (symbol eq other.symbol) 0
       else if (symbol isLess other.symbol) -1
       else 1
+
+    override def equals(other: Any): Boolean =
+      other match {
+        case other: IMember => (this compare other) == 0
+        case _ => false
+      }
+
+    override def hashCode = symbol.##
   }
 
   /** Represent a class in ICode */

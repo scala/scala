@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 
 import io.{ Directory, File, Path }
 import java.io.IOException

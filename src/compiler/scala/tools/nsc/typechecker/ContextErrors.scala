@@ -21,47 +21,65 @@ trait ContextErrors {
   import global._
   import definitions._
 
-  object ErrorKinds extends Enumeration {
-    type ErrorKind = Value
-    val Normal, Access, Ambiguous, Divergent = Value
-  }
-
-  import ErrorKinds.ErrorKind
-
-  trait AbsTypeError extends Throwable {
+  sealed abstract class AbsTypeError extends Throwable {
     def errPos: Position
     def errMsg: String
-    def kind: ErrorKind
+    override def toString() = "[Type error at:" + errPos + "] " + errMsg
   }
 
-  case class NormalTypeError(underlyingTree: Tree, errMsg: String, kind: ErrorKind = ErrorKinds.Normal)
-    extends AbsTypeError {
-
-    def errPos:Position = underlyingTree.pos
-    override def toString() = "[Type error at:" + underlyingTree.pos + "] " + errMsg
+  sealed abstract class TreeTypeError extends AbsTypeError {
+    def underlyingTree: Tree
+    def errPos = underlyingTree.pos
   }
 
-  case class SymbolTypeError(underlyingSym: Symbol, errMsg: String, kind: ErrorKind = ErrorKinds.Normal)
+  case class NormalTypeError(underlyingTree: Tree, errMsg: String)
+    extends TreeTypeError
+
+  case class AccessTypeError(underlyingTree: Tree, errMsg: String)
+    extends TreeTypeError
+
+  case class AmbiguousTypeError(errPos: Position, errMsg: String)
+    extends AbsTypeError
+
+  case class SymbolTypeError(underlyingSym: Symbol, errMsg: String)
     extends AbsTypeError {
 
     def errPos = underlyingSym.pos
   }
 
-  case class TypeErrorWrapper(ex: TypeError, kind: ErrorKind = ErrorKinds.Normal)
+  case class TypeErrorWrapper(ex: TypeError)
     extends AbsTypeError {
     def errMsg = ex.msg
     def errPos = ex.pos
   }
 
-  case class TypeErrorWithUnderlyingTree(tree: Tree, ex: TypeError, kind: ErrorKind = ErrorKinds.Normal)
+  case class TypeErrorWithUnderlyingTree(tree: Tree, ex: TypeError)
     extends AbsTypeError {
     def errMsg = ex.msg
     def errPos = tree.pos
   }
 
-  case class AmbiguousTypeError(underlyingTree: Tree, errPos: Position, errMsg: String, kind: ErrorKind = ErrorKinds.Ambiguous) extends AbsTypeError
+  // Unlike other type errors diverging implicit expansion
+  // will be re-issued explicitly on failed implicit argument search.
+  // This is because we want to:
+  // 1) provide better error message than just "implicit not found"
+  // 2) provide the type of the implicit parameter for which we got diverging expansion
+  //    (pt at the point of divergence gives less information to the user)
+  // Note: it is safe to delay error message generation in this case
+  // becasue we don't modify implicits' infos.
+  case class DivergentImplicitTypeError(underlyingTree: Tree, pt0: Type, sym: Symbol)
+    extends TreeTypeError {
+    def errMsg: String   = errMsgForPt(pt0)
+    def withPt(pt: Type): AbsTypeError = this.copy(pt0 = pt)
+    private def errMsgForPt(pt: Type) =
+      s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
+  }
 
-  case class PosAndMsgTypeError(errPos: Position, errMsg: String, kind: ErrorKind = ErrorKinds.Normal) extends AbsTypeError
+  case class AmbiguousImplicitTypeError(underlyingTree: Tree, errMsg: String)
+    extends TreeTypeError
+
+  case class PosAndMsgTypeError(errPos: Position, errMsg: String)
+    extends AbsTypeError
 
   object ErrorUtils {
     def issueNormalTypeError(tree: Tree, msg: String)(implicit context: Context) {
@@ -72,21 +90,13 @@ trait ContextErrors {
       issueTypeError(SymbolTypeError(sym, msg))
     }
 
-    def issueDivergentImplicitsError(tree: Tree, msg: String)(implicit context: Context) {
-      issueTypeError(NormalTypeError(tree, msg, ErrorKinds.Divergent))
-    }
-
     def issueAmbiguousTypeError(pre: Type, sym1: Symbol, sym2: Symbol, err: AmbiguousTypeError)(implicit context: Context) {
       context.issueAmbiguousError(pre, sym1, sym2, err)
     }
 
     def issueTypeError(err: AbsTypeError)(implicit context: Context) { context.issue(err) }
 
-    def typeErrorMsg(found: Type, req: Type, possiblyMissingArgs: Boolean) = {
-      def missingArgsMsg = if (possiblyMissingArgs) "\n possible cause: missing arguments for method or constructor" else ""
-
-      "type mismatch" + foundReqMsg(found, req) + missingArgsMsg
-    }
+    def typeErrorMsg(found: Type, req: Type) = "type mismatch" + foundReqMsg(found, req)
   }
 
   def notAnyRefMessage(found: Type): String = {
@@ -127,7 +137,7 @@ trait ContextErrors {
         }
         issueNormalTypeError(tree,
           "stable identifier required, but "+tree+" found." + (
-          if (isStableExceptVolatile(tree)) addendum else ""))
+          if (treeInfo.hasVolatileType(tree)) addendum else ""))
         setError(tree)
       }
 
@@ -171,7 +181,7 @@ trait ContextErrors {
         }
         assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
 
-        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req, infer.isPossiblyMissingArgs(foundType, req))) )
+        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req)))
         infer.explainTypes(foundType, req)
       }
 
@@ -450,7 +460,7 @@ trait ContextErrors {
       def AbstractionFromVolatileTypeError(vd: ValDef) =
         issueNormalTypeError(vd, "illegal abstraction from value with volatile type "+vd.symbol.tpe)
 
-      private[ContextErrors] def TypedApplyWrongNumberOfTpeParametersErrorMessage(fun: Tree) =
+      private[scala] def TypedApplyWrongNumberOfTpeParametersErrorMessage(fun: Tree) =
         "wrong number of type parameters for "+treeSymTypeMsg(fun)
 
       def TypedApplyWrongNumberOfTpeParametersError(tree: Tree, fun: Tree) = {
@@ -466,7 +476,7 @@ trait ContextErrors {
       // doTypeApply
       //tryNamesDefaults
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "macros application do not support named and/or default arguments")
+        NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
       def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
@@ -561,7 +571,7 @@ trait ContextErrors {
       //adapt
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
         val message =
-          if (meth.isMacro) MacroPartialApplicationErrorMessage
+          if (meth.isMacro) MacroTooFewArgumentListsMessage
           else "missing arguments for " + meth.fullLocationString + (
             if (meth.isConstructor) ""
             else ";\nfollow this method with `_' if you want to treat it as a partially applied function"
@@ -591,6 +601,10 @@ trait ContextErrors {
         issueNormalTypeError(tree, restpe.prefix+" is not a legal prefix for a constructor")
         setError(tree)
       }
+
+      // typedPattern
+      def PatternMustBeValue(pat: Tree, pt: Type) =
+        issueNormalTypeError(pat, s"pattern must be a value: $pat"+ typePatternAdvice(pat.tpe.typeSymbol, pt.typeSymbol))
 
       // SelectFromTypeTree
       def TypeSelectionFromVolatileTypeError(tree: Tree, qual: Tree) = {
@@ -678,25 +692,33 @@ trait ContextErrors {
         issueNormalTypeError(expandee, s"macro in $role role can only expand into $allowedExpansions")
       }
 
-      // same reason as for MacroBodyTypecheckException
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
       protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
-        if (msg != null) context.error(pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
+        if (msg != null) context.error(if (pos.isDefined) pos else expandee.pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
         setError(expandee)
         throw MacroExpansionException
       }
 
-      def MacroPartialApplicationErrorMessage = "macros cannot be partially applied"
-      def MacroPartialApplicationError(expandee: Tree) = {
+      private def macroExpansionError2(expandee: Tree, msg: String) = {
         // macroExpansionError won't work => swallows positions, hence needed to do issueTypeError
         // kinda contradictory to the comment in `macroExpansionError`, but this is how it works
-        issueNormalTypeError(expandee, MacroPartialApplicationErrorMessage)
+        issueNormalTypeError(expandee, msg)
         setError(expandee)
         throw MacroExpansionException
       }
+
+      private def MacroTooFewArgumentListsMessage = "too few argument lists for macro invocation"
+      def MacroTooFewArgumentListsError(expandee: Tree) = macroExpansionError2(expandee, MacroTooFewArgumentListsMessage)
+
+      private def MacroTooManyArgumentListsMessage = "too many argument lists for macro invocation"
+      def MacroTooManyArgumentListsError(expandee: Tree) = macroExpansionError2(expandee, MacroTooManyArgumentListsMessage)
+
+      def MacroTooFewArgumentsError(expandee: Tree) = macroExpansionError2(expandee, "too few arguments for macro invocation")
+
+      def MacroTooManyArgumentsError(expandee: Tree) = macroExpansionError2(expandee, "too many arguments for macro invocation")
 
       def MacroGeneratedAbort(expandee: Tree, ex: AbortMacroException) = {
         // errors have been reported by the macro itself, so we do nothing here
@@ -719,7 +741,7 @@ trait ContextErrors {
           try {
             // [Eugene] is there a better way?
             // [Paul] See Exceptional.scala and Origins.scala.
-            val relevancyThreshold = realex.getStackTrace().indexWhere(_.getMethodName endsWith "macroExpand1")
+            val relevancyThreshold = realex.getStackTrace().indexWhere(_.getMethodName endsWith "macroExpandWithRuntime")
             if (relevancyThreshold == -1) None
             else {
               var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
@@ -760,13 +782,16 @@ trait ContextErrors {
       }
 
       def MacroExpansionHasInvalidTypeError(expandee: Tree, expanded: Any) = {
-        val expected = "expr"
-        val isPathMismatch = expanded != null && expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+        def isUnaffiliatedExpr = expanded.isInstanceOf[scala.reflect.api.Exprs#Expr[_]]
+        def isUnaffiliatedTree = expanded.isInstanceOf[scala.reflect.api.Trees#TreeApi]
+        val expected = "expr or tree"
+        val actual = if (isUnaffiliatedExpr) "an expr" else if (isUnaffiliatedTree) "a tree" else "unexpected"
+        val isPathMismatch = expanded != null && (isUnaffiliatedExpr || isUnaffiliatedTree)
         macroExpansionError(expandee,
           s"macro must return a compiler-specific $expected; returned value is " + (
             if (expanded == null) "null"
-            else if (isPathMismatch) s" $expected, but it doesn't belong to this compiler"
-            else " of " + expanded.getClass
+            else if (isPathMismatch) s"$actual, but it doesn't belong to this compiler's universe"
+            else "of " + expanded.getClass
         ))
       }
 
@@ -830,7 +855,7 @@ trait ContextErrors {
           underlyingSymbol(sym).fullLocationString + " cannot be accessed in " +
           location + explanation
         }
-        NormalTypeError(tree, errMsg, ErrorKinds.Access)
+        AccessTypeError(tree, errMsg)
       }
 
       def NoMethodInstanceError(fn: Tree, args: List[Tree], msg: String) =
@@ -875,7 +900,7 @@ trait ContextErrors {
             "argument types " + argtpes.mkString("(", ",", ")") +
            (if (pt == WildcardType) "" else " and expected result type " + pt)
           val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
-          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(pos, msg))
           setErrorOnLastTry(lastTry, tree)
         } else setError(tree) // do not even try further attempts because they should all fail
                               // even if this is not the last attempt (because of the SO's possibility on the horizon)
@@ -883,13 +908,13 @@ trait ContextErrors {
       }
 
       def NoBestExprAlternativeError(tree: Tree, pt: Type, lastTry: Boolean) = {
-        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt, isPossiblyMissingArgs(tree.symbol.tpe, pt))))
+        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(tree.symbol.tpe, pt)))
         setErrorOnLastTry(lastTry, tree)
       }
 
       def AmbiguousExprAlternativeError(tree: Tree, pre: Type, best: Symbol, firstCompeting: Symbol, pt: Type, lastTry: Boolean) = {
         val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, "expected type " + pt)
-        issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+        issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(pos, msg))
         setErrorOnLastTry(lastTry, tree)
       }
 
@@ -903,7 +928,7 @@ trait ContextErrors {
           kindErrors.toList.mkString("\n", ", ", ""))
       }
 
-      private[ContextErrors] def NotWithinBoundsErrorMessage(prefix: String, targs: List[Type], tparams: List[Symbol], explaintypes: Boolean) = {
+      private[scala] def NotWithinBoundsErrorMessage(prefix: String, targs: List[Type], tparams: List[Symbol], explaintypes: Boolean) = {
         if (explaintypes) {
           val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
           (targs, bounds).zipped foreach ((targ, bound) => explainTypes(bound.lo, targ))
@@ -937,33 +962,10 @@ trait ContextErrors {
       def IncompatibleScrutineeTypeError(tree: Tree, pattp: Type, pt: Type) =
         issueNormalTypeError(tree, "scrutinee is incompatible with pattern type" + foundReqMsg(pattp, pt))
 
-      def PatternTypeIncompatibleWithPtError2(pat: Tree, pt1: Type, pt: Type) = {
-        def errMsg = {
-          val sym   = pat.tpe.typeSymbol
-          val clazz = sym.companionClass
-          val addendum = (
-            if (sym.isModuleClass && clazz.isCaseClass && (clazz isSubClass pt1.typeSymbol)) {
-              // TODO: move these somewhere reusable.
-              val typeString = clazz.typeParams match {
-                case Nil  => "" + clazz.name
-                case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
-              }
-              val caseString = (
-                clazz.caseFieldAccessors
-                map (_ => "_")    // could use the actual param names here
-                mkString (clazz.name + "(", ",", ")")
-              )
-              (
-                "\nNote: if you intended to match against the class, try `case _: " +
-                typeString + "` or `case " + caseString + "`"
-              )
-            }
-            else ""
-          )
-          "pattern type is incompatible with expected type"+foundReqMsg(pat.tpe, pt) + addendum
-        }
-        issueNormalTypeError(pat, errMsg)
-      }
+      def PatternTypeIncompatibleWithPtError2(pat: Tree, pt1: Type, pt: Type) =
+        issueNormalTypeError(pat,
+          "pattern type is incompatible with expected type"+ foundReqMsg(pat.tpe, pt) +
+          typePatternAdvice(pat.tpe.typeSymbol, pt1.typeSymbol))
 
       def PolyAlternativeError(tree: Tree, argtypes: List[Type], sym: Symbol, err: PolyAlternativeErrorKind.ErrorType) = {
         import PolyAlternativeErrorKind._
@@ -1108,11 +1110,11 @@ trait ContextErrors {
 
 
       def AbstractMemberWithModiferError(sym: Symbol, flag: Int) =
-        issueSymbolTypeError(sym, "abstract member may not have " + Flags.flagsToString(flag) + " modifier")
+        issueSymbolTypeError(sym, "abstract member may not have " + Flags.flagsToString(flag.toLong) + " modifier")
 
       def IllegalModifierCombination(sym: Symbol, flag1: Int, flag2: Int) =
         issueSymbolTypeError(sym, "illegal combination of modifiers: %s and %s for: %s".format(
-            Flags.flagsToString(flag1), Flags.flagsToString(flag2), sym))
+            Flags.flagsToString(flag1.toLong), Flags.flagsToString(flag2.toLong), sym))
 
       def IllegalDependentMethTpeError(sym: Symbol)(context: Context) = {
         val errorAddendum =
@@ -1154,7 +1156,7 @@ trait ContextErrors {
             // failures which have nothing to do with implicit conversions
             // per se, but which manifest as implicit conversion conflicts
             // involving Any, are further explained from foundReqMsg.
-            if (AnyRefClass.tpe <:< req) (
+            if (AnyRefTpe <:< req) (
               if (sym == AnyClass || sym == UnitClass) (
                  sm"""|Note: ${sym.name} is not implicitly converted to AnyRef.  You can safely
                       |pattern match `x: AnyRef` or cast `x.asInstanceOf[AnyRef]` to do so."""
@@ -1170,11 +1172,11 @@ trait ContextErrors {
                sm"""|Note that implicit conversions are not applicable because they are ambiguous:
                     |${coreMsg}are possible conversion functions from $found to $req"""
           }
-          typeErrorMsg(found, req, infer.isPossiblyMissingArgs(found, req)) + (
+          typeErrorMsg(found, req) + (
             if (explanation == "") "" else "\n" + explanation
           )
         }
-        context.issueAmbiguousError(AmbiguousTypeError(tree, tree.pos,
+        context.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
           if (isView) viewMsg
           else s"ambiguous implicit values:\n${coreMsg}match expected type $pt")
         )
@@ -1182,9 +1184,7 @@ trait ContextErrors {
     }
 
     def DivergingImplicitExpansionError(tree: Tree, pt: Type, sym: Symbol)(implicit context0: Context) =
-      issueDivergentImplicitsError(tree,
-          "diverging implicit expansion for type "+pt+"\nstarting with "+
-          sym.fullLocationString)
+      issueTypeError(DivergentImplicitTypeError(tree, pt, sym))
   }
 
   object NamesDefaultsErrorsGen {
@@ -1234,138 +1234,5 @@ trait ContextErrors {
       issueNormalTypeError(arg, "positional after named argument.")
       setError(arg)
     }
-  }
-
-  // using an exception here is actually a good idea
-  // because the lifespan of this exception is extremely small and controlled
-  // moreover exceptions let us avoid an avalanche of "if (!hasError) do stuff" checks
-  case object MacroBodyTypecheckException extends Exception with scala.util.control.ControlThrowable
-
-  trait MacroErrors {
-    self: MacroTyper =>
-
-    private implicit val context0 = typer.context
-    val context = typer.context
-
-    // helpers
-
-    private def lengthMsg(flavor: String, violation: String, extra: Symbol) = {
-      val noun = if (flavor == "value") "parameter" else "type parameter"
-      val message = noun + " lists have different length, " + violation + " extra " + noun
-      val suffix = if (extra ne NoSymbol) " " + extra.defString else ""
-      message + suffix
-    }
-
-    private def abbreviateCoreAliases(s: String): String = List("WeakTypeTag", "Expr").foldLeft(s)((res, x) => res.replace("c.universe." + x, "c." + x))
-
-    private def showMeth(pss: List[List[Symbol]], restpe: Type, abbreviate: Boolean) = {
-      var argsPart = (pss map (ps => ps map (_.defString) mkString ("(", ", ", ")"))).mkString
-      if (abbreviate) argsPart = abbreviateCoreAliases(argsPart)
-      var retPart = restpe.toString
-      if (abbreviate || macroDdef.tpt.tpe == null) retPart = abbreviateCoreAliases(retPart)
-      argsPart + ": " + retPart
-    }
-
-    // not exactly an error generator, but very related
-    // and I dearly wanted to push it away from Macros.scala
-    private def checkSubType(slot: String, rtpe: Type, atpe: Type) = {
-      val ok = if (macroDebugVerbose) {
-        withTypesExplained(rtpe <:< atpe)
-      } else rtpe <:< atpe
-      if (!ok) {
-        if (!macroDebugVerbose)
-          explainTypes(rtpe, atpe)
-        compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, abbreviateCoreAliases(rtpe.toString), abbreviateCoreAliases(atpe.toString)))
-      }
-    }
-
-    // errors
-
-    private def fail() = {
-      // need to set the IS_ERROR flag to prohibit spurious expansions
-      if (macroDef != null) macroDef setFlag IS_ERROR
-      // not setting ErrorSymbol as in `infer.setError`, because we still need to know that it's a macro
-      // otherwise assignTypeToTree in Namers might fail if macroDdef.tpt == EmptyTree
-      macroDdef setType ErrorType
-      throw MacroBodyTypecheckException
-    }
-
-    private def genericError(tree: Tree, message: String) = {
-      issueNormalTypeError(tree, message)
-      fail()
-    }
-
-    private def implRefError(message: String) = {
-      val treeInfo.Applied(implRef, _, _) = macroDdef.rhs
-      genericError(implRef, message)
-    }
-
-    private def compatibilityError(message: String) =
-      implRefError(
-        "macro implementation has wrong shape:"+
-        "\n required: " + showMeth(rparamss, rret, abbreviate = true) +
-        "\n found   : " + showMeth(aparamss, aret, abbreviate = false) +
-        "\n" + message)
-
-    // Phase I: sanity checks
-
-    def MacroDefIsFastTrack() = {
-      macroLogVerbose("typecheck terminated unexpectedly: macro is fast track")
-      assert(!macroDdef.tpt.isEmpty, "fast track macros must provide result type")
-      throw MacroBodyTypecheckException // don't call fail, because we don't need IS_ERROR
-    }
-
-    def MacroFeatureNotEnabled() = {
-      macroLogVerbose("typecheck terminated unexpectedly: language.experimental.macros feature is not enabled")
-      fail()
-    }
-
-    // Phase II: typecheck the right-hand side of the macro def
-
-    // do nothing, just fail. relevant typecheck errors have already been reported
-    def MacroDefUntypeableBodyError() = fail()
-
-    def MacroDefInvalidBodyError() = genericError(macroDdef, "macro body has wrong shape:\n required: macro [<implementation object>].<method name>[[<type args>]]")
-
-    def MacroImplNotPublicError() = implRefError("macro implementation must be public")
-
-    def MacroImplOverloadedError() = implRefError("macro implementation cannot be overloaded")
-
-    def MacroImplWrongNumberOfTypeArgumentsError(macroImplRef: Tree) = implRefError(typer.TyperErrorGen.TypedApplyWrongNumberOfTpeParametersErrorMessage(macroImplRef))
-
-    def MacroImplNotStaticError() = implRefError("macro implementation must be in statically accessible object")
-
-    // Phase III: check compatibility between the macro def and its macro impl
-    // aXXX (e.g. aparams) => characteristics of the macro impl ("a" stands for "actual")
-    // rXXX (e.g. rparams) => characteristics of a reference macro impl signature synthesized from the macro def ("r" stands for "reference")
-
-    def MacroImplNonTagImplicitParameters(params: List[Symbol]) = compatibilityError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
-
-    def MacroImplParamssMismatchError() = compatibilityError("number of parameter sections differ")
-
-    def MacroImplExtraParamsError(aparams: List[Symbol], rparams: List[Symbol]) = compatibilityError(lengthMsg("value", "found", aparams(rparams.length)))
-
-    def MacroImplMissingParamsError(aparams: List[Symbol], rparams: List[Symbol]) = compatibilityError(abbreviateCoreAliases(lengthMsg("value", "required", rparams(aparams.length))))
-
-    def checkMacroImplParamTypeMismatch(atpe: Type, rparam: Symbol) = checkSubType("parameter " + rparam.name, rparam.tpe, atpe)
-
-    def checkMacroImplResultTypeMismatch(atpe: Type, rret: Type) = checkSubType("return type", atpe, rret)
-
-    def MacroImplParamNameMismatchError(aparam: Symbol, rparam: Symbol) = compatibilityError("parameter names differ: " + rparam.name + " != " + aparam.name)
-
-    def MacroImplVarargMismatchError(aparam: Symbol, rparam: Symbol) = {
-      if (isRepeated(rparam) && !isRepeated(aparam))
-        compatibilityError("types incompatible for parameter " + rparam.name + ": corresponding is not a vararg parameter")
-      if (!isRepeated(rparam) && isRepeated(aparam))
-        compatibilityError("types incompatible for parameter " + aparam.name + ": corresponding is not a vararg parameter")
-    }
-
-    def MacroImplTargMismatchError(atargs: List[Type], atparams: List[Symbol]) =
-      compatibilityError(typer.infer.InferErrorGen.NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes))
-
-    def MacroImplTparamInstantiationError(atparams: List[Symbol], ex: NoInstance) =
-      compatibilityError(
-        "type parameters "+(atparams map (_.defString) mkString ", ")+" cannot be instantiated\n"+
-        ex.getMessage)
   }
 }

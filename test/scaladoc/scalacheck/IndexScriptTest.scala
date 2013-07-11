@@ -8,14 +8,20 @@ import java.net.{URLClassLoader, URLDecoder}
 object Test extends Properties("IndexScript") {
 
   def getClasspath = {
-    val loader = Thread.currentThread.getContextClassLoader
-    val paths = loader.asInstanceOf[URLClassLoader].getURLs
-    val morepaths = loader.getParent.asInstanceOf[URLClassLoader].getURLs
-    (paths ++ morepaths).map(u => URLDecoder.decode(u.getPath)).mkString(java.io.File.pathSeparator)
+    // these things can be tricky
+    // this test previously relied on the assumption that the current thread's classloader is an url classloader and contains all the classpaths
+    // does partest actually guarantee this? to quote Leonard Nimoy: The answer, of course, is no.
+    // this test _will_ fail again some time in the future.
+    // Footnote: java.lang.ClassCastException: org.apache.tools.ant.loader.AntClassLoader5 cannot be cast to java.net.URLClassLoader
+    val loader = Thread.currentThread.getContextClassLoader.asInstanceOf[URLClassLoader]
+    val paths = loader.getURLs.map(u => URLDecoder.decode(u.getPath))
+    paths mkString java.io.File.pathSeparator
   }
 
   val docFactory = {
     val settings = new doc.Settings({Console.err.println(_)})
+    settings.scaladocQuietRun = true
+    settings.nowarn.value = true
     settings.classpath.value = getClasspath
     val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
     new doc.DocFactory(reporter, settings)

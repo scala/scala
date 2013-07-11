@@ -113,7 +113,7 @@ class CompileSocket extends CompileOutputCommon {
    */
   def getPort(vmArgs: String): Int = {
     val maxPolls = 300
-    val sleepTime = 25
+    val sleepTime = 25L
 
     var attempts = 0
     var port = pollPort()
@@ -152,9 +152,9 @@ class CompileSocket extends CompileOutputCommon {
     * cannot be established.
     */
   def getOrCreateSocket(vmArgs: String, create: Boolean = true): Option[Socket] = {
-    val maxMillis = 10 * 1000   // try for 10 seconds
-    val retryDelay = 50
-    val maxAttempts = maxMillis / retryDelay
+    val maxMillis = 10L * 1000   // try for 10 seconds
+    val retryDelay = 50L
+    val maxAttempts = (maxMillis / retryDelay).toInt
 
     def getsock(attempts: Int): Option[Socket] = attempts match {
       case 0    => warn("Unable to establish connection to compilation daemon") ; None

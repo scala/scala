@@ -43,8 +43,6 @@ import scala.tools.nsc.util.InterruptReq
  */
 trait CompilerControl { self: Global =>
 
-  import syntaxAnalyzer.UnitParser
-
   type Response[T] = scala.tools.nsc.interactive.Response[T]
 
   /** The scheduler by which client and compiler communicate
@@ -297,6 +295,14 @@ trait CompilerControl { self: Global =>
     val tpe: Type
     val accessible: Boolean
     def implicitlyAdded = false
+
+    private def accessible_s = if (accessible) "" else "[inaccessible] "
+    def forceInfoString = {
+      definitions.fullyInitializeSymbol(sym)
+      definitions.fullyInitializeType(tpe)
+      infoString
+    }
+    def infoString = s"$accessible_s${sym.defStringSeenAs(tpe)}"
   }
 
   case class TypeMember(

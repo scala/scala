@@ -8,7 +8,9 @@
 
 
 
-package scala.runtime
+package scala
+package runtime
+
 
 trait Boxed {
 

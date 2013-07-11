@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend.icode.analysis
 
 import scala.collection.{ mutable, immutable }
@@ -26,7 +27,7 @@ abstract class CopyPropagation {
   case object This extends Location
 
   /** Values that can be on the stack. */
-  abstract class Value { }
+  sealed abstract class Value { }
   case class Record(cls: Symbol, bindings: mutable.Map[Symbol, Value]) extends Value { }
   /** The value of some location in memory. */
   case class Deref(l: Location) extends Value
@@ -456,7 +457,7 @@ abstract class CopyPropagation {
     final def simulateCall(state: copyLattice.State, method: Symbol, static: Boolean): copyLattice.State = {
       val out = new copyLattice.State(state.bindings, state.stack)
       out.stack = out.stack.drop(method.info.paramTypes.length + (if (static) 0 else 1))
-      if (method.info.resultType != definitions.UnitClass.tpe && !method.isConstructor)
+      if (method.info.resultType != definitions.UnitTpe && !method.isConstructor)
         out.stack = Unknown :: out.stack
       if (!isPureMethod(method))
         invalidateRecords(out)
@@ -541,7 +542,8 @@ abstract class CopyPropagation {
       m.isGetter // abstract getters are still pure, as we 'know'
 
     final override def toString() = (
-      method.blocks map { b =>
+      if (method eq null) List("<null>")
+      else method.blocks map { b =>
         "\nIN(%s):\t Bindings: %s".format(b.label, in(b).bindings) +
         "\nIN(%s):\t Stack: %s".format(b.label, in(b).stack)
       }

@@ -3,7 +3,8 @@
  * @author Iulian Dragos
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package symtab
 package classfile
 
@@ -73,7 +74,7 @@ abstract class ICodeReader extends ClassfileParser {
   private def parseMember(field: Boolean): (JavaAccFlags, Symbol) = {
     val jflags   = JavaAccFlags(u2)
     val name     = pool getName u2
-    /** If we're parsing a scala module, the owner of members is always
+    /*  If we're parsing a scala module, the owner of members is always
      *  the module symbol.
      */
     val owner = (
@@ -504,7 +505,7 @@ abstract class ICodeReader extends ClassfileParser {
           // TODO, this is just a place holder. A real implementation must parse the class constant entry
           debuglog("Found JVM invokedynamic instructionm, inserting place holder ICode INVOKE_DYNAMIC.")
           containsInvokeDynamic = true
-          val poolEntry = in.nextChar
+          val poolEntry = in.nextChar.toInt
           in.skip(2)
           code.emit(INVOKE_DYNAMIC(poolEntry))
 
@@ -918,6 +919,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
 
     /** Return the local at given index, with the given type. */
+    def getLocal(idx: Char, kind: TypeKind): Local = getLocal(idx.toInt, kind)
     def getLocal(idx: Int, kind: TypeKind): Local = {
       assert(idx < maxLocals, "Index too large for local variable.")
 

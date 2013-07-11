@@ -1,4 +1,4 @@
-[[syntax trees at end of                lambdalift]] // newSource1
+[[syntax trees at end of                lambdalift]] // newSource1.scala
 package <empty> {
   class T extends Object {
     <paramaccessor> val classParam: Int = _;
@@ -15,11 +15,11 @@ package <empty> {
       }
     };
     def bar(barParam: Int): Object = {
-      @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = new runtime.VolatileObjectRef(null);
+      @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = scala.runtime.VolatileObjectRef.zero();
       T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
     };
     def tryy(tryyParam: Int): Function0 = {
-      var tryyLocal: runtime.IntRef = new runtime.IntRef(0);
+      var tryyLocal: runtime.IntRef = scala.runtime.IntRef.create(0);
       {
         (new anonymous class $anonfun$tryy$1(T.this, tryyParam, tryyLocal): Function0)
       }

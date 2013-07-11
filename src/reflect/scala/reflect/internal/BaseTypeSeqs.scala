@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect
+package scala
+package reflect
 package internal
 
 // todo implement in terms of BitSet
@@ -65,15 +66,14 @@ trait BaseTypeSeqs {
             pending += i
             try {
               mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
-                case Some(tp0) =>
+                case NoType => typeError("no common type instance of base types "+(variants mkString ", and ")+" exists.")
+                case tp0    =>
                   pending(i) = false
                   elems(i) = tp0
                   tp0
-                case None =>
-                  typeError(
-                    "no common type instance of base types "+(variants mkString ", and ")+" exists.")
               }
-            } catch {
+            }
+            catch {
               case CyclicInheritance =>
                 typeError(
                   "computing the common type instance of base types "+(variants mkString ", and ")+" leads to a cycle.")
@@ -180,7 +180,7 @@ trait BaseTypeSeqs {
       def nextRawElem(i: Int): Type = {
         val j = index(i)
         val pbts = pbtss(i)
-        if (j < pbts.length) pbts.rawElem(j) else AnyClass.tpe
+        if (j < pbts.length) pbts.rawElem(j) else AnyTpe
       }
       var minSym: Symbol = NoSymbol
       while (minSym != AnyClass) {

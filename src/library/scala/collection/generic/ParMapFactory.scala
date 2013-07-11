@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.generic
+package scala
+package collection
+package generic
 
 import scala.collection.parallel.ParMap
 import scala.collection.parallel.ParMapLike

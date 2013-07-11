@@ -7,7 +7,7 @@ package scala.tools.partest
 
 import scala.tools.nsc
 import scala.tools.nsc._
-import scala.tools.nsc.util.CommandLineParser
+import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.doc.{ DocFactory, Universe }
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._

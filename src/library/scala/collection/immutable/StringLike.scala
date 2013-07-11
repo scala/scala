@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import mutable.Builder
@@ -221,12 +222,33 @@ self =>
    */
   def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
 
+  /**
+   * @throws `java.lang.IllegalArgumentException` - If the string does not contain a parsable boolean.
+   */
   def toBoolean: Boolean = parseBoolean(toString)
+  /**
+   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable byte.
+   */
   def toByte: Byte       = java.lang.Byte.parseByte(toString)
+  /**
+   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable short.
+   */
   def toShort: Short     = java.lang.Short.parseShort(toString)
+  /**
+   * @throws `java.lang.NumberFormatException`  - If the string does not contain a parsable int.
+   */
   def toInt: Int         = java.lang.Integer.parseInt(toString)
+  /**
+   * @throws `java.lang.NumberFormatException`  - If the string does not contain a parsable long.
+   */
   def toLong: Long       = java.lang.Long.parseLong(toString)
+  /**
+   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable float.
+   */
   def toFloat: Float     = java.lang.Float.parseFloat(toString)
+  /**
+   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable double.
+   */
   def toDouble: Double   = java.lang.Double.parseDouble(toString)
 
   private def parseBoolean(s: String): Boolean =

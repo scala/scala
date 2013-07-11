@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
@@ -9,8 +10,6 @@ package macros
  */
 trait Typers {
   self: Context =>
-
-  import universe._
 
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
@@ -24,13 +23,26 @@ trait Typers {
    */
   def openMacros: List[Context]
 
-  /** Types along with corresponding trees for which implicit arguments are currently searched.
+  /** Information about one of the currently considered implicit candidates.
+   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
+   *  hence implicit searches can recursively trigger other implicit searches.
+   *
+   *  `pre` and `sym` provide information about the candidate itself.
+   *  `pt` and `tree` store the parameters of the implicit search the candidate is participating in.
+   */
+  case class ImplicitCandidate(pre: Type, sym: Symbol, pt: Type, tree: Tree)
+
+  /** Information about one of the currently considered implicit candidates.
+   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
+   *  hence implicit searches can recursively trigger other implicit searches.
+   *
    *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
+   *  If we're in an implicit macro being expanded, it's included in this list.
    *
    *  Unlike `enclosingImplicits`, this is a def, which means that it gets recalculated on every invocation,
    *  so it might change depending on what is going on during macro expansion.
    */
-  def openImplicits: List[(Type, Tree)]
+  def openImplicits: List[ImplicitCandidate]
 
   /** Typechecks the provided tree against the expected type `pt` in the macro callsite context.
    *
@@ -45,7 +57,7 @@ trait Typers {
    *
    *  @throws [[scala.reflect.macros.TypecheckException]]
    */
-  def typeCheck(tree: Tree, pt: Type = WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
+  def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
 
   /** Infers an implicit value of the expected type `pt` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.

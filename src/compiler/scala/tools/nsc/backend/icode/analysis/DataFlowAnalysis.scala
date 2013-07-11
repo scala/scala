@@ -4,7 +4,8 @@
  */
 
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend.icode.analysis
 
 import scala.collection.{ mutable, immutable }

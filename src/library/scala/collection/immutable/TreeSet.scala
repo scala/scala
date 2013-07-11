@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -50,6 +51,9 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
 @SerialVersionUID(-5685982407650748405L)
 class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
+
+  if (ordering eq null)
+    throw new NullPointerException("ordering must not be null")
 
   override def stringPrefix = "TreeSet"
 

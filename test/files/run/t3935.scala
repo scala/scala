@@ -9,7 +9,7 @@ object Test {
     try {
       assert(q.front != null)
     } catch {
-      case _ =>
+      case _: Throwable =>
     }
   }
 }

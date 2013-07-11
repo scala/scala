@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 /** A common class for lightweight sets.
  */

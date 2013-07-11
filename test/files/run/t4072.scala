@@ -1,5 +1,7 @@
 import scala.tools.nsc._
 
+import scala.language.{ reflectiveCalls }
+
 object Test {
   class DryRun {
     val compiler = new Global(new Settings()) { 

@@ -2,6 +2,8 @@ package scala
 package reflect
 package internal
 
+import scala.language.existentials // SI-6541
+
 package object util {
   import StringOps.longestCommonPrefix
 
@@ -25,11 +27,10 @@ package object util {
 
     if (isModule)
       (name split '$' filterNot (_ == "")).last + "$"
-    else if (isAnon) {
-      val parents = clazz.getSuperclass :: clazz.getInterfaces.toList
-      parents map (c => shortClass(c)) mkString " with "
-    }
-    else shortenName(name)
+    else if (isAnon)
+      clazz.getSuperclass :: clazz.getInterfaces.toList map (c => shortClass(c)) mkString " with "
+    else
+      shortenName(name)
   }
   /**
    * Adds the `sm` String interpolator to a [[scala.StringContext]].

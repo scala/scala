@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
@@ -340,7 +341,7 @@ trait GenTraversableOnce[+A] extends Any {
    *
    *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   A1    The type over which the ordering is defined.
-   *  @return   the smallest element of this $coll with respect to the ordering `cmp`.
+   *  @return   the smallest element of this $coll with respect to the ordering `ord`.
    *
    *  @usecase def min: A
    *    @inheritdoc
@@ -353,7 +354,7 @@ trait GenTraversableOnce[+A] extends Any {
    *
    *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   A1    The type over which the ordering is defined.
-   *  @return   the largest element of this $coll with respect to the ordering `cmp`.
+   *  @return   the largest element of this $coll with respect to the ordering `ord`.
    *
    *  @usecase def max: A
    *    @inheritdoc
@@ -362,8 +363,34 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def max[A1 >: A](implicit ord: Ordering[A1]): A
 
+  /** Finds the first element which yields the largest value measured by function f.
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The result type of the function f.
+   *  @param    f     The measuring function.
+   *  @return   the first element of this $coll with the largest value measured by function f 
+   *  with respect to the ordering `cmp`.
+   *
+   *  @usecase def maxBy[B](f: A => B): A
+   *    @inheritdoc
+   *
+   *    @return   the first element of this $coll with the largest value measured by function f.
+   */
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A
 
+  /** Finds the first element which yields the smallest value measured by function f.
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The result type of the function f.
+   *  @param    f     The measuring function.
+   *  @return   the first element of this $coll with the smallest value measured by function f 
+   *  with respect to the ordering `cmp`.
+   *
+   *  @usecase def minBy[B](f: A => B): A
+   *    @inheritdoc
+   *
+   *    @return   the first element of this $coll with the smallest value measured by function f.
+   */
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A
 
   def forall(pred: A => Boolean): Boolean

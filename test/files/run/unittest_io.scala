@@ -1,3 +1,5 @@
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
 
   def main(args: Array[String]) {

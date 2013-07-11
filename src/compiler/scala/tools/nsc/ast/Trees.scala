@@ -54,77 +54,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     case xs :: rest => rest.foldLeft(Apply(gen.mkSuperInitCall, xs): Tree)(Apply.apply)
   }
 
-    /** Generates a template with constructor corresponding to
-   *
-   *  constrmods (vparams1_) ... (vparams_n) preSuper { presupers }
-   *  extends superclass(args_1) ... (args_n) with mixins { self => body }
-   *
-   *  This gets translated to
-   *
-   *  extends superclass with mixins { self =>
-   *    presupers' // presupers without rhs
-   *    vparamss   // abstract fields corresponding to value parameters
-   *    def <init>(vparamss) {
-   *      presupers
-   *      super.<init>(args)
-   *    }
-   *    body
-   *  }
-   */
-  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): Template = {
-    /* Add constructor to template */
-
-    // create parameters for <init> as synthetic trees.
-    var vparamss1 = mmap(vparamss) { vd =>
-      atPos(vd.pos.focus) {
-        val mods = Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR)
-        ValDef(mods withAnnotations vd.mods.annotations, vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
-      }
-    }
-    val (edefs, rest) = body span treeInfo.isEarlyDef
-    val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
-    val gvdefs = evdefs map {
-      case vdef @ ValDef(_, _, tpt, _) =>
-        copyValDef(vdef)(
-        // atPos for the new tpt is necessary, since the original tpt might have no position
-        // (when missing type annotation for ValDef for example), so even though setOriginal modifies the
-        // position of TypeTree, it would still be NoPosition. That's what the author meant.
-        tpt = atPos(vdef.pos.focus)(TypeTree() setOriginal tpt setPos tpt.pos.focus),
-        rhs = EmptyTree
-      )
-    }
-    val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = vdef.mods | PRESUPER) }
-
-    val constrs = {
-      if (constrMods hasFlag TRAIT) {
-        if (body forall treeInfo.isInterfaceMember) List()
-        else List(
-          atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
-      } else {
-        // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
-        if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
-          vparamss1 = List() :: vparamss1
-        val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
-                                         // this requires knowing which of the parents is a type macro and which is not
-                                         // and that's something that cannot be found out before typer
-                                         // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
-                                         // this means that we don't know what will be the arguments of the super call
-                                         // therefore here we emit a dummy which gets populated when the template is named and typechecked
-        List(
-          // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
-          // is it going to be a problem that we can no longer include the `argss`?
-          atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant(()))))))
-      }
-    }
-    constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
-    // Field definitions for the class - remove defaults.
-    val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
-
-    Template(parents, self, gvdefs ::: fieldDefs ::: constrs ::: etdefs ::: rest)
-  }
-
   /** Construct class definition with given class symbol, value parameters,
    *  supercall arguments and template body.
    *
@@ -143,9 +72,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     )
 
     ClassDef(sym,
-      Template(sym.info.parents map TypeTree,
-               if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
-               constrMods, vparamss, body, superPos))
+      gen.mkTemplate(sym.info.parents map TypeTree,
+                    if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
+                    constrMods, vparamss, body, superPos))
   }
 
  // --- subcomponents --------------------------------------------------
@@ -221,7 +150,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       try unit.body = transform(unit.body)
       catch {
         case ex: Exception =>
-          println(supplementErrorMessage("unhandled exception while transforming "+unit))
+          log(supplementErrorMessage("unhandled exception while transforming "+unit))
           throw ex
       }
     }

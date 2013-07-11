@@ -1,7 +1,9 @@
-import scala.actors._
-import scala.actors.Actor._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors._
+  import scala.actors.Actor._
 
   def main (args: Array[String]) {
     val actors = (1 to 1000).toList map { x => actor {

@@ -2,9 +2,11 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
  */
-package scala.reflect
+package scala
+package reflect
 package internal
 
+import scala.language.implicitConversions
 import java.lang.{ Class => jClass }
 import java.lang.annotation.{ Annotation => jAnnotation }
 import java.lang.reflect.{

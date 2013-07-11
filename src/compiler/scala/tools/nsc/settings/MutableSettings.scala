@@ -9,8 +9,9 @@ package nsc
 package settings
 
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
-import scala.reflect.internal.util.StringOps
+import scala.collection.generic.Clearable
 import scala.io.Source
+import scala.reflect.internal.util.StringOps
 import scala.reflect.{ ClassTag, classTag }
 
 /** A mutable Settings object.
@@ -107,7 +108,7 @@ class MutableSettings(val errorFn: String => Unit)
 
   /** Split the given line into parameters.
    */
-  def splitParams(line: String) = cmd.Parser.tokenize(line, errorFn)
+  def splitParams(line: String) = cmd.CommandLineParser.tokenize(line, errorFn)
 
   /** Returns any unprocessed arguments.
    */
@@ -251,8 +252,7 @@ class MutableSettings(val errorFn: String => Unit)
       else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
         new PlainFile(Path(name))
       else
-//      throw new FatalError(name + " does not exist or is not a directory")
-        dir
+        throw new FatalError(name + " does not exist or is not a directory")
     )
 
     /** Set the single output directory. From now on, all files will
@@ -543,7 +543,7 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     val arg: String,
     descr: String)
-  extends Setting(name, descr) {
+  extends Setting(name, descr) with Clearable {
     type T = List[String]
     protected var v: T = Nil
     def appendToValue(str: String) { value ++= List(str) }
@@ -556,6 +556,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
+    def clear(): Unit = (v = Nil)
     def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -609,44 +610,49 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     descr: String,
     default: String
-  ) extends Setting(name, mkPhasesHelp(descr, default)) {
+  ) extends Setting(name, mkPhasesHelp(descr, default)) with Clearable {
     private[nsc] def this(name: String, descr: String) = this(name, descr, "")
 
     type T = List[String]
-    protected var v: T = Nil
-    override def value = if (v contains "all") List("all") else super.value
-    private lazy val (numericValues, stringValues) =
-      value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))
-
-    /** A little ad-hoc parsing.  If a string is not the name of a phase, it can also be:
-     *    a phase id: 5
-     *    a phase id range: 5-10 (inclusive of both ends)
-     *    a range with no start: -5 means up to and including 5
-     *    a range with no end: 10- means 10 until completion.
-     */
-    private def stringToPhaseIdTest(s: String): Int => Boolean = (s indexOf '-') match {
-      case -1  => (_ == s.toInt)
-      case 0   => (_ <= s.tail.toInt)
-      case idx =>
-        if (s.last == '-') (_ >= s.init.toInt)
-        else (s splitAt idx) match {
-          case (s1, s2) => (id => id >= s1.toInt && id <= s2.tail.toInt)
-        }
-    }
-    private lazy val phaseIdTest: Int => Boolean =
-      (numericValues map stringToPhaseIdTest) match {
-        case Nil    => _ => false
-        case fns    => fns.reduceLeft((f1, f2) => id => f1(id) || f2(id))
+    private[this] var _v: T = Nil
+    private[this] var _numbs: List[(Int,Int)] = Nil
+    private[this] var _names: T = Nil
+    //protected var v: T = Nil
+    protected def v: T = _v
+    protected def v_=(t: T): Unit = {
+      // throws NumberFormat on bad range (like -5-6)
+      def asRange(s: String): (Int,Int) = (s indexOf '-') match {
+        case -1 => (s.toInt, s.toInt)
+        case 0  => (-1, s.tail.toInt)
+        case i if s.last == '-' => (s.init.toInt, Int.MaxValue)
+        case i  => (s.take(i).toInt, s.drop(i+1).toInt)
       }
+      val numsAndStrs = t filter (_.nonEmpty) partition (_ forall (ch => ch.isDigit || ch == '-'))
+      _numbs = numsAndStrs._1 map asRange
+      _names = numsAndStrs._2
+      _v     = t
+    }
+    override def value = if (v contains "all") List("all") else super.value // i.e., v
+    private def numericValues = _numbs
+    private def stringValues  = _names
+    private def phaseIdTest(i: Int): Boolean = numericValues exists (_ match {
+      case (min, max) => min <= i && i <= max
+    })
 
     def tryToSet(args: List[String]) =
       if (default == "") errorAndValue("missing phase", None)
-      else { tryToSetColon(List(default)) ; Some(args) }
+      else tryToSetColon(List(default)) map (_ => args)
 
-    override def tryToSetColon(args: List[String]) = args match {
-      case Nil  => if (default == "") errorAndValue("missing phase", None) else tryToSetColon(List(default))
-      case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
-    }
+    override def tryToSetColon(args: List[String]) = try {
+      args match {
+        case Nil  => if (default == "") errorAndValue("missing phase", None)
+                     else tryToSetColon(List(default))
+        case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
+      }
+    } catch { case _: NumberFormatException => None }
+
+    def clear(): Unit = (v = Nil)
+
     // we slightly abuse the usual meaning of "contains" here by returning
     // true if our phase list contains "all", regardless of the incoming argument
     def contains(phName: String)     = doAllPhases || containsName(phName)

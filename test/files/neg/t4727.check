@@ -1,10 +1,4 @@
-t4727.scala:5: error: type mismatch;
- found   : Null
- required: Int
-Note that implicit conversions are not applicable because they are ambiguous:
- both method Integer2intNullConflict in class LowPriorityImplicits of type (x: Null)Int
- and method Integer2int in object Predef of type (x: Integer)Int
- are possible conversion functions from Null to Int
+t4727.scala:5: error: an expression of type Null is ineligible for implicit conversion
 Error occurred in an application involving default arguments.
     new C[Int]
     ^

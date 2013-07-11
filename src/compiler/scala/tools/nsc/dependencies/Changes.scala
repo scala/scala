@@ -16,7 +16,7 @@ abstract class Changes {
   import compiler._
   import symtab.Flags._
 
-  abstract class Change
+  sealed abstract class Change
 
   private lazy val annotationsChecked =
     List(definitions.SpecializedClass) // Any others that should be checked?
@@ -38,7 +38,7 @@ abstract class Changes {
   /** An entity in source code, either a class or a member definition.
    *  Name is fully-qualified.
    */
-  abstract class Entity
+  sealed abstract class Entity
   case class Class(name: String) extends Entity
   case class Definition(name: String) extends Entity
 

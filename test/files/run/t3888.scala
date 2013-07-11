@@ -1,3 +1,6 @@
+
+// in a match, which notion of equals prevails?
+// extending Tuple doesn't seem to be at issue here.
 object Test {
 
   val T1 = new P

@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 import scala.ref.WeakReference
@@ -13,9 +14,7 @@ import java.lang.reflect.{
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
 import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags, JMethodOrConstructor }
-import JavaAccFlags._
 import internal.pickling.ByteCodecs
-import internal.ClassfileConstants._
 import internal.pickling.UnPickler
 import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
@@ -126,7 +125,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private def ErrorStaticModule(sym: Symbol)                  = abort(s"$sym is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
     private def ErrorNotMember(sym: Symbol, owner: Symbol)      = abort(s"expected a member of $owner, you provided ${sym.kindString} ${sym.fullName}")
     private def ErrorNotField(sym: Symbol)                      = abort(s"expected a field or an accessor method symbol, you provided $sym")
-    private def ErrorSetImmutableField(sym: Symbol)             = abort(s"cannot set an immutable field ${sym.name}")
     private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = abort(s"expected a constructor of $owner, you provided $sym")
     private def ErrorFree(member: Symbol, freeType: Symbol)     = abort(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
     private def ErrorNonExistentField(sym: Symbol)              = abort(
@@ -270,7 +268,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       lazy val jfield = ensureAccessible(fieldToJava(symbol))
       def get = jfield get receiver
       def set(value: Any) = {
-        if (!symbol.isMutable) ErrorSetImmutableField(symbol)
+        // it appears useful to be able to set values of vals, therefore I'm disabling this check
+        // if (!symbol.isMutable) ErrorSetImmutableField(symbol)
         jfield.set(receiver, value)
       }
       def bind(newReceiver: Any) = new JavaFieldMirror(newReceiver, symbol)
@@ -582,15 +581,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
                 info(s"unpickling Scala $clazz and $module with long Scala signature")
-                val byteSegments = slsig map (_.getBytes)
-                val lens = byteSegments map ByteCodecs.decode
-                val bytes = Array.ofDim[Byte](lens.sum)
-                var len = 0
-                for ((bs, l) <- byteSegments zip lens) {
-                  bs.copyToArray(bytes, len, l)
-                  len += l
-                }
-                unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
+                val encoded = slsig flatMap (_.getBytes)
+                val len = ByteCodecs.decode(encoded)
+                val decoded = encoded.take(len)
+                unpickler.unpickle(decoded, 0, clazz, module, jclazz.getName)
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
@@ -702,7 +696,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val parents = try {
           parentsLevel += 1
           val jsuperclazz = jclazz.getGenericSuperclass
-          val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
+          val superclazz = if (jsuperclazz == null) AnyTpe else typeToScala(jsuperclazz)
           superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
         } finally {
           parentsLevel -= 1
@@ -973,8 +967,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             javaTypeToValueClass(jclazz) orElse lookupClass
 
         assert (cls.isType,
-          sm"""${if (cls == NoSymbol) "not a type: symbol" else "no symbol could be"}
-              | loaded from $jclazz in $owner with name $simpleName and classloader $classLoader""")
+          (if (cls != NoSymbol) s"not a type: symbol $cls" else "no symbol could be") +
+          s" loaded from $jclazz in $owner with name $simpleName and classloader $classLoader")
 
         cls.asClass
       }
@@ -1280,14 +1274,12 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      syntheticCoreClasses get (owner.fullName, name) match {
-        case Some(tsym) =>
-          // synthetic core classes are only present in root mirrors
-          // because Definitions.scala, which initializes and enters them, only affects rootMirror
-          // therefore we need to enter them manually for non-root mirrors
-          if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
-          return tsym
-        case None =>
+      syntheticCoreClasses get ((owner.fullName, name)) foreach { tsym =>
+        // synthetic core classes are only present in root mirrors
+        // because Definitions.scala, which initializes and enters them, only affects rootMirror
+        // therefore we need to enter them manually for non-root mirrors
+        if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
+        return tsym
       }
     }
     info("*** missing: "+name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)

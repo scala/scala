@@ -19,7 +19,7 @@ trait TreeAndTypeAnalysis extends Debugging {
   // we use subtyping as a model for implication between instanceof tests
   // i.e., when S <:< T we assume x.isInstanceOf[S] implies x.isInstanceOf[T]
   // unfortunately this is not true in general:
-  // SI-6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefClass.tpe)
+  // SI-6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefTpe)
   def instanceOfTpImplies(tp: Type, tpImplied: Type) = {
     val tpValue    = tp.typeSymbol.isPrimitiveValueClass
 
@@ -28,7 +28,7 @@ trait TreeAndTypeAnalysis extends Debugging {
     // this allows us to reuse subtyping as a model for implication between instanceOf tests
     // the latter don't see a difference between AnyRef, Object or Any when comparing non-value types -- SI-6022
     val tpImpliedNormalizedToAny =
-      if (tpImplied =:= (if (tpValue) AnyValClass.tpe else AnyRefClass.tpe)) AnyClass.tpe
+      if (tpImplied =:= (if (tpValue) AnyValTpe else AnyRefTpe)) AnyTpe
       else tpImplied
 
     tp <:< tpImpliedNormalizedToAny
@@ -48,7 +48,7 @@ trait TreeAndTypeAnalysis extends Debugging {
       tp.typeSymbol match {
         // TODO case _ if tp.isTupleType => // recurse into component types?
         case UnitClass =>
-          Some(List(UnitClass.tpe))
+          Some(List(UnitTpe))
         case BooleanClass =>
           Some((List(ConstantType(Constant(true)), ConstantType(Constant(false)))))
         // TODO case _ if tp.isTupleType => // recurse into component types
@@ -95,7 +95,9 @@ trait TreeAndTypeAnalysis extends Debugging {
       // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
       // similar to typer.infer.approximateAbstracts
       object typeArgsToWildcardsExceptArray extends TypeMap {
-        def apply(tp: Type): Type = tp match {
+        // SI-6771 dealias would be enough today, but future proofing with the dealiasWiden.
+        // See neg/t6771b.scala for elaboration
+        def apply(tp: Type): Type = tp.dealiasWiden match {
           case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
             TypeRef(pre, sym, args map (_ => WildcardType))
           case _ =>

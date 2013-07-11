@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 
 import scala.reflect.api.{Universe => ApiUniverse}
 
@@ -42,6 +43,6 @@ package object api {
   // implementation is hardwired into `scala.reflect.reify.Taggers`
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   // todo. once we have implicit macros for tag generation, we can remove these anchors
-  private[scala] def materializeWeakTypeTag[T](u: ApiUniverse): u.WeakTypeTag[T] = ??? // macro
-  private[scala] def materializeTypeTag[T](u: ApiUniverse): u.TypeTag[T] = ??? // macro
+  private[scala] def materializeWeakTypeTag[T](u: ApiUniverse): u.WeakTypeTag[T] = macro ???
+  private[scala] def materializeTypeTag[T](u: ApiUniverse): u.TypeTag[T] = macro ???
 }

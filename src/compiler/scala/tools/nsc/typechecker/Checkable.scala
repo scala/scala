@@ -247,7 +247,7 @@ trait Checkable {
         case TypeRef(_, NothingClass | NullClass | AnyValClass, _) => false
         case RefinedType(_, decls) if !decls.isEmpty               => false
         case p                                                     =>
-          new CheckabilityChecker(AnyClass.tpe, p) isCheckable
+          new CheckabilityChecker(AnyTpe, p) isCheckable
       })
     )
 

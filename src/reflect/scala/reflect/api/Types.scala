@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -50,7 +51,7 @@ package api
  *
  *  @contentDiagram hideNodes "*Api"
  */
-trait Types extends ImplicitTags {
+trait Types {
   self: Universe =>
 
   /** The type of Scala types, and also Scala type signatures.
@@ -208,6 +209,12 @@ trait Types extends ImplicitTags {
     def widen: Type
 
     /******************* helpers *******************/
+
+    /** Provides an alternate if type is NoType.
+     *
+     *  @group Helpers
+     */
+    def orElse(alt: => Type): Type
 
     /** Substitute symbols in `to` for corresponding occurrences of references to
      *  symbols `from` in this type.

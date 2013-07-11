@@ -8,8 +8,7 @@ package backend
 package icode
 
 import scala.collection.{ mutable, immutable }
-import mutable.{ ListBuffer, ArrayBuffer }
-import scala.reflect.internal.util.{ Position, NoPosition }
+import mutable.ListBuffer
 import backend.icode.analysis.ProgramPoint
 import scala.language.postfixOps
 
@@ -17,8 +16,7 @@ trait BasicBlocks {
   self: ICodes =>
 
   import opcodes._
-  import global.{ settings, debuglog, log, nme }
-  import nme.isExceptionResultName
+  import global._
 
   /** Override Array creation for efficiency (to not go through reflection). */
   private implicit val instructionTag: scala.reflect.ClassTag[Instruction] = new scala.reflect.ClassTag[Instruction] {
@@ -38,7 +36,7 @@ trait BasicBlocks {
 
     import BBFlags._
 
-    def code = method.code
+    def code = if (method eq null) NoCode else method.code
 
     private final class SuccessorList() {
       private var successors: List[BasicBlock] = Nil
@@ -336,9 +334,9 @@ trait BasicBlocks {
            * put into ignore mode so we hear about it if there's a problem.
            */
           instr match {
-            case JUMP(_) | RETURN(_) | THROW(_) | SCOPE_EXIT(_)               => // ok
-            case STORE_LOCAL(local) if isExceptionResultName(local.sym.name)  => // ok
-            case x => log("Ignoring instruction, possibly at our peril, at " + pos + ": " + x)
+            case JUMP(_) | RETURN(_) | THROW(_) | SCOPE_EXIT(_)                  => // ok
+            case STORE_LOCAL(local) if nme.isExceptionResultName(local.sym.name) => // ok
+            case x                                                               => log("Ignoring instruction, possibly at our peril, at " + pos + ": " + x)
           }
         }
       }
@@ -416,7 +414,7 @@ trait BasicBlocks {
         enterIgnoreMode()
       }
     }
-    
+
     /**
      * Same as killIf but with the logic of the condition reversed
      */
@@ -477,16 +475,17 @@ trait BasicBlocks {
 
     def directSuccessors: List[BasicBlock] =
       if (isEmpty) Nil else lastInstruction match {
-        case JUMP(whereto)              => whereto :: Nil
-        case CJUMP(succ, fail, _, _)    => fail :: succ :: Nil
-        case CZJUMP(succ, fail, _, _)   => fail :: succ :: Nil
-        case SWITCH(_, labels)          => labels
-        case RETURN(_)                  => Nil
-        case THROW(_)                   => Nil
-        case _ =>
+        case JUMP(whereto)            => whereto :: Nil
+        case CJUMP(succ, fail, _, _)  => fail :: succ :: Nil
+        case CZJUMP(succ, fail, _, _) => fail :: succ :: Nil
+        case SWITCH(_, labels)        => labels
+        case RETURN(_)                => Nil
+        case THROW(_)                 => Nil
+        case _                        =>
           if (closed)
-            dumpClassesAndAbort("The last instruction is not a control flow instruction: " + lastInstruction)
-          else Nil
+            devWarning(s"$lastInstruction/${lastInstruction.getClass.getName} is not a control flow instruction")
+
+          Nil
       }
 
     /** Returns the predecessors of this block.     */

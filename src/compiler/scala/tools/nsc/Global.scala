@@ -3,10 +3,13 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
+import java.util.UUID._
 import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
@@ -14,6 +17,7 @@ import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
+import scala.reflect.io.VirtualFile
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
@@ -24,6 +28,7 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, JavaPlatform }
+import backend.jvm.GenBCode
 import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
@@ -98,16 +103,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       typer.typed(mkCast(tree, pt))
   }
 
-  /** Trees fresh from the oven, mostly for use by the parser. */
-  object treeBuilder extends {
-    val global: Global.this.type = Global.this
-  } with TreeBuilder {
-    def freshName(prefix: String): Name               = freshTermName(prefix)
-    def freshTermName(prefix: String): TermName       = currentUnit.freshTermName(prefix)
-    def freshTypeName(prefix: String): TypeName       = currentUnit.freshTypeName(prefix)
-    def o2p(offset: Int): Position                    = new OffsetPosition(currentUnit.source, offset)
-    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(currentUnit.source, start, mid, end)
-  }
+  /** A spare instance of TreeBuilder left for backwards compatibility. */
+  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new syntaxAnalyzer.ParserTreeBuilder
 
   /** Fold constants */
   object constfold extends {
@@ -218,7 +215,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
   def error(msg: String)                = globalError(msg)
-  def inform(msg: String)               = reporter.echo(msg)
+  override def inform(msg: String)      = reporter.echo(msg)
   override def globalError(msg: String) = reporter.error(NoPosition, msg)
   override def warning(msg: String)     =
     if (settings.fatalWarnings) globalError(msg)
@@ -614,6 +611,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsAfter = List("dce")
     val runsRightAfter = None
   } with GenASM
+
+  // phaseName = "bcode"
+  object genBCode extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("dce")
+    val runsRightAfter = None
+  } with GenBCode
 
   // phaseName = "terminal"
   object terminal extends {
@@ -1053,17 +1057,16 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def enteringMixin[T](op: => T): T         = enteringPhase(currentRun.mixinPhase)(op)
   @inline final def enteringPickler[T](op: => T): T       = enteringPhase(currentRun.picklerPhase)(op)
   @inline final def enteringRefchecks[T](op: => T): T     = enteringPhase(currentRun.refchecksPhase)(op)
+  @inline final def enteringSpecialize[T](op: => T): T    = enteringPhase(currentRun.specializePhase)(op)
   @inline final def enteringTyper[T](op: => T): T         = enteringPhase(currentRun.typerPhase)(op)
   @inline final def enteringUncurry[T](op: => T): T       = enteringPhase(currentRun.uncurryPhase)(op)
 
-  // Owners up to and including the first package class.
+  // Owners which aren't package classes.
   private def ownerChainString(sym: Symbol): String = (
     if (sym == null) ""
-    else sym.ownerChain.span(!_.isPackageClass) match {
-      case (xs, pkg :: _) => (xs :+ pkg) mkString " -> "
-      case _              => sym.ownerChain mkString " -> " // unlikely
-    }
+    else sym.ownerChain takeWhile (!_.isPackageClass) mkString " -> "
   )
+
   private def formatExplain(pairs: (String, Any)*): String = (
     pairs.toList collect { case (k, v) if v != null => "%20s: %s".format(k, v) } mkString "\n"
   )
@@ -1071,41 +1074,45 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
-  override def supplementErrorMessage(errorMessage: String): String =
+  override def supplementErrorMessage(errorMessage: String): String = {
     if (currentRun.supplementedError) errorMessage
     else try {
+      currentRun.supplementedError = true
       val tree      = analyzer.lastTreeToTyper
       val sym       = tree.symbol
       val tpe       = tree.tpe
-      val enclosing = lastSeenContext.enclClassOrMethod.tree
+      val site      = lastSeenContext.enclClassOrMethod.owner
+      val pos_s     = if (tree.pos.isDefined) s"line ${tree.pos.line} of ${tree.pos.source.file}" else "<unknown>"
+      val context_s = try {
+        // Taking 3 before, 3 after the fingered line.
+        val start = 0 max (tree.pos.line - 3)
+        val xs = scala.reflect.io.File(tree.pos.source.file.file).lines drop start take 7
+        val strs = xs.zipWithIndex map { case (line, idx) => f"${start + idx}%6d $line" }
+        strs.mkString("== Source file context for tree position ==\n\n", "\n", "")
+      }
+      catch { case t: Exception => devWarning("" + t) ; "<Cannot read source file>" }
 
       val info1 = formatExplain(
         "while compiling"    -> currentSource.path,
-        "during phase"       -> ( if (globalPhase eq phase) phase else "global=%s, enteringPhase=%s".format(globalPhase, phase) ),
+        "during phase"       -> ( if (globalPhase eq phase) phase else "globalPhase=%s, enteringPhase=%s".format(globalPhase, phase) ),
         "library version"    -> scala.util.Properties.versionString,
         "compiler version"   -> Properties.versionString,
         "reconstructed args" -> settings.recreateArgs.mkString(" ")
       )
       val info2 = formatExplain(
         "last tree to typer" -> tree.summaryString,
+        "tree position"      -> pos_s,
+        "tree tpe"           -> tpe,
         "symbol"             -> Option(sym).fold("null")(_.debugLocationString),
-        "symbol definition"  -> Option(sym).fold("null")(_.defString),
-        "tpe"                -> tpe,
+        "symbol definition"  -> Option(sym).fold("null")(s => s.defString + s" (a ${s.shortSymbolClass})"),
+        "symbol package"     -> sym.enclosingPackage.fullName,
         "symbol owners"      -> ownerChainString(sym),
-        "context owners"     -> ownerChainString(lastSeenContext.owner)
+        "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
       )
-      val info3: List[String] = (
-           ( List("== Enclosing template or block ==", nodePrinters.nodeToString(enclosing).trim) )
-        ++ ( if (tpe eq null) Nil else List("== Expanded type of tree ==", typeDeconstruct.show(tpe)) )
-        ++ ( if (!settings.debug) Nil else List("== Current unit body ==", nodePrinters.nodeToString(currentUnit.body)) )
-        ++ ( List(errorMessage) )
-      )
-
-      currentRun.supplementedError = true
-
-      ("\n" + info1) :: info2 :: info3 mkString "\n\n"
+      ("\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
     }
-    catch { case x: Exception => errorMessage }
+    catch { case _: Exception | _: TypeError => errorMessage }
+  }
 
   /** The id of the currently active run
    */
@@ -1389,9 +1396,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def registerPickle(sym: Symbol): Unit = ()
 
     /** does this run compile given class, module, or case factory? */
+    // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
+    //       Here we work around that wrinkle by claiming that a top-level, early-initialized member is compiled in
+    //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
+      else if (sym.isTopLevel && sym.isEarlyInitialized) true
       else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClass)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
@@ -1489,18 +1500,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       compileUnits(sources map (new CompilationUnit(_)), firstPhase)
     }
 
-    def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
-      try compileUnitsInternal(units, fromPhase)
-      catch { case ex: Throwable =>
-        val shown = if (settings.verbose)
-           stackTraceString(ex)
-         else
-           stackTraceHeadString(ex) // note that error stacktraces do not print in fsc
-
-        globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
-        throw ex
-      }
-    }
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =
+      compileUnitsInternal(units, fromPhase)
 
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       doInvalidation()
@@ -1617,6 +1618,25 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           enteringPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit))
         refreshProgress()
       }
+    }
+
+    // TODO: provide a way to specify a pretty name for debugging purposes
+    private def randomFileName() = (
+      "compileLateSynthetic-" + randomUUID().toString.replace("-", "") + ".scala"
+    )
+
+    def compileLate(code: PackageDef) {
+      // compatibility with SBT
+      // on the one hand, we need to specify some jfile here, otherwise sbt crashes with an NPE (SI-6870)
+      // on the other hand, we can't specify the obvious enclosingUnit, because then sbt somehow fails to run tests using type macros
+      // okay, now let's specify a guaranteedly non-existent file in an existing directory (so that we don't run into permission problems)
+      val syntheticFileName = randomFileName()
+      val fakeJfile = new java.io.File(syntheticFileName)
+      val virtualFile = new VirtualFile(syntheticFileName) { override def file = fakeJfile }
+      val sourceFile = new BatchSourceFile(virtualFile, code.toString)
+      val unit = new CompilationUnit(sourceFile)
+      unit.body = code
+      compileLate(unit)
     }
 
     /** Reset package class to state at typer (not sure what this

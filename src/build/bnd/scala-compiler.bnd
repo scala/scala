@@ -3,6 +3,6 @@ Bundle-SymbolicName: org.scala-lang.scala-compiler
 ver: @VERSION@
 Bundle-Version: ${ver}
 Export-Package: *;version=${ver}
-Import-Package: scala.tools.jline.*;resolution:=optional, \
+Import-Package: jline.*;resolution:=optional, \
                 org.apache.tools.ant.*;resolution:=optional, \
                 *

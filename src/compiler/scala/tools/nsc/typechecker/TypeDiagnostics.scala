@@ -126,7 +126,7 @@ trait TypeDiagnostics {
     else if (!member.isDeferred) member.accessed
     else {
       val getter = if (member.isSetter) member.getter(member.owner) else member
-      val flags  = if (getter.setter(member.owner) != NoSymbol) DEFERRED | MUTABLE else DEFERRED
+      val flags  = if (getter.setter(member.owner) != NoSymbol) DEFERRED.toLong | MUTABLE else DEFERRED
 
       getter.owner.newValue(getter.name.toTermName, getter.pos, flags) setInfo getter.tpe.resultType
     }
@@ -253,7 +253,7 @@ trait TypeDiagnostics {
   // For found/required errors where AnyRef would have sufficed:
   // explain in greater detail.
   def explainAnyVsAnyRef(found: Type, req: Type): String = {
-    if (AnyRefClass.tpe <:< req) notAnyRefMessage(found) else ""
+    if (AnyRefTpe <:< req) notAnyRefMessage(found) else ""
   }
 
   // TODO - figure out how to avoid doing any work at all
@@ -269,6 +269,24 @@ trait TypeDiagnostics {
       + explainVariance(found, req)
       + explainAnyVsAnyRef(found, req)
     )
+  }
+
+  def typePatternAdvice(sym: Symbol, ptSym: Symbol) = {
+    val clazz = if (sym.isModuleClass) sym.companionClass else sym
+    val caseString =
+      if (clazz.isCaseClass && (clazz isSubClass ptSym))
+        ( clazz.caseFieldAccessors
+          map (_ => "_")    // could use the actual param names here
+          mkString (s"`case ${clazz.name}(", ",", ")`")
+        )
+      else
+        "`case _: " + (clazz.typeParams match {
+          case Nil  => "" + clazz.name
+          case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
+        })+ "`"
+
+    "\nNote: if you intended to match against the class, try "+ caseString
+
   }
 
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
@@ -551,11 +569,7 @@ trait TypeDiagnostics {
       }
 
       // The checkDead call from typedArg is more selective.
-      def inMode(mode: Mode, tree: Tree): Tree = {
-        val modeOK = (mode & (EXPRmode | BYVALmode | POLYmode)) == (EXPRmode | BYVALmode)
-        if (modeOK) apply(tree)
-        else tree
-      }
+      def inMode(mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(tree) else tree
     }
 
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded

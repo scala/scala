@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
@@ -226,6 +227,182 @@ trait Kinds {
           }
         }
         else Nil
+      }
+    }
+  }
+
+  /**
+   * The data structure describing the kind of a given type.
+   * 
+   * Proper types are represented using ProperTypeKind.
+   *
+   * Type constructors are reprented using TypeConKind.
+   */
+  abstract class Kind {
+    import Kind.StringState
+    def description: String
+    def order: Int
+    def bounds: TypeBounds
+
+    /** Scala syntax notation of this kind.
+     * Proper types are expresses as A.
+     * Type constructors are expressed as F[k1 >: lo <: hi, k2, ...] where k1, k2, ... are parameter kinds.
+     * If the bounds exists at any level, it preserves the type variable names. Otherwise,
+     * it uses prescribed letters for each level: A, F, X, Y, Z.
+     */
+    def scalaNotation: String
+    
+    /** Kind notation used in http://adriaanm.github.com/files/higher.pdf.
+     * Proper types are expressed as *.
+     * Type constructors are expressed * -> *(lo, hi) -(+)-> *.
+     */
+    def starNotation: String
+
+    /** Contains bounds either as part of itself or its arguments.
+     */
+    def hasBounds: Boolean = !bounds.isEmptyBounds
+    
+    private[internal] def buildState(sym: Symbol, v: Variance)(s: StringState): StringState
+  }
+  object Kind {
+    private[internal] sealed trait ScalaNotation
+    private[internal] sealed case class Head(order: Int, n: Option[Int], alias: Option[String]) extends ScalaNotation {
+      override def toString: String = { 
+        alias getOrElse {
+          typeAlias(order) + n.map(_.toString).getOrElse("")
+        }
+      }
+      private def typeAlias(x: Int): String =
+        x match {
+          case 0 => "A"
+          case 1 => "F"
+          case 2 => "X"
+          case 3 => "Y"
+          case 4 => "Z"
+          case n if n < 12 => ('O'.toInt - 5 + n).toChar.toString
+          case _ => "V"
+        }
+    }
+    private[internal] sealed case class Text(value: String) extends ScalaNotation {
+      override def toString: String = value
+    } 
+    private[internal] case class StringState(tokens: Seq[ScalaNotation]) {
+      override def toString: String = tokens.mkString
+      def append(value: String): StringState = StringState(tokens :+ Text(value))
+      def appendHead(order: Int, sym: Symbol): StringState = {
+        val n = countByOrder(order) + 1
+        val alias = if (sym eq NoSymbol) None
+                    else Some(sym.nameString)
+        StringState(tokens :+ Head(order, Some(n), alias))
+      }
+      def countByOrder(o: Int): Int = tokens count {
+        case Head(`o`, _, _) => true
+        case t               => false
+      }
+      // Replace Head(o, Some(1), a) with Head(o, None, a) if countByOrder(o) <= 1, so F1[A] becomes F[A]
+      def removeOnes: StringState = {
+        val maxOrder = (tokens map {
+          case Head(o, _, _) => o
+          case _             => 0
+        }).max
+        StringState((tokens /: (0 to maxOrder)) { (ts: Seq[ScalaNotation], o: Int) =>
+          if (countByOrder(o) <= 1)
+            ts map {
+              case Head(`o`, _, a) => Head(o, None, a)
+              case t               => t
+            } 
+          else ts
+        })
+      }
+      // Replace Head(o, n, Some(_)) with Head(o, n, None), so F[F] becomes F[A].
+      def removeAlias: StringState = {
+        StringState(tokens map {
+          case Head(o, n, Some(_)) => Head(o, n, None)
+          case t                   => t
+        })
+      }
+    }
+    private[internal] object StringState {
+      def empty: StringState = StringState(Seq())
+    }
+  }
+  class ProperTypeKind(val bounds: TypeBounds) extends Kind {
+    import Kind.StringState
+    val description: String = "This is a proper type."
+    val order = 0
+    private[internal] def buildState(sym: Symbol, v: Variance)(s: StringState): StringState = {
+      s.append(v.symbolicString).appendHead(order, sym).append(bounds.scalaNotation(_.toString))
+    } 
+    def scalaNotation: String = Kind.Head(order, None, None) + bounds.scalaNotation(_.toString)
+    def starNotation: String = "*" + bounds.starNotation(_.toString)
+  }
+  object ProperTypeKind {
+    def apply: ProperTypeKind = this(TypeBounds.empty)
+    def apply(bounds: TypeBounds): ProperTypeKind = new ProperTypeKind(bounds)
+    def unapply(ptk: ProperTypeKind): Some[TypeBounds] = Some(ptk.bounds)
+  }
+
+  class TypeConKind(val bounds: TypeBounds, val args: Seq[TypeConKind.Argument]) extends Kind {
+    import Kind.StringState
+    val order = (args map {_.kind.order} max) + 1
+    def description: String =
+      if (order == 1) "This is a type constructor: a 1st-order-kinded type."
+      else  "This is a type constructor that takes type constructor(s): a higher-kinded type."
+    override def hasBounds: Boolean = super.hasBounds || args.exists(_.kind.hasBounds)
+    def scalaNotation: String = {
+      val s = buildState(NoSymbol, Variance.Invariant)(StringState.empty).removeOnes
+      val s2 = if (hasBounds) s
+               else s.removeAlias
+      s2.toString
+    }
+    private[internal] def buildState(sym: Symbol, v: Variance)(s0: StringState): StringState = {
+      var s: StringState = s0
+      s = s.append(v.symbolicString).appendHead(order, sym).append("[")
+      args.zipWithIndex foreach { case (arg, i) =>
+        s = arg.kind.buildState(arg.sym, arg.variance)(s)
+        if (i != args.size - 1) {
+          s = s.append(",")
+        }
+      }
+      s = s.append("]").append(bounds.scalaNotation(_.toString))
+      s
+    }
+    def starNotation: String = {
+      import Variance._
+      (args map { arg =>
+        (if (arg.kind.order == 0) arg.kind.starNotation
+        else "(" + arg.kind.starNotation + ")") +
+        (if (arg.variance == Invariant) " -> "
+        else " -(" + arg.variance.symbolicString + ")-> ")
+      }).mkString + "*" + bounds.starNotation(_.toString)
+    }
+  }
+  object TypeConKind {
+    def apply(args: Seq[TypeConKind.Argument]): TypeConKind = this(TypeBounds.empty, args)
+    def apply(bounds: TypeBounds, args: Seq[TypeConKind.Argument]): TypeConKind = new TypeConKind(bounds, args)
+    def unapply(tck: TypeConKind): Some[(TypeBounds, Seq[TypeConKind.Argument])] = Some(tck.bounds, tck.args)
+    case class Argument(variance: Variance, kind: Kind)(val sym: Symbol) {}
+  }
+
+  /**
+   * Starting from a Symbol (sym) or a Type (tpe), infer the kind that classifies it (sym.tpeHK/tpe).
+   */
+  object inferKind {
+    import TypeConKind.Argument
+    
+    abstract class InferKind {
+      protected def infer(tpe: Type, owner: Symbol, topLevel: Boolean): Kind
+      protected def infer(sym: Symbol, topLevel: Boolean): Kind = infer(sym.tpeHK, sym.owner, topLevel)
+      def apply(sym: Symbol): Kind = infer(sym, true)
+      def apply(tpe: Type, owner: Symbol): Kind = infer(tpe, owner, true)
+    }
+
+    def apply(pre: Type): InferKind = new InferKind {
+      protected def infer(tpe: Type, owner: Symbol, topLevel: Boolean): Kind = {        
+        val bounds = if (topLevel) TypeBounds.empty
+                     else tpe.asSeenFrom(pre, owner).bounds
+        if(!tpe.isHigherKinded) ProperTypeKind(bounds)
+        else TypeConKind(bounds, tpe.typeParams map { p => Argument(p.variance, infer(p, false))(p) })
       }
     }
   }

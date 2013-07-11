@@ -1,4 +1,6 @@
 // ticket #421
+
+@deprecated("Suppress warnings", since="2.11")
 object Test extends App {
 
   def transpose[A: ClassManifest](xss: Array[Array[A]]) = {

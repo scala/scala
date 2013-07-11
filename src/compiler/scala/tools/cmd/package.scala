@@ -3,7 +3,8 @@
  * @author Paul Phillips
  */
 
-package scala.tools
+package scala
+package tools
 
 package object cmd {
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
@@ -21,7 +22,7 @@ package object cmd {
 
   def toOpt(s: String)              = if (s startsWith "--") s else "--" + s
   def fromOpt(s: String)            = s stripPrefix "--"
-  def toArgs(line: String)          = Parser tokenize line
+  def toArgs(line: String)          = CommandLineParser tokenize line
   def fromArgs(args: List[String])  = args mkString " "
 
   def stripQuotes(s: String) = {

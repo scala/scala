@@ -3,7 +3,9 @@
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
-package scala.tools.nsc
+package scala
+package tools
+package nsc
 package doc
 package html
 
@@ -40,8 +42,7 @@ abstract class HtmlPage extends Page { thisPage =>
   def body: NodeSeq
 
   def writeFor(site: HtmlFactory) {
-    val doctype =
-      DocType("html", PublicID("-//W3C//DTD XHTML 1.1//EN", "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"), Nil)
+    val doctype = DocType("html")
     val html =
       <html>
         <head>
@@ -55,7 +56,6 @@ abstract class HtmlPage extends Page { thisPage =>
       </html>
 
     writeFile(site) { (w: Writer) =>
-      w.write("<?xml version='1.0' encoding='" + site.encoding + "'?>\n")
       w.write(doctype.toString + "\n")
       w.write(xml.Xhtml.toXhtml(html))
     }
@@ -65,8 +65,6 @@ abstract class HtmlPage extends Page { thisPage =>
         // we're only interested in the body, as this will go into the diff
         _.write(body.text)
       }
-
-    //XML.save(pageFile.getPath, html, site.encoding, xmlDecl = false, doctype = doctype)
   }
 
   /** Transforms an optional comment into an styled HTML tree representing its body if it is defined, or into an empty

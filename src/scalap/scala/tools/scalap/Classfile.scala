@@ -32,7 +32,7 @@ class Classfile(in: ByteArrayReader) {
     var attribs: List[Attribute] = Nil
     var i = 0
     while (i < n) {
-      attribs = Attribute(in.nextChar, in.nextBytes(in.nextInt)) :: attribs
+      attribs = Attribute(in.nextChar.toInt, in.nextBytes(in.nextInt)) :: attribs
       i = i + 1
     }
     attribs
@@ -43,7 +43,7 @@ class Classfile(in: ByteArrayReader) {
     var members: List[Member] = Nil
     var i = 0
     while (i < n) {
-      members = Member(field, in.nextChar, in.nextChar, in.nextChar, readAttribs) :: members
+      members = Member(field, in.nextChar.toInt, in.nextChar.toInt, in.nextChar.toInt, readAttribs) :: members
       i = i + 1
     }
     members
@@ -54,7 +54,7 @@ class Classfile(in: ByteArrayReader) {
     var intfs: List[Int] = Nil
     var i = 0
     while (i < n) {
-      intfs = in.nextChar :: intfs
+      intfs = in.nextChar.toInt :: intfs
       i = i + 1
     }
     intfs
@@ -81,7 +81,7 @@ class Classfile(in: ByteArrayReader) {
     case object Empty extends PoolEntry(0) { }
 
     val entries = {
-      val pool = new Array[PoolEntry](in.nextChar)
+      val pool = new Array[PoolEntry](in.nextChar.toInt)
       var i = 1
       while (i < pool.length) {
         val tag = in.nextByte
@@ -92,7 +92,7 @@ class Classfile(in: ByteArrayReader) {
           pool(i) = Empty
         }
         else pool(i) = tag match {
-          case CONSTANT_UTF8            => UTF8(in.nextUTF8(in.nextChar))
+          case CONSTANT_UTF8            => UTF8(in.nextUTF8(in.nextChar.toInt))
           case CONSTANT_UNICODE         => in.skip(in.nextChar) ; Empty
           case CONSTANT_CLASS           => ClassRef(in.nextChar)
           case CONSTANT_STRING          => StringConst(in.nextChar)

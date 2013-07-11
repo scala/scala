@@ -9,9 +9,10 @@ package doc
 import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
 import scala.reflect.internal.Chars._
 import symtab._
-import reporters.Reporter
 import typechecker.Analyzer
 import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
+import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo, LinkToExternal }
+import scala.language.postfixOps
 
 trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
@@ -150,20 +151,52 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
 
   class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
 
-    private var docBuffer: StringBuilder = null        // buffer for comments
-    private var docPos: Position         = NoPosition  // last doc comment position
-    private var inDocComment             = false
+    private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
+    private var inDocComment             = false       // if buffer contains double-star doc comment
+    private var lastDoc: DocComment      = null        // last comment if it was double-star doc
 
+    private object unmooredParser extends {                // minimalist comment parser
+      val global: Global = ScaladocSyntaxAnalyzer.this.global
+    }
+    with CommentFactoryBase with MemberLookupBase {
+      import global.{ settings, Symbol }
+      def parseComment(comment: DocComment) = {
+        val nowarnings = settings.nowarn.value
+        settings.nowarn.value = true
+        try parseAtSymbol(comment.raw, comment.raw, comment.pos)
+        finally settings.nowarn.value = nowarnings
+      }
+
+      override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] = None
+      override def chooseLink(links: List[LinkTo]): LinkTo = links.headOption orNull
+      override def toString(link: LinkTo): String = "No link"
+      override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = None
+      override def warnNoLink: Boolean = false
+    }
+
+    /**
+     * Warn when discarding buffered doc at the end of a block.
+     * This mechanism doesn't warn about arbitrary unmoored doc.
+     * Also warn under -Xlint, but otherwise only warn in the presence of suspicious
+     * tags that appear to be documenting API.  Warnings are suppressed while parsing
+     * the local comment so that comments of the form `[at] Martin` will not trigger a warning.
+     * By omission, tags for `see`, `todo`, `note` and `example` are ignored.
+     */
     override def discardDocBuffer() = {
+      import scala.tools.nsc.doc.base.comment.Comment
       val doc = flushDoc
-      if (doc ne null)
-        unit.warning(docPos, "discarding unmoored doc comment")
+      // tags that make a local double-star comment look unclean, as though it were API
+      def unclean(comment: Comment): Boolean = {
+        import comment._
+        authors.nonEmpty || result.nonEmpty || throws.nonEmpty || valueParams.nonEmpty ||
+        typeParams.nonEmpty || version.nonEmpty || since.nonEmpty
+      }
+      def isDirty = unclean(unmooredParser parseComment doc)
+      if ((doc ne null) && (settings.lint || isDirty))
+        unit.warning(doc.pos, "discarding unmoored doc comment")
     }
 
-    override def flushDoc(): DocComment = {
-      if (docBuffer eq null) null
-      else try DocComment(docBuffer.toString, docPos) finally docBuffer = null
-    }
+    override def flushDoc(): DocComment = (try lastDoc finally lastDoc = null)
 
     override protected def putCommentChar() {
       if (inDocComment)
@@ -182,23 +215,19 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       super.skipBlockComment()
     }
     override def skipComment(): Boolean = {
-      super.skipComment() && {
-        if (docBuffer ne null) {
-          if (inDocComment)
-            foundDocComment(docBuffer.toString, offset, charOffset - 2)
-          else
-            try foundComment(docBuffer.toString, offset, charOffset - 2) finally docBuffer = null
-        }
+      // emit a block comment; if it's double-star, make Doc at this pos
+      def foundStarComment(start: Int, end: Int) = try {
+        val str = docBuffer.toString
+        val pos = new RangePosition(unit.source, start, start, end)
+        unit.comment(pos, str)
+        if (inDocComment)
+          lastDoc = DocComment(str, pos)
         true
+      } finally {
+        docBuffer    = null
+        inDocComment = false
       }
-    }
-    def foundComment(value: String, start: Int, end: Int) {
-      val pos = new RangePosition(unit.source, start, start, end)
-      unit.comment(pos, value)
-    }
-    def foundDocComment(value: String, start: Int, end: Int) {
-      docPos = new RangePosition(unit.source, start, start, end)
-      unit.comment(docPos, value)
+      super.skipComment() && ((docBuffer eq null) || foundStarComment(offset, charOffset - 2))
     }
   }
   class ScaladocUnitParser(unit: CompilationUnit, patches: List[BracePatch]) extends UnitParser(unit, patches) {

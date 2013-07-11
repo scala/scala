@@ -103,7 +103,7 @@ trait MethodSynthesis {
       createMethod(original)(m => gen.mkMethodCall(newMethod, transformArgs(m.paramss.head map Ident)))
 
     def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree) = {
-      createMethod(name, List(IntClass.tpe), returnType) { m =>
+      createMethod(name, List(IntTpe), returnType) { m =>
         val arg0    = Ident(m.firstParam)
         val default = DEFAULT ==> THROW(IndexOutOfBoundsExceptionClass, arg0)
         val cases   = range.map(num => CASE(LIT(num)) ==> f(num)).toList :+ default
@@ -259,7 +259,7 @@ trait MethodSynthesis {
      *  So it's important that creating an instance of Derived does not have a side effect,
      *  or if it has a side effect, control that it is done only once.
      */
-    trait Derived {
+    sealed trait Derived {
 
       /** The tree from which we are deriving a synthetic member. Typically, that's
        *  given as an argument of the instance. */
@@ -288,7 +288,7 @@ trait MethodSynthesis {
       def derivedTree: Tree
     }
 
-    trait DerivedFromMemberDef extends Derived {
+    sealed trait DerivedFromMemberDef extends Derived {
       def tree: MemberDef
       def enclClass: Symbol
 
@@ -297,12 +297,12 @@ trait MethodSynthesis {
       final def basisSym           = tree.symbol
     }
 
-    trait DerivedFromClassDef extends DerivedFromMemberDef {
+    sealed trait DerivedFromClassDef extends DerivedFromMemberDef {
       def tree: ClassDef
       final def enclClass = basisSym.owner.enclClass
     }
 
-    trait DerivedFromValDef extends DerivedFromMemberDef {
+    sealed trait DerivedFromValDef extends DerivedFromMemberDef {
       def tree: ValDef
       final def enclClass = basisSym.enclClass
 
@@ -341,10 +341,10 @@ trait MethodSynthesis {
         logDerived(derivedTree)
       }
     }
-    trait DerivedGetter extends DerivedFromValDef {
+    sealed trait DerivedGetter extends DerivedFromValDef {
       // TODO
     }
-    trait DerivedSetter extends DerivedFromValDef {
+    sealed trait DerivedSetter extends DerivedFromValDef {
       override def isSetter = true
       private def setterParam = derivedSym.paramss match {
         case (p :: Nil) :: _  => p
@@ -378,11 +378,11 @@ trait MethodSynthesis {
       def name: TermName               = tree.name.toTermName
     }
 
-    abstract class BaseGetter(tree: ValDef) extends DerivedGetter {
+    sealed abstract class BaseGetter(tree: ValDef) extends DerivedGetter {
       def name       = tree.name
       def category   = GetterTargetClass
       def flagsMask  = GetterFlags
-      def flagsExtra = ACCESSOR | ( if (tree.mods.isMutable) 0 else STABLE )
+      def flagsExtra = ACCESSOR.toLong | ( if (tree.mods.isMutable) 0 else STABLE )
 
       override def validate() {
         assert(derivedSym != NoSymbol, tree)
@@ -510,7 +510,7 @@ trait MethodSynthesis {
       def flagsExtra = 0
       override def derivedSym = enclClass.info decl name
     }
-    trait AnyBeanGetter extends BeanAccessor with DerivedGetter {
+    sealed trait AnyBeanGetter extends BeanAccessor with DerivedGetter {
       def category = BeanGetterTargetClass
       override def validate() {
         if (derivedSym == NoSymbol) {

@@ -8,9 +8,8 @@ package transform
 
 import symtab._
 import Flags._
-import util.TreeSet
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet }
+import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet, TreeSet }
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -32,6 +31,21 @@ abstract class LambdaLift extends InfoTransform {
     }
   }
 
+  /** scala.runtime.*Ref classes */
+  private lazy val allRefClasses: Set[Symbol] = {
+    refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)
+  }
+
+  /** Each scala.runtime.*Ref class has a static method `create(value)` that simply instantiates the Ref to carry that value. */
+  private lazy val refCreateMethod: Map[Symbol, Symbol] = {
+    mapFrom(allRefClasses.toList)(x => getMemberMethod(x.companionModule, nme.create))
+  }
+
+  /** Quite frequently a *Ref is initialized with its zero (e.g., null, 0.toByte, etc.) Method `zero()` of *Ref class encapsulates that pattern. */
+  private lazy val refZeroMethod: Map[Symbol, Symbol] = {
+    mapFrom(allRefClasses.toList)(x => getMemberMethod(x.companionModule, nme.zero))
+  }
+
   def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isCapturedVariable) capturedVariableType(sym, tpe = lifted(tp), erasedTypes = true)
     else lifted(tp)
@@ -40,6 +54,8 @@ abstract class LambdaLift extends InfoTransform {
     new LambdaLifter(unit)
 
   class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
+
+    private type SymSet = TreeSet[Symbol]
 
     /** A map storing free variables of functions and classes */
     private val free = new LinkedHashMap[Symbol, SymSet]
@@ -52,6 +68,12 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Symbols that are called from an inner class. */
     private val calledFromInner = new LinkedHashSet[Symbol]
+
+    private val ord = Ordering.fromLessThan[Symbol](_ isLess _)
+    private def newSymSet = TreeSet.empty[Symbol](ord)
+
+    private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet =
+      f.getOrElseUpdate(sym, newSymSet)
 
     /** The set of symbols that need to be renamed. */
     private val renamable = newSymSet
@@ -91,13 +113,6 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new LinkedHashMap[Symbol, List[Tree]]
-
-    private type SymSet = TreeSet[Symbol]
-
-    private def newSymSet = new TreeSet[Symbol](_ isLess _)
-
-    private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet =
-      f.getOrElseUpdate(sym, newSymSet)
 
     private def isSameOwnerEnclosure(sym: Symbol) =
       sym.owner.logicallyEnclosingMember == currentOwner.logicallyEnclosingMember
@@ -140,8 +155,8 @@ abstract class LambdaLift extends InfoTransform {
         else {
           val ss = symSet(free, enclosure)
           if (!ss(sym)) {
-            ss addEntry sym
-            renamable addEntry sym
+            ss += sym
+            renamable += sym
             changedFreeVars = true
             debuglog("" + sym + " is free in " + enclosure)
             if (sym.isVariable) sym setFlag CAPTURED
@@ -153,7 +168,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def markCalled(sym: Symbol, owner: Symbol) {
       debuglog("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
-      symSet(called, owner) addEntry sym
+      symSet(called, owner) += sym
       if (sym.enclClass != owner.enclClass) calledFromInner += sym
     }
 
@@ -180,17 +195,17 @@ abstract class LambdaLift extends InfoTransform {
               if (sym.isImplClass)
                 localImplClasses((sym.owner, tpnme.interfaceName(sym.name))) = sym
               else {
-                renamable addEntry sym
+                renamable += sym
                 if (sym.isTrait)
                   localTraits((sym, sym.name)) = sym.owner
               }
             }
           case DefDef(_, _, _, _, _, _) =>
             if (sym.isLocal) {
-              renamable addEntry sym
+              renamable += sym
               sym setFlag (PrivateLocal | FINAL)
             } else if (sym.isPrimaryConstructor) {
-              symSet(called, sym) addEntry sym.owner
+              symSet(called, sym) += sym.owner
             }
           case Ident(name) =>
             if (sym == NoSymbol) {
@@ -199,7 +214,7 @@ abstract class LambdaLift extends InfoTransform {
               val owner = currentOwner.logicallyEnclosingMember
               if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
               else if (sym.isMethod) markCalled(sym, owner)
-                //symSet(called, owner) addEntry sym
+                //symSet(called, owner) += sym
             }
           case Select(_, _) =>
             if (sym.isConstructor && sym.owner.isLocal)
@@ -209,7 +224,7 @@ abstract class LambdaLift extends InfoTransform {
         super.traverse(tree)
        } catch {//debug
          case ex: Throwable =>
-           Console.println("exception when traversing " + tree)
+           Console.println(s"$ex while traversing $tree")
            throw ex
        }
       }
@@ -289,7 +304,7 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
-              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags) setInfo fv.info
+              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags.toLong) setInfo fv.info
               if (owner.isClass) owner.info.decls enter proxy
               proxy
             }
@@ -444,56 +459,21 @@ abstract class LambdaLift extends InfoTransform {
         case ValDef(mods, name, tpt, rhs) =>
           if (sym.isCapturedVariable) {
             val tpt1 = TypeTree(sym.tpe) setPos tpt.pos
-            /* Creating a constructor argument if one isn't present. */
-            val constructorArg = rhs match {
-              case EmptyTree =>
-                sym.tpe.typeSymbol.primaryConstructor.info.paramTypes match {
-                  case List(tp) => gen.mkZero(tp)
-                  case _        =>
-                    debugwarn("Couldn't determine how to properly construct " + sym)
-                    rhs
-                }
-              case arg => arg
+
+            val refTypeSym = sym.tpe.typeSymbol
+
+            val factoryCall = typer.typedPos(rhs.pos) {
+              rhs match {
+                case EmptyTree =>
+                  val zeroMSym   = refZeroMethod(refTypeSym)
+                  gen.mkMethodCall(zeroMSym, Nil)
+                case arg =>
+                  val createMSym = refCreateMethod(refTypeSym)
+                  gen.mkMethodCall(createMSym, arg :: Nil)
+              }
             }
 
-            /* Wrap expr argument in new *Ref(..) constructor. But try/catch
-             * is a problem because a throw will clear the stack and post catch
-             * we would expect the partially-constructed object to be on the stack
-             * for the call to init. So we recursively
-             * search for "leaf" result expressions where we know its safe
-             * to put the new *Ref(..) constructor or, if all else fails, transform
-             * an expr to { val temp=expr; new *Ref(temp) }.
-             * The reason we narrowly look for try/catch in captured var definitions
-             * is because other try/catch expression have already been lifted
-             * see SI-6863
-             */
-            def refConstr(expr: Tree): Tree = typer.typedPos(expr.pos)(expr match {
-              // very simple expressions can be wrapped in a new *Ref(expr) because they can't have
-              // a try/catch in final expression position.
-              case Ident(_) | Apply(_, _) | Literal(_) | New(_) | Select(_, _) | Throw(_) | Assign(_, _) | ValDef(_, _, _, _) | Return(_) | EmptyTree =>
-                New(sym.tpe, expr)
-              case Try(block, catches, finalizer) =>
-                Try(refConstr(block), catches map refConstrCase, finalizer)
-              case Block(stats, expr) =>
-                Block(stats, refConstr(expr))
-              case If(cond, trueBranch, falseBranch) =>
-                If(cond, refConstr(trueBranch), refConstr(falseBranch))
-              case Match(selector, cases) =>
-                Match(selector, cases map refConstrCase)
-              // if we can't figure out what else to do, turn expr into {val temp1 = expr; new *Ref(temp1)} to avoid
-              // any possibility of try/catch in the *Ref constructor. This should be a safe tranformation as a default
-              // though it potentially wastes a variable slot. In particular this case handles LabelDefs.
-              case _ =>
-                debuglog("assigning expr to temp: " + (expr.pos))
-                val tempSym = currentOwner.newValue(unit.freshTermName("temp"), expr.pos) setInfo expr.tpe
-                val tempDef = ValDef(tempSym, expr) setPos expr.pos
-                val tempRef = Ident(tempSym) setPos expr.pos
-                Block(tempDef, New(sym.tpe, tempRef))
-            })
-            def refConstrCase(cdef: CaseDef): CaseDef =
-              CaseDef(cdef.pat, cdef.guard, refConstr(cdef.body))
-
-            treeCopy.ValDef(tree, mods, name, tpt1, refConstr(constructorArg))
+            treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
           } else tree
         case Return(Block(stats, value)) =>
           Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos

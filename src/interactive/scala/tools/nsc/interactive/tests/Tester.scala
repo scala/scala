@@ -2,7 +2,8 @@
  * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interactive
 package tests
 
@@ -25,7 +26,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     while (!res.isComplete && !res.isCancelled) {
       if (System.currentTimeMillis() > limit) {
         print("c"); res.cancel()
-      } else res.get(TIMEOUT) match {
+      } else res.get(TIMEOUT.toLong) match {
         case Some(Left(t)) =>
           /**/
           if (settings.verbose) println(t)

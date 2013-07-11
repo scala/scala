@@ -3,7 +3,8 @@
  * @author Stepan Koltsov
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interpreter
 
 import java.io.{ BufferedReader }

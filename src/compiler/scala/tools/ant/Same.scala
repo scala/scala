@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.ant
+package scala
+package tools.ant
 
 import java.io.{File, FileInputStream}
 

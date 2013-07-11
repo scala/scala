@@ -4,7 +4,8 @@
  * @author Adriaan Moors
  */
 
-package scala.tools.nsc.transform.patmat
+package scala
+package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
@@ -384,18 +385,35 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // else  debug.patmat("NOT implies: "+(lower, upper))
 
 
-        /* does V = C preclude V having value `other`?
-         (1) V = null is an exclusive assignment,
-         (2) V = A and V = B, for A and B value constants, are mutually exclusive unless A == B
-             we err on the safe side, for example:
-               - assume `val X = 1; val Y = 1`, then
-                 (2: Int) match { case X => case Y =>  <falsely considered reachable>  }
-               - V = 1 does not preclude V = Int, or V = Any, it could be said to preclude V = String, but we don't model that
-
-         (3) for types we could try to do something fancy, but be conservative and just say no
+        /** Does V=A preclude V=B?
+         *
+         * (0) A or B must be in the domain to draw any conclusions.
+         *
+         *     For example, knowing the the scrutinee is *not* true does not
+         *     statically exclude it from being `X`, because that is an opaque
+         *     Boolean.
+         *
+         *     val X = true
+         *     (true: Boolean) match { case true => case X <reachable> }
+         *
+         * (1) V = null excludes assignment to any other constant (modulo point #0). This includes
+         *     both values and type tests (which are both modelled here as `Const`)
+         * (2) V = A and V = B, for A and B domain constants, are mutually exclusive unless A == B
+         *
+         * (3) We only reason about test tests as being excluded by null assignments, otherwise we
+         *     only consider value assignments.
+         *     TODO: refine this, a == 0 excludes a: String, or `a: Int` excludes `a: String`
+         *     (since no value can be of both types. See also SI-7211)
+         *
+         *  NOTE: V = 1 does not preclude V = Int, or V = Any, it could be said to preclude
+         *        V = String, but we don't model that.
          */
-        def excludes(a: Const, b: Const): Boolean =
-          a != b && ((a == NullConst || b == NullConst) || (a.isValue && b.isValue))
+        def excludes(a: Const, b: Const): Boolean = {
+          val bothInDomain  = domain exists (d => d(a) && d(b))
+          val eitherIsNull  = a == NullConst || b == NullConst
+          val bothAreValues = a.isValue && b.isValue
+          bothInDomain && (eitherIsNull || bothAreValues) && (a != b)
+        }
 
           // if(r) debug.patmat("excludes    : "+(a, a.tp, b, b.tp))
           // else  debug.patmat("NOT excludes: "+(a, b))

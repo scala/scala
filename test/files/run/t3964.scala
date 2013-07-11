@@ -1,3 +1,6 @@
+
+import scala.language.implicitConversions
+
 object Test {
   class Base 
   object Bob extends Base

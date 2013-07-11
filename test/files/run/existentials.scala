@@ -1,3 +1,6 @@
+import scala.language.existentials
+import scala.language.reflectiveCalls
+
 class Foo {
   class Line {
     case class Cell[T](var x: T)

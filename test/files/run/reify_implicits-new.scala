@@ -1,3 +1,5 @@
+
+import scala.language.{ implicitConversions, reflectiveCalls }
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.Eval

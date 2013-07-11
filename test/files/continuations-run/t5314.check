@@ -1,3 +1,9 @@
+t5314.scala:34: warning: expression 7 is cps-transformed unexpectedly
+  def bar3(x:Int): Int @cps[Int] = { foo2(x); if (x == 7) return 7 else return foo2(x) }
+                                                                 ^
+t5314.scala:35: warning: expression 7 is cps-transformed unexpectedly
+  def bar4(x:Int): Int @cps[Int] = { foo2(x); if (x == 7) return 7 else foo2(x) }
+                                                                 ^
 7
 7
 7

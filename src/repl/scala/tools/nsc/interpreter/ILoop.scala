@@ -3,24 +3,26 @@
  * @author Alexander Spoon
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package interpreter
 
-import Predef.{ println => _, _ }
-import java.io.{ BufferedReader, FileReader }
-import session._
+import scala.language.{ implicitConversions, existentials }
 import scala.annotation.tailrec
-import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
-import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
-import io.{ File, Directory }
-import util.ScalaClassLoader
-import ScalaClassLoader._
-import scala.tools.util._
-import scala.language.{implicitConversions, existentials}
-import scala.reflect.classTag
+import Predef.{ println => _, _ }
+import interpreter.session._
 import StdReplTags._
+import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
+import scala.tools.nsc.util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
+import scala.reflect.classTag
+import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader }
+import ScalaClassLoader._
+import scala.reflect.io.{ File, Directory }
+import scala.tools.util._
+import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
+import java.io.{ BufferedReader, FileReader }
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -206,21 +208,26 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Standard commands **/
   lazy val standardCommands = List(
     cmd("cp", "<path>", "add a jar or directory to the classpath", addClasspath),
+    cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
     cmd("h?", "<string>", "search the history", searchHistory),
     cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
     cmd("implicits", "[-v]", "show the implicits in scope", intp.implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
+    cmd("line", "<id>|<line>", "place line(s) at the end of history", lineCommand),
     cmd("load", "<path>", "load and interpret a Scala file", loadCommand),
     nullary("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
     nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
+    cmd("save", "<path>", "save replayable session to a file", saveCommand),
     shCommand,
+    cmd("settings", "[+|-]<options>", "+enable/-disable flags, set compiler options", changeSettings),
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
+    cmd("kind", "[-v] <expr>", "display the kind of expression's type", kindCommand),
     nullary("warnings", "show the suppressed warnings from the most recent line which had any", warningsCommand)
   )
 
@@ -253,16 +260,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  private def findToolsJar() = {
-    val jdkPath = Directory(jdkHome)
-    val jar     = jdkPath / "lib" / "tools.jar" toFile
+  private def findToolsJar() = PathResolver.SupplementalLocations.platformTools
 
-    if (jar isFile)
-      Some(jar)
-    else if (jdkPath.isDirectory)
-      jdkPath.deepFiles find (_.name == "tools.jar")
-    else None
-  }
   private def addToolsJarToLoader() = {
     val cl = findToolsJar() match {
       case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
@@ -286,9 +285,15 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   // Still todo: modules.
   private def typeCommand(line0: String): Result = {
     line0.trim match {
-      case ""                      => ":type [-v] <expression>"
-      case s if s startsWith "-v " => intp.typeCommandInternal(s stripPrefix "-v " trim, verbose = true)
-      case s                       => intp.typeCommandInternal(s, verbose = false)
+      case "" => ":type [-v] <expression>"
+      case s  => intp.typeCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
+    }
+  }
+
+  private def kindCommand(expr: String): Result = {
+    expr.trim match {
+      case "" => ":kind [-v] <expression>"
+      case s  => intp.kindCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
     }
   }
 
@@ -297,6 +302,49 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       "Can't find any cached warnings."
     else
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
+  }
+
+  private def changeSettings(args: String): Result = {
+    def showSettings() = {
+      for (s <- settings.userSetSettings.toSeq.sorted) echo(s.toString)
+    }
+    def updateSettings() = {
+      // put aside +flag options
+      val (pluses, rest) = (args split "\\s+").toList partition (_.startsWith("+"))
+      val tmps = new Settings
+      val (ok, leftover) = tmps.processArguments(rest, processAll = true)
+      if (!ok) echo("Bad settings request.")
+      else if (leftover.nonEmpty) echo("Unprocessed settings.")
+      else {
+        // boolean flags set-by-user on tmp copy should be off, not on
+        val offs = tmps.userSetSettings filter (_.isInstanceOf[Settings#BooleanSetting])
+        val (minuses, nonbools) = rest partition (arg => offs exists (_ respondsTo arg))
+        // update non-flags
+        settings.processArguments(nonbools, processAll = true)
+        // also snag multi-value options for clearing, e.g. -Ylog: and -language:
+        for {
+          s <- settings.userSetSettings
+          if s.isInstanceOf[Settings#MultiStringSetting] || s.isInstanceOf[Settings#PhasesSetting]
+          if nonbools exists (arg => arg.head == '-' && arg.last == ':' && (s respondsTo arg.init))
+        } s match {
+          case c: Clearable => c.clear()
+          case _ =>
+        }
+        def update(bs: Seq[String], name: String=>String, setter: Settings#Setting=>Unit) = {
+          for (b <- bs)
+            settings.lookupSetting(name(b)) match {
+              case Some(s) =>
+                if (s.isInstanceOf[Settings#BooleanSetting]) setter(s)
+                else echo(s"Not a boolean flag: $b")
+              case _ =>
+                echo(s"Not an option: $b")
+            }
+        }
+        update(minuses, identity, _.tryToSetFromPropertyValue("false"))  // turn off
+        update(pluses, "-" + _.drop(1), _.tryToSet(Nil))                 // turn on
+      }
+    }
+    if (args.isEmpty) showSettings() else updateSettings()
   }
 
   private def javapCommand(line: String): Result = {
@@ -441,6 +489,90 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     unleashAndSetPhase()
   }
 
+  def lineCommand(what: String): Result = editCommand(what, None)
+
+  // :edit id or :edit line
+  def editCommand(what: String): Result = editCommand(what, Properties.envOrNone("EDITOR"))
+
+  def editCommand(what: String, editor: Option[String]): Result = {
+    def diagnose(code: String) = {
+      echo("The edited code is incomplete!\n")
+      val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
+      if (errless) echo("The compiler reports no errors.")
+    }
+    def historicize(text: String) = history match {
+      case jlh: JLineHistory => text.lines foreach jlh.add ; jlh.moveToEnd() ; true
+      case _ => false
+    }
+    def edit(text: String): Result = editor match {
+      case Some(ed) =>
+        val tmp = File.makeTemp()
+        tmp.writeAll(text)
+        try {
+          val pr = new ProcessResult(s"$ed ${tmp.path}")
+          pr.exitCode match {
+            case 0 =>
+              tmp.safeSlurp() match {
+                case Some(edited) if edited.trim.isEmpty => echo("Edited text is empty.")
+                case Some(edited) =>
+                  echo(edited.lines map ("+" + _) mkString "\n")
+                  val res = intp interpret edited
+                  if (res == IR.Incomplete) diagnose(edited)
+                  else {
+                    historicize(edited)
+                    Result(lineToRecord = Some(edited), keepRunning = true)
+                  }
+                case None => echo("Can't read edited text. Did you delete it?")
+              }
+            case x => echo(s"Error exit from $ed ($x), ignoring")
+          }
+        } finally {
+          tmp.delete()
+        }
+      case None =>
+        if (historicize(text)) echo("Placing text in recent history.")
+        else echo(f"No EDITOR defined and you can't change history, echoing your text:%n$text")
+    }
+
+    // if what is a number, use it as a line number or range in history
+    def isNum = what forall (c => c.isDigit || c == '-' || c == '+')
+    // except that "-" means last value
+    def isLast = (what == "-")
+    if (isLast || !isNum) {
+      val name = if (isLast) intp.mostRecentVar else what
+      val sym = intp.symbolOfIdent(name)
+      intp.prevRequestList collectFirst { case r if r.defines contains sym => r } match {
+        case Some(req) => edit(req.line)
+        case None      => echo(s"No symbol in scope: $what")
+      }
+    } else try {
+      val s = what
+      // line 123, 120+3, -3, 120-123, 120-, note -3 is not 0-3 but (cur-3,cur)
+      val (start, len) = 
+        if ((s indexOf '+') > 0) {
+          val (a,b) = s splitAt (s indexOf '+')
+          (a.toInt, b.drop(1).toInt)
+        } else {
+          (s indexOf '-') match {
+            case -1 => (s.toInt, 1)
+            case 0  => val n = s.drop(1).toInt ; (history.index - n, n)
+            case _ if s.last == '-' => val n = s.init.toInt ; (n, history.index - n)
+            case i  => val n = s.take(i).toInt ; (n, s.drop(i+1).toInt - n)
+          }
+        }
+      import scala.collection.JavaConverters._
+      val index = (start - 1) max 0
+      val text = history match {
+        case jlh: JLineHistory => jlh.entries(index).asScala.take(len) map (_.value) mkString "\n"
+        case _ => history.asStrings.slice(index, index + len) mkString "\n"
+      }
+      edit(text)
+    } catch {
+      case _: NumberFormatException => echo(s"Bad range '$what'")
+        echo("Use line 123, 120+3, -3, 120-123, 120-, note -3 is not 0-3 but (cur-3,cur)")
+    }
+  }
+
   /** fork a shell and run a command */
   lazy val shCommand = new LoopCommand("sh", "run a shell command (result is implicitly => List[String])") {
     override def usage = "<command line>"
@@ -468,6 +600,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     })
     Result(keepRunning = true, shouldReplay)
   }
+
+  def saveCommand(filename: String): Result = (
+    if (filename.isEmpty) echo("File name is required.")
+    else if (replayCommandStack.isEmpty) echo("No replay commands in session")
+    else File(filename).printlnAll(replayCommands: _*)
+  )
 
   def addClasspath(arg: String): Unit = {
     val f = File(arg).normalize
@@ -530,8 +668,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def pasteCommand(): Result = {
     echo("// Entering paste mode (ctrl-D to finish)\n")
     val code = readWhile(_ => true) mkString "\n"
-    echo("\n// Exiting paste mode, now interpreting.\n")
-    intp interpret code
+    if (code.trim.isEmpty) {
+      echo("\n// Nothing pasted, nothing gained.\n")
+    } else {
+      echo("\n// Exiting paste mode, now interpreting.\n")
+      val res = intp interpret code
+      // if input is incomplete, let the compiler try to say why
+      if (res == IR.Incomplete) {
+        echo("The pasted code is incomplete!\n")
+        // Remembrance of Things Pasted in an object
+        val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
+        if (errless) echo("...but compilation found no error? Good luck with that.")
+      }
+    }
     ()
   }
 
@@ -642,10 +791,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def loopPostInit() {
-    in match {
-      case x: JLineReader => x.consoleReader.postInit
-      case _              =>
-    }
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
     intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
@@ -660,6 +805,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       replProps.power setValue true
       unleashAndSetPhase()
       asyncMessage(power.banner)
+    }
+    // SI-7418 Now, and only now, can we enable TAB completion.
+    in match {
+      case x: JLineReader => x.consoleReader.postInit
+      case _              =>
     }
   }
   def process(settings: Settings): Boolean = savingContextLoader {

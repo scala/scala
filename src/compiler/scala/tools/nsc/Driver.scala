@@ -1,4 +1,5 @@
-package scala.tools.nsc
+package scala
+package tools.nsc
 
 import scala.tools.nsc.reporters.ConsoleReporter
 import Properties.{ versionString, copyrightString, residentPromptString }

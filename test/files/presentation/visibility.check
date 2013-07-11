@@ -2,220 +2,220 @@ reload: Completions.scala
 
 askTypeCompletion at Completions.scala(14,12)
 ================================================================================
-[response] aksTypeCompletion at (14,12)
+[response] askCompletionAt (14,12)
 retrieved 41 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method clone()Object`
-[accessible:  true] `method ensuring(cond: Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method finalize()Unit`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method secretPrivate()Unit`
-[accessible:  true] `method secretProtected()Unit`
-[accessible:  true] `method secretProtectedInPackage()Unit`
-[accessible:  true] `method secretPublic()Unit`
-[accessible:  true] `method someTests(other: accessibility.Foo)Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `value __leftOfArrowaccessibility.Foo`
-[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value __stringToFormataccessibility.Foo`
-[accessible:  true] `value __thingToAddaccessibility.Foo`
-[accessible: false] `method secretPrivateThis()Unit`
+[inaccessible] private[this] def secretPrivateThis(): Unit
+def +(other: String): String
+def ->[B](y: B): (accessibility.Foo, B)
+def ensuring(cond: Boolean): accessibility.Foo
+def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def secretPublic(): Unit
+def someTests(other: accessibility.Foo): Unit
+def toString(): String
+def →[B](y: B): (accessibility.Foo, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private def secretPrivate(): Unit
+private[this] val __leftOfArrow: accessibility.Foo
+private[this] val __resultOfEnsuring: accessibility.Foo
+private[this] val __stringToFormat: accessibility.Foo
+private[this] val __thingToAdd: accessibility.Foo
+protected def secretProtected(): Unit
+protected[package accessibility] def secretProtectedInPackage(): Unit
+protected[package lang] def clone(): Object
+protected[package lang] def finalize(): Unit
 ================================================================================
 
 askTypeCompletion at Completions.scala(16,11)
 ================================================================================
-[response] aksTypeCompletion at (16,11)
+[response] askCompletionAt (16,11)
 retrieved 41 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method clone()Object`
-[accessible:  true] `method ensuring(cond: Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method finalize()Unit`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method secretPrivate()Unit`
-[accessible:  true] `method secretPrivateThis()Unit`
-[accessible:  true] `method secretProtected()Unit`
-[accessible:  true] `method secretProtectedInPackage()Unit`
-[accessible:  true] `method secretPublic()Unit`
-[accessible:  true] `method someTests(other: accessibility.Foo)Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `value __leftOfArrowaccessibility.Foo`
-[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value __stringToFormataccessibility.Foo`
-[accessible:  true] `value __thingToAddaccessibility.Foo`
+def +(other: String): String
+def ->[B](y: B): (accessibility.Foo, B)
+def ensuring(cond: Boolean): accessibility.Foo
+def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def secretPublic(): Unit
+def someTests(other: accessibility.Foo): Unit
+def toString(): String
+def →[B](y: B): (accessibility.Foo, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private def secretPrivate(): Unit
+private[this] def secretPrivateThis(): Unit
+private[this] val __leftOfArrow: accessibility.Foo
+private[this] val __resultOfEnsuring: accessibility.Foo
+private[this] val __stringToFormat: accessibility.Foo
+private[this] val __thingToAdd: accessibility.Foo
+protected def secretProtected(): Unit
+protected[package accessibility] def secretProtectedInPackage(): Unit
+protected[package lang] def clone(): Object
+protected[package lang] def finalize(): Unit
 ================================================================================
 
 askTypeCompletion at Completions.scala(22,11)
 ================================================================================
-[response] aksTypeCompletion at (22,11)
+[response] askCompletionAt (22,11)
 retrieved 41 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(accessibility.AccessibilityChecks, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method clone()Object`
-[accessible:  true] `method ensuring(cond: Boolean)accessibility.AccessibilityChecks`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)accessibility.AccessibilityChecks`
-[accessible:  true] `method ensuring(cond: accessibility.AccessibilityChecks => Boolean)accessibility.AccessibilityChecks`
-[accessible:  true] `method ensuring(cond: accessibility.AccessibilityChecks => Boolean, msg: => Any)accessibility.AccessibilityChecks`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method finalize()Unit`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method secretProtected()Unit`
-[accessible:  true] `method secretProtectedInPackage()Unit`
-[accessible:  true] `method secretPublic()Unit`
-[accessible:  true] `method someTests(other: accessibility.Foo)Unit`
-[accessible:  true] `method someTests=> Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(accessibility.AccessibilityChecks, B)`
-[accessible:  true] `value __leftOfArrowaccessibility.AccessibilityChecks`
-[accessible:  true] `value __resultOfEnsuringaccessibility.AccessibilityChecks`
-[accessible:  true] `value __stringToFormataccessibility.AccessibilityChecks`
-[accessible:  true] `value __thingToAddaccessibility.AccessibilityChecks`
-[accessible: false] `method secretPrivate()Unit`
+[inaccessible] private def secretPrivate(): Unit
+def +(other: String): String
+def ->[B](y: B): (accessibility.AccessibilityChecks, B)
+def ensuring(cond: Boolean): accessibility.AccessibilityChecks
+def ensuring(cond: Boolean,msg: => Any): accessibility.AccessibilityChecks
+def ensuring(cond: accessibility.AccessibilityChecks => Boolean): accessibility.AccessibilityChecks
+def ensuring(cond: accessibility.AccessibilityChecks => Boolean,msg: => Any): accessibility.AccessibilityChecks
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def secretPublic(): Unit
+def someTests(other: accessibility.Foo): Unit
+def someTests: Unit
+def toString(): String
+def →[B](y: B): (accessibility.AccessibilityChecks, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private[this] val __leftOfArrow: accessibility.AccessibilityChecks
+private[this] val __resultOfEnsuring: accessibility.AccessibilityChecks
+private[this] val __stringToFormat: accessibility.AccessibilityChecks
+private[this] val __thingToAdd: accessibility.AccessibilityChecks
+protected def secretProtected(): Unit
+protected[package accessibility] def secretProtectedInPackage(): Unit
+protected[package lang] def clone(): Object
+protected[package lang] def finalize(): Unit
 ================================================================================
 
 askTypeCompletion at Completions.scala(28,10)
 ================================================================================
-[response] aksTypeCompletion at (28,10)
+[response] askCompletionAt (28,10)
 retrieved 41 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method ensuring(cond: Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method secretProtectedInPackage()Unit`
-[accessible:  true] `method secretPublic()Unit`
-[accessible:  true] `method someTests(other: accessibility.Foo)Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `value __leftOfArrowaccessibility.Foo`
-[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value __stringToFormataccessibility.Foo`
-[accessible:  true] `value __thingToAddaccessibility.Foo`
-[accessible: false] `method clone()Object`
-[accessible: false] `method finalize()Unit`
-[accessible: false] `method secretPrivate()Unit`
-[accessible: false] `method secretPrivateThis()Unit`
-[accessible: false] `method secretProtected()Unit`
+[inaccessible] private def secretPrivate(): Unit
+[inaccessible] private[this] def secretPrivateThis(): Unit
+[inaccessible] protected def secretProtected(): Unit
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (accessibility.Foo, B)
+def ensuring(cond: Boolean): accessibility.Foo
+def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def secretPublic(): Unit
+def someTests(other: accessibility.Foo): Unit
+def toString(): String
+def →[B](y: B): (accessibility.Foo, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private[this] val __leftOfArrow: accessibility.Foo
+private[this] val __resultOfEnsuring: accessibility.Foo
+private[this] val __stringToFormat: accessibility.Foo
+private[this] val __thingToAdd: accessibility.Foo
+protected[package accessibility] def secretProtectedInPackage(): Unit
 ================================================================================
 
 askTypeCompletion at Completions.scala(37,8)
 ================================================================================
-[response] aksTypeCompletion at (37,8)
+[response] askCompletionAt (37,8)
 retrieved 41 members
-[accessible:  true] `method !=(x$1: Any)Boolean`
-[accessible:  true] `method !=(x$1: AnyRef)Boolean`
-[accessible:  true] `method ##()Int`
-[accessible:  true] `method +(other: String)String`
-[accessible:  true] `method ->[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `method ==(x$1: Any)Boolean`
-[accessible:  true] `method ==(x$1: AnyRef)Boolean`
-[accessible:  true] `method asInstanceOf[T0]=> T0`
-[accessible:  true] `method ensuring(cond: Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean)accessibility.Foo`
-[accessible:  true] `method ensuring(cond: accessibility.Foo => Boolean, msg: => Any)accessibility.Foo`
-[accessible:  true] `method eq(x$1: AnyRef)Boolean`
-[accessible:  true] `method equals(x$1: Any)Boolean`
-[accessible:  true] `method formatted(fmtstr: String)String`
-[accessible:  true] `method hashCode()Int`
-[accessible:  true] `method isInstanceOf[T0]=> Boolean`
-[accessible:  true] `method ne(x$1: AnyRef)Boolean`
-[accessible:  true] `method notify()Unit`
-[accessible:  true] `method notifyAll()Unit`
-[accessible:  true] `method secretPublic()Unit`
-[accessible:  true] `method someTests(other: accessibility.Foo)Unit`
-[accessible:  true] `method synchronized[T0](x$1: T0)T0`
-[accessible:  true] `method toString()String`
-[accessible:  true] `method wait()Unit`
-[accessible:  true] `method wait(x$1: Long)Unit`
-[accessible:  true] `method wait(x$1: Long, x$2: Int)Unit`
-[accessible:  true] `method →[B](y: B)(accessibility.Foo, B)`
-[accessible:  true] `value __leftOfArrowaccessibility.Foo`
-[accessible:  true] `value __resultOfEnsuringaccessibility.Foo`
-[accessible:  true] `value __stringToFormataccessibility.Foo`
-[accessible:  true] `value __thingToAddaccessibility.Foo`
-[accessible: false] `method clone()Object`
-[accessible: false] `method finalize()Unit`
-[accessible: false] `method secretPrivate()Unit`
-[accessible: false] `method secretPrivateThis()Unit`
-[accessible: false] `method secretProtected()Unit`
-[accessible: false] `method secretProtectedInPackage()Unit`
+[inaccessible] private def secretPrivate(): Unit
+[inaccessible] private[this] def secretPrivateThis(): Unit
+[inaccessible] protected def secretProtected(): Unit
+[inaccessible] protected[package accessibility] def secretProtectedInPackage(): Unit
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (accessibility.Foo, B)
+def ensuring(cond: Boolean): accessibility.Foo
+def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def equals(x$1: Any): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def secretPublic(): Unit
+def someTests(other: accessibility.Foo): Unit
+def toString(): String
+def →[B](y: B): (accessibility.Foo, B)
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private[this] val __leftOfArrow: accessibility.Foo
+private[this] val __resultOfEnsuring: accessibility.Foo
+private[this] val __stringToFormat: accessibility.Foo
+private[this] val __thingToAdd: accessibility.Foo
 ================================================================================

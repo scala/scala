@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect
+package scala
+package reflect
 
 /** A `OptManifest[T]` is an optional [[scala.reflect.Manifest]].
  *

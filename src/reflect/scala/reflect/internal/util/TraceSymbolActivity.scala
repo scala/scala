@@ -1,4 +1,5 @@
-package scala.reflect.internal
+package scala
+package reflect.internal
 package util
 
 import scala.collection.{ mutable, immutable }

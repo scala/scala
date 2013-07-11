@@ -3,7 +3,8 @@
  * @author Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package transform
 
 import symtab._
@@ -83,7 +84,7 @@ abstract class ExplicitOuter extends InfoTransform
     else findOrElse(clazz.info.decls)(_.outerSource == clazz)(NoSymbol)
   }
   def newOuterAccessor(clazz: Symbol) = {
-    val accFlags = SYNTHETIC | ARTIFACT | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
+    val accFlags = SYNTHETIC | ARTIFACT | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
     val sym      = clazz.newMethod(nme.OUTER, clazz.pos, accFlags)
     val restpe   = if (clazz.isTrait) clazz.outerClass.tpe_* else clazz.outerClass.thisType
 
@@ -378,7 +379,7 @@ abstract class ExplicitOuter extends InfoTransform
         if (outerAcc.isDeferred) EmptyTree
         else This(currentClass) DOT outerField(currentClass)
 
-      /** If we don't re-type the tree, we see self-type related crashes like #266.
+      /*  If we don't re-type the tree, we see self-type related crashes like #266.
        */
       localTyper typed {
         (DEF(outerAcc) withPos currentClass.pos withType null) === rhs

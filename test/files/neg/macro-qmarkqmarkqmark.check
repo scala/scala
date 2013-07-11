@@ -1,0 +1,13 @@
+macro-qmarkqmarkqmark.scala:5: error: macro implementation is missing
+  foo1
+  ^
+macro-qmarkqmarkqmark.scala:8: error: too few argument lists for macro invocation
+  foo2
+  ^
+macro-qmarkqmarkqmark.scala:9: error: macro implementation is missing
+  foo2(1)
+      ^
+macro-qmarkqmarkqmark.scala:12: error: macro implementation is missing
+  foo3[Int]
+      ^
+four errors found

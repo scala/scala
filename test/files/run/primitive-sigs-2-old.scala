@@ -1,3 +1,5 @@
+
+import scala.language.{ postfixOps }
 import java.{ lang => jl }
 
 trait T[A] {

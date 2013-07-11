@@ -1,8 +1,9 @@
 package scala.tools.reflect
 
-import scala.reflect.macros.runtime.Context
+import scala.reflect.macros.contexts.Context
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
+import scala.reflect.internal.util.OffsetPosition
 
 abstract class MacroImplementations {
   val c: Context
@@ -25,16 +26,12 @@ abstract class MacroImplementations {
         c.abort(args(parts.length-1).pos,
             "too many arguments for interpolated string")
     }
-    val stringParts = parts map {
-      case Literal(Constant(s: String)) => s
-      case _ => throw new IllegalArgumentException("argument parts must be a list of string literals")
-    }
 
-    val pi = stringParts.iterator
+    val pi = parts.iterator
     val bldr = new java.lang.StringBuilder
     val evals = ListBuffer[ValDef]()
     val ids = ListBuffer[Ident]()
-    val argsStack = Stack(args : _*)
+    val argStack = Stack(args : _*)
 
     def defval(value: Tree, tpe: Type): Unit = {
       val freshName = newTermName(c.freshName("arg$"))
@@ -81,50 +78,73 @@ abstract class MacroImplementations {
     }
 
     def copyString(first: Boolean): Unit = {
-      val str = StringContext.treatEscapes(pi.next())
+      val strTree = pi.next()
+      val rawStr = strTree match {
+        case Literal(Constant(str: String)) => str
+        case _ => throw new IllegalArgumentException("internal error: argument parts must be a list of string literals")
+      }
+      val str = StringContext.treatEscapes(rawStr)
       val strLen = str.length
       val strIsEmpty = strLen == 0
-      var start = 0
+      def charAtIndexIs(idx: Int, ch: Char) = idx < strLen && str(idx) == ch
+      def isPercent(idx: Int) = charAtIndexIs(idx, '%')
+      def isConversion(idx: Int) = isPercent(idx) && !charAtIndexIs(idx + 1, 'n') && !charAtIndexIs(idx + 1, '%')
       var idx = 0
 
+      def errorAtIndex(idx: Int, msg: String) = c.error(new OffsetPosition(strTree.pos.source, strTree.pos.point + idx), msg)
+      def wrongConversionString(idx: Int) = errorAtIndex(idx, "wrong conversion string")
+      def illegalConversionCharacter(idx: Int) = errorAtIndex(idx, "illegal conversion character")
+      def nonEscapedPercent(idx: Int) = errorAtIndex(idx, "percent signs not directly following splicees must be escaped")
+
+      // STEP 1: handle argument conversion
+      // 1) "...${smth}" => okay, equivalent to "...${smth}%s"
+      // 2) "...${smth}blahblah" => okay, equivalent to "...${smth}%sblahblah"
+      // 3) "...${smth}%" => error
+      // 4) "...${smth}%n" => okay, equivalent to "...${smth}%s%n"
+      // 5) "...${smth}%%" => okay, equivalent to "...${smth}%s%%"
+      // 6) "...${smth}[%legalJavaConversion]" => okay, according to http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html
+      // 7) "...${smth}[%illegalJavaConversion]" => error
       if (!first) {
-        val arg = argsStack.pop()
-        if (strIsEmpty || (str charAt 0) != '%') {
-          bldr append "%s"
-          defval(arg, AnyTpe)
-        } else {
+        val arg = argStack.pop()
+        if (isConversion(0)) {
           // PRE str is not empty and str(0) == '%'
           // argument index parameter is not allowed, thus parse
           //    [flags][width][.precision]conversion
           var pos = 1
-          while(pos < strLen && isFlag(str charAt pos)) pos += 1
-          while(pos < strLen && Character.isDigit(str charAt pos)) pos += 1
-          if(pos < strLen && str.charAt(pos) == '.') { pos += 1
-            while(pos < strLen && Character.isDigit(str charAt pos)) pos += 1
+          while (pos < strLen && isFlag(str charAt pos)) pos += 1
+          while (pos < strLen && Character.isDigit(str charAt pos)) pos += 1
+          if (pos < strLen && str.charAt(pos) == '.') {
+            pos += 1
+            while (pos < strLen && Character.isDigit(str charAt pos)) pos += 1
           }
-          if(pos < strLen) {
+          if (pos < strLen) {
             conversionType(str charAt pos, arg) match {
               case Some(tpe) => defval(arg, tpe)
-              case None => c.error(arg.pos, "illegal conversion character")
+              case None => illegalConversionCharacter(pos)
             }
           } else {
-            // TODO: place error message on conversion string
-            c.error(arg.pos, "wrong conversion string")
+            wrongConversionString(pos - 1)
           }
+          idx = 1
+        } else {
+          bldr append "%s"
+          defval(arg, AnyTpe)
         }
-        idx = 1
       }
+
+      // STEP 2: handle the rest of the text
+      // 1) %n tokens are left as is
+      // 2) %% tokens are left as is
+      // 3) other usages of percents are reported as errors
       if (!strIsEmpty) {
-        val len = str.length
-        while (idx < len) {
-          def notPercentN = str(idx) != '%' || (idx + 1 < len && str(idx + 1) != 'n')
-          if (str(idx) == '%' && notPercentN) {
-            bldr append (str substring (start, idx)) append "%%"
-            start = idx + 1
+        while (idx < strLen) {
+          if (isPercent(idx)) {
+            if (isConversion(idx)) nonEscapedPercent(idx)
+            else idx += 1 // skip n and % in %n and %%
           }
           idx += 1
         }
-        bldr append (str substring (start, idx))
+        bldr append (str take idx)
       }
     }
 

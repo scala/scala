@@ -10,5 +10,5 @@ object Test {
       if (b) shifted
     }
   }
-  def main(args: Array[String]) = test1(true)
+  def main(args: Array[String]): Unit = test1(true)
 }

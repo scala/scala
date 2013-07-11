@@ -1,13 +1,13 @@
-newSource1:17: warning: discarding unmoored doc comment
-          /** Testing 123 */
-          ^
-newSource1:27: warning: discarding unmoored doc comment
-        /** Calculate this result. */
+newSource1.scala:47: warning: discarding unmoored doc comment
+        /** Document this crucial constant for posterity.
         ^
-newSource1:34: warning: discarding unmoored doc comment
-        /** Another digit is a giveaway. */
+newSource1.scala:64: warning: discarding unmoored doc comment
+        /*************************\
         ^
-[[syntax trees at end of                    parser]] // newSource1
+newSource1.scala:73: warning: discarding unmoored doc comment
+        val i = 10 */** Important!
+                   ^
+[[syntax trees at end of                    parser]] // newSource1.scala
 package <empty> {
   object UselessComments extends scala.AnyRef {
     def <init>() = {
@@ -48,6 +48,26 @@ package <empty> {
     val test4 = 'a' match {
       case ('0'| '1'| '2'| '3'| '4'| '5'| '6'| '7'| '8'| '9') => true
       case _ => false
+    };
+    def test5: scala.Unit = if (true)
+      $qmark$qmark$qmark
+    else
+      ();
+    def test6 = {
+      val u = 4;
+      0.to(u).foreach(((i) => println(i)))
+    };
+    def test7 = {
+      val u = 4;
+      0.to(u).foreach(((i) => println(i)))
+    };
+    def test8 = {
+      val z = "fancy";
+      z.replace("fanc", "arts")
+    };
+    def test9 = {
+      val i = 10.$times(10);
+      assert(i.$eq$eq(100))
     }
   };
   /** comments that we should keep */
@@ -75,7 +95,7 @@ package <empty> {
         ()
       };
       /** T */
-      type T >: _root_.scala.Nothing <: _root_.scala.Any;
+      type T;
       /** f */
       def f(i: Int): scala.Unit;
       /** v */
@@ -102,7 +122,11 @@ package <empty> {
         super.<init>();
         ()
       }
-    }
+    };
+    /** Get the simple value.
+       *  @return the default value
+       */
+    def value: Int = 7
   }
 }
 

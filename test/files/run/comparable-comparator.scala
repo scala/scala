@@ -15,7 +15,8 @@ object Test {
     def compare(p1: C2, p2: C2) = p2.s compareTo p1.s
   }
 
-  val strs = "zip foo bar baz aggle bing bong" split ' ' toList
+  val words = "zip foo bar baz aggle bing bong" split ' '
+  val strs = words.toList
   val c1s = strs map (x => new C1(x))
   val c2s = strs map (x => new C2(x))
   

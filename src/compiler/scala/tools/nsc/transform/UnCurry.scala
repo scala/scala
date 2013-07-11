@@ -3,7 +3,8 @@
  * @author
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package transform
 
 import symtab.Flags._
@@ -141,7 +142,7 @@ abstract class UnCurry extends InfoTransform
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
       nonLocalReturnKeys.getOrElseUpdate(meth,
-        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectClass.tpe
+        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectTpe
       )
 
     /** Generate a non-local return throw with given return expression from given method.
@@ -183,11 +184,17 @@ abstract class UnCurry extends InfoTransform
           THEN ((ex DOT nme.value)())
           ELSE (Throw(Ident(ex)))
         )
-        val keyDef   = ValDef(key, New(ObjectClass.tpe))
+        val keyDef   = ValDef(key, New(ObjectTpe))
         val tryCatch = Try(body, pat -> rhs)
 
-        for (Try(t, catches, _) <- body ; cdef <- catches ; if treeInfo catchesThrowable cdef)
+        import treeInfo.{catchesThrowable, isSyntheticCase}
+        for {
+          Try(t, catches, _) <- body
+          cdef <- catches
+          if catchesThrowable(cdef) && !isSyntheticCase(cdef)
+        } {
           unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
+        }
 
         Block(List(keyDef), tryCatch)
       }
@@ -290,7 +297,7 @@ abstract class UnCurry extends InfoTransform
           def getClassTag(tp: Type): Tree = {
             val tag = localTyper.resolveClassTag(tree.pos, tp)
             // Don't want bottom types getting any further than this (SI-4024)
-            if (tp.typeSymbol.isBottomClass) getClassTag(AnyClass.tpe)
+            if (tp.typeSymbol.isBottomClass) getClassTag(AnyTpe)
             else if (!tag.isEmpty) tag
             else if (tp.bounds.hi ne tp) getClassTag(tp.bounds.hi)
             else localTyper.TyperErrorGen.MissingClassTagError(tree, tp)
@@ -470,7 +477,7 @@ abstract class UnCurry extends InfoTransform
             val fn1 = withInPattern(value = false)(transform(fn))
             val args1 = transformTrees(fn.symbol.name match {
               case nme.unapply    => args
-              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.pos, fn.symbol, fn.tpe, args.length))
+              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.pos, fn.symbol, fn.tpe, args))
               case _              => sys.error("internal error: UnApply node has wrong symbol")
             })
             treeCopy.UnApply(tree, fn1, args1)
@@ -546,7 +553,7 @@ abstract class UnCurry extends InfoTransform
 
       def isThrowable(pat: Tree): Boolean = pat match {
         case Typed(Ident(nme.WILDCARD), tpt) =>
-          tpt.tpe =:= ThrowableClass.tpe
+          tpt.tpe =:= ThrowableTpe
         case Bind(_, pat) =>
           isThrowable(pat)
         case _ =>
@@ -632,7 +639,8 @@ abstract class UnCurry extends InfoTransform
      *
      * This transformation erases the dependent method types by:
      *   - Widening the formal parameter type to existentially abstract
-     *     over the prior parameters (using `packSymbols`)
+     *     over the prior parameters (using `packSymbols`). This transformation
+     *     is performed in the the `InfoTransform`er [[scala.reflect.internal.transform.UnCurry]].
      *   - Inserting casts in the method body to cast to the original,
      *     precise type.
      *
@@ -660,15 +668,14 @@ abstract class UnCurry extends InfoTransform
        */
       def erase(dd: DefDef): (List[List[ValDef]], Tree) = {
         import dd.{ vparamss, rhs }
-        val vparamSyms = vparamss flatMap (_ map (_.symbol))
-
         val paramTransforms: List[ParamTransform] =
-          vparamss.flatten.map { p =>
-            val declaredType = p.symbol.info
-            // existentially abstract over value parameters
-            val packedType = typer.packSymbols(vparamSyms, declaredType)
-            if (packedType =:= declaredType) Identity(p)
+          map2(vparamss.flatten, dd.symbol.info.paramss.flatten) { (p, infoParam) =>
+            val packedType = infoParam.info
+            if (packedType =:= p.symbol.info) Identity(p)
             else {
+              // The Uncurry info transformer existentially abstracted over value parameters
+              // from the previous parameter lists.
+
               // Change the type of the param symbol
               p.symbol updateInfo packedType
 
@@ -680,8 +687,8 @@ abstract class UnCurry extends InfoTransform
               // the method body to refer to this, rather than the parameter.
               val tempVal: ValDef = {
                 val tempValName = unit freshTermName (p.name + "$")
-                val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(declaredType)
-                atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), declaredType)))
+                val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(p.symbol.info)
+                atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), p.symbol.info)))
               }
               Packed(newParam, tempVal)
             }
@@ -699,13 +706,6 @@ abstract class UnCurry extends InfoTransform
           Block(tempVals, rhsSubstituted)
         }
 
-        // update the type of the method after uncurry.
-        dd.symbol updateInfo {
-          val GenPolyType(tparams, tp) = dd.symbol.info
-          logResult(s"erased dependent param types for ${dd.symbol.info}") {
-            GenPolyType(tparams, MethodType(allParams map (_.symbol), tp.finalResultType))
-          }
-        }
         (allParams :: Nil, rhs1)
       }
     }
@@ -741,7 +741,7 @@ abstract class UnCurry extends InfoTransform
         //   becomes     def foo[T](a: Int, b: Array[Object])
         //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
         arrayType(
-          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectClass.tpe
+          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectTpe
           else arg
         )
       }

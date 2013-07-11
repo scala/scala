@@ -1,3 +1,6 @@
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 

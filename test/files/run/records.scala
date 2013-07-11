@@ -1,3 +1,6 @@
+
+import scala.language.{ reflectiveCalls }
+
 trait C {
   def f: Int
 }

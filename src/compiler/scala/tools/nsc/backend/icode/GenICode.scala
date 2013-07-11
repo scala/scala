@@ -4,7 +4,8 @@
  */
 
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend
 package icode
 
@@ -22,12 +23,7 @@ abstract class GenICode extends SubComponent  {
   import global._
   import icodes._
   import icodes.opcodes._
-  import definitions.{
-    ArrayClass, ObjectClass, ThrowableClass, StringClass, StringModule, AnyRefClass,
-    Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeModule,
-    BoxedNumberClass, BoxedCharacterClass,
-    getMember
-  }
+  import definitions._
   import scalaPrimitives.{
     isArrayOp, isComparisonOp, isLogicalOp,
     isUniversalEqualityOp, isReferenceEqualityOp
@@ -56,6 +52,7 @@ abstract class GenICode extends SubComponent  {
     }
 
     override def apply(unit: CompilationUnit): Unit = {
+      if (settings.isBCodeActive) { return }
       this.unit = unit
       unit.icode.clear()
       informProgress("Generating icode for " + unit)
@@ -181,7 +178,7 @@ abstract class GenICode extends SubComponent  {
     }
 
     private def genThrow(expr: Tree, ctx: Context): (Context, TypeKind) = {
-      require(expr.tpe <:< ThrowableClass.tpe, expr.tpe)
+      require(expr.tpe <:< ThrowableTpe, expr.tpe)
 
       val thrownKind = toTypeKind(expr.tpe)
       val ctx1       = genLoad(expr, ctx, thrownKind)
@@ -301,7 +298,7 @@ abstract class GenICode extends SubComponent  {
     }
     private def genSynchronized(tree: Apply, ctx: Context, expectedType: TypeKind): (Context, TypeKind) = {
       val Apply(fun, args) = tree
-      val monitor = ctx.makeLocal(tree.pos, ObjectClass.tpe, "monitor")
+      val monitor = ctx.makeLocal(tree.pos, ObjectTpe, "monitor")
       var monitorResult: Local = null
       val argTpe = args.head.tpe
       val hasResult = expectedType != UNIT
@@ -1467,7 +1464,7 @@ abstract class GenICode extends SubComponent  {
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Boolean = {
       def getTempLocal = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) getOrElse {
-        ctx.makeLocal(l.pos, AnyRefClass.tpe, nme.EQEQ_LOCAL_VAR.toString)
+        ctx.makeLocal(l.pos, AnyRefTpe, nme.EQEQ_LOCAL_VAR.toString)
       }
 
       /* True if the equality comparison is between values that require the use of the rich equality
@@ -1751,7 +1748,7 @@ abstract class GenICode extends SubComponent  {
 
     /////////////////////// Context ////////////////////////////////
 
-    abstract class Cleanup(val value: AnyRef) {
+    sealed abstract class Cleanup(val value: AnyRef) {
       def contains(x: AnyRef) = value == x
     }
     case class MonitorRelease(m: Local) extends Cleanup(m) { }
@@ -2038,7 +2035,7 @@ abstract class GenICode extends SubComponent  {
             this.addActiveHandler(exh)  // .. and body aswell
             val exhStartCtx = finalizerCtx.enterExceptionHandler(exh)
             exhStartCtx.bb killIf outerCtx.bb.ignore
-            val exception = exhStartCtx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
+            val exception = exhStartCtx.makeLocal(finalizer.pos, ThrowableTpe, "exc")
             loadException(exhStartCtx, exh, finalizer.pos)
             exhStartCtx.bb.emit(STORE_LOCAL(exception))
             val exhEndCtx = genLoad(finalizer, exhStartCtx, UNIT)
@@ -2164,8 +2161,7 @@ abstract class GenICode extends SubComponent  {
      * by a real JUMP instruction when all labels are resolved.
      */
     abstract class PseudoJUMP(label: Label) extends Instruction {
-      override def toString(): String = "PJUMP " + label.symbol
-
+      override def toString = s"PJUMP(${label.symbol})"
       override def consumed = 0
       override def produced = 0
 

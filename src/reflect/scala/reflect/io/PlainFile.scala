@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{ FileInputStream, FileOutputStream, IOException }
@@ -56,8 +57,14 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {
+    // Optimization: Assume that the file was not deleted and did not have permissions changed
+    // between the call to `list` and the iteration. This saves a call to `exists`.
+    def existsFast(path: Path) = path match {
+      case (_: Directory | _: io.File) => true
+      case _                           => path.exists
+    }
     if (!isDirectory) Iterator.empty
-    else givenPath.toDirectory.list filter (_.exists) map (new PlainFile(_))
+    else givenPath.toDirectory.list filter existsFast map (new PlainFile(_))
   }
 
   /**

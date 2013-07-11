@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -93,7 +94,7 @@ extends AbstractMap[A, B]
 
   def -=(key: A): this.type = { removeEntry(key); this }
 
-  def iterator = entriesIterator map {e => (e.key, e.value)}
+  def iterator = entriesIterator map (e => ((e.key, e.value)))
 
   override def foreach[C](f: ((A, B)) => C): Unit = foreachEntry(e => f((e.key, e.value)))
 

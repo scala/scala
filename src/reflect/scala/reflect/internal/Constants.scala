@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import java.lang.Integer.toOctalString
@@ -62,17 +63,17 @@ trait Constants extends api.Constants {
     def isAnyVal              = UnitTag <= tag && tag <= DoubleTag
 
     def tpe: Type = tag match {
-      case UnitTag    => UnitClass.tpe
-      case BooleanTag => BooleanClass.tpe
-      case ByteTag    => ByteClass.tpe
-      case ShortTag   => ShortClass.tpe
-      case CharTag    => CharClass.tpe
-      case IntTag     => IntClass.tpe
-      case LongTag    => LongClass.tpe
-      case FloatTag   => FloatClass.tpe
-      case DoubleTag  => DoubleClass.tpe
-      case StringTag  => StringClass.tpe
-      case NullTag    => NullClass.tpe
+      case UnitTag    => UnitTpe
+      case BooleanTag => BooleanTpe
+      case ByteTag    => ByteTpe
+      case ShortTag   => ShortTpe
+      case CharTag    => CharTpe
+      case IntTag     => IntTpe
+      case LongTag    => LongTpe
+      case FloatTag   => FloatTpe
+      case DoubleTag  => DoubleTpe
+      case StringTag  => StringTpe
+      case NullTag    => NullTpe
       case ClazzTag   => ClassType(typeValue)
       case EnumTag    => EnumType(symbolValue)
     }
@@ -211,7 +212,7 @@ trait Constants extends api.Constants {
       case '"'  => "\\\""
       case '\'' => "\\\'"
       case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\0" + toOctalString(ch) else String.valueOf(ch)
+      case _    => if (ch.isControl) "\\0" + toOctalString(ch.toInt) else String.valueOf(ch)
     }
 
     def escapedStringValue: String = {

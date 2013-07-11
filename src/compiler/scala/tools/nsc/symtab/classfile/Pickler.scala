@@ -308,7 +308,6 @@ abstract class Pickler extends SubComponent {
           putTree(definition)
 */
         case Template(parents, self, body) =>
-          writeNat(parents.length)
           putTrees(parents)
           putTree(self)
           putTrees(body)
@@ -633,7 +632,7 @@ abstract class Pickler extends SubComponent {
         case c @ Constant(_) =>
           if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
           else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
-          else if (c.tag == FloatTag) writeLong(floatToIntBits(c.floatValue))
+          else if (c.tag == FloatTag) writeLong(floatToIntBits(c.floatValue).toLong)
           else if (c.tag == DoubleTag) writeLong(doubleToLongBits(c.doubleValue))
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClazzTag) writeRef(c.typeValue)

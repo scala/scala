@@ -6,6 +6,8 @@ import scala.concurrent.duration._
 import scala.reflect._
 import scala.tools.partest.TestUtil.intercept
 
+import scala.language.{ postfixOps }
+
 object Test extends App {
 
   implicit class Assert(val left: Any) extends AnyVal {

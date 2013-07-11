@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -65,6 +66,8 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def Ident(sym: Symbol): Ident
 
+    def Block(stats: List[Tree]): Block
+
     def TypeTree(tp: Type): TypeTree
 
     def thisPrefix(sym: Symbol): Type
@@ -72,5 +75,45 @@ private[reflect] trait BuildUtils { self: Universe =>
     def setType[T <: Tree](tree: T, tpe: Type): T
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T
+
+    def mkAnnotationCtor(tree: Tree, args: List[Tree]): Tree
+
+    val FlagsAsBits: FlagsAsBitsExtractor
+
+    trait FlagsAsBitsExtractor {
+      def unapply(flags: Long): Option[Long]
+    }
+
+    val TypeApplied: TypeAppliedExtractor
+
+    trait TypeAppliedExtractor {
+      def unapply(tree: Tree): Some[(Tree, List[Tree])]
+    }
+
+    val Applied: AppliedExtractor
+
+    trait AppliedExtractor {
+      def unapply(tree: Tree): Some[(Tree, List[List[Tree]])]
+    }
+
+    val SyntacticClassDef: SyntacticClassDefExtractor
+
+    trait SyntacticClassDefExtractor {
+      def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
+                constrMods: Modifiers, vparamss: List[List[ValDef]], parents: List[Tree],
+                selfdef: ValDef, body: List[Tree]): Tree
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers,
+                                       List[List[ValDef]], List[Tree], ValDef, List[Tree])]
+    }
+
+    val TupleN: TupleNExtractor
+    val TupleTypeN: TupleNExtractor
+
+    trait TupleNExtractor {
+      def apply(args: List[Tree]): Tree
+      def unapply(tree: Tree): Option[List[Tree]]
+    }
+
+    def RefTree(qual: Tree, sym: Symbol): Tree
   }
 }

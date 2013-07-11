@@ -7,9 +7,8 @@ package scala.tools.nsc
 package interactive
 
 @deprecated("Use scala.reflect.internal.Positions", "2.11.0")
-trait RangePositions extends {
-  override val useOffsetPositions = false
-} with scala.reflect.internal.Positions with ast.Trees with ast.Positions {
+trait RangePositions extends scala.reflect.internal.Positions with ast.Trees with ast.Positions {
   self: scala.tools.nsc.Global =>
 
+  override val useOffsetPositions = false
 }

@@ -1,3 +1,6 @@
+
+import scala.language.higherKinds
+
 trait Base[A] { type B = A; }
 class C extends Base[String] {
   class D {

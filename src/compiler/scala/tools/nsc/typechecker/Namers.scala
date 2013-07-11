@@ -9,6 +9,7 @@ package typechecker
 import scala.collection.mutable
 import scala.annotation.tailrec
 import symtab.Flags._
+import scala.language.postfixOps
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -47,7 +48,6 @@ trait Namers extends MethodSynthesis {
 
   private class NormalNamer(context: Context) extends Namer(context)
   def newNamer(context: Context): Namer = new NormalNamer(context)
-  def newNamerFor(context: Context, tree: Tree): Namer = newNamer(context.makeNewScope(tree, tree.symbol))
 
   abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
     // overridden by the presentation compiler
@@ -254,7 +254,7 @@ trait Namers extends MethodSynthesis {
           case DocDef(_, defn)                               => enterSym(defn)
           case tree @ Import(_, _)                           =>
             assignSymbol(tree)
-            returnContext = context.makeNewImport(tree)
+            returnContext = context.make(tree)
           case _ =>
         }
         returnContext
@@ -765,7 +765,7 @@ trait Namers extends MethodSynthesis {
     def accessorTypeCompleter(tree: ValDef, isSetter: Boolean) = mkTypeCompleter(tree) { sym =>
       logAndValidate(sym) {
         sym setInfo {
-          val tp = if (isSetter) MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitClass.tpe)
+          val tp = if (isSetter) MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitTpe)
                    else NullaryMethodType(typeSig(tree))
           pluginsTypeSigAccessor(tp, typer, tree, sym)
         }
@@ -863,7 +863,7 @@ trait Namers extends MethodSynthesis {
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
-        if (tpt.tpe.isError) AnyRefClass.tpe
+        if (tpt.tpe.isError) AnyRefTpe
         else tpt.tpe
       }
 
@@ -1267,7 +1267,7 @@ trait Namers extends MethodSynthesis {
 
             val defaultTree = atPos(vparam.pos.focus) {
               DefDef(
-                Modifiers(meth.flags & DefaultGetterFlags) | SYNTHETIC | DEFAULTPARAM | oflag,
+                Modifiers(meth.flags & DefaultGetterFlags) | (SYNTHETIC | DEFAULTPARAM | oflag).toLong,
                 name, deftParams, defvParamss, defTpt, defRhs)
             }
             if (!isConstr)
@@ -1342,13 +1342,16 @@ trait Namers extends MethodSynthesis {
     private def importSig(imp: Import) = {
       val Import(expr, selectors) = imp
       val expr1 = typer.typedQualifier(expr)
-      typer checkStable expr1
+
       if (expr1.symbol != null && expr1.symbol.isRootPackage)
         RootImportError(imp)
 
       if (expr1.isErrorTyped)
         ErrorType
       else {
+        if (!treeInfo.isStableIdentifierPattern(expr1))
+          typer.TyperErrorGen.UnstableTreeError(expr1)
+
         val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
         checkSelectors(newImport)
         transformed(imp) = newImport
@@ -1405,11 +1408,20 @@ trait Namers extends MethodSynthesis {
         if (!annotated.isInitialized) tree match {
           case defn: MemberDef =>
             val ainfos = defn.mods.annotations filterNot (_ eq null) map { ann =>
+              val ctx    = typer.context
+              val annCtx = ctx.make(ann)
+              annCtx.setReportErrors()
               // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
               AnnotationInfo lazily {
-                val context1 = typer.context.make(ann)
-                context1.setReportErrors()
-                enteringTyper(newTyper(context1) typedAnnotation ann)
+                if (typer.context ne ctx)
+                  log(sm"""|The var `typer.context` in ${Namer.this} was mutated before the annotation ${ann} was forced.
+                           |
+                           |current value  = ${typer.context}
+                           |original value = $ctx
+                           |
+                           |This confirms the hypothesis for the cause of SI-7603. If you see this message, please comment on that ticket.""")
+
+                enteringTyper(newTyper(annCtx) typedAnnotation ann)
               }
             }
             if (ainfos.nonEmpty) {
@@ -1490,8 +1502,8 @@ trait Namers extends MethodSynthesis {
     private object RestrictJavaArraysMap extends TypeMap {
       def apply(tp: Type): Type = tp match {
         case TypeRef(pre, ArrayClass, List(elemtp))
-        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectClass.tpe) =>
-          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, ObjectClass.tpe))))
+        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectTpe) =>
+          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, ObjectTpe))))
         case _ =>
           mapOver(tp)
       }
@@ -1513,7 +1525,7 @@ trait Namers extends MethodSynthesis {
           AbstractMemberWithModiferError(sym, flag)
       }
       def checkNoConflict(flag1: Int, flag2: Int) {
-        if (sym hasAllFlags flag1 | flag2)
+        if (sym hasAllFlags flag1.toLong | flag2)
           IllegalModifierCombination(sym, flag1, flag2)
       }
       if (sym.isImplicit) {
@@ -1629,7 +1641,7 @@ trait Namers extends MethodSynthesis {
       // @M an abstract type's type parameters are entered.
       // TODO: change to isTypeMember ?
       if (defnSym.isAbstractType)
-        newNamerFor(ctx, tree) enterSyms tparams //@M
+        newNamer(ctx.makeNewScope(tree, tree.symbol)) enterSyms tparams //@M
       restp complete sym
     }
   }
@@ -1683,8 +1695,13 @@ trait Namers extends MethodSynthesis {
    *  call this method?
    */
   def companionSymbolOf(original: Symbol, ctx: Context): Symbol = {
+    val owner = original.owner
+    // SI-7264 Force the info of owners from previous compilation runs.
+    //         Doing this generally would trigger cycles; that's what we also
+    //         use the lower-level scan through the current Context as a fall back.
+    if (!currentRun.compiles(owner)) owner.initialize
     original.companionSymbol orElse {
-      ctx.lookup(original.name.companionName, original.owner).suchThat(sym =>
+      ctx.lookup(original.name.companionName, owner).suchThat(sym =>
         (original.isTerm || sym.hasModuleFlag) &&
         (sym isCoDefinedWith original)
       )

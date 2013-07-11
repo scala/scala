@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 package pickling
 
@@ -851,7 +852,8 @@ abstract class UnPickler {
       private val p = phase
       override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
-        enteringPhase(p) (sym setInfo tp)
+        if (p ne null)
+          enteringPhase(p) (sym setInfo tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
       }

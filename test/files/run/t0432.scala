@@ -1,3 +1,6 @@
+
+import scala.language.reflectiveCalls
+
 object Test {
   type valueType = { def value: this.type }
 

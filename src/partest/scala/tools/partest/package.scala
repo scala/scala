@@ -4,8 +4,9 @@
 
 package scala.tools
 
+import java.util.concurrent.{ Callable, ExecutorService }
+import scala.concurrent.duration.Duration
 import scala.sys.process.javaVmArguments
-import java.util.concurrent.Callable
 import scala.tools.partest.nest.NestUI
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 
@@ -31,6 +32,8 @@ package object partest {
   def ojoin(xs: String*): String  = oempty(xs: _*) mkString space
   def nljoin(xs: String*): String = oempty(xs: _*) mkString EOL
 
+  implicit val codec = scala.io.Codec.UTF8
+
   def setUncaughtHandler() = {
     Thread.setDefaultUncaughtExceptionHandler(
       new Thread.UncaughtExceptionHandler {
@@ -53,8 +56,8 @@ package object partest {
       f.toString split """[/\\]+""" takeRight 2 mkString "/" // e.g. pos/t1234
     }
 
-    def mapInPlace(mapFn: String => String): Unit =
-      writeAll(fileLines.map(x => mapFn(x) + "\n"): _*)
+    def mapInPlace(mapFn: String => String)(filterFn: String => Boolean = _ => true): Unit =
+      writeAll(fileLines filter filterFn map (x => mapFn(x) + EOL): _*)
 
     def appendAll(strings: String*): Unit = sf.appendAll(strings: _*)
     def writeAll(strings: String*): Unit = sf.writeAll(strings: _*)
@@ -83,6 +86,25 @@ package object partest {
 
   implicit class Copier(val f: SFile) extends AnyVal {
     def copyTo(dest: Path): Unit = dest.toFile writeAll f.slurp(scala.io.Codec.UTF8)
+  }
+
+  implicit class LoaderOps(val loader: ClassLoader) extends AnyVal {
+    import scala.util.control.Exception.catching
+    /** Like ScalaClassLoader.create for the case where the result type is
+     *  available to the current class loader, implying that the current
+     *  loader is a parent of `loader`.
+     */
+    def instantiate[A >: Null](name: String): A = (
+      catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
+      (loader loadClass name).newInstance.asInstanceOf[A] orNull
+    )
+  }
+
+  implicit class ExecutorOps(val executor: ExecutorService) {
+    def awaitTermination[A](wait: Duration)(failing: => A = ()): Option[A] = (
+      if (executor awaitTermination (wait.length, wait.unit)) None
+      else Some(failing)
+    )
   }
 
   implicit def temporaryPath2File(x: Path): File = x.jfile

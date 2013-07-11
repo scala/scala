@@ -91,7 +91,7 @@ object Test {
     }
     val parsed = parser.element(TopScope) // parse the source as element
     // alternatively, we could call document()
-    parsed
+    println(parsed)
   }
 
 }

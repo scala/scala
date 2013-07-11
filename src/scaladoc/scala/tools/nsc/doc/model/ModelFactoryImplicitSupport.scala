@@ -170,7 +170,7 @@ trait ModelFactoryImplicitSupport {
         val newContext = context.makeImplicit(context.ambiguousErrors)
         newContext.macrosEnabled = false
         val newTyper = global.analyzer.newTyper(newContext)
-          newTyper.silent(_.typed(appliedTree, EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+          newTyper.silent(_.typed(appliedTree), reportAmbiguousErrors = false) match {
 
           case global.analyzer.SilentResultValue(t: Tree) => t
           case global.analyzer.SilentTypeError(err) =>
@@ -226,12 +226,9 @@ trait ModelFactoryImplicitSupport {
       // look for type variables in the type. If there are none, we can decide if the implicit is there or not
       if (implType.isTrivial) {
         try {
-          context.flushBuffer() /* any errors here should not prevent future findings */
-          // TODO: Not sure this is the right thing to do -- seems similar to what scalac should be doing
-          val context2 = context.make(context.unit, context.tree, sym.owner, context.scope, context.imports)
-          val search = inferImplicit(EmptyTree, tpe, false, false, context2, false)
-          context.flushBuffer() /* any errors here should not prevent future findings */
-
+          // TODO: Not sure if `owner = sym.owner` is the right thing to do -- seems similar to what scalac should be doing
+          val silentContext = context.make(owner = sym.owner).makeSilent(reportAmbiguousErrors = false)
+          val search = inferImplicit(EmptyTree, tpe, false, false, silentContext, false)
           available = Some(search.tree != EmptyTree)
         } catch {
           case _: TypeError =>
@@ -288,7 +285,7 @@ trait ModelFactoryImplicitSupport {
     (tparams zip constrs) flatMap {
       case (tparam, constr) => {
         uniteConstraints(constr) match {
-          case (loBounds, upBounds) => (loBounds filter (_ != NothingClass.tpe), upBounds filter (_ != AnyClass.tpe)) match {
+          case (loBounds, upBounds) => (loBounds filter (_ != NothingTpe), upBounds filter (_ != AnyTpe)) match {
             case (Nil, Nil) =>
               Nil
             case (List(lo), List(up)) if (lo == up) =>
@@ -335,13 +332,12 @@ trait ModelFactoryImplicitSupport {
 
     def targetType: TypeEntity = makeType(toType, inTpl)
 
-    def convertorOwner: TemplateEntity =
-      if (convSym != NoSymbol)
-        makeTemplate(convSym.owner)
-      else {
+    def convertorOwner: TemplateEntity = {
+      if (convSym eq NoSymbol)
         error("Scaladoc implicits: " + toString + " = NoSymbol!")
-        makeRootPackage
-      }
+
+      makeTemplate(convSym.owner)
+    }
 
     def targetTypeComponents: List[(TemplateEntity, TypeEntity)] = makeParentTypes(toType, None, inTpl)
 
@@ -536,7 +532,7 @@ trait ModelFactoryImplicitSupport {
   object wildcardToNothing extends TypeMap {
     def apply(tp: Type): Type = mapOver(tp) match {
       case WildcardType =>
-        NothingClass.tpe
+        NothingTpe
       case other =>
         other
     }

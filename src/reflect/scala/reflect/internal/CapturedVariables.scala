@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import Flags._
@@ -29,7 +30,7 @@ trait CapturedVariables { self: SymbolTable =>
     def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
       if (isPrimitiveValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
       else if (erasedTypes) objectRefClass.tpe
-      else appliedType(objectRefClass, tpe)
+      else appliedType(objectRefClass, tpe1)
     if (vble.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
     else refType(refClass, ObjectRefClass)
   }

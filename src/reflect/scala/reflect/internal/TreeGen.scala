@@ -1,5 +1,8 @@
-package scala.reflect
+package scala
+package reflect
 package internal
+
+import Flags._
 
 abstract class TreeGen extends macros.TreeBuilder {
   val global: SymbolTable
@@ -136,22 +139,20 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = stableTypeFor(tree) match {
-    case Some(tp) => tree setType tp
-    case _        => tree
+    case NoType => tree
+    case tp     => tree setType tp
   }
 
   /** Computes stable type for a tree if possible */
-  def stableTypeFor(tree: Tree): Option[Type] = tree match {
-    case This(_) if tree.symbol != null && !tree.symbol.isError =>
-      Some(ThisType(tree.symbol))
-    case Ident(_) if tree.symbol.isStable =>
-      Some(singleType(tree.symbol.owner.thisType, tree.symbol))
-    case Select(qual, _) if ((tree.symbol ne null) && (qual.tpe ne null)) && // turned assert into guard for #4064
-                            tree.symbol.isStable && qual.tpe.isStable =>
-      Some(singleType(qual.tpe, tree.symbol))
-    case _ =>
-      None
-  }
+  def stableTypeFor(tree: Tree): Type = (
+    if (!treeInfo.admitsTypeSelection(tree)) NoType
+    else tree match {
+      case This(_)         => ThisType(tree.symbol)
+      case Ident(_)        => singleType(tree.symbol.owner.thisType, tree.symbol)
+      case Select(qual, _) => singleType(qual.tpe, tree.symbol)
+      case _               => NoType
+    }
+  )
 
   /** Builds a reference with stable type to given symbol */
   def mkAttributedStableRef(pre: Type, sym: Symbol): Tree =
@@ -228,7 +229,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Cast `tree` to `pt`, unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =
-    if ((pt == UnitClass.tpe) || (tpe <:< pt)) tree
+    if ((pt == UnitTpe) || (tpe <:< pt)) tree
     else atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = true, wrapInApply = !beforeRefChecks))
 
   /** Apparently we smuggle a Type around as a Literal(Constant(tp))
@@ -254,7 +255,7 @@ abstract class TreeGen extends macros.TreeBuilder {
    *  which is appropriate to the given Type.
    */
   def mkZero(tp: Type): Tree = tp.typeSymbol match {
-    case NothingClass => mkMethodCall(Predef_???, Nil) setType NothingClass.tpe
+    case NothingClass => mkMethodCall(Predef_???, Nil) setType NothingTpe
     case _            => Literal(mkConstantZero(tp)) setType tp
   }
 
@@ -297,5 +298,84 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   def mkPackageDef(packageName: String, stats: List[Tree]): PackageDef = {
     PackageDef(mkUnattributedRef(newTermName(packageName)), stats)
+  }
+
+  def mkSeqApply(arg: Tree): Apply = {
+    val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
+    Apply(factory, List(arg))
+  }
+
+  def mkSuperInitCall: Select = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
+
+  /** Generates a template with constructor corresponding to
+   *
+   *  constrmods (vparams1_) ... (vparams_n) preSuper { presupers }
+   *  extends superclass(args_1) ... (args_n) with mixins { self => body }
+   *
+   *  This gets translated to
+   *
+   *  extends superclass with mixins { self =>
+   *    presupers' // presupers without rhs
+   *    vparamss   // abstract fields corresponding to value parameters
+   *    def <init>(vparamss) {
+   *      presupers
+   *      super.<init>(args)
+   *    }
+   *    body
+   *  }
+   */
+  def mkTemplate(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): Template = {
+    /* Add constructor to template */
+
+    // create parameters for <init> as synthetic trees.
+    var vparamss1 = mmap(vparamss) { vd =>
+      atPos(vd.pos.focus) {
+        val mods = Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR)
+        ValDef(mods withAnnotations vd.mods.annotations, vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
+      }
+    }
+    val (edefs, rest) = body span treeInfo.isEarlyDef
+    val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
+    val gvdefs = evdefs map {
+      case vdef @ ValDef(_, _, tpt, _) =>
+        copyValDef(vdef)(
+        // atPos for the new tpt is necessary, since the original tpt might have no position
+        // (when missing type annotation for ValDef for example), so even though setOriginal modifies the
+        // position of TypeTree, it would still be NoPosition. That's what the author meant.
+        tpt = atPos(vdef.pos.focus)(TypeTree() setOriginal tpt setPos tpt.pos.focus),
+        rhs = EmptyTree
+      )
+    }
+    val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = vdef.mods | PRESUPER) }
+
+    val constrs = {
+      if (constrMods hasFlag TRAIT) {
+        if (body forall treeInfo.isInterfaceMember) List()
+        else List(
+          atPos(wrappingPos(superPos, lvdefs)) (
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(Nil), TypeTree(), Block(lvdefs, Literal(Constant())))))
+      } else {
+        // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
+        if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
+          vparamss1 = List() :: vparamss1
+        val superRef: Tree = atPos(superPos)(mkSuperInitCall)
+        val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
+                                         // this requires knowing which of the parents is a type macro and which is not
+                                         // and that's something that cannot be found out before typer
+                                         // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
+                                         // this means that we don't know what will be the arguments of the super call
+                                         // therefore here we emit a dummy which gets populated when the template is named and typechecked
+        List(
+          // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
+          // is it going to be a problem that we can no longer include the `argss`?
+          atPos(wrappingPos(superPos, lvdefs)) (
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
+      }
+    }
+    constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
+    // Field definitions for the class - remove defaults.
+    val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
+
+    global.Template(parents, self, gvdefs ::: fieldDefs ::: constrs ::: etdefs ::: rest)
   }
 }

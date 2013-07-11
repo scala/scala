@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 
 
@@ -14,7 +15,7 @@ package scala.util
 
 
 package object hashing {
-  
+
   /** Fast multiplicative hash with a nice distribution.
    */
   def byteswap32(v: Int): Int = {
@@ -22,7 +23,7 @@ package object hashing {
     hc = java.lang.Integer.reverseBytes(hc)
     hc * 0x9e3775cd
   }
-  
+
   /** Fast multiplicative hash with a nice distribution
    *  for 64-bit values.
    */
@@ -31,5 +32,5 @@ package object hashing {
     hc = java.lang.Long.reverseBytes(hc)
     hc * 0x9e3775cd9e3775cdL
   }
-  
+
 }

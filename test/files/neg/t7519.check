@@ -1,0 +1,7 @@
+t7519.scala:5: error: could not find implicit value for parameter nada: Nothing
+    locally(0 : String) // was: "value conversion is not a member of C.this.C"
+            ^
+t7519.scala:15: error: could not find implicit value for parameter nada: Nothing
+      locally(0 : String) // was: "value conversion is not a member of U"
+              ^
+two errors found

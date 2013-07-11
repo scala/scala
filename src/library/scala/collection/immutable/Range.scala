@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.immutable
+package scala
+package collection.immutable
 
 import scala.collection.parallel.immutable.ParRange
 
@@ -64,6 +65,7 @@ extends scala.collection.AbstractSeq[Int]
     || (start < end && step < 0)
     || (start == end && !isInclusive)
   )
+  @deprecated("This method will be made private, use `length` instead.", "2.11") 
   final val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
@@ -73,7 +75,9 @@ extends scala.collection.AbstractSeq[Int]
       else len.toInt
     }
   }
+  @deprecated("This method will be made private, use `last` instead.", "2.11")
   final val lastElement     = start + (numRangeElements - 1) * step
+  @deprecated("This method will be made private.", "2.11") 
   final val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else lastElement
@@ -81,14 +85,14 @@ extends scala.collection.AbstractSeq[Int]
 
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
-      if (step > 0) start
+      if (step > 0) head
       else last
     } else super.min(ord)
 
   override def max[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)

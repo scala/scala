@@ -59,7 +59,22 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
   override def changesBaseClasses = false
 
   override def transformInfo(sym: Symbol, tp: Type): Type = {
-    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    // !!! This is a sketchy way to do things.
+    // It would be better to replace the module symbol with a method symbol
+    // rather than creating this module/method hybrid which must be special
+    // cased all over the place. Look for the call sites which use(d) some
+    // variation of "isMethod && !isModule", which to an observer looks like
+    // a nonsensical condition. (It is now "isModuleNotMethod".)
+    if (sym.isModule && !sym.isStatic) {
+      sym setFlag lateMETHOD | STABLE
+      // Note that this as far as we can see it works equally well
+      // to set the METHOD flag here and dump lateMETHOD, but it does
+      // mean that under separate compilation the typer will see
+      // modules as methods (albeit stable ones with singleton types.)
+      // So for now lateMETHOD lives while we try to convince ourselves
+      // we can live without it or deliver that info some other way.
+      log(s"Stabilizing module method for ${sym.fullLocationString}")
+    }
     super.transformInfo(sym, tp)
   }
 
@@ -111,7 +126,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
 
       defaultMethodNames.toList.distinct foreach { name =>
-        val methods      = clazz.info.findMember(name, 0L, METHOD, false).alternatives
+        val methods      = clazz.info.findMember(name, 0L, METHOD, stableOnly = false).alternatives
         def hasDefaultParam(tpe: Type): Boolean = tpe match {
           case MethodType(params, restpe) => (params exists (_.hasDefault)) || hasDefaultParam(restpe)
           case _ => false
@@ -144,7 +159,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       // This has become noisy with implicit classes.
       if (settings.lint && settings.developer) {
         clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
-          val alts = clazz.info.decl(sym.name).alternatives
+          // implicit classes leave both a module symbol and a method symbol as residue
+          val alts = clazz.info.decl(sym.name).alternatives filterNot (_.isModule)
           if (alts.size > 1)
             alts foreach (x => unit.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
         }
@@ -390,7 +406,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             overrideError("cannot be used here - classes can only override abstract types")
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member")
-          } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) { // (*)
+          } else if (!other.isDeferred && !other.hasFlag(DEFAULTMETHOD) && !member.isAnyOverride && !member.isSynthetic) { // (*)
             // (*) Synthetic exclusion for (at least) default getters, fixes SI-5178. We cannot assign the OVERRIDE flag to
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
@@ -495,7 +511,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             }
 
             if (member.isStable && !otherTp.isVolatile) {
-	            if (memberTp.isVolatile)
+              // (1.4), pt 2 -- member.isStable && memberTp.isVolatile started being possible after SI-6815
+              // (before SI-6815, !symbol.tpe.isVolatile was implied by symbol.isStable)
+              // TODO: allow overriding when @uncheckedStable?
+              if (memberTp.isVolatile)
                 overrideError("has a volatile type; cannot override a member with non-volatile type")
               else memberTp.dealiasWiden.resultType match {
                 case rt: RefinedType if !(rt =:= otherTp) && !(checkedCombinations contains rt.parents) =>
@@ -585,8 +604,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           def stubImplementations: List[String] = {
             // Grouping missing methods by the declaring class
             val regrouped = missingMethods.groupBy(_.owner).toList
-            def membersStrings(members: List[Symbol]) =
-              members.sortBy("" + _.name) map (m => m.defStringSeenAs(clazz.tpe memberType m) + " = ???")
+            def membersStrings(members: List[Symbol]) = {
+              members foreach fullyInitializeSymbol
+              members.sortBy(_.name) map (m => m.defStringSeenAs(clazz.tpe_* memberType m) + " = ???")
+            }
 
             if (regrouped.tail.isEmpty)
               membersStrings(regrouped.head._2)
@@ -729,7 +750,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // Have to use matchingSymbol, not a method involving overridden symbols,
           // because the scala type system understands that an abstract method here does not
           // override a concrete method in Object. The jvm, however, does not.
-          val overridden = decl.matchingSymbol(ObjectClass, ObjectClass.tpe)
+          val overridden = decl.matchingSymbol(ObjectClass, ObjectTpe)
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
@@ -926,9 +947,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       case _ =>
     }
 
+    private def isObjectOrAnyComparisonMethod(sym: Symbol) = sym match {
+      case Object_eq | Object_ne | Object_== | Object_!= | Any_== | Any_!= => true
+      case _                                                               => false
+    }
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
-      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 =>
-        def isReferenceOp = name == nme.eq || name == nme.ne
+      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) =>
+        // Make sure the 'eq' or 'ne' method is the one in AnyRef.
+        def isReferenceOp = fn.symbol == Object_eq || fn.symbol == Object_ne
         def isNew(tree: Tree) = tree match {
           case Function(_, _)
              | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
@@ -965,12 +991,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           val s = fn.symbol
           (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=)
         }
+        def haveSubclassRelationship = (actual isSubClass receiver) || (receiver isSubClass actual)
+
         // Whether the operands+operator represent a warnable combo (assuming anyrefs)
         // Looking for comparisons performed with ==/!= in combination with either an
         // equals method inherited from Object or a case class synthetic equals (for
         // which we know the logic.)
         def isWarnable           = isReferenceOp || (isUsingDefaultScalaOp && isUsingWarnableEquals)
-        def isEitherNullable     = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+        def isEitherNullable     = (NullTpe <:< receiver.info) || (NullTpe <:< actual.info)
+        def isEitherValueClass   = actual.isDerivedValueClass || receiver.isDerivedValueClass
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
@@ -982,6 +1011,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // used to short-circuit unrelatedTypes check if both sides are special
         def isSpecial(s: Symbol) = isMaybeAnyValue(s) || isAnyNumber(s)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
+        def isNonsenseValueClassCompare = (
+             !haveSubclassRelationship
+          && isUsingDefaultScalaOp
+          && isEitherValueClass
+          && !isCaseEquals
+        )
 
         def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
           val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
@@ -993,10 +1028,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def nonSensiblyNeq() = nonSensible("", false)
         def nonSensiblyNew() = nonSensibleWarning("a fresh object", false)
 
+        def unrelatedMsg = name match {
+          case nme.EQ | nme.eq => "never compare equal"
+          case _               => "always compare unequal"
+        }
         def unrelatedTypes() = {
-          val msg = if (name == nme.EQ || name == nme.eq)
-                      "never compare equal" else "always compare unequal"
-          unit.warning(pos, typesString + " are unrelated: they will most likely " + msg)
+          val weaselWord = if (isEitherValueClass) "" else " most likely"
+          unit.warning(pos, s"$typesString are unrelated: they will$weaselWord $unrelatedMsg")
         }
 
         if (nullCount == 2) // null == null
@@ -1035,15 +1073,19 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
         }
 
+        // warn if one but not the other is a derived value class
+        // this is especially important to enable transitioning from
+        // regular to value classes without silent failures.
+        if (isNonsenseValueClassCompare)
+          unrelatedTypes()
         // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
-        if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
+        else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           // better to have lubbed and lost
           def warnIfLubless(): Unit = {
             val common = global.lub(List(actual.tpe, receiver.tpe))
-            if (ObjectClass.tpe <:< common)
+            if (ObjectTpe <:< common)
               unrelatedTypes()
           }
-          def eitherSubclasses = (actual isSubClass receiver) || (receiver isSubClass actual)
           // warn if actual has a case parent that is not same as receiver's;
           // if actual is not a case, then warn if no common supertype, as below
           if (isCaseEquals) {
@@ -1056,14 +1098,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
                 //else
                 // if a class, it must be super to thisCase (and receiver) since not <: thisCase
                 if (!actual.isTrait && !(receiver isSubClass actual)) nonSensiblyNeq()
-                else if (!eitherSubclasses) warnIfLubless()
+                else if (!haveSubclassRelationship) warnIfLubless()
               case _ =>
             }
           }
-          else if (actual isSubClass receiver) ()
-          else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object
-          else {
+          else if (!haveSubclassRelationship) {
             warnIfLubless()
           }
         }
@@ -1259,6 +1299,16 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // The getOrElse part should never happen, it's just here as a backstop.
         unit.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
       }
+    }
+
+    private def checkDelayedInitSelect(qual: Tree, sym: Symbol, pos: Position) = {
+      def isLikelyUninitialized = (
+           (sym.owner isSubClass DelayedInitClass)
+        && !qual.tpe.isInstanceOf[ThisType]
+        && sym.accessedOrSelf.isVal
+      )
+      if (settings.lint.value && isLikelyUninitialized)
+        unit.warning(pos, s"Selecting ${sym} from ${sym.owner}, which extends scala.DelayedInit, is likely to yield an uninitialized value")
     }
 
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
@@ -1464,6 +1514,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       if(settings.Xmigration.value != NoScalaVersion)
         checkMigration(sym, tree.pos)
       checkCompileTimeOnly(sym, tree.pos)
+      checkDelayedInitSelect(qual, sym, tree.pos)
 
       if (sym eq NoSymbol)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
@@ -1484,7 +1535,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
-        if (t == EmptyTree) Literal(Constant(())).setPos(tree.pos).setType(UnitClass.tpe) else t
+        if (t == EmptyTree) Literal(Constant(())).setPos(tree.pos).setType(UnitTpe) else t
 
       cond.tpe match {
         case ConstantType(value) =>
@@ -1511,10 +1562,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
     // Verify classes extending AnyVal meet the requirements
     private def checkAnyValSubclass(clazz: Symbol) = {
-      if ((clazz isSubClass AnyValClass) && !isPrimitiveValueClass(clazz)) {
+      if (clazz.isDerivedValueClass) {
         if (clazz.isTrait)
           unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
-        else if ((clazz != AnyValClass) && clazz.hasFlag(ABSTRACT))
+        else if (clazz.hasAbstractFlag)
           unit.error(clazz.pos, "`abstract' modifier cannot be used with value classes")
       }
     }
@@ -1591,7 +1642,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             enterReference(tree.pos, tpt.tpe.typeSymbol)
             tree
 
-          case Typed(_, Ident(tpnme.WILDCARD_STAR)) if !isRepeatedParamArg(tree) =>
+          case treeInfo.WildcardStarArg(_) if !isRepeatedParamArg(tree) =>
             unit.error(tree.pos, "no `: _*' annotation allowed here\n"+
               "(such annotations are only allowed in arguments to *-parameters)")
             tree

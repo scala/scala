@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 
 
 

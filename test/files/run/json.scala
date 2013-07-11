@@ -1,13 +1,17 @@
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
 import scala.util.parsing.json._
 import scala.collection.immutable.TreeMap
 
+@deprecated("Suppress warnings", since="2.11")
 object Test extends App {
   /* This method converts parsed JSON back into real JSON notation with objects in
    * sorted-key order. Not required by the spec, but it allows us to do a stable
    * toString comparison. */
   def jsonToString(in : Any) : String = in match {
     case l : List[_] => "[" + l.map(jsonToString).mkString(", ") + "]"
-    case m : Map[String,_] => "{" + m.iterator.toList
+    case m : Map[String @unchecked,_] => "{" + m.iterator.toList
          .sortWith({ (x,y) => x._1 < y._1 })
          .map({ case (k,v) => "\"" + k + "\": " + jsonToString(v) })
          .mkString(", ") + "}"
@@ -20,7 +24,7 @@ object Test extends App {
    */
   def sortJSON(in : Any) : Any = in match {
     case l : List[_] => l.map(sortJSON)
-    case m : Map[String,_] => TreeMap(m.mapValues(sortJSON).iterator.toSeq : _*)
+    case m : Map[String @unchecked,_] => TreeMap(m.mapValues(sortJSON).iterator.toSeq : _*)
     // For the object versions, sort their contents, ugly casts and all...
     case JSONObject(data) => JSONObject(sortJSON(data).asInstanceOf[Map[String,Any]])
     case JSONArray(data) => JSONArray(sortJSON(data).asInstanceOf[List[Any]])

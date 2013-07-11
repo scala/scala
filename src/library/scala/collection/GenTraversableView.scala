@@ -6,6 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 trait GenTraversableView[+A, +Coll] extends GenTraversableViewLike[A, Coll, GenTraversableView[A, Coll]] { }

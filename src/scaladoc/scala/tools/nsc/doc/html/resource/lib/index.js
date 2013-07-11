@@ -14,9 +14,9 @@ var title = $(document).attr('title');
 var lastHash = "";
 
 $(document).ready(function() {
-    $('body').layout({ 
+    $('body').layout({
         west__size: '20%',
-        center__maskContents: true 
+        center__maskContents: true
     });
     $('#browser').layout({
         center__paneSelector: ".ui-west-center"
@@ -342,14 +342,17 @@ function configureTextFilter() {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
             }
-            if (event.keyCode == 9) { // tab
-                $("#template").contents().find("#mbrsel-input").focus();
-                input.attr("value", "");
-                return false;
-            }
             if (event.keyCode == 40) { // down arrow
                 $(window).unbind("keydown");
                 keyboardScrolldownLeftPane();
+                return false;
+            }
+            textFilter();
+        });
+        input.bind('keydown', function(event) {
+            if (event.keyCode == 9) { // tab
+                $("#template").contents().find("#mbrsel-input").focus();
+                input.attr("value", "");
                 return false;
             }
             textFilter();

@@ -134,9 +134,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
-  // Apparently needed for the xml library
-  val $scope = scala.xml.TopScope
-
   // errors and asserts -------------------------------------------------
 
   // !!! Remove this when possible - ideally for 2.11.
@@ -346,19 +343,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
   implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
 
-  // These next eight implicits exist solely to exclude AnyRef methods from the
-  // eight implicits above so that primitives are not coerced to AnyRefs.  They
-  // only create such conflict for AnyRef methods, so the methods on the java.lang
-  // boxed types are unambiguously reachable.
-  implicit def byte2ByteConflict(x: Byte)           = new AnyRef
-  implicit def short2ShortConflict(x: Short)        = new AnyRef
-  implicit def char2CharacterConflict(x: Char)      = new AnyRef
-  implicit def int2IntegerConflict(x: Int)          = new AnyRef
-  implicit def long2LongConflict(x: Long)           = new AnyRef
-  implicit def float2FloatConflict(x: Float)        = new AnyRef
-  implicit def double2DoubleConflict(x: Double)     = new AnyRef
-  implicit def boolean2BooleanConflict(x: Boolean)  = new AnyRef
-
   implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
   implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
   implicit def Character2char(x: java.lang.Character): Char   = x.charValue
@@ -445,4 +429,71 @@ private[scala] trait DeprecatedPredef {
   @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf1(format: String)             = ReadStdin.readf1(format)
   @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf2(format: String)             = ReadStdin.readf2(format)
   @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf3(format: String)             = ReadStdin.readf3(format)
+}
+
+/** The `LowPriorityImplicits` class provides implicit values that
+*  are valid in all Scala compilation units without explicit qualification,
+*  but that are partially overridden by higher-priority conversions in object
+*  `Predef`.
+*
+*  @author  Martin Odersky
+*  @since 2.8
+*/
+// SI-7335 Parents of Predef are defined in the same compilation unit to avoid
+// cyclic reference errors compiling the standard library *without* a previously
+// compiled copy on the classpath.
+private[scala] abstract class LowPriorityImplicits {
+  import mutable.WrappedArray
+  import immutable.WrappedString
+
+  /** We prefer the java.lang.* boxed types to these wrappers in
+   *  any potential conflicts.  Conflicts do exist because the wrappers
+   *  need to implement ScalaNumber in order to have a symmetric equals
+   *  method, but that implies implementing java.lang.Number as well.
+   *
+   *  Note - these are inlined because they are value classes, but
+   *  the call to xxxWrapper is not eliminated even though it does nothing.
+   *  Even inlined, every call site does a no-op retrieval of Predef's MODULE$
+   *  because maybe loading Predef has side effects!
+   */
+  @inline implicit def byteWrapper(x: Byte)       = new runtime.RichByte(x)
+  @inline implicit def shortWrapper(x: Short)     = new runtime.RichShort(x)
+  @inline implicit def intWrapper(x: Int)         = new runtime.RichInt(x)
+  @inline implicit def charWrapper(c: Char)       = new runtime.RichChar(c)
+  @inline implicit def longWrapper(x: Long)       = new runtime.RichLong(x)
+  @inline implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
+  @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
+  @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
+
+  implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
+    if (xs eq null) null
+    else WrappedArray.make(xs)
+
+  // Since the JVM thinks arrays are covariant, one 0-length Array[AnyRef]
+  // is as good as another for all T <: AnyRef.  Instead of creating 100,000,000
+  // unique ones by way of this implicit, let's share one.
+  implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = {
+    if (xs eq null) null
+    else if (xs.length == 0) WrappedArray.empty[T]
+    else new WrappedArray.ofRef[T](xs)
+  }
+
+  implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
+  implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
+  implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
+  implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
+  implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
+  implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
+  implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
+  implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
+  implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
+
+  implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
+  implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
+
+  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
+    new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
+      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
+      def apply() = immutable.IndexedSeq.newBuilder[T]
+    }
 }

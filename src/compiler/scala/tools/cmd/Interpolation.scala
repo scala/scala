@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.tools
+package scala
+package tools
 package cmd
 
 /** Interpolation logic for generated files.  The idea is to be

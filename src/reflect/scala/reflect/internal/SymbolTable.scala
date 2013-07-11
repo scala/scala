@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.annotation.elidable
@@ -47,6 +48,7 @@ abstract class SymbolTable extends macros.Universe
 
   def log(msg: => AnyRef): Unit
   def warning(msg: String): Unit     = Console.err.println(msg)
+  def inform(msg: String): Unit      = Console.err.println(msg)
   def globalError(msg: String): Unit = abort(msg)
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
@@ -123,6 +125,8 @@ abstract class SymbolTable extends macros.Universe
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
   } with util.TraceSymbolActivity
+
+  val treeInfo: TreeInfo { val global: SymbolTable.this.type }
 
   /** Check that the executing thread is the compiler thread. No-op here,
    *  overridden in interactive.Global. */
@@ -303,27 +307,20 @@ abstract class SymbolTable extends macros.Universe
   }
 
   object perRunCaches {
-    import java.lang.ref.WeakReference
     import scala.collection.generic.Clearable
 
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
-    private val caches = mutable.HashSet[WeakReference[Clearable]]()
+    private val caches = WeakHashSet[Clearable]()
 
     def recordCache[T <: Clearable](cache: T): T = {
-      caches += new WeakReference(cache)
+      caches += cache
       cache
     }
 
     def clearAll() = {
       debuglog("Clearing " + caches.size + " caches.")
-      caches foreach { ref =>
-        val cache = ref.get()
-        if (cache == null)
-          caches -= ref
-        else
-          cache.clear()
-      }
+      caches foreach (_.clear)
     }
 
     def newWeakMap[K, V]()        = recordCache(mutable.WeakHashMap[K, V]())
