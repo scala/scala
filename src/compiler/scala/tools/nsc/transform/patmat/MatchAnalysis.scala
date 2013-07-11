@@ -384,10 +384,8 @@ trait MatchAnalysis extends MatchApproximation {
       try {
         val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
         val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   modelNull = true)
-        val eqAxioms = simplifyFormula(andFormula(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
-
-        val prefix   = formulaBuilder
-        addFormula(prefix, eqAxioms)
+        // TODO: obsolete
+        val eqAxioms = simplify(And(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
 
         var prefixRest = symbolicCasesFail
         var current    = symbolicCasesOk
@@ -395,7 +393,9 @@ trait MatchAnalysis extends MatchApproximation {
         var caseIndex  = 0
 
         debug.patmat("reachability, vars:\n"+ ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
-        debug.patmat("equality axioms:\n"+ cnfString(eqAxiomsOk))
+        debug.patmat(s"equality axioms:\n$propsCasesOk")
+
+        val prefixes = mutable.ArrayBuffer[Prop]()
 
         // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
         // termination: prefixRest.length decreases by 1
@@ -405,9 +405,11 @@ trait MatchAnalysis extends MatchApproximation {
           prefixRest = prefixRest.tail
           if (prefixRest.isEmpty) reachable = true
           else {
-            addFormula(prefix, prefHead)
+            prefixes += prefHead
             current = current.tail
-            val model = findModelFor(andFormula(current.head, toFormula(prefix)))
+            val formulaForCase = And(prefixes.toSet + eqAxioms + current.head)
+            val solvable = eqFreePropToSolvable(formulaForCase)
+            val model = findModelFor(solvable, AnalysisBudget.max)
 
             // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
             // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
@@ -473,7 +475,8 @@ trait MatchAnalysis extends MatchApproximation {
 
         try {
           // find the models (under which the match fails)
-          val matchFailModels = findAllModelsFor(propToSolvable(matchFails))
+          val solvable = propToSolvable(matchFails)
+          val matchFailModels = findAllModelsFor(solvable, AnalysisBudget.max)
 
           val scrutVar = Var(prevBinderTree)
           val counterExamples = matchFailModels.map(modelToCounterExample(scrutVar))
@@ -485,7 +488,7 @@ trait MatchAnalysis extends MatchApproximation {
         } catch {
           case ex : AnalysisBudget.Exception =>
             warn(prevBinder.pos, ex, "exhaustivity")
-            Nil // CNF budget exceeded
+            Nil // SAT solver timeout
         }
       }
     }
