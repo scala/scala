@@ -114,7 +114,7 @@ object BigInt {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-@deprecatedInheritance("This class will me made final.", "2.10.0")
+@deprecatedInheritance("This class will be made final.", "2.10.0")
 class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericConversions with Serializable {
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
