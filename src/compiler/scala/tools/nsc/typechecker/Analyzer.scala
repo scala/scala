@@ -29,8 +29,9 @@ trait Analyzer extends AnyRef
   val global : Global
   import global._
 
-  object namerFactory extends SubComponent {
+  object namerFactory extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
+  } with SubComponent {
     val phaseName = "namer"
     val runsAfter = List[String]("parser")
     val runsRightAfter = None
@@ -44,8 +45,9 @@ trait Analyzer extends AnyRef
     }
   }
 
-  object packageObjects extends SubComponent {
+  object packageObjects extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
+  } with SubComponent {
     val phaseName = "packageobjects"
     val runsAfter = List[String]()
     val runsRightAfter= Some("namer")
@@ -71,9 +73,10 @@ trait Analyzer extends AnyRef
     }
   }
 
-  object typerFactory extends SubComponent {
-    import scala.reflect.internal.TypesStats.typerNanos
+  object typerFactory extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
+  } with SubComponent {
+    import scala.reflect.internal.TypesStats.typerNanos
     val phaseName = "typer"
     val runsAfter = List[String]()
     val runsRightAfter = Some("packageobjects")
