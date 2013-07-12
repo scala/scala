@@ -91,20 +91,20 @@ trait Reshape {
     private def undoMacroExpansion(tree: Tree): Tree =
       tree.attachments.get[MacroExpansionAttachment] match {
         case Some(MacroExpansionAttachment(original)) =>
+          def mkImplicitly(tp: Type) = atPos(tree.pos)(
+            gen.mkNullaryCall(Predef_implicitly, List(tp))
+          )
+          val sym = original.symbol
           original match {
             // this hack is necessary until I fix implicit macros
             // so far tag materialization is implemented by sneaky macros hidden in scala-compiler.jar
             // hence we cannot reify references to them, because noone will be able to see them later
             // when implicit macros are fixed, these sneaky macros will move to corresponding companion objects
             // of, say, ClassTag or TypeTag
-            case Apply(TypeApply(_, List(tt)), _) if original.symbol == materializeClassTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeWeakTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe))))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
-            case _ =>
-              original
+            case Apply(TypeApply(_, List(tt)), _) if sym == materializeClassTag            => mkImplicitly(appliedType(ClassTagClass, tt.tpe))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeWeakTypeTag => mkImplicitly(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe)))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeTypeTag     => mkImplicitly(typeRef(pre.tpe, TypeTagClass, List(tt.tpe)))
+            case _                                                                         => original
           }
         case _ => tree
       }
