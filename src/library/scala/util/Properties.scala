@@ -128,6 +128,10 @@ private[scala] trait PropertiesTrait {
   def javaVmName            = propOrEmpty("java.vm.name")
   def javaVmVendor          = propOrEmpty("java.vm.vendor")
   def javaVmVersion         = propOrEmpty("java.vm.version")
+  // this property must remain less-well-known until 2.11
+  private def javaSpecVersion       = propOrEmpty("java.specification.version")
+  //private def javaSpecVendor        = propOrEmpty("java.specification.vendor")
+  //private def javaSpecName          = propOrEmpty("java.specification.name")
   def osName                = propOrEmpty("os.name")
   def scalaHome             = propOrEmpty("scala.home")
   def tmpDir                = propOrEmpty("java.io.tmpdir")
@@ -152,18 +156,29 @@ private[scala] trait PropertiesTrait {
   def scalaCmd              = if (isWin) "scala.bat" else "scala"
   def scalacCmd             = if (isWin) "scalac.bat" else "scalac"
 
-  /** Can the java version be determined to be at least as high as the argument?
-   *  Hard to properly future proof this but at the rate 1.7 is going we can leave
-   *  the issue for our cyborg grandchildren to solve.
+  /** Compares the given specification version to the specification version of the platform.
+   *
+   * @param version a specification version of the form "major.minor"
+   * @return `true` iff the specification version of the current runtime
+   * is equal to or higher than the version denoted by the given string.
+   * @throws NumberFormatException if the given string is not a version string
+   *
+   * @example {{{
+   * // In this example, the runtime's Java specification is assumed to be at version 1.7.
+   * isJavaAtLeast("1.6")            // true
+   * isJavaAtLeast("1.7")            // true
+   * isJavaAtLeast("1.8")            // false
+   * }}
    */
-  def isJavaAtLeast(version: String) = {
-    val okVersions = version match {
-      case "1.5"    => List("1.5", "1.6", "1.7")
-      case "1.6"    => List("1.6", "1.7")
-      case "1.7"    => List("1.7")
-      case _        => Nil
+  def isJavaAtLeast(version: String): Boolean = {
+    def parts(x: String) = {
+      val i = x.indexOf('.')
+      if (i < 0) throw new NumberFormatException("Not a version: " + x)
+      (x.substring(0, i), x.substring(i+1, x.length))
     }
-    okVersions exists (javaVersion startsWith _)
+    val (v, _v) = parts(version)
+    val (s, _s) = parts(javaSpecVersion)
+    s.toInt >= v.toInt && _s.toInt >= _v.toInt
   }
 
   // provide a main method so version info can be obtained by running this
