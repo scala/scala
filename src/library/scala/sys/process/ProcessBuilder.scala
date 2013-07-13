@@ -127,7 +127,7 @@ import ProcessBuilder._
   *
   * Finally, `!` at the end executes the commands, and returns the exit value.
   * Whatever is printed will be sent to the Scala process standard output. If
-  * we wanted to caputre it, we could run that with `!!` instead.
+  * we wanted to capture it, we could run that with `!!` instead.
   *
   * Note: though it is not shown above, the equivalent of a shell's `;` would be
   * `###`. The reason for this name is that `;` is a reserved token in Scala.
