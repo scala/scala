@@ -146,7 +146,6 @@ trait StdNames {
     final val CASEkw: TermName      = kw("case")
     final val CLASSkw: TermName     = kw("class")
     final val CATCHkw: TermName     = kw("catch")
-    final val DATATYPEkw: TermName  = kw("datatype")
     final val DEFkw: TermName       = kw("def")
     final val DOkw: TermName        = kw("do")
     final val ELSEkw: TermName      = kw("else")

@@ -1141,7 +1141,6 @@ trait Scanners extends ScannersCommon {
     nme.CASEkw      -> CASE,
     nme.CATCHkw     -> CATCH,
     nme.CLASSkw     -> CLASS,
-    nme.DATATYPEkw  -> DATATYPE,
     nme.DEFkw       -> DEF,
     nme.DOkw        -> DO,
     nme.ELSEkw      -> ELSE,

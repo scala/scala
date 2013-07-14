@@ -637,7 +637,7 @@ self =>
       case _                                                => false
     }
     def isDclIntro: Boolean = in.token match {
-      case VAL | VAR | DEF | TYPE | DATATYPE => true
+      case VAL | VAR | DEF | TYPE => true
       case _ => false
     }
 
@@ -2393,8 +2393,6 @@ self =>
           List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
         case TYPE =>
           List(typeDefOrDcl(pos, mods withPosition(TYPE, tokenRange(in))))
-        case DATATYPE =>
-          datatypeDef(pos, mods)
         case _ =>
           List(tmplDef(pos, mods))
       }
@@ -2705,119 +2703,6 @@ self =>
       }
     }
 
-    /** {{{
-      *  DatatypeDef     ::= Id ClassParamClauses [ClassTemplateOpt] '=' DatatypeParamClauses
-      *  }}}
-      */
-    def datatypeDef(start: Int, mods: Modifiers): List[Tree] = {
-      // Id: get datatype name
-      in.nextToken()
-      val name = identForType()
-
-      //
-      savingClassContextBounds {
-        classContextBounds = List()
-        val tstart = (in.offset :: classContextBounds.map(_.pos.startOrPoint)).min
-
-        val constrAnnots = constructorAnnotations()
-        // ClassParamClauses
-        val (constrMods, vparamss) = (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = false))
-        var mods1 = mods
-
-        // [ClassTemplateOpt]
-        val vpara = vparamss match {
-          case List() => List(List())
-          case _ => vparamss
-        }
-        val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vpara, tstart)
-
-        val abstractParentClass = ClassDef(mods1 | Flags.ABSTRACT | Flags.SEALED, name, List(), template)
-
-        // Context bounds generate implicit parameters (part of the template) with types
-        // from tparams: we need to ensure these don't overlap
-        if (!classContextBounds.isEmpty)
-          ensureNonOverlapping(template, Nil)
-
-        // check '='
-        if(in.token != EQUALS){
-          syntaxError("no '=' after datatype name.", skipIt = false)
-        }
-        in.nextToken()
-
-        val result = abstractParentClass :: datatypeParamClauses(Ident(name), mods)
-        result
-      }
-    }
-
-    /** {{{
-      *  DatatypeParamClauses  ::= DatatypeParamClause ['|' DatatypeParamClause]
-      *  }}}
-      */
-    def datatypeParamClauses(superclass: Tree, mods: Modifiers): List[Tree] = {
-      val clauses = new ListBuffer[Tree]
-      val clause = datatypeParamClause(superclass, mods)
-      clauses.append(clause)
-      if ((in.token == NEWLINE || in.token == NEWLINES) && in.next.name == raw.BAR){
-        in.nextToken()
-      }
-      while (isRawBar) {
-        in.nextToken();
-        val node = datatypeParamClause(superclass, mods)
-        clauses.append(node)
-
-        if ((in.token == NEWLINE || in.token == NEWLINES) && in.next.name == raw.BAR){
-          in.nextToken()
-        }
-      }
-      clauses.toList
-    }
-
-    /** {{{
-      *  DatatypeParamClause  ::= Id ClassParamClauses [ClassTemplateOpt]
-      *  }}}
-      */
-    def datatypeParamClause(superclass: Tree, mods: Modifiers): Tree = {
-      // Id: get datatype name
-      val nameOffset = in.offset
-      val name = identForType()
-
-      classContextBounds = List()
-      val tstart = (in.offset :: classContextBounds.map(_.pos.startOrPoint)).min
-
-      // ClassParamClauses
-      val vparamss = paramClauses(name, classContextBounds, ofCaseClass = false)
-      var mods1 = mods
-
-      val constrAnnots = constructorAnnotations()
-      val constrMods = accessModifierOpt()
-
-      // [ClassTemplateOpt]
-      val vpara = vparamss match {
-        case List() => List(List())
-        case _ => vparamss
-      }
-      val template = datatypeTemplateOpt(mods1, name, constrMods withAnnotations constrAnnots, vpara, tstart, superclass)
-
-      val result = ClassDef(mods1 | Flags.CASE, name, List(), template)
-      result
-    }
-
-    /** {{{
-      *  DatatypeTemplateOpt ::= [TemplateBody]
-      *  }}}
-      */
-    def datatypeTemplateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int, superclass: Tree): Template = {
-      newLineOptWhenFollowedBy(LBRACE)
-      val (self, body) = templateBodyOpt(parenMeansSyntaxError = mods.isTrait || name.isTermName)
-      val parents: List[Tree] = superclass :: List(productConstr, serializableConstr)
-      val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
-
-      atPos(tstart0) {
-        // Exclude only the 9 primitives plus AnyVal.
-        gen.mkTemplate(parents, self, constrMods, vparamss, body, o2p(tstart0))
-      }
-    }
-
     /** Create a tree representing a package object, converting
      *  {{{
      *    package object foo { ... }
@@ -3012,11 +2897,6 @@ self =>
             importClause()
           case x if isAnnotation || isTemplateIntro || isModifier =>
             joinComment(topLevelTmplDef :: Nil)
-          case DATATYPE =>
-              val annots = annotations(skipNewLines = true)
-              val pos    = caseAwareTokenOffset
-              val mods   = modifiers() withAnnotations annots
-              datatypeDef(pos, mods)
           case _ =>
             if (isStatSep) Nil
             else syntaxErrorOrIncompleteAnd("expected class or object definition", skipIt = true)(Nil)
