@@ -1,5 +1,11 @@
-Impls_Macros_1.scala:12: error: overriding method foo in trait Foo of type (x: Int)Int;
- macro method foo cannot override an abstract method
-  def foo(x: Int) = macro Impls.impl
-      ^
-one error found
+Test_2.scala:3: error: anonymous class $anon inherits conflicting members:
+  macro method t in trait C of type ()Unit  and
+  method t in trait A of type ()Unit
+(Note: this can be resolved by declaring an override in anonymous class $anon.)
+  val c2 = new C with A {}
+               ^
+Test_2.scala:5: error: overriding macro method t in trait C of type ()Unit;
+ method t cannot override a macro
+  val c4 = new C with A { override def t(): Unit = () }
+                                       ^
+two errors found
