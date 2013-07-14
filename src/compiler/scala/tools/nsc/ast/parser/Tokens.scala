@@ -90,6 +90,7 @@ object Tokens extends Tokens {
   final val LAZY = 61
   final val MACRO = 62 // not yet used in 2.10
   final val THEN = 63  // not yet used in 2.10
+  final val DATATYPE = 64
 
   /** special symbols */
   final val COMMA = 70
