@@ -11,7 +11,7 @@ import java.io.{ BufferedReader, FileReader }
 import java.util.concurrent.locks.ReentrantLock
 import scala.sys.process.Process
 import session._
-import scala.tools.util.{ Signallable, Javap }
+import scala.tools.util.{ Signallable, Javap, StringOps }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
@@ -591,16 +591,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  def withFile(filename: String)(action: File => Unit) {
-    val f = File(filename)
+  def smartPath(path: String) = if (File(path).exists) path else path.trim
+
+  def withPath(path: String)(action: File => Unit) {
+    val f = File(path)
 
     if (f.exists) action(f)
-    else echo("That file does not exist")
+    else echo("The path '" + f + "' doesn't seem to exist.")
   }
 
   def loadCommand(arg: String) = {
     var shouldReplay: Option[String] = None
-    withFile(arg)(f => {
+    withPath(smartPath(arg))(f => {
       interpretAllFrom(f)
       shouldReplay = Some(":load " + arg)
     })
@@ -608,14 +610,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   def addClasspath(arg: String): Unit = {
-    val f = File(arg).normalize
-    if (f.exists) {
+    withPath(File(arg).normalize.path)(f => {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       val totalClasspath = ClassPath.join(settings.classpath.value, addedClasspath)
       echo("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, totalClasspath))
       replay()
-    }
-    else echo("The path '" + f + "' doesn't seem to exist.")
+    })
   }
 
   def powerCmd(): Result = {
@@ -641,9 +641,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     * if any. */
   def command(line: String): Result = {
     if (line startsWith ":") {
-      val cmd = line.tail takeWhile (x => !x.isWhitespace)
+      val lineNoColon = line.tail
+      val (cmd, arg) = StringOps.splitLeft(lineNoColon, ' ').getOrElse((lineNoColon, ""))
       uniqueCommand(cmd) match {
-        case Some(lc) => lc(line.tail stripPrefix cmd dropWhile (_.isWhitespace))
+        case Some(lc) => lc(arg)
         case _        => ambiguousError(cmd)
       }
     }
