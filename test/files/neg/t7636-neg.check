@@ -1,0 +1,10 @@
+t7636.scala:3: error: illegal inheritance;
+ self-type Main.ResultTable[_$3] does not conform to Main.ResultTable[_$3]'s selftype Main.ResultTable[_$3]
+  new ResultTable(Left(5):Either[_,_])(5){}
+      ^
+t7636.scala:3: error: type mismatch;
+ found   : Either[_$2,_$3(in constructor $anon)] where type _$3(in constructor $anon), type _$2
+ required: Either[_, _$3(in value <local Main>)] where type _$3(in value <local Main>)
+  new ResultTable(Left(5):Either[_,_])(5){}
+                         ^
+two errors found

@@ -2010,7 +2010,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
       // !!! This method is redundant with other, less buggy ones.
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
-        case Apply(fn, args) =>
+        case Apply(fn, args) if fn.tpe != null =>
           // an object cannot be allowed to pass a reference to itself to a superconstructor
           // because of initialization issues; SI-473, SI-3913, SI-6928.
           foreachSubTreeBoundTo(args, clazz) { tree =>
