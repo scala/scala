@@ -1,0 +1,13 @@
+t7655.scala:9: error: pattern type is incompatible with expected type;
+ found   : Test.Other.type
+ required: Test.Foo
+Note: if you intended to match against the class, try `case _: <none>`
+    case Other => true // warns
+         ^
+t7655.scala:14: error: pattern type is incompatible with expected type;
+ found   : Test.Other.type
+ required: Test.Foo
+Note: if you intended to match against the class, try `case _: <none>`
+    case OtherAlias => true // no warning.
+         ^
+two errors found

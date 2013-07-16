@@ -545,7 +545,7 @@ trait Typers extends Adaptations with Tags {
           // TODO SI-6609 Eliminate this special case once the old pattern matcher is removed.
           def dealias(sym: Symbol) =
             (atPos(tree.pos.makeTransparent) {gen.mkAttributedRef(sym)} setPos tree.pos, sym.owner.thisType)
-          sym.name match {
+          (sym.name: Name) match {
             case nme.List => return dealias(ListModule)
             case nme.Seq  => return dealias(SeqModule)
             case nme.Nil  => return dealias(NilModule)
@@ -1131,8 +1131,11 @@ trait Typers extends Adaptations with Tags {
 
       def fallbackAfterVanillaAdapt(): Tree = {
         def isPopulatedPattern = {
-          if ((tree.symbol ne null) && tree.symbol.isModule)
-            inferModulePattern(tree, pt)
+          if (treeInfo.isStableIdentifier(tree, allowVolatile = true))
+            // 8.1.5 A stable identifier pattern is a stable identifier r (§3.1).
+            // The type of r must conform to the expected type of the pattern.
+            // The pattern matches any value v such that r == v (§12.1).
+            inferStableIdPattern(tree, pt)
 
           isPopulated(tree.tpe, approximateAbstracts(pt))
         }

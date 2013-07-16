@@ -475,7 +475,7 @@ abstract class UnCurry extends InfoTransform
               super.transform(tree)
           case UnApply(fn, args) =>
             val fn1 = withInPattern(value = false)(transform(fn))
-            val args1 = transformTrees(fn.symbol.name match {
+            val args1 = transformTrees((fn.symbol.name: Name) match {
               case nme.unapply    => args
               case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.pos, fn.symbol, fn.tpe, args))
               case _              => sys.error("internal error: UnApply node has wrong symbol")

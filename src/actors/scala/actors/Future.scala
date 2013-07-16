@@ -153,8 +153,8 @@ object Futures {
     val FutCh1 = ft1.inputChannel
     val FutCh2 = ft2.inputChannel
     Actor.receive {
-      case FutCh1 ! arg1 => arg1.asInstanceOf[B]
-      case FutCh2 ! arg2 => arg2.asInstanceOf[B]
+      case futCh1 ! arg1 if futCh1 == FutCh1 => arg1.asInstanceOf[B]
+      case futCh2 ! arg2 if futCh2 == FutCh2 => arg2.asInstanceOf[B]
     }
   }
 
@@ -188,9 +188,9 @@ object Futures {
     })
 
     val partFuns = unsetFts.map((p: Pair[Int, Future[Any]]) => {
-      val FutCh = p._2.inputChannel
+      val FutCh = p._2.inputChannel.asInstanceOf[Channel[Any]]
       val singleCase: PartialFunction[Any, Pair[Int, Any]] = {
-        case FutCh ! any => Pair(p._1, any)
+        case futCh ! any if futCh == FutCh => Pair(p._1, any)
       }
       singleCase
     })
