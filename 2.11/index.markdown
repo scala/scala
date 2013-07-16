@@ -3,6 +3,10 @@ layout: default
 title: Overview of Scala 2.11
 ---
 
+The current 2.11 milestone is [M4](https://github.com/scala/scala/releases/tag/v2.11.0-M4).
+
+To contribute to this overview, [please submit a pull request](https://github.com/scala/scala/tree/gh-pages/2.11/index.markdown).
+
 # Smaller
 We're modularizing the standard library and the compiler to allow more selective use of Scala's features, and to facilitate contributions to more clearly delineated sub-projects.
 
