@@ -6,6 +6,7 @@ title: Pull Request Policy
 Hi there, pull request submitter!
 
 Your pull request should:
+
   - (... have been discussed on scala-internals)
   - merge cleanly
   - consist of commits with impeccable commit messages
@@ -34,10 +35,13 @@ we will merge your changes.
 Please note: you are responsible for meeting these criteria  (reminding your reviewer, for example).
 
 ### Pull request bot mechanics
-* most of this will be automated, but in the mean time, please consider the following:
-  * when you push new commits, please delete the comments with the old build results to avoid confusion (this will also trigger a new build, even though the bot detects this automatically)
-  * label the issue corresponding to your pull request (if you have permission) as 'tested' when the bot has reported on a successful build, 'reviewed' when everyone has LGTM'd
-  * 'PLS REBUILD ALL' will force the bot to rebuild (handy for spurious failures)
+Please see the [pr validator's overview](https://github.com/typesafehub/ghpullrequest-validator/blob/master/overview.md) for details.
+
+Quick notes:
+
+  * The bot automatically builds every commit as it is added to the PR, and will set the status according to the results of the test suite (click on the indicator to see the build log).
+  * The bot will add the 'reviewed' label if there's a comment starting with "LGTM".
+  * 'PLS REBUILD ALL' is only necessary when something other than the commit is causing a failure
 
 ### List of reviewers by area:
 
