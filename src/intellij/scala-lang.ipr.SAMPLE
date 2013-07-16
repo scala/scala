@@ -33,6 +33,9 @@
   <component name="EntryPointsManager">
     <entry_points version="2.0" />
   </component>
+  <component name="HighlightingAdvisor">
+    <option name="SUGGEST_TYPE_AWARE_HIGHLIGHTING" value="false" />
+  </component>
   <component name="InspectionProjectProfileManager">
     <profiles>
       <profile version="1.0" is_locked="false">
@@ -204,6 +207,7 @@
       <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
       <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
+      <module fileurl="file://$PROJECT_DIR$/parser-combinators.iml" filepath="$PROJECT_DIR$/parser-combinators.iml" />
       <module fileurl="file://$PROJECT_DIR$/partest.iml" filepath="$PROJECT_DIR$/partest.iml" />
       <module fileurl="file://$PROJECT_DIR$/reflect.iml" filepath="$PROJECT_DIR$/reflect.iml" />
       <module fileurl="file://$PROJECT_DIR$/repl.iml" filepath="$PROJECT_DIR$/repl.iml" />
@@ -212,6 +216,7 @@
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
       <module fileurl="file://$PROJECT_DIR$/swing.iml" filepath="$PROJECT_DIR$/swing.iml" />
       <module fileurl="file://$PROJECT_DIR$/test.iml" filepath="$PROJECT_DIR$/test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/xml.iml" filepath="$PROJECT_DIR$/xml.iml" />
     </modules>
   </component>
   <component name="ProjectResources">
@@ -228,6 +233,13 @@
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
   </component>
   <component name="libraryTable">
+    <library name="ant">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/../../lib/ant/ant.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
     <library name="compiler-locker">
       <CLASSES>
         <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
@@ -238,13 +250,35 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="jline">
+    <library name="junit">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
+        <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
       </CLASSES>
       <JAVADOC />
-      <SOURCES />
+      <SOURCES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
+      </SOURCES>
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" type="SOURCES" />
     </library>
+    <library name="partest-deps">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/partest" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
+      </SOURCES>
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/partest" recursive="false" />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" type="SOURCES" />
+    </library>
+    <library name="repl-deps">
+       <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/repl" />
+       </CLASSES>
+       <JAVADOC />
+       <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/repl" recursive="false" />
+     </library>
   </component>
 </project>
-
