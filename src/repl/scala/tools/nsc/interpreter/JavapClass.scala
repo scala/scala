@@ -44,33 +44,78 @@ class JavapClass(
     val (flags, upgraded) = upgrade(options)
     import flags.{ app, fun, help, raw }
     val targets = if (fun && !help) FunFinder(loader, intp).funs(claases) else claases
-    if (help || claases.isEmpty) List(JpResult(JavapTool.helper(printWriter)))
-    else if (targets.isEmpty) List(JpResult("No anonfuns found."))
-    else tool(raw, upgraded)(targets map (claas => claas -> bytesFor(claas, app)))
+    if (help || claases.isEmpty)
+      List(JpResult(JavapTool.helper(printWriter)))
+    else if (targets.isEmpty)
+      List(JpResult("No anonfuns found."))
+    else
+      tool(raw, upgraded)(targets map (claas => targeted(claas, app)))
   }
 
   /** Cull our tool options. */
-  private def upgrade(options: Seq[String]): (ToolArgs, Seq[String]) = ToolArgs fromArgs options match {
-    case (t,s) if s.nonEmpty  => (t,s)
-    case (t,s)                => (t, JavapTool.DefaultOptions)
-  }
+  private def upgrade(options: Seq[String]): (ToolArgs, Seq[String]) =
+    ToolArgs fromArgs options match {
+      case (t, s) if s.nonEmpty => (t, s)
+      case (t, s)               => (t, JavapTool.DefaultOptions)
+    }
+
+  /** Associate the requested path with a possibly failed or empty array of bytes. */
+  private def targeted(path: String, app: Boolean): (String, Try[Array[Byte]]) =
+    bytesFor(path, app) match {
+      case Success((target, bytes)) => (target, Try(bytes))
+      case f: Failure[_]            => (path,   Failure(f.exception))
+    }
 
   /** Find bytes. Handle "-", "-app", "Foo#bar" (by ignoring member), "#bar" (by taking "bar"). */
   private def bytesFor(path: String, app: Boolean) = Try {
     def last = intp.get.mostRecentVar  // fail if no intp
-    def req = if (path == "-") last else {
-      val s = path.splitHashMember
-      if (s._1.nonEmpty) s._1
-      else s._2 getOrElse "#"
+    def req = path match {
+      case "-" => last
+      case HashSplit(prefix, member) =>
+        if (prefix != null) prefix
+        else if (member != null) member
+        else "#"
     }
-    def asAppBody(s: String) = {
-      val (cls, fix) = s.splitSuffix
-      s"${cls}$$delayedInit$$body${fix}"
+    val targetedBytes = if (app) findAppBody(req) else (req, findBytes(req))
+    if (targetedBytes._2.isEmpty) throw new FileNotFoundException(s"Could not find class bytes for '$path'")
+    targetedBytes
+  }
+
+  private def findAppBody(path: String): (String, Array[Byte]) = {
+    // is this new style delayedEndpoint? then find it.
+    // the name test is naive. could add $mangled path.
+    // assumes only the first match is of interest (because only one endpoint is generated).
+    def findNewStyle(bytes: Array[Byte]) = {
+      import scala.tools.asm.ClassReader
+      import scala.tools.asm.tree.ClassNode
+      import PartialFunction.cond
+      import JavaConverters._
+      val rdr = new ClassReader(bytes)
+      val nod = new ClassNode
+      rdr.accept(nod, 0)
+      //foo/Bar.delayedEndpoint$foo$Bar$1
+      val endpoint = "delayedEndpoint".r.unanchored
+      def isEndPoint(s: String) = (s contains '$') && cond(s) { case endpoint() => true }
+      nod.methods.asScala collectFirst { case m if isEndPoint(m.name) => m.name }
     }
-    def todo = if (app) asAppBody(req) else req
-    val bytes = findBytes(todo)
-    if (bytes.isEmpty) throw new FileNotFoundException(s"Could not find class bytes for '${path}'")
-    else bytes
+    // try new style, and add foo#delayedEndpoint$bar$1 to filter on the endpoint
+    def asNewStyle(bytes: Array[Byte]) = Some(bytes) filter (_.nonEmpty) flatMap { bs =>
+      findNewStyle(bs) map (n => (s"$path#$n", bs))
+    }
+    // use old style, and add foo# to filter on apply method
+    def asOldStyle = {
+      def asAppBody(s: String) = {
+        val (cls, fix) = s.splitSuffix
+        s"${cls}$$delayedInit$$body${fix}"
+      }
+      val oldStyle = asAppBody(path)
+      val oldBytes = findBytes(oldStyle)
+      if (oldBytes.nonEmpty) (s"$oldStyle#", oldBytes)
+      else (path, oldBytes)
+    }
+
+    val pathBytes = findBytes(path)
+    asNewStyle(pathBytes) getOrElse asOldStyle
   }
 
   def findBytes(path: String): Array[Byte] = tryFile(path) getOrElse tryClass(path)
@@ -496,6 +541,7 @@ object JavapClass {
     intp: Option[IMain] = None
   ) = new JavapClass(loader, printWriter, intp)
 
+  val HashSplit = "(.*?)(?:#([^#]*))?".r
   // We enjoy flexibility in specifying either a fully-qualified class name com.acme.Widget
   // or a resource path com/acme/Widget.class; but not widget.out
   implicit class MaybeClassLike(val s: String) extends AnyVal {
