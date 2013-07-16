@@ -1,4 +1,7 @@
-# Overview of Scala 2.11
+---
+title: Overview of Scala 2.11
+---
+
 # Smaller
 We're modularizing the standard library and the compiler to allow more selective use of Scala's features, and to facilitate contributions to more clearly delineated sub-projects.
 
