@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Scala by scala</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Scala</h1>
+        <p>Documentation on the development of the Scala compiler and standard library.</p>
+
+        <p class="view"><a href="https://github.com/scala/scala">View the Project on GitHub <small>scala/scala</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/scala/scala/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/scala/scala/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/scala/scala">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="more-information" class="anchor" href="#more-information"><span class="octicon octicon-link"></span></a>More information</h1>
+
+<ul>
+<li><a href="http://www.scala-lang.org">The official Scala website</a></li>
+<li><a href="http://docs.scala-lang.org">Scala documentation</a></li>
+<li><a href="https://issues.scala-lang.org">Report a bug or request a feature</a></li>
+<li><a href="https://scala-webapps.epfl.ch/jenkins/">Scala Jenkins dashboard</a></li>
+<li>Scala mailing lists:
+
+<ul>
+<li><a href="https://groups.google.com/group/scala-user">Users of Scala</a></li>
+<li><a href="https://groups.google.com/group/scala-language">Scala language discussion</a></li>
+<li><a href="https://groups.google.com/group/scala-internals">Compiler and standard library development</a></li>
+<li><a href="https://groups.google.com/group/scala-sips">Scala Improvement Process</a></li>
+<li><a href="https://groups.google.com/group/scala-debate">Debate</a></li>
+<li><a href="https://groups.google.com/group/scala-announce">Announcements</a></li>
+</ul>
+</li>
+</ul><h1>
+<a name="building" class="anchor" href="#building"><span class="octicon octicon-link"></span></a>Building</h1>
+
+<p>Run <code>ant build-opt</code> to build an optimized version of the compiler.
+Verify your build using <code>ant test-opt</code>.</p>
+
+<p>The Scala build system is based on Apache Ant. Most required pre-compiled
+libraries are part of the repository (in 'lib/'). The following however is
+assumed to be installed on the build machine:</p>
+
+<h2>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<ul>
+<li>A Java runtime environment (JRE) or SDK 1.6 or above.</li>
+<li>Apache Ant version 1.8.0 or above.</li>
+<li>bash (via cygwin for windows)</li>
+<li>curl</li>
+</ul><h1>
+<a name="contributing" class="anchor" href="#contributing"><span class="octicon octicon-link"></span></a>Contributing</h1>
+
+<p>We ask all contributors <a href="http://typesafe.com/contribute/cla/scala">sign the Scala Contributor License Agreement</a>,
+which allows us to ensure that all code submitted to the project is unencumbered by copyrights or patents.</p>
+
+<p>Please follow the guidelines outlined in our (Pull Request Policy)[<a href="https://github.com/scala/scala/wiki/Pull-Request-Policy">https://github.com/scala/scala/wiki/Pull-Request-Policy</a>].</p>
+
+<h2>
+<a name="repository-structure" class="anchor" href="#repository-structure"><span class="octicon octicon-link"></span></a>Repository structure</h2>
+
+<pre><code>scala/
++--build.xml                 The main Ant build script, see also under src/build.
++--lib/                      Pre-compiled libraries for the build.
++--pull-binary-libs.sh       Pulls binary artifacts from remote repository.
++--src/                      All the source files of Scala.
++--test/                     The Scala test suite.
++--build/                    [Generated] Build products output directory for ant.
++--dist/                     [Generated] The destination folder for Scala distributions.
+</code></pre>
+
+<h2>
+<a name="tips-and-tricks" class="anchor" href="#tips-and-tricks"><span class="octicon octicon-link"></span></a>Tips and tricks</h2>
+
+<p>Here are some common commands. Most ant targets offer a <code>-opt</code> variant that runs under <code>-optimise</code>.</p>
+
+<ul>
+<li><p><code>./pull-binary-libs.sh</code> downloads all binary artifacts associated with this commit.
+This requires internet access to <a href="http://typesafe.artifactoryonline.com/typesafe">http://typesafe.artifactoryonline.com/typesafe</a>.</p></li>
+<li><p><code>ant -p</code> prints out information about the commonly used ant targets. The interested
+developer can find the rest in the XML files.</p></li>
+<li>
+<p><code>ant</code> or <code>ant build</code>: A quick compilation (to quick) of your changes using the locker compiler.</p>
+
+<ul>
+<li>This will rebuild all quick if locker changed.</li>
+<li>This will also rebuild locker if starr changed.</li>
+</ul>
+</li>
+<li><p><code>ln -s build/quick/bin qbin</code> (once):</p></li>
+<li><p><code>ant &amp;&amp; qbin/scalac -d sandbox sandbox/test.scala &amp;&amp; qbin/scala -cp sandbox Test</code>
+Incrementally builds quick, and then uses it to compile and run the file
+<code>sandbox/test.scala</code>. This is a typical debug cycle.</p></li>
+<li>
+<p><code>ant test</code> tests that your code is working and fit to be committed.</p>
+
+<ul>
+<li>Runs the test suite and bootstrapping test on quick.</li>
+<li>You can run the suite only (skipping strap) with 'ant test.suite'.</li>
+</ul>
+</li>
+<li><p><code>ant docs</code> generates the HTML documentation for the library from the sources using the
+scaladoc tool in quick.  Note: on most machines this requires more heap than
+is allocate by default.  You can adjust the parameters with ANT_OPTS.
+Example command line::
+<code>ANT_OPTS = "-Xms512M -Xmx2048M -Xss1M -XX:MaxPermSize=128M" ant docs</code></p></li>
+<li><p><code>ant dist</code> builds a distribution in 'dists/latest'.</p></li>
+<li><p><code>ant all.clean</code> Removes all build files and all distributions.</p></li>
+</ul><h1>
+<a name="bootstrapping-soon-to-be-legacy" class="anchor" href="#bootstrapping-soon-to-be-legacy"><span class="octicon octicon-link"></span></a>Bootstrapping (soon to be legacy)</h1>
+
+<p>In order to guarantee the bootstrapping of the Scala compiler, SABBUS builds
+Scala in layers. Each layer is a complete compiled Scala compiler and library.
+A superior layer is always compiled by the layer just below it. Here is a short
+description of the four layers that SABBUS uses, from bottom to top:</p>
+
+<ul>
+<li><p><code>starr</code>: the stable reference Scala release which is shared by all the
+developers. It is found in the repository as 'lib/scala-compiler.jar' and
+'lib/scala-library.jar'. Any committable source code must be compiled directly
+by starr to guarantee the bootstrapping of the compiler.</p></li>
+<li><p><code>locker</code>: the local reference which is compiled by starr and is the work
+compiler in a typical development cycle. When it has been built once, it is
+“frozen” in this state. Updating it to fit the current source code must be
+explicitly requested (see below).</p></li>
+<li><p><code>quick</code>: the layer which is incrementally built when testing changes in the
+compiler or library. This is considered an actual new version when locker is
+up-to-date in relation to the source code.</p></li>
+<li><p><code>strap</code>: a test layer used to check stability of the build.</p></li>
+</ul><p>SABBUS compiles, for each layer, the Scala library first and the compiler next.
+That means that any changes in the library can immediately be used in the
+compiler without an intermediate build. On the other hand, if building the
+library requires changes in the compiler, a new locker must be built if
+bootstrapping is still possible, or a new starr if it is not.</p>
+
+<p>Use <code>ant replacelocker</code> to "unfreeze" locker by updating it to match the current source code.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/scala">scala</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
