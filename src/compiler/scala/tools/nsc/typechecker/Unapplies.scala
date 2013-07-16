@@ -37,7 +37,7 @@ trait Unapplies extends ast.TreeDSL
     assert(ufn.isMethod, ufn)
     val nbSubPats = args.length
     //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
-    ufn.name match {
+    (ufn.name: Name) match {
       case nme.unapply | nme.unapplySeq =>
         val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn, treeInfo.effectivePatternArity(args))
         if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")

@@ -73,7 +73,7 @@ private[actors] class ReactChannel[Msg](receiver: InternalReplyReactor) extends 
     val C = this
     val recvActor = receiver.asInstanceOf[Actor]
     recvActor.reactWithin(msec) {
-      case C ! msg if (f.isDefinedAt(msg.asInstanceOf[Msg])) =>
+      case c ! msg if c == C && (f.isDefinedAt(msg.asInstanceOf[Msg])) =>
         f(msg.asInstanceOf[Msg])
       case TIMEOUT => f(TIMEOUT)
     }
@@ -89,7 +89,7 @@ private[actors] class ReactChannel[Msg](receiver: InternalReplyReactor) extends 
     val C = this
     val recvActor = receiver.asInstanceOf[Actor]
     recvActor.receive {
-      case C ! msg if (f.isDefinedAt(msg.asInstanceOf[Msg])) =>
+      case c ! msg if c == C && (f.isDefinedAt(msg.asInstanceOf[Msg])) =>
         f(msg.asInstanceOf[Msg])
     }
   }
@@ -105,7 +105,7 @@ private[actors] class ReactChannel[Msg](receiver: InternalReplyReactor) extends 
     val C = this
     val recvActor = receiver.asInstanceOf[Actor]
     recvActor.receiveWithin(msec) {
-      case C ! msg if (f.isDefinedAt(msg.asInstanceOf[Msg])) =>
+      case c ! msg if c == C && (f.isDefinedAt(msg.asInstanceOf[Msg])) =>
         f(msg.asInstanceOf[Msg])
       case TIMEOUT => f(TIMEOUT)
     }

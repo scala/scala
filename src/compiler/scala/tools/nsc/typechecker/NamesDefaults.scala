@@ -528,7 +528,7 @@ trait NamesDefaults { self: Analyzer =>
     var positionalAllowed = true
     val namelessArgs = mapWithIndex(args) { (arg, argIndex) =>
       arg match {
-        case arg @ AssignOrNamedArg(Ident(name), rhs) =>
+        case arg @ AssignOrNamedArg(Ident(name: TermName), rhs) =>
           def matchesName(param: Symbol) = !param.isSynthetic && (
             (param.name == name) || (param.deprecatedParamName match {
               case Some(`name`) =>

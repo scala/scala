@@ -91,7 +91,7 @@ class Classfile(in: ByteArrayReader) {
           i = i + 1
           pool(i) = Empty
         }
-        else pool(i) = tag match {
+        else pool(i) = (tag: Int) match {
           case CONSTANT_UTF8            => UTF8(in.nextUTF8(in.nextChar.toInt))
           case CONSTANT_UNICODE         => in.skip(in.nextChar) ; Empty
           case CONSTANT_CLASS           => ClassRef(in.nextChar)

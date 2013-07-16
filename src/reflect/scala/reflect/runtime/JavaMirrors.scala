@@ -418,7 +418,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           jinvoke(jmeths.head, null, objReceiver +: objArgs)
         }
 
-        symbol match {
+         (symbol: TermSymbol) match {
           case Any_== | Object_==                     => ScalaRunTime.inlinedEquals(objReceiver, objArg0)
           case Any_!= | Object_!=                     => !ScalaRunTime.inlinedEquals(objReceiver, objArg0)
           case Any_## | Object_##                     => ScalaRunTime.hash(objReceiver)
@@ -428,7 +428,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           case Object_eq                              => objReceiver eq objArg0
           case Object_ne                              => objReceiver ne objArg0
           case Object_synchronized                    => objReceiver.synchronized(objArg0)
-          case sym if isGetClass(sym)                 => preciseClass(receiver)
+          case _ if isGetClass(symbol)                => preciseClass(receiver)
           case Any_asInstanceOf                       => fail("Any.asInstanceOf requires a type argument")
           case Any_isInstanceOf                       => fail("Any.isInstanceOf requires a type argument")
           case Object_asInstanceOf                    => fail("AnyRef.$asInstanceOf is an internal method")
@@ -437,7 +437,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           case Array_apply                            => ScalaRunTime.array_apply(objReceiver, args(0).asInstanceOf[Int])
           case Array_update                           => ScalaRunTime.array_update(objReceiver, args(0).asInstanceOf[Int], args(1))
           case Array_clone                            => ScalaRunTime.array_clone(objReceiver)
-          case sym if isStringConcat(sym)             => receiver.toString + objArg0
+          case _ if isStringConcat(symbol)            => receiver.toString + objArg0
           case sym if sym.owner.isPrimitiveValueClass => invokePrimitiveMethod
           case sym if sym == Predef_classOf           => fail("Predef.classOf is a compile-time function")
           case sym if sym.isMacro                     => fail(s"${symbol.fullName} is a macro, i.e. a compile-time function")

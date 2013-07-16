@@ -304,7 +304,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
             /* A native Array call. */
             def genArrayCall = fixResult(
-              methSym.name match {
+              (methSym.name: Name) match {
                 case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
                 case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
                 case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))

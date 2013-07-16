@@ -439,7 +439,7 @@ abstract class UnPickler {
     /** Read an annotation argument, which is pickled either
      *  as a Constant or a Tree.
      */
-    protected def readAnnotArg(i: Int): Tree = bytes(index(i)) match {
+    protected def readAnnotArg(i: Int): Tree = (bytes(index(i)): Int) match {
       case TREE => at(i, readTree)
       case _    =>
         val const = at(i, readConstant)
@@ -453,7 +453,7 @@ abstract class UnPickler {
       val end = readEnd()
       until(end, () => readClassfileAnnotArg(readNat())).toArray(JavaArgumentTag)
     }
-    protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
+    protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = (bytes(index(i)): Int) match {
       case ANNOTINFO     => NestedAnnotArg(at(i, readAnnotation))
       case ANNOTARGARRAY => at(i, () => ArrayAnnotArg(readArrayAnnot()))
       case _             => LiteralAnnotArg(at(i, readConstant))
