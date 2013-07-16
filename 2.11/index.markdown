@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Overview of Scala 2.11
 ---
 
