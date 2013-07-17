@@ -40,9 +40,21 @@ class ConsoleInterface
 				}
 				else
 					super.createInterpreter()
-					
-				for( (id, value) <- bindNames zip bindValues)
-					interpreter.beQuietDuring(interpreter.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value))
+
+				def bind(values: Seq[(String,Any)])
+				{
+					// for 2.8 compatibility
+					final class Compat {
+						def bindValue(id: String, value: Any) =
+							interpreter.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
+					}
+					implicit def compat(a: AnyRef): Compat = new Compat
+
+					for( (id, value) <- values )
+						interpreter.beQuietDuring(interpreter.bindValue(id, value))
+				}
+
+				bind(bindNames zip bindValues)
 			
 				if(!initialCommands.isEmpty)
 					interpreter.interpret(initialCommands)
