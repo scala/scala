@@ -626,7 +626,7 @@ abstract class ClassfileParser {
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((sflags & PRIVATE) != 0L && global.settings.optimise.value) {
+      if ((sflags & PRIVATE) != 0L && global.settings.optimise.value) { // TODO this should be !optimize, no? See c4181f656d.
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
@@ -636,7 +636,7 @@ abstract class ClassfileParser {
           info match {
             case MethodType(params, restpe) =>
               // if this is a non-static inner class, remove the explicit outer parameter
-              val newParams = innerClasses getEntry currentClass match {
+              val paramsNoOuter = innerClasses getEntry currentClass match {
                 case Some(entry) if !isScalaRaw && !isStatic(entry.jflags) =>
                   /* About `clazz.owner.isPackage` below: SI-5957
                    * For every nested java class A$B, there are two symbols in the scala compiler.
@@ -650,6 +650,15 @@ abstract class ClassfileParser {
                 case _ =>
                   params
               }
+              val newParams = paramsNoOuter match {
+                case (init :+ tail) if (jflags & JAVA_ACC_SYNTHETIC) != 0L =>
+                  // SI-7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
+                  // are added when an inner class needs to access a private constructor.
+                  init
+                case _ =>
+                  paramsNoOuter
+              }
+
               info = MethodType(newParams, clazz.tpe)
           }
         sym.setInfo(info)
