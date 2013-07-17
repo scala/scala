@@ -486,14 +486,10 @@ abstract class Pickler extends SubComponent {
         }
       }
       def putClassfileAnnotArg(carg: ClassfileAnnotArg) {
-        carg match {
-          case LiteralAnnotArg(const) =>
-            putConstant(const)
-          case ArrayAnnotArg(args) =>
-            if (putEntry(carg))
-              args foreach putClassfileAnnotArg
-          case NestedAnnotArg(annInfo) =>
-            putAnnotation(annInfo)
+        (carg: @unchecked) match {
+          case LiteralAnnotArg(const)  => putConstant(const)
+          case ArrayAnnotArg(args)     => if (putEntry(carg)) args foreach putClassfileAnnotArg
+          case NestedAnnotArg(annInfo) => putAnnotation(annInfo)
         }
       }
       val AnnotationInfo(tpe, args, assocs) = annot
@@ -559,13 +555,10 @@ abstract class Pickler extends SubComponent {
 
     /** Write a ClassfileAnnotArg (argument to classfile annotation) */
     def writeClassfileAnnotArg(carg: ClassfileAnnotArg) {
-      carg match {
-        case LiteralAnnotArg(const) =>
-          writeRef(const)
-        case ArrayAnnotArg(args) =>
-          writeRef(carg)
-        case NestedAnnotArg(annInfo) =>
-          writeRef(annInfo)
+      (carg: @unchecked) match {
+        case LiteralAnnotArg(const)  => writeRef(const)
+        case ArrayAnnotArg(args)     => writeRef(carg)
+        case NestedAnnotArg(annInfo) => writeRef(annInfo)
       }
     }
 

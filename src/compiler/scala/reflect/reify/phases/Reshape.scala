@@ -231,13 +231,10 @@ trait Reshape {
       val args = if (ann.assocs.isEmpty) {
         ann.args
       } else {
-        def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = jann match {
-          case LiteralAnnotArg(const) =>
-            Literal(const)
-          case ArrayAnnotArg(arr) =>
-            Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
-          case NestedAnnotArg(ann) =>
-            toPreTyperAnnotation(ann)
+        def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = (jann: @unchecked) match {
+          case LiteralAnnotArg(const) => Literal(const)
+          case ArrayAnnotArg(arr)     => Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
+          case NestedAnnotArg(ann)    => toPreTyperAnnotation(ann)
         }
 
         ann.assocs map { case (nme, arg) => AssignOrNamedArg(Ident(nme), toScalaAnnotation(arg)) }

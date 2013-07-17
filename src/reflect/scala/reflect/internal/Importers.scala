@@ -434,6 +434,8 @@ trait Importers extends api.Importers { to: SymbolTable =>
         ScalaSigBytes(bytes)
       case from.NestedAnnotArg(annInfo) =>
         NestedAnnotArg(importAnnotationInfo(annInfo))
+      case from.UnmappableAnnotArg =>
+        UnmappableAnnotArg
     }
 
     // todo. careful import of positions
