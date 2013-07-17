@@ -40,5 +40,5 @@ Improve performance of reflection SI-6638
 
   - @som-snytt added and improved several commands (:javap, :paste, :edit,...)
   - @folone and @eed3si9n contributed the `:kind` command to help to tell ground types from type constructors (#2340)
-  - @rjolly made it possible to embed the repl as a JSR-166 Scripting Engine (#2206).
+  - @rjolly made it possible to embed the repl as a JSR-223 Scripting Engine (#2206).
 
