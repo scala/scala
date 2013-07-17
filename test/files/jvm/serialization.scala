@@ -420,70 +420,6 @@ object Test3_mutable {
   }
 }
 
-
-//############################################################################
-// Test classes in package "scala.xml"
-
-object Test4_xml {
-  import scala.xml.{Attribute, Document, Elem, Null, PrefixedAttribute, Text}
-
-  case class Person(name: String, age: Int)
-
-  try {
-    // Attribute
-    val a1 = new PrefixedAttribute("xml", "src", Text("hello"), Null)
-    val _a1: Attribute = read(write(a1))
-    check(a1, _a1)
-
-    // Document
-    val d1 = new Document
-    d1.docElem = <title></title>
-    d1.encoding = Some("UTF-8")
-    val _d1: Document = read(write(d1))
-    check(d1, _d1)
-
-    // Elem
-    val e1 = <html><title>title</title><body></body></html>;
-    val _e1: Elem = read(write(e1))
-    check(e1, _e1)
-
-    class AddressBook(a: Person*) {
-      private val people: List[Person] = a.toList
-      def toXHTML =
-      <table cellpadding="2" cellspacing="0">
-        <tr>
-          <th>Last Name</th>
-          <th>First Name</th>
-        </tr>
-        { for (p <- people) yield
-        <tr>
-          <td> { p.name } </td>
-          <td> { p.age.toString() } </td>
-        </tr> }
-      </table>;
-    }
-
-    val people = new AddressBook(
-      Person("Tom", 20),
-      Person("Bob", 22),
-      Person("James", 19))
-
-    val e2 =
-      <html>
-      <body>
-        { people.toXHTML }
-      </body>
-      </html>;
-    val _e2: Elem = read(write(e2))
-    check(e2, _e2)
-  }
-  catch {
-    case e: Exception =>
-      println("Error in Test4_xml: " + e)
-      throw e
-  }
-}
-
 //############################################################################
 // Test user-defined classes WITHOUT nesting
 
@@ -600,7 +536,6 @@ object Test {
     Test1_scala
     Test2_immutable
     Test3_mutable
-    Test4_xml
     Test5
     Test6
     Test7
