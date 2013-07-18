@@ -34,6 +34,9 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
   }
 
   class JLineConsoleReader extends ConsoleReader with ConsoleReaderHelper {
+    // ASAP
+    this setExpandEvents false
+
     // working around protected/trait/java insufficiencies.
     def goBack(num: Int): Unit = back(num)
     if ((history: History) ne NoHistory)
