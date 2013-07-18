@@ -9,8 +9,12 @@
 package scala.annotation
 
 /** A base class for classfile annotations. These are stored as
- *  [[http://docs.oracle.com/javase/7/docs/technotes/guides/language/annotations.html#_top Java annotations]]]
+ *  [[http://docs.oracle.com/javase/7/docs/technotes/guides/language/annotations.html#_top Java annotations]]
  *  in classfiles.
+ *
+ *  Note that subclassing `ClassfileAnnotation` does not make the annotation
+ *  visible at runtime. To make an annotation visible at runtime, the
+ *  annotation class must be defined in Java.
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
