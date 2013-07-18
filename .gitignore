@@ -1,1 +1,43 @@
+#
+# Are you tempted to edit this file?
+#
+# First consider if the changes make sense for all,
+# or if they are specific to your workflow/system.
+# If it is the latter, you can augment this list with
+# entries in .git/info/excludes
+#
+# see also test/files/.gitignore
+#
+
+*.jar
+*~
+
+build.properties
+
+# target directories for ant build
 /build/
+/dists/
+
+# other
+/out/
+/bin/
+/sandbox/
+
+# eclipse, intellij
+/.classpath
+/.project
+/src/intellij/*.iml
+/src/intellij/*.ipr
+/src/intellij/*.iws
+/.cache
+/.idea
+/.settings
+
+# bak files produced by ./cleanup-commit
+*.bak
+
+# Standard symbolic link to build/quick/bin
+qbin
+
+# Mac specific, but that is common enough a dev platform to warrant inclusion.
+.DS_Store
