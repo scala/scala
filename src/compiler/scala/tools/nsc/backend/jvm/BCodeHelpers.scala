@@ -654,7 +654,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     def emitArgument(av:   asm.AnnotationVisitor,
                      name: String,
                      arg:  ClassfileAnnotArg) {
-      arg match {
+      (arg: @unchecked) match {
 
         case LiteralAnnotArg(const) =>
           if (const.isNonUnitAnyVal) { av.visit(name, const.value) }
