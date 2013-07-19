@@ -50,6 +50,8 @@ sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Rep
 }
 class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed
 
+class InterfaceCompileCancelled(val arguments: Array[String], override val toString: String) extends xsbti.CompileCancelled
+
 private final class WeakLog(private[this] var log: Logger, private[this] var delegate: Reporter)
 {
 	def apply(message: String) {
@@ -124,11 +126,20 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 		}
 		dreporter.printSummary()
 		if(!noErrors(dreporter)) handleErrors(dreporter, log)
+		// the case where we cancelled compilation _after_ some compilation errors got reported
+		// will be handled by line above so errors still will be reported properly just potentially not
+		// all of them (because we cancelled the compilation)
+		if (dreporter.cancelled) handleCompilationCancellation(dreporter, log)
 	}
 	def handleErrors(dreporter: DelegatingReporter, log: Logger): Nothing =
 	{
 		debug(log, "Compilation failed (CompilerInterface)")
 		throw new InterfaceCompileFailed(args, dreporter.problems, "Compilation failed")
+	}
+	def handleCompilationCancellation(dreporter: DelegatingReporter, log: Logger): Nothing = {
+		assert(dreporter.cancelled, "We should get here only if when compilation got cancelled")
+		debug(log, "Compilation cancelled (CompilerInterface)")
+		throw new InterfaceCompileCancelled(args, "Compilation has been cancelled")
 	}
 	def processUnreportedWarnings(run: compiler.Run)
 	{
