@@ -5,27 +5,24 @@ import TableDef._
 import scala.language.postfixOps
 
 /** A class for representing tabular data in a way that preserves
- *  its inner beauty.  See Exceptional for an example usage.
+ *  its inner beauty.
  *  One creates an instance of TableDef by defining the columns of
  *  the table, then uses that to create an instance of Table by
  *  passing in a sequence of rows.
  */
 class TableDef[T](_cols: Column[T]*) {
-  /** These operators are about all there is to it.
-   *
-   *  ~   appends a column to the table
-   *  >>  creates a right-justified column and appends it
-   *  <<  creates a left-justified column and appends it
-   *  >+  specifies a string to separate the previous column from the next.
-   *      if none is specified, a space is used.
-   */
+  // These operators are about all there is to it.
+  /** Appends a column to the table. */
   def ~(next: Column[T])            = retThis(cols :+= next)
+  /** Creates a right-justified column and appends it. */
   def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = false)
+  /** Creates a left-justified column and appends it. */
   def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = true)
+  /** Specifies a string to separate the previous column from the next.
+    * If none is specified, a space is used. */
   def >+(sep: String)               = retThis(separators += ((cols.size - 1, sep)))
 
-  /** Below this point should all be considered private/internal.
-   */
+  // Below this point should all be considered private/internal.
   private var cols: List[Column[T]] = _cols.toList
   private var separators: Map[Int, String] = Map()
 
