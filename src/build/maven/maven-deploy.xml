@@ -110,7 +110,6 @@
         <deploy-one                name="scala-library"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-xml"      version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-parser-combinators"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-partest"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-reflect"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-swing"    version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scalap"         version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
