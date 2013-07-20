@@ -43,6 +43,12 @@ trait FileUtil {
     if (diff.getDeltas.isEmpty) ""
     else difflib.DiffUtils.generateUnifiedDiff(origName, newName, origLines.asJava, diff, 1).asScala.mkString("\n")
   }
+
+  def jarsWithPrefix(dir: Directory, name: String): Iterator[SFile] =
+    dir.files filter (f => (f hasExtension "jar") && (f.name startsWith name))
+
+  def dirsWithPrefix(dir: Directory, name: String): Iterator[Directory] =
+    dir.dirs filter (_.name startsWith name)
 }
 object FileUtil extends FileUtil { }
 
@@ -51,34 +57,49 @@ trait FileManager extends FileUtil {
   def testRootDir: Directory
   def testRootPath: String
 
+  def compilerUnderTest = LATEST_COMP
+
   var JAVACMD: String
   var JAVAC_CMD: String
 
-  var CLASSPATH: String
+  var COMPILATION_CLASSPATH: String
   var LATEST_LIB: String
   var LATEST_REFLECT: String
   var LATEST_COMP: String
-  var LATEST_PARTEST: String
-  var LATEST_ACTORS: String
+
+  // basedir for jars or classfiles on core classpath
+  lazy val baseDir = SFile(LATEST_LIB).parent
 
   protected def relativeToLibrary(what: String): String = {
-    def jarname = if (what startsWith "scala") s"$what.jar" else s"scala-$what.jar"
     if (LATEST_LIB endsWith ".jar")
-      (SFile(LATEST_LIB).parent / jarname).toAbsolute.path
+      (baseDir / s"$what.jar").toAbsolute.path
     else
-      (SFile(LATEST_LIB).parent.parent / "classes" / what).toAbsolute.path
+      (baseDir.parent / "classes" / what).toAbsolute.path
   }
-  def latestParserCBLib = relativeToLibrary("parser-combinators")
-  def latestXmlLib      = relativeToLibrary("xml")
-  def latestScaladoc    = relativeToLibrary("scaladoc")
-  def latestInteractive = relativeToLibrary("interactive")
-  def latestScalapFile  = relativeToLibrary("scalap")
-  def latestPaths       = List(
-        LATEST_LIB, LATEST_REFLECT, LATEST_COMP, LATEST_PARTEST, LATEST_ACTORS,
-        latestParserCBLib, latestXmlLib, latestScalapFile, latestScaladoc, latestInteractive
-  )
-  def latestFiles       = latestPaths map (p => new java.io.File(p))
-  def latestUrls        = latestFiles map (_.toURI.toURL)
+
+  // all jars or dirs with prefix `what`
+  protected def relativeToLibraryAll(what: String): Iterator[String] = (
+    if (LATEST_LIB endsWith ".jar") jarsWithPrefix(baseDir, what)
+    else dirsWithPrefix(baseDir.parent / "classes" toDirectory, what)
+  ).map(_.toAbsolute.path)
+
+  // this determines the classpath we're running tests under -- should just be out classpath...
+  // this way we can actually use maven resolution when invoking partest to construct the classpath that has all partest's dependencies
+  lazy val testClassPath: List[String] = List(
+      LATEST_LIB, LATEST_REFLECT, LATEST_COMP,
+      relativeToLibrary("scala-actors"),
+      relativeToLibrary("scala-parser-combinators"),
+      relativeToLibrary("scala-xml"),
+      relativeToLibrary("scala-scaladoc"),
+      relativeToLibrary("scala-interactive"),
+      relativeToLibrary("scalap"),
+      PathSettings.srcCodeLib.toString, // is this necessary? there's a `prependToClasspaths(s, codelib)` elsewhere
+      PathSettings.diffUtils.toString,
+      PathSettings.testInterface.toString,
+      PathSettings.scalaCheck.toString
+  ) ++ relativeToLibraryAll("scala-partest")
+  def testClassPathUrls = testClassPath map (p => new java.io.File(p).toURI.toURL)
+
 
   var showDiff = false
   var updateCheck = false

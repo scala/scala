@@ -65,7 +65,7 @@ class DirectCompiler(val fileManager: FileManager) {
       // codelib provides the possibility to override standard reify
       // this shields the massive amount of reification tests from changes in the API
       prependToClasspaths(s, codelib)
-      s.classpath append fileManager.CLASSPATH   // adding this why?
+      s.classpath append fileManager.COMPILATION_CLASSPATH   // adding this why?
 
       // add the instrumented library version to classpath
       if (kind == "specialized")

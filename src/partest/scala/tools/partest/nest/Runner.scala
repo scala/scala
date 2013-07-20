@@ -15,7 +15,7 @@ import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.reflect.internal.FatalError
 import scala.sys.process.{ Process, ProcessLogger }
-import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
+import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp, versionMsg, javaVmName, javaVmVersion, javaVmInfo }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile }
 import scala.tools.nsc.reporters.ConsoleReporter
@@ -141,7 +141,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       "-d",
       outDir.getAbsolutePath,
       "-classpath",
-      join(outDir.toString, CLASSPATH)
+      join(outDir.toString, COMPILATION_CLASSPATH)
     ) ++ files.map(_.getAbsolutePath)
 
     pushTranscript(args mkString " ")
@@ -203,7 +203,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       "-Duser.country=US"
     ) ++ extras
 
-    val classpath = if (extraClasspath != "") join(extraClasspath, CLASSPATH) else CLASSPATH
+    val classpath = if (extraClasspath != "") join(extraClasspath, COMPILATION_CLASSPATH) else COMPILATION_CLASSPATH
 
     javaCmd +: (
       (JAVA_OPTS.split(' ') ++ extraJavaOptions.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
@@ -682,7 +682,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     // create compiler
     val settings = new Settings(workerError)
     settings.sourcepath.value = sourcepath
-    settings.classpath.value = fileManager.CLASSPATH
+    settings.classpath.value = fileManager.COMPILATION_CLASSPATH
     val reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
     val command = new CompilerCommand(argList, settings)
     object compiler extends Global(command.settings, reporter)
@@ -774,16 +774,30 @@ trait DirectRunner {
 
   setUncaughtHandler
   
-  def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
+  def banner = {
+    def relativize(path: String) = path.replace(fileManager.baseDir.toString, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
+    val vmBin  = javaHome + fileSeparator + "bin"
+    val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
+    val vmOpts = fileManager.JAVA_OPTS
 
+  s"""|Scala compiler under test:  ${relativize(fileManager.compilerUnderTest)}
+      |Scala version is:           $versionMsg
+      |Scalac options are:         ${fileManager.SCALAC_OPTS mkString " "}
+      |Compilation Path:           ${relativize(fileManager.COMPILATION_CLASSPATH)}
+      |Java binaries in:           $vmBin
+      |Java runtime is:            $vmName
+      |Java options are:           $vmOpts
+      |baseDir:                    ${fileManager.baseDir}
+      |sourceDir:                  ${PathSettings.srcDir}
+    """.stripMargin
+    // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
+    // |Java Classpath:             ${sys.props("java.class.path")}
+  }
+
+  def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
     NestUI.resetTestNumber(kindFiles.size)
 
-    // this special class loader is for the benefit of scaladoc tests, which need a class path
-    import PathSettings.{ testInterface, scalaCheck }
-    val allUrls           = scalaCheck.toURL :: testInterface.toURL :: fileManager.latestUrls
-    val parentClassLoader = ScalaClassLoader fromURLs allUrls
-    // add scalacheck.jar to a special classloader, but use our loader as parent with test-interface
-    //val parentClassLoader = ScalaClassLoader fromURLs (List(scalaCheck.toURL), getClass().getClassLoader)
+    val parentClassLoader = ScalaClassLoader fromURLs fileManager.testClassPathUrls
     val pool              = Executors newFixedThreadPool numThreads
     val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
     val futures           = kindFiles map (f => pool submit callable(manager runTest f))
@@ -869,10 +883,6 @@ object Output {
 
 /** Use a Runner to run a test. */
 class RunnerManager(kind: String, fileManager: FileManager, params: TestRunParams) {
-  import fileManager._
-  fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
-  fileManager.CLASSPATH += File.pathSeparator + PathSettings.diffUtils // needed to put diffutils on test/partest's classpath
-
   def runTest(testFile: File): TestState = {
     val runner = new Runner(testFile, fileManager, params)
 

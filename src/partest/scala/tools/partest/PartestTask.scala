@@ -16,6 +16,7 @@ import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{ Reference, FileSet}
 import org.apache.tools.ant.types.Commandline.Argument
 import scala.tools.ant.ScalaTask
+import nest.NestUI
 
 /** An Ant task to execute the Scala test suite (NSC).
  *
@@ -111,23 +112,19 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
 
   override def execute() {
     if (debug || sys.props.contains("partest.debug")) {
-      nest.NestUI.setDebug()
+      NestUI.setDebug()
     }
 
     srcDir foreach (x => setProp("partest.srcdir", x))
 
-    val classpath = this.compilationPath getOrElse sys.error("Mandatory attribute 'compilationPath' is not set.")
-    val cpfiles = classpath.list map { fs => new File(fs) } toList
+    if (compilationPath.isEmpty) sys.error("Mandatory attribute 'compilationPath' is not set.")
+
+    val compilationPaths = compilationPath.get.list
+    val cpfiles = compilationPaths map { fs => new File(fs) } toList
     def findCp(name: String) = cpfiles find (f =>
          (f.getName == s"scala-$name.jar")
       || (f.absolutePathSegments endsWith Seq("classes", name))
-    ) getOrElse sys.error(s"Provided classpath does not contain a Scala $name element.")
-
-    val scalaLibrary         = findCp("library")
-    val scalaReflect         = findCp("reflect")
-    val scalaCompiler        = findCp("compiler")
-    val scalaPartest         = findCp("partest")
-    val scalaActors          = findCp("actors")
+    ) map (_.getAbsolutePath) getOrElse sys.error(s"Provided compilationPath does not contain a Scala $name element.\nLooked in: ${compilationPaths.mkString(":")}")
 
     def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
       val parts = a.getParts
@@ -138,12 +135,13 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
     val antFileManager = antRunner.fileManager
 
     // antFileManager.failed = runFailed
-    antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
-    antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
-    antFileManager.LATEST_REFLECT = scalaReflect.getAbsolutePath
-    antFileManager.LATEST_COMP = scalaCompiler.getAbsolutePath
-    antFileManager.LATEST_PARTEST = scalaPartest.getAbsolutePath
-    antFileManager.LATEST_ACTORS = scalaActors.getAbsolutePath
+
+    antFileManager.COMPILATION_CLASSPATH = ClassPath.join(compilationPaths: _*)
+    antFileManager.LATEST_LIB            = findCp("library")
+    antFileManager.LATEST_REFLECT        = findCp("reflect")
+    antFileManager.LATEST_COMP           = findCp("compiler")
+
+    NestUI echo antRunner.banner
 
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)

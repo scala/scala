@@ -15,12 +15,10 @@ class AntRunner extends DirectRunner {
   val fileManager = new FileManager {
     var JAVACMD: String                 = "java"
     var JAVAC_CMD: String               = "javac"
-    var CLASSPATH: String               = _
+    var COMPILATION_CLASSPATH: String               = _
     var LATEST_LIB: String              = _
     var LATEST_REFLECT: String          = _
     var LATEST_COMP: String             = _
-    var LATEST_PARTEST: String          = _
-    var LATEST_ACTORS: String           = _
     val testRootPath: String            = "test"
     val testRootDir: Directory          = Directory(testRootPath)
   }

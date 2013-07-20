@@ -45,23 +45,29 @@ class ConsoleFileManager extends FileManager {
   lazy val testRootPath  = testRootDir.toAbsolute.path
   def testParent    = testRootDir.parent
 
-  var CLASSPATH   = PartestDefaults.classPath
+  var COMPILATION_CLASSPATH   = PartestDefaults.classPath
   var JAVACMD     = PartestDefaults.javaCmd
   var JAVAC_CMD   = PartestDefaults.javacCmd
 
+  override def compilerUnderTest =
+    (if (testClasses.isDefined) testClassesDir
+    else testBuildFile getOrElse {
+      latestCompFile.getParentFile.getParentFile.getAbsoluteFile
+    }).toString
 
-  vlog("CLASSPATH: "+CLASSPATH)
+
+  vlog("COMPILATION_CLASSPATH: "+COMPILATION_CLASSPATH)
 
   if (!srcDir.isDirectory) {
     NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
     sys.exit(1)
   }
 
-  CLASSPATH = {
+  COMPILATION_CLASSPATH = {
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
 
     // add all jars in libs
-    (CLASSPATH :: libs.toList) mkString pathSeparator
+    (COMPILATION_CLASSPATH :: libs.toList) mkString pathSeparator
   }
 
   def findLatest() {
@@ -75,56 +81,44 @@ class ConsoleFileManager extends FileManager {
       vlog("Running with classes in "+testClassesDir)
 
       latestLibFile     = testClassesDir / "library"
-      latestActorsFile  = testClassesDir / "library" / "actors"
       latestReflectFile = testClassesDir / "reflect"
       latestCompFile    = testClassesDir / "compiler"
-      latestPartestFile = testClassesDir / "partest"
     }
     else if (testBuild.isDefined) {
       val dir = Path(testBuild.get)
       vlog("Running on "+dir)
       latestLibFile     = dir / "lib/scala-library.jar"
-      latestActorsFile  = dir / "lib/scala-actors.jar"
       latestReflectFile = dir / "lib/scala-reflect.jar"
       latestCompFile    = dir / "lib/scala-compiler.jar"
-      latestPartestFile = dir / "lib/scala-partest.jar"
     }
     else {
       def setupQuick() {
         vlog("Running build/quick")
         latestLibFile     = prefixFile("build/quick/classes/library")
-        latestActorsFile  = prefixFile("build/quick/classes/library/actors")
         latestReflectFile = prefixFile("build/quick/classes/reflect")
         latestCompFile    = prefixFile("build/quick/classes/compiler")
-        latestPartestFile = prefixFile("build/quick/classes/partest")
       }
 
       def setupInst() {
         vlog("Running dist (installed)")
         val p = testParent.getParentFile
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
-        latestActorsFile  = prefixFileWith(p, "lib/scala-actors.jar")
         latestReflectFile = prefixFileWith(p, "lib/scala-reflect.jar")
         latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
-        latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
       }
 
       def setupDist() {
         vlog("Running dists/latest")
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
-        latestActorsFile  = prefixFile("dists/latest/lib/scala-actors.jar")
         latestReflectFile = prefixFile("dists/latest/lib/scala-reflect.jar")
         latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
-        latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
       }
 
       def setupPack() {
         vlog("Running build/pack")
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
-        latestActorsFile  = prefixFile("build/pack/lib/scala-actors.jar")
         latestReflectFile = prefixFile("build/pack/lib/scala-reflect.jar")
         latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
-        latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       }
 
       def mostRecentOf(base: String, names: String*) =
@@ -150,40 +144,16 @@ class ConsoleFileManager extends FileManager {
     LATEST_LIB = latestLibFile.getAbsolutePath
     LATEST_REFLECT = latestReflectFile.getAbsolutePath
     LATEST_COMP = latestCompFile.getAbsolutePath
-    LATEST_PARTEST = latestPartestFile.getAbsolutePath
-    LATEST_ACTORS = latestActorsFile.getAbsolutePath
   }
 
   var LATEST_LIB: String = ""
   var LATEST_REFLECT: String = ""
   var LATEST_COMP: String = ""
-  var LATEST_PARTEST: String = ""
-  var LATEST_ACTORS: String = ""
 
   var latestLibFile: File = _
-  var latestActorsFile: File = _
   var latestReflectFile: File = _
   var latestCompFile: File = _
-  var latestPartestFile: File = _
-  //def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
-  //def latestScalapFile: File = new File(latestLibFile.getParentFile, "scalap.jar")
   var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
-
-  /*
-  def getFiles(kind: String, cond: Path => Boolean): List[File] = {
-    def ignoreDir(p: Path) = List("svn", "obj") exists (p hasExtension _)
-
-    val dir = Directory(srcDir / kind)
-
-    if (dir.isDirectory) NestUI.verbose("look in %s for tests" format dir)
-    else NestUI.failure("Directory '%s' not found" format dir)
-
-    val files = dir.list filterNot ignoreDir filter cond toList
-
-    ( if (failed) files filter (x => logFileExists(x, kind)) else files ) map (_.jfile)
-  }
-  */
-  var latestFjbgFile: File = _
 }

@@ -118,6 +118,8 @@ class ConsoleRunner(argstr: String) extends {
     fileManager.updateCheck = optUpdateCheck
     fileManager.failed      = optFailed
 
+    NestUI echo banner
+
     val partestTests = (
       if (optSelfTest) TestKinds.testsForPartest
       else Nil
@@ -146,11 +148,6 @@ class ConsoleRunner(argstr: String) extends {
       else Nil
     )
     val kindsTests = kinds flatMap testsFor
-    val dir =
-      if (fileManager.testClasses.isDefined) fileManager.testClassesDir
-      else fileManager.testBuildFile getOrElse {
-        fileManager.latestCompFile.getParentFile.getParentFile.getAbsoluteFile
-      }
 
     def testContributors = {
       List(
@@ -161,25 +158,6 @@ class ConsoleRunner(argstr: String) extends {
         if (individualTests.isEmpty) "" else "specified tests"
       ) filterNot (_ == "") mkString ", "
     }
-
-    def banner = {
-      val vmBin  = javaHome + fileSeparator + "bin"
-      val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
-      val vmOpts = fileManager.JAVA_OPTS
-
-    s"""|Scala compiler classes in:  $dir
-        |Scala version is:           $versionMsg
-        |Scalac options are:         ${fileManager.SCALAC_OPTS mkString " "}
-        |Java binaries in:           $vmBin
-        |Java runtime is:            $vmName
-        |Java options are:           $vmOpts
-        |Source directory is:        $srcDir
-        |Available processors:       ${Runtime.getRuntime().availableProcessors()}
-        |Java Classpath:             ${sys.props("java.class.path")}
-      """.stripMargin
-    }
-
-    chatty(banner)
 
     val allTests: List[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical) sortBy (_.toString)
     val grouped              = (allTests groupBy kindOf).toList sortBy (x => standardKinds indexOf x._1)
