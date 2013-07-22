@@ -1,13 +1,12 @@
 package scala.tools.partest
 
-import scala.tools.nsc.FatalError
 import scala.tools.nsc.util.stackTraceString
 
 sealed abstract class TestState {
-  def testFile: File
+  def testFile: java.io.File
   def what: String
   def reason: String
-  def transcript: List[String]
+  def transcript: Array[String]
 
   def isOk             = false
   def isSkipped        = false
@@ -25,36 +24,36 @@ sealed abstract class TestState {
 }
 
 object TestState {
-  case class Uninitialized(testFile: File) extends TestState {
+  case class Uninitialized(testFile: java.io.File) extends TestState {
     def what = "uninitialized"
     def reason = what
-    def transcript = Nil
+    def transcript = Array.empty[String]
     override def shortStatus = "??"
   }
-  case class Pass(testFile: File) extends TestState {
+  case class Pass(testFile: java.io.File) extends TestState {
     def what = "pass"
     override def isOk = true
-    def transcript: List[String] = Nil
+    def transcript: Array[String] = Array.empty[String]
     def reason = ""
   }
-  case class Updated(testFile: File) extends TestState {
+  case class Updated(testFile: java.io.File) extends TestState {
     def what = "updated"
     override def isOk = true
-    def transcript: List[String] = Nil
+    def transcript: Array[String] = Array.empty[String]
     def reason = "updated check file"
     override def shortStatus = "++"
   }
-  case class Skip(testFile: File, reason: String) extends TestState {
+  case class Skip(testFile: java.io.File, reason: String) extends TestState {
     def what = "skip"
     override def isOk = true
     override def isSkipped = true
-    def transcript: List[String] = Nil
+    def transcript: Array[String] = Array.empty[String]
     override def shortStatus = "--"
   }
-  case class Fail(testFile: File, reason: String, transcript: List[String]) extends TestState {
+  case class Fail(testFile: java.io.File, reason: String, transcript: Array[String]) extends TestState {
     def what = "fail"
   }
-  case class Crash(testFile: File, caught: Throwable, transcript: List[String]) extends TestState {
+  case class Crash(testFile: java.io.File, caught: Throwable, transcript: Array[String]) extends TestState {
     def what = "crash"
     def reason = s"caught $caught_s - ${caught.getMessage}"
 

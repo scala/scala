@@ -14,40 +14,17 @@ import scala.util.Properties.{ propOrElse, scalaCmd, scalacCmd }
 import scala.tools.nsc.{ io, util }
 import PathResolver.{ Environment, Defaults }
 
-class ConsoleFileManager extends FileManager {
-  var testBuild: Option[String] = PartestDefaults.testBuild
+case class ConsoleFileManager(
+    testBuild: Option[String] = PartestDefaults.testBuild,
+    testClasses: Option[String] = None,
+    updateCheck: Boolean = false,
+    failed: Boolean = false) extends FileManager {
   def testBuildFile = testBuild map (testParent / _)
-
-  var testClasses: Option[String] = None
-
-  def this(buildPath: String, rawClasses: Boolean) = {
-    this()
-    if (rawClasses)
-      testClasses = Some(buildPath)
-    else
-      testBuild = Some(buildPath)
-    // re-run because initialization of default
-    // constructor must be updated
-    findLatest()
-  }
-
-  def this(buildPath: String) = {
-    this(buildPath, false)
-  }
-
-  def this(buildPath: String, rawClasses: Boolean, moreOpts: String) = {
-    this(buildPath, rawClasses)
-    SCALAC_OPTS = SCALAC_OPTS ++ moreOpts.split(' ').toSeq.filter(_.length > 0)
-  }
 
   lazy val srcDir        = PathSettings.srcDir
   lazy val testRootDir   = PathSettings.testRoot
   lazy val testRootPath  = testRootDir.toAbsolute.path
   def testParent    = testRootDir.parent
-
-  var COMPILATION_CLASSPATH   = PartestDefaults.classPath
-  var JAVACMD     = PartestDefaults.javaCmd
-  var JAVAC_CMD   = PartestDefaults.javacCmd
 
   override def compilerUnderTest =
     (if (testClasses.isDefined) testClassesDir
@@ -63,11 +40,11 @@ class ConsoleFileManager extends FileManager {
     sys.exit(1)
   }
 
-  COMPILATION_CLASSPATH = {
+  lazy val COMPILATION_CLASSPATH = {
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
 
     // add all jars in libs
-    (COMPILATION_CLASSPATH :: libs.toList) mkString pathSeparator
+    (PartestDefaults.classPath :: libs.toList) mkString pathSeparator
   }
 
   def findLatest() {
@@ -76,7 +53,7 @@ class ConsoleFileManager extends FileManager {
     def prefixFileWith(parent: File, relPath: String) = (SFile(parent) / relPath).toCanonical
     def prefixFile(relPath: String) = (testParent / relPath).toCanonical
 
-    if (!testClasses.isEmpty) {
+    if (testClasses.isDefined) {
       testClassesDir = Path(testClasses.get).toCanonical.toDirectory
       vlog("Running with classes in "+testClassesDir)
 

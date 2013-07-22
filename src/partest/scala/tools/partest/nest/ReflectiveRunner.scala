@@ -40,15 +40,11 @@ class ReflectiveRunner {
     // find out which build to test
     val buildPath = searchPath("--buildpath", argList)
     val classPath = searchPath("--classpath", argList)
-    val fileManager =
-      if (!buildPath.isEmpty)
-        new ConsoleFileManager(buildPath.get)
-      else if (!classPath.isEmpty)
-        new ConsoleFileManager(classPath.get, true)
-      else if (argList contains "--pack")
-        new ConsoleFileManager("build/pack")
-      else // auto detection
-        new ConsoleFileManager
+    val fileManager = new ConsoleFileManager(
+      if (argList contains "--pack") Some("build/pack") else buildPath,
+      classPath,
+      updateCheck = argList contains "--update-check",
+      failed = argList contains "--failed")
 
     // this seems to be the core classloader that determines which classes can be found when running partest from the test/partest script    
     val sepLoader = new URLClassLoader(fileManager.testClassPathUrls.toArray, null)
@@ -77,15 +73,14 @@ class ReflectiveRunner {
         println(prop + ": " + propOrEmpty(prop))
 
     try {
-      val sepRunnerClass  = sepLoader loadClass sepRunnerClassName
-      val sepMainMethod   = sepRunnerClass.getMethod("main", classOf[Array[String]])
+      val sepRunnerClass = sepLoader loadClass sepRunnerClassName
+      val sepMainMethod = sepRunnerClass.getMethod("main", classOf[Array[String]])
       val cargs: Array[AnyRef] = Array(Array(args))
       sepMainMethod.invoke(null, cargs: _*)
-    }
-    catch {
+    } catch {
       case cnfe: ClassNotFoundException =>
         cnfe.printStackTrace()
-        NestUI.failure(sepRunnerClassName +" could not be loaded from:\n")
+        NestUI.failure(sepRunnerClassName + " could not be loaded from:\n")
         fileManager.testClassPathUrls foreach (x => NestUI.failure(x + "\n"))
     }
   }

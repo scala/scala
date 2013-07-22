@@ -13,7 +13,7 @@ import scala.util.Properties.setProp
 import scala.tools.ant.sabbus.CompilationPathProperty
 import java.lang.reflect.Method
 import org.apache.tools.ant.Task
-import org.apache.tools.ant.types.{ Reference, FileSet}
+import org.apache.tools.ant.types.{ Reference, FileSet }
 import org.apache.tools.ant.types.Commandline.Argument
 import scala.tools.ant.ScalaTask
 import nest.NestUI
@@ -34,20 +34,20 @@ import nest.NestUI
  *  It also takes the following parameters as nested elements:
  *  - `compilationpath`.
  *
- * @author Philippe Haller
+ *  @author Philipp Haller, Adriaan Moors
  */
 class PartestTask extends Task with CompilationPathProperty with ScalaTask {
   type Path = org.apache.tools.ant.types.Path
 
-  private var kinds: List[String]               = Nil
-  private var classpath: Option[Path]           = None
-  private var debug                             = false
-  private var errorOnFailed: Boolean            = true
-  private var jUnitReportDir: Option[File]      = None
-  private var javaccmd: Option[File]            = None
-  private var javacmd: Option[File]             = Option(sys.props("java.home")) map (x => new File(x, "bin/java"))
+  private var kinds: List[String] = Nil
+  private var classpath: Option[Path] = None
+  private var debug = false
+  private var errorOnFailed: Boolean = true
+  private var jUnitReportDir: Option[File] = None
+  private var javaccmd: Option[File] = None
+  private var javacmd: Option[File] = Option(sys.props("java.home")) map (x => new File(x, "bin/java"))
   private var scalacArgs: Option[Seq[Argument]] = None
-  private var srcDir: Option[String]            = None
+  private var srcDir: Option[String] = None
   private var colors: Int = 0
 
   def setSrcDir(input: String) {
@@ -119,87 +119,41 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
 
     if (compilationPath.isEmpty) sys.error("Mandatory attribute 'compilationPath' is not set.")
 
-    val compilationPaths = compilationPath.get.list
-    val cpfiles = compilationPaths map { fs => new File(fs) } toList
-    def findCp(name: String) = cpfiles find (f =>
-         (f.getName == s"scala-$name.jar")
-      || (f.absolutePathSegments endsWith Seq("classes", name))
-    ) map (_.getAbsolutePath) getOrElse sys.error(s"Provided compilationPath does not contain a Scala $name element.\nLooked in: ${compilationPaths.mkString(":")}")
-
-    def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
+    def scalacArgsFlat: Array[String] = scalacArgs.toArray flatMap (_ flatMap { a =>
       val parts = a.getParts
-      if (parts eq null) Nil else parts.toSeq
+      if (parts eq null) Array.empty[String] else parts
     })
 
-    val antRunner = new scala.tools.partest.nest.AntRunner
-    val antFileManager = antRunner.fileManager
 
-    // antFileManager.failed = runFailed
+    var failureCount = 0
+    val summary = new scala.tools.partest.nest.AntRunner(compilationPath.get.list, javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
+      def echo(msg: String): Unit = PartestTask.this.log(msg)
+      def log(msg: String): Unit = PartestTask.this.log(msg)
 
-    antFileManager.COMPILATION_CLASSPATH = ClassPath.join(compilationPaths: _*)
-    antFileManager.LATEST_LIB            = findCp("library")
-    antFileManager.LATEST_REFLECT        = findCp("reflect")
-    antFileManager.LATEST_COMP           = findCp("compiler")
+      def onFinishKind(kind: String, passed: Array[TestState], failed: Array[TestState]) = {
+        failureCount += failed.size
 
-    NestUI echo antRunner.banner
-
-    javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
-    javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
-    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS ++= _)
-
-    def runSet(kind: String, files: Array[File]): (Int, Int, List[String]) = {
-      if (files.isEmpty) (0, 0, List())
-      else {
-        log(s"Running ${files.length} tests in '$kind' at $now")
-        // log(s"Tests: ${files.toList}")
-        val results = antRunner.reflectiveRunTestsForFiles(files, kind)
-        val (passed, failed) = results partition (_.isOk)
-        val numPassed = passed.size
-        val numFailed = failed.size
-        def failedMessages = failed map (_.longStatus)
-
-        log(s"Completed '$kind' at $now")
+        def oneResult(res: TestState) =
+          <testcase name={ res.testIdent }>{
+            if (res.isOk) scala.xml.NodeSeq.Empty
+            else <failure message="Test failed"/>
+          }</testcase>
 
         // create JUnit Report xml files if directory was specified
         jUnitReportDir foreach { d =>
           d.mkdir
+          val report =
+            <testsuite name={ kind } tests={ (passed.size + failed.size) toString } failures={ failed.size.toString }>
+              <properties/>{ passed map oneResult }{ failed map oneResult }
+            </testsuite>
 
-          val report = testReport(kind, results, numPassed, numFailed)
-          scala.xml.XML.save(d.getAbsolutePath+"/"+kind+".xml", report)
+          scala.xml.XML.save(d.getAbsolutePath + "/" + kind + ".xml", report)
         }
-
-        (numPassed, numFailed, failedMessages)
       }
-    }
+    } execute (kinds)
 
-    val _results       = kinds map (k => runSet(k, TestKinds testsFor k map (_.jfile) toArray))
-    val allSuccesses   = _results map (_._1) sum
-    val allFailures    = _results map (_._2) sum
-    val allFailedPaths = _results flatMap (_._3)
+    if (errorOnFailed && failureCount > 0) buildError(summary)
+    else log(summary)
 
-    def f = if (errorOnFailed && allFailures > 0) buildError(_: String) else log(_: String)
-    def s = if (allFailures > 1) "s" else ""
-    val msg =
-      if (allFailures > 0)
-        "Test suite finished with %d case%s failing:\n".format(allFailures, s)+
-        allFailedPaths.mkString("\n")
-      else if (allSuccesses == 0) "There were no tests to run."
-      else "Test suite finished with no failures."
-
-    f(msg)
   }
-
-  private def oneResult(res: TestState) =
-    <testcase name={res.testIdent}>{
-      if (res.isOk) scala.xml.NodeSeq.Empty
-      else <failure message="Test failed"/>
-    }</testcase>
-
-  private def testReport(kind: String, results: Iterable[TestState], succs: Int, fails: Int) =
-    <testsuite name={kind} tests={(succs + fails).toString} failures={fails.toString}>
-      <properties/>
-      {
-        results map oneResult
-      }
-    </testsuite>
 }

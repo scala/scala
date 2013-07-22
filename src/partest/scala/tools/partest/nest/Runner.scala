@@ -100,9 +100,9 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   }
 
   def genPass()                   = Pass(testFile)
-  def genFail(reason: String)     = Fail(testFile, reason, _transcript.fail)
-  def genTimeout()                = Fail(testFile, "timed out", _transcript.fail)
-  def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail)
+  def genFail(reason: String)     = Fail(testFile, reason, _transcript.fail.toArray)
+  def genTimeout()                = Fail(testFile, "timed out", _transcript.fail.toArray)
+  def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail.toArray)
   def genUpdated()                = Updated(testFile)
 
   def speclib = PathSettings.srcSpecLib.toString  // specialization lib
@@ -794,7 +794,7 @@ trait DirectRunner {
     // |Java Classpath:             ${sys.props("java.class.path")}
   }
 
-  def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
+  def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
     NestUI.resetTestNumber(kindFiles.size)
 
     val parentClassLoader = ScalaClassLoader fromURLs fileManager.testClassPathUrls

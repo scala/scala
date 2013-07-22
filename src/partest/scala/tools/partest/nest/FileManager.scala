@@ -53,19 +53,21 @@ trait FileUtil {
 object FileUtil extends FileUtil { }
 
 trait FileManager extends FileUtil {
+  def updateCheck: Boolean
+  def failed: Boolean
 
   def testRootDir: Directory
   def testRootPath: String
 
   def compilerUnderTest = LATEST_COMP
 
-  var JAVACMD: String
-  var JAVAC_CMD: String
+  def JAVACMD: String = PartestDefaults.javaCmd
+  def JAVAC_CMD: String = PartestDefaults.javacCmd
 
-  var COMPILATION_CLASSPATH: String
-  var LATEST_LIB: String
-  var LATEST_REFLECT: String
-  var LATEST_COMP: String
+  def COMPILATION_CLASSPATH: String
+  def LATEST_LIB: String
+  def LATEST_REFLECT: String
+  def LATEST_COMP: String
 
   // basedir for jars or classfiles on core classpath
   lazy val baseDir = SFile(LATEST_LIB).parent
@@ -101,13 +103,9 @@ trait FileManager extends FileUtil {
   def testClassPathUrls = testClassPath map (p => new java.io.File(p).toURI.toURL)
 
 
-  var showDiff = false
-  var updateCheck = false
-  var showLog = false
-  var failed = false
 
-  var SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
-  var JAVA_OPTS   = PartestDefaults.javaOpts
+  def SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
+  def JAVA_OPTS   = PartestDefaults.javaOpts
 
   /** Only when --debug is given. */
   lazy val testTimings = new mutable.HashMap[String, Long]
