@@ -91,7 +91,7 @@ trait Phased {
       Parser, Namer, Packageobjects, Typer, Superaccessors, Pickler, Refchecks,
       Selectiveanf, Liftcode, Selectivecps, Uncurry, Tailcalls, Specialize,
       Explicitouter, Erasure, Lazyvals, Lambdalift, Constructors, Flatten, Mixin,
-      Cleanup, Icode, Inliner, Closelim, Dce, Jvm, Terminal
+      Cleanup, Delambdafy, Icode, Inliner, Closelim, Dce, Jvm, Terminal
     )
     lazy val nameMap = all.map(x => x.name -> x).toMap withDefaultValue NoPhaseName
     multi = all
@@ -127,6 +127,7 @@ trait Phased {
   case object Flatten extends PhaseName
   case object Mixin extends PhaseName
   case object Cleanup extends PhaseName
+  case object Delambdafy extends PhaseName
   case object Icode extends PhaseName
   case object Inliner extends PhaseName
   case object Closelim extends PhaseName
