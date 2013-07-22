@@ -22,12 +22,13 @@ superaccessors   6  add super accessors in traits and nested classes
        flatten  19  eliminate inner classes
          mixin  20  mixin composition
        cleanup  21  platform-specific cleanups, generate reflective calls
-         icode  22  generate portable intermediate code
-       inliner  23  optimization: do inlining
-inlinehandlers  24  optimization: inline exception handlers
-      closelim  25  optimization: eliminate uncalled closures
-      constopt  26  optimization: optimize null and other constants
-           dce  27  optimization: eliminate dead code
-           jvm  28  generate JVM bytecode
-       ploogin  29  A sample phase that does so many things it's kind of hard...
-      terminal  30  The last phase in the compiler chain
+    delambdafy  22  remove lambdas
+         icode  23  generate portable intermediate code
+       inliner  24  optimization: do inlining
+inlinehandlers  25  optimization: inline exception handlers
+      closelim  26  optimization: eliminate uncalled closures
+      constopt  27  optimization: optimize null and other constants
+           dce  28  optimization: eliminate dead code
+           jvm  29  generate JVM bytecode
+       ploogin  30  A sample phase that does so many things it's kind of hard...
+      terminal  31  The last phase in the compiler chain

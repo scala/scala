@@ -19,6 +19,7 @@
 [running phase flatten on t6102.scala]
 [running phase mixin on t6102.scala]
 [running phase cleanup on t6102.scala]
+[running phase delambdafy on t6102.scala]
 [running phase icode on t6102.scala]
 [running phase inliner on t6102.scala]
 [running phase inlinehandlers on t6102.scala]
