@@ -9,7 +9,7 @@ import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
 
 
-object PromiseTests extends MinimalScalaTest {
+class PromiseTests extends MinimalScalaTest {
   import ExecutionContext.Implicits._
 
   val defaultTimeout = Inf

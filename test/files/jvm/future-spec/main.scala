@@ -10,9 +10,9 @@ import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 object Test {
   
   def main(args: Array[String]) {
-    FutureTests.check()
-    PromiseTests.check()
-    TryTests.check()
+    (new FutureTests).check()
+    (new PromiseTests).check()
+    (new TryTests).check()
   }
   
 }
