@@ -15,7 +15,7 @@ import scala.tools.nsc.{ io, util }
 import PathResolver.{ Environment, Defaults }
 
 object ConsoleFileManager {
-  val classPath = {
+  def classPath = {
     val srcDir = {
       val src = PathSettings.srcDir
       if (!src.isDirectory) {
@@ -26,14 +26,17 @@ object ConsoleFileManager {
     }
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
 
+    // def classPath   = propOrElse("partest.classpath", "")
+    val userCp = ClassPath split PathResolver.Environment.javaUserClassPath    // XXX
+
     // add all jars in libs
-    val cp = (PartestDefaults.classPath ++ libs.toList)
+    val cp = (userCp ++ libs.toList)
     vlog("testClassPath: " + cp)
     cp map (Path(_))
   }
 
   def mostRecentTrifecta(testBuild: Option[String], testClasses: Option[String]) = {
-    val testParent     = PathSettings.testRoot.parent
+    import PathSettings.testParent
     val testClassesDir = testClasses map (tc => Path(tc).toCanonical.toDirectory)
     val testBuildDir   = testBuild map (b => (testParent / b).toCanonical.toDirectory)
 

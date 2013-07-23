@@ -7,35 +7,66 @@ package nest
 
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.{ Path, File, Directory }
+import scala.tools.nsc.Properties.{ propOrElse, propOrNone }
 import Path._
 
+/** Get current value for path settings -- these depend on the mutable `testSourcePath`.
+ * Default values are read from system properties `partest.srcdir` and `partest.root`.
+ *
+ * TODO: make `testSourcePath` immutable, but that's pretty involved as a lot of stuff depends on it (all the more reason to refactor)
+ *     (we don't use system properties to configure partest internally,
+ *      as their behavior depends on the security policy in place -- e.g., ant does not allow overwriting properties)
+ *
+ * NOTE: the members are methods because `testSourcePath` changes.
+ */
 object PathSettings {
-  import PartestDefaults.{ testRootDir, srcDirName }
+  private[this] var myTestSourcePath: String = null
+  private def defaultSrcDirName              = propOrElse("partest.srcdir", "files")
+
+  /** testSourcePath determines where we look for tests, relative to the `testRoot`
+   * after it's been read, it cannot be changed
+   */
+  def testSourcePath: String = {
+    if (myTestSourcePath eq null) myTestSourcePath = defaultSrcDirName
+    myTestSourcePath
+  }
+
+  /** testSourcePath determines where we look for tests, relative to the `testRoot`
+   * it can be set only if it hasn't been read yet
+   */
+  def testSourcePath_= (path: String): Unit = {
+    // assert(myTestSourcePath eq null, "Test Source Path set after use.")
+    myTestSourcePath = path
+  }
+
+  // defaults can be set using the environment, but note PathSettings is mutable
+  private def defaultTestRootName  = propOrNone("partest.root")
 
   private def cwd = Directory.Current getOrElse sys.error("user.dir property not set")
-  private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
+  private def isPartestDir(d: Directory) = (d.name == "test") && (d / testSourcePath isDirectory)
   private def findJar(name: String, ds: Directory*): Either[String, File] =
     ds.toStream flatMap (_.files) filter (_ hasExtension "jar") find ( _.name startsWith name ) map (Right(_)) getOrElse
       Left(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
 
   // Directory <root>/test
-  lazy val testRoot: Directory = testRootDir getOrElse {
+  def testRoot: Directory = (defaultTestRootName map (Directory(_))) getOrElse {
     val candidates: List[Directory] = (cwd :: cwd.parents) flatMap (d => List(d, Directory(d / "test")))
 
     candidates find isPartestDir getOrElse sys.error("Directory 'test' not found.")
   }
+  def testParent = testRoot.parent
 
   // Directory <root>/test/files or .../scaladoc
-  lazy val srcDir = Directory(testRoot / srcDirName toCanonical)
+  def srcDir = Directory(testRoot / testSourcePath toCanonical)
 
   // Directory <root>/build/pack/lib
-  lazy val buildPackLibDir = Directory(buildDir / "pack" / "lib")
+  private def buildPackLibDir = Directory(buildDir / "pack" / "lib")
 
   // Directory <root>/test/files/lib
-  lazy val srcLibDir = Directory(srcDir / "lib")
+  private def srcLibDir = Directory(srcDir / "lib")
 
   // Directory <root>/build
-  lazy val buildDir: Directory = {
+  private def buildDir: Directory = {
     val bases      = testRoot :: testRoot.parents
     // In the classic "ant" build, the relevant subdirectory is called build,
     // but in the postmodern "sbt" build, it is called target.  Look for both.
@@ -44,19 +75,10 @@ object PathSettings {
     dirs.headOption getOrElse sys.error("Neither 'build' nor 'target' dir found under test root " + testRoot + ".")
   }
 
-
-  lazy val srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
-  lazy val srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)
-  lazy val agentLib       = findJar("scala-partest-javaagent", buildPackLibDir)
-  lazy val scalaCheck     = findJar("scalacheck", buildPackLibDir, srcLibDir)
-  lazy val testInterface  = findJar("test-interface", buildPackLibDir, srcLibDir)
-  lazy val diffUtils      = findJar("diffutils", buildPackLibDir)
-
-  /** The platform-specific support jar, `tools.jar`.
-   */
-  lazy val platformTools = PathResolver.SupplementalLocations.platformTools
-}
-
-class PathSettings() {
-  // def classpathAsURLs: List[URL]
+  def srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
+  def srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)
+  def agentLib       = findJar("scala-partest-javaagent", buildPackLibDir)
+  def scalaCheck     = findJar("scalacheck", buildPackLibDir, srcLibDir)
+  def testInterface  = findJar("test-interface", buildPackLibDir, srcLibDir)
+  def diffUtils      = findJar("diffutils", buildPackLibDir)
 }

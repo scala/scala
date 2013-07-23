@@ -10,7 +10,6 @@ package nest
 import utils.Properties._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.collection.{ mutable, immutable }
-import PathSettings.srcDir
 import TestKinds._
 import scala.reflect.internal.util.Collections.distinctBy
 import scala.tools.cmd.{ CommandLine, CommandLineParser, Instance }
@@ -110,7 +109,7 @@ class ConsoleRunner(argstr: String) extends {
         echoWarning(s"Discarding ${invalid.size} invalid test paths")
     }
 
-    optSourcePath foreach (x => setProp("partest.srcdir", x))
+    optSourcePath foreach (PathSettings.testSourcePath = _)
     optTimeout foreach (x => setProp("partest.timeout", x))
 
     NestUI echo banner

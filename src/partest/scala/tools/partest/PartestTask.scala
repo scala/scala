@@ -115,7 +115,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
       NestUI.setDebug()
     }
 
-    srcDir foreach (x => setProp("partest.srcdir", x))
+    srcDir foreach (nest.PathSettings.testSourcePath = _)
 
     if (compilationPath.isEmpty) sys.error("Mandatory attribute 'compilationPath' is not set.")
 

@@ -6,14 +6,6 @@ import scala.tools.nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 import java.lang.Runtime.{ getRuntime => runtime }
 
 object PartestDefaults {
-
-  def testRootName  = propOrNone("partest.root")
-  def srcDirName    = propOrElse("partest.srcdir", "files")
-  def testRootDir   = testRootName map (x => Directory(x))
-
-  // def classPath   = propOrElse("partest.classpath", "")
-  def classPath   = ClassPath split PathResolver.Environment.javaUserClassPath    // XXX
-
   def javaCmd     = propOrElse("partest.javacmd", "java")
   def javacCmd    = propOrElse("partest.javac_cmd", "javac")
   def javaOpts    = propOrElse("partest.java_opts", "")
