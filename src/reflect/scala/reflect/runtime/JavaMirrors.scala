@@ -673,8 +673,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val parents = try {
           parentsLevel += 1
           val jsuperclazz = jclazz.getGenericSuperclass
-          val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
-          superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
+          val ifaces = jclazz.getGenericInterfaces.toList map typeToScala
+          val isAnnotation = (jclazz.getModifiers & JAVA_ACC_ANNOTATION) != 0
+          if (isAnnotation) AnnotationClass.tpe :: ClassfileAnnotationClass.tpe :: ifaces
+          else (if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)) :: ifaces
         } finally {
           parentsLevel -= 1
         }
@@ -685,6 +687,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
         def enter(sym: Symbol, mods: Int) =
           (if (jModifier.isStatic(mods)) module.moduleClass else clazz).info.decls enter sym
+
+        def enterEmptyCtorIfNecessary(): Unit = {
+          if (jclazz.getConstructors.isEmpty)
+            clazz.info.decls.enter(clazz.newClassConstructor(NoPosition))
+        }
 
         for (jinner <- jclazz.getDeclaredClasses) {
           jclassAsScala(jinner) // inner class is entered as a side-effect
@@ -701,6 +708,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
           for (jconstr <- jclazz.getConstructors)
             enter(jconstrAsScala(jconstr), jconstr.getModifiers)
+
+          enterEmptyCtorIfNecessary()
 
         } :: pendingLoadActions
 

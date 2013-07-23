@@ -101,6 +101,12 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
+sym = constructor $PrivateJavaClass, signature = ()JavaClass_1.this.$PrivateJavaClass, owner = class $PrivateJavaClass
+isPrivate = false
+isProtected = false
+isPublic = true
+privateWithin = <none>
+============
 sym = value this$0, signature = foo.JavaClass_1, owner = class $PrivateJavaClass
 isPrivate = false
 isProtected = false
@@ -118,6 +124,12 @@ isPrivate = false
 isProtected = true
 isPublic = false
 privateWithin = package foo
+============
+sym = constructor $ProtectedJavaClass, signature = ()JavaClass_1.this.$ProtectedJavaClass, owner = class $ProtectedJavaClass
+isPrivate = false
+isProtected = false
+isPublic = true
+privateWithin = <none>
 ============
 sym = value this$0, signature = foo.JavaClass_1, owner = class $ProtectedJavaClass
 isPrivate = false
@@ -173,6 +185,12 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
+sym = constructor PrivateStaticJavaClass, signature = ()foo.JavaClass_1.PrivateStaticJavaClass, owner = class PrivateStaticJavaClass
+isPrivate = false
+isProtected = false
+isPublic = true
+privateWithin = <none>
+============
 sym = object PrivateStaticJavaClass, signature = foo.JavaClass_1.PrivateStaticJavaClass.type, owner = object JavaClass_1
 isPrivate = true
 isProtected = false
@@ -183,6 +201,12 @@ sym = class ProtectedStaticJavaClass, signature = ClassInfoType(...), owner = ob
 isPrivate = true
 isProtected = false
 isPublic = false
+privateWithin = <none>
+============
+sym = constructor ProtectedStaticJavaClass, signature = ()foo.JavaClass_1.ProtectedStaticJavaClass, owner = class ProtectedStaticJavaClass
+isPrivate = false
+isProtected = false
+isPublic = true
 privateWithin = <none>
 ============
 sym = object ProtectedStaticJavaClass, signature = foo.JavaClass_1.ProtectedStaticJavaClass.type, owner = object JavaClass_1
