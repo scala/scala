@@ -154,7 +154,7 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
 
     val testFullPath = testFile.getAbsolutePath
 
-    // Note! As this currently functions, JAVA_OPTS must precede argString
+    // Note! As this currently functions, PartestDefaults.javaOpts must precede argString
     // because when an option is repeated to java only the last one wins.
     // That means until now all the .javaopts files were being ignored because
     // they all attempt to change options which are also defined in
@@ -181,7 +181,7 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
     val classpath = joinPaths(extraClasspath ++ testClassPath)
 
     javaCmd +: (
-      (JAVA_OPTS.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
+      (PartestDefaults.javaOpts.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
       ) ++ propertyOptions ++ Seq(
@@ -534,7 +534,7 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
       if (NestUI._verbose) List("-verbose", "-noinput")
       else List("-noinput")
     val cmd = javaCmd +: (
-      JAVA_OPTS.split(' ').map(_.trim).filter(_ != "") ++ Seq(
+      PartestDefaults.javaOpts.split(' ').map(_.trim).filter(_ != "") ++ Seq(
         "-classpath",
         antLauncherPath,
         "org.apache.tools.ant.launch.Launcher"
@@ -743,7 +743,6 @@ abstract class DirectRunner {
     def relativize(path: String) = path.replace(fileManager.baseDir.toString, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
     val vmBin  = javaHome + fileSeparator + "bin"
     val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
-    val vmOpts = fileManager.JAVA_OPTS
 
   s"""|Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
       |Scala version is:    $versionMsg
@@ -751,7 +750,7 @@ abstract class DirectRunner {
       |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName
-      |Java options are:    $vmOpts
+      |Java options are:    ${PartestDefaults.javaOpts}
       |baseDir:             ${fileManager.baseDir}
       |sourceDir:           ${PathSettings.srcDir}
     """.stripMargin

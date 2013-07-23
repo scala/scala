@@ -160,8 +160,7 @@ class FileManager(val testClassPath: List[Path],
     this(testClassPath, trifecta._1, trifecta._2, trifecta._3)
   }
 
-  lazy val testClassLoader =
-    ScalaClassLoader fromURLs (testClassPath map (_.toURI.toURL))
+  lazy val testClassLoader = ScalaClassLoader fromURLs (testClassPath map (_.toURI.toURL))
 
   // basedir for jars or classfiles on core classpath
   lazy val baseDir = libraryUnderTest.parent
@@ -169,7 +168,6 @@ class FileManager(val testClassPath: List[Path],
   lazy val JAVACMD: String          = javaCmd getOrElse PartestDefaults.javaCmd
   lazy val JAVAC_CMD: String        = javacCmd getOrElse PartestDefaults.javacCmd
   lazy val SCALAC_OPTS: Seq[String] = scalacOpts ++ PartestDefaults.scalacOpts.split(' ').toSeq
-  lazy val JAVA_OPTS: String        = PartestDefaults.javaOpts
 
   def distKind = {
     val p = libraryUnderTest.getAbsolutePath
