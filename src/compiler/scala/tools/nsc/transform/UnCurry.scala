@@ -63,6 +63,7 @@ abstract class UnCurry extends InfoTransform
 // uncurry and uncurryType expand type aliases
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    private val inlineFunctionExpansion = settings.Ydelambdafy.value == "inline"
     private var needTryLift       = false
     private var inPattern         = false
     private var inConstructorFlag = 0L
@@ -278,7 +279,10 @@ abstract class UnCurry extends InfoTransform
 
           val funTyper = localTyper.typedPos(fun.pos) _
 
-          val block = {
+          val block = if (inlineFunctionExpansion) {
+            // if delambdafy strategy is inline then 
+            // fall back to putting the body of the lambda directly in the anonymous class
+            // anonymous subclass of FunctionN with an apply method
             val anonymousClassDef = {
               val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
               val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
@@ -298,6 +302,32 @@ abstract class UnCurry extends InfoTransform
               List(anonymousClassDef),
               Typed(New(anonymousClassDef.symbol), TypeTree(fun.tpe))
             ) 
+          } else {
+            val methodFlags = ARTIFACT
+            // method definition with the same arguments, return type, and body as the original lambda
+            val liftedMethod = createMethod(fun.symbol.owner, tpnme.ANON_FUN_NAME.toTermName, methodFlags){
+              case(methSym, vparams) => 
+                fun.body.substituteSymbols(fun.vparams map (_.symbol), vparams map (_.symbol))
+                fun.body changeOwner (fun.symbol -> methSym)
+            }
+            // callsite for the lifted method
+            val args = fun.vparams map { vparam =>
+              val ident = Ident(vparam.symbol)
+              // if -Yeta-expand-keeps-star is turned on then T* types can get through. In order
+              // to forward them we need to forward x: T* ascribed as "x:_*"
+              if (settings.etaExpandKeepsStar && definitions.isRepeatedParamType(vparam.tpt.tpe))
+                gen.wildcardStar(ident)
+              else
+                ident
+            }
+            val liftedMethodCall = funTyper(Apply(liftedMethod.symbol, args:_*))
+            
+            // new function whose body is just a call to the lifted method
+            val newFun = fun.replace(fun.body, liftedMethodCall)
+            Block(
+              List(funTyper(liftedMethod)),
+              super.transform(newFun)
+            )
           }
           funTyper(block)
         }
@@ -433,7 +463,7 @@ abstract class UnCurry extends InfoTransform
         deriveDefDef(dd)(_ => body)
       case _ => tree
     }
-    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy
+    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy || currentOwner.isAnonymousFunction
 
 // ------ The tree transformers --------------------------------------------------------
 
@@ -545,6 +575,10 @@ abstract class UnCurry extends InfoTransform
           case CaseDef(pat, guard, body) =>
             val pat1 = withInPattern(value = true)(transform(pat))
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+
+          // if a lambda is already the right shape we don't need to transform it again
+          case fun @ Function(_, Apply(target, _)) if (!inlineFunctionExpansion) && target.symbol.isLocal && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME) =>
+            super.transform(fun)
 
           case fun @ Function(_, _) =>
             mainTransform(transformFunction(fun))
