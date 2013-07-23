@@ -39,7 +39,7 @@ import nest.NestUI
 class PartestTask extends Task with CompilationPathProperty with ScalaTask {
   type Path = org.apache.tools.ant.types.Path
 
-  private var kinds: List[String] = Nil
+  private var kinds: Array[String] = Array.empty
   private var classpath: Option[Path] = None
   private var debug = false
   private var errorOnFailed: Boolean = true
@@ -84,7 +84,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
   }
 
   def setKinds(input: String) {
-    kinds = words(input)
+    kinds = words(input).toArray
   }
 
   def setJavacCmd(input: File) {

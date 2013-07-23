@@ -794,13 +794,15 @@ trait DirectRunner {
     // |Java Classpath:             ${sys.props("java.class.path")}
   }
 
+  def runTest(manager: RunnerManager, testFile: File): TestState = manager runTest testFile
+
   def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
     NestUI.resetTestNumber(kindFiles.size)
 
     val parentClassLoader = ScalaClassLoader fromURLs fileManager.testClassPathUrls
     val pool              = Executors newFixedThreadPool numThreads
     val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
-    val futures           = kindFiles map (f => pool submit callable(manager runTest f))
+    val futures           = kindFiles map (f => pool submit callable(runTest(manager, f)))
 
     pool.shutdown()
     Try (pool.awaitTermination(waitTime) {
