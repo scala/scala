@@ -60,6 +60,8 @@ trait Implicits {
    *  @return                        A search result
    */
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
+    // Note that the isInvalidConversionTarget seems to make a lot more sense right here, before all the
+    // work is performed, than at the point where it presently exists.
     val shouldPrint     = printTypings && !context.undetparams.isEmpty
     val rawTypeStart    = if (Statistics.canEnable) Statistics.startCounter(rawTypeImpl) else null
     val findMemberStart = if (Statistics.canEnable) Statistics.startCounter(findMemberImpl) else null
@@ -1335,12 +1337,18 @@ trait Implicits {
         }
       }
       if (result.isSuccess && isView) {
+        def maybeInvalidConversionError(msg: String) {
+          // We have to check context.ambiguousErrors even though we are calling "issueAmbiguousError"
+          // which ostensibly does exactly that before issuing the error. Why? I have no idea. Test is pos/t7690.
+          if (context.ambiguousErrors)
+            context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, msg))
+        }
         if (isInvalidConversionTarget(pt)) {
-          context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, "the result type of an implicit conversion must be more specific than AnyRef"))
+          maybeInvalidConversionError("the result type of an implicit conversion must be more specific than AnyRef")
           result = SearchFailure
         }
         else if (isInvalidConversionSource(pt)) {
-          context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, "an expression of type Null is ineligible for implicit conversion"))
+          maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
           result = SearchFailure
         }
       }
