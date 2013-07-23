@@ -52,7 +52,7 @@ class DirectCompiler(val fileManager: FileManager) {
 
     val classPath: List[Path] = specializedOverride ++ codeLib ++ fileManager.testClassPath ++ List[Path](outDir)
 
-    val testSettings = new TestSettings(fileManager.joinPaths(classPath))
+    val testSettings = new TestSettings(FileManager.joinPaths(classPath))
     val logWriter    = new FileWriter(logFile)
     val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
     val opts         = fileManager.updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)

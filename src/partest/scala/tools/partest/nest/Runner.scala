@@ -27,6 +27,8 @@ import ClassPath.{ join, split }
 import PartestDefaults.{ javaCmd, javacCmd }
 import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
+import FileManager.{compareFiles, compareContents, joinPaths}
+
 trait PartestRunSettings {
   def gitPath: Path
   def reportPath: Path
@@ -294,8 +296,8 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
   }
 
   def currentDiff = (
-    if (checkFile.canRead) diffilter(compareFiles(logFile, checkFile))
-    else compareContents(augmentString(file2String(logFile)).lines.toList, Nil)
+    if (checkFile.canRead) diffilter(compareFiles(original = checkFile, revised = logFile))
+    else compareContents(original = Nil, revised = augmentString(file2String(logFile)).lines.toList)
   )
 
   val gitRunner = List("/usr/local/bin/git", "/usr/bin/git") map (f => new java.io.File(f)) find (_.canRead)
@@ -728,7 +730,7 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
 }
 
 /** Extended by Ant- and ConsoleRunner for running a set of tests. */
-trait DirectRunner {
+abstract class DirectRunner {
   def fileManager: FileManager
   def updateCheck: Boolean
   def failed: Boolean
@@ -746,7 +748,7 @@ trait DirectRunner {
   s"""|Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
       |Scala version is:    $versionMsg
       |Scalac options are:  ${fileManager.SCALAC_OPTS mkString " "}
-      |Compilation Path:    ${relativize(fileManager.joinPaths(fileManager.testClassPath))}
+      |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName
       |Java options are:    $vmOpts

@@ -25,15 +25,61 @@ import scala.reflect.io.AbstractFile
 import scala.collection.mutable
 import scala.reflect.internal.util.ScalaClassLoader
 
-trait FileUtil {
+object FileManager {
+  def getLogFile(dir: File, fileBase: String, kind: String): File =
+    new File(dir, fileBase + "-" + kind + ".log")
+
+  def getLogFile(file: File, kind: String): File = {
+    val dir = file.getParentFile
+    val fileBase = basename(file.getName)
+
+    getLogFile(dir, fileBase, kind)
+  }
+
+  def logFileExists(file: File, kind: String) =
+    getLogFile(file, kind).canRead
+
+  def overwriteFileWith(dest: File, file: File) =
+    dest.isFile && copyFile(file, dest)
+
+  def copyFile(from: File, dest: File): Boolean = {
+    if (from.isDirectory) {
+      assert(dest.isDirectory, "cannot copy directory to file")
+      val subDir: Directory = Path(dest) / Directory(from.getName)
+      subDir.createDirectory()
+      from.listFiles.toList forall (copyFile(_, subDir))
+    } else {
+      val to = if (dest.isDirectory) new File(dest, from.getName) else dest
+
+      try {
+        SFile(to) writeAll SFile(from).slurp()
+        true
+      } catch { case _: IOException => false }
+    }
+  }
+
+  def mapFile(file: File, replace: String => String) {
+    val f = SFile(file)
+
+    f.printlnAll(f.lines.toList map replace: _*)
+  }
+
+  def jarsWithPrefix(dir: Directory, name: String): Iterator[SFile] =
+    dir.files filter (f => (f hasExtension "jar") && (f.name startsWith name))
+
+  def dirsWithPrefix(dir: Directory, name: String): Iterator[Directory] =
+    dir.dirs filter (_.name startsWith name)
+
+  def joinPaths(paths: List[Path]) = ClassPath.join(paths.map(_.getAbsolutePath).distinct: _*)
+
   /** Compares two files using difflib to produce a unified diff.
    *
-   *  @param  f1  the first file to be compared
-   *  @param  f2  the second file to be compared
+   *  @param  original  the first file to be compared
+   *  @param  revised  the second file to be compared
    *  @return the unified diff of the compared files or the empty string if they're equal
    */
-  def compareFiles(f1: File, f2: File): String = {
-    compareContents(io.Source.fromFile(f1).getLines.toSeq, io.Source.fromFile(f2).getLines.toSeq, f1.getName, f2.getName)
+  def compareFiles(original: File, revised: File): String = {
+    compareContents(io.Source.fromFile(original).getLines.toSeq, io.Source.fromFile(revised).getLines.toSeq, original.getName, revised.getName)
   }
 
   /** Compares two lists of lines using difflib to produce a unified diff.
@@ -44,26 +90,14 @@ trait FileUtil {
    *  @param  newName    file name to be used in unified diff for `newLines`
    *  @return the unified diff of the `origLines` and `newLines` or the empty string if they're equal
    */
-  def compareContents(origLines: Seq[String], newLines: Seq[String], origName: String = "a", newName: String = "b"): String = {
+  def compareContents(original: Seq[String], revised: Seq[String], originalName: String = "a", revisedName: String = "b"): String = {
     import collection.JavaConverters._
 
-    val diff = difflib.DiffUtils.diff(origLines.asJava, newLines.asJava)
+    val diff = difflib.DiffUtils.diff(original.asJava, revised.asJava)
     if (diff.getDeltas.isEmpty) ""
-    else difflib.DiffUtils.generateUnifiedDiff(origName, newName, origLines.asJava, diff, 1).asScala.mkString("\n")
+    else difflib.DiffUtils.generateUnifiedDiff(originalName, revisedName, original.asJava, diff, 1).asScala.mkString("\n")
   }
 
-  def jarsWithPrefix(dir: Directory, name: String): Iterator[SFile] =
-    dir.files filter (f => (f hasExtension "jar") && (f.name startsWith name))
-
-  def dirsWithPrefix(dir: Directory, name: String): Iterator[Directory] =
-    dir.dirs filter (_.name startsWith name)
-
-  def joinPaths(paths: List[Path]) = ClassPath.join(paths.map(_.getAbsolutePath).distinct: _*)
-}
-object FileUtil extends FileUtil {}
-
-object FileManager {
-  import FileUtil._
   def classPathFromTrifecta(library: Path, reflect: Path, compiler: Path) = {
     val usingJars = library.getAbsolutePath endsWith ".jar"
     // basedir for jars or classfiles on core classpath
@@ -107,7 +141,7 @@ class FileManager(val testClassPath: List[Path],
                   val compilerUnderTest: Path,
                   javaCmd: Option[String] = None,
                   javacCmd: Option[String] = None,
-                  scalacOpts: Seq[String] = Seq.empty) extends FileUtil {
+                  scalacOpts: Seq[String] = Seq.empty) {
   def this(testClassPath: List[Path], javaCmd: Option[String] = None, javacCmd: Option[String] = None, scalacOpts: Seq[String] = Seq.empty) {
     this(testClassPath,
         FileManager.fromClassPath("library", testClassPath),
@@ -146,47 +180,10 @@ class FileManager(val testClassPath: List[Path],
   }
 
   /** Only when --debug is given. */
-  lazy val testTimings = new mutable.HashMap[String, Long]
+  private[this] lazy val testTimings = new mutable.HashMap[String, Long]
   def recordTestTiming(name: String, milliseconds: Long) =
     synchronized { testTimings(name) = milliseconds }
 
-  def getLogFile(dir: File, fileBase: String, kind: String): File =
-    new File(dir, fileBase + "-" + kind + ".log")
-
-  def getLogFile(file: File, kind: String): File = {
-    val dir = file.getParentFile
-    val fileBase = basename(file.getName)
-
-    getLogFile(dir, fileBase, kind)
-  }
-
-  def logFileExists(file: File, kind: String) =
-    getLogFile(file, kind).canRead
-
-  def overwriteFileWith(dest: File, file: File) =
-    dest.isFile && copyFile(file, dest)
-
-  def copyFile(from: File, dest: File): Boolean = {
-    if (from.isDirectory) {
-      assert(dest.isDirectory, "cannot copy directory to file")
-      val subDir: Directory = Path(dest) / Directory(from.getName)
-      subDir.createDirectory()
-      from.listFiles.toList forall (copyFile(_, subDir))
-    } else {
-      val to = if (dest.isDirectory) new File(dest, from.getName) else dest
-
-      try {
-        SFile(to) writeAll SFile(from).slurp()
-        true
-      } catch { case _: IOException => false }
-    }
-  }
-
-  def mapFile(file: File, replace: String => String) {
-    val f = SFile(file)
-
-    f.printlnAll(f.lines.toList map replace: _*)
-  }
 
   /** Massage args to merge plugins and fix paths.
    *  Plugin path can be relative to test root, or cwd is out.
