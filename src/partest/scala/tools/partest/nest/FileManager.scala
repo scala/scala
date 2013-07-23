@@ -179,12 +179,6 @@ class FileManager(val testClassPath: List[Path],
     else "installed"
   }
 
-  /** Only when --debug is given. */
-  private[this] lazy val testTimings = new mutable.HashMap[String, Long]
-  def recordTestTiming(name: String, milliseconds: Long) =
-    synchronized { testTimings(name) = milliseconds }
-
-
   /** Massage args to merge plugins and fix paths.
    *  Plugin path can be relative to test root, or cwd is out.
    *  While we're at it, mix in the baseline options, too.
