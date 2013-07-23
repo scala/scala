@@ -8,33 +8,41 @@
 package scala.tools.partest
 package nest
 
-import java.io.{File, FilenameFilter, IOException, StringWriter,
-                FileInputStream, FileOutputStream, BufferedReader,
-                FileReader, PrintWriter, FileWriter}
+import java.io.{
+  File,
+  FilenameFilter,
+  IOException,
+  StringWriter,
+  FileInputStream,
+  FileOutputStream,
+  BufferedReader,
+  FileReader,
+  PrintWriter,
+  FileWriter
+}
 import java.net.URI
 import scala.reflect.io.AbstractFile
 import scala.collection.mutable
+import scala.reflect.internal.util.ScalaClassLoader
 
 trait FileUtil {
-  /**
-   * Compares two files using difflib to produce a unified diff.
+  /** Compares two files using difflib to produce a unified diff.
    *
-   * @param  f1  the first file to be compared
-   * @param  f2  the second file to be compared
-   * @return the unified diff of the compared files or the empty string if they're equal
+   *  @param  f1  the first file to be compared
+   *  @param  f2  the second file to be compared
+   *  @return the unified diff of the compared files or the empty string if they're equal
    */
   def compareFiles(f1: File, f2: File): String = {
     compareContents(io.Source.fromFile(f1).getLines.toSeq, io.Source.fromFile(f2).getLines.toSeq, f1.getName, f2.getName)
   }
 
-  /**
-   * Compares two lists of lines using difflib to produce a unified diff.
+  /** Compares two lists of lines using difflib to produce a unified diff.
    *
-   * @param  origLines  the first seq of lines to be compared
-   * @param  newLines   the second seq of lines to be compared
-   * @param  origName   file name to be used in unified diff for `origLines`
-   * @param  newName    file name to be used in unified diff for `newLines`
-   * @return the unified diff of the `origLines` and `newLines` or the empty string if they're equal
+   *  @param  origLines  the first seq of lines to be compared
+   *  @param  newLines   the second seq of lines to be compared
+   *  @param  origName   file name to be used in unified diff for `origLines`
+   *  @param  newName    file name to be used in unified diff for `newLines`
+   *  @return the unified diff of the `origLines` and `newLines` or the empty string if they're equal
    */
   def compareContents(origLines: Seq[String], newLines: Seq[String], origName: String = "a", newName: String = "b"): String = {
     import collection.JavaConverters._
@@ -49,63 +57,93 @@ trait FileUtil {
 
   def dirsWithPrefix(dir: Directory, name: String): Iterator[Directory] =
     dir.dirs filter (_.name startsWith name)
+
+  def joinPaths(paths: List[Path]) = ClassPath.join(paths.map(_.getAbsolutePath).distinct: _*)
 }
-object FileUtil extends FileUtil { }
+object FileUtil extends FileUtil {}
 
-trait FileManager extends FileUtil {
-  def updateCheck: Boolean
-  def failed: Boolean
+object FileManager {
+  import FileUtil._
+  def classPathFromTrifecta(library: Path, reflect: Path, compiler: Path) = {
+    val usingJars = library.getAbsolutePath endsWith ".jar"
+    // basedir for jars or classfiles on core classpath
+    val baseDir = SFile(library).parent
 
-  def testRootDir: Directory
-  def testRootPath: String
+    def relativeToLibrary(what: String): Path = {
+      if (usingJars) (baseDir / s"$what.jar")
+      else (baseDir.parent / "classes" / what)
+    }
 
-  def compilerUnderTest = LATEST_COMP
+    // all jars or dirs with prefix `what`
+    def relativeToLibraryAll(what: String): Iterator[Path] = (
+      if (usingJars) jarsWithPrefix(baseDir, what)
+      else dirsWithPrefix(baseDir.parent / "classes" toDirectory, what)
+    )
 
-  def JAVACMD: String = PartestDefaults.javaCmd
-  def JAVAC_CMD: String = PartestDefaults.javacCmd
-
-  def COMPILATION_CLASSPATH: String
-  def LATEST_LIB: String
-  def LATEST_REFLECT: String
-  def LATEST_COMP: String
-
-  // basedir for jars or classfiles on core classpath
-  lazy val baseDir = SFile(LATEST_LIB).parent
-
-  protected def relativeToLibrary(what: String): String = {
-    if (LATEST_LIB endsWith ".jar")
-      (baseDir / s"$what.jar").toAbsolute.path
-    else
-      (baseDir.parent / "classes" / what).toAbsolute.path
-  }
-
-  // all jars or dirs with prefix `what`
-  protected def relativeToLibraryAll(what: String): Iterator[String] = (
-    if (LATEST_LIB endsWith ".jar") jarsWithPrefix(baseDir, what)
-    else dirsWithPrefix(baseDir.parent / "classes" toDirectory, what)
-  ).map(_.toAbsolute.path)
-
-  // this determines the classpath we're running tests under -- should just be out classpath...
-  // this way we can actually use maven resolution when invoking partest to construct the classpath that has all partest's dependencies
-  lazy val testClassPath: List[String] = List(
-      LATEST_LIB, LATEST_REFLECT, LATEST_COMP,
+    List[Path](
+      library, reflect, compiler,
       relativeToLibrary("scala-actors"),
       relativeToLibrary("scala-parser-combinators"),
       relativeToLibrary("scala-xml"),
       relativeToLibrary("scala-scaladoc"),
       relativeToLibrary("scala-interactive"),
       relativeToLibrary("scalap"),
-      PathSettings.srcCodeLib.toString, // is this necessary? there's a `prependToClasspaths(s, codelib)` elsewhere
-      PathSettings.diffUtils.toString,
-      PathSettings.testInterface.toString,
-      PathSettings.scalaCheck.toString
-  ) ++ relativeToLibraryAll("scala-partest")
-  def testClassPathUrls = testClassPath map (p => new java.io.File(p).toURI.toURL)
+      PathSettings.diffUtils.fold(sys.error, identity)
+    ) ++ relativeToLibraryAll("scala-partest")
+  }
 
+  // find library/reflect/compiler jar or subdir under build/$stage/classes/
+  // TODO: make more robust -- for now, only matching on prefix of jar file so it works for ivy/maven-resolved versioned jars
+  // can we use the ClassLoader to find the jar/directory that contains a characteristic class file?
+  def fromClassPath(name: String, testClassPath: List[Path]): Path = testClassPath find (f =>
+    (f.extension == "jar" && f.getName.startsWith(s"scala-$name"))
+      || (f.absolutePathSegments endsWith Seq("classes", name))
+  ) getOrElse sys.error(s"Provided compilationPath does not contain a Scala $name element.\nLooked in: ${testClassPath.mkString(":")}")
+}
 
+class FileManager(val testClassPath: List[Path],
+                  val libraryUnderTest: Path,
+                  val reflectUnderTest: Path,
+                  val compilerUnderTest: Path,
+                  javaCmd: Option[String] = None,
+                  javacCmd: Option[String] = None,
+                  scalacOpts: Seq[String] = Seq.empty) extends FileUtil {
+  def this(testClassPath: List[Path], javaCmd: Option[String] = None, javacCmd: Option[String] = None, scalacOpts: Seq[String] = Seq.empty) {
+    this(testClassPath,
+        FileManager.fromClassPath("library", testClassPath),
+        FileManager.fromClassPath("reflect", testClassPath),
+        FileManager.fromClassPath("compiler", testClassPath),
+        javaCmd,
+        javacCmd,
+        scalacOpts)
+  }
 
-  def SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
-  def JAVA_OPTS   = PartestDefaults.javaOpts
+  def this(libraryUnderTest: Path, reflectUnderTest: Path, compilerUnderTest: Path) {
+    this(FileManager.classPathFromTrifecta(libraryUnderTest, reflectUnderTest, compilerUnderTest), libraryUnderTest, reflectUnderTest, compilerUnderTest)
+  }
+
+  def this(testClassPath: List[Path], trifecta: (Path, Path, Path)) {
+    this(testClassPath, trifecta._1, trifecta._2, trifecta._3)
+  }
+
+  lazy val testClassLoader =
+    ScalaClassLoader fromURLs (testClassPath map (_.toURI.toURL))
+
+  // basedir for jars or classfiles on core classpath
+  lazy val baseDir = libraryUnderTest.parent
+
+  lazy val JAVACMD: String          = javaCmd getOrElse PartestDefaults.javaCmd
+  lazy val JAVAC_CMD: String        = javacCmd getOrElse PartestDefaults.javacCmd
+  lazy val SCALAC_OPTS: Seq[String] = scalacOpts ++ PartestDefaults.scalacOpts.split(' ').toSeq
+  lazy val JAVA_OPTS: String        = PartestDefaults.javaOpts
+
+  def distKind = {
+    val p = libraryUnderTest.getAbsolutePath
+    if (p endsWith "build/quick/classes/library") "quick"
+    else if (p endsWith "build/pack/lib/scala-library.jar") "pack"
+    else if (p endsWith "dists/latest/lib/scala-library.jar/") "latest"
+    else "installed"
+  }
 
   /** Only when --debug is given. */
   lazy val testTimings = new mutable.HashMap[String, Long]
@@ -116,7 +154,7 @@ trait FileManager extends FileUtil {
     new File(dir, fileBase + "-" + kind + ".log")
 
   def getLogFile(file: File, kind: String): File = {
-    val dir      = file.getParentFile
+    val dir = file.getParentFile
     val fileBase = basename(file.getName)
 
     getLogFile(dir, fileBase, kind)
@@ -131,18 +169,16 @@ trait FileManager extends FileUtil {
   def copyFile(from: File, dest: File): Boolean = {
     if (from.isDirectory) {
       assert(dest.isDirectory, "cannot copy directory to file")
-      val subDir:Directory = Path(dest) / Directory(from.getName)
+      val subDir: Directory = Path(dest) / Directory(from.getName)
       subDir.createDirectory()
       from.listFiles.toList forall (copyFile(_, subDir))
-    }
-    else {
+    } else {
       val to = if (dest.isDirectory) new File(dest, from.getName) else dest
 
       try {
         SFile(to) writeAll SFile(from).slurp()
         true
-      }
-      catch { case _: IOException => false }
+      } catch { case _: IOException => false }
     }
   }
 
@@ -158,25 +194,25 @@ trait FileManager extends FileUtil {
    *  That's how ant passes in the plugins dir.
    */
   def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): List[String] = {
-    val dir = testRootDir
+    val dir = PathSettings.testRoot
     // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
     def pathOrCwd(p: String) =
       if (p == ".") {
         val plugxml = "scalac-plugin.xml"
-        val pout    = if (out.isVirtual) Directory.makeTemp() else Path(out.path)
+        val pout = if (out.isVirtual) Directory.makeTemp() else Path(out.path)
         val srcpath = Path(srcdir.path)
-        val pd      = (srcpath / plugxml).toFile
+        val pd = (srcpath / plugxml).toFile
         if (pd.exists) pd copyTo (pout / plugxml)
         pout
       } else Path(p)
     def absolutize(path: String) = pathOrCwd(path) match {
-      case x if x.isAbsolute  => x.path
-      case x                  => (dir / x).toAbsolute.path
+      case x if x.isAbsolute => x.path
+      case x                 => (dir / x).toAbsolute.path
     }
 
-    val xprefix          = "-Xplugin:"
+    val xprefix = "-Xplugin:"
     val (xplugs, others) = args partition (_ startsWith xprefix)
-    val Xplugin          = if (xplugs.isEmpty) Nil else List(xprefix +
+    val Xplugin = if (xplugs.isEmpty) Nil else List(xprefix +
       (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
     )
     SCALAC_OPTS.toList ::: others ::: Xplugin

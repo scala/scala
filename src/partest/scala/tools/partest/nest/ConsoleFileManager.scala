@@ -14,88 +14,70 @@ import scala.util.Properties.{ propOrElse, scalaCmd, scalacCmd }
 import scala.tools.nsc.{ io, util }
 import PathResolver.{ Environment, Defaults }
 
-case class ConsoleFileManager(
-    testBuild: Option[String] = PartestDefaults.testBuild,
-    testClasses: Option[String] = None,
-    updateCheck: Boolean = false,
-    failed: Boolean = false) extends FileManager {
-  def testBuildFile = testBuild map (testParent / _)
-
-  lazy val srcDir        = PathSettings.srcDir
-  lazy val testRootDir   = PathSettings.testRoot
-  lazy val testRootPath  = testRootDir.toAbsolute.path
-  def testParent    = testRootDir.parent
-
-  override def compilerUnderTest =
-    (if (testClasses.isDefined) testClassesDir
-    else testBuildFile getOrElse {
-      latestCompFile.getParentFile.getParentFile.getAbsoluteFile
-    }).toString
-
-
-  vlog("COMPILATION_CLASSPATH: "+COMPILATION_CLASSPATH)
-
-  if (!srcDir.isDirectory) {
-    NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
-    sys.exit(1)
-  }
-
-  lazy val COMPILATION_CLASSPATH = {
+object ConsoleFileManager {
+  val classPath = {
+    val srcDir = {
+      val src = PathSettings.srcDir
+      if (!src.isDirectory) {
+        NestUI.failure("Source directory \"" + src.path + "\" not found")
+        sys.exit(1)
+      }
+      src
+    }
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
 
     // add all jars in libs
-    (PartestDefaults.classPath :: libs.toList) mkString pathSeparator
+    val cp = (PartestDefaults.classPath ++ libs.toList)
+    vlog("testClassPath: " + cp)
+    cp map (Path(_))
   }
 
-  def findLatest() {
+  def mostRecentTrifecta(testBuild: Option[String], testClasses: Option[String]) = {
+    val testParent     = PathSettings.testRoot.parent
+    val testClassesDir = testClasses map (tc => Path(tc).toCanonical.toDirectory)
+    val testBuildDir   = testBuild map (b => (testParent / b).toCanonical.toDirectory)
+
     vlog("test parent: "+testParent)
 
     def prefixFileWith(parent: File, relPath: String) = (SFile(parent) / relPath).toCanonical
     def prefixFile(relPath: String) = (testParent / relPath).toCanonical
 
-    if (testClasses.isDefined) {
-      testClassesDir = Path(testClasses.get).toCanonical.toDirectory
-      vlog("Running with classes in "+testClassesDir)
-
-      latestLibFile     = testClassesDir / "library"
-      latestReflectFile = testClassesDir / "reflect"
-      latestCompFile    = testClassesDir / "compiler"
-    }
-    else if (testBuild.isDefined) {
-      val dir = Path(testBuild.get)
-      vlog("Running on "+dir)
-      latestLibFile     = dir / "lib/scala-library.jar"
-      latestReflectFile = dir / "lib/scala-reflect.jar"
-      latestCompFile    = dir / "lib/scala-compiler.jar"
-    }
-    else {
-      def setupQuick() {
+    (testClassesDir map { testClassesDir => vlog(s"Running with classes in $testClassesDir")
+      (testClassesDir / "library",
+       testClassesDir / "reflect",
+       testClassesDir / "compiler")
+    }) orElse (testBuildDir map { testBuild => vlog(s"Running on $testBuild")
+      (testBuild / "lib/scala-library.jar",
+       testBuild / "lib/scala-reflect.jar",
+       testBuild / "lib/scala-compiler.jar")
+    }) getOrElse {
+      def setupQuick = {
         vlog("Running build/quick")
-        latestLibFile     = prefixFile("build/quick/classes/library")
-        latestReflectFile = prefixFile("build/quick/classes/reflect")
-        latestCompFile    = prefixFile("build/quick/classes/compiler")
+        (prefixFile("build/quick/classes/library"),
+         prefixFile("build/quick/classes/reflect"),
+         prefixFile("build/quick/classes/compiler"))
       }
 
-      def setupInst() {
+      def setupInst = {
         vlog("Running dist (installed)")
         val p = testParent.getParentFile
-        latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
-        latestReflectFile = prefixFileWith(p, "lib/scala-reflect.jar")
-        latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
+        (prefixFileWith(p, "lib/scala-library.jar"),
+         prefixFileWith(p, "lib/scala-reflect.jar"),
+         prefixFileWith(p, "lib/scala-compiler.jar"))
       }
 
-      def setupDist() {
+      def setupDist = {
         vlog("Running dists/latest")
-        latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
-        latestReflectFile = prefixFile("dists/latest/lib/scala-reflect.jar")
-        latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
+        (prefixFile("dists/latest/lib/scala-library.jar"),
+         prefixFile("dists/latest/lib/scala-reflect.jar"),
+         prefixFile("dists/latest/lib/scala-compiler.jar"))
       }
 
-      def setupPack() {
+      def setupPack = {
         vlog("Running build/pack")
-        latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
-        latestReflectFile = prefixFile("build/pack/lib/scala-reflect.jar")
-        latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
+        (prefixFile("build/pack/lib/scala-library.jar"),
+         prefixFile("build/pack/lib/scala-reflect.jar"),
+         prefixFile("build/pack/lib/scala-compiler.jar"))
       }
 
       def mostRecentOf(base: String, names: String*) =
@@ -103,34 +85,22 @@ case class ConsoleFileManager(
 
       // detect most recent build
       val quickTime = mostRecentOf("build/quick/classes", "compiler/compiler.properties", "reflect/reflect.properties", "library/library.properties")
-      val packTime  = mostRecentOf("build/pack/lib", "scala-compiler.jar", "scala-reflect.jar", "scala-library.jar")
-      val distTime  = mostRecentOf("dists/latest/lib", "scala-compiler.jar", "scala-reflect.jar", "scala-library.jar")
       val instTime  = mostRecentOf("lib", "scala-compiler.jar", "scala-reflect.jar", "scala-library.jar")
+      val distTime  = mostRecentOf("dists/latest/lib", "scala-compiler.jar", "scala-reflect.jar", "scala-library.jar")
+      val packTime  = mostRecentOf("build/pack/lib", "scala-compiler.jar", "scala-reflect.jar", "scala-library.jar")
 
       val pairs = Map(
-        (quickTime, () => setupQuick()),
-        (packTime,  () => setupPack()),
-        (distTime,  () => setupDist()),
-        (instTime,  () => setupInst())
+        (quickTime, () => setupQuick),
+        (instTime,  () => setupInst),
+        (distTime,  () => setupDist),
+        (packTime,  () => setupPack)
       )
 
       // run setup based on most recent time
       pairs(pairs.keys max)()
     }
-
-    LATEST_LIB = latestLibFile.getAbsolutePath
-    LATEST_REFLECT = latestReflectFile.getAbsolutePath
-    LATEST_COMP = latestCompFile.getAbsolutePath
   }
-
-  var LATEST_LIB: String = ""
-  var LATEST_REFLECT: String = ""
-  var LATEST_COMP: String = ""
-
-  var latestLibFile: File = _
-  var latestReflectFile: File = _
-  var latestCompFile: File = _
-  var testClassesDir: Directory = _
-  // initialize above fields
-  findLatest()
 }
+
+case class ConsoleFileManager(testBuild: Option[String] = PartestDefaults.testBuild, testClasses: Option[String] = None)
+  extends FileManager(ConsoleFileManager.classPath, ConsoleFileManager.mostRecentTrifecta(testBuild, testClasses))

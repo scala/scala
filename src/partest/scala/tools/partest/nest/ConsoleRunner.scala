@@ -25,13 +25,13 @@ class ConsoleRunner(argstr: String) extends {
   // the buffered failure info.
   scala.sys addShutdownHook issueSummaryReport()
 
-  lazy val fileManager: ConsoleFileManager = new ConsoleFileManager(
-    if (optPack) Some("build/pack") else optBuildPath,
-    optClassPath,
-    updateCheck = optUpdateCheck,
-    failed = optFailed)
+  lazy val fileManager: ConsoleFileManager =
+    new ConsoleFileManager(if (optPack) Some("build/pack") else optBuildPath, optClassPath)
 
-  private var totalTests = 0
+  def updateCheck = optUpdateCheck
+  def failed = optFailed
+
+  private var totalTests  = 0
   private val passedTests = mutable.ListBuffer[TestState]()
   private val failedTests = mutable.ListBuffer[TestState]()
 
@@ -47,15 +47,15 @@ class ConsoleRunner(argstr: String) extends {
     val total = passed + failed + skipped
     val isSuccess = failed == 0
     def p0 = s"$passed/$total"
-    def p = (if (isSuccess) bold(green(p0)) else p0) + " passed"
-    def f = if (failed == 0) "" else bold(red("" + failed)) + " failed"
-    def s = if (skipped == 0) "" else bold(yellow("" + skipped)) + " skipped"
+    def p  = ( if (isSuccess) bold(green(p0)) else p0 ) + " passed"
+    def f  = if (failed == 0) "" else bold(red("" + failed)) + " failed"
+    def s  = if (skipped == 0) "" else bold(yellow("" + skipped)) + " skipped"
 
     oempty(p, f, s) mkString ", "
   }
 
-  private var summarizing = false
-  private var elapsedMillis = 0L
+  private var summarizing      = false
+  private var elapsedMillis    = 0L
   private var expectedFailures = 0
   private def isSuccess = failedTests.size == expectedFailures
 
@@ -64,14 +64,14 @@ class ConsoleRunner(argstr: String) extends {
     if (!summarizing) {
       summarizing = true
 
-      val passed0 = passedTests.toList
-      val failed0 = failedTests.toList
-      val passed = passed0.size
-      val failed = failed0.size
-      val skipped = totalTests - (passed + failed)
-      val passFail = passFailString(passed, failed, skipped)
-      val elapsed = if (elapsedMillis > 0) " (elapsed time: " + elapsedString(elapsedMillis) + ")" else ""
-      val message = passFail + elapsed
+      val passed0   = passedTests.toList
+      val failed0   = failedTests.toList
+      val passed    = passed0.size
+      val failed    = failed0.size
+      val skipped   = totalTests - (passed + failed)
+      val passFail  = passFailString(passed, failed, skipped)
+      val elapsed   = if (elapsedMillis > 0) " (elapsed time: " + elapsedString(elapsedMillis) + ")" else ""
+      val message   = passFail + elapsed
 
       if (failed0.nonEmpty) {
         if (isPartestVerbose) {
@@ -159,8 +159,8 @@ class ConsoleRunner(argstr: String) extends {
 
     totalTests = allTests.size
     expectedFailures = propOrNone("partest.errors") match {
-      case Some(num) => num.toInt
-      case _         => 0
+      case Some(num)  => num.toInt
+      case _          => 0
     }
     val expectedFailureMessage = if (expectedFailures == 0) "" else s" (expecting $expectedFailures to fail)"
     echo(s"Selected $totalTests tests drawn from $testContributors$expectedFailureMessage\n")
@@ -183,9 +183,9 @@ class ConsoleRunner(argstr: String) extends {
     }
     this.elapsedMillis = millis
     issueSummaryReport()
-    System exit (if (isSuccess) 0 else 1)
+    System exit ( if (isSuccess) 0 else 1 )
   }
-
+  
   run()
 }
 

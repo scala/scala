@@ -39,18 +39,20 @@ class DirectCompiler(val fileManager: FileManager) {
   def newGlobal(settings: Settings, logWriter: FileWriter): Global =
     newGlobal(settings, new ExtConsoleReporter(settings, new PrintWriter(logWriter)))
 
-  def newSettings(): TestSettings = new TestSettings(fileManager.LATEST_LIB)
-  def newSettings(outdir: String): TestSettings = {
-    val cp = ClassPath.join(fileManager.LATEST_LIB, outdir)
-    val s = new TestSettings(cp)
-    s.outdir.value = outdir
-    s
-  }
-
   def compile(runner: Runner, opts0: List[String], sources: List[File]): TestState = {
     import runner.{ sources => _, _ }
+    import ClassPath.{join, split}
 
-    val testSettings = new TestSettings(ClassPath.join(fileManager.LATEST_LIB, outDir.getPath))
+    // adding codelib.jar to the classpath
+    // codelib provides the possibility to override standard reify
+    // this shields the massive amount of reification tests from changes in the API
+    val codeLib = PathSettings.srcCodeLib.fold[List[Path]](x => Nil, lib => List[Path](lib))
+    // add the instrumented library version to classpath -- must come first
+    val specializedOverride: List[Path] = if (kind == "specialized") List(PathSettings.srcSpecLib.fold(sys.error, identity)) else Nil
+
+    val classPath: List[Path] = specializedOverride ++ codeLib ++ fileManager.testClassPath ++ List[Path](outDir)
+
+    val testSettings = new TestSettings(fileManager.joinPaths(classPath))
     val logWriter    = new FileWriter(logFile)
     val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
     val opts         = fileManager.updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)
@@ -59,27 +61,11 @@ class DirectCompiler(val fileManager: FileManager) {
     val reporter     = global.reporter.asInstanceOf[ExtConsoleReporter]
     def errorCount   = reporter.ERROR.count
 
-    def defineSettings(s: Settings) = {
-      s.outputDirs setSingleOutput outDir.getPath
-      // adding codelib.jar to the classpath
-      // codelib provides the possibility to override standard reify
-      // this shields the massive amount of reification tests from changes in the API
-      prependToClasspaths(s, codelib)
-      s.classpath append fileManager.COMPILATION_CLASSPATH   // adding this why?
+    testSettings.outputDirs setSingleOutput outDir.getPath
 
-      // add the instrumented library version to classpath
-      if (kind == "specialized")
-        prependToClasspaths(s, speclib)
-
-      // check that option processing succeeded
-      opts0.isEmpty || command.ok
-    }
-
-    if (!defineSettings(testSettings))
-      if (opts0.isEmpty)
-        reporter.error(null, s"bad settings: $testSettings")
-      else
-        reporter.error(null, opts0.mkString("bad options: ", space, ""))
+    // check that option processing succeeded
+    if (opts0.nonEmpty && !command.ok)
+      reporter.error(null, opts0.mkString("bad options: ", space, ""))
 
     def ids = sources.map(_.testIdent) mkString space
     vlog(s"% scalac $ids")

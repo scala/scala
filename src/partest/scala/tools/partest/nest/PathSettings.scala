@@ -14,11 +14,9 @@ object PathSettings {
 
   private def cwd = Directory.Current getOrElse sys.error("user.dir property not set")
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
-  private def findJar(d: Directory, name: String): Option[File] = findJar(d.files, name)
-  private def findJar(files: Iterator[File], name: String): Option[File] =
-    files filter (_ hasExtension "jar") find { _.name startsWith name }
-  private def findJarOrFail(name: String, ds: Directory*): File = findJar(ds flatMap (_.files) iterator, name) getOrElse
-    sys.error(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
+  private def findJar(name: String, ds: Directory*): Either[String, File] =
+    ds.toStream flatMap (_.files) filter (_ hasExtension "jar") find ( _.name startsWith name ) map (Right(_)) getOrElse
+      Left(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
 
   // Directory <root>/test
   lazy val testRoot: Directory = testRootDir getOrElse {
@@ -28,32 +26,13 @@ object PathSettings {
   }
 
   // Directory <root>/test/files or .../scaladoc
-  def srcDir = Directory(testRoot / srcDirName toCanonical)
+  lazy val srcDir = Directory(testRoot / srcDirName toCanonical)
+
+  // Directory <root>/build/pack/lib
+  lazy val buildPackLibDir = Directory(buildDir / "pack" / "lib")
 
   // Directory <root>/test/files/lib
   lazy val srcLibDir = Directory(srcDir / "lib")
-
-  // Directory <root>/test/files/speclib
-  lazy val srcSpecLibDir = Directory(srcDir / "speclib")
-
-  lazy val srcSpecLib: File = findJar(srcSpecLibDir, "instrumented") getOrElse {
-    sys.error("No instrumented.jar found in %s".format(srcSpecLibDir))
-  }
-
-  // Directory <root>/test/files/codelib
-  lazy val srcCodeLibDir = Directory(srcDir / "codelib")
-
-  lazy val srcCodeLib: File = (
-    findJar(srcCodeLibDir, "code")
-      orElse findJar(Directory(testRoot / "files" / "codelib"), "code") // work with --srcpath pending
-      getOrElse sys.error("No code.jar found in %s".format(srcCodeLibDir))
-  )
-
-  lazy val instrumentationAgentLib: File = {
-    findJar(buildPackLibDir.files, "scala-partest-javaagent") getOrElse {
-      sys.error("No partest-javaagent jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
-    }
-  }
 
   // Directory <root>/build
   lazy val buildDir: Directory = {
@@ -65,22 +44,17 @@ object PathSettings {
     dirs.headOption getOrElse sys.error("Neither 'build' nor 'target' dir found under test root " + testRoot + ".")
   }
 
-  // Directory <root>/build/pack/lib
-  lazy val buildPackLibDir = Directory(buildDir / "pack" / "lib")
 
-  lazy val scalaCheck: File =
-    findJar(buildPackLibDir.files ++ srcLibDir.files, "scalacheck") getOrElse {
-      sys.error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
-    }
-
-  lazy val testInterface: File = findJarOrFail("test-interface", buildPackLibDir, srcLibDir)
-
-  lazy val diffUtils: File =
-    findJar(buildPackLibDir.files, "diffutils") getOrElse sys.error(s"No diffutils.jar found in '$buildPackLibDir'.")
+  lazy val srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
+  lazy val srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)
+  lazy val agentLib       = findJar("scala-partest-javaagent", buildPackLibDir)
+  lazy val scalaCheck     = findJar("scalacheck", buildPackLibDir, srcLibDir)
+  lazy val testInterface  = findJar("test-interface", buildPackLibDir, srcLibDir)
+  lazy val diffUtils      = findJar("diffutils", buildPackLibDir)
 
   /** The platform-specific support jar, `tools.jar`.
    */
-  lazy val platformTools: Option[File] = PathResolver.SupplementalLocations.platformTools
+  lazy val platformTools = PathResolver.SupplementalLocations.platformTools
 }
 
 class PathSettings() {

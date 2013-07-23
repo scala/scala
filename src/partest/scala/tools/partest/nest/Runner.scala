@@ -56,7 +56,7 @@ class TestTranscript {
 }
 
 /** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, fileManager: FileManager, val testRunParams: TestRunParams) {
+class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean) {
   import fileManager._
 
   // Override to true to have the outcome of this test displayed
@@ -105,33 +105,6 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail.toArray)
   def genUpdated()                = Updated(testFile)
 
-  def speclib = PathSettings.srcSpecLib.toString  // specialization lib
-  def codelib = PathSettings.srcCodeLib.toString  // reify lib
-
-  // Prepend to a classpath, but without incurring duplicate entries
-  def prependTo(classpath: String, path: String): String = {
-    val segments = ClassPath split classpath
-
-    if (segments startsWith path) classpath
-    else ClassPath.join(path :: segments distinct: _*)
-  }
-
-  def prependToJavaClasspath(path: String) {
-    val jcp = sys.props.getOrElse("java.class.path", "")
-    prependTo(jcp, path) match {
-      case `jcp`  =>
-      case cp     => sys.props("java.class.path") = cp
-    }
-  }
-  def prependToClasspaths(s: Settings, path: String) {
-    prependToJavaClasspath(path)
-    val scp = s.classpath.value
-    prependTo(scp, path) match {
-      case `scp`  =>
-      case cp     => s.classpath.value = cp
-    }
-  }
-
   private def workerError(msg: String): Unit = System.err.println("Error: " + msg)
 
   def javac(files: List[File]): TestState = {
@@ -141,7 +114,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       "-d",
       outDir.getAbsolutePath,
       "-classpath",
-      join(outDir.toString, COMPILATION_CLASSPATH)
+      joinPaths(outDir :: testClassPath)
     ) ++ files.map(_.getAbsolutePath)
 
     pushTranscript(args mkString " ")
@@ -192,8 +165,8 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       "-Dfile.encoding=UTF-8",
       "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
       "-Dpartest.output="+outDir.getAbsolutePath,
-      "-Dpartest.lib="+LATEST_LIB,
-      "-Dpartest.reflect="+LATEST_REFLECT,
+      "-Dpartest.lib="+libraryUnderTest.getAbsolutePath,
+      "-Dpartest.reflect="+reflectUnderTest.getAbsolutePath,
       "-Dpartest.cwd="+outDir.getParent,
       "-Dpartest.test-path="+testFullPath,
       "-Dpartest.testname="+fileBase,
@@ -203,10 +176,10 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
       "-Duser.country=US"
     ) ++ extras
 
-    val classpath = if (extraClasspath != "") join(extraClasspath, COMPILATION_CLASSPATH) else COMPILATION_CLASSPATH
+    val classpath = joinPaths(extraClasspath ++ testClassPath)
 
     javaCmd +: (
-      (JAVA_OPTS.split(' ') ++ extraJavaOptions.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
+      (JAVA_OPTS.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
       ) ++ propertyOptions ++ Seq(
@@ -357,7 +330,6 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
 
     // this string identifies a path and is also snipped from log output.
-    // to preserve more of the path, could use fileManager.testRootPath
     val elided     = parentFile.getAbsolutePath
 
     // something to mark the elision in the log file (disabled)
@@ -399,7 +371,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     // if diff is not empty, is update needed?
     val updating: Option[Boolean] = (
       if (diff == "") None
-      else Some(fileManager.updateCheck)
+      else Some(updateCheck)
     )
     pushTranscript(s"diff $logFile $checkFile")
     nextTestAction(updating) {
@@ -574,12 +546,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     val (swr, wr) = newTestWriters()
 
     val succeeded = try {
-      val binary = "-Dbinary="+(
-        if      (fileManager.LATEST_LIB endsWith "build/quick/classes/library") "quick"
-        else if (fileManager.LATEST_LIB endsWith "build/pack/lib/scala-library.jar") "pack"
-        else if (fileManager.LATEST_LIB endsWith "dists/latest/lib/scala-library.jar/") "latest"
-        else "installed"
-      )
+      val binary = "-Dbinary="+ fileManager.distKind
       val args = Array(binary, "-logfile", logFile.getPath, "-file", testFile.getPath)
       NestUI.verbose("ant "+args.mkString(" "))
 
@@ -596,28 +563,23 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   }
 
   def extraClasspath = kind match {
-    case "specialized"  => PathSettings.srcSpecLib.toString
-    case _              => ""
+    case "specialized"  => List(PathSettings.srcSpecLib.fold(sys.error, identity))
+    case _              => Nil
   }
   def extraJavaOptions = kind match {
-    case "instrumented" => "-javaagent:"+PathSettings.instrumentationAgentLib
-    case _              => ""
+    case "instrumented" => ("-javaagent:"+PathSettings.agentLib.fold(sys.error, identity)).split(' ')
+    case _              => Array.empty[String]
   }
 
   def runScalacheckTest() = runTestCommon {
     NestUI verbose f"compilation of $testFile succeeded%n"
 
-    // this classloader is test specific: its parent contains library classes and others
-    val loader = {
-      import PathSettings.scalaCheck
-      val locations = List(outDir, scalaCheck.jfile) map (_.getAbsoluteFile.toURI.toURL)
-      ScalaClassLoader.fromURLs(locations, getClass.getClassLoader)
-    }
     val logWriter = new PrintStream(new FileOutputStream(logFile), true)
 
     def runInFramework(): Boolean = {
       import org.scalatools.testing._
-      val f: Framework = loader.instantiate[Framework]("org.scalacheck.ScalaCheckFramework")
+      // getClass.getClassLoader.instantiate[Framework]("org.scalacheck.ScalaCheckFramework")
+      val f: Framework = new org.scalacheck.ScalaCheckFramework
       val logger = new Logger {
         def ansiCodesSupported  = false //params.env.isSet("colors")
         def error(msg: String)  = logWriter println msg
@@ -637,13 +599,14 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
         }
       }
       val loggers     = Array(logger)
-      val r           = f.testRunner(loader, loggers).asInstanceOf[Runner2]  // why?
+      val loader      = ScalaClassLoader.fromURLs(List(outDir.toURI.toURL), getClass.getClassLoader)
+      val r           = f.testRunner(loader, loggers).asInstanceOf[Runner2]  // cast to interface with the fingerprint we want
       val claas       = "Test"
       val fingerprint = f.tests collectFirst { case x: SubclassFingerprint if x.isModule => x }
       val args        = toolArgs("scalacheck")
       vlog(s"Run $testFile with args $args")
       // set the context class loader for scaladoc/scalacheck tests (FIX ME)
-      ScalaClassLoader(testRunParams.scalaCheckParentClassLoader).asContext {
+      ScalaClassLoader(fileManager.testClassLoader).asContext {
         r.run(claas, fingerprint.get, handler, args.toArray)    // synchronous?
       }
       val ok = (bad == 0)
@@ -682,7 +645,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     // create compiler
     val settings = new Settings(workerError)
     settings.sourcepath.value = sourcepath
-    settings.classpath.value = fileManager.COMPILATION_CLASSPATH
+    settings.classpath.value = joinPaths(fileManager.testClassPath)
     val reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
     val command = new CompilerCommand(argList, settings)
     object compiler extends Global(command.settings, reporter)
@@ -764,11 +727,11 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   }
 }
 
-case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
-
 /** Extended by Ant- and ConsoleRunner for running a set of tests. */
 trait DirectRunner {
   def fileManager: FileManager
+  def updateCheck: Boolean
+  def failed: Boolean
 
   import PartestDefaults.{ numThreads, waitTime }
 
@@ -780,15 +743,15 @@ trait DirectRunner {
     val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
     val vmOpts = fileManager.JAVA_OPTS
 
-  s"""|Scala compiler under test:  ${relativize(fileManager.compilerUnderTest)}
-      |Scala version is:           $versionMsg
-      |Scalac options are:         ${fileManager.SCALAC_OPTS mkString " "}
-      |Compilation Path:           ${relativize(fileManager.COMPILATION_CLASSPATH)}
-      |Java binaries in:           $vmBin
-      |Java runtime is:            $vmName
-      |Java options are:           $vmOpts
-      |baseDir:                    ${fileManager.baseDir}
-      |sourceDir:                  ${PathSettings.srcDir}
+  s"""|Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
+      |Scala version is:    $versionMsg
+      |Scalac options are:  ${fileManager.SCALAC_OPTS mkString " "}
+      |Compilation Path:    ${relativize(fileManager.joinPaths(fileManager.testClassPath))}
+      |Java binaries in:    $vmBin
+      |Java runtime is:     $vmName
+      |Java options are:    $vmOpts
+      |baseDir:             ${fileManager.baseDir}
+      |sourceDir:           ${PathSettings.srcDir}
     """.stripMargin
     // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
     // |Java Classpath:             ${sys.props("java.class.path")}
@@ -799,9 +762,8 @@ trait DirectRunner {
   def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
     NestUI.resetTestNumber(kindFiles.size)
 
-    val parentClassLoader = ScalaClassLoader fromURLs fileManager.testClassPathUrls
     val pool              = Executors newFixedThreadPool numThreads
-    val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
+    val manager           = new RunnerManager(kind, fileManager, failed, updateCheck)
     val futures           = kindFiles map (f => pool submit callable(runTest(manager, f)))
 
     pool.shutdown()
@@ -884,13 +846,13 @@ object Output {
 }
 
 /** Use a Runner to run a test. */
-class RunnerManager(kind: String, fileManager: FileManager, params: TestRunParams) {
+class RunnerManager(kind: String, fileManager: FileManager, failed: Boolean, updateCheck: Boolean) {
   def runTest(testFile: File): TestState = {
-    val runner = new Runner(testFile, fileManager, params)
+    val runner = new Runner(testFile, fileManager, updateCheck)
 
     // when option "--failed" is provided execute test only if log
     // is present (which means it failed before)
-    if (fileManager.failed && !runner.logFile.canRead)
+    if (failed && !runner.logFile.canRead)
       runner.genPass()
     else {
       val (state, elapsed) =

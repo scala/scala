@@ -27,27 +27,15 @@ abstract class AntRunner(compilationPaths: Array[String], javaCmd: File, javacCm
   def onFinishKind(kind: String, passed: Array[TestState], failed: Array[TestState]): Unit
   def onFinishTest(testFile: File, result: TestState): TestState = result
 
-  private val cpfiles = compilationPaths map { fs => new File(fs) } toList
-  private def findCp(name: String) = cpfiles find (f =>
-    (f.getName == s"scala-$name.jar")
-      || (f.absolutePathSegments endsWith Seq("classes", name))
-  ) map (_.getAbsolutePath) getOrElse error(s"Provided compilationPath does not contain a Scala $name element.\nLooked in: ${compilationPaths.mkString(":")}")
+  def updateCheck: Boolean = false
+  def failed: Boolean = false
 
-  final val fileManager = new FileManager {
-    val COMPILATION_CLASSPATH: String = ClassPath.join(compilationPaths: _*)
-    val LATEST_LIB: String = findCp("library")
-    val LATEST_REFLECT: String = findCp("reflect")
-    val LATEST_COMP: String = findCp("compiler")
-    val testRootPath: String = "test"
-    val testRootDir: Directory = Directory(testRootPath)
-
-    def failed = false
-    def updateCheck = false
-
-    override val JAVACMD: String = Option(javaCmd) map (_.getAbsolutePath) getOrElse "java"
-    override val JAVAC_CMD: String = Option(javacCmd) map (_.getAbsolutePath) getOrElse "javac"
-    override def SCALAC_OPTS: Seq[String] = super.SCALAC_OPTS ++ scalacArgs
-  }
+  final lazy val fileManager =
+    new FileManager(
+        testClassPath = compilationPaths map { fs => Path(fs) } toList,
+        javaCmd = Option(javaCmd) map (_.getAbsolutePath),
+        javacCmd = Option(javacCmd) map (_.getAbsolutePath),
+        scalacOpts = scalacArgs.toSeq)
 
   final override def runTest(manager: RunnerManager, testFile: File): TestState =
     onFinishTest(testFile, manager runTest testFile)
