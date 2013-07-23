@@ -1,0 +1,21 @@
+[[syntax trees at end of                   uncurry]] // newSource1.scala
+package <empty> {
+  class Foo extends Object {
+    def <init>(): Foo = {
+      Foo.super.<init>();
+      ()
+    };
+    def bar(x: () => Int): Int = x.apply();
+    def foo(): Int = Foo.this.bar({
+      @SerialVersionUID(0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction0[Int] with Serializable {
+        def <init>(): <$anon: () => Int> = {
+          $anonfun.super.<init>();
+          ()
+        };
+        final def apply(): Int = 1
+      };
+      (new <$anon: () => Int>(): () => Int)
+    })
+  }
+}
+

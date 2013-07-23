@@ -63,6 +63,7 @@ abstract class UnCurry extends InfoTransform
 // uncurry and uncurryType expand type aliases
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    private val inlineFunctionExpansion = settings.Ydelambdafy.value == "inline"
     private var needTryLift       = false
     private var inConstructorFlag = 0L
     private val byNameArgs        = mutable.HashSet[Tree]()
@@ -223,33 +224,109 @@ abstract class UnCurry extends InfoTransform
           val targs     = fun.tpe.typeArgs
           val (formals, restpe) = (targs.init, targs.last)
 
-          val applyMethodDef = {
-            val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
-            val paramSyms = map2(formals, fun.vparams) {
-              (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
+          if (inlineFunctionExpansion) {
+            val applyMethodDef = {
+              val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
+              val paramSyms = map2(formals, fun.vparams) {
+                (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
+              }
+              methSym setInfoAndEnter MethodType(paramSyms, restpe)
+
+              fun.vparams foreach  (_.symbol.owner =  methSym)
+              fun.body changeOwner (fun.symbol     -> methSym)
+
+              val body    = localTyper.typedPos(fun.pos)(fun.body)
+              val methDef = DefDef(methSym, List(fun.vparams), body)
+
+              // Have to repack the type to avoid mismatches when existentials
+              // appear in the result - see SI-4869.
+              methDef.tpt setType localTyper.packedType(body, methSym)
+              methDef
             }
-            methSym setInfoAndEnter MethodType(paramSyms, restpe)
 
-            fun.vparams foreach  (_.symbol.owner =  methSym)
-            fun.body changeOwner (fun.symbol     -> methSym)
+            localTyper.typedPos(fun.pos) {
+              Block(
+                List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
+                Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
+            }
+          } else {
+            /**
+             * Abstracts away the common functionality required to create both
+             * the lifted function and the apply method on the anonymous class
+             * It creates a method definition with value params cloned from the
+             * original lambda. Then it calls a supplied function to create
+             * the body and types the result. Finally
+             * everything is wrapped up in a MethodDef
+             *
+             * TODO it is intended that this common functionality be used
+             * whether inlineFunctionExpansion is true or not. However, it
+             * seems to introduce subtle ownwership changes that produce
+             * binary incompatible changes and so it is completely
+             * hidden behind the inlineFunctionExpansion for now.
+             *
+             * @param owner The owner for the new method
+             * @param name name for the new method
+             * @param additionalFlags flags to be put on the method in addition to FINAL
+             * @bodyF function that turns the method symbol and list of value params
+             *        into a body for the method
+             */
+            def createMethod(owner: Symbol, name: TermName, additionalFlags: Long)(bodyF: (Symbol, List[ValDef]) => Tree) = {
+              val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
+              val vparams = fun.vparams map (_.duplicate)
 
-            val body    = localTyper.typedPos(fun.pos)(fun.body)
-            val methDef = DefDef(methSym, List(fun.vparams), body)
+              val paramSyms = map2(formals, vparams) {
+                (tp, vparam) => methSym.newSyntheticValueParam(tp, vparam.name)
+              }
+              foreach2(vparams, paramSyms){(valdef, sym) => valdef.symbol = sym}
+              vparams foreach (_.symbol.owner = methSym)
 
-            // Have to repack the type to avoid mismatches when existentials
-            // appear in the result - see SI-4869.
-            methDef.tpt setType localTyper.packedType(body, methSym)
-            methDef
+              val methodType = MethodType(paramSyms, restpe.deconst)
+              methSym setInfo methodType
+
+              // TODO this is probably cleaner if bodyF only works with symbols rather than parameter ValDefs
+              val tempBody = bodyF(methSym, vparams)
+              val body = localTyper.typedPos(fun.pos)(tempBody)
+              val methDef = DefDef(methSym, List(vparams), body)
+
+              // Have to repack the type to avoid mismatches when existentials
+              // appear in the result - see SI-4869.
+              methDef.tpt setType localTyper.packedType(body, methSym).deconst
+              methDef
+            }
+
+            val methodFlags = ARTIFACT
+            // method definition with the same arguments, return type, and body as the original lambda
+            val liftedMethod = createMethod(fun.symbol.owner, tpnme.ANON_FUN_NAME.toTermName, methodFlags){
+              case(methSym, vparams) =>
+                fun.body.substituteSymbols(fun.vparams map (_.symbol), vparams map (_.symbol))
+                fun.body changeOwner (fun.symbol -> methSym)
+            }
+
+            // callsite for the lifted method
+            val args = fun.vparams map { vparam =>
+              val ident = Ident(vparam.symbol)
+              // if -Yeta-expand-keeps-star is turned on then T* types can get through. In order
+              // to forward them we need to forward x: T* ascribed as "x:_*"
+              if (settings.etaExpandKeepsStar && definitions.isRepeatedParamType(vparam.tpt.tpe))
+                gen.wildcardStar(ident)
+              else
+                ident
+            }
+
+            val funTyper = localTyper.typedPos(fun.pos) _
+
+            val liftedMethodCall = funTyper(Apply(liftedMethod.symbol, args:_*))
+
+            // new function whose body is just a call to the lifted method
+            val newFun = treeCopy.Function(fun, fun.vparams, liftedMethodCall)
+            funTyper(Block(
+             List(funTyper(liftedMethod)),
+               super.transform(newFun)
+             ))
           }
-
-          localTyper.typedPos(fun.pos) {
-            Block(
-              List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
-              Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
-          }
-
-      }
+        }
     }
+
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
       val isJava = fun.isJavaDefined
@@ -381,7 +458,7 @@ abstract class UnCurry extends InfoTransform
         deriveDefDef(dd)(_ => body)
       case _ => tree
     }
-    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy
+    def isNonLocalReturn(ret: Return) = ret.symbol != currentOwner.enclMethod || currentOwner.isLazy || currentOwner.isAnonymousFunction
 
 // ------ The tree transformers --------------------------------------------------------
 
@@ -413,6 +490,10 @@ abstract class UnCurry extends InfoTransform
       }
 
       val sym = tree.symbol
+
+      // true if the taget is a lambda body that's been lifted into a method
+      def isLiftedLambdaBody(target: Tree) = target.symbol.isLocal && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME)
+
       val result = (
         // TODO - settings.noassertions.value temporarily retained to avoid
         // breakage until a reasonable interface is settled upon.
@@ -493,6 +574,10 @@ abstract class UnCurry extends InfoTransform
           case CaseDef(pat, guard, body) =>
             val pat1 = transform(pat)
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+
+          // if a lambda is already the right shape we don't need to transform it again
+          case fun @ Function(_, Apply(target, _)) if (!inlineFunctionExpansion) && isLiftedLambdaBody(target) =>
+            super.transform(fun)
 
           case fun @ Function(_, _) =>
             mainTransform(transformFunction(fun))
