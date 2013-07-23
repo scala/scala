@@ -20,7 +20,8 @@ import sbt.testing.SuiteSelector
 import sbt.testing.TestSelector
 
 // not using any Scala types to ease calling across different scala versions
-abstract class AntRunner(compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends SuiteRunner(
+abstract class AntRunner(srcDir: String, compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends SuiteRunner(
+  testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
   new FileManager(testClassPath = compilationPaths map { fs => Path(fs) } toList),
   updateCheck = false,
   failed  = false,
@@ -67,7 +68,9 @@ abstract class AntRunner(compilationPaths: Array[String], javaCmd: File, javacCm
   }
 }
 
-class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger], compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends AntRunner(compilationPaths, javaCmd, javacCmd, scalacArgs) {
+class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
+    srcDir: String, compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String])
+    extends AntRunner(srcDir, compilationPaths, javaCmd, javacCmd, scalacArgs) {
   override def error(msg: String): Nothing = sys.error(msg)
   def echo(msg: String): Unit = loggers foreach { l => l.info(msg) }
   def log(msg: String): Unit = loggers foreach { l => l.debug(msg) }

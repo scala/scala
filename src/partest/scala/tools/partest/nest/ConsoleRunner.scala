@@ -19,9 +19,10 @@ class ConsoleRunner(argstr: String) extends {
 } with ConsoleRunnerSpec with Instance {
 
   val suiteRunner = new SuiteRunner (
-    new ConsoleFileManager(if (optPack) Some("build/pack") else optBuildPath, optClassPath),
-    optUpdateCheck,
-    optFailed)
+    testSourcePath = optSourcePath.map(_.getAbsolutePath) getOrElse PartestDefaults.sourcePath,
+    fileManager = new ConsoleFileManager(if (optPack) Some("build/pack") else optBuildPath, optClassPath),
+    updateCheck = optUpdateCheck,
+    failed = optFailed)
   import suiteRunner._
   import NestUI._
   import NestUI.color._
@@ -109,7 +110,6 @@ class ConsoleRunner(argstr: String) extends {
         echoWarning(s"Discarding ${invalid.size} invalid test paths")
     }
 
-    optSourcePath foreach (PathSettings.testSourcePath = _)
     optTimeout foreach (x => setProp("partest.timeout", x))
 
     NestUI echo banner

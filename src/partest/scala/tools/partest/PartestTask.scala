@@ -115,8 +115,6 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
       NestUI.setDebug()
     }
 
-    srcDir foreach (nest.PathSettings.testSourcePath = _)
-
     if (compilationPath.isEmpty) sys.error("Mandatory attribute 'compilationPath' is not set.")
 
     def scalacArgsFlat: Array[String] = scalacArgs.toArray flatMap (_ flatMap { a =>
@@ -125,7 +123,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
     })
 
     var failureCount = 0
-    val summary = new scala.tools.partest.nest.AntRunner(compilationPath.get.list, javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
+    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), compilationPath.get.list, javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
       def echo(msg: String): Unit = PartestTask.this.log(msg)
       def log(msg: String): Unit = PartestTask.this.log(msg)
 

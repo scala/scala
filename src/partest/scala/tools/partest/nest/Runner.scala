@@ -735,6 +735,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
 
 /** Extended by Ant- and ConsoleRunner for running a set of tests. */
 class SuiteRunner(
+  val testSourcePath: String,
   val fileManager: FileManager,
   val updateCheck: Boolean,
   val failed: Boolean,
@@ -745,7 +746,10 @@ class SuiteRunner(
   import PartestDefaults.{ numThreads, waitTime }
 
   setUncaughtHandler
-  
+
+  // TODO: make this immutable
+  PathSettings.testSourcePath = testSourcePath
+
   def banner = {
     def relativize(path: String) = path.replace(fileManager.baseDir.toString, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
     val vmBin  = javaHome + fileSeparator + "bin"

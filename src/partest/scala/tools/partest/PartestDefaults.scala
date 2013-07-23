@@ -6,6 +6,7 @@ import scala.tools.nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 import java.lang.Runtime.{ getRuntime => runtime }
 
 object PartestDefaults {
+  def sourcePath  = propOrElse("partest.srcdir", "files")
   def javaCmd     = propOrElse("partest.javacmd", "java")
   def javacCmd    = propOrElse("partest.javac_cmd", "javac")
   def javaOpts    = propOrElse("partest.java_opts", "")

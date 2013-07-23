@@ -20,24 +20,7 @@ import Path._
  * NOTE: the members are methods because `testSourcePath` changes.
  */
 object PathSettings {
-  private[this] var myTestSourcePath: String = null
-  private def defaultSrcDirName              = propOrElse("partest.srcdir", "files")
-
-  /** testSourcePath determines where we look for tests, relative to the `testRoot`
-   * after it's been read, it cannot be changed
-   */
-  def testSourcePath: String = {
-    if (myTestSourcePath eq null) myTestSourcePath = defaultSrcDirName
-    myTestSourcePath
-  }
-
-  /** testSourcePath determines where we look for tests, relative to the `testRoot`
-   * it can be set only if it hasn't been read yet
-   */
-  def testSourcePath_= (path: String): Unit = {
-    // assert(myTestSourcePath eq null, "Test Source Path set after use.")
-    myTestSourcePath = path
-  }
+  private[nest] var testSourcePath: String = null // set by RunnerSuite
 
   // defaults can be set using the environment, but note PathSettings is mutable
   private def defaultTestRootName  = propOrNone("partest.root")
