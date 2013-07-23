@@ -16,19 +16,19 @@ import scala.tools.cmd.{ CommandLine, CommandLineParser, Instance }
 
 class ConsoleRunner(argstr: String) extends {
   val parsed = ConsoleRunnerSpec.creator(CommandLineParser tokenize argstr)
-} with DirectRunner with ConsoleRunnerSpec with Instance {
+} with ConsoleRunnerSpec with Instance {
+
+  val suiteRunner = new SuiteRunner (
+    new ConsoleFileManager(if (optPack) Some("build/pack") else optBuildPath, optClassPath),
+    optUpdateCheck,
+    optFailed)
+  import suiteRunner._
   import NestUI._
   import NestUI.color._
 
   // So we can ctrl-C a test run and still hear all
   // the buffered failure info.
   scala.sys addShutdownHook issueSummaryReport()
-
-  lazy val fileManager: ConsoleFileManager =
-    new ConsoleFileManager(if (optPack) Some("build/pack") else optBuildPath, optClassPath)
-
-  def updateCheck = optUpdateCheck
-  def failed = optFailed
 
   private var totalTests  = 0
   private val passedTests = mutable.ListBuffer[TestState]()

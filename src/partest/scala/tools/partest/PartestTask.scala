@@ -124,7 +124,6 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
       if (parts eq null) Array.empty[String] else parts
     })
 
-
     var failureCount = 0
     val summary = new scala.tools.partest.nest.AntRunner(compilationPath.get.list, javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
       def echo(msg: String): Unit = PartestTask.this.log(msg)

@@ -138,18 +138,12 @@ object FileManager {
 class FileManager(val testClassPath: List[Path],
                   val libraryUnderTest: Path,
                   val reflectUnderTest: Path,
-                  val compilerUnderTest: Path,
-                  javaCmd: Option[String] = None,
-                  javacCmd: Option[String] = None,
-                  scalacOpts: Seq[String] = Seq.empty) {
-  def this(testClassPath: List[Path], javaCmd: Option[String] = None, javacCmd: Option[String] = None, scalacOpts: Seq[String] = Seq.empty) {
+                  val compilerUnderTest: Path) {
+  def this(testClassPath: List[Path]) {
     this(testClassPath,
         FileManager.fromClassPath("library", testClassPath),
         FileManager.fromClassPath("reflect", testClassPath),
-        FileManager.fromClassPath("compiler", testClassPath),
-        javaCmd,
-        javacCmd,
-        scalacOpts)
+        FileManager.fromClassPath("compiler", testClassPath))
   }
 
   def this(libraryUnderTest: Path, reflectUnderTest: Path, compilerUnderTest: Path) {
@@ -165,45 +159,11 @@ class FileManager(val testClassPath: List[Path],
   // basedir for jars or classfiles on core classpath
   lazy val baseDir = libraryUnderTest.parent
 
-  lazy val JAVACMD: String          = javaCmd getOrElse PartestDefaults.javaCmd
-  lazy val JAVAC_CMD: String        = javacCmd getOrElse PartestDefaults.javacCmd
-  lazy val SCALAC_OPTS: Seq[String] = scalacOpts ++ PartestDefaults.scalacOpts.split(' ').toSeq
-
   def distKind = {
     val p = libraryUnderTest.getAbsolutePath
     if (p endsWith "build/quick/classes/library") "quick"
     else if (p endsWith "build/pack/lib/scala-library.jar") "pack"
     else if (p endsWith "dists/latest/lib/scala-library.jar/") "latest"
     else "installed"
-  }
-
-  /** Massage args to merge plugins and fix paths.
-   *  Plugin path can be relative to test root, or cwd is out.
-   *  While we're at it, mix in the baseline options, too.
-   *  That's how ant passes in the plugins dir.
-   */
-  def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): List[String] = {
-    val dir = PathSettings.testRoot
-    // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
-    def pathOrCwd(p: String) =
-      if (p == ".") {
-        val plugxml = "scalac-plugin.xml"
-        val pout = if (out.isVirtual) Directory.makeTemp() else Path(out.path)
-        val srcpath = Path(srcdir.path)
-        val pd = (srcpath / plugxml).toFile
-        if (pd.exists) pd copyTo (pout / plugxml)
-        pout
-      } else Path(p)
-    def absolutize(path: String) = pathOrCwd(path) match {
-      case x if x.isAbsolute => x.path
-      case x                 => (dir / x).toAbsolute.path
-    }
-
-    val xprefix = "-Xplugin:"
-    val (xplugs, others) = args partition (_ startsWith xprefix)
-    val Xplugin = if (xplugs.isEmpty) Nil else List(xprefix +
-      (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
-    )
-    SCALAC_OPTS.toList ::: others ::: Xplugin
   }
 }

@@ -24,7 +24,6 @@ import scala.tools.scalap.Main.decompileScala
 import scala.tools.scalap.scalax.rules.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
-import PartestDefaults.{ javaCmd, javacCmd }
 import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
 import FileManager.{compareFiles, compareContents, joinPaths}
@@ -58,7 +57,11 @@ class TestTranscript {
 }
 
 /** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean) {
+class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
+
+  import suiteRunner.{fileManager => fm, _}
+  val fileManager = fm
+
   import fileManager._
 
   // Override to true to have the outcome of this test displayed
@@ -112,7 +115,7 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
   def javac(files: List[File]): TestState = {
     // compile using command-line javac compiler
     val args = Seq(
-      javacCmd,
+      javacCmdPath,
       "-d",
       outDir.getAbsolutePath,
       "-classpath",
@@ -172,15 +175,15 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
       "-Dpartest.cwd="+outDir.getParent,
       "-Dpartest.test-path="+testFullPath,
       "-Dpartest.testname="+fileBase,
-      "-Djavacmd="+javaCmd,
-      "-Djavaccmd="+javacCmd,
+      "-Djavacmd="+javaCmdPath,
+      "-Djavaccmd="+javacCmdPath,
       "-Duser.language=en",
       "-Duser.country=US"
     ) ++ extras
 
     val classpath = joinPaths(extraClasspath ++ testClassPath)
 
-    javaCmd +: (
+    javaCmdPath +: (
       (PartestDefaults.javaOpts.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
@@ -426,10 +429,10 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
       List(file)
   )
 
-  def newCompiler = new DirectCompiler(fileManager)
+  def newCompiler = new DirectCompiler(this)
 
   def attemptCompile(sources: List[File]): TestState = {
-    val state = newCompiler.compile(this, flagsForCompilation(sources), sources)
+    val state = newCompiler.compile(flagsForCompilation(sources), sources)
     if (!state.isOk)
       _transcript append ("\n" + file2String(logFile))
 
@@ -533,7 +536,7 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
     val antOptions =
       if (NestUI._verbose) List("-verbose", "-noinput")
       else List("-noinput")
-    val cmd = javaCmd +: (
+    val cmd = javaCmdPath +: (
       PartestDefaults.javaOpts.split(' ').map(_.trim).filter(_ != "") ++ Seq(
         "-classpath",
         antLauncherPath,
@@ -727,13 +730,17 @@ class Runner(val testFile: File, fileManager: FileManager, updateCheck: Boolean)
     if (!isPartestDebug)
       Directory(outDir).deleteRecursively()
   }
+
 }
 
 /** Extended by Ant- and ConsoleRunner for running a set of tests. */
-abstract class DirectRunner {
-  def fileManager: FileManager
-  def updateCheck: Boolean
-  def failed: Boolean
+class SuiteRunner(
+  val fileManager: FileManager,
+  val updateCheck: Boolean,
+  val failed: Boolean,
+  val javaCmdPath: String = PartestDefaults.javaCmd,
+  val javacCmdPath: String = PartestDefaults.javacCmd,
+  val scalacExtraArgs: Seq[String] = Seq.empty) {
 
   import PartestDefaults.{ numThreads, waitTime }
 
@@ -746,7 +753,7 @@ abstract class DirectRunner {
 
   s"""|Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
       |Scala version is:    $versionMsg
-      |Scalac options are:  ${fileManager.SCALAC_OPTS mkString " "}
+      |Scalac options are:  ${scalacExtraArgs.mkString(" ")}
       |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName
@@ -758,14 +765,34 @@ abstract class DirectRunner {
     // |Java Classpath:             ${sys.props("java.class.path")}
   }
 
-  def runTest(manager: RunnerManager, testFile: File): TestState = manager runTest testFile
+  def onFinishTest(testFile: File, result: TestState): TestState = result
+
+  def runTest(testFile: File): TestState = {
+    val runner = new Runner(testFile, this)
+
+    // when option "--failed" is provided execute test only if log
+    // is present (which means it failed before)
+    val state =
+      if (failed && !runner.logFile.canRead)
+        runner.genPass()
+      else {
+        val (state, elapsed) =
+          try timed(runner.run())
+          catch {
+            case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
+          }
+        NestUI.reportTest(state)
+        runner.cleanup()
+        state
+      }
+    onFinishTest(testFile, state)
+  }
 
   def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
     NestUI.resetTestNumber(kindFiles.size)
 
     val pool              = Executors newFixedThreadPool numThreads
-    val manager           = new RunnerManager(kind, fileManager, failed, updateCheck)
-    val futures           = kindFiles map (f => pool submit callable(runTest(manager, f)))
+    val futures           = kindFiles map (f => pool submit callable(runTest(f)))
 
     pool.shutdown()
     Try (pool.awaitTermination(waitTime) {
@@ -842,28 +869,6 @@ object Output {
     finally {
       newstream.flush()
       redirVar.value = saved
-    }
-  }
-}
-
-/** Use a Runner to run a test. */
-class RunnerManager(kind: String, fileManager: FileManager, failed: Boolean, updateCheck: Boolean) {
-  def runTest(testFile: File): TestState = {
-    val runner = new Runner(testFile, fileManager, updateCheck)
-
-    // when option "--failed" is provided execute test only if log
-    // is present (which means it failed before)
-    if (failed && !runner.logFile.canRead)
-      runner.genPass()
-    else {
-      val (state, elapsed) =
-        try timed(runner.run())
-        catch {
-          case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
-        }
-      NestUI.reportTest(state)
-      runner.cleanup()
-      state
     }
   }
 }

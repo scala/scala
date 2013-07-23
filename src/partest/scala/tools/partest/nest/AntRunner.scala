@@ -20,25 +20,18 @@ import sbt.testing.SuiteSelector
 import sbt.testing.TestSelector
 
 // not using any Scala types to ease calling across different scala versions
-abstract class AntRunner(compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends DirectRunner {
+abstract class AntRunner(compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends SuiteRunner(
+  new FileManager(testClassPath = compilationPaths map { fs => Path(fs) } toList),
+  updateCheck = false,
+  failed  = false,
+  javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
+  javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
+  scalacExtraArgs = scalacArgs) {
+
   def error(msg: String): Nothing = sys.error(msg)
   def echo(msg: String): Unit
   def log(msg: String): Unit
   def onFinishKind(kind: String, passed: Array[TestState], failed: Array[TestState]): Unit
-  def onFinishTest(testFile: File, result: TestState): TestState = result
-
-  def updateCheck: Boolean = false
-  def failed: Boolean = false
-
-  final lazy val fileManager =
-    new FileManager(
-        testClassPath = compilationPaths map { fs => Path(fs) } toList,
-        javaCmd = Option(javaCmd) map (_.getAbsolutePath),
-        javacCmd = Option(javacCmd) map (_.getAbsolutePath),
-        scalacOpts = scalacArgs.toSeq)
-
-  final override def runTest(manager: RunnerManager, testFile: File): TestState =
-    onFinishTest(testFile, manager runTest testFile)
 
   final def runSet(kind: String, files: Array[File]): (Int, Int, Array[String]) = {
     if (files.isEmpty) (0, 0, Array.empty[String])

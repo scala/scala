@@ -13,6 +13,6 @@ package utils
 /** Loads partest.properties from the jar. */
 object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "partest"
-  protected def pickJarBasedOn  = classOf[nest.RunnerManager]
+  protected def pickJarBasedOn  = classOf[nest.Runner]
   override def isAvian = super.isAvian
 }

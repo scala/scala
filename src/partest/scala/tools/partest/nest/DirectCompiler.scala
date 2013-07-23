@@ -32,14 +32,45 @@ class PartestGlobal(settings: Settings, reporter: Reporter) extends Global(setti
   // override def globalError(msg: String): Unit
   // override def supplementErrorMessage(msg: String): String
 }
-class DirectCompiler(val fileManager: FileManager) {
+class DirectCompiler(val runner: Runner) {
   def newGlobal(settings: Settings, reporter: Reporter): PartestGlobal =
     new PartestGlobal(settings, reporter)
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global =
     newGlobal(settings, new ExtConsoleReporter(settings, new PrintWriter(logWriter)))
 
-  def compile(runner: Runner, opts0: List[String], sources: List[File]): TestState = {
+
+  /** Massage args to merge plugins and fix paths.
+   *  Plugin path can be relative to test root, or cwd is out.
+   *  While we're at it, mix in the baseline options, too.
+   *  That's how ant passes in the plugins dir.
+   */
+  private def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): Seq[String] = {
+    val dir = PathSettings.testRoot
+    // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
+    def pathOrCwd(p: String) =
+      if (p == ".") {
+        val plugxml = "scalac-plugin.xml"
+        val pout = if (out.isVirtual) Directory.makeTemp() else Path(out.path)
+        val srcpath = Path(srcdir.path)
+        val pd = (srcpath / plugxml).toFile
+        if (pd.exists) pd copyTo (pout / plugxml)
+        pout
+      } else Path(p)
+    def absolutize(path: String) = pathOrCwd(path) match {
+      case x if x.isAbsolute => x.path
+      case x                 => (dir / x).toAbsolute.path
+    }
+
+    val xprefix = "-Xplugin:"
+    val (xplugs, others) = args partition (_ startsWith xprefix)
+    val Xplugin = if (xplugs.isEmpty) Nil else List(xprefix +
+      (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
+    )
+    runner.suiteRunner.scalacExtraArgs ++ PartestDefaults.scalacOpts.split(' ') ++ others ++ Xplugin
+  }
+
+  def compile(opts0: List[String], sources: List[File]): TestState = {
     import runner.{ sources => _, _ }
     import ClassPath.{join, split}
 
@@ -55,8 +86,8 @@ class DirectCompiler(val fileManager: FileManager) {
     val testSettings = new TestSettings(FileManager.joinPaths(classPath))
     val logWriter    = new FileWriter(logFile)
     val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
-    val opts         = fileManager.updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)
-    val command      = new CompilerCommand(opts, testSettings)
+    val opts         = updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)
+    val command      = new CompilerCommand(opts.toList, testSettings)
     val global       = newGlobal(testSettings, logWriter)
     val reporter     = global.reporter.asInstanceOf[ExtConsoleReporter]
     def errorCount   = reporter.ERROR.count
