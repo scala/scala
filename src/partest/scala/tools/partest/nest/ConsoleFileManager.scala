@@ -15,27 +15,7 @@ import scala.tools.nsc.{ io, util }
 import PathResolver.{ Environment, Defaults }
 
 object ConsoleFileManager {
-  def classPath = {
-    val srcDir = {
-      val src = PathSettings.srcDir
-      if (!src.isDirectory) {
-        NestUI.failure("Source directory \"" + src.path + "\" not found")
-        sys.exit(1)
-      }
-      src
-    }
-    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
-
-    // def classPath   = propOrElse("partest.classpath", "")
-    val userCp = ClassPath split PathResolver.Environment.javaUserClassPath    // XXX
-
-    // add all jars in libs
-    val cp = (userCp ++ libs.toList)
-    vlog("testClassPath: " + cp)
-    cp map (Path(_))
-  }
-
-  def mostRecentTrifecta(testBuild: Option[String], testClasses: Option[String]) = {
+  private def mostRecentTrifecta(testBuild: Option[String], testClasses: Option[String]) = {
     import PathSettings.testParent
     val testClassesDir = testClasses map (tc => Path(tc).toCanonical.toDirectory)
     val testBuildDir   = testBuild map (b => (testParent / b).toCanonical.toDirectory)
@@ -103,7 +83,49 @@ object ConsoleFileManager {
       pairs(pairs.keys max)()
     }
   }
+
+  def classPathFromMostRecentTrifecta(testBuild: Option[String], testClasses: Option[String]): List[Path] = {
+    val (library, reflect, compiler) = mostRecentTrifecta(testBuild, testClasses)
+
+    val srcDir = {
+      val src = PathSettings.srcDir
+      if (!src.isDirectory) {
+        NestUI.failure("Source directory \"" + src.path + "\" not found")
+        sys.exit(1)
+      }
+      src
+    }
+    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (file => Path(file.toCanonical.path))
+
+    // def classPath   = propOrElse("partest.classpath", "")
+    val userCp = ClassPath split PathResolver.Environment.javaUserClassPath map (Path(_))
+
+    val usingJars = library.getAbsolutePath endsWith ".jar"
+    // basedir for jars or classfiles on core classpath
+    val baseDir = SFile(library).parent
+
+    def relativeToLibrary(what: String): Path = {
+      if (usingJars) (baseDir / s"$what.jar")
+      else (baseDir.parent / "classes" / what)
+    }
+
+    // all jars or dirs with prefix `what`
+    def relativeToLibraryAll(what: String): Iterator[Path] = (
+      if (usingJars) FileManager.jarsWithPrefix(baseDir, what)
+      else FileManager.dirsWithPrefix(baseDir.parent / "classes" toDirectory, what)
+    )
+
+    userCp ++ List[Path](
+      library, reflect, compiler,
+      relativeToLibrary("scala-actors"),
+      relativeToLibrary("scala-parser-combinators"),
+      relativeToLibrary("scala-xml"),
+      relativeToLibrary("scala-scaladoc"),
+      relativeToLibrary("scala-interactive"),
+      relativeToLibrary("scalap"),
+      PathSettings.diffUtils.fold(sys.error, identity)
+    ) ++ relativeToLibraryAll("scala-partest") ++ libs
+  }
 }
 
-case class ConsoleFileManager(testBuild: Option[String] = PartestDefaults.testBuild, testClasses: Option[String] = None)
-  extends FileManager(ConsoleFileManager.classPath, ConsoleFileManager.mostRecentTrifecta(testBuild, testClasses))
+case class ConsoleFileManager(testBuild: Option[String] = PartestDefaults.testBuild, testClasses: Option[String] = None) extends FileManager(ConsoleFileManager.classPathFromMostRecentTrifecta(testBuild, testClasses))

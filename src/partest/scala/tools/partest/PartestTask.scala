@@ -17,6 +17,7 @@ import org.apache.tools.ant.types.{ Reference, FileSet }
 import org.apache.tools.ant.types.Commandline.Argument
 import scala.tools.ant.ScalaTask
 import nest.NestUI
+import java.net.URLClassLoader
 
 /** An Ant task to execute the Scala test suite (NSC).
  *
@@ -123,7 +124,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
     })
 
     var failureCount = 0
-    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), compilationPath.get.list, javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
+    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), new URLClassLoader(compilationPath.get.list.map(Path(_).toURL)), javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
       def echo(msg: String): Unit = PartestTask.this.log(msg)
       def log(msg: String): Unit = PartestTask.this.log(msg)
 

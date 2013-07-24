@@ -18,11 +18,12 @@ import sbt.testing.Status
 import sbt.testing.OptionalThrowable
 import sbt.testing.SuiteSelector
 import sbt.testing.TestSelector
+import java.net.URLClassLoader
 
 // not using any Scala types to ease calling across different scala versions
-abstract class AntRunner(srcDir: String, compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends SuiteRunner(
+abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends SuiteRunner(
   testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
-  new FileManager(testClassPath = compilationPaths map { fs => Path(fs) } toList),
+  new FileManager(testClassLoader = testClassLoader),
   updateCheck = false,
   failed  = false,
   javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
@@ -51,6 +52,7 @@ abstract class AntRunner(srcDir: String, compilationPaths: Array[String], javaCm
     }
   }
 
+  // called reflectively from scala-partest-test-interface
   final def execute(kinds: Array[String]): String = {
     echo(banner)
 
@@ -68,9 +70,10 @@ abstract class AntRunner(srcDir: String, compilationPaths: Array[String], javaCm
   }
 }
 
+// called reflectively from scala-partest-test-interface
 class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
-    srcDir: String, compilationPaths: Array[String], javaCmd: File, javacCmd: File, scalacArgs: Array[String])
-    extends AntRunner(srcDir, compilationPaths, javaCmd, javacCmd, scalacArgs) {
+    srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String])
+    extends AntRunner(srcDir, testClassLoader, javaCmd, javacCmd, scalacArgs) {
   override def error(msg: String): Nothing = sys.error(msg)
   def echo(msg: String): Unit = loggers foreach { l => l.info(msg) }
   def log(msg: String): Unit = loggers foreach { l => l.debug(msg) }

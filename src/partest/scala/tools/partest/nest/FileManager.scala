@@ -24,6 +24,7 @@ import java.net.URI
 import scala.reflect.io.AbstractFile
 import scala.collection.mutable
 import scala.reflect.internal.util.ScalaClassLoader
+import java.net.URLClassLoader
 
 object FileManager {
   def getLogFile(dir: File, fileBase: String, kind: String): File =
@@ -97,85 +98,18 @@ object FileManager {
     if (diff.getDeltas.isEmpty) ""
     else difflib.DiffUtils.generateUnifiedDiff(originalName, revisedName, original.asJava, diff, 1).asScala.mkString("\n")
   }
-
-  // only used by script-based partest, not recommended for anything else
-  def classPathFromTrifecta(library: Path, reflect: Path, compiler: Path) = {
-    val usingJars = library.getAbsolutePath endsWith ".jar"
-    // basedir for jars or classfiles on core classpath
-    val baseDir = SFile(library).parent
-
-    def relativeToLibrary(what: String): Path = {
-      if (usingJars) (baseDir / s"$what.jar")
-      else (baseDir.parent / "classes" / what)
-    }
-
-    // all jars or dirs with prefix `what`
-    def relativeToLibraryAll(what: String): Iterator[Path] = (
-      if (usingJars) jarsWithPrefix(baseDir, what)
-      else dirsWithPrefix(baseDir.parent / "classes" toDirectory, what)
-    )
-
-    List[Path](
-      library, reflect, compiler,
-      relativeToLibrary("scala-actors"),
-      relativeToLibrary("scala-parser-combinators"),
-      relativeToLibrary("scala-xml"),
-      relativeToLibrary("scala-scaladoc"),
-      relativeToLibrary("scala-interactive"),
-      relativeToLibrary("scalap"),
-      PathSettings.diffUtils.fold(sys.error, identity)
-    ) ++ relativeToLibraryAll("scala-partest")
-  }
-
-  // find library/reflect/compiler jar or subdir under build/$stage/classes/
-  // TODO: make more robust -- for now, only matching on prefix of jar file so it works for ivy/maven-resolved versioned jars
-  // can we use the ClassLoader to find the jar/directory that contains a characteristic class file?
-  def fromClassPath(name: String, testClassPath: List[Path]): Path = {
-    // the old approach:
-    def fallback =
-      testClassPath find (f =>
-          (f.extension == "jar" && f.getName.startsWith(s"scala-$name"))
-            || (f.absolutePathSegments endsWith Seq("classes", name))
-        ) getOrElse sys.error(s"Provided compilationPath does not contain a Scala $name element.\nLooked in: ${testClassPath.mkString(":")}")
-
-    // more precise:
-    try {
-      val classLoader = ScalaClassLoader fromURLs (testClassPath map (_.toURI.toURL))
-      val canaryClass =
-        name match {
-          case "library"  => Class.forName("scala.Unit", false, classLoader)
-          case "reflect"  => Class.forName("scala.reflect.api.Symbols", false, classLoader)
-          case "compiler" => Class.forName("scala.tools.nsc.Main", false, classLoader)
-        }
-      val path = Path(canaryClass.getProtectionDomain.getCodeSource.getLocation.getPath)
-      if (path.extension == "jar" || path.absolutePathSegments.endsWith(Seq("classes", name))) path
-      else fallback
-    } catch {
-      case everything: Exception => fallback
-    }
-  }
 }
 
-class FileManager private (val testClassPath: List[Path],
-                  val libraryUnderTest: Path,
-                  val reflectUnderTest: Path,
-                  val compilerUnderTest: Path) {
+class FileManager(val testClassLoader: URLClassLoader) {
+  lazy val libraryUnderTest: Path  = findArtifact("library")
+  lazy val reflectUnderTest: Path  = findArtifact("reflect")
+  lazy val compilerUnderTest: Path = findArtifact("compiler")
+
+  lazy val testClassPath = testClassLoader.getURLs().map(url => Path(new File(url.toURI))).toList
+
   def this(testClassPath: List[Path]) {
-    this(testClassPath,
-        FileManager.fromClassPath("library", testClassPath),
-        FileManager.fromClassPath("reflect", testClassPath),
-        FileManager.fromClassPath("compiler", testClassPath))
+    this(new URLClassLoader(testClassPath.toArray map (_.toURI.toURL)))
   }
-
-  protected[nest] def this(libraryUnderTest: Path, reflectUnderTest: Path, compilerUnderTest: Path) {
-    this(FileManager.classPathFromTrifecta(libraryUnderTest, reflectUnderTest, compilerUnderTest), libraryUnderTest, reflectUnderTest, compilerUnderTest)
-  }
-
-  protected[nest] def this(testClassPath: List[Path], trifecta: (Path, Path, Path)) {
-    this(testClassPath, trifecta._1, trifecta._2, trifecta._3)
-  }
-
-  lazy val testClassLoader = ScalaClassLoader fromURLs (testClassPath map (_.toURI.toURL))
 
   def distKind = {
     val p = libraryUnderTest.getAbsolutePath
@@ -183,5 +117,22 @@ class FileManager private (val testClassPath: List[Path],
     else if (p endsWith "build/pack/lib/scala-library.jar") "pack"
     else if (p endsWith "dists/latest/lib/scala-library.jar") "latest"
     else "installed"
+  }
+
+  // find library/reflect/compiler jar or subdir under build/$stage/classes/
+  private def findArtifact(name: String): Path = {
+    val canaryClass =
+      name match {
+        case "library"  => Class.forName("scala.Unit", false, testClassLoader)
+        case "reflect"  => Class.forName("scala.reflect.api.Symbols", false, testClassLoader)
+        case "compiler" => Class.forName("scala.tools.nsc.Main", false, testClassLoader)
+      }
+
+    val path = Path(canaryClass.getProtectionDomain.getCodeSource.getLocation.getPath)
+    if (path.extension == "jar"
+      || path.absolutePathSegments.endsWith(Seq("classes", name))) path
+    else sys.error(
+      s"""Test Classloader does not contain a $name jar or classes/$name directory.
+           |Looked in: $testClassPath""")
   }
 }

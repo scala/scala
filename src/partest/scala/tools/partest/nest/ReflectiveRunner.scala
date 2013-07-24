@@ -41,7 +41,7 @@ class ReflectiveRunner {
     val classPath = searchPath("--classpath", argList)
     val fileManager = new ConsoleFileManager(if (argList contains "--pack") Some("build/pack") else buildPath, classPath)
 
-    val classPathEntries = fileManager.testClassLoader.classPathURLs.map(_.toString)
+    val classPathEntries = fileManager.testClassPath.map(_.toString)
 
     if (isPartestDebug)
       println("Loading classes from:\n  " + classPathEntries.mkString("\n  "))
@@ -63,7 +63,7 @@ class ReflectiveRunner {
       case cnfe: ClassNotFoundException =>
         cnfe.printStackTrace()
         NestUI.failure(runnerClassName + " could not be loaded from:\n")
-        fileManager.testClassLoader.classPathURLs foreach (x => NestUI.failure(x + "\n"))
+        fileManager.testClassPath foreach (x => NestUI.failure(x + "\n"))
     }
   }
 }
