@@ -27,4 +27,19 @@ class Lock {
     available = true
     notify()
   }
+
+  /**
+    *  Run `body` after acquiring this lock, and then releasing it after
+    *
+    * @author Luke Cycon <luke@lukecycon.com>
+    */
+  def doWith[T](body: => T): T = {
+    acquire()
+    try {
+      body
+    } finally {
+      release()
+    }
+  }
+
 }
