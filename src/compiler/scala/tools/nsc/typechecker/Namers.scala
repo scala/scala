@@ -35,7 +35,8 @@ trait Namers extends MethodSynthesis {
     }
     def apply(tree: Tree) = {
       val r = transform(tree)
-      if (r.exists(_.isEmpty)) TypeTree()
+      if (r exists { case tt: TypeTree => tt.isEmpty case _ => false })
+        TypeTree()
       else r
     }
   }
