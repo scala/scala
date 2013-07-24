@@ -100,7 +100,7 @@ class ConsoleRunner(argstr: String) extends {
 
     // Early return on no args, version, or invalid args
     if (optVersion) return echo(versionMsg)
-    if ((argstr == "") || optHelp) return NestUI.usage()
+    if (optHelp) return NestUI.usage()
 
     val (individualTests, invalid) = parsed.residualArgs map (p => Path(p)) partition denotesTestPath
     if (invalid.nonEmpty) {
@@ -122,6 +122,7 @@ class ConsoleRunner(argstr: String) extends {
     val grepExpr = optGrep getOrElse ""
 
     // If --grep is given we suck in every file it matches.
+    // TODO: intersect results of grep with specified kinds, if any
     val greppedTests = if (grepExpr == "") Nil else {
       val paths = grepFor(grepExpr)
       if (paths.isEmpty)
@@ -136,9 +137,8 @@ class ConsoleRunner(argstr: String) extends {
 
     val givenKinds = standardKinds.filter(kind => parsed.isSet("--" + kind))
     val kinds = (
-      if (optAll) standardKinds
-      else if (givenKinds.nonEmpty) givenKinds
-      else if (invalid.isEmpty && miscTests.isEmpty && !isRerun) standardKinds // If no kinds, --grep, or individual tests were given, assume --all
+      if (givenKinds.nonEmpty) givenKinds
+      else if (miscTests.isEmpty) standardKinds // If no kinds, --grep, or individual tests were given, assume --all
       else Nil
     )
     val kindsTests = kinds flatMap testsFor

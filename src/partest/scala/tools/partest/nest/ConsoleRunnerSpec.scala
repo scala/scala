@@ -8,11 +8,10 @@ trait ConsoleRunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = ConsoleRunnerSpec
   def programInfo         = Spec.Info(
       "console-runner",
-      "Usage: NestRunner [options] [test test ...]",
+      "Usage: ConsoleRunner [options] [test test ...]",
       "scala.tools.partest.nest.ConsoleRunner")
 
   heading("Test categories:")
-  val optAll          = "all"          / "run all tests"                     --?
   val optPos          = "pos"          / "run compilation tests (success)"   --?
   val optNeg          = "neg"          / "run compilation tests (failure)"   --?
   val optRun          = "run"          / "run interpreter and backend tests" --?
