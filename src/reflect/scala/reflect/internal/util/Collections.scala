@@ -53,6 +53,18 @@ trait Collections {
     }
     lb.toList
   }
+  /** like map2, but returns list `xs` itself - instead of a copy - if function
+   *  `f` maps all elements to themselves.
+   */
+  final def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
+    if (xs.isEmpty || ys.isEmpty) xs
+    else {
+      val x1 = f(xs.head, ys.head)
+      val xs1 = map2Conserve(xs.tail, ys.tail)(f)
+      if ((x1 eq xs.head) && (xs1 eq xs.tail)) xs
+      else x1 :: xs1
+    }
+
   final def map3[A, B, C, D](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => D): List[D] = {
     if (xs1.isEmpty || xs2.isEmpty || xs3.isEmpty) Nil
     else f(xs1.head, xs2.head, xs3.head) :: map3(xs1.tail, xs2.tail, xs3.tail)(f)
