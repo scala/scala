@@ -20,7 +20,7 @@ class ConsoleRunner(argstr: String) extends {
 
   val suiteRunner = new SuiteRunner (
     testSourcePath = optSourcePath.map(_.getAbsolutePath) getOrElse PartestDefaults.sourcePath,
-    fileManager = new ConsoleFileManager(if (optPack) Some("build/pack") else optBuildPath, optClassPath),
+    fileManager = new FileManager(ClassPath split PathResolver.Environment.javaUserClassPath map (Path(_))), // the script sets up our classpath for us via ant
     updateCheck = optUpdateCheck,
     failed = optFailed)
   import suiteRunner._
