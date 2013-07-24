@@ -751,7 +751,8 @@ class SuiteRunner(
   PathSettings.testSourcePath = testSourcePath
 
   def banner = {
-    def relativize(path: String) = path.replace(fileManager.baseDir.toString, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
+    val baseDir = fileManager.compilerUnderTest.parent.toString
+    def relativize(path: String) = path.replace(baseDir, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
     val vmBin  = javaHome + fileSeparator + "bin"
     val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
 
@@ -762,7 +763,7 @@ class SuiteRunner(
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName
       |Java options are:    ${PartestDefaults.javaOpts}
-      |baseDir:             ${fileManager.baseDir}
+      |baseDir:             $baseDir
       |sourceDir:           ${PathSettings.srcDir}
     """.stripMargin
     // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
