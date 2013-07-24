@@ -28,18 +28,6 @@ import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
 import FileManager.{compareFiles, compareContents, joinPaths}
 
-trait PartestRunSettings {
-  def gitPath: Path
-  def reportPath: Path
-  def logPath: Path
-
-  def testPaths: List[Path]
-
-  def gitDiffOptions: List[String]
-  def extraScalacOptions: List[String]
-  def extraJavaOptions: List[String]
-}
-
 class TestTranscript {
   import NestUI.color._
   private val buf = ListBuffer[String]()
