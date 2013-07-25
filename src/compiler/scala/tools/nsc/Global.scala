@@ -742,22 +742,41 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     phaseDescriptors map (_.phaseName)
   }
 
-  /** A description of the phases that will run */
-  def phaseDescriptions: String = {
+  /** A description of the phases that will run in this configuration, or all if -Ydebug. */
+  def phaseDescriptions: String = phaseHelp("description", elliptically = true, phasesDescMap)
+
+  /** Summary of the per-phase values of nextFlags and newFlags, shown under -Xshow-phases -Ydebug. */
+  def phaseFlagDescriptions: String = {
+    def fmt(ph: SubComponent) = {
+      def fstr1 = if (ph.phaseNewFlags == 0L) "" else "[START] " + Flags.flagsToString(ph.phaseNewFlags)
+      def fstr2 = if (ph.phaseNextFlags == 0L) "" else "[END] " + Flags.flagsToString(ph.phaseNextFlags)
+      if (ph.initial) Flags.flagsToString(Flags.InitialFlags)
+      else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
+      else fstr1 + fstr2
+    }
+    phaseHelp("new flags", elliptically = false, fmt)
+  }
+
+  def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String) = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens
-    val maxName = (0 /: phaseNames)(_ max _.length)
+    val maxName = phaseNames map (_.length) max
     val width   = maxName min Limit
     val maxDesc = MaxCol - (width + 6)  // descriptions not novels
-    val fmt     = if (settings.verbose) s"%${maxName}s  %2s  %s%n"
+    val fmt     = if (settings.verbose || !elliptically) s"%${maxName}s  %2s  %s%n"
                   else s"%${width}.${width}s  %2s  %.${maxDesc}s%n"
 
-    val line1 = fmt.format("phase name", "id", "description")
-    val line2 = fmt.format("----------", "--", "-----------")
+    val line1 = fmt.format("phase name", "id", title)
+    val line2 = fmt.format("----------", "--", "-" * title.length)
 
     // built-in string precision merely truncates
     import java.util.{ Formattable, FormattableFlags, Formatter }
-    def fmtable(s: String) = new Formattable {
+    def dotfmt(s: String) = new Formattable {
+      def elliptically(s: String, max: Int) = (
+        if (max < 0 || s.length <= max) s
+        else if (max < 4) s.take(max)
+        else s.take(max - 3) + "..."
+      )
       override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) {
         val p = elliptically(s, precision)
         val w = if (width > 0 && p.length < width) {
@@ -773,36 +792,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         formatter.out.append(w)
       }
     }
-    def elliptically(s: String, max: Int) =
-      if (max < 0 || s.length <= max) s
-      else if (max < 4) s.take(max)
-      else s.take(max - 3) + "..."
-    val descs = phaseDescriptors.zipWithIndex map {
-      case (ph, idx) => fmt.format(fmtable(ph.phaseName), idx + 1, fmtable(phasesDescMap(ph)))
-    }
-    line1 :: line2 :: descs mkString
-  }
-  /** Summary of the per-phase values of nextFlags and newFlags, shown
-   *  with -Xshow-phases if -Ydebug also given.
-   */
-  def phaseFlagDescriptions: String = {
-    val width = phaseNames map (_.length) max
-    val fmt   = "%" + width + "s  %2s  %s\n"
 
-    val line1 = fmt.format("phase name", "id", "new flags")
-    val line2 = fmt.format("----------", "--", "---------")
-    val descs = phaseDescriptors.zipWithIndex map {
-      case (ph, idx) =>
-        def fstr1 = if (ph.phaseNewFlags == 0L) "" else "[START] " + Flags.flagsToString(ph.phaseNewFlags)
-        def fstr2 = if (ph.phaseNextFlags == 0L) "" else "[END] " + Flags.flagsToString(ph.phaseNextFlags)
-        val fstr = (
-          if (ph.ownPhase.id == 1) Flags.flagsToString(Flags.InitialFlags)
-          else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
-          else fstr1 + fstr2
-        )
-        fmt.format(ph.phaseName, idx + 1, fstr)
+    // phase id in run, or suitable icon
+    def idOf(p: SubComponent) = (
+      if (settings.skip contains p.phaseName) "oo"   // (currentRun skipPhase p.phaseName)
+      else if (!p.enabled) "xx"
+      else p.ownPhase.id.toString
+    )
+    def mkText(p: SubComponent) = {
+      val (name, text) = if (elliptically) (dotfmt(p.phaseName), dotfmt(describe(p)))
+                         else (p.phaseName, describe(p))
+      fmt.format(name, idOf(p), text)
     }
-    line1 :: line2 :: descs mkString
+    line1 :: line2 :: (phaseDescriptors map mkText) mkString
   }
 
   /** Returns List of (phase, value) pairs, including only those
