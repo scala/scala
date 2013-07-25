@@ -34,6 +34,8 @@ abstract class ConstantOptimization extends SubComponent {
   /** Create a new phase */
   override def newPhase(p: Phase) = new ConstantOptimizationPhase(p)
 
+  override val enabled: Boolean = settings.YconstOptimization
+
   /**
    * The constant optimization phase.
    */
