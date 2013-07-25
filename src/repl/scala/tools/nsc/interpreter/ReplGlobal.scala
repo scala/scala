@@ -30,37 +30,5 @@ trait ReplGlobal extends Global {
       val virtualDirectory = globalSettings.outputDirs.getSingleOutput.get
       new util.AbstractFileClassLoader(virtualDirectory, loader) {}
     }
-
-    override def newTyper(context: Context): Typer = new Typer(context) {
-      override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
-        val res = super.typed(tree, mode, pt)
-        tree match {
-          case Ident(name) if !tree.symbol.hasPackageFlag && !name.toString.startsWith("$") =>
-            repldbg("typed %s: %s".format(name, res.tpe))
-          case _ =>
-        }
-        res
-      }
-    }
-  }
-
-  object replPhase extends SubComponent {
-    val global: ReplGlobal.this.type = ReplGlobal.this
-    val phaseName = "repl"
-    val runsAfter = List[String]("typer")
-    val runsRightAfter = None
-    def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      def apply(unit: CompilationUnit) {
-        repldbg("Running replPhase on " + unit.body)
-        // newNamer(rootContext(unit)).enterSym(unit.body)
-      }
-    }
-    // add to initial or terminal phase to sanity check Run at construction
-    override val requires = List("typer")  // ensure they didn't -Ystop-after:parser
-  }
-
-  override protected def computePhaseDescriptors: List[SubComponent] = {
-    addToPhasesSet(replPhase, "repl")
-    super.computePhaseDescriptors
   }
 }
