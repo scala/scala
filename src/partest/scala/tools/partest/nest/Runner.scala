@@ -721,6 +721,12 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
 
 }
 
+/** Loads `library.properties` from the jar. */
+object Properties extends scala.util.PropertiesTrait {
+  protected def propCategory    = "partest"
+  protected def pickJarBasedOn  = classOf[SuiteRunner]
+}
+
 /** Extended by Ant- and ConsoleRunner for running a set of tests. */
 class SuiteRunner(
   val testSourcePath: String,
@@ -744,7 +750,8 @@ class SuiteRunner(
     val vmBin  = javaHome + fileSeparator + "bin"
     val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
 
-  s"""|Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
+  s"""|Partest version:     ${Properties.versionNumberString}
+      |Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
       |Scala version is:    $versionMsg
       |Scalac options are:  ${scalacExtraArgs.mkString(" ")}
       |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
