@@ -11,41 +11,44 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
   val name = "continuations"
   val description = "applies selective cps conversion"
 
-  val anfPhase = new {val global = SelectiveCPSPlugin.this.global } with SelectiveANFTransform() {
+  val pluginEnabled = options contains "enable"
+
+  val anfPhase = new {
+    val global = SelectiveCPSPlugin.this.global
+    val cpsEnabled = pluginEnabled
+    override val enabled = cpsEnabled
+  } with SelectiveANFTransform {
     val runsAfter = List("pickler")
   }
 
-  val cpsPhase = new {val global = SelectiveCPSPlugin.this.global } with SelectiveCPSTransform() {
+  val cpsPhase = new {
+    val global = SelectiveCPSPlugin.this.global
+    val cpsEnabled = pluginEnabled
+    override val enabled = cpsEnabled
+  } with SelectiveCPSTransform {
     val runsAfter = List("selectiveanf")
     override val runsBefore = List("uncurry")
   }
 
   val components = List[PluginComponent](anfPhase, cpsPhase)
 
-  val checker = new { val global: SelectiveCPSPlugin.this.global.type = SelectiveCPSPlugin.this.global } with CPSAnnotationChecker
+  val checker = new {
+    val global: SelectiveCPSPlugin.this.global.type = SelectiveCPSPlugin.this.global
+    val cpsEnabled = pluginEnabled
+  } with CPSAnnotationChecker
+
+  // TODO don't muck up global with unused checkers
   global.addAnnotationChecker(checker.checker)
   global.analyzer.addAnalyzerPlugin(checker.plugin)
 
   global.log("instantiated cps plugin: " + this)
 
-  def setEnabled(flag: Boolean) = {
-    checker.cpsEnabled = flag
-    anfPhase.cpsEnabled = flag
-    cpsPhase.cpsEnabled = flag
-  }
-
-  // TODO: require -enabled command-line flag
-
-  override def processOptions(options: List[String], error: String => Unit) = {
-    var enabled = false
-    for (option <- options) {
-      if (option == "enable") {
-        enabled = true
-      } else {
-        error("Option not understood: "+option)
-      }
+  override def init(options: List[String], error: String => Unit) = {
+    options foreach {
+      case "enable" => // in initializer
+      case arg      => error(s"Bad argument: $arg")
     }
-    setEnabled(enabled)
+    pluginEnabled
   }
 
   override val optionsHelp: Option[String] =
