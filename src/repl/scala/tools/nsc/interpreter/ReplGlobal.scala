@@ -44,8 +44,9 @@ trait ReplGlobal extends Global {
     }
   }
 
-  object replPhase extends SubComponent {
+  object replPhase extends {
     val global: ReplGlobal.this.type = ReplGlobal.this
+  } with SubComponent {
     val phaseName = "repl"
     val runsAfter = List[String]("typer")
     val runsRightAfter = None
@@ -59,8 +60,8 @@ trait ReplGlobal extends Global {
     override val requires = List("typer")  // ensure they didn't -Ystop-after:parser
   }
 
-  override protected def computePhaseDescriptors: List[SubComponent] = {
+  override protected def computeInternalPhases(): Unit = {
     addToPhasesSet(replPhase, "repl")
-    super.computePhaseDescriptors
+    super.computeInternalPhases()
   }
 }
