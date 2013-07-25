@@ -352,6 +352,8 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   implicit def Double2double(x: java.lang.Double): Double     = x.doubleValue
   implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.booleanValue
 
+  implicit def Lock2RichLock(x: java.util.concurrent.locks.Lock) = new runtime.RichLock(x)
+
   // Type Constraints --------------------------------------------------------------
 
   /**
