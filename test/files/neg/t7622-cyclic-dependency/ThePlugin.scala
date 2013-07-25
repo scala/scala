@@ -20,7 +20,7 @@ class ThePlugin(val global: Global) extends Plugin {
 
     val phaseName = ThePlugin.this.name + "1"
 
-    def newPhase(prev: Phase) = new ThePhase(prev)    
+    def newPhase(prev: Phase) = new ThePhase(prev, phaseName)
   }
   
   private object thePhase2 extends PluginComponent {
@@ -30,11 +30,10 @@ class ThePlugin(val global: Global) extends Plugin {
 
     val phaseName = ThePlugin.this.name + "2"
 
-    def newPhase(prev: Phase) = new ThePhase(prev)    
+    def newPhase(prev: Phase) = new ThePhase(prev, phaseName)
   }
   
-  private class ThePhase(prev: Phase) extends Phase(prev) {
-    def name = ThePlugin.this.name
+  private class ThePhase(prev: Phase, val name: String) extends Phase(prev) {
     def run {}
   }
 }

@@ -49,6 +49,8 @@ abstract class Inliners extends SubComponent {
 
   val phaseName = "inliner"
 
+  override val enabled: Boolean = settings.inline
+
   /** Debug - for timing the inliner. */
   /****
   private def timed[T](s: String, body: => T): T = {

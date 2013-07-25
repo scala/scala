@@ -301,21 +301,31 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
     val prefix = "#partest"
     val b = new ListBuffer[String]()
     var on = true
+    var checked = false
     for (line <- file2String(checkFile).lines) {
       if (line startsWith prefix) {
+        checked = true
         on = retainOn(line stripPrefix prefix)
       } else if (on) {
         b += line
       }
     }
-    b.toList
+    val res = b.toList
+    if (checked && isPartestDebug) {
+      val propped = s"Filtered check, java7 ${retainOn("java7")}, opt ${retainOn("-optimise")}$EOL"
+      val bracketed = res mkString (s"${checkFile.getName} {$EOL  |", s"|$EOL  |", s"|$EOL}")
+      checkFile changeExtension "checked" writeAll (propped, bracketed)
+    }
+    res
   }
 
   def currentDiff = {
     val logged = augmentString(file2String(logFile)).lines.toList
     val (other, othername) =
       if (checkFile.canRead) (filteredCheck, checkFile.getName) else (Nil, "empty")
-    compareContents(logged, other, logFile.getName, othername)
+    val res = compareContents(logged, other, logFile.getName, othername)
+    if (isPartestDebug) logFile changeExtension "diff" writeAll res
+    res
   }
 
   val gitRunner = List("/usr/local/bin/git", "/usr/bin/git") map (f => new java.io.File(f)) find (_.canRead)
