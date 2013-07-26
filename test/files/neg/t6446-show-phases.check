@@ -28,4 +28,4 @@ inlinehandlers  24  optimization: inline exception handlers
       constopt  26  optimization: optimize null and other constants
            dce  27  optimization: eliminate dead code
            jvm  28  generate JVM bytecode
-      terminal  29  The last phase in the compiler chain
+      terminal  29  the last phase during a compilation run

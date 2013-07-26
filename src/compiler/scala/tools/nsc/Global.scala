@@ -47,7 +47,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // the mirror --------------------------------------------------
 
   override def isCompilerUniverse = true
-  override val useOffsetPositions = !currentSettings.Yrangepos.value
+  override val useOffsetPositions = !currentSettings.Yrangepos
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
@@ -430,9 +430,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // phaseName = "parser"
   lazy val syntaxAnalyzer = new {
     val global: Global.this.type = Global.this
+  } with SyntaxAnalyzer {
     val runsAfter = List[String]()
     val runsRightAfter = None
-  } with SyntaxAnalyzer
+    override val initial = true
+  }
 
   import syntaxAnalyzer.{ UnitScanner, UnitParser }
 
@@ -452,9 +454,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   object patmat extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("typer")
-    // patmat doesn't need to be right after typer, as long as we run before supperaccesors
-    // (sbt does need to run right after typer, so don't conflict)
     val runsRightAfter = None
+    // patmat doesn't need to be right after typer, as long as we run before superaccessors
+    // (sbt does need to run right after typer, so don't conflict)
   } with PatternMatching
 
   // phaseName = "superaccessors"
@@ -628,18 +630,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // phaseName = "terminal"
   object terminal extends {
     val global: Global.this.type = Global.this
-    val phaseName = "terminal"
+  } with SubComponent {
+    final val phaseName = "terminal"
     val runsAfter = List("jvm")
     val runsRightAfter = None
-  } with SubComponent {
-    private var cache: Option[GlobalPhase] = None
-    def reset(): Unit = cache = None
+    override val terminal = true
 
-    def newPhase(prev: Phase): GlobalPhase =
-      cache getOrElse returning(new TerminalPhase(prev))(x => cache = Some(x))
-
-    class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
-      def name = "terminal"
+    def newPhase(prev: Phase): GlobalPhase = {
+      new TerminalPhase(prev)
+    }
+    private class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
+      def name = phaseName
       def apply(unit: CompilationUnit) {}
     }
   }
@@ -667,7 +668,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Add the internal compiler phases to the phases set.
    *  This implementation creates a description map at the same time.
    */
-  protected def computeInternalPhases() {
+  protected def computeInternalPhases(): Unit = {
     // Note: this fits -Xshow-phases into 80 column width, which it is
     // desirable to preserve.
     val phs = List(
@@ -697,7 +698,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       closureElimination      -> "optimization: eliminate uncalled closures",
       constantOptimization    -> "optimization: optimize null and other constants",
       deadCode                -> "optimization: eliminate dead code",
-      terminal                -> "The last phase in the compiler chain"
+      terminal                -> "the last phase during a compilation run"
     )
 
     phs foreach (addToPhasesSet _).tupled
@@ -715,13 +716,21 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // sequences the phase assembly
   protected def computePhaseDescriptors: List[SubComponent] = {
-    computeInternalPhases()       // Global.scala
-    computePlatformPhases()       // backend/Platform.scala
-    computePluginPhases()         // plugins/Plugins.scala
-    buildCompilerFromPhasesSet()  // PhaseAssembly.scala
+    /** Allow phases to opt out of the phase assembly. */
+    def cullPhases(phases: List[SubComponent]) = {
+      val enabled = if (settings.debug && settings.isInfo) phases else phases filter (_.enabled)
+      def isEnabled(q: String) = enabled exists (_.phaseName == q)
+      val (satisfied, unhappy) = enabled partition (_.requires forall isEnabled)
+      unhappy foreach (u => globalError(s"Phase '${u.phaseName}' requires: ${u.requires filterNot isEnabled}"))
+      satisfied   // they're happy now, but they may need an unhappy phase that was booted
+    }
+    computeInternalPhases()             // Global.scala
+    computePlatformPhases()             // backend/Platform.scala
+    computePluginPhases()               // plugins/Plugins.scala
+    cullPhases(computePhaseAssembly())  // PhaseAssembly.scala
   }
 
-  /* The phase descriptor list */
+  /* The phase descriptor list. Components that are phase factories. */
   lazy val phaseDescriptors: List[SubComponent] = computePhaseDescriptors
 
   /* The set of phase objects that is the basis for the compiler phase chain */
@@ -1147,7 +1156,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def newUnitParser(unit: CompilationUnit): UnitParser   = new UnitParser(unit)
   def newUnitParser(code: String): UnitParser            = newUnitParser(newCompilationUnit(code))
 
-  /** A Run is a single execution of the compiler on a sets of units
+  /** A Run is a single execution of the compiler on a set of units.
    */
   class Run extends RunContextApi {
     /** Have been running into too many init order issues with Run
@@ -1186,64 +1195,100 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** A map from compiled top-level symbols to their picklers */
     val symData = new mutable.HashMap[Symbol, PickleBuffer]
 
-    private var phasec: Int       = 0   // phases completed
-    private var unitc: Int        = 0   // units completed this phase
+    private var phasec: Int  = 0   // phases completed
+    private var unitc: Int   = 0   // units completed this phase
     private var _unitbufSize = 0
 
     def size = _unitbufSize
     override def toString = "scalac Run for:\n  " + compiledFiles.toList.sorted.mkString("\n  ")
 
     // Calculate where to stop based on settings -Ystop-before or -Ystop-after.
-    // Slightly complicated logic due to wanting -Ystop-before:parser to fail rather
-    // than mysteriously running to completion.
+    // The result is the phase to stop at BEFORE running it.
     private lazy val stopPhaseSetting = {
-      val result = phaseDescriptors sliding 2 collectFirst {
-        case xs if xs exists (settings.stopBefore contains _.phaseName) => if (settings.stopBefore contains xs.head.phaseName) xs.head else xs.last
-        case xs if settings.stopAfter contains xs.head.phaseName        => xs.last
+      def isBefore(pd: SubComponent) = settings.stopBefore contains pd.phaseName
+      phaseDescriptors sliding 2 collectFirst {
+        case xs if xs exists isBefore
+                => (xs find isBefore).get
+        case xs if settings.stopAfter contains xs.head.phaseName
+                => xs.last
       }
-      if (result exists (_.phaseName == "parser"))
-        globalError("Cannot stop before parser phase.")
-
-      result
     }
-    // The phase to stop BEFORE running.
+    /** Should we stop right before entering the given phase? */
     protected def stopPhase(name: String) = stopPhaseSetting exists (_.phaseName == name)
+    /** Should we skip the given phase? */
     protected def skipPhase(name: String) = settings.skip contains name
 
-    /** As definitions.init requires phase != NoPhase, and calling phaseDescriptors.head
-     *  will force init, there is some jockeying herein regarding init order: instead of
-     *  taking the head descriptor we create a parser phase directly.
-     */
     private val firstPhase = {
-      /** Initialization. */
+      // Initialization.  definitions.init requires phase != NoPhase
+      import scala.reflect.internal.SomePhase
       curRunId += 1
       curRun = this
-
-      /* Set phase to a newly created syntaxAnalyzer and call definitions.init. */
-      val parserPhase: Phase = syntaxAnalyzer.newPhase(NoPhase)
-      phase = parserPhase
+      phase = SomePhase
+      phaseWithId(phase.id) = phase
       definitions.init()
 
-      // Flush the cache in the terminal phase: the chain could have been built
-      // before without being used. (This happens in the interpreter.)
-      terminal.reset()
-
-      // Each subcomponent supplies a phase, which are chained together.
-      //   If -Ystop:phase is given, neither that phase nor any beyond it is added.
-      //   If -Yskip:phase is given, that phase will be skipped.
-      val phaseLinks = {
-        val phs = (
-          phaseDescriptors.tail
-            takeWhile (pd => !stopPhase(pd.phaseName))
-            filterNot (pd =>  skipPhase(pd.phaseName))
-        )
+      // the components to use, omitting those named by -Yskip and stopping at the -Ystop phase
+      val components = {
+        // stop on a dime, but this test fails if pd is after the stop phase
+        def unstoppable(pd: SubComponent) = {
+          val stoppable = stopPhase(pd.phaseName)
+          if (stoppable && pd.initial) {
+            globalError(s"Cannot stop before initial phase '${pd.phaseName}'.")
+            true
+          } else
+            !stoppable
+        }
+        // skip a component for -Yskip or if not enabled
+        def skippable(pd: SubComponent) = {
+          val skippable = skipPhase(pd.phaseName)
+          if (skippable && (pd.initial || pd.terminal)) {
+            globalError(s"Cannot skip an initial or terminal phase '${pd.phaseName}'.")
+            false
+          } else
+            skippable || !pd.enabled
+        }
+        val phs = phaseDescriptors takeWhile unstoppable filterNot skippable
         // Ensure there is a terminal phase at the end, since -Ystop may have limited the phases.
-        if (phs.isEmpty || (phs.last ne terminal)) phs :+ terminal
-        else phs
+        if (phs.isEmpty || !phs.last.terminal) {
+          val t = if (phaseDescriptors.last.terminal) phaseDescriptors.last else terminal
+          phs :+ t
+        } else phs
       }
-      // Link them together.
-      phaseLinks.foldLeft(parserPhase)((chain, ph) => ph newPhase chain)
-      parserPhase
+      // Create phases and link them together. We supply the previous, and the ctor sets prev.next.
+      val last  = components.foldLeft(NoPhase: Phase)((prev, c) => c newPhase prev)
+      // rewind (Iterator.iterate(last)(_.prev) dropWhile (_.prev ne NoPhase)).next
+      val first = { var p = last ; while (p.prev ne NoPhase) p = p.prev ; p }
+      val ss    = settings
+
+      // As a final courtesy, see if the settings make any sense at all.
+      // If a setting selects no phase, it's a mistake. If a name prefix
+      // doesn't select a unique phase, that might be surprising too.
+      def checkPhaseSettings(including: Boolean, specs: Seq[String]*) = {
+        def isRange(s: String) = s.forall(c => c.isDigit || c == '-')
+        def isSpecial(s: String) = (s == "all" || isRange(s))
+        val setting = new ss.PhasesSetting("fake","fake")
+        for (p <- specs.flatten.to[Set]) {
+          setting.value = List(p)
+          val count = (
+            if (including) first.iterator count (setting containsPhase _)
+            else phaseDescriptors count (setting contains _.phaseName)
+          )
+          if (count == 0) warning(s"'$p' specifies no phase")
+          if (count > 1 && !isSpecial(p)) warning(s"'$p' selects $count phases")
+          if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
+          setting.clear()
+        }
+      }
+      // phases that are excluded; for historical reasons, these settings only select by phase name
+      val exclusions = List(ss.stopBefore, ss.stopAfter, ss.skip)
+      val inclusions = ss.visibleSettings collect {
+        case s: ss.PhasesSetting if !(exclusions contains s) => s.value
+      }
+      checkPhaseSettings(including = true, inclusions.toSeq: _*)
+      checkPhaseSettings(including = false, exclusions map (_.value): _*)
+
+      phase = first   //parserPhase
+      first
     }
 
     /** Reset all classes contained in current project, as determined by
