@@ -30,4 +30,4 @@ inlinehandlers  24  optimization: inline exception handlers
            dce  27  optimization: eliminate dead code
            jvm  28  generate JVM bytecode
        ploogin  29  A sample phase that does so many things it's kind of hard...
-      terminal  30  The last phase in the compiler chain
+      terminal  30  the last phase during a compilation run
