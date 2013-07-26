@@ -194,7 +194,7 @@ trait PhaseAssembly {
 
 
   /** Called by Global#computePhaseDescriptors to compute phase order. */
-  def buildCompilerFromPhasesSet(): List[SubComponent] = {
+  def computePhaseAssembly(): List[SubComponent] = {
 
     // Add all phases in the set to the graph
     val graph = phasesSetToDepGraph(phasesSet)
