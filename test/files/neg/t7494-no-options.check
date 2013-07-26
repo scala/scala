@@ -1,4 +1,4 @@
-error: Error: ploogin has no options
+error: Error: ploogin takes no options
     phase name  id  description
     ----------  --  -----------
         parser   1  parse source into ASTs, perform simple desugaring
