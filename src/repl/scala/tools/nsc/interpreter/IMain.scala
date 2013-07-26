@@ -7,30 +7,23 @@ package scala
 package tools.nsc
 package interpreter
 
-import Predef.{ println => _, _ }
-import util.stringFromWriter
-import scala.reflect.internal.util._
-import java.net.URL
-import scala.sys.BooleanProp
-import scala.tools.nsc.io.AbstractFile
-import reporters._
-import scala.tools.util.PathResolver
-import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
-import ScalaClassLoader.URLClassLoader
-import scala.tools.nsc.util.Exceptional.unwrap
-import scala.collection.{ mutable, immutable }
-import scala.reflect.BeanProperty
-import scala.util.Properties.versionString
-import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
-import java.io.{ StringWriter, Reader }
-import java.util.Arrays
-import IMain._
-import scala.concurrent.{ Future, ExecutionContext }
-import scala.reflect.runtime.{ universe => ru }
-import scala.reflect.{ ClassTag, classTag }
-import StdReplTags._
 import scala.language.implicitConversions
+
+import scala.collection.mutable
+
+import scala.concurrent.{ Future, ExecutionContext }
+
+import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.{ BeanProperty, ClassTag, classTag }
+import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
+
+import scala.tools.util.PathResolver
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
+import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter }
+import scala.tools.nsc.util.Exceptional.unwrap
+
+import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 
 /** An interpreter for Scala code.
  *
@@ -92,7 +85,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private var _classLoader: util.AbstractFileClassLoader = null                              // active classloader
   private val _compiler: ReplGlobal                 = newCompiler(settings, reporter)   // our private compiler
 
-  def compilerClasspath: Seq[URL] = (
+  def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
     else new PathResolver(settings).result.asURLs  // the compiler's classpath
   )
@@ -239,7 +232,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   lazy val isettings = new ISettings(this)
 
   /** Instantiate a compiler.  Overridable. */
-  protected def newCompiler(settings: Settings, reporter: Reporter): ReplGlobal = {
+  protected def newCompiler(settings: Settings, reporter: reporters.Reporter): ReplGlobal = {
     settings.outputDirs setSingleOutput replOutput.dir
     settings.exposeEmptyPackage.value = true
     new Global(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
@@ -332,7 +325,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private def makeClassLoader(): util.AbstractFileClassLoader =
     new TranslatingClassLoader(parentClassLoader match {
       case null   => ScalaClassLoader fromURLs compilerClasspath
-      case p      => new URLClassLoader(compilerClasspath, p)
+      case p      => new ScalaClassLoader.URLClassLoader(compilerClasspath, p)
     })
 
   // Set the current Java "context" class loader to this interpreter's class loader
@@ -552,7 +545,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   var code = ""
   var bound = false
-  @throws(classOf[ScriptException])
+  @throws[ScriptException]
   def compile(script: String): CompiledScript = {
     if (!bound) {
       quietBind("engine" -> this.asInstanceOf[ScriptEngine])
@@ -580,9 +573,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
   }
 
-  @throws(classOf[ScriptException])
-  def compile(reader: Reader): CompiledScript = {
-    val writer = new StringWriter()
+  @throws[ScriptException]
+  def compile(reader: java.io.Reader): CompiledScript = {
+    val writer = new java.io.StringWriter()
     var c = reader.read()
     while(c != -1) {
       writer.write(c)
@@ -602,7 +595,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
      *  escape. We could have wrapped runtime exceptions just like other
      *  exceptions in ScriptException, this is a choice.
      */
-    @throws(classOf[ScriptException])
+    @throws[ScriptException]
     def eval(context: ScriptContext): Object = {
       val result = req.lineRep.evalEither match {
         case Left(e: RuntimeException) => throw e
@@ -735,7 +728,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
       val unwrapped = unwrap(t)
       withLastExceptionLock[String]({
-        directBind[Throwable]("lastException", unwrapped)(tagOfThrowable, classTag[Throwable])
+        directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable])
         util.stackTraceString(unwrapped)
       }, util.stackTraceString(unwrapped))
     }
@@ -869,7 +862,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     def fullPath(vname: String) = s"${lineRep.readPath}$accessPath.`$vname`"
 
     /** generate the source code for the object that computes this request */
-    private object ObjectSourceCode extends CodeAssembler[MemberHandler] {
+    private object ObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
@@ -892,7 +885,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
     }
 
-    private object ResultObjectSourceCode extends CodeAssembler[MemberHandler] {
+    private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
@@ -991,11 +984,11 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
   }
 
-  @throws(classOf[ScriptException])
+  @throws[ScriptException]
   def eval(script: String, context: ScriptContext): Object = compile(script).eval(context)
 
-  @throws(classOf[ScriptException])
-  def eval(reader: Reader, context: ScriptContext): Object = compile(reader).eval(context)
+  @throws[ScriptException]
+  def eval(reader: java.io.Reader, context: ScriptContext): Object = compile(reader).eval(context)
 
   override def finalize = close
 
@@ -1170,6 +1163,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
 /** Utility methods for the Interpreter. */
 object IMain {
+  import java.util.Arrays.{ asList => asJavaList }
+
   class Factory extends ScriptEngineFactory {
     @BeanProperty
     val engineName = "Scala Interpreter"
@@ -1178,21 +1173,21 @@ object IMain {
     val engineVersion = "1.0"
 
     @BeanProperty
-    val extensions: JList[String] = Arrays.asList("scala")
+    val extensions: JList[String] = asJavaList("scala")
 
     @BeanProperty
     val languageName = "Scala"
 
     @BeanProperty
-    val languageVersion = versionString
+    val languageVersion = scala.util.Properties.versionString
 
     def getMethodCallSyntax(obj: String, m: String, args: String*): String = null
 
     @BeanProperty
-    val mimeTypes: JList[String] = Arrays.asList("application/x-scala")
+    val mimeTypes: JList[String] = asJavaList("application/x-scala")
 
     @BeanProperty
-    val names: JList[String] = Arrays.asList("scala")
+    val names: JList[String] = asJavaList("scala")
 
     def getOutputStatement(toDisplay: String): String = null
 
