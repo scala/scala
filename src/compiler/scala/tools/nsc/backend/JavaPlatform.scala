@@ -11,6 +11,8 @@ import util.{ClassPath,MergedClassPath,DeltaClassPath}
 import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform {
+  val global: Global
+  override val symbolTable: global.type = global
   import global._
   import definitions._
 
@@ -24,8 +26,6 @@ trait JavaPlatform extends Platform {
   /** Update classpath with a substituted subentry */
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]) =
     currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))
-
-  def rootLoader = new loaders.PackageLoader(classPath)
 
   private def classEmitPhase =
     if (settings.isBCodeActive) genBCode
@@ -54,9 +54,6 @@ trait JavaPlatform extends Platform {
     (sym isNonBottomSubClass BoxedCharacterClass) ||
     (sym isNonBottomSubClass BoxedBooleanClass)
   }
-
-  def newClassLoader(bin: AbstractFile): loaders.SymbolLoader =
-    new loaders.ClassfileLoader(bin)
 
   def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean = true
 

@@ -20,6 +20,8 @@ import scala.reflect.internal.JavaAccFlags
  */
 abstract class ICodeReader extends ClassfileParser {
   val global: Global
+  val symbolTable: global.type
+  val loaders: global.loaders.type
   import global._
   import icodes._
 

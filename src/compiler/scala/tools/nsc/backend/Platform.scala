@@ -12,8 +12,8 @@ import io.AbstractFile
 /** The platform dependent pieces of Global.
  */
 trait Platform {
-  val global: Global
-  import global._
+  val symbolTable: symtab.SymbolTable
+  import symbolTable._
 
   /** The binary classfile representation type */
   @deprecated("BinaryRepr is not an abstract type anymore. It's an alias that points at AbstractFile. It'll be removed before Scala 2.11 is released.", "2.11.0-M5")
@@ -21,9 +21,6 @@ trait Platform {
 
   /** The compiler classpath. */
   def classPath: ClassPath[AbstractFile]
-
-  /** The root symbol loader. */
-  def rootLoader: LazyType
 
   /** Update classpath with a substitution that maps entries to entries */
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])
@@ -36,9 +33,6 @@ trait Platform {
 
   /** The various ways a boxed primitive might materialize at runtime. */
   def isMaybeBoxed(sym: Symbol): Boolean
-
-  /** Create a new class loader to load class file `bin` */
-  def newClassLoader(bin: AbstractFile): loaders.SymbolLoader
 
   /**
    * Tells whether a class should be loaded and entered into the package

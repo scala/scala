@@ -22,8 +22,8 @@ import scala.annotation.switch
  *  @version 1.0
  */
 abstract class UnPickler {
-  val global: SymbolTable
-  import global._
+  val symbolTable: SymbolTable
+  import symbolTable._
 
   /** Unpickle symbol table information descending from a class and/or module root
    *  from an array of bytes.

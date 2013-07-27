@@ -17,6 +17,7 @@ import scala.reflect.internal.{ JavaAccFlags }
 import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
 import scala.tools.nsc.io.AbstractFile
 
+import util.ClassPath
 
 /** This abstract class implements a class file parser.
  *
@@ -24,9 +25,14 @@ import scala.tools.nsc.io.AbstractFile
  *  @version 1.0
  */
 abstract class ClassfileParser {
-  val global: Global
-  import global._
+  val symbolTable: SymbolTable {
+    def settings: Settings
+  }
+  val loaders: SymbolLoaders {
+    val symbolTable: ClassfileParser.this.symbolTable.type
+  }
 
+  import symbolTable._
   /**
    * If typer phase is defined then perform member lookup of a symbol
    * `sym` at typer phase. This method results from refactoring. The
@@ -36,6 +42,9 @@ abstract class ClassfileParser {
    * we make to make sure we handle such situation properly.
    */
   protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
+
+  /** The compiler classpath. */
+  def classPath: ClassPath[AbstractFile]
 
   import definitions._
   import scala.reflect.internal.ClassfileConstants._
@@ -64,7 +73,7 @@ abstract class ClassfileParser {
 
   def srcfile = srcfile0
 
-  private def optimized         = global.settings.optimise.value
+  private def optimized         = settings.optimise.value
   private def currentIsTopLevel = !(currentClass.decodedName containsChar '$')
 
   // u1, u2, and u4 are what these data types are called in the JVM spec.
@@ -84,7 +93,7 @@ abstract class ClassfileParser {
   private def readType()            = pool getType u2
 
   private object unpickler extends scala.reflect.internal.pickling.UnPickler {
-    val global: ClassfileParser.this.global.type = ClassfileParser.this.global
+    val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
   }
 
   private def handleMissing(e: MissingRequirementError) = {
@@ -344,7 +353,7 @@ abstract class ClassfileParser {
   }
 
   private def loadClassSymbol(name: Name): Symbol = {
-    val file = global.classPath findSourceFile ("" +name) getOrElse {
+    val file = classPath findSourceFile ("" +name) getOrElse {
       // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
       // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
       // that are not in their correct place (see bug for details)
@@ -352,7 +361,7 @@ abstract class ClassfileParser {
         warning(s"Class $name not found - continuing with a stub.")
       return NoSymbol.newClass(name.toTypeName)
     }
-    val completer     = new global.loaders.ClassfileLoader(file)
+    val completer     = new loaders.ClassfileLoader(file)
     var owner: Symbol = rootMirror.RootClass
     var sym: Symbol   = NoSymbol
     var ss: Name      = null
@@ -990,7 +999,7 @@ abstract class ClassfileParser {
 
     def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile) {
       def jflags      = entry.jflags
-      val completer   = new global.loaders.ClassfileLoader(file)
+      val completer   = new loaders.ClassfileLoader(file)
       val name        = entry.originalName
       val sflags      = jflags.toScalaFlags
       val owner       = ownerForFlags(jflags)
@@ -998,7 +1007,7 @@ abstract class ClassfileParser {
       val innerClass  = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
       val innerModule = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
 
-      innerModule.moduleClass setInfo global.loaders.moduleClassLoader
+      innerModule.moduleClass setInfo loaders.moduleClassLoader
       List(innerClass, innerModule.moduleClass) foreach (_.associatedFile = file)
 
       scope enter innerClass
@@ -1019,7 +1028,7 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
-        val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {
+        val file = classPath.findSourceFile(entry.externalName.toString) getOrElse {
           throw new AssertionError(entry.externalName)
         }
         enterClassAndModule(entry, file)

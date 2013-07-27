@@ -1479,12 +1479,16 @@ abstract class GenICode extends SubComponent  {
 
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
-        val equalsMethod =
+        val equalsMethod: Symbol =
           if (!settings.optimise) {
             def default = platform.externalEquals
             platform match {
+              // TODO: define `externalEqualsNumNum`, `externalEqualsNumChar` and `externalEqualsNumObject` in Platform
+              // so we don't need special casing here
               case x: JavaPlatform =>
-                import x._
+                // We need this cast because pattern matcher doesn't narrow type properly
+                val javaPlatformRefined = x.asInstanceOf[JavaPlatform { val global: GenICode.this.global.type }]
+                import javaPlatformRefined._
                   if (l.tpe <:< BoxedNumberClass.tpe) {
                     if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
                     else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar

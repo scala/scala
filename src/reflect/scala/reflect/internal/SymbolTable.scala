@@ -52,6 +52,12 @@ abstract class SymbolTable extends macros.Universe
   def globalError(msg: String): Unit = abort(msg)
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
+  protected def elapsedMessage(msg: String, start: Long) =
+    msg + " in " + (System.currentTimeMillis() - start) + "ms"
+
+  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
+  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
+
   def shouldLogAtThisPhase = false
   def isPastTyper = false
 

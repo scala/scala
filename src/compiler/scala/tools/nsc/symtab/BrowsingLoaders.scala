@@ -13,8 +13,11 @@ import scala.tools.nsc.io.AbstractFile
  *  are managed automatically.
  */
 abstract class BrowsingLoaders extends SymbolLoaders {
-  import global._
+  val global: Global
+  val symbolTable: global.type
+  protected def compileLate(srcfile: AbstractFile) = global.currentRun.compileLate(srcfile)
 
+  import global._
   import syntaxAnalyzer.{OutlineParser, MalformedInput}
 
   /*

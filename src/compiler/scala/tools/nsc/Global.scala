@@ -51,7 +51,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = platform.rootLoader
+    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
     override def toString = "compiler mirror"
   }
 
@@ -80,10 +80,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // platform specific elements
 
-  type ThisPlatform = Platform { val global: Global.this.type }
+  protected class GlobalPlatform extends {
+    val global: Global.this.type = Global.this
+    val settings: Settings = Global.this.settings
+  } with JavaPlatform
 
-  lazy val platform: ThisPlatform =
-    new { val global: Global.this.type = Global.this } with JavaPlatform
+  type ThisPlatform = Platform { val symbolTable: Global.this.type }
+  lazy val platform: ThisPlatform  = new GlobalPlatform
 
   type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
@@ -265,12 +268,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       log("!!! " + msg) // such warnings always at least logged
   }
 
-  private def elapsedMessage(msg: String, start: Long) =
-    msg + " in " + (currentTime - start) + "ms"
-
   def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
-  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
-  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
 
@@ -354,9 +352,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     getSourceFile(f)
   }
 
-  lazy val loaders = new SymbolLoaders {
-    val global: Global.this.type = Global.this
-    def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
+  lazy val loaders = new {
+    val symbolTable: Global.this.type = Global.this
+    val platform: Global.this.platform.type = Global.this.platform
+  } with SymbolLoaders {
+    protected override def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
       def lookup = sym.info.member(name)
       // if loading during initialization of `definitions` typerPhase is not yet set.
       // in that case we simply load the member at the current phase
@@ -365,6 +365,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       else
         enteringTyper { lookup }
     }
+    protected override def compileLate(srcfile: AbstractFile): Unit =
+      currentRun.compileLate(srcfile)
+
   }
 
   /** Returns the mirror that loaded given symbol */
