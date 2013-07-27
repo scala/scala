@@ -1,0 +1,13 @@
+t7715.scala:8: error: error in interpolated string: identifier or block expected
+  days map s"On the $_th day of Christmas" foreach println
+                     ^
+t7715.scala:10: error: error in interpolated string: identifier or block expected
+  val rf = (n: Int) => s"\\*{$_}"(n).r
+                              ^
+t7715.scala:17: error: unbound placeholder parameter
+  days zip days map s"${_: Int} by ${_: Int}".tupled foreach println
+                        ^
+t7715.scala:17: error: unbound placeholder parameter
+  days zip days map s"${_: Int} by ${_: Int}".tupled foreach println
+                                     ^
+four errors found
