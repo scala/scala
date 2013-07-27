@@ -85,7 +85,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val settings: Settings = Global.this.settings
   } with JavaPlatform
 
-  type ThisPlatform = Platform { val symbolTable: Global.this.type }
+  type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
 
   type PlatformClassPath = ClassPath[AbstractFile]

@@ -1479,30 +1479,18 @@ abstract class GenICode extends SubComponent  {
 
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
-        val equalsMethod: Symbol =
+        val equalsMethod: Symbol = {
           if (!settings.optimise) {
-            def default = platform.externalEquals
-            platform match {
-              // TODO: define `externalEqualsNumNum`, `externalEqualsNumChar` and `externalEqualsNumObject` in Platform
-              // so we don't need special casing here
-              case x: JavaPlatform =>
-                // We need this cast because pattern matcher doesn't narrow type properly
-                val javaPlatformRefined = x.asInstanceOf[JavaPlatform { val global: GenICode.this.global.type }]
-                import javaPlatformRefined._
-                  if (l.tpe <:< BoxedNumberClass.tpe) {
-                    if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
-                    else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar
-                    else externalEqualsNumObject
-                  }
-                  else default
-
-              case _ => default
-            }
-          }
-          else {
+            if (l.tpe <:< BoxedNumberClass.tpe) {
+              if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
+              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+              else platform.externalEqualsNumObject
+            } else platform.externalEquals
+          } else {
             ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
             getMember(ScalaRunTimeModule, nme.inlinedEquals)
           }
+        }
 
         val ctx1 = genLoad(l, ctx, ObjectReference)
         val ctx2 = genLoad(r, ctx1, ObjectReference)

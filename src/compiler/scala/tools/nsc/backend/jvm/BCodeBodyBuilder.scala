@@ -1188,25 +1188,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
       if (mustUseAnyComparator) {
         val equalsMethod: Symbol = {
-
-          def default: Symbol = platform.externalEquals
-
-          platform match {
-            // TODO: define `externalEqualsNumNum`, `externalEqualsNumChar` and `externalEqualsNumObject` in Platform
-            // so we don't need special casing here
-            case x: JavaPlatform =>
-              // We need this cast because pattern matcher doesn't narrow type properly
-              val javaPlatformRefined = x.asInstanceOf[JavaPlatform { val global: BCodeBodyBuilder.this.global.type }]
-              import javaPlatformRefined._
-                if (l.tpe <:< BoxedNumberClass.tpe) {
-                  if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
-                  else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar
-                  else externalEqualsNumObject
-                }
-                else default
-
-            case _ => default
-          }
+          if (l.tpe <:< BoxedNumberClass.tpe) {
+            if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
+            else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+            else platform.externalEqualsNumObject
+          } else platform.externalEquals
         }
         genLoad(l, ObjectReference)
         genLoad(r, ObjectReference)
