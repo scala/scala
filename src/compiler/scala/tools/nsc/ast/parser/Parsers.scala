@@ -1137,32 +1137,65 @@ self =>
       })
     }
 
-    private def interpolatedString(inPattern: Boolean): Tree = atPos(in.offset) {
-      val start = in.offset
-      val interpolator = in.name
-
-      val partsBuf = new ListBuffer[Tree]
-      val exprBuf = new ListBuffer[Tree]
-      in.nextToken()
-      while (in.token == STRINGPART) {
-        partsBuf += literal()
-        exprBuf += (
-          if (inPattern) dropAnyBraces(pattern())
-          else in.token match {
-            case IDENTIFIER => atPos(in.offset)(Ident(ident()))
-            case LBRACE     => expr()
-            case THIS       => in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY))
-            case _          => syntaxErrorOrIncompleteAnd("error in interpolated string: identifier or block expected", skipIt = true)(EmptyTree)
-          }
-        )
+    /** Handle placeholder syntax.
+     *  If evaluating the tree produces placeholders, then make it a function.
+     */
+    private def withPlaceholders(tree: =>Tree): Tree = {
+      val savedPlaceholderParams = placeholderParams
+      placeholderParams = List()
+      var res = tree
+      if (!placeholderParams.isEmpty && !isWildcard(res)) {
+        res = atPos(res.pos)(Function(placeholderParams.reverse, res))
+        placeholderParams = List()
       }
-      if (in.token == STRINGLIT) partsBuf += literal()
+      placeholderParams = placeholderParams ::: savedPlaceholderParams
+      res
+    }
 
-      val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
-      val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
-      t2 setPos t2.pos.makeTransparent
-      val t3 = Select(t2, interpolator) setPos t2.pos
-      atPos(start) { Apply(t3, exprBuf.toList) }
+    /** Consume a USCORE and create a fresh synthetic placeholder param. */
+    private def freshPlaceholder(isAny: Boolean): Tree = {
+      val start = in.offset
+      val pname = freshName("x$")
+      in.nextToken()
+      val id = atPos(start)(Ident(pname))
+      val param = atPos(id.pos.focus)(gen.mkSyntheticParam(pname.toTermName))
+      if (isAny) param.tpt setType definitions.AnyTpe
+      placeholderParams = param :: placeholderParams
+      id
+    }
+
+    private def interpolatedString(inPattern: Boolean): Tree = {
+      // Like Swiss cheese, with holes
+      def stringCheese: Tree = atPos(in.offset) {
+        val start = in.offset
+        val interpolator = in.name
+
+        val partsBuf = new ListBuffer[Tree]
+        val exprBuf = new ListBuffer[Tree]
+        in.nextToken()
+        while (in.token == STRINGPART) {
+          partsBuf += literal()
+          exprBuf += (
+            if (inPattern) dropAnyBraces(pattern())
+            else in.token match {
+              case IDENTIFIER => atPos(in.offset)(Ident(ident()))
+              case USCORE     => freshPlaceholder(isAny = true) // strinterpolator params are Any* by definition
+              case LBRACE     => expr()
+              case THIS       => in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY))
+              case _          => syntaxErrorOrIncompleteAnd("error in interpolated string: identifier or block expected", skipIt = true)(EmptyTree)
+            }
+          )
+        }
+        if (in.token == STRINGLIT) partsBuf += literal()
+
+        val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
+        val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
+        t2 setPos t2.pos.makeTransparent
+        val t3 = Select(t2, interpolator) setPos t2.pos
+        atPos(start) { Apply(t3, exprBuf.toList) }
+      }
+      if (inPattern) stringCheese
+      else withPlaceholders(stringCheese)
     }
 
 /* ------------- NEW LINES ------------------------------------------------- */
@@ -1260,18 +1293,7 @@ self =>
      */
     def expr(): Tree = expr(Local)
 
-    def expr(location: Int): Tree = {
-      val savedPlaceholderParams = placeholderParams
-      placeholderParams = List()
-      var res = expr0(location)
-      if (!placeholderParams.isEmpty && !isWildcard(res)) {
-        res = atPos(res.pos){ Function(placeholderParams.reverse, res) }
-        placeholderParams = List()
-      }
-      placeholderParams = placeholderParams ::: savedPlaceholderParams
-      res
-    }
-
+    def expr(location: Int): Tree = withPlaceholders(expr0(location))
 
     def expr0(location: Int): Tree = (in.token: @scala.annotation.switch) match {
       case IF =>
@@ -1520,13 +1542,7 @@ self =>
           case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
             path(thisOK = true, typeOK = false)
           case USCORE =>
-            val start = in.offset
-            val pname = freshName("x$")
-            in.nextToken()
-            val id = atPos(start) (Ident(pname))
-            val param = atPos(id.pos.focus){ gen.mkSyntheticParam(pname.toTermName) }
-            placeholderParams = param :: placeholderParams
-            id
+            freshPlaceholder(isAny = false)
           case LPAREN =>
             atPos(in.offset)(makeParens(commaSeparated(expr())))
           case LBRACE =>
