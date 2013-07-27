@@ -51,10 +51,6 @@ object Test extends InteractiveTest {
           new Typer(context) with InteractiveTyper with ScaladocTyper
       }
 
-      override lazy val loaders = new scala.tools.nsc.symtab.SymbolLoaders {
-        val global: outer.type = outer
-      }
-
       def chooseLink(links: List[LinkTo]): LinkTo = links.head
       def internalLink(sym: Symbol, site: Symbol) = None
       def toString(link: LinkTo) = link.toString

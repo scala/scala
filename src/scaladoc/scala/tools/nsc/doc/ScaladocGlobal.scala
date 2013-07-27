@@ -32,6 +32,16 @@ trait ScaladocGlobalTrait extends Global {
     override protected def signalError(root: Symbol, ex: Throwable) {
       log(s"Suppressing error involving $root: $ex")
     }
+
+    def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
+      def lookup = sym.info.member(name)
+      // if loading during initialization of `definitions` typerPhase is not yet set.
+      // in that case we simply load the member at the current phase
+      if (currentRun.typerPhase eq null)
+        lookup
+      else
+        enteringTyper { lookup }
+    }
   }
 }
 

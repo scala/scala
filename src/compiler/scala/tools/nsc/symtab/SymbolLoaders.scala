@@ -22,6 +22,11 @@ import scala.reflect.io.{ AbstractFile, NoAbstractFile }
 abstract class SymbolLoaders {
   val global: Global
   import global._
+
+  /**
+   * Required by ClassfileParser. Check documentation in that class for details.
+   */
+  protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
   import SymbolLoadersStats._
 
   protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
@@ -249,6 +254,8 @@ abstract class SymbolLoaders {
     } with ClassfileParser {
       override protected type ThisConstantPool = ConstantPool
       override protected def newConstantPool: ThisConstantPool = new ConstantPool
+      override protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol =
+        SymbolLoaders.this.lookupMemberAtTyperPhaseIfPossible(sym, name)
     }
 
     protected def description = "class file "+ classfile.toString

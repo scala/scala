@@ -26,6 +26,17 @@ import scala.tools.nsc.io.AbstractFile
 abstract class ClassfileParser {
   val global: Global
   import global._
+
+  /**
+   * If typer phase is defined then perform member lookup of a symbol
+   * `sym` at typer phase. This method results from refactoring. The
+   * original author of the logic that uses typer phase didn't explain
+   * why we need to force infos at that phase specifically. It only mentioned
+   * that ClassfileParse can be called late (e.g. at flatten phase) and
+   * we make to make sure we handle such situation properly.
+   */
+  protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
+
   import definitions._
   import scala.reflect.internal.ClassfileConstants._
   import Flags._
@@ -1093,19 +1104,15 @@ abstract class ClassfileParser {
       case Some(entry) => innerSymbol(entry)
       case _           => NoSymbol
     }
-    // if loading during initialization of `definitions` typerPhase is not yet set.
-    // in that case we simply load the member at the current phase
-    @inline private def enteringTyperIfPossible(body: => Symbol): Symbol =
-      if (currentRun.typerPhase eq null) body else enteringTyper(body)
 
     private def innerSymbol(entry: InnerClassEntry): Symbol = {
       val name      = entry.originalName.toTypeName
       val enclosing = entry.enclosing
       def getMember = (
         if (enclosing == clazz) entry.scope lookup name
-        else enclosing.info member name
+        else lookupMemberAtTyperPhaseIfPossible(enclosing, name)
       )
-      enteringTyperIfPossible(getMember)
+      getMember
       /*  There used to be an assertion that this result is not NoSymbol; changing it to an error
        *  revealed it had been going off all the time, but has been swallowed by a catch t: Throwable
        *  in Repository.scala. Since it has been accomplishing nothing except misleading anyone who

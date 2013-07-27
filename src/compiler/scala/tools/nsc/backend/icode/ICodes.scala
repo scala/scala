@@ -108,6 +108,16 @@ abstract class ICodes extends AnyRef
 
   object icodeReader extends ICodeReader {
     lazy val global: ICodes.this.global.type = ICodes.this.global
+    import global._
+    def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
+      def lookup = sym.info.member(name)
+      // if loading during initialization of `definitions` typerPhase is not yet set.
+      // in that case we simply load the member at the current phase
+      if (currentRun.typerPhase eq null)
+        lookup
+      else
+        enteringTyper { lookup }
+    }
   }
 
   /** A phase which works on icode. */

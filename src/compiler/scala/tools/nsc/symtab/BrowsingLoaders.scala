@@ -17,6 +17,20 @@ abstract class BrowsingLoaders extends SymbolLoaders {
 
   import syntaxAnalyzer.{OutlineParser, MalformedInput}
 
+  /*
+   * BrowsingLoaders has dependency on Global so we can implement this method here instead of forcing subclasses
+   * of BrowsingLoaders (e.g. in interactive) to implement it.
+   */
+  override def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
+      def lookup = sym.info.member(name)
+      // if loading during initialization of `definitions` typerPhase is not yet set.
+      // in that case we simply load the member at the current phase
+      if (currentRun.typerPhase eq null)
+        lookup
+      else
+        enteringTyper { lookup }
+  }
+
   /** In browse mode, it can happen that an encountered symbol is already
    *  present. For instance, if the source file has a name different from
    *  the classes and objects it contains, the symbol loader will always
