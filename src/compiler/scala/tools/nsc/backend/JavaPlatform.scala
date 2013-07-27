@@ -14,29 +14,18 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  type BinaryRepr = AbstractFile
+  private var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
-  private var currentClassPath: Option[MergedClassPath[BinaryRepr]] = None
-
-  def classPath: ClassPath[BinaryRepr] = {
+  def classPath: ClassPath[AbstractFile] = {
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
     currentClassPath.get
   }
 
   /** Update classpath with a substituted subentry */
-  def updateClassPath(subst: Map[ClassPath[BinaryRepr], ClassPath[BinaryRepr]]) =
+  def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]) =
     currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))
 
-  def rootLoader = new loaders.PackageLoader(classPath.asInstanceOf[ClassPath[platform.BinaryRepr]])
-    // [Martin] Why do we need a cast here?
-    // The problem is that we cannot specify at this point that global.platform should be of type JavaPlatform.
-    // So we cannot infer that global.platform.BinaryRepr is AbstractFile.
-    // Ideally, we should be able to write at the top of the JavaPlatform trait:
-    //   val global: Global { val platform: JavaPlatform }
-    //   import global._
-    // Right now, this does nothing because the concrete definition of platform in Global
-    // replaces the tighter abstract definition here. If we had DOT typing rules, the two
-    // types would be conjoined and everything would work out. Yet another reason to push for DOT.
+  def rootLoader = new loaders.PackageLoader(classPath)
 
   private def classEmitPhase =
     if (settings.isBCodeActive) genBCode
@@ -69,7 +58,7 @@ trait JavaPlatform extends Platform {
   def newClassLoader(bin: AbstractFile): loaders.SymbolLoader =
     new loaders.ClassfileLoader(bin)
 
-  def doLoad(cls: ClassPath[BinaryRepr]#ClassRep): Boolean = true
+  def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean = true
 
   def needCompile(bin: AbstractFile, src: AbstractFile) =
     src.lastModified >= bin.lastModified

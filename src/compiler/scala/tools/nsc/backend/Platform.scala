@@ -16,16 +16,17 @@ trait Platform {
   import global._
 
   /** The binary classfile representation type */
-  type BinaryRepr
+  @deprecated("BinaryRepr is not an abstract type anymore. It's an alias that points at AbstractFile. It'll be removed before Scala 2.11 is released.", "2.11.0-M5")
+  type BinaryRepr = AbstractFile
 
   /** The compiler classpath. */
-  def classPath: ClassPath[BinaryRepr]
+  def classPath: ClassPath[AbstractFile]
 
   /** The root symbol loader. */
   def rootLoader: LazyType
 
   /** Update classpath with a substitution that maps entries to entries */
-  def updateClassPath(subst: Map[ClassPath[BinaryRepr], ClassPath[BinaryRepr]])
+  def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])
 
   /** Any platform-specific phases. */
   def platformPhases: List[SubComponent]
@@ -37,7 +38,7 @@ trait Platform {
   def isMaybeBoxed(sym: Symbol): Boolean
 
   /** Create a new class loader to load class file `bin` */
-  def newClassLoader(bin: BinaryRepr): loaders.SymbolLoader
+  def newClassLoader(bin: AbstractFile): loaders.SymbolLoader
 
   /**
    * Tells whether a class should be loaded and entered into the package
@@ -45,7 +46,7 @@ trait Platform {
    * (anonymous classes, implementation classes, module classes), their
    * symtab is encoded in the pickle of another class.
    */
-  def doLoad(cls: ClassPath[BinaryRepr]#ClassRep): Boolean
+  def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean
 
   /**
    * Tells whether a class with both a binary and a source representation
@@ -53,6 +54,6 @@ trait Platform {
    * on the JVM similar to javac, i.e. if the source file is newer than the classfile,
    * a re-compile is triggered. On .NET by contrast classfiles always take precedence.
    */
-  def needCompile(bin: BinaryRepr, src: AbstractFile): Boolean
+  def needCompile(bin: AbstractFile, src: AbstractFile): Boolean
 }
 

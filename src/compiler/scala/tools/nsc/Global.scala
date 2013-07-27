@@ -85,7 +85,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   lazy val platform: ThisPlatform =
     new { val global: Global.this.type = Global.this } with JavaPlatform
 
-  type PlatformClassPath = ClassPath[platform.BinaryRepr]
+  type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
 
   def classPath: PlatformClassPath = platform.classPath
@@ -924,7 +924,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
              invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
     ifDebug(informProgress(s"syncing $root, $oldEntries -> $newEntries"))
 
-    val getName: ClassPath[platform.BinaryRepr] => String = (_.name)
+    val getName: ClassPath[AbstractFile] => String = (_.name)
     def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
     def invalidateOrRemove(root: ClassSymbol) = {
       allEntries match {
