@@ -30,12 +30,15 @@ abstract class ClassfileParser {
   import scala.reflect.internal.ClassfileConstants._
   import Flags._
 
+  protected type ThisConstantPool <: ConstantPool
+  protected def newConstantPool: ThisConstantPool
+
   protected var in: AbstractFileReader = _  // the class file reader
   protected var clazz: Symbol = _           // the class symbol containing dynamic members
   protected var staticModule: Symbol = _    // the module symbol containing static members
   protected var instanceScope: Scope = _    // the scope of all instance definitions
   protected var staticScope: Scope = _      // the scope of all static definitions
-  protected var pool: ConstantPool = _      // the classfile's constant pool
+  protected var pool: ThisConstantPool = _  // the classfile's constant pool
   protected var isScala: Boolean = _        // does class file describe a scala class?
   protected var isScalaAnnot: Boolean = _   // does class file describe a scala class with its pickled info in an annotation?
   protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
@@ -119,7 +122,7 @@ abstract class ClassfileParser {
       this.isScala      = false
 
       parseHeader()
-      this.pool = new ConstantPool
+      this.pool = newConstantPool
       parseClass()
     }
   }
@@ -134,11 +137,14 @@ abstract class ClassfileParser {
       abort(s"class file ${in.file} has unknown version $major.$minor, should be at least $JAVA_MAJOR_VERSION.$JAVA_MINOR_VERSION")
   }
 
-  class ConstantPool {
-    private val len          = u2
-    private val starts       = new Array[Int](len)
-    private val values       = new Array[AnyRef](len)
-    private val internalized = new Array[Name](len)
+  /**
+   * Constructor of this class should not be called directly, use `newConstantPool` instead.
+   */
+  protected class ConstantPool {
+    protected val len          = u2
+    protected val starts       = new Array[Int](len)
+    protected val values       = new Array[AnyRef](len)
+    protected val internalized = new Array[Name](len)
 
     { var i = 1
       while (i < starts.length) {
@@ -212,76 +218,13 @@ abstract class ClassfileParser {
       getExternalName((in getChar start).toInt)
     }
 
-    /** Return the symbol of the class member at `index`.
-     *  The following special cases exist:
-     *   - If the member refers to special `MODULE$` static field, return
-     *  the symbol of the corresponding module.
-     *   - If the member is a field, and is not found with the given name,
-     *     another try is made by appending `nme.LOCAL_SUFFIX_STRING`
-     *   - If no symbol is found in the right tpe, a new try is made in the
-     *     companion class, in case the owner is an implementation class.
-     */
-    def getMemberSymbol(index: Int, static: Boolean): Symbol = {
-      if (index <= 0 || len <= index) errorBadIndex(index)
-      var f = values(index).asInstanceOf[Symbol]
-      if (f eq null) {
-        val start = starts(index)
-        val first = in.buf(start).toInt
-        if (first != CONSTANT_FIELDREF &&
-            first != CONSTANT_METHODREF &&
-            first != CONSTANT_INTFMETHODREF) errorBadTag(start)
-        val ownerTpe = getClassOrArrayType(in.getChar(start + 1).toInt)
-        debuglog("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
-        val (name0, tpe0) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
-        debuglog("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
-
-        forceMangledName(tpe0.typeSymbol.name, module = false)
-        val (name, tpe) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
-        if (name == nme.MODULE_INSTANCE_FIELD) {
-          val index = in.getChar(start + 1).toInt
-          val name = getExternalName(in.getChar(starts(index).toInt + 1).toInt)
-          //assert(name.endsWith("$"), "Not a module class: " + name)
-          f = forceMangledName(name dropRight 1, module = true)
-          if (f == NoSymbol)
-            f = rootMirror.getModuleByName(name dropRight 1)
-        } else {
-          val origName = nme.unexpandedName(name)
-          val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
-          f = owner.info.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe.widen =:= tpe)
-          if (f == NoSymbol)
-            f = owner.info.findMember(newTermName(origName + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
-          if (f == NoSymbol) {
-            // if it's an impl class, try to find it's static member inside the class
-            if (ownerTpe.typeSymbol.isImplClass) {
-              f = ownerTpe.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
-            } else {
-              log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
-              f = tpe match {
-                case MethodType(_, _) => owner.newMethod(name.toTermName, owner.pos)
-                case _                => owner.newVariable(name.toTermName, owner.pos)
-              }
-              f setInfo tpe
-              log("created fake member " + f.fullName)
-            }
-          }
-        }
-        assert(f != NoSymbol,
-          s"could not find $name: $tpe in $ownerTpe" + (
-            if (settings.debug.value) ownerTpe.members.mkString(", members are:\n  ", "\n  ", "") else ""
-          )
-        )
-        values(index) = f
-      }
-      f
-    }
-
     /** Return a name and a type at the given index. If the type is a method
      *  type, a dummy symbol is created in `ownerTpe`, which is used as the
      *  owner of its value parameters. This might lead to inconsistencies,
      *  if a symbol of the given name already exists, and has a different
      *  type.
      */
-    private def getNameAndType(index: Int, ownerTpe: Type): (Name, Type) = {
+    protected def getNameAndType(index: Int, ownerTpe: Type): (Name, Type) = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       values(index) match {
         case p: ((Name @unchecked, Type @unchecked)) => p
@@ -381,33 +324,12 @@ abstract class ClassfileParser {
     }
 
     /** Throws an exception signaling a bad constant index. */
-    private def errorBadIndex(index: Int) =
+    protected def errorBadIndex(index: Int) =
       abort(s"bad constant pool index: $index at pos: ${in.bp}")
 
     /** Throws an exception signaling a bad tag at given address. */
-    private def errorBadTag(start: Int) =
+    protected def errorBadTag(start: Int) =
       abort("bad constant pool tag ${in.buf(start)} at byte $start")
-  }
-
-  /** Try to force the chain of enclosing classes for the given name. Otherwise
-   *  flatten would not lift classes that were not referenced in the source code.
-   */
-  def forceMangledName(name: Name, module: Boolean): Symbol = {
-    val parts = name.decode.toString.split(Array('.', '$'))
-    var sym: Symbol = rootMirror.RootClass
-
-    // was "at flatten.prev"
-    enteringFlatten {
-      for (part0 <- parts; if !(part0 == ""); part = newTermName(part0)) {
-        val sym1 = enteringIcode {
-          sym.linkedClassOfClass.info
-          sym.info.decl(part.encode)
-        }//.suchThat(module == _.isModule)
-
-        sym = sym1 orElse sym.info.decl(part.encode.toTypeName)
-      }
-    }
-    sym
   }
 
   private def loadClassSymbol(name: Name): Symbol = {

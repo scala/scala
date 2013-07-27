@@ -246,7 +246,10 @@ abstract class SymbolLoaders {
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
-    } with ClassfileParser
+    } with ClassfileParser {
+      override protected type ThisConstantPool = ConstantPool
+      override protected def newConstantPool: ThisConstantPool = new ConstantPool
+    }
 
     protected def description = "class file "+ classfile.toString
 
