@@ -82,7 +82,7 @@ trait Promise[T] {
 
   /** Completes the promise with a value.
    *
-   *  @param v    The value to complete the promise with.
+   *  @param value The value to complete the promise with.
    *
    *  $promiseCompletion
    */
@@ -98,7 +98,7 @@ trait Promise[T] {
 
   /** Completes the promise with an exception.
    *
-   *  @param t        The throwable to complete the promise with.
+   *  @param cause    The throwable to complete the promise with.
    *
    *  $allowedThrowables
    *
