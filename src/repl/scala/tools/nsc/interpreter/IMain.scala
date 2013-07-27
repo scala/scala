@@ -26,7 +26,7 @@ import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine
 import java.io.{ StringWriter, Reader }
 import java.util.Arrays
 import IMain._
-import java.util.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import StdReplTags._
@@ -142,10 +142,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def initialize(postInitSignal: => Unit) {
     synchronized {
       if (_isInitialized == null) {
-        _isInitialized = io.spawn {
-          try _initialize()
-          finally postInitSignal
-        }
+        _isInitialized =
+          Future(try _initialize() finally postInitSignal)(ExecutionContext.global)
       }
     }
   }
