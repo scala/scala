@@ -1,10 +1,7 @@
-ambiguous-float-dots2.scala:7: error: Non-zero numbers may not have a leading zero.
-  val y0 = 055
-           ^
 ambiguous-float-dots2.scala:3: error: identifier expected but '}' found.
 }
 ^
-ambiguous-float-dots2.scala:12: error: ';' expected but integer literal found.
+ambiguous-float-dots2.scala:11: error: ';' expected but integer literal found.
   1. + 2
        ^
-three errors found
+two errors found
