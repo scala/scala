@@ -9,7 +9,7 @@ package api
  * ''Note: this trait should typically be used only rarely.''
  *
  *  Reflection artifacts, such as [[scala.reflect.api.Symbols Symbols]] and [[scala.reflect.api.Types Types]],
- *  are contained in [[scala.reflect.api.Universes Universe]]s. Typically all processing happens
+ *  are contained in [[scala.reflect.api.Universe Universe]]s. Typically all processing happens
  *  within a single `Universe` (e.g. a compile-time macro `Universe` or a runtime reflection `Universe`), but sometimes
  *  there is a need to migrate artifacts from one `Universe` to another. For example, runtime compilation works by
  *  importing runtime reflection trees into a runtime compiler universe, compiling the importees and exporting the
