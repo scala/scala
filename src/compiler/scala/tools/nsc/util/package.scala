@@ -86,12 +86,6 @@ package object util {
   @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
   type StringOps = scala.reflect.internal.util.StringOps
 
-  @deprecated("Moved to scala.reflect.internal.util.TableDef", "2.10.0")
-  val TableDef = scala.reflect.internal.util.TableDef
-
-  @deprecated("Moved to scala.reflect.internal.util.TableDef", "2.10.0")
-  type TableDef[T] = scala.reflect.internal.util.TableDef[T]
-
   @deprecated("scala.reflect.internal.util.WeakHashSet", "2.10.0")
   type WeakHashSet[T <: AnyRef] = scala.reflect.internal.util.WeakHashSet[T]
 
