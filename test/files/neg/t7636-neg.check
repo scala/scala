@@ -1,0 +1,10 @@
+t7636.scala:3: error: illegal inheritance;
+ self-type Main.C does not conform to Main.ResultTable[_$3]'s selftype Main.ResultTable[_$3]
+  class C extends ResultTable(Left(5):Either[_,_])(5)
+                  ^
+t7636.scala:3: error: type mismatch;
+ found   : Either[_$2,_$3(in constructor C)] where type _$3(in constructor C), type _$2
+ required: Either[_, _$3(in object Main)] where type _$3(in object Main)
+  class C extends ResultTable(Left(5):Either[_,_])(5)
+                                     ^
+two errors found
