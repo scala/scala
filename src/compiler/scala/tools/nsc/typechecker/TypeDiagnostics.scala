@@ -167,10 +167,10 @@ trait TypeDiagnostics {
   def explainAlias(tp: Type) = {
     // Don't automatically normalize standard aliases; they still will be
     // expanded if necessary to disambiguate simple identifiers.
-    if ((tp eq tp.normalize) || tp.typeSymbolDirect.isInDefaultNamespace) ""
-    else {
+    val deepDealias = DealiasedType(tp)
+    if (tp eq deepDealias) "" else {
       // A sanity check against expansion being identical to original.
-      val s = "" + DealiasedType(tp)
+      val s = "" + deepDealias
       if (s == "" + tp) ""
       else "\n    (which expands to)  " + s
     }

@@ -70,6 +70,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   override def settings = currentSettings
 
+  /** Switch to turn on detailed type logs */
+  var printTypings = settings.Ytyperdebug.value
+
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)
 
@@ -416,10 +419,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
   }
-
-  /** Switch to turn on detailed type logs */
-  val printTypings = settings.Ytyperdebug.value
-  val printInfers = settings.Yinferdebug.value
 
   // phaseName = "parser"
   lazy val syntaxAnalyzer = new {
