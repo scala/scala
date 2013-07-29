@@ -1,13 +1,6 @@
-package scala.tools.scalap
-package scalax
-package rules
-package scalasig
+package scala.tools.scalap.scalasig
 
-
-import java.io.IOException
-
-import scala._
-import scala.Predef._
+import scala.tools.scalap.rules.{ Success, Failure, ~, RulesWithState }
 
 object ByteCode {
   def apply(bytes : Array[Byte]) = new ByteCode(bytes, 0, bytes.length)
@@ -22,7 +15,7 @@ object ByteCode {
       val bytes = new Array[Byte](rest)
       while (rest > 0) {
         val res = in.read(bytes, bytes.length - rest, rest)
-        if (res == -1) throw new IOException("read error")
+        if (res == -1) throw new java.io.IOException("read error")
         rest -= res
       }
       ByteCode(bytes)
@@ -33,8 +26,7 @@ object ByteCode {
   }
 }
 
-/** Represents a chunk of raw bytecode.  Used as input for the parsers
- */
+/** Represents a chunk of raw bytecode.  Used as input for the parsers. */
 class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
 
   assert(pos >= 0 && length >= 0 && pos + length <= bytes.length)
@@ -86,11 +78,11 @@ trait ByteCodeReader extends RulesWithState {
   type S = ByteCode
   type Parser[A] = Rule[A, String]
 
-  val byte = apply(_ nextByte)
+  val byte = apply(_.nextByte)
 
   val u1 = byte ^^ (_ & 0xFF)
-  val u2 = bytes(2) ^^ (_ toInt)
-  val u4 = bytes(4) ^^ (_ toInt) // should map to Long??
+  val u2 = bytes(2) ^^ (_.toInt)
+  val u4 = bytes(4) ^^ (_.toInt) // should map to Long??
 
   def bytes(n : Int) = apply(_ next n)
 }
@@ -101,7 +93,7 @@ object ClassFileParser extends ByteCodeReader {
 
   val magicNumber = (u4 filter (_ == 0xCAFEBABE)) | error("Not a valid class file")
   val version = u2 ~ u2 ^^ { case minor ~ major => (major,  minor) }
-  val constantPool = (u2 ^^ ConstantPool) >> repeatUntil(constantPoolEntry)(_ isFull)
+  val constantPool = (u2 ^^ ConstantPool) >> repeatUntil(constantPoolEntry)(_.isFull)
 
   // NOTE currently most constants just evaluate to a string description
   // TODO evaluate to useful values
@@ -246,4 +238,3 @@ case class ConstantPool(len : Int) {
     this
   }
 }
-

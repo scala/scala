@@ -5,17 +5,14 @@
 **
 */
 
+package scala.tools.scalap.scalasig
 
-package scala.tools.scalap
-package scalax
-package rules
-package scalasig
+import scala.language.implicitConversions
 
 import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
-import scala.tools.scalap.scalax.util.StringUtil
-import scala.reflect.NameTransformer
-import java.lang.String
+
+import scala.tools.scalap.rules.~
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   import stream._
@@ -186,19 +183,9 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     printWithIndent(level, "}\n")
   }
 
-  def genParamNames(t: {def paramTypes: Seq[Type]}): List[String] = t.paramTypes.toList.map(x => {
-    var str = toString(x)
-    val j = str.indexOf("[")
-    if (j > 0) str = str.substring(0, j)
-    str = StringUtil.trimStart(str, "=> ")
-    val i = str.lastIndexOf(".")
-    val res = if (i > 0) str.substring(i + 1) else str
-    if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
-  })
-
   def printMethodType(t: Type, printResult: Boolean)(cont: => Unit): Unit = {
 
-    def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) = {
+    def _pmt(mt: MethodType) = {
 
       val paramEntries = mt.paramSymbols.map({
         case ms: MethodSymbol => ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
@@ -356,8 +343,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         }
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
-          val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
-          StringUtil.trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
+          val path = cutSubstring(symbol.path)(".package") //remove package object reference
+          trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
         }
       })
       case TypeBoundsType(lower, upper) => {
@@ -402,7 +389,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def typeArgString(typeArgs: Seq[Type]): String =
     if (typeArgs.isEmpty) ""
-    else typeArgs.map(toString).map(StringUtil.trimStart(_, "=> ")).mkString("[", ", ", "]")
+    else typeArgs.map(toString).map(trimStart(_, "=> ")).mkString("[", ", ", "]")
 
   def typeParamString(params: Seq[Symbol]): String =
     if (params.isEmpty) ""
@@ -423,7 +410,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (i > 0) name.substring(i + 2) else name
   }
 
-  def processName(name: String) = {
+  private def processName(name: String) = {
     val stripped = stripPrivatePrefix(name)
     val m = pattern.matcher(stripped)
     var temp = stripped
@@ -433,7 +420,15 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       temp = temp.replaceAll(re, _syms(re))
     }
     val result = temp.replaceAll(placeholderPattern, "_")
-    NameTransformer.decode(result)
+    scala.reflect.NameTransformer.decode(result)
   }
 
+  private def trimStart(s: String, prefix: String) =
+    if (s != null && s.startsWith(prefix)) s.substring(prefix.length) else s
+
+  private def decapitalize(s: String) =
+    java.beans.Introspector.decapitalize(s)
+
+  private def cutSubstring(dom: String)(s: String) =
+    if (dom != null && s != null) dom.replace(s, "") else dom
 }

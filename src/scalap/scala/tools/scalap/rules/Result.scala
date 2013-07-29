@@ -10,9 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scala.tools.scalap
-package scalax
-package rules;
+package scala.tools.scalap.rules;
 
 /** Represents the combined value of two rules applied in sequence.
  *
