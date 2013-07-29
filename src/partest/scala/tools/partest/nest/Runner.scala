@@ -20,7 +20,7 @@ import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
-import scala.tools.scalap.scalax.rules.scalasig.ByteCode
+import scala.tools.scalap.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import PartestDefaults.{ javaCmd, javacCmd }

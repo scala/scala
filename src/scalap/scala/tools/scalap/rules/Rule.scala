@@ -10,9 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scala.tools.scalap
-package scalax
-package rules
+package scala.tools.scalap.rules
 
 /** A Rule is a function from some input to a Result.  The result may be:
   * <ul>
@@ -91,11 +89,11 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   /** Apply the result of this rule to the function returned by the previous rule */
   def <~:[InPrev, B, X2 >: X](prev : => Rule[InPrev, In, A => B, X2]) = for (fa2b <- prev; a <- this) yield fa2b(a)
 
-  def ~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield new ~(a, b)
+  def ~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next.orError) yield new ~(a, b)
 
-  def ~-![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield a
+  def ~-![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next.orError) yield a
 
-  def -~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield b
+  def -~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next.orError) yield b
 
   def -[In2 <: In](exclude : => Rule[In2, Any, Any, Any]) = !exclude -~ this
 

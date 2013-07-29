@@ -5,17 +5,14 @@
 **
 */
 
-// $Id$
-
 package scala.tools.scalap
 
-import scala.tools.scalap.scalax.rules.scalasig._
-import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.nsc.util.ScalaClassLoader.appLoader
+import scala.tools.scalap.scalasig._
+
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.internal.pickling.ByteCodecs
 
 import ClassFileParser.{ ConstValueIndex, Annotation }
-import Main.{ SCALA_SIG, SCALA_SIG_ANNOTATION, BYTES_VALUE }
 
 /** Temporary decoder.  This would be better off in the scala.tools.nsc
  *  but right now the compiler won't acknowledge scala.tools.scalap
@@ -31,7 +28,7 @@ object Decode {
   /** Return the classfile bytes representing the scala sig classfile attribute.
    *  This has been obsoleted by the switch to annotations.
    */
-  def scalaSigBytes(name: String): Option[Array[Byte]] = scalaSigBytes(name, appLoader)
+  def scalaSigBytes(name: String): Option[Array[Byte]] = scalaSigBytes(name, ScalaClassLoader.appLoader)
   def scalaSigBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
     val bytes = classLoader.classBytes(name)
     val reader = new ByteArrayReader(bytes)
@@ -39,17 +36,16 @@ object Decode {
     cf.scalaSigAttribute map (_.data)
   }
 
-  /** Return the bytes representing the annotation
-   */
-  def scalaSigAnnotationBytes(name: String): Option[Array[Byte]] = scalaSigAnnotationBytes(name, appLoader)
+  /** Return the bytes representing the annotation. */
+  def scalaSigAnnotationBytes(name: String): Option[Array[Byte]] = scalaSigAnnotationBytes(name, ScalaClassLoader.appLoader)
   def scalaSigAnnotationBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
     val bytes     = classLoader.classBytes(name)
     val byteCode  = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
     import classFile._
 
-    classFile annotation SCALA_SIG_ANNOTATION map { case Annotation(_, els) =>
-      val bytesElem = els find (x => constant(x.elementNameIndex) == BYTES_VALUE) getOrElse null
+    classFile annotation Main.SCALA_SIG_ANNOTATION map { case Annotation(_, els) =>
+      val bytesElem = els find (x => constant(x.elementNameIndex) == Main.BYTES_VALUE) getOrElse null
       val _bytes    = bytesElem.elementValue match { case ConstValueIndex(x) => constantWrapped(x) }
       val bytes     = _bytes.asInstanceOf[StringBytesPair].bytes
       val length    = ByteCodecs.decode(bytes)
@@ -58,8 +54,7 @@ object Decode {
     }
   }
 
-  /** private[scala] so nobody gets the idea this is a supported interface.
-   */
+  /** private[scala] so nobody gets the idea this is a supported interface. */
   private[scala] def caseParamNames(path: String): Option[List[String]] = {
     val (outer, inner) = (path indexOf '$') match {
       case -1   => (path, "")
@@ -67,7 +62,7 @@ object Decode {
     }
 
     for {
-      clazz <- appLoader.tryToLoadClass[AnyRef](outer)
+      clazz <- ScalaClassLoader.appLoader.tryToLoadClass[AnyRef](outer)
       ssig <- ScalaSigParser.parse(clazz)
     }
     yield {
@@ -85,11 +80,10 @@ object Decode {
     }
   }
 
-  /** Returns a map of Alias -> Type for the given package.
-   */
+  /** Returns a map of Alias -> Type for the given package. */
   private[scala] def typeAliases(pkg: String) = {
     for {
-      clazz <- appLoader.tryToLoadClass[AnyRef](pkg + ".package")
+      clazz <- ScalaClassLoader.appLoader.tryToLoadClass[AnyRef](pkg + ".package")
       ssig <- ScalaSigParser.parse(clazz)
     }
     yield {
