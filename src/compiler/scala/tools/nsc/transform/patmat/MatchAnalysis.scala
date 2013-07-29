@@ -488,8 +488,13 @@ trait MatchAnalysis extends MatchApproximation {
 
     object CounterExample {
       def prune(examples: List[CounterExample]): List[CounterExample] = {
-        val distinct = examples.filterNot(_ == NoExample).toSet
-        distinct.filterNot(ce => distinct.exists(other => (ce ne other) && ce.coveredBy(other))).toList
+        // SI-7669 Warning: we don't used examples.distinct here any more as
+        //         we can have A != B && A.coveredBy(B) && B.coveredBy(A)
+        //         with Nil and List().
+        val result = mutable.Buffer[CounterExample]()
+        for (example <- examples if (!result.exists(example coveredBy _)))
+          result += example
+        result.toList
       }
     }
 
@@ -591,7 +596,7 @@ trait MatchAnalysis extends MatchApproximation {
         private def unique(variable: Var): VariableAssignment =
           uniques.getOrElseUpdate(variable, {
             val (eqTo, neqTo) = varAssignment.getOrElse(variable, (Nil, Nil)) // TODO
-            VariableAssignment(variable, eqTo.toList, neqTo.toList, mutable.HashMap.empty)
+            VariableAssignment(variable, eqTo.toList, neqTo.toList)
           })
 
         def apply(variable: Var): VariableAssignment = {
@@ -605,7 +610,7 @@ trait MatchAnalysis extends MatchApproximation {
           else {
             findVar(pre) foreach { preVar =>
               val outerCtor = this(preVar)
-              outerCtor.fields(field) = newCtor
+              outerCtor.addField(field, newCtor)
             }
             newCtor
           }
@@ -613,7 +618,8 @@ trait MatchAnalysis extends MatchApproximation {
       }
 
       // node in the tree that describes how to construct a counter-example
-      case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const], fields: scala.collection.mutable.Map[Symbol, VariableAssignment]) {
+      case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const]) {
+        private val fields: mutable.Map[Symbol, VariableAssignment] = mutable.HashMap.empty
         // need to prune since the model now incorporates all super types of a constant (needed for reachability)
         private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && instanceOfTpImplies(better.tp, subsumed.tp)))
         private lazy val prunedEqualTo = uniqueEqualTo filterNot (subsumed => variable.staticTpCheckable <:< subsumed.tp)
@@ -622,6 +628,11 @@ trait MatchAnalysis extends MatchApproximation {
         private lazy val cls        = if (ctor == NoSymbol) NoSymbol else ctor.owner
         private lazy val caseFieldAccs = if (cls == NoSymbol) Nil else cls.caseFieldAccessors
 
+        def addField(symbol: Symbol, assign: VariableAssignment) {
+          // SI-7669 Only register this field if if this class contains it.
+          val shouldConstrainField = !symbol.isCaseAccessor || caseFieldAccs.contains(symbol)
+          if (shouldConstrainField) fields(symbol) = assign
+        }
 
         def allFieldAssignmentsLegal: Boolean =
           (fields.keySet subsetOf caseFieldAccs.toSet) && fields.values.forall(_.allFieldAssignmentsLegal)
