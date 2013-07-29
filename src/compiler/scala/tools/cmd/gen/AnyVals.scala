@@ -20,7 +20,9 @@ trait AnyValReps {
         s"implicit def @javaequiv@2${to.javaEquiv}(x: @name@): ${to.name} = x.to${to.name}"
       )
     }
-    def coercionComment = """/** Language mandated coercions from @name@ to "wider" types. */"""
+    def coercionComment =
+"""/** Language mandated coercions from @name@ to "wider" types. */
+import scala.language.implicitConversions"""
 
     def implicitCoercions: List[String] = {
       val coercions = this match {
@@ -285,8 +287,6 @@ trait AnyValTemplates {
 
 package scala
 
-import scala.language.implicitConversions
-
 """
 
   def classDocTemplate = ("""
@@ -482,5 +482,3 @@ override def getClass(): Class[Boolean] = null
 
   def make() = values map (x => (x.name, x.make()))
 }
-
-object AnyVals extends AnyVals { }
