@@ -1,7 +1,4 @@
-package scala.tools.scalap
-package scalax
-package rules
-package scalasig
+package scala.tools.scalap.scalasig
 
 import ScalaSigEntryParsers._
 
