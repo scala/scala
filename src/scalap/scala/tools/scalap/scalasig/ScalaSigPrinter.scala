@@ -135,7 +135,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       print(" {")
       //Print class selftype
       c.selfType match {
-        case Some(t: Type) => print("\n"); print(" this : " + toString(t) + " =>")
+        case Some(t: Type) => print("\n"); print(" this: " + toString(t) + " =>")
         case None =>
       }
       print("\n")
@@ -190,7 +190,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     def _pmt(mt: MethodType) = {
 
       val paramEntries = mt.paramSymbols.map({
-        case ms: MethodSymbol => ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
+        case ms: MethodSymbol => ms.name + ": " + toString(ms.infoType)(TypeFlags(true))
         case _ => "^___^"
       })
       val implicitWord = mt.paramSymbols.headOption match {
@@ -205,21 +205,21 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       mt.resultType match {
         case mt: MethodType => printMethodType(mt, printResult)({})
         case x => if (printResult) {
-          print(" : ");
+          print(": ");
           printType(x)
         }
       }
     }
 
     t match {
-      case NullaryMethodType(resType) => if (printResult) { print(" : "); printType(resType) }
+      case NullaryMethodType(resType) => if (printResult) { print(": "); printType(resType) }
       case mt@MethodType(resType, paramSymbols) => _pmt(mt)
       case pt@PolyType(mt, typeParams) => {
         print(typeParamString(typeParams))
         printMethodType(mt, printResult)({})
       }
       //todo consider another method types
-      case x => print(" : "); printType(x)
+      case x => print(": "); printType(x)
     }
 
     // Print rest of the symbol output

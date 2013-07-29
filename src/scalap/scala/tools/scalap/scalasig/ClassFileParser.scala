@@ -3,9 +3,9 @@ package scala.tools.scalap.scalasig
 import scala.tools.scalap.rules.{ Success, Failure, ~, RulesWithState }
 
 object ByteCode {
-  def apply(bytes : Array[Byte]) = new ByteCode(bytes, 0, bytes.length)
+  def apply(bytes: Array[Byte]) = new ByteCode(bytes, 0, bytes.length)
 
-  def forClass(clazz : Class[_]) = {
+  def forClass(clazz: Class[_]) = {
     val name = clazz.getName
     val subPath = name.substring(name.lastIndexOf('.') + 1) + ".class"
     val in = clazz.getResourceAsStream(subPath)
@@ -27,17 +27,17 @@ object ByteCode {
 }
 
 /** Represents a chunk of raw bytecode.  Used as input for the parsers. */
-class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
+class ByteCode(val bytes: Array[Byte], val pos: Int, val length: Int) {
 
   assert(pos >= 0 && length >= 0 && pos + length <= bytes.length)
 
   def nextByte = if (length == 0) Failure else Success(drop(1), bytes(pos))
-  def next(n : Int) = if (length >= n) Success(drop(n), take(n)) else Failure
+  def next(n: Int) = if (length >= n) Success(drop(n), take(n)) else Failure
 
-  def take(n : Int) = new ByteCode(bytes, pos, n)
-  def drop(n : Int) = new ByteCode(bytes, pos + n, length - n)
+  def take(n: Int) = new ByteCode(bytes, pos, n)
+  def drop(n: Int) = new ByteCode(bytes, pos + n, length - n)
 
-  def fold[X](x : X)(f : (X, Byte) => X) : X = {
+  def fold[X](x: X)(f: (X, Byte) => X): X = {
     var result = x
     var i = pos
     while (i < pos + length) {
@@ -64,7 +64,7 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
     StringBytesPair(str, chunk)
   }
 
-  def byte(i : Int) = bytes(pos) & 0xFF
+  def byte(i: Int) = bytes(pos) & 0xFF
 }
 
 /**
@@ -84,11 +84,11 @@ trait ByteCodeReader extends RulesWithState {
   val u2 = bytes(2) ^^ (_.toInt)
   val u4 = bytes(4) ^^ (_.toInt) // should map to Long??
 
-  def bytes(n : Int) = apply(_ next n)
+  def bytes(n: Int) = apply(_ next n)
 }
 
 object ClassFileParser extends ByteCodeReader {
-  def parse(byteCode : ByteCode) = expect(classFile)(byteCode)
+  def parse(byteCode: ByteCode) = expect(classFile)(byteCode)
   def parseAnnotations(byteCode: ByteCode) = expect(annotations)(byteCode)
 
   val magicNumber = (u4 filter (_ == 0xCAFEBABE)) | error("Not a valid class file")
@@ -161,19 +161,19 @@ object ClassFileParser extends ByteCodeReader {
   val classFile = header ~ fields ~ methods ~ attributes ~- !u1 ^~~~^ ClassFile
 
   // TODO create a useful object, not just a string
-  def memberRef(description : String) = u2 ~ u2 ^^ add1 {
+  def memberRef(description: String) = u2 ~ u2 ^^ add1 {
     case classRef ~ nameAndTypeRef => pool => description + ": " + pool(classRef) + ", " + pool(nameAndTypeRef)
   }
 
-  def add1[T](f : T => ConstantPool => Any)(raw : T)(pool : ConstantPool) = pool add f(raw)
-  def add2[T](f : T => ConstantPool => Any)(raw : T)(pool : ConstantPool) = pool add f(raw) add { pool => "<empty>" }
+  def add1[T](f: T => ConstantPool => Any)(raw: T)(pool: ConstantPool) = pool add f(raw)
+  def add2[T](f: T => ConstantPool => Any)(raw: T)(pool: ConstantPool) = pool add f(raw) add { pool => "<empty>" }
 }
 
 case class ClassFile(
-    header : ClassFileHeader,
-    fields : Seq[Field],
-    methods : Seq[Method],
-    attributes : Seq[Attribute]) {
+    header: ClassFileHeader,
+    fields: Seq[Field],
+    methods: Seq[Method],
+    attributes: Seq[Attribute]) {
 
   def majorVersion = header.major
   def minorVersion = header.minor
@@ -182,14 +182,14 @@ case class ClassFile(
   def superClass = constant(header.superClassIndex)
   def interfaces = header.interfaces.map(constant)
 
-  def constant(index : Int) = header.constants(index) match {
+  def constant(index: Int) = header.constants(index) match {
     case StringBytesPair(str, _) => str
     case z => z
   }
 
   def constantWrapped(index: Int) = header.constants(index)
 
-  def attribute(name : String) = attributes.find {attrib => constant(attrib.nameIndex) == name }
+  def attribute(name: String) = attributes.find {attrib => constant(attrib.nameIndex) == name }
 
   val RUNTIME_VISIBLE_ANNOTATIONS = "RuntimeVisibleAnnotations"
   def annotations = (attributes.find(attr => constant(attr.nameIndex) == RUNTIME_VISIBLE_ANNOTATIONS)
@@ -198,23 +198,23 @@ case class ClassFile(
   def annotation(name: String) = annotations.flatMap(seq => seq.find(annot => constant(annot.typeIndex) == name))
 }
 
-case class Attribute(nameIndex : Int, byteCode : ByteCode)
-case class Field(flags : Int, nameIndex : Int, descriptorIndex : Int, attributes : Seq[Attribute])
-case class Method(flags : Int, nameIndex : Int, descriptorIndex : Int, attributes : Seq[Attribute])
+case class Attribute(nameIndex: Int, byteCode: ByteCode)
+case class Field(flags: Int, nameIndex: Int, descriptorIndex: Int, attributes: Seq[Attribute])
+case class Method(flags: Int, nameIndex: Int, descriptorIndex: Int, attributes: Seq[Attribute])
 
 case class ClassFileHeader(
-    minor : Int,
-    major : Int,
-    constants : ConstantPool,
-    flags : Int,
-    classIndex : Int,
-    superClassIndex : Int,
-    interfaces : Seq[Int]) {
+    minor: Int,
+    major: Int,
+    constants: ConstantPool,
+    flags: Int,
+    classIndex: Int,
+    superClassIndex: Int,
+    interfaces: Seq[Int]) {
 
-  def constant(index : Int) = constants(index)
+  def constant(index: Int) = constants(index)
 }
 
-case class ConstantPool(len : Int) {
+case class ConstantPool(len: Int) {
   val size = len - 1
 
   private val buffer = new scala.collection.mutable.ArrayBuffer[ConstantPool => Any]
@@ -222,7 +222,7 @@ case class ConstantPool(len : Int) {
 
   def isFull = buffer.length >= size
 
-  def apply(index : Int) = {
+  def apply(index: Int) = {
     // Note constant pool indices are 1-based
     val i = index - 1
     values(i) getOrElse {
@@ -233,7 +233,7 @@ case class ConstantPool(len : Int) {
     }
   }
 
-  def add(f : ConstantPool => Any) = {
+  def add(f: ConstantPool => Any) = {
     buffer += f
     this
   }
