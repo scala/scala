@@ -1,3 +1,5 @@
-anonymous class $anon$1
+$anon
 Test.$anon$1
-A with B{def <init>(): A with B}
+A with B {
+  def <init>(): A with B
+}
