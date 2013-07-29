@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// DO NOT EDIT, CHANGES WILL BE LOST.
+// DO NOT EDIT, CHANGES WILL BE LOST
+// This auto-generated code can be modified in scala.tools.cmd.gen.
+// Afterwards, running tools/codegen-anyvals regenerates this source file.
 
 package scala
-
-import scala.language.implicitConversions
 
 /** `Long`, a 64-bit signed integer (equivalent to Java's `long` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Long` are not
@@ -37,13 +37,9 @@ final abstract class Long private extends AnyVal {
  * }}}
  */
   def unary_~ : Long
-  /**
- * Returns this value, unmodified.
- */
+  /** Returns this value, unmodified. */
   def unary_+ : Long
-  /**
- * Returns the negation of this value.
- */
+  /** Returns the negation of this value. */
   def unary_- : Long
 
   def +(x: String): String
@@ -105,178 +101,94 @@ final abstract class Long private extends AnyVal {
   */
   def >>(x: Long): Long
 
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Byte): Boolean
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Short): Boolean
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Char): Boolean
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Int): Boolean
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Long): Boolean
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Float): Boolean
-  /**
-  * Returns `true` if this value is equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Double): Boolean
 
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Byte): Boolean
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Short): Boolean
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Char): Boolean
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Int): Boolean
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Long): Boolean
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Float): Boolean
-  /**
-  * Returns `true` if this value is not equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is not equal to x, `false` otherwise. */
   def !=(x: Double): Boolean
 
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Byte): Boolean
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Short): Boolean
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Char): Boolean
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Int): Boolean
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Long): Boolean
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Float): Boolean
-  /**
-  * Returns `true` if this value is less than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than x, `false` otherwise. */
   def <(x: Double): Boolean
 
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Byte): Boolean
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Short): Boolean
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Char): Boolean
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Int): Boolean
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Long): Boolean
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Float): Boolean
-  /**
-  * Returns `true` if this value is less than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
   def <=(x: Double): Boolean
 
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Byte): Boolean
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Short): Boolean
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Char): Boolean
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Int): Boolean
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Long): Boolean
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Float): Boolean
-  /**
-  * Returns `true` if this value is greater than x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than x, `false` otherwise. */
   def >(x: Double): Boolean
 
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Byte): Boolean
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Short): Boolean
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Char): Boolean
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Int): Boolean
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Long): Boolean
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Float): Boolean
-  /**
-  * Returns `true` if this value is greater than or equal to x, `false` otherwise.
-  */
+  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
   def >=(x: Double): Boolean
 
   /**
@@ -447,161 +359,89 @@ final abstract class Long private extends AnyVal {
   */
   def ^(x: Long): Long
 
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Byte): Long
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Short): Long
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Char): Long
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Int): Long
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Long): Long
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Float): Float
-  /**
-  * Returns the sum of this value and `x`.
-  */
+  /** Returns the sum of this value and `x`. */
   def +(x: Double): Double
 
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Byte): Long
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Short): Long
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Char): Long
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Int): Long
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Long): Long
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Float): Float
-  /**
-  * Returns the difference of this value and `x`.
-  */
+  /** Returns the difference of this value and `x`. */
   def -(x: Double): Double
 
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Byte): Long
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Short): Long
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Char): Long
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Int): Long
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Long): Long
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Float): Float
-  /**
-  * Returns the product of this value and `x`.
-  */
+  /** Returns the product of this value and `x`. */
   def *(x: Double): Double
 
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Byte): Long
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Short): Long
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Char): Long
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Int): Long
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Long): Long
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Float): Float
-  /**
-  * Returns the quotient of this value and `x`.
-  */
+  /** Returns the quotient of this value and `x`. */
   def /(x: Double): Double
 
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Byte): Long
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Short): Long
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Char): Long
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Int): Long
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Long): Long
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Float): Float
-  /**
-  * Returns the remainder of the division of this value by `x`.
-  */
+  /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
   override def getClass(): Class[Long] = null
 }
 
 object Long extends AnyValCompanion {
-  /** The smallest value representable as a Long.
-   */
+  /** The smallest value representable as a Long. */
   final val MinValue = java.lang.Long.MIN_VALUE
 
-  /** The largest value representable as a Long.
-   */
+  /** The largest value representable as a Long. */
   final val MaxValue = java.lang.Long.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.
@@ -625,12 +465,10 @@ object Long extends AnyValCompanion {
    */
   def unbox(x: java.lang.Object): Long = x.asInstanceOf[java.lang.Long].longValue()
 
-  /** The String representation of the scala.Long companion object.
-   */
+  /** The String representation of the scala.Long companion object. */
   override def toString = "object scala.Long"
-
-  /** Language mandated coercions from Long to "wider" types.
-   */
+  /** Language mandated coercions from Long to "wider" types. */
+  import scala.language.implicitConversions
   implicit def long2float(x: Long): Float = x.toFloat
   implicit def long2double(x: Long): Double = x.toDouble
 }

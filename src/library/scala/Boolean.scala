@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// DO NOT EDIT, CHANGES WILL BE LOST.
+// DO NOT EDIT, CHANGES WILL BE LOST
+// This auto-generated code can be modified in scala.tools.cmd.gen.
+// Afterwards, running tools/codegen-anyvals regenerates this source file.
 
 package scala
-
-import scala.language.implicitConversions
 
 /** `Boolean` (equivalent to Java's `boolean` primitive type) is a
  *  subtype of [[scala.AnyVal]]. Instances of `Boolean` are not
@@ -20,18 +20,16 @@ import scala.language.implicitConversions
  *  which provides useful non-primitive operations.
  */
 final abstract class Boolean private extends AnyVal {
-  /**
-   * Negates a Boolean expression.
-   *
-   * - `!a` results in `false` if and only if `a` evaluates to `true` and
-   * - `!a` results in `true` if and only if `a` evaluates to `false`.
-   *
-   * @return the negated expression
-   */
+  /** Negates a Boolean expression.
+    *
+    * - `!a` results in `false` if and only if `a` evaluates to `true` and
+    * - `!a` results in `true` if and only if `a` evaluates to `false`.
+    *
+    * @return the negated expression
+    */
   def unary_! : Boolean
 
-  /**
-    * Compares two Boolean expressions and returns `true` if they evaluate to the same value.
+  /** Compares two Boolean expressions and returns `true` if they evaluate to the same value.
     *
     * `a == b` returns `true` if and only if
     *  - `a` and `b` are `true` or
@@ -48,8 +46,7 @@ final abstract class Boolean private extends AnyVal {
     */
   def !=(x: Boolean): Boolean
 
-  /**
-    * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+  /** Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
     *
     * `a || b` returns `true` if and only if
     *  - `a` is `true` or
@@ -62,8 +59,7 @@ final abstract class Boolean private extends AnyVal {
     */
   def ||(x: Boolean): Boolean
 
-  /**
-    * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+  /** Compares two Boolean expressions and returns `true` if both of them evaluate to true.
     *
     * `a && b` returns `true` if and only if
     *  - `a` and `b` are `true`.
@@ -78,8 +74,7 @@ final abstract class Boolean private extends AnyVal {
   // def ||(x: => Boolean): Boolean
   // def &&(x: => Boolean): Boolean
 
-  /**
-    * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+  /** Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
     *
     * `a | b` returns `true` if and only if
     *  - `a` is `true` or
@@ -90,8 +85,7 @@ final abstract class Boolean private extends AnyVal {
     */
   def |(x: Boolean): Boolean
 
-  /**
-    * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+  /** Compares two Boolean expressions and returns `true` if both of them evaluate to true.
     *
     * `a & b` returns `true` if and only if
     *  - `a` and `b` are `true`.
@@ -100,8 +94,7 @@ final abstract class Boolean private extends AnyVal {
     */
   def &(x: Boolean): Boolean
 
-  /**
-    * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
+  /** Compares two Boolean expressions and returns `true` if they evaluate to a different value.
     *
     * `a ^ b` returns `true` if and only if
     *  - `a` is `true` and `b` is `false` or
@@ -135,8 +128,7 @@ object Boolean extends AnyValCompanion {
    */
   def unbox(x: java.lang.Object): Boolean = x.asInstanceOf[java.lang.Boolean].booleanValue()
 
-  /** The String representation of the scala.Boolean companion object.
-   */
+  /** The String representation of the scala.Boolean companion object. */
   override def toString = "object scala.Boolean"
 
 }
