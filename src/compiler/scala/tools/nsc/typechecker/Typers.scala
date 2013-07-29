@@ -2103,6 +2103,8 @@ trait Typers extends Adaptations with Tags with TypersTracking {
 
       // !!! This method is redundant with other, less buggy ones.
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
+        case _ if call.isErrorTyped => // e.g. SI-7636
+          (call, Nil)
         case Apply(fn, args) =>
           // an object cannot be allowed to pass a reference to itself to a superconstructor
           // because of initialization issues; SI-473, SI-3913, SI-6928.
@@ -4012,6 +4014,7 @@ trait Typers extends Adaptations with Tags with TypersTracking {
           findSelection(cxTree) match {
             case Some((opName, treeInfo.Applied(_, targs, _))) =>
               val fun = gen.mkTypeApply(Select(qual, opName), targs)
+              if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // SI-7617
               atPos(qual.pos)(Apply(fun, Literal(Constant(name.decode)) :: Nil))
             case _ =>
               setError(tree)
@@ -4176,7 +4179,9 @@ trait Typers extends Adaptations with Tags with TypersTracking {
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
-        val lhs1    = typed(lhs, EXPRmode | LHSmode)
+        // see SI-7617 for an explanation of why macro expansion is suppressed
+        def typedLhs(lhs: Tree) = typed(lhs, EXPRmode | LHSmode)
+        val lhs1    = unsuppressMacroExpansion(typedLhs(suppressMacroExpansion(lhs)))
         val varsym  = lhs1.symbol
 
         // see #2494 for double error message example
