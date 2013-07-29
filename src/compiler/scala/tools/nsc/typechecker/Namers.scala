@@ -1085,6 +1085,9 @@ trait Namers extends MethodSynthesis {
             overriddenTp = overriddenTp.resultType
           }
 
+          // SI-7668 Substitute parameters from the parent method with those of the overriding method.
+          overriddenTp = overriddenTp.substSym(overridden.paramss.flatten, vparamss.flatten.map(_.symbol))
+
           overriddenTp match {
             case NullaryMethodType(rtpe) => overriddenTp = rtpe
             case MethodType(List(), rtpe) => overriddenTp = rtpe
