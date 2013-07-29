@@ -1,7 +1,7 @@
 package scala.tools.scalap.scalasig
 
 trait Flags {
-  def hasFlag(flag : Long) : Boolean
+  def hasFlag(flag: Long): Boolean
 
   def isImplicit = hasFlag(0x00000001)
   def isFinal = hasFlag(0x00000002)
