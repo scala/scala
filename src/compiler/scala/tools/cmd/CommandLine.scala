@@ -30,7 +30,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
   /** argMap is option -> argument (or "" if it is a unary argument)
    *  residualArgs are what is left after removing the options and their args.
    */
-  lazy val (argMap, residualArgs) = {
+  lazy val (argMap, residualArgs): (Map[String, String], List[String]) = {
     val residualBuffer = new ListBuffer[String]
 
     def loop(args: List[String]): Map[String, String] = {
