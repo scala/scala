@@ -3152,6 +3152,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
+    def anonOrRefinementString = {
+      if (hasCompleteInfo) {
+        val label   = if (isAnonymousClass) "$anon:" else "refinement of"
+        val parents = parentsString(info.parents map functionNBaseType filterNot (_.typeSymbol == SerializableClass))
+        s"<$label $parents>"
+      }
+      else if (isAnonymousClass) "$anon"
+      else nameString
+    }
+    override def toString = (
+      if (isAnonOrRefinementClass) anonOrRefinementString
+      else super.toString
+    )
+
     if (Statistics.hotEnabled) Statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])

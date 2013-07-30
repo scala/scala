@@ -929,7 +929,7 @@ trait Types
      *  after `maxTostringRecursions` recursion levels. Uses `safeToString`
      *  to produce a string on each level.
      */
-    override def toString: String = typeToString(this)
+    override final def toString: String = typeToString(this)
 
     /** Method to be implemented in subclasses.
      *  Converts this type to a string in calling toString for its parts.
@@ -943,7 +943,9 @@ trait Types
       else if ((str endsWith ".type") && !typeSymbol.isModuleClass)
         widen match {
           case RefinedType(_, _)                      => "" + widen
-          case _                                      => s"$str (with underlying type $widen)"
+          case _                                      =>
+            if (widen.toString.trim == "") str
+            else s"$str (with underlying type $widen)"
         }
       else str
     }
@@ -1557,10 +1559,10 @@ trait Types
     override def isStructuralRefinement: Boolean =
       typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
 
-    override def safeToString: String = parentsString(parents) + (
-      (if (settings.debug || parents.isEmpty || (decls.elems ne null))
-        fullyInitializeScope(decls).mkString("{", "; ", "}") else "")
-    )
+    protected def shouldForceScope = settings.debug || parents.isEmpty || !decls.isEmpty
+    protected def initDecls        = fullyInitializeScope(decls)
+    protected def scopeString      = if (shouldForceScope) initDecls.mkString("{", "; ", "}") else ""
+    override def safeToString      = parentsString(parents) + scopeString
   }
 
   protected def computeBaseClasses(tpe: Type): List[Symbol] = {
@@ -1968,21 +1970,12 @@ trait Types
     }
 
     override def kind = "ClassInfoType"
-
-    override def safeToString =
-      if (settings.debug || decls.size > 1)
-        formattedToString
-      else
-        super.safeToString
-
     /** A nicely formatted string with newlines and such.
      */
-    def formattedToString: String =
-      parents.mkString("\n        with ") + (
-        if (settings.debug || parents.isEmpty || (decls.elems ne null))
-         fullyInitializeScope(decls).mkString(" {\n  ", "\n  ", "\n}")
-        else ""
-      )
+    def formattedToString = parents.mkString("\n        with ") + scopeString
+    override protected def shouldForceScope = settings.debug || decls.size > 1
+    override protected def scopeString      = initDecls.mkString(" {\n  ", "\n  ", "\n}")
+    override def safeToString               = if (shouldForceScope) formattedToString else super.safeToString
   }
 
   object ClassInfoType extends ClassInfoTypeExtractor
@@ -2370,7 +2363,6 @@ trait Types
       }
       thisInfo.decls
     }
-
     protected[Types] def baseTypeSeqImpl: BaseTypeSeq = sym.info.baseTypeSeq map transform
 
     override def baseTypeSeq: BaseTypeSeq = {
@@ -2385,7 +2377,6 @@ trait Types
         baseTypeSeqCache
       }
     }
-
     // ensure that symbol is not a local copy with a name coincidence
     private def needsPreString = (
          settings.debug
@@ -2395,46 +2386,50 @@ trait Types
     private def preString  = if (needsPreString) pre.prefixString else ""
     private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
 
-    def refinementString = (
-      if (sym.isStructuralRefinement) (
-        fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
-          map (_.defString)
-          mkString("{", "; ", "}")
-      )
+    private def refinementDecls = fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
+    private def refinementString = (
+      if (sym.isStructuralRefinement)
+        refinementDecls map (_.defString) mkString("{", "; ", "}")
       else ""
     )
-
     protected def finishPrefix(rest: String) = (
       if (sym.isInitialized && sym.isAnonymousClass && !phase.erasedTypes)
         parentsString(thisInfo.parents) + refinementString
       else rest
     )
+    private def noArgsString = finishPrefix(preString + sym.nameString)
+    private def tupleTypeString: String = args match {
+      case Nil        => noArgsString
+      case arg :: Nil => s"($arg,)"
+      case _          => args.mkString("(", ", ", ")")
+    }
     private def customToString = sym match {
       case RepeatedParamClass => args.head + "*"
       case ByNameParamClass   => "=> " + args.head
       case _                  =>
-        def targs = dealiasWiden.typeArgs
-
-        if (isFunctionType(this)) {
+        if (isFunctionTypeDirect(this)) {
           // Aesthetics: printing Function1 as T => R rather than (T) => R
           // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
           // from (T1, T2) => R.
-          targs match {
-            case in :: out :: Nil if !isTupleType(in) =>
-              // A => B => C should be (A => B) => C or A => (B => C)
+          unspecializedTypeArgs(this) match {
+            // See neg/t588 for an example which arrives here - printing
+            // the type of a Function1 after erasure.
+            case Nil => noArgsString
+            case in :: out :: Nil if !isTupleTypeDirect(in) =>
+              // A => B => C should be (A => B) => C or A => (B => C).
               // Also if A is byname, then we want (=> A) => B because => is right associative and => A => B
               // would mean => (A => B) which is a different type
-              val in_s  = if (isFunctionType(in) || isByNameParamType(in)) "(" + in + ")" else "" + in
-              val out_s = if (isFunctionType(out)) "(" + out + ")" else "" + out
+              val in_s  = if (isFunctionTypeDirect(in) || isByNameParamType(in)) "(" + in + ")" else "" + in
+              val out_s = if (isFunctionTypeDirect(out)) "(" + out + ")" else "" + out
               in_s + " => " + out_s
             case xs =>
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
         }
-        else if (isTupleType(this))
-          targs.mkString("(", ", ", if (hasLength(targs, 1)) ",)" else ")")
-        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne this.normalize))
-          "" + normalize
+        else if (isTupleTypeDirect(this))
+          tupleTypeString
+        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias))
+          "" + dealias
         else
           ""
     }

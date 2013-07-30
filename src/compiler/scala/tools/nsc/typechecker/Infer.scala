@@ -20,8 +20,8 @@ trait Infer extends Checkable {
 
   import global._
   import definitions._
-  import typer.printInference
   import typeDebug.ptBlock
+  import typingStack.{ printTyping }
 
   /** The formal parameter types corresponding to `formals`.
    *  If `formals` has a repeated last parameter, a list of
@@ -216,8 +216,10 @@ trait Infer extends Checkable {
   def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
                   variances: List[Variance], upper: Boolean, depth: Int): List[Type] = {
 
-    if (tvars.nonEmpty)
-      printInference("[solve types] solving for " + tparams.map(_.name).mkString(", ") + " in " + tvars.mkString(", "))
+    if (tvars.nonEmpty) {
+      def tp_s = (tparams, tvars).zipped map { case (tp, tv) => s"${tp.name}/$tv" } mkString ","
+      printTyping(s"solving for $tp_s")
+    }
 
     if (!solve(tvars, tparams, variances, upper, depth)) {
       // no panic, it's good enough to just guess a solution, we'll find out
@@ -987,21 +989,13 @@ trait Infer extends Checkable {
      *  attempts fail, an error is produced.
      */
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type) {
-      printInference(
-        ptBlock("inferArgumentInstance",
-          "tree"        -> tree,
-          "tree.tpe"    -> tree.tpe,
-          "undetparams" -> undetparams,
-          "strictPt"    -> strictPt,
-          "lenientPt"   -> lenientPt
-        )
-      )
+      printTyping(tree, s"inferring arg instance based on pt0=$strictPt, pt1=$lenientPt")
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt, useWeaklyCompatible = false)
       if ((targs eq null) || !(tree.tpe.subst(undetparams, targs) <:< strictPt))
         targs = exprTypeArgs(undetparams, tree.tpe, lenientPt, useWeaklyCompatible = false)
 
       substExpr(tree, undetparams, targs, lenientPt)
-      printInference("[inferArgumentInstance] finished, targs = " + targs)
+      printTyping(tree, s"infer arg instance from pt0=$strictPt, pt1=$lenientPt; targs=$targs")
     }
 
     /** Infer type arguments `targs` for `tparams` of polymorphic expression in `tree`, given prototype `pt`.
@@ -1013,29 +1007,20 @@ trait Infer extends Checkable {
       val treeTp = if (treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
       val tvars  = tparams map freshVar
       val targs  = exprTypeArgs(tvars, tparams, treeTp, pt, useWeaklyCompatible)
-      printInference(
-        ptBlock("inferExprInstance",
-          "tree"    -> tree,
-          "tree.tpe"-> tree.tpe,
-          "tparams" -> tparams,
-          "pt"      -> pt,
-          "targs"   -> targs,
-          "tvars"   -> tvars
-        )
-      )
+      def infer_s = map3(tparams, tvars, targs)((tparam, tvar, targ) => s"$tparam=$tvar/$targ") mkString ","
+      printTyping(tree, s"infer expr instance from pt=$pt, $infer_s")
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
         substExpr(tree, tparams, targs, pt)
         List()
       } else {
         val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, tvars, targs)
-        printInference(
-          ptBlock("inferExprInstance/AdjustedTypeArgs",
-            "okParams" -> okParams,
-            "okArgs" -> okArgs,
-            "leftUndet" -> leftUndet
-          )
-        )
+        def solved_s = map2(okParams, okArgs)((p, a) => s"$p=$a") mkString ","
+        def undet_s = leftUndet match {
+          case Nil => ""
+          case ps  => ps.mkString(", undet=", ",", "")
+        }
+        printTyping(tree, s"infer solved $solved_s$undet_s")
         substExpr(tree, okParams, okArgs, pt)
         leftUndet
       }
@@ -1076,14 +1061,6 @@ trait Infer extends Checkable {
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
             methTypeArgs(undetparams, formals, restpe, argtpes, pt)
-
-          printInference("[infer method] solving for %s in %s based on (%s)%s (%s)".format(
-            undetparams.map(_.name).mkString(", "),
-            fn.tpe,
-            argtpes.mkString(", "),
-            restpe,
-            (okparams map (_.name), okargs).zipped.map(_ + "=" + _).mkString("solved: ", ", ", "")
-          ))
 
           if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okparams, okargs)

@@ -1,28 +1,28 @@
-t6666.scala:23: error: Implementation restriction: access of method x$2 in object O1 from anonymous class 2, would require illegal premature access to object O1
+t6666.scala:23: error: Implementation restriction: access of method x$2 in object O1 from <$anon: Function0>, would require illegal premature access to object O1
   F.byname(x)
            ^
-t6666.scala:30: error: Implementation restriction: access of value x$3 in object O2 from anonymous class 3, would require illegal premature access to object O2
+t6666.scala:30: error: Implementation restriction: access of value x$3 in object O2 from <$anon: Function0>, would require illegal premature access to object O2
   F.byname(x)
            ^
-t6666.scala:37: error: Implementation restriction: access of method x$4 in object O3 from anonymous class 4, would require illegal premature access to object O3
+t6666.scala:37: error: Implementation restriction: access of method x$4 in object O3 from <$anon: Function0>, would require illegal premature access to object O3
   F.hof(() => x)
               ^
-t6666.scala:50: error: Implementation restriction: access of method x$6 in class C1 from anonymous class 7, would require illegal premature access to the unconstructed `this` of class C1
+t6666.scala:50: error: Implementation restriction: access of method x$6 in class C1 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C1
   F.byname(x)
            ^
-t6666.scala:54: error: Implementation restriction: access of value x$7 in class C2 from anonymous class 8, would require illegal premature access to the unconstructed `this` of class C2
+t6666.scala:54: error: Implementation restriction: access of value x$7 in class C2 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C2
   F.byname(x)
            ^
-t6666.scala:58: error: Implementation restriction: access of method x$8 in class C3 from anonymous class 9, would require illegal premature access to the unconstructed `this` of class C3
+t6666.scala:58: error: Implementation restriction: access of method x$8 in class C3 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C3
   F.hof(() => x)
               ^
 t6666.scala:62: error: Implementation restriction: access of method x$9 in class C4 from object Nested$4, would require illegal premature access to the unconstructed `this` of class C4
   object Nested { def xx = x}
                            ^
-t6666.scala:76: error: Implementation restriction: access of method x$11 in class C11 from anonymous class 12, would require illegal premature access to the unconstructed `this` of class C11
+t6666.scala:76: error: Implementation restriction: access of method x$11 in class C11 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C11
       F.byname(x)
                ^
-t6666.scala:95: error: Implementation restriction: access of method x$12 in class C13 from anonymous class 13, would require illegal premature access to the unconstructed `this` of class C13
+t6666.scala:95: error: Implementation restriction: access of method x$12 in class C13 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C13
       F.hof(() => x)
                   ^
 t6666.scala:104: error: Implementation restriction: access of method x$13 in class C14 from object Nested$5, would require illegal premature access to the unconstructed `this` of class C14
