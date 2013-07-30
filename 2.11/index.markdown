@@ -250,9 +250,6 @@ It is now possible to use the REPL as a Scripting Engine:
 scala> import javax.script.ScriptEngineManager
 import javax.script.ScriptEngineManager
 
-scala> import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.interpreter.IMain
-
 scala> val e = new ScriptEngineManager().getEngineByName("scala")
 e: javax.script.ScriptEngine = scala.tools.nsc.interpreter.IMain@7debe95d
 
