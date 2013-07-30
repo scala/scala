@@ -82,9 +82,6 @@ trait Erasure {
     (clazz.info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
      NoSymbol)
 
-  def underlyingOfValueClass(clazz: Symbol): Type =
-    clazz.derivedValueClassUnbox.tpe.resultType
-
   /** The type of the argument of a value class reference after erasure
    *  This method needs to be called at a phase no later than erasurephase
    */
