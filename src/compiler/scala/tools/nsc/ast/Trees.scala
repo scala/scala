@@ -14,6 +14,7 @@ import scala.reflect.internal.Flags.PARAMACCESSOR
 import scala.reflect.internal.Flags.PRESUPER
 import scala.reflect.internal.Flags.TRAIT
 import scala.compat.Platform.EOL
+import scala.reflect.internal.CompileRunAborted
 
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------
@@ -147,12 +148,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   class Transformer extends super.Transformer {
     def transformUnit(unit: CompilationUnit) {
-      try unit.body = transform(unit.body)
-      catch {
-        case ex: Exception =>
-          log(supplementErrorMessage("unhandled exception while transforming "+unit))
-          throw ex
-      }
+      unit.body = transform(unit.body)
     }
   }
 

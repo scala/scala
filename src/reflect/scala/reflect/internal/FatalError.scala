@@ -4,4 +4,5 @@
  */
 package scala
 package reflect.internal
-case class FatalError(msg: String) extends Exception(msg)
+
+case class FatalError(msg: String) extends Exception(msg) { }

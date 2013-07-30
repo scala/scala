@@ -5299,7 +5299,6 @@ trait Typers extends Adaptations with Tags with TypersTracking {
     }
 
     def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
-      lastTreeToTyper = tree
       def body = (
         if (printTypings && !phase.erasedTypes && !noPrintTyping(tree))
           typingStack.nextTyped(tree, mode, pt, context)(typedInternal(tree, mode, pt))
@@ -5308,8 +5307,12 @@ trait Typers extends Adaptations with Tags with TypersTracking {
       )
       val startByType = if (Statistics.canEnable) Statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
       if (Statistics.canEnable) Statistics.incCounter(visitsByType, tree.getClass)
+      pushLastTreeToTyper(tree)
       try body
-      finally if (Statistics.canEnable) Statistics.popTimer(byTypeStack, startByType)
+      finally {
+        popLastTreeToTyper()
+        if (Statistics.canEnable) Statistics.popTimer(byTypeStack, startByType)
+      }
     }
 
     private def typedInternal(tree: Tree, mode: Mode, pt: Type): Tree = {
@@ -5367,8 +5370,6 @@ trait Typers extends Adaptations with Tags with TypersTracking {
         case ex: Exception =>
           // @M causes cyclic reference error
           devWarning(s"exception when typing $tree, pt=$ptPlugins")
-          if (context != null && context.unit.exists && tree != null)
-            logError("AT: " + (tree.pos).dbgString, ex)
           throw ex
       }
     }
