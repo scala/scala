@@ -26,7 +26,7 @@ object Opt {
   trait Implicit {
     def name: String
     def programInfo: Info
-    protected def opt = toOpt(name)
+    protected def opt = fromOpt(name)
 
     def --? : Boolean                       // --opt is set
     def --> (body: => Unit): Unit           // if --opt is set, execute body

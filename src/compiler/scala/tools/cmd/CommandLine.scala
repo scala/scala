@@ -24,7 +24,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
   val Terminator = "--"
   val ValueForUnaryOption = "true"  // so if --opt is given, x(--opt) = true
 
-  def mapForUnary(opt: String) = Map(opt -> ValueForUnaryOption)
+  def mapForUnary(opt: String) = Map(fromOpt(opt) -> ValueForUnaryOption)
   def errorFn(msg: String) = println(msg)
 
   /** argMap is option -> argument (or "" if it is a unary argument)
@@ -72,7 +72,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
 
           if (x2 == Terminator)         mapForUnary(x1) ++ residual(xs)
           else if (isUnaryOption(x1))   mapForUnary(x1) ++ loop(args.tail)
-          else if (isBinaryOption(x1))  Map(x1 -> x2) ++ loop(xs)
+          else if (isBinaryOption(x1))  Map(fromOpt(x1) -> x2) ++ loop(xs)
           else if (isUnknown(x1))       loop(args.tail)
           else                          residual(List(x1)) ++ loop(args.tail)
       }

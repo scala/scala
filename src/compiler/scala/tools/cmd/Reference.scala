@@ -23,9 +23,9 @@ trait Reference extends Spec {
   def helpMsg     = options.helpMsg
   def propertyArgs: List[String] = Nil
 
-  def isUnaryOption(s: String)  = unary contains toOpt(s)
-  def isBinaryOption(s: String) = binary contains toOpt(s)
-  def isExpandOption(s: String) = expansionMap contains toOpt(s)
+  def isUnaryOption(s: String)  = unary contains fromOpt(s)
+  def isBinaryOption(s: String) = binary contains fromOpt(s)
+  def isExpandOption(s: String) = expansionMap contains fromOpt(s)
 
   def expandArg(arg: String)      = expansionMap.getOrElse(fromOpt(arg), List(arg))
 
