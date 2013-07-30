@@ -77,9 +77,6 @@ trait Erasure {
     if (cls.owner.isClass) cls.owner.tpe_* else pre // why not cls.isNestedClass?
   }
 
-  def underlyingOfValueClass(clazz: Symbol): Type =
-    clazz.derivedValueClassUnbox.tpe.resultType
-
   /** The type of the argument of a value class reference after erasure
    *  This method needs to be called at a phase no later than erasurephase
    */
