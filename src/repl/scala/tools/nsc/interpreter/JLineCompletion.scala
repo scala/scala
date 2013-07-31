@@ -12,7 +12,7 @@ import scala.reflect.internal.util.StringOps.longestCommonPrefix
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
-class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput {
+class JLineCompletion(val intp: IMain, advancedConfig : ReplAdvancedConfig = new ReplAdvancedConfig) extends Completion with CompletionOutput {
   val global: intp.global.type = intp.global
   import global._
   import definitions._
@@ -106,7 +106,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def excludeNames: List[String] = (anyref.methodNames filterNot anyRefMethodsToShow) :+ "_root_"
 
     def methodSignatureString(sym: Symbol) = {
-      IMain stripString exitingTyper(new MethodSymbolOutput(sym).methodString())
+      advancedConfig.removeExtraUserWrappers(IMain stripString exitingTyper(new MethodSymbolOutput(sym).methodString()))
     }
 
     def exclude(name: String): Boolean = (

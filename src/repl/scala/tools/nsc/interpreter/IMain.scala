@@ -64,7 +64,8 @@ import scala.language.implicitConversions
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter) extends AbstractScriptEngine with Compilable with Imports {
+class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter,
+            val advancedConfig: ReplAdvancedConfig = new ReplAdvancedConfig) extends AbstractScriptEngine with Compilable with Imports {
   imain =>
 
   setBindings(createBindings, ScriptContext.ENGINE_SCOPE)
@@ -109,8 +110,10 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings, out: JPrintWriter) = this(null, settings, out)
+  def this(settings: Settings, out: JPrintWriter, advancedConfig :ReplAdvancedConfig) = this(null, settings, out, advancedConfig)
   def this(factory: ScriptEngineFactory, settings: Settings) = this(factory, settings, new NewLinePrintWriter(new ConsoleWriter, true))
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
+  def this(settings: Settings, advancedConfig: ReplAdvancedConfig) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true), advancedConfig)
   def this(factory: ScriptEngineFactory) = this(factory, new Settings())
   def this() = this(new Settings())
 
@@ -173,6 +176,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
            noFatal(runtimeMirror staticClass path)
     orElse noFatal(rootMirror staticClass path)
   )
+
   def getModuleIfDefined(path: String) = (
            noFatal(runtimeMirror staticModule path)
     orElse noFatal(rootMirror staticModule path)
@@ -293,6 +297,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     def path(sym: Symbol): String = backticked(shift(sym.fullName))
     def sig(sym: Symbol): String  = shift(sym.defString)
   }
+
   object typerOp extends PhaseDependentOps {
     def shift[T](op: => T): T = exitingTyper(op)
   }
@@ -302,7 +307,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   def originalPath(name: String): String = originalPath(name: TermName)
   def originalPath(name: Name): String   = typerOp path name
-  def originalPath(sym: Symbol): String  = typerOp path sym
+  def originalPath(sym: Symbol): String  = advancedConfig.originalPathExtended(typerOp.path(sym))
+
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
   def translatePath(path: String) = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
@@ -791,7 +797,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = getModuleIfDefined(readPath)   // the outermost wrapper
+       // the outermost wrapper
+      val readRoot  = if (advancedConfig.isModule) getModuleIfDefined(readPath) else getClassIfDefined(readPath)
+
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => exitingTyper(termMember(sym, name))
@@ -868,29 +876,20 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** the line of code to compute */
     def toCompute = line
 
-    def fullPath(vname: String) = s"${lineRep.readPath}$accessPath.`$vname`"
+    def fullPath(vname: String) = advancedConfig.fullPath(lineRep, accessPath, vname)
 
     /** generate the source code for the object that computes this request */
     private object ObjectSourceCode extends CodeAssembler[MemberHandler] {
-      def path = originalPath("$intp")
-      def envLines = {
+        def envLines = {
         if (!isReplPower) Nil // power mode only for now
-        // $intp is not bound; punt, but include the line.
-        else if (path == "$intp") List(
-          "def $line = " + tquoted(originalLine),
-          "def $trees = Nil"
-        )
-        else List(
-          "def $line  = " + tquoted(originalLine),
-          "def $trees = Nil"
-        )
-      }
+          else
+            List( "def $line  = " + tquoted(originalLine),
+                  "def $trees = Nil"
+           )
+        }
 
-      val preamble = """
-        |object %s {
-        |%s%s%s
-      """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString, importsPreamble, indentCode(toCompute))
-      val postamble = importsTrailer + "\n}"
+      val preamble = advancedConfig.preambleObjSrcCode(lineRep, envLines.map("  " + _ + ";\n").mkString, importsPreamble, indentCode(toCompute))
+      val postamble = advancedConfig.postambleObjSrcCode(lineRep, importsTrailer)
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
     }
 
@@ -904,22 +903,10 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       }
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
-      val preamble = """
-      |object %s {
-      |  %s
-      |  lazy val %s: String = %s {
-      |    %s
-      |    (""
-      """.stripMargin.format(
-        lineRep.evalName, evalResult, lineRep.printName,
-        executionWrapper, lineRep.readName + accessPath
-      )
+      val preamble = advancedConfig.preambleResObjSrcCode(lineRep, evalResult, executionWrapper, accessPath)
 
-      val postamble = """
-      |    )
-      |  }
-      |}
-      """.stripMargin
+      val postamble = advancedConfig.postambleResObjSrcCode(lineRep, evalResult, executionWrapper, accessPath)
+
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
