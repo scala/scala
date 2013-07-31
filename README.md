@@ -7,34 +7,102 @@ Prerequisites
 In order to build the scala reference, you will require the following
 software packages:
 
-- Pandoc v1.10.1 or higher (http://johnmacfarlane.net/pandoc/)
-- TeX-Live (https://www.tug.org/texlive/)
+- Pandoc v1.11.1 or higher (<http://johnmacfarlane.net/pandoc/>)
+  you can install this using cabal:
+
+      ```
+      cabal update
+      cabal install pandoc
+      ```
+
+- TeX-Live (<https://www.tug.org/texlive/>), in order to build the pdf
+version of the specification.
+
 - The luximono font - this does not ship with TeX-Live by default due to
   license restrictions, but it can be easily installed using
   the ["getnonfreefonts" script](https://www.tug.org/fonts/getnonfreefonts/).
   A short guide on using this to get luximono can be found on the 
   TeX Stackexchange [here](http://tex.stackexchange.com/questions/22157/how-to-use-the-luximono-font-with-tex-live).
+
 - The Heuristica font - this is an extension of the free version of the Adobe
   Utopia font. This must be installed as a system font for the PDF to
   build, and you can find the appropriate font package for your system
-  here: https://code.google.com/p/evristika/
+  here: <https://code.google.com/p/evristika/>
 
 
 General Advice for editors
--------
+--------------------------
 
 - All files must be saved as UTF-8: ensure your editors are configured
   appropriately.
+
 - Leave two empty lines between each section, regardless of level of nesting.
   Leave two empty lines at the end of every markdown file that forms a part
   of the main specification when compiled.
+
 - Use of the appropriate unicode characters instead of the latex modifiers
   for accents, etc. is necessary. For example, é instead of \'e. Make use of
   the fact that the content is unicode, google the necessary characters if
   you don't know how to type them directly.
 
+
+Useful tools
+------------
+
+I have found the following tools to be useful for viewing and testing the
+output of the various builds:
+
+- The [Markdown Preview](https://chrome.google.com/webstore/detail/markdown-preview/jmchmkecamhbiokiopfpnfgbidieafmd) extension for Chrome, for viewing
+markdown files locally in the way GitHub renders it 
+(you must enable viewing of local file urls for the extension). This is
+useful for previewing markdown changes before comitting them, though it
+will not render many of the Pandoc specific extensions.
+- The [Readium](https://chrome.google.com/webstore/detail/empty-title/fepbnnnkkadjhjahcafoaglimekefifl) app for Chrome, for viewing epub3
+files. This actually uses MathJAX to render the math elements on demand
+for each page of the ebook.
+- The [UnicodeMath](https://github.com/mvoidex/UnicodeMath) plugin for Sublime 
+Text. This is helpful if you are familiar with LaTeX macros for mathematical 
+symbols, as you may type the macro and have it automatically converted to the 
+equivalent unicode symbol (if it exists). This can be installed through
+the [Package Control](http://wbond.net/sublime_packages/package_control) 
+Sublime Text plugin.
+
+
+Known issues and outstanding tasks
+----------------------------------
+
+Please see the issue tracker at <https://github.com/iainmcgin/scala-ref-markdown/issues>.
+
+
+Fixing known build errors / warnings
+------------------------------------
+
+### I am seeing `process\_defaultadd: n=-1 tag.data='NGENRE' level=0` every time I build the spec
+
+Apparently this is due to a bug in the bibutils C library which was fixed,
+and occurs if you have built pandoc from source. You must force a recompilation 
+of a few Haskell libraries for the fixed bibutils library to be used. Simply 
+run:
+
+    ```
+    cabal update
+    cabal install --reinstall --force hs-bibutils citeproc-hs pandoc
+    ```
+
+
+Fixing rendering errors
+------------------------
+
+MathJAX errors will appear within the rendered DOM as span elements with
+class `mtext` and style attribute `color: red` applied. It is possible to
+search for this combination in the development tools of the browser of your
+choice. In chrome, CTRL+F / CMD+F within the inspect element panel allows you
+to do this.
+
+
 Conversion from LaTeX - Guidelines
 ----------------------------------
+
 
 ### Chapter conversion Checklist
 
@@ -93,6 +161,7 @@ code blocks. In most cases the usages of math mode I have seen within
 code blocks are easily replaced with unicode character equivalents. If
 a more complex solution is required this will be investigated at a later stage.
 
+
 #### Inline Code
 
 Inline code, usually `~\lstinline@...some code...@` can be replaced with
@@ -103,16 +172,15 @@ the pandoc equivalent of
 where `<type>` is one of the classes representing the language of the
 code fragment.
 
+
 ### Definitions
 
 Pandoc supports definition lists, however these do not seem to be a good
 semantic match for the numbered definitions in the reference. The only
-compromise came up with here was to treat definitions like quotations:
+reasonable compromise I found was to treat definitions like quotations:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> **Definition**
-> Let $C$ be a class with template ...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    > **Definition**
+    > Let $C$ be a class with template ...
 
 
 ### Macro replacements:
@@ -151,6 +219,7 @@ compromise came up with here was to treat definitions like quotations:
 - Similarly for left and right double quotation marks (“ and ”) in
   place of ". These can be typed on a mac using Option+[ and Option+Shift+].
 
+
 ### Enumerations
 
 Latex enumerations can be replaced with markdown ordered lists, which have
@@ -159,11 +228,4 @@ syntax
     #. first entry
     #. ...
     #. last entry
-
-
-Finding rendering errors
-------------------------
-
-- MathJAX errors will appear within the rendered DOM as span elements with
-  class `mtext` and style attribute `color: red` applied.
 
