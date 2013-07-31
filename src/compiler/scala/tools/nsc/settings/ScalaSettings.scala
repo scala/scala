@@ -192,6 +192,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Ytyperdebug             = BooleanSetting("-Ytyper-debug", "Trace all type assignments.")
   val Ypatmatdebug            = BooleanSetting("-Ypatmat-debug", "Trace pattern matching translation.")
   val Yquasiquotedebug        = BooleanSetting("-Yquasiquote-debug", "Trace quasiquote-related activities.")
+  val Ytopleveldebug          = ChoiceSetting ("-Ytopleveldebug", "detail", "Trace top-level definitions.", List("definitions", "definitionsWithMembers"), "definitions")
 
   /** Groups of Settings.
    */

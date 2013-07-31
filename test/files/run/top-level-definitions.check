@@ -1,0 +1,50 @@
+[namer] 3 top level definitions  (+3)
++  --     ClassDef                              class  s.B
++  --     ClassDef                              trait  s.A
++  --     ModuleDef                             class  s.C
+
+[packageobjects] no changes
+[typer] no changes
+[patmat] no changes
+[superaccessors] no changes
+[extmethods] no changes
+[pickler] no changes
+[refchecks] no changes
+[uncurry] 3 top level definitions
+   7222   ClassDef/ClassSymbol                  trait  s.A
+   7223   ClassDef/ClassSymbol                  class  s.B
++  7225   ClassDef/ModuleClassSymbol   <module> class  s.C
+-  7224   ModuleDef/ModuleSymbol                object s.C
+
+[tailcalls] no changes
+[specialize] no changes
+[explicitouter] no changes
+[erasure] no changes
+[posterasure] 4 top level definitions  (+1)
+   7222   ClassDef/ClassSymbol                  trait  s.A
+   7223   ClassDef/ClassSymbol                  class  s.B
+   7225   ClassDef/ModuleClassSymbol   <module> class  s.C
++  19022  ClassDef/ImplClassSymbol       <impl> class  s.A$class
+
+[lazyvals] no changes
+[lambdalift] no changes
+[constructors] no changes
+[flatten] no changes
+[mixin] 5 top level definitions  (+1)
+   19022  ClassDef/ImplClassSymbol       <impl> class  s.A$class
+   7222   ClassDef/ClassSymbol                  trait  s.A
+   7223   ClassDef/ClassSymbol                  class  s.B
+   7225   ClassDef/ModuleClassSymbol   <module> class  s.C
++  7233   ClassDef/ModuleClassSymbol   <module> class  s.Z
++  7241   ClassDef/ModuleClassSymbol   <module> class  s.Z
++  7249   ClassDef/ModuleClassSymbol   <module> class  s.Z
+
+[cleanup] no changes
+[icode] no changes
+[inliner] no changes
+[inlinehandlers] no changes
+[closelim] no changes
+[constopt] no changes
+[dce] no changes
+[jvm] no changes
+[terminal] no changes

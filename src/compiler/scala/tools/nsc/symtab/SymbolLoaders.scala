@@ -8,10 +8,11 @@ package symtab
 
 import java.io.IOException
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.{ ClassPath }
+import scala.tools.nsc.util.ClassPath
 import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.Flags.{ ARTIFACT, SYNTHETIC }
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
 
 /** This class ...
@@ -64,12 +65,16 @@ abstract class SymbolLoaders {
     val pname = newTermName(name)
     val preExisting = root.info.decls lookup pname
     if (preExisting != NoSymbol) {
+      if (preExisting hasAllFlags (ARTIFACT | SYNTHETIC)) {
+        root.info.decls unlink preExisting
+        log(s"Unlinked synthetic companion symbol $preExisting")
+      }
       // Some jars (often, obfuscated ones) include a package and
       // object with the same name. Rather than render them unusable,
       // offer a setting to resolve the conflict one way or the other.
       // This was motivated by the desire to use YourKit probes, which
       // require yjp.jar at runtime. See SI-2089.
-      if (settings.termConflict.isDefault)
+      else if (settings.termConflict.isDefault)
         throw new TypeError(
           root+" contains object and package with same name: "+
           name+"\none of them needs to be removed from classpath"
@@ -100,9 +105,12 @@ abstract class SymbolLoaders {
   /** Enter class and module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
+  def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader, moduleIsSynthetic: Boolean) {
     val clazz = enterClass(root, name, completer)
     val module = enterModule(root, name, completer)
+    if (moduleIsSynthetic)
+      module setFlag (ARTIFACT | SYNTHETIC)
+
     if (!clazz.isAnonymousClass) {
       // Diagnostic for SI-7147
       def msg: String = {
@@ -123,7 +131,7 @@ abstract class SymbolLoaders {
    *  (overridden in interactive.Global).
    */
   def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
-    enterClassAndModule(root, name, new SourcefileLoader(src))
+    enterClassAndModule(root, name, new SourcefileLoader(src), false)
   }
 
   /** The package objects of scala and scala.reflect should always
@@ -139,7 +147,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep, moduleIsSynthetic: Boolean) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -149,7 +157,7 @@ abstract class SymbolLoaders {
         if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
         global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
-        global.loaders.enterClassAndModule(owner, classRep.name, platform.newClassLoader(bin))
+        global.loaders.enterClassAndModule(owner, classRep.name, platform.newClassLoader(bin), moduleIsSynthetic)
     }
   }
 
@@ -230,7 +238,11 @@ abstract class SymbolLoaders {
 
       if (!root.isRoot) {
         for (classRep <- classpath.classes if platform.doLoad(classRep)) {
-          initializeFromClassPath(root, classRep)
+          val moduleIsReal = (
+               (classRep.name endsWith "$")
+            || classpath.findClass(classRep.name + "$").nonEmpty
+          )
+          initializeFromClassPath(root, classRep, !moduleIsReal)
         }
       }
       if (!root.isEmptyPackageClass) {

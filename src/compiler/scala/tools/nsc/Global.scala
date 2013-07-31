@@ -18,7 +18,7 @@ import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceS
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.reflect.io.VirtualFile
-import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
+import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers, TopLevelDefinitions }
 import symtab.classfile.Pickler
 import plugins.Plugins
 import ast._
@@ -36,6 +36,7 @@ import scala.language.postfixOps
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
+    with TopLevelDefinitions
     with CompilationUnits
     with Plugins
     with PhaseAssembly
@@ -359,6 +360,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   lazy val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
+
+    override protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
+      owner.info.decls.lookup(member.name) andAlso { existing =>
+        log(s"Unlinking early-load symbol $existing.")
+        owner.info.decls unlink existing
+      }
+      super.enterIfNew(owner, member, completer)
+    }
   }
 
   /** Returns the mirror that loaded given symbol */
@@ -371,6 +380,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   val MaxPhases = 64
 
   val phaseWithId: Array[Phase] = Array.fill(MaxPhases)(NoPhase)
+
+  private object definitionReporter extends TopLevelDefinition.DefinitionReporter {
+
+    val showDefinitions            = settings.Ytopleveldebug.isSetByUser
+    val showDefinitionsWithMembers = showDefinitions && settings.Ytopleveldebug.value == "definitionsWithMembers"
+
+    this.trackMembers = showDefinitionsWithMembers
+
+    def issueReport() {
+      report(globalPhase.toString, currentRun.topLevelDefinitions)
+    }
+  }
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
@@ -1140,6 +1161,21 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def newUnitParser(unit: CompilationUnit): UnitParser   = new UnitParser(unit)
   def newUnitParser(code: String): UnitParser            = newUnitParser(newCompilationUnit(code))
 
+  override def missingHook(owner: Symbol, name: Name): Symbol = {
+    currentRun.units foreach { unit =>
+      for (PackageDef(pid, stats) <- unit.body) {
+        if (owner.fullName.toString == pid.toString) {
+          loaders.enterToplevelsFromSource(owner, name.toString, unit.source.file)
+          val member = owner.info decl name
+          member.associatedFile = unit.source.file
+          log(s"Early load of source symbol for $member with file ${member.associatedFile}")
+          return member
+        }
+      }
+    }
+    super.missingHook(owner, name)
+  }
+
   /** A Run is a single execution of the compiler on a sets of units
    */
   class Run extends RunContextApi {
@@ -1172,6 +1208,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     private val unitbuf = new mutable.ListBuffer[CompilationUnit]
     val compiledFiles   = new mutable.HashSet[String]
+
+    def topLevelDefinitions: List[TopLevelDefinition] = {
+      val xs = unitbuf flatMap (TopLevelDefinition inTree _.body)
+      xs.toList.sorted
+    }
 
     /** A map from compiled top-level symbols to their source files */
     val symSource = new mutable.HashMap[Symbol, AbstractFile]
@@ -1267,7 +1308,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         classPath.findClass(fullname) match {
           case Some(classRep) =>
             if (settings.verbose) inform("[reset] reinit "+fullname)
-            loaders.initializeFromClassPath(root, classRep)
+            loaders.initializeFromClassPath(root, classRep, moduleIsSynthetic = false)
           case _ =>
         }
     } catch {
@@ -1554,6 +1595,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // output collected statistics
         if (settings.Ystatistics)
           statistics.print(phase)
+
+        // Report on changes among identity or members of top level definitions
+        if (definitionReporter.showDefinitions)
+          definitionReporter.issueReport()
 
         advancePhase()
       }
