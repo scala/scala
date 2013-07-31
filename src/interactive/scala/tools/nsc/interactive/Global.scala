@@ -365,20 +365,16 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   override def registerTopLevelSym(sym: Symbol) { currentTopLevelSyms += sym }
 
+  protected type SymbolLoadersInInteractive = GlobalSymbolLoaders {
+    val global: Global.this.type
+    val platform: Global.this.platform.type
+  }
   /** Symbol loaders in the IDE parse all source files loaded from a package for
    *  top-level idents. Therefore, we can detect top-level symbols that have a name
    *  different from their source file
    */
-  protected type SymbolLoadersInInteractive = SymbolLoaders {
-    // `global` val is needed so we conform to loaders type in Global in Scala 2.11.0-M4
-    // TODO: remove once 2.11.0-M5 is used to build interactive
-    val global: Global.this.type
-    val symbolTable: Global.this.type
-    val platform: Global.this.platform.type
-  }
   override lazy val loaders: SymbolLoadersInInteractive = new {
     val global: Global.this.type = Global.this
-    val symbolTable: Global.this.type = Global.this
     val platform: Global.this.platform.type = Global.this.platform
   } with BrowsingLoaders
 

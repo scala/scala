@@ -30,7 +30,7 @@ abstract class SymbolLoaders {
   /**
    * Required by ClassfileParser. Check documentation in that class for details.
    */
-  protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
+  def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
   /**
    * Should forward to `Run.compileLate`. The more principled fix would be to
    * determine why this functionality is needed and extract it into a separate

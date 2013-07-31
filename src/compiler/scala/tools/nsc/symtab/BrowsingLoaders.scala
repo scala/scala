@@ -12,27 +12,11 @@ import scala.tools.nsc.io.AbstractFile
  *  This class should be used whenever file dependencies and recompile sets
  *  are managed automatically.
  */
-abstract class BrowsingLoaders extends SymbolLoaders {
+abstract class BrowsingLoaders extends GlobalSymbolLoaders {
   val global: Global
-  val symbolTable: global.type
-  protected def compileLate(srcfile: AbstractFile) = global.currentRun.compileLate(srcfile)
 
   import global._
   import syntaxAnalyzer.{OutlineParser, MalformedInput}
-
-  /*
-   * BrowsingLoaders has dependency on Global so we can implement this method here instead of forcing subclasses
-   * of BrowsingLoaders (e.g. in interactive) to implement it.
-   */
-  override def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
-      def lookup = sym.info.member(name)
-      // if loading during initialization of `definitions` typerPhase is not yet set.
-      // in that case we simply load the member at the current phase
-      if (currentRun.typerPhase eq null)
-        lookup
-      else
-        enteringTyper { lookup }
-  }
 
   /** In browse mode, it can happen that an encountered symbol is already
    *  present. For instance, if the source file has a name different from

@@ -353,22 +353,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   lazy val loaders = new {
-    val symbolTable: Global.this.type = Global.this
+    val global: Global.this.type = Global.this
     val platform: Global.this.platform.type = Global.this.platform
-  } with SymbolLoaders {
-    protected override def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol = {
-      def lookup = sym.info.member(name)
-      // if loading during initialization of `definitions` typerPhase is not yet set.
-      // in that case we simply load the member at the current phase
-      if (currentRun.typerPhase eq null)
-        lookup
-      else
-        enteringTyper { lookup }
-    }
-    protected override def compileLate(srcfile: AbstractFile): Unit =
-      currentRun.compileLate(srcfile)
-
-  }
+  } with GlobalSymbolLoaders
 
   /** Returns the mirror that loaded given symbol */
   def mirrorThatLoaded(sym: Symbol): Mirror = rootMirror
