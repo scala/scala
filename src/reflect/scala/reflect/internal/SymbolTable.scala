@@ -165,9 +165,9 @@ abstract class SymbolTable extends macros.Universe
     ph
   }
 
-  def atPhaseStackMessage = atPhaseStack match {
+  def atPhaseStackMessage = atPhaseStack.reverse dropWhile (_ == ph) match {
     case Nil    => ""
-    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+    case ps     => ps.map("->" + _).mkString("(", " ", ")")
   }
 
   final def phase_=(p: Phase) {

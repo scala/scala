@@ -153,7 +153,10 @@ private[internal] trait TypeMaps {
       case BoundedWildcardType(bounds) =>
         val bounds1 = this(bounds)
         if (bounds1 eq bounds) tp
-        else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
+        else BoundedWildcardType(bounds1 match {
+          case tb: TypeBounds => tb
+          case _              => devWarning(s"Unexpected BoundedWildcardType result: $bounds ==> $bounds1 (${bounds1.getClass})") ; ErrorType.bounds
+        })
       case rtp @ RefinedType(parents, decls) =>
         val parents1 = parents mapConserve this
         val decls1 = mapOver(decls)

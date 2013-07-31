@@ -14,7 +14,7 @@ private[internal] trait TypeToStrings {
 
   protected def typeToString(tpe: Type): String =
     if (tostringRecursions >= maxTostringRecursions) {
-      devWarning("Exceeded recursion depth attempting to print " + util.shortClassOfInstance(tpe))
+      devWarning("Exceeded recursion depth attempting to print " + util.shortClassOfInstance(tpe) + " with symbol " + tpe.typeSymbolDirect)
       if (settings.debug)
         (new Throwable).printStackTrace
 
