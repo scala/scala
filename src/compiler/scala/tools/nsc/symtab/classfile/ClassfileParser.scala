@@ -51,7 +51,6 @@ abstract class ClassfileParser {
   def srcfile = srcfile0
 
   private def optimized         = global.settings.optimise.value
-  private def currentIsTopLevel = !(currentClass.decodedName containsChar '$')
 
   // u1, u2, and u4 are what these data types are called in the JVM spec.
   // They are an unsigned byte, unsigned char, and unsigned int respectively.
@@ -231,9 +230,9 @@ abstract class ClassfileParser {
             first != CONSTANT_METHODREF &&
             first != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val ownerTpe = getClassOrArrayType(in.getChar(start + 1).toInt)
-        debuglog("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
+        debuglog(s"getMemberSymbol(static: $static): owner type: $ownerTpe ${ownerTpe.typeSymbol.originalName}")
         val (name0, tpe0) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
-        debuglog("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
+        debuglog(s"getMemberSymbol: name and tpe: $name0: $tpe0")
 
         forceMangledName(tpe0.typeSymbol.name, module = false)
         val (name, tpe) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
@@ -255,7 +254,7 @@ abstract class ClassfileParser {
             if (ownerTpe.typeSymbol.isImplClass) {
               f = ownerTpe.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
             } else {
-              log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
+              log(s"Couldn't find $name: $tpe inside: \n$ownerTpe")
               f = tpe match {
                 case MethodType(_, _) => owner.newMethod(name.toTermName, owner.pos)
                 case _                => owner.newVariable(name.toTermName, owner.pos)
@@ -386,7 +385,7 @@ abstract class ClassfileParser {
 
     /** Throws an exception signaling a bad tag at given address. */
     private def errorBadTag(start: Int) =
-      abort("bad constant pool tag ${in.buf(start)} at byte $start")
+      abort(s"bad constant pool tag ${in.buf(start)} at byte $start")
   }
 
   /** Try to force the chain of enclosing classes for the given name. Otherwise
