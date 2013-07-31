@@ -1123,7 +1123,7 @@ lazy val $m$ = new $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { this: $m.type$ =
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note that the value defined by an object definition is instantiated
-lazily.  The `new $m\Dollar$cls` constructor is evaluated
+lazily.  The `new $m$\$cls` constructor is evaluated
 not at the point of the object definition, but is instead evaluated
 the first time $m$ is dereferenced during execution of the program
 (which might be never at all). An attempt to dereference $m$ again in
