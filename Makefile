@@ -16,10 +16,10 @@ MD_SOURCES := 01-title.md \
 
 BUILD_DIR := build
 
-.PHONY: dirs all html pdf tex epub md clean
+.PHONY: dirs all html mathml pdf tex epub2 epub3 md clean
 
 
-all: html pdf epub md
+all: html mathml pdf tex epub2 epub3 md
 
 
 clean:
@@ -29,20 +29,26 @@ clean:
 html: $(BUILD_DIR)/ScalaReference.html
 
 
+mathml: $(BUILD_DIR)/ScalaReference-mathml.html
+
+
 pdf: $(BUILD_DIR)/ScalaReference.pdf
 
 
 tex: $(BUILD_DIR)/ScalaReference.tex
 
 
-epub: $(BUILD_DIR)/ScalaReference.epub
+epub2: $(BUILD_DIR)/ScalaReference.epub2
+
+
+epub3: $(BUILD_DIR)/ScalaReference.epub3
 
 
 md: $(BUILD_DIR)/ScalaReference.md
 
 
-$(BUILD_DIR)/ScalaReference.epub: Scala.bib $(BUILD_DIR)/ScalaReference.md
-	@echo "building EPUB spec to $(BUILD_DIR)/ScalaReference.epub"
+$(BUILD_DIR)/ScalaReference.epub2: Scala.bib $(BUILD_DIR)/ScalaReference.md
+	@echo "building EPUB2 spec to $(BUILD_DIR)/ScalaReference.epub2"
 	@pandoc -f markdown \
        -t epub \
       --standalone \
@@ -51,7 +57,21 @@ $(BUILD_DIR)/ScalaReference.epub: Scala.bib $(BUILD_DIR)/ScalaReference.md
       --number-sections \
       --bibliography=Scala.bib \
       --self-contained \
-      -o build/ScalaReference.epub \
+      -o build/ScalaReference.epub2 \
+      build/ScalaReference.md
+
+
+$(BUILD_DIR)/ScalaReference.epub3: Scala.bib $(BUILD_DIR)/ScalaReference.md
+	@echo "building EPUB3 spec to $(BUILD_DIR)/ScalaReference.epub3"
+	@pandoc -f markdown \
+       -t epub3 \
+      --standalone \
+      --toc \
+      --chapters \
+      --number-sections \
+      --bibliography=Scala.bib \
+      --self-contained \
+      -o build/ScalaReference.epub3 \
       build/ScalaReference.md
 
 
@@ -96,6 +116,20 @@ $(BUILD_DIR)/ScalaReference.html: Scala.bib $(BUILD_DIR)/ScalaReference.md
        --template=resources/scala-ref-template.html5 \
        --mathjax='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' \
        -o build/ScalaReference.html \
+       build/ScalaReference.md
+
+$(BUILD_DIR)/ScalaReference-mathml.html: Scala.bib $(BUILD_DIR)/ScalaReference.md
+	@echo "building HTML spec to $(BUILD_DIR)/ScalaReference-mathml.html"
+	@pandoc -f markdown \
+       -t html5 \
+       --standalone \
+       --toc \
+       --chapters \
+       --number-sections \
+       --bibliography=Scala.bib \
+       --template=resources/scala-ref-template.html5 \
+       --mathml \
+       -o build/ScalaReference-mathml.html \
        build/ScalaReference.md
 
 
