@@ -22,6 +22,8 @@ abstract class DeadCodeElimination extends SubComponent {
 
   val phaseName = "dce"
 
+  override val enabled: Boolean = settings.Xdce
+
   /** Create a new phase */
   override def newPhase(p: Phase) = new DeadCodeEliminationPhase(p)
 

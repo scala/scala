@@ -17,27 +17,36 @@ import scala.tools.partest.nest.FileUtil.compareContents
  */
 abstract class IcodeTest extends DirectTest {
   // override to check icode at a different point.
+  // but you can't print at a phase that is not configured.
   def printIcodeAfterPhase = "icode"
+  def printSuboptimalIcodeAfterPhase = "icode"
   // override to use source code other than the file being tested.
   def code = testPath.slurp()
 
-  override def extraSettings: String = "-usejavacp -Xprint-icode:" + printIcodeAfterPhase
+  override def extraSettings: String = "-usejavacp"
 
-  // Compile, read in all the *.icode files, delete them, and return their contents
-  def collectIcode(args: String*): List[String] = {
-    compile("-d" :: testOutput.path :: args.toList : _*)
+  /** Compile the test and return the contents of all (sorted) .icode
+   *  files, which are immediately deleted. 
+   *  @param args must include -Xprint-icode:phase
+   */
+  def collectIcode(arg0: String, args: String*): List[String] = {
+    compile("-d" :: testOutput.path :: arg0 :: args.toList : _*)
     val icodeFiles = testOutput.files.toList filter (_ hasExtension "icode")
 
     try     icodeFiles sortBy (_.name) flatMap (f => f.lines.toList)
     finally icodeFiles foreach (f => f.delete())
   }
+  /** Use the default phase, `printIcodeAfterPhase`. */
+  def collectIcode(): List[String] =
+    collectIcode(s"-Xprint-icode:$printIcodeAfterPhase")
 
   // Default show() compiles the code with and without optimization and
   // outputs the diff.
   def show() {
-    val lines1 = collectIcode("")
-    val lines2 = collectIcode("-optimise")
+    val lines1 = collectIcode(s"-Xprint-icode:$printSuboptimalIcodeAfterPhase")
+    val lines2 = collectIcode("-optimise", s"-Xprint-icode:$printIcodeAfterPhase")
 
     println(compareContents(lines1, lines2))
   }
+  def showIcode() = println(collectIcode() mkString "\n")
 }

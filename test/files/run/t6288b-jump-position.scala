@@ -15,8 +15,5 @@ object Test extends IcodeTest {
      |  }
      |}""".stripMargin
 
-  override def show() {
-    val lines1 = collectIcode("")
-    println(lines1 mkString "\n")
-  }
+  override def show() = showIcode()
 }

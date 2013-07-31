@@ -16,7 +16,7 @@ object PathSettings {
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
   private def findJar(d: Directory, name: String): Option[File] = findJar(d.files, name)
   private def findJar(files: Iterator[File], name: String): Option[File] =
-    files filter (_ hasExtension "jar") find { _.name startsWith name }
+    files filter (_ hasExtension "jar") find (_.name startsWith name)
   private def findJarOrFail(name: String, ds: Directory*): File = findJar(ds flatMap (_.files) iterator, name) getOrElse
     sys.error(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
 
@@ -57,10 +57,11 @@ object PathSettings {
 
   // Directory <root>/build
   lazy val buildDir: Directory = {
-    val bases      = testRoot :: testRoot.parents
+    // In the classic "ant" build, the relevant subdirectory is test's sibling ../build, so try there first.
+    val bases = testRoot.parent :: testRoot :: testRoot.parent.parents
     // In the classic "ant" build, the relevant subdirectory is called build,
     // but in the postmodern "sbt" build, it is called target.  Look for both.
-    val dirs = Path.onlyDirs(bases flatMap (x => List(x / "build", x / "target")))
+    val dirs  = Path.onlyDirs(bases flatMap (x => List(x / "build", x / "target")))
 
     dirs.headOption getOrElse sys.error("Neither 'build' nor 'target' dir found under test root " + testRoot + ".")
   }

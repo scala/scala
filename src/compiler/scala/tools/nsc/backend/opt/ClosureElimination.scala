@@ -18,6 +18,8 @@ abstract class ClosureElimination extends SubComponent {
 
   val phaseName = "closelim"
 
+  override val enabled: Boolean = settings.Xcloselim
+
   /** Create a new phase */
   override def newPhase(p: Phase) = new ClosureEliminationPhase(p)
 

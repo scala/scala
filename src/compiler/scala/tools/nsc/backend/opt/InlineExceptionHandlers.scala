@@ -57,6 +57,8 @@ abstract class InlineExceptionHandlers extends SubComponent {
   /** Create a new phase */
   override def newPhase(p: Phase) = new InlineExceptionHandlersPhase(p)
 
+  override def enabled = settings.inlineHandlers
+
   /**
     * Inlining Exception Handlers
     */

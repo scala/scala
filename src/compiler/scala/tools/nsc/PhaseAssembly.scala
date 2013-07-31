@@ -6,15 +6,12 @@
 
 package scala.tools.nsc
 
-import java.io.{ BufferedWriter, FileWriter }
 import scala.collection.mutable
 import scala.language.postfixOps
 
-/**
- * PhaseAssembly
- * Trait made to separate the constraint solving of the phase order from
- * the rest of the compiler. See SIP 00002
- *
+/** Converts an unordered morass of components into an order that
+ *  satisfies their mutual constraints.
+ *  @see SIP 00002. You have read SIP 00002?
  */
 trait PhaseAssembly {
   self: Global =>
@@ -23,18 +20,16 @@ trait PhaseAssembly {
    * Aux datastructure for solving the constraint system
    * The depency graph container with helper methods for node and edge creation
    */
-  class DependencyGraph {
+  private class DependencyGraph {
 
-    /**
-     * Simple edge with to and from refs
-     */
-    class Edge(var frm: Node, var to: Node, var hard: Boolean)
+    /** Simple edge with to and from refs */
+    case class Edge(var frm: Node, var to: Node, var hard: Boolean)
 
     /**
      * Simple node with name and object ref for the phase object,
      * also sets of in and out going dependencies
      */
-    class Node(name: String) {
+    case class Node(name: String) {
       val phasename = name
       var phaseobj: Option[List[SubComponent]] = None
       val after = new mutable.HashSet[Edge]()
@@ -51,8 +46,8 @@ trait PhaseAssembly {
     val nodes = new mutable.HashMap[String,Node]()
     val edges = new mutable.HashSet[Edge]()
 
-    /* Given a phase object, get the node for this phase object. If the
-     * node object does not exist, then create it.
+    /** Given a phase object, get the node for this phase object. If the
+     *  node object does not exist, then create it.
      */
     def getNodeByPhase(phs: SubComponent): Node = {
       val node: Node = getNodeByPhase(phs.phaseName)
@@ -105,9 +100,8 @@ trait PhaseAssembly {
      */
     def collapseHardLinksAndLevels(node: Node, lvl: Int) {
       if (node.visited) {
-        throw new FatalError(
-          "Cycle in compiler phase dependencies detected, phase " +
-          node.phasename + " reacted twice!")
+        dump("phase-cycle")
+        throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
       }
 
       if (node.level < lvl) node.level = lvl
@@ -140,7 +134,8 @@ trait PhaseAssembly {
       var hardlinks = edges.filter(_.hard)
       for (hl <- hardlinks) {
         if (hl.frm.after.size > 1) {
-          throw new FatalError("phase " + hl.frm.phasename + " want to run right after " + hl.to.phasename + ", but some phase has declared to run before " + hl.frm.phasename + ". Re-run with -Xgenerate-phase-graph <filename> to better see the problem.")
+          dump("phase-order")
+          throw new FatalError(s"Phase ${hl.frm.phasename} can't follow ${hl.to.phasename}, created phase-order.dot")
         }
       }
 
@@ -153,15 +148,9 @@ trait PhaseAssembly {
           if (sanity.length == 0) {
             throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
           } else if (sanity.length > 1) {
-            var msg = "Multiple phases want to run right after the phase " + sanity.head.to.phasename + "\n"
-            msg += "Phases: "
-            sanity = sanity sortBy (_.frm.phasename)
-            for (edge <- sanity) {
-              msg += edge.frm.phasename + ", "
-            }
-            msg += "\nRe-run with -Xgenerate-phase-graph <filename> to better see the problem."
-            throw new FatalError(msg)
-
+            dump("phase-order")
+            val following = (sanity map (_.frm.phasename)).sorted mkString ","
+            throw new FatalError(s"Phase ${sanity.head.to.phasename} has too many followers: $following; created phase-order.dot")
           } else {
 
             val promote = hl.to.before.filter(e => (!e.hard))
@@ -199,39 +188,38 @@ trait PhaseAssembly {
         }
       }
     }
+
+    def dump(title: String = "phase-assembly") = graphToDotFile(this, s"$title.dot")
   }
 
-  /* Method called from computePhaseDescriptors in class Global
-   */
-  def buildCompilerFromPhasesSet(): List[SubComponent] = {
+
+  /** Called by Global#computePhaseDescriptors to compute phase order. */
+  def computePhaseAssembly(): List[SubComponent] = {
 
     // Add all phases in the set to the graph
     val graph = phasesSetToDepGraph(phasesSet)
 
+    val dot = if (settings.genPhaseGraph.isSetByUser) Some(settings.genPhaseGraph.value) else None
+
     // Output the phase dependency graph at this stage
-    if (settings.genPhaseGraph.value != "")
-      graphToDotFile(graph, settings.genPhaseGraph.value + "1.dot")
+    def dump(stage: Int) = dot foreach (n => graphToDotFile(graph, s"$n-$stage.dot"))
+
+    dump(1)
 
     // Remove nodes without phaseobj
     graph.removeDanglingNodes()
 
-    // Output the phase dependency graph at this stage
-    if (settings.genPhaseGraph.value != "")
-      graphToDotFile(graph, settings.genPhaseGraph.value + "2.dot")
+    dump(2)
 
     // Validate and Enforce hardlinks / runsRightAfter and promote nodes down the tree
     graph.validateAndEnforceHardlinks()
 
-    // Output the phase dependency graph at this stage
-    if (settings.genPhaseGraph.value != "")
-      graphToDotFile(graph, settings.genPhaseGraph.value + "3.dot")
+    dump(3)
 
     // test for cycles, assign levels and collapse hard links into nodes
     graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
 
-    // Output the phase dependency graph at this stage
-    if (settings.genPhaseGraph.value != "")
-      graphToDotFile(graph, settings.genPhaseGraph.value + "4.dot")
+    dump(4)
 
     // assemble the compiler
     graph.compilerPhaseList()
@@ -288,16 +276,11 @@ trait PhaseAssembly {
     sbuf.append("digraph G {\n")
     for (edge <- graph.edges) {
       sbuf.append("\"" + edge.frm.allPhaseNames + "(" + edge.frm.level + ")" + "\"->\"" + edge.to.allPhaseNames + "(" + edge.to.level + ")" + "\"")
-      if (! edge.frm.phaseobj.get.head.internal) {
-               extnodes += edge.frm
-      }
-      edge.frm.phaseobj match { case None => null case Some(ln) => if(ln.size > 1) fatnodes += edge.frm }
-      edge.to.phaseobj match { case None => null case Some(ln) => if(ln.size > 1) fatnodes += edge.to }
-      if (edge.hard) {
-        sbuf.append(" [color=\"#0000ff\"]\n")
-      } else {
-        sbuf.append(" [color=\"#000000\"]\n")
-      }
+      if (!edge.frm.phaseobj.get.head.internal) extnodes += edge.frm
+      edge.frm.phaseobj foreach (phobjs => if (phobjs.tail.nonEmpty) fatnodes += edge.frm )
+      edge.to.phaseobj foreach (phobjs => if (phobjs.tail.nonEmpty) fatnodes += edge.to )
+      val color = if (edge.hard) "#0000ff" else "#000000"
+      sbuf.append(s""" [color="$color"]\n""")
     }
     for (node <- extnodes) {
       sbuf.append("\"" + node.allPhaseNames + "(" + node.level + ")" + "\" [color=\"#00ff00\"]\n")
@@ -306,10 +289,7 @@ trait PhaseAssembly {
       sbuf.append("\"" + node.allPhaseNames + "(" + node.level + ")" + "\" [color=\"#0000ff\"]\n")
     }
     sbuf.append("}\n")
-    val out = new BufferedWriter(new FileWriter(filename))
-    out.write(sbuf.toString)
-    out.flush()
-    out.close()
+    import reflect.io._
+    for (d <- settings.outputDirs.getSingleOutput if !d.isVirtual) Path(d.file) / File(filename) writeAll sbuf.toString
   }
-
 }

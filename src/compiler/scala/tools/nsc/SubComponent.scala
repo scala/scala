@@ -19,18 +19,29 @@ abstract class SubComponent {
   /** The name of the phase */
   val phaseName: String
 
-  /** List of phase names, this phase should run after  */
+  /** Names of phases that must run before this phase. */
   val runsAfter: List[String]
 
-  /** List of phase names, this phase should run before  */
+  /** Names of phases that must run after this phase. Default is `Nil`. */
   val runsBefore: List[String] = Nil
 
-  /** Phase name this phase will attach itself to, not allowing any phase to come between it
-   * and the phase name declared  */
+  /** Name of the phase that this phase must follow immediately. */
   val runsRightAfter: Option[String]
 
-  /** Internal flag to tell external from internal phases */
+  /** Names of phases required by this component. Default is `Nil`. */
+  val requires: List[String] = Nil
+
+  /** Is this component enabled? Default is true. */
+  def enabled: Boolean = true
+
+  /** True if this phase is not provided by a plug-in. */
   val internal: Boolean = true
+
+  /** True if this phase runs before all other phases. Usually, `parser`. */
+  val initial: Boolean = false
+
+  /** True if this phase runs after all other phases. Usually, `terminal`. */
+  val terminal: Boolean = false
 
   /** SubComponent are added to a HashSet and two phases are the same if they have the same name  */
   override def hashCode() = phaseName.hashCode()

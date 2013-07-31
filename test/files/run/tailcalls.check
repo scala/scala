@@ -52,7 +52,6 @@ test TailCall.b2 was successful
 test FancyTailCalls.tcTryLocal was successful
 test FancyTailCalls.differentInstance was successful
 test PolyObject.tramp was successful
-
 #partest avian
 test Object .f was successful
 test Final .f was successful
