@@ -13,6 +13,7 @@ class SymbolTableTest {
 
   @Test
   def initDefinitions = {
+    symbolTable.settings.debug.value = true
     symbolTable.definitions.init()
   }
 

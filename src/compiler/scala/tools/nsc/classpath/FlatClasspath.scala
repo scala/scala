@@ -1,5 +1,7 @@
 package scala.tools.nsc.classpath
 
+import scala.reflect.io.AbstractFile
+
 /**
  * An interface for a flat classpath.
  *
@@ -10,7 +12,19 @@ package scala.tools.nsc.classpath
  */
 trait FlatClasspath {
   /** Empty string represents root package */
-  def packages(inPackage: String): Seq[String]
-  def classes(inPackage: String): Seq[String]
-  def loadClassfile(classfile: String): Array[Byte]
+  def packages(inPackage: String): Seq[PackageEntry]
+  def classes(inPackage: String): Seq[ClassfileEntry]
+  //def loadClassfile(ClassfileEntry: String): Array[Byte]
+  
+  sealed trait ClasspathEntry {
+    def name: String
+  }
+  trait ClassfileEntry extends ClasspathEntry {
+    def file: AbstractFile
+  }
+  trait PackageEntry extends ClasspathEntry
+}
+
+object FlatClasspath {
+  val RootPackage = ""
 }

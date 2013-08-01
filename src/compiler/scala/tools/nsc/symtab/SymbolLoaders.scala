@@ -13,6 +13,7 @@ import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import scala.tools.nsc.classpath.FlatClasspath
 
 /** This class ...
  *
@@ -167,6 +168,12 @@ abstract class SymbolLoaders {
         enterClassAndModule(owner, classRep.name, newClassLoader(bin))
     }
   }
+  
+  /** Initialize toplevel class and module symbols in `owner` from class name
+   */
+  def initializeFromClassPath(owner: Symbol, classfileEntry: FlatClasspath#ClassfileEntry) {
+    enterClassAndModule(owner, classfileEntry.name, new ClassfileLoader(classfileEntry.file))
+  }
 
   /** Create a new loader from a binary classfile.
    *  This is intented as a hook allowing to support loading symbols from
@@ -264,6 +271,40 @@ abstract class SymbolLoaders {
       }
     }
   }
+  
+  /**
+   * Load contents of a package
+   */
+  class PackageLoaderUsingFlatClasspath(packageName: String, classpath: FlatClasspath) extends SymbolLoader with FlagAgnosticCompleter {
+    protected def description = "package loader "+ { 
+      if (packageName == FlatClasspath.RootPackage) "<root package>" else packageName
+    }
+
+    protected def doComplete(root: Symbol) {
+      assert(root.isPackageClass, root)
+      root.setInfo(new PackageClassInfoType(newScope, root))
+      
+      val classes = classpath.classes(packageName)
+      val packages = classpath.packages(packageName)
+
+      if (!root.isRoot) {
+        for (clazz <- classes) {
+          initializeFromClassPath(root, clazz)
+        }
+      }
+      if (!root.isEmptyPackageClass) {
+        for (pkg <- packages) {
+          val fullName = pkg.name
+          val lastDot = fullName.lastIndexOf('.')
+          val name = fullName.substring(lastDot+1)
+          val packageLoader = new PackageLoaderUsingFlatClasspath(name, classpath)
+          enterPackage(root, name, packageLoader)
+        }
+
+        openPackageModule(root)
+      }
+    }
+  }
 
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
@@ -283,7 +324,7 @@ abstract class SymbolLoaders {
        */
       private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
-      val classPath = platform.classPath
+      def classPath = platform.classPath
     }
 
     protected def description = "class file "+ classfile.toString

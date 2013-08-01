@@ -6,6 +6,8 @@ import scala.reflect.internal.{Phase, NoPhase, SomePhase}
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
+import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.DefaultFlatClasspathManager
 
 /**
  * A complete SymbolTable implementation designed to be used in JUnit tests.
@@ -26,13 +28,14 @@ class SymbolTableForUnitTesting extends SymbolTable {
   class LazyTreeCopier extends super.LazyTreeCopier with TreeCopier
 
   override def isCompilerUniverse: Boolean = true
-  def classPath = new PathResolver(settings).result
+  //def classPath = platform.classPath
+  def flatClasspath: FlatClasspath = DefaultFlatClasspathManager.createClasspath(settings)
 
   object platform extends backend.Platform {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
     lazy val loaders: SymbolTableForUnitTesting.this.loaders.type = SymbolTableForUnitTesting.this.loaders
     def platformPhases: List[SubComponent] = Nil
-    val classPath: ClassPath[AbstractFile] = new PathResolver(settings).result
+    def classPath: ClassPath[AbstractFile] = ???
     def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean = true
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
@@ -51,7 +54,8 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
-    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
+    def rootLoader: LazyType = 
+      new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
     override def toString = "compiler mirror"
   }
 
@@ -64,6 +68,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   def settings: Settings = {
     val s = new Settings
     // initialize classpath using java classpath
+    s.debug .value = true
     s.usejavacp.value = true
     s
   }

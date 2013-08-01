@@ -35,6 +35,7 @@ import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, Cl
 import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
+import scala.tools.nsc.classpath.FlatClasspath
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -57,7 +58,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
+    def rootLoader: LazyType = {
+//      settings.YclasspathImpl.value match {
+//        case "recursive" => new loaders.PackageLoader(classPath)
+//        case "flat" => 
+//      }
+      new loaders.PackageLoader(classPath)
+    }
     override def toString = "compiler mirror"
   }
   implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
@@ -104,6 +111,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type OptClassPath = Option[PlatformClassPath]
 
   def classPath: PlatformClassPath = platform.classPath
+
+  def flatClasspath: FlatClasspath = platform.flatClasspath
 
   // sub-components --------------------------------------------------
 

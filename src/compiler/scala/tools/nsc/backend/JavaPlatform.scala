@@ -9,6 +9,8 @@ package backend
 import io.AbstractFile
 import util.{ClassPath,MergedClassPath,DeltaClassPath}
 import scala.tools.util.PathResolver
+import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.DefaultFlatClasspathManager
 
 trait JavaPlatform extends Platform {
   val global: Global
@@ -21,6 +23,10 @@ trait JavaPlatform extends Platform {
   def classPath: ClassPath[AbstractFile] = {
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
     currentClassPath.get
+  }
+
+  def flatClasspath: FlatClasspath = {
+    DefaultFlatClasspathManager.createClasspath(settings)
   }
 
   /** Update classpath with a substituted subentry */
