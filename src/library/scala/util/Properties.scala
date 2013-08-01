@@ -131,10 +131,9 @@ private[scala] trait PropertiesTrait {
   def javaVmName            = propOrEmpty("java.vm.name")
   def javaVmVendor          = propOrEmpty("java.vm.vendor")
   def javaVmVersion         = propOrEmpty("java.vm.version")
-  // this property must remain less-well-known until 2.11
-  private def javaSpecVersion       = propOrEmpty("java.specification.version")
-  //private def javaSpecVendor        = propOrEmpty("java.specification.vendor")
-  //private def javaSpecName          = propOrEmpty("java.specification.name")
+  def javaSpecVersion       = propOrEmpty("java.specification.version")
+  def javaSpecVendor        = propOrEmpty("java.specification.vendor")
+  def javaSpecName          = propOrEmpty("java.specification.name")
   def osName                = propOrEmpty("os.name")
   def scalaHome             = propOrEmpty("scala.home")
   def tmpDir                = propOrEmpty("java.io.tmpdir")
