@@ -1479,26 +1479,18 @@ abstract class GenICode extends SubComponent  {
 
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
-        val equalsMethod =
+        val equalsMethod: Symbol = {
           if (!settings.optimise) {
-            def default = platform.externalEquals
-            platform match {
-              case x: JavaPlatform =>
-                import x._
-                  if (l.tpe <:< BoxedNumberClass.tpe) {
-                    if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
-                    else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar
-                    else externalEqualsNumObject
-                  }
-                  else default
-
-              case _ => default
-            }
-          }
-          else {
+            if (l.tpe <:< BoxedNumberClass.tpe) {
+              if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
+              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+              else platform.externalEqualsNumObject
+            } else platform.externalEquals
+          } else {
             ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
             getMember(ScalaRunTimeModule, nme.inlinedEquals)
           }
+        }
 
         val ctx1 = genLoad(l, ctx, ObjectReference)
         val ctx2 = genLoad(r, ctx1, ObjectReference)

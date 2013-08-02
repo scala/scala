@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="compiler"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/asm"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/reflect"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/scala-library"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/continuations-library"/>
 	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="build-quick-compiler"/>

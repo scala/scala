@@ -529,7 +529,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     }
 
     private object unpickler extends UnPickler {
-      val global: thisUniverse.type = thisUniverse
+      val symbolTable: thisUniverse.type = thisUniverse
     }
 
     /** how connected????

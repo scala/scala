@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="interactive"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scaladoc"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
-	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry kind="output" path="build-quick-interactive"/>
 </classpath>

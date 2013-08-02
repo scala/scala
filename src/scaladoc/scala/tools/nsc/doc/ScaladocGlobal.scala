@@ -23,9 +23,11 @@ trait ScaladocGlobalTrait extends Global {
     val runsAfter = List[String]()
     val runsRightAfter = None
   }
-  override lazy val loaders = new SymbolLoaders {
-    val global: outer.type = outer
 
+  override lazy val loaders = new {
+    val global: outer.type = outer
+    val platform: outer.platform.type = outer.platform
+  } with GlobalSymbolLoaders {
     // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
     // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
     // that are not in their correct place (see bug for details)

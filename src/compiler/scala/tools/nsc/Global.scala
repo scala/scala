@@ -51,7 +51,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = platform.rootLoader
+    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
     override def toString = "compiler mirror"
   }
 
@@ -83,12 +83,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // platform specific elements
 
-  type ThisPlatform = Platform { val global: Global.this.type }
+  protected class GlobalPlatform extends {
+    val global: Global.this.type = Global.this
+    val settings: Settings = Global.this.settings
+  } with JavaPlatform
 
-  lazy val platform: ThisPlatform =
-    new { val global: Global.this.type = Global.this } with JavaPlatform
+  type ThisPlatform = JavaPlatform { val global: Global.this.type }
+  lazy val platform: ThisPlatform  = new GlobalPlatform
 
-  type PlatformClassPath = ClassPath[platform.BinaryRepr]
+  type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
 
   def classPath: PlatformClassPath = platform.classPath
@@ -268,12 +271,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       log("!!! " + msg) // such warnings always at least logged
   }
 
-  private def elapsedMessage(msg: String, start: Long) =
-    msg + " in " + (currentTime - start) + "ms"
-
   def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
-  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
-  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
 
@@ -357,9 +355,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     getSourceFile(f)
   }
 
-  lazy val loaders = new SymbolLoaders {
+  lazy val loaders = new {
     val global: Global.this.type = Global.this
-  }
+    val platform: Global.this.platform.type = Global.this.platform
+  } with GlobalSymbolLoaders
 
   /** Returns the mirror that loaded given symbol */
   def mirrorThatLoaded(sym: Symbol): Mirror = rootMirror
@@ -914,7 +913,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
              invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
     ifDebug(informProgress(s"syncing $root, $oldEntries -> $newEntries"))
 
-    val getName: ClassPath[platform.BinaryRepr] => String = (_.name)
+    val getName: ClassPath[AbstractFile] => String = (_.name)
     def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
     def invalidateOrRemove(root: ClassSymbol) = {
       allEntries match {

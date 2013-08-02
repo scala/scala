@@ -20,8 +20,23 @@ import scala.reflect.io.{ AbstractFile, NoAbstractFile }
  *  @version 1.0
  */
 abstract class SymbolLoaders {
-  val global: Global
-  import global._
+  val symbolTable: symtab.SymbolTable {
+    def settings: Settings
+  }
+  val platform: backend.Platform {
+    val symbolTable: SymbolLoaders.this.symbolTable.type
+  }
+  import symbolTable._
+  /**
+   * Required by ClassfileParser. Check documentation in that class for details.
+   */
+  def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
+  /**
+   * Should forward to `Run.compileLate`. The more principled fix would be to
+   * determine why this functionality is needed and extract it into a separate
+   * interface.
+   */
+  protected def compileLate(srcfile: AbstractFile): Unit
   import SymbolLoadersStats._
 
   protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
@@ -75,14 +90,14 @@ abstract class SymbolLoaders {
           name+"\none of them needs to be removed from classpath"
         )
       else if (settings.termConflict.value == "package") {
-        global.warning(
+        warning(
           "Resolving package/object name conflict in favor of package " +
           preExisting.fullName + ".  The object will be inaccessible."
         )
         root.info.decls.unlink(preExisting)
       }
       else {
-        global.warning(
+        warning(
           "Resolving package/object name conflict in favor of object " +
           preExisting.fullName + ".  The package will be inaccessible."
         )
@@ -139,17 +154,17 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[AbstractFile]#ClassRep) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
         if (settings.verbose) inform("[symloader] picked up newer source file for " + src.path)
-        global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
+        enterToplevelsFromSource(owner, classRep.name, src)
       case (None, Some(src)) =>
         if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
-        global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
+        enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
-        global.loaders.enterClassAndModule(owner, classRep.name, platform.newClassLoader(bin))
+        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin))
     }
   }
 
@@ -221,7 +236,7 @@ abstract class SymbolLoaders {
   /**
    * Load contents of a package
    */
-  class PackageLoader(classpath: ClassPath[platform.BinaryRepr]) extends SymbolLoader with FlagAgnosticCompleter {
+  class PackageLoader(classpath: ClassPath[AbstractFile]) extends SymbolLoader with FlagAgnosticCompleter {
     protected def description = "package loader "+ classpath.name
 
     protected def doComplete(root: Symbol) {
@@ -245,8 +260,24 @@ abstract class SymbolLoaders {
 
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
-      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
-    } with ClassfileParser
+      val symbolTable: SymbolLoaders.this.symbolTable.type = SymbolLoaders.this.symbolTable
+    } with ClassfileParser {
+      override protected type ThisConstantPool = ConstantPool
+      override protected def newConstantPool: ThisConstantPool = new ConstantPool
+      override protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol =
+        SymbolLoaders.this.lookupMemberAtTyperPhaseIfPossible(sym, name)
+      /*
+       * The type alias and the cast (where the alias is used) is needed due to problem described
+       * in SI-7585. In this particular case, the problem is that we need to make sure that symbol
+       * table used by symbol loaders is exactly the same as they one used by classfileParser.
+       * If you look at the path-dependent types we have here everything should work out ok but
+       * due to issue described in SI-7585 type-checker cannot tie the knot here.
+       *
+       */
+      private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
+      val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
+      val classPath = platform.classPath
+    }
 
     protected def description = "class file "+ classfile.toString
 
@@ -272,7 +303,7 @@ abstract class SymbolLoaders {
     protected def description = "source file "+ srcfile.toString
     override def fromSource = true
     override def sourcefile = Some(srcfile)
-    protected def doComplete(root: Symbol): Unit = global.currentRun.compileLate(srcfile)
+    protected def doComplete(root: Symbol): Unit = compileLate(srcfile)
   }
 
   object moduleClassLoader extends SymbolLoader with FlagAssigningCompleter {
