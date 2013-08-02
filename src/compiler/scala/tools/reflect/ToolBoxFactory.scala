@@ -15,6 +15,7 @@ import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
+import scala.reflect.io.NoAbstractFile
 
 abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
@@ -138,7 +139,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val wrapper2      = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
         def wrapper       (tree: => Tree) = wrapper1(wrapper2(tree))
 
-        phase = (new Run).typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
+        val run = new Run
+        run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works
+        phase = run.typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
         currentTyper.context.setReportErrors() // need to manually set context mode, otherwise typer.silent will throw exceptions
         reporter.reset()
 
