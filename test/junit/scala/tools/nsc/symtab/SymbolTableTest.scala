@@ -26,4 +26,25 @@ class SymbolTableTest {
     assertTrue("List should be subclass of Seq", listClassTpe <:< seqClassTpe)
   }
 
+  /**
+   * Demonstrates how one can create symbols and type completely
+   * from scratch and perform sub type check.
+   */
+  @Test
+  def customClassesSubTypeCheck: Unit = {
+    val symbolTable = createSymbolTable
+    import symbolTable._
+    symbolTable.definitions.init()
+    val rootClass = symbolTable.rootMirror.RootClass
+    val fooSymbol = rootClass.newClassSymbol("Foo": TypeName, NoPosition, 0)
+    val fooType = new ClassInfoType(Nil, EmptyScope, fooSymbol)
+    fooSymbol.info = fooType
+    val barSymbol = rootClass.newClassSymbol("Bar": TypeName, NoPosition, 0)
+    val fooTypeRef = TypeRef(fooSymbol.owner.tpe, fooSymbol, Nil)
+    val barType = new ClassInfoType(List(fooTypeRef), EmptyScope, barSymbol)
+    barSymbol.info = barType
+    assertTrue("Bar should be subclass of Foo", barSymbol.tpe <:< fooSymbol.tpe)
+    assertFalse("Foo should be a superclass of Foo", fooSymbol.tpe <:< barSymbol.tpe)
+  }
+
 }
