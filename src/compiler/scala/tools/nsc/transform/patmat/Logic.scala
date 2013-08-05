@@ -18,8 +18,8 @@ trait Logic extends Debugging  {
   import PatternMatchingStats._
 
   private def max(xs: Seq[Int]) = if (xs isEmpty) 0 else xs max
-  private def alignedColumns(cols: Seq[AnyRef]): Seq[String] = {
-    def toString(x: AnyRef) = if (x eq null) "" else x.toString
+  private def alignedColumns(cols: Seq[Any]): Seq[String] = {
+    def toString(x: Any) = if (x == null) "" else x.toString
     if (cols.isEmpty || cols.tails.isEmpty) cols map toString
     else {
       val colLens = cols map (c => toString(c).length)
@@ -34,7 +34,7 @@ trait Logic extends Debugging  {
     }
   }
 
-  def alignAcrossRows(xss: List[List[AnyRef]], sep: String, lineSep: String = "\n"): String = {
+  def alignAcrossRows(xss: List[List[Any]], sep: String, lineSep: String = "\n"): String = {
     val maxLen = max(xss map (_.length))
     val padded = xss map (xs => xs ++ List.fill(maxLen - xs.length)(null))
     padded.transpose.map(alignedColumns).transpose map (_.mkString(sep)) mkString(lineSep)
