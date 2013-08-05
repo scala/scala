@@ -8,6 +8,7 @@ import scala.tools.nsc.typechecker.Modes
 import scala.tools.nsc.io.VirtualDirectory
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.util.FreshNameCreator
+import scala.tools.nsc.util.OffsetPosition
 import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
 import java.lang.{Class => jClass}
@@ -273,7 +274,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def parse(code: String): Tree = {
         val run = new Run
         reporter.reset()
-        val wrappedCode = "object wrapper {" + EOL + code + EOL + "}"
+        val startWrapperCode = "object wrapper {" + EOL
+        val endWrapperCode = EOL + "}"
+        val wrappedCode = startWrapperCode + code + endWrapperCode
         val file = new BatchSourceFile("<toolbox>", wrappedCode)
         val unit = new CompilationUnit(file)
         phase = run.parserPhase
@@ -281,6 +284,20 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val wrappedTree = parser.parse()
         throwIfErrors()
         val PackageDef(_, List(ModuleDef(_, _, Template(_, _, _ :: parsed)))) = wrappedTree
+        def adjustPosition(tree: Tree) {
+          if (tree.pos.isDefined) {
+            val wrappedSource = tree.pos.source
+            val adjustedSource = new BatchSourceFile(wrappedSource.file, wrappedSource.content.drop(startWrapperCode.length).dropRight(endWrapperCode.length))
+            val naiveAdjustedOffset = tree.pos.point - startWrapperCode.length
+            // @jedesah writes: This seems buggy to me that we would receive Offset positions that go beyond the scope of the trees we are dealing with,
+            // but I don't think there is much to be done here right now besides making a sensible correction.
+            val adjustedOffset = scala.math.min(naiveAdjustedOffset, adjustedSource.content.length - 1)
+            val adjustedPos = adjustedSource.position(adjustedOffset)
+            tree.setPos(adjustedPos)
+          }
+          tree.children.foreach(adjustPosition)
+        }
+        parsed.foreach(adjustPosition)
         parsed match {
           case expr :: Nil => expr
           case stats :+ expr => Block(stats, expr)
@@ -402,7 +419,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
     def compile(tree: u.Tree): () => Any = {
       if (compiler.settings.verbose.value) println("importing "+tree)
-      var ctree: compiler.Tree = importer.importTree(tree)
+      val ctree: compiler.Tree = importer.importTree(tree)
 
       if (compiler.settings.verbose.value) println("compiling "+ctree)
       compiler.compile(ctree)

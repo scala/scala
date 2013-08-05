@@ -443,7 +443,7 @@ trait Importers extends api.Importers { self: SymbolTable =>
         }
       })
       tryFixup()
-      mytree
+      mytree setPos importPosition(tree.pos)
     }
 
     def importValDef(tree: from.ValDef): ValDef = importTree(tree).asInstanceOf[ValDef]
