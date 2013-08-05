@@ -12,6 +12,7 @@ import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.HashSet
+import scala.annotation.tailrec
 
 
 trait Logic extends Debugging  {
@@ -48,7 +49,7 @@ trait Logic extends Debugging  {
     type Tree
 
     class Prop
-    case class Eq(p: Var, q: Const) extends Prop
+    final case class Eq(p: Var, q: Const) extends Prop
 
     type Const
 
@@ -105,36 +106,44 @@ trait Logic extends Debugging  {
 
     // would be nice to statically check whether a prop is equational or pure,
     // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
-    case class And(a: Prop, b: Prop) extends Prop
-    case class Or(a: Prop, b: Prop) extends Prop
-    case class Not(a: Prop) extends Prop
+    final case class And(ops: Set[Prop]) extends Prop
+    object And {
+      def apply(ops: Prop*) = new And(ops.toSet)
+    }
+    final case class Or(ops: Set[Prop]) extends Prop
+    object Or {
+      def apply(ops: Prop*) = new Or(ops.toSet)
+    }
+
+    final case class Not(a: Prop) extends Prop
 
     case object True extends Prop
     case object False extends Prop
 
     // symbols are propositions
-    abstract case class Sym(val variable: Var, val const: Const) extends Prop {
+    final class Sym private[PropositionalLogic] (val variable: Var, val const: Const) extends Prop {
       private[this] val id = Sym.nextSymId
 
-      override def toString = variable +"="+ const +"#"+ id
+      override def toString = variable + "=" + const + "#" + id
     }
-    class UniqueSym(variable: Var, const: Const) extends Sym(variable, const)
+
     object Sym {
       private val uniques: HashSet[Sym] = new HashSet("uniques", 512)
       def apply(variable: Var, const: Const): Sym = {
-        val newSym = new UniqueSym(variable, const)
+        val newSym = new Sym(variable, const)
         (uniques findEntryOrUpdate newSym)
       }
-      private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+      def nextSymId = {_symId += 1; _symId}; private var _symId = 0
     }
 
-    def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
-    def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
+    def /\(props: Iterable[Prop]) = if (props.isEmpty) True else And(props.toSet)
+    def \/(props: Iterable[Prop]) = if (props.isEmpty) False else Or(props.toSet)
+
 
     trait PropTraverser {
       def apply(x: Prop): Unit = x match {
-        case And(a, b) => apply(a); apply(b)
-        case Or(a, b) => apply(a); apply(b)
+        case And(ops) => ops foreach apply
+        case Or(ops) => ops foreach apply
         case Not(a) => apply(a)
         case Eq(a, b) => applyVar(a); applyConst(b)
         case _ =>
@@ -153,8 +162,8 @@ trait Logic extends Debugging  {
 
     trait PropMap {
       def apply(x: Prop): Prop = x match { // TODO: mapConserve
-        case And(a, b) => And(apply(a), apply(b))
-        case Or(a, b) => Or(apply(a), apply(b))
+        case And(ops) => And(ops map apply)
+        case Or(ops) => Or(ops map apply)
         case Not(a) => Not(apply(a))
         case p => p
       }
@@ -243,8 +252,8 @@ trait Logic extends Debugging  {
         }
       }
 
-      debug.patmat("eqAxioms:\n"+ cnfString(toFormula(eqAxioms)))
-      debug.patmat("pure:"+ pure.map(p => cnfString(p)).mkString("\n"))
+      debug.patmat(s"eqAxioms:\n$eqAxioms")
+      debug.patmat(s"pure:${pure.mkString("\n")}")
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
@@ -350,7 +359,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
       // populate equalitySyms
       // don't care about the result, but want only one fresh symbol per distinct constant c
-      def registerEquality(c: Const): Unit = {ensureCanModify; symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
+      def registerEquality(c: Const): Unit = {ensureCanModify(); symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
 
       // return the symbol that represents this variable being equal to the constant `c`, if it exists, otherwise False (for robustness)
       // (registerEquality(c) must have been called prior, either when constructing the domain or from outside)

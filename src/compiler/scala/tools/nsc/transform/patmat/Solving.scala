@@ -49,23 +49,23 @@ trait Solving extends Logic {
       def negationNormalFormNot(p: Prop, budget: Int): Prop =
         if (budget <= 0) throw AnalysisBudget.exceeded
         else p match {
-          case And(a, b) =>  Or(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))
-          case Or(a, b)  => And(negationNormalFormNot(a, budget - 1), negationNormalFormNot(b, budget - 1))
-          case Not(p)    => negationNormalForm(p, budget - 1)
-          case True      => False
-          case False     => True
-          case s: Sym    => Not(s)
+          case And(ps) => Or (ps map (negationNormalFormNot(_, budget - 1)))
+          case Or(ps)  => And(ps map (negationNormalFormNot(_, budget - 1)))
+          case Not(p)  => negationNormalForm(p, budget - 1)
+          case True    => False
+          case False   => True
+          case s: Sym  => Not(s)
         }
 
       def negationNormalForm(p: Prop, budget: Int = AnalysisBudget.max): Prop =
         if (budget <= 0) throw AnalysisBudget.exceeded
         else p match {
-          case And(a, b)      => And(negationNormalForm(a, budget - 1), negationNormalForm(b, budget - 1))
-          case Or(a, b)       =>  Or(negationNormalForm(a, budget - 1), negationNormalForm(b, budget - 1))
-          case Not(negated)   => negationNormalFormNot(negated, budget - 1)
+          case Or(ps)        => Or (ps map (negationNormalForm(_, budget - 1)))
+          case And(ps)       => And(ps map (negationNormalForm(_, budget - 1)))
+          case Not(negated)  => negationNormalFormNot(negated, budget - 1)
           case True
              | False
-             | (_ : Sym)      => p
+             | (_ : Sym)     => p
         }
 
       val TrueF          = formula()
@@ -97,14 +97,17 @@ trait Solving extends Logic {
           case False       => FalseF
           case s: Sym      => lit(s)
           case Not(s: Sym) => negLit(s)
-          case And(a, b)   =>
-            val cnfA = conjunctiveNormalForm(a, budget - 1)
-            val cnfB = conjunctiveNormalForm(b, budget - cnfA.size)
-            cnfA ++ cnfB
-          case Or(a, b)    =>
-            val cnfA = conjunctiveNormalForm(a)
-            val cnfB = conjunctiveNormalForm(b)
-            distribute(cnfA, cnfB, budget - (cnfA.size + cnfB.size))
+          case And(ps)   =>
+            val formula = formulaBuilder
+            ps foreach { p =>
+              val cnf = conjunctiveNormalForm(p, budget - 1)
+              addFormula(formula, cnf)
+            }
+            toFormula(formula)
+          case Or(ps)    =>
+            ps map (conjunctiveNormalForm(_)) reduceLeft { (a, b) =>
+              distribute(a, b, budget - (a.size + b.size))
+            }
         }
       }
 
