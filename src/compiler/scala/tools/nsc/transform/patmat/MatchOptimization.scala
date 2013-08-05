@@ -12,6 +12,7 @@ import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.NoPosition
+import scala.reflect.internal.util.Sequenceable
 
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *
@@ -240,9 +241,6 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       def defaultBody: Tree
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef
 
-      private def sequence[T](xs: List[Option[T]]): Option[List[T]] =
-        if (xs exists (_.isEmpty)) None else Some(xs.flatten)
-
       object GuardAndBodyTreeMakers {
           def unapply(tms: List[TreeMaker]): Option[(Tree, Tree)] = {
             tms match {
@@ -451,7 +449,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                 }
 
                 // succeed if they were all switchable
-                sequence(switchableAlts) map { switchableAlts =>
+                switchableAlts.sequence map { switchableAlts =>
                   def extractConst(t: Tree) = t match {
                     case Literal(const) => const
                     case _              => t
@@ -470,7 +468,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             }
           }
 
-          val caseDefsWithGuards = sequence(caseDefs) match {
+          val caseDefsWithGuards = caseDefs.sequence match {
             case None      => return Nil
             case Some(cds) => cds
           }
