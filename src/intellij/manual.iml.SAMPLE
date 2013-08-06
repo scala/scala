@@ -18,7 +18,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="library" name="ant" level="application" />
+    <orderEntry type="module" module-name="xml" />
+    <orderEntry type="library" name="ant" level="project" />
   </component>
 </module>
 
