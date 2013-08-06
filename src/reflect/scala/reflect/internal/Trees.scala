@@ -968,7 +968,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
     override def isEmpty = true
     super.setPos(NoPosition)
-    override def setPos(pos: Position) = { assert(false); this }
+    override def setPos(pos: Position) = this
   }
 
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
