@@ -154,39 +154,6 @@
             "artifacts": [
                 {
                     "extension": "jar",
-                    "name": "scala-partest",
-                    "organization": "org.scala-lang"
-                }
-            ],
-            "dependencies": [
-                {
-                    "extension": "jar",
-                    "name": "scala-compiler",
-                    "organization": "org.scala-lang"
-                },
-                {
-                    "extension": "jar",
-                    "name": "scalap",
-                    "organization": "org.scala-lang"
-                },
-                {
-                    "extension": "jar",
-                    "name": "scala-xml",
-                    "organization": "org.scala-lang"
-                },
-                {
-                    "extension": "jar",
-                    "name": "scalacheck",
-                    "organization": "org.scala-lang"
-                }
-            ],
-            "name": "scala-partest",
-            "organization": "org.scala-lang"
-        },
-        {
-            "artifacts": [
-                {
-                    "extension": "jar",
                     "name": "scaladoc",
                     "organization": "org.scala-lang"
                 }

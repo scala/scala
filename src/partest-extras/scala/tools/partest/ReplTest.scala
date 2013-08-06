@@ -7,7 +7,6 @@ package scala.tools.partest
 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.ILoop
-import scala.tools.partest.nest.FileUtil
 import java.lang.reflect.{ Method => JMethod, Field => JField }
 
 /** A trait for testing repl code.  It drops the first line
@@ -31,7 +30,7 @@ abstract class ReplTest extends DirectTest {
   def show() = eval() foreach println
 }
 
-abstract class SessionTest extends ReplTest with FileUtil {
+abstract class SessionTest extends ReplTest  {
   def session: String
   override final def code = expected filter (_.startsWith(prompt)) map (_.drop(prompt.length)) mkString "\n"
   def expected = session.stripMargin.lines.toList
@@ -39,6 +38,6 @@ abstract class SessionTest extends ReplTest with FileUtil {
   override def show() = {
     val out = eval().toList
     if (out.size != expected.size) Console println s"Expected ${expected.size} lines, got ${out.size}"
-    if (out != expected) Console print compareContents(expected, out, "expected", "actual")
+    if (out != expected) Console print nest.FileManager.compareContents(expected, out, "expected", "actual")
   }
 }
