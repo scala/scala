@@ -8,7 +8,7 @@ package runtime
  *
  *  @contentDiagram hideNodes "*Api" "*Extractor"
  */
-class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.SymbolTable { self =>
+class JavaUniverse extends internal.SymbolTable with JavaUniverseForce with ReflectSetup with runtime.SymbolTable { self =>
 
   override def inform(msg: String): Unit = log(msg)
   def picklerPhase = internal.SomePhase
@@ -87,5 +87,13 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
   // Therefore, before initializing ScalaPackageClass, we must pre-initialize ObjectClass
   def init() {
     definitions.init()
+
+    // workaround for http://groups.google.com/group/scala-internals/browse_thread/thread/97840ba4fd37b52e
+    // constructors are by definition single-threaded, so we initialize all lazy vals (and local object) in advance
+    // in order to avoid deadlocks later (e.g. one thread holds a global reflection lock and waits for definitions.Something to initialize,
+    // whereas another thread holds a definitions.Something initialization lock and needs a global reflection lock to complete the initialization)
+
+    // TODO Convert this into a macro
+    force()
   }
 }
