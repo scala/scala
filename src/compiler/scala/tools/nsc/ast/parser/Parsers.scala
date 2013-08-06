@@ -1140,12 +1140,16 @@ self =>
     /** Handle placeholder syntax.
      *  If evaluating the tree produces placeholders, then make it a function.
      */
-    private def withPlaceholders(tree: =>Tree): Tree = {
+    private def withPlaceholders(tree: =>Tree, isAny: Boolean): Tree = {
       val savedPlaceholderParams = placeholderParams
       placeholderParams = List()
       var res = tree
-      if (!placeholderParams.isEmpty && !isWildcard(res)) {
+      if (placeholderParams.nonEmpty && !isWildcard(res)) {
         res = atPos(res.pos)(Function(placeholderParams.reverse, res))
+        if (isAny) placeholderParams foreach (_.tpt match {
+          case tpt @ TypeTree() => tpt setType definitions.AnyTpe
+          case _                => // some ascription
+        })
         placeholderParams = List()
       }
       placeholderParams = placeholderParams ::: savedPlaceholderParams
@@ -1153,13 +1157,12 @@ self =>
     }
 
     /** Consume a USCORE and create a fresh synthetic placeholder param. */
-    private def freshPlaceholder(isAny: Boolean): Tree = {
+    private def freshPlaceholder(): Tree = {
       val start = in.offset
       val pname = freshName("x$")
       in.nextToken()
       val id = atPos(start)(Ident(pname))
       val param = atPos(id.pos.focus)(gen.mkSyntheticParam(pname.toTermName))
-      if (isAny) param.tpt setType definitions.AnyTpe
       placeholderParams = param :: placeholderParams
       id
     }
@@ -1179,8 +1182,8 @@ self =>
             if (inPattern) dropAnyBraces(pattern())
             else in.token match {
               case IDENTIFIER => atPos(in.offset)(Ident(ident()))
-              case USCORE     => freshPlaceholder(isAny = true) // strinterpolator params are Any* by definition
-              case LBRACE     => expr()
+              case USCORE     => freshPlaceholder()
+              case LBRACE     => dropAnyBraces(expr0(Local))
               case THIS       => in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY))
               case _          => syntaxErrorOrIncompleteAnd("error in interpolated string: identifier or block expected", skipIt = true)(EmptyTree)
             }
@@ -1195,7 +1198,7 @@ self =>
         atPos(start) { Apply(t3, exprBuf.toList) }
       }
       if (inPattern) stringCheese
-      else withPlaceholders(stringCheese)
+      else withPlaceholders(stringCheese, isAny = true) // strinterpolator params are Any* by definition
     }
 
 /* ------------- NEW LINES ------------------------------------------------- */
@@ -1293,7 +1296,7 @@ self =>
      */
     def expr(): Tree = expr(Local)
 
-    def expr(location: Int): Tree = withPlaceholders(expr0(location))
+    def expr(location: Int): Tree = withPlaceholders(expr0(location), isAny = false)
 
     def expr0(location: Int): Tree = (in.token: @scala.annotation.switch) match {
       case IF =>
@@ -1542,7 +1545,7 @@ self =>
           case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
             path(thisOK = true, typeOK = false)
           case USCORE =>
-            freshPlaceholder(isAny = false)
+            freshPlaceholder()
           case LPAREN =>
             atPos(in.offset)(makeParens(commaSeparated(expr())))
           case LBRACE =>
