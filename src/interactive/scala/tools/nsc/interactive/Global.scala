@@ -365,13 +365,18 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   override def registerTopLevelSym(sym: Symbol) { currentTopLevelSyms += sym }
 
+  protected type SymbolLoadersInInteractive = GlobalSymbolLoaders {
+    val global: Global.this.type
+    val platform: Global.this.platform.type
+  }
   /** Symbol loaders in the IDE parse all source files loaded from a package for
    *  top-level idents. Therefore, we can detect top-level symbols that have a name
    *  different from their source file
    */
-  override lazy val loaders: SymbolLoaders { val global: Global.this.type } = new BrowsingLoaders {
+  override lazy val loaders: SymbolLoadersInInteractive = new {
     val global: Global.this.type = Global.this
-  }
+    val platform: Global.this.platform.type = Global.this.platform
+  } with BrowsingLoaders
 
   // ----------------- Polling ---------------------------------------
 

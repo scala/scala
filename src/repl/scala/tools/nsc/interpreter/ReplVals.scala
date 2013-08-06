@@ -39,7 +39,7 @@ class StdReplVals(final val r: ILoop) extends ReplVals {
   def lastRequest = intp.lastRequest
 
   class ReplImplicits extends power.Implicits2 {
-    import intp.global._
+    import intp.global.Symbol
 
     private val tagFn = ReplVals.mkCompilerTypeFromTag[intp.global.type](global)
     implicit def mkCompilerTypeFromTag(sym: Symbol) = tagFn(sym)

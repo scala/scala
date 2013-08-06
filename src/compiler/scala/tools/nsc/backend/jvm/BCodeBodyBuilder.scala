@@ -1187,22 +1187,12 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
 
       if (mustUseAnyComparator) {
-        val equalsMethod = {
-
-          def default = platform.externalEquals
-
-          platform match {
-            case x: JavaPlatform =>
-              import x._
-                if (l.tpe <:< BoxedNumberClass.tpe) {
-                  if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
-                  else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar
-                  else externalEqualsNumObject
-                }
-                else default
-
-            case _ => default
-          }
+        val equalsMethod: Symbol = {
+          if (l.tpe <:< BoxedNumberClass.tpe) {
+            if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
+            else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+            else platform.externalEqualsNumObject
+          } else platform.externalEquals
         }
         genLoad(l, ObjectReference)
         genLoad(r, ObjectReference)

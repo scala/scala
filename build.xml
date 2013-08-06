@@ -364,7 +364,7 @@ TODO:
     </then></if>
 
     <!-- Allow this to be overridden simply -->
-    <property name="sbt.latest.version"    value="0.12.2"/>
+    <property name="sbt.latest.version"    value="0.12.4"/>
 
     <property name="sbt.src.dir"           value="${build-sbt.dir}/${sbt.latest.version}/src"/>
     <property name="sbt.lib.dir"           value="${build-sbt.dir}/${sbt.latest.version}/lib"/>
@@ -1538,7 +1538,7 @@ TODO:
   <target name="test.junit" depends="test.junit.comp">
     <stopwatch name="test.junit.timer"/>
     <mkdir dir="${test.junit.classes}"/>
-    <junit fork="yes" haltonfailure="yes" showoutput="yes" printsummary="on">
+    <junit fork="yes" haltonfailure="yes" printsummary="on">
       <classpath refid="test.junit.compiler.build.path"/>
       <batchtest fork="yes" todir="${build-junit.dir}">
         <fileset dir="${test.junit.classes}">
