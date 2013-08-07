@@ -443,7 +443,12 @@ trait Importers extends api.Importers { self: SymbolTable =>
         }
       })
       tryFixup()
-      mytree
+      // we have to be careful with position import as some shared trees
+      // like EmptyTree, emptyValDef don't support position assignment
+      if (tree.pos != NoPosition)
+        mytree.setPos(importPosition(tree.pos))
+      else
+        mytree
     }
 
     def importValDef(tree: from.ValDef): ValDef = importTree(tree).asInstanceOf[ValDef]
