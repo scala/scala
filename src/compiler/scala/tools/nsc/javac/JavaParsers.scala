@@ -792,7 +792,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val superclazz =
         AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
-        ClassDef(mods, name, List(),
+        ClassDef(mods | Flags.ENUM, name, List(),
                  makeTemplate(superclazz :: interfaces, body))
       })
     }
@@ -811,10 +811,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           skipAhead()
           accept(RBRACE)
         }
-        // The STABLE flag is to signal to namer that this was read from a
-        // java enum, and so should be given a Constant type (thereby making
-        // it usable in annotations.)
-        ValDef(Modifiers(Flags.STABLE | Flags.JAVA | Flags.STATIC), name.toTermName, enumType, blankExpr)
+        ValDef(Modifiers(Flags.ENUM | Flags.STABLE | Flags.JAVA | Flags.STATIC), name.toTermName, enumType, blankExpr)
       }
     }
 

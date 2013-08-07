@@ -63,7 +63,7 @@ import scala.collection.{ mutable, immutable }
 // 45:  SYNCHRONIZED/M
 // 46:        ARTIFACT
 // 47: DEFAULTMETHOD/M
-// 48:
+// 48:            ENUM
 // 49:
 // 50:
 // 51:    lateDEFERRED
@@ -119,6 +119,7 @@ class ModifierFlags {
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
   final val ARTIFACT      = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
   final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method
+  final val ENUM          = 1L << 48      // symbol is an enum
 
   /** Symbols which are marked ARTIFACT. (Expand this list?)
    *
@@ -142,7 +143,7 @@ class ModifierFlags {
 }
 object ModifierFlags extends ModifierFlags
 
-/** All flags and associated operatins */
+/** All flags and associated operations */
 class Flags extends ModifierFlags {
   final val METHOD        = 1 << 6        // a method
   final val MODULE        = 1 << 8        // symbol is module or class implementing a module
@@ -446,7 +447,7 @@ class Flags extends ModifierFlags {
     case        SYNCHRONIZED => "<synchronized>"                      // (1L << 45)
     case            ARTIFACT => "<artifact>"                          // (1L << 46)
     case       DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)
-    case    0x1000000000000L => ""                                    // (1L << 48)
+    case                ENUM => "<enum>"                              // (1L << 48)
     case    0x2000000000000L => ""                                    // (1L << 49)
     case    0x4000000000000L => ""                                    // (1L << 50)
     case      `lateDEFERRED` => "<latedeferred>"                      // (1L << 51)

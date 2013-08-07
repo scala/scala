@@ -43,5 +43,6 @@ trait FlagSets extends api.FlagSets { self: SymbolTable =>
     val PRESUPER      : FlagSet = Flags.PRESUPER
     val DEFAULTINIT   : FlagSet = Flags.DEFAULTINIT
     val SYNTHETIC     : FlagSet = Flags.SYNTHETIC
+    val ENUM          : FlagSet = Flags.ENUM
   }
 }
