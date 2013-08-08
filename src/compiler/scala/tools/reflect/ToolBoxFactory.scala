@@ -8,6 +8,7 @@ import scala.tools.nsc.typechecker.Modes
 import scala.tools.nsc.io.VirtualDirectory
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.util.FreshNameCreator
+import scala.tools.nsc.ast.parser.Tokens.EOF
 import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
 import java.lang.{Class => jClass}
@@ -273,14 +274,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def parse(code: String): Tree = {
         val run = new Run
         reporter.reset()
-        val wrappedCode = "object wrapper {" + EOL + code + EOL + "}"
-        val file = new BatchSourceFile("<toolbox>", wrappedCode)
+        val file = new BatchSourceFile("<toolbox>", code)
         val unit = new CompilationUnit(file)
         phase = run.parserPhase
         val parser = new syntaxAnalyzer.UnitParser(unit)
-        val wrappedTree = parser.parse()
+        val parsed = parser.templateStats()
+        parser.accept(EOF)
         throwIfErrors()
-        val PackageDef(_, List(ModuleDef(_, _, Template(_, _, _ :: parsed)))) = wrappedTree
         parsed match {
           case expr :: Nil => expr
           case stats :+ expr => Block(stats, expr)
@@ -402,7 +402,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
     def compile(tree: u.Tree): () => Any = {
       if (compiler.settings.verbose.value) println("importing "+tree)
-      var ctree: compiler.Tree = importer.importTree(tree)
+      val ctree: compiler.Tree = importer.importTree(tree)
 
       if (compiler.settings.verbose.value) println("compiling "+ctree)
       compiler.compile(ctree)
