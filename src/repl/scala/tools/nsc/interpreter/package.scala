@@ -145,8 +145,8 @@ package object interpreter extends ReplConfig with ReplStrings {
         case sym: TypeSymbol => Some(sym)
         case _ => None
       }
-      (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) foreach { sym => 
-        val (kind, tpe) = exitingTyper { 
+      (typeFromTypeString orElse typeFromNameTreatedAsTerm orElse typeFromFullName orElse typeOfTerm) foreach { sym =>
+        val (kind, tpe) = exitingTyper {
           val tpe = sym.tpeHK
           (intp.global.inferKind(NoPrefix)(tpe, sym.owner), tpe)
         }
