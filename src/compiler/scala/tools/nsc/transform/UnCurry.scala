@@ -272,22 +272,20 @@ abstract class UnCurry extends InfoTransform
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
       val isJava = fun.isJavaDefined
+      def eval(body: => Tree): Tree = exitingUncurry(localTyper.typedPos(pos)(body))
+
       def transformVarargs(varargsElemType: Type) = {
         def mkArrayValue(ts: List[Tree], elemtp: Type) =
           ArrayValue(TypeTree(elemtp), ts) setType arrayType(elemtp)
 
         // when calling into scala varargs, make sure it's a sequence.
-        def arrayToSequence(tree: Tree, elemtp: Type) = {
-          exitingUncurry {
-            localTyper.typedPos(pos) {
-              val pt = arrayType(elemtp)
-              val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
-                if (tree.tpe <:< pt) tree
-                else gen.mkCastArray(tree, elemtp, pt)
+        def arrayToSequence(tree: Tree, elemtp: Type) = eval {
+          val pt = arrayType(elemtp)
+          val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
+            if (tree.tpe <:< pt) tree
+            else gen.mkCastArray(tree, elemtp, pt)
 
-              gen.mkWrapArray(adaptedTree, elemtp)
-            }
-          }
+          gen.mkWrapArray(adaptedTree, elemtp)
         }
 
         // when calling into java varargs, make sure it's an array - see bug #1360
@@ -308,22 +306,18 @@ abstract class UnCurry extends InfoTransform
               case _          => EmptyTree
             }
           }
-          exitingUncurry {
-            localTyper.typedPos(pos) {
-              gen.mkMethodCall(tree, toArraySym, Nil, List(traversableClassTag(tree.tpe)))
-            }
-          }
+          eval(gen.mkMethodCall(tree, toArraySym, Nil, traversableClassTag(tree.tpe) :: Nil))
         }
 
         var suffix: Tree =
           if (treeInfo isWildcardStarArgList args) {
             val Typed(tree, _) = args.last
-            if (isJava)
-              if (tree.tpe.typeSymbol == ArrayClass) tree
-              else sequenceToArray(tree)
-            else
-              if (tree.tpe.typeSymbol isSubClass SeqClass) tree
-              else arrayToSequence(tree, varargsElemType)
+            val Varargs = if (isJava) ArrayClass else SeqClass
+            tree.tpe baseType Varargs match {
+              case TypeRef(_, `Varargs`, _ :: Nil) => tree
+              case _ if isJava                     => sequenceToArray(tree)
+              case _                               => arrayToSequence(tree, varargsElemType)
+            }
           }
           else {
             def mkArray = mkArrayValue(args drop (formals.length - 1), varargsElemType)
@@ -331,14 +325,16 @@ abstract class UnCurry extends InfoTransform
             else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
             else arrayToSequence(mkArray, varargsElemType)
           }
+        def needsRuntimeCall = (
+             isJava
+          && !isReferenceArray(suffix.tpe)
+          && isReferenceArray(fun.tpe.params.last.tpe)
+        )
 
-        exitingUncurry {
-          if (isJava && !isReferenceArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
-            // The array isn't statically known to be a reference array, so call ScalaRuntime.toObjectArray.
-            suffix = localTyper.typedPos(pos) {
-              gen.mkRuntimeCall(nme.toObjectArray, List(suffix))
-            }
-          }
+        suffix = eval {
+          // The array isn't statically known to be a reference array, so call ScalaRuntime.toObjectArray.
+          if (needsRuntimeCall) gen.mkRuntimeCall(nme.toObjectArray, suffix :: Nil)
+          else suffix
         }
         args.take(formals.length - 1) :+ (suffix setType formals.last)
       }

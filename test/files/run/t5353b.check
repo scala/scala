@@ -1,0 +1,150 @@
+                                         type  erasure
+
+                          Array[Any with Any]  Array[Object]
+                       Array[Any with AnyVal]  Array[Object]
+                          Array[Any with Int]  Object
+                       Array[Any with String]  Array[Object]
+                         Array[Any with Null]  Array[Object]
+                      Array[Any with Nothing]  Array[Object]
+                           Array[Any with T3]  Object
+                           Array[Any with T6]  Object
+                   Array[Any with Array[Any]]  Array[Object]
+                   Array[Any with Array[Int]]  Array[Object]
+                       Array[AnyVal with Any]  Array[Object]
+                    Array[AnyVal with AnyVal]  Array[Object]
+                       Array[AnyVal with Int]  Object
+                    Array[AnyVal with String]  Array[Object]
+                      Array[AnyVal with Null]  Array[Object]
+                   Array[AnyVal with Nothing]  Array[Object]
+                        Array[AnyVal with T3]  Object
+                        Array[AnyVal with T6]  Object
+                Array[AnyVal with Array[Any]]  Array[Object]
+                Array[AnyVal with Array[Int]]  Array[Object]
+                          Array[Int with Any]  Object
+                       Array[Int with AnyVal]  Object
+                          Array[Int with Int]  Array[I]
+                       Array[Int with String]  Object
+                         Array[Int with Null]  Object
+                      Array[Int with Nothing]  Object
+                           Array[Int with T3]  Object
+                           Array[Int with T6]  Object
+                   Array[Int with Array[Any]]  Object
+                   Array[Int with Array[Int]]  Object
+                       Array[String with Any]  Array[Object]
+                    Array[String with AnyVal]  Array[Object]
+                       Array[String with Int]  Object
+                    Array[String with String]  Array[String]
+                      Array[String with Null]  Array[Object]
+                   Array[String with Nothing]  Array[Object]
+                        Array[String with T3]  Object
+                        Array[String with T6]  Object
+                Array[String with Array[Any]]  Array[Object]
+                Array[String with Array[Int]]  Array[Object]
+                         Array[Null with Any]  Array[Object]
+                      Array[Null with AnyVal]  Array[Object]
+                         Array[Null with Int]  Object
+                      Array[Null with String]  Array[Object]
+                        Array[Null with Null]  Array[Object]
+                     Array[Null with Nothing]  Array[Object]
+                          Array[Null with T3]  Object
+                          Array[Null with T6]  Object
+                  Array[Null with Array[Any]]  Array[Object]
+                  Array[Null with Array[Int]]  Array[Object]
+                      Array[Nothing with Any]  Array[Object]
+                   Array[Nothing with AnyVal]  Array[Object]
+                      Array[Nothing with Int]  Object
+                   Array[Nothing with String]  Array[Object]
+                     Array[Nothing with Null]  Array[Object]
+                  Array[Nothing with Nothing]  Array[Object]
+                       Array[Nothing with T3]  Object
+                       Array[Nothing with T6]  Object
+               Array[Nothing with Array[Any]]  Array[Object]
+               Array[Nothing with Array[Int]]  Array[Object]
+                           Array[T3 with Any]  Object
+                        Array[T3 with AnyVal]  Object
+                           Array[T3 with Int]  Object
+                        Array[T3 with String]  Object
+                          Array[T3 with Null]  Object
+                       Array[T3 with Nothing]  Object
+                            Array[T3 with T3]  Object
+                            Array[T3 with T6]  Object
+                    Array[T3 with Array[Any]]  Object
+                    Array[T3 with Array[Int]]  Object
+                           Array[T6 with Any]  Object
+                        Array[T6 with AnyVal]  Object
+                           Array[T6 with Int]  Object
+                        Array[T6 with String]  Object
+                          Array[T6 with Null]  Object
+                       Array[T6 with Nothing]  Object
+                            Array[T6 with T3]  Object
+                            Array[T6 with T6]  Object
+                    Array[T6 with Array[Any]]  Object
+                    Array[T6 with Array[Int]]  Object
+                   Array[Array[Any] with Any]  Array[Object]
+                Array[Array[Any] with AnyVal]  Array[Object]
+                   Array[Array[Any] with Int]  Object
+                Array[Array[Any] with String]  Array[Object]
+                  Array[Array[Any] with Null]  Array[Object]
+               Array[Array[Any] with Nothing]  Array[Object]
+                    Array[Array[Any] with T3]  Object
+                    Array[Array[Any] with T6]  Object
+            Array[Array[Any] with Array[Any]]  Array[Array[Object]]
+            Array[Array[Any] with Array[Int]]  Array[Object]
+                   Array[Array[Int] with Any]  Array[Object]
+                Array[Array[Int] with AnyVal]  Array[Object]
+                   Array[Array[Int] with Int]  Object
+                Array[Array[Int] with String]  Array[Object]
+                  Array[Array[Int] with Null]  Array[Object]
+               Array[Array[Int] with Nothing]  Array[Object]
+                    Array[Array[Int] with T3]  Object
+                    Array[Array[Int] with T6]  Object
+            Array[Array[Int] with Array[Any]]  Array[Object]
+            Array[Array[Int] with Array[Int]]  Array[Array[I]]
+                                   Array[Any]  Array[Object]
+                              Array[_ <: Any]  Object
+           Array[T forSome { type T <: Any }]  Object
+                                Array[AnyVal]  Array[Object]
+                           Array[_ <: AnyVal]  Object
+        Array[T forSome { type T <: AnyVal }]  Object
+                                   Array[Int]  Array[I]
+                              Array[_ <: Int]  Object
+           Array[T forSome { type T <: Int }]  Object
+                                Array[String]  Array[String]
+                           Array[_ <: String]  Object
+        Array[T forSome { type T <: String }]  Object
+                                  Array[Null]  Array[Object]
+                             Array[_ <: Null]  Object
+          Array[T forSome { type T <: Null }]  Object
+                               Array[Nothing]  Array[Object]
+                          Array[_ <: Nothing]  Object
+       Array[T forSome { type T <: Nothing }]  Object
+                                    Array[T3]  Object
+                               Array[_ <: T3]  Object
+            Array[T forSome { type T <: T3 }]  Object
+                                    Array[T6]  Object
+                               Array[_ <: T6]  Object
+            Array[T forSome { type T <: T6 }]  Object
+                            Array[Array[Any]]  Array[Array[Object]]
+                       Array[_ <: Array[Any]]  Object
+    Array[T forSome { type T <: Array[Any] }]  Object
+                            Array[Array[Int]]  Array[Array[I]]
+                       Array[_ <: Array[Int]]  Object
+    Array[T forSome { type T <: Array[Int] }]  Object
+                             Array[this.type]  Array[A]
+                        Array[_ <: this.type]  Object
+     Array[T forSome { type T <: this.type }]  Object
+                                Array[A.type]  Array[A$]
+                           Array[_ <: A.type]  Object
+        Array[T forSome { type T <: A.type }]  Object
+                                    Array[T1]  Object
+                               Array[_ <: T1]  Object
+            Array[T forSome { type T <: T1 }]  Object
+                                    Array[T2]  Object
+                               Array[_ <: T2]  Object
+            Array[T forSome { type T <: T2 }]  Object
+                                    Array[T4]  Object
+                               Array[_ <: T4]  Object
+            Array[T forSome { type T <: T4 }]  Object
+                                    Array[T5]  Object
+                               Array[_ <: T5]  Object
+            Array[T forSome { type T <: T5 }]  Object
