@@ -269,17 +269,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       def parse(code: String): Tree = {
-        val run = new Run
         reporter.reset()
-        val wrappedCode = "object wrapper {" + EOL + code + EOL + "}"
-        val file = new BatchSourceFile("<toolbox>", wrappedCode)
+        val file = new BatchSourceFile("<toolbox>", code)
         val unit = new CompilationUnit(file)
-        phase = run.parserPhase
-        val parser = newUnitParser(unit)
-        val wrappedTree = parser.parse()
+        val parsed = newUnitParser(unit).parseStats()
         throwIfErrors()
-        val PackageDef(_, List(ModuleDef(_, _, Template(_, _, _ :: parsed)))) = wrappedTree
         parsed match {
+          case Nil => EmptyTree
           case expr :: Nil => expr
           case stats :+ expr => Block(stats, expr)
         }
