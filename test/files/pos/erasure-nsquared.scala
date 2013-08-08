@@ -1,0 +1,35 @@
+trait BigCast {
+  def bar(x: Int): AnyRef = (
+    null
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+      .asInstanceOf[List[AnyRef]].head
+  )
+}
