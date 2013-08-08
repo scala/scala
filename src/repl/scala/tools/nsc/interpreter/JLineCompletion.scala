@@ -190,7 +190,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
   // literal Ints, Strings, etc.
   object literals extends CompletionAware {
-    def simpleParse(code: String): Tree = newUnitParser(code).templateStats().last
+    def simpleParse(code: String): Tree = newUnitParser(code).templateStatsCompat().last
     def completions(verbosity: Int) = Nil
 
     override def follow(id: String) = simpleParse(id) match {
