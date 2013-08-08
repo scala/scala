@@ -17,7 +17,7 @@ abstract class Quasiquotes extends Parsers
   lazy val (universe: Tree, args, parts, parse, reify) = c.macroApplication match {
     case Apply(Select(Select(Apply(Select(universe0, _), List(Apply(_, parts0))), interpolator0), method0), args0) =>
       val parts1 = parts0.map {
-        case Literal(Constant(s: String)) => s
+        case lit @ Literal(Constant(s: String)) => s -> lit.pos
         case part => c.abort(part.pos, "Quasiquotes can only be used with literal strings")
       }
       val reify0 = method0 match {

@@ -188,12 +188,6 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       val q"$m1 $m2 def foo" = EmptyTree
     """)
 
-  property("can't parse more than one casedef") = fails(
-    "Can't parse more than one casedef, consider generating a match tree instead",
-    """
-      cq"1 => 2 case 3 => 5"
-    """)
-
   // // Make sure a nice error is reported in this case
   // { import Flag._; val mods = NoMods; q"lazy $mods val x: Int" }
 }
