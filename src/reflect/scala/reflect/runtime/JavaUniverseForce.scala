@@ -27,7 +27,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
 
     this.settings
     this.treeInfo
-    this.gil
+    // inaccessible: this.scala$reflect$runtime$Gil$$gil
     // inaccessible: this.uniqueLock
     // inaccessible: this._skolemizationLevel
     // inaccessible: this._undoLog
