@@ -28,7 +28,7 @@ trait ExprTyper {
 
       result
     }
-    def stmts(code: String) = applyRule(code, _.templateStats())
+    def stmts(code: String) = applyRule(code, _.templateStatsCompat())
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
