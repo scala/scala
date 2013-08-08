@@ -128,6 +128,7 @@ TODO:
 
   <!-- Sets location of build folders -->
   <property name="build.dir"               value="${basedir}/build"/>
+  <property name="build-deps.dir"          value="${build.dir}/deps"/>
   <property name="build-libs.dir"          value="${build.dir}/libs"/>
   <property name="build-asm.dir"           value="${build.dir}/asm"/>
   <property name="build-forkjoin.dir"      value="${build-libs.dir}"/>
@@ -192,6 +193,18 @@ TODO:
     </touch>
   </target>
 
+  <macrodef name="copy-deps" description="Copy a file set based on maven dependency resolution to a directory. Currently used by the IntelliJ config files.">
+    <attribute name="fileset.prefix"></attribute>
+    <attribute name="out"></attribute>
+    <sequential>
+      <delete dir="${build-deps.dir}/@{out}" includes="*.jar"/>
+      <copy todir="${build-deps.dir}/@{out}">
+        <fileset refid="@{fileset.prefix}.fileset" />
+        <mapper type="flatten" />
+      </copy>
+    </sequential>
+  </macrodef>
+
   <target name="init" depends="boot">
     <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib-ant.dir}/ant-contrib.jar"/>
@@ -218,6 +231,7 @@ TODO:
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
+      <copy-deps fileset.prefix="junit" out="junit"/>
 
       <!-- Pax runner -->
       <property name="pax.exam.version" value="2.5.0"/>
@@ -238,10 +252,12 @@ TODO:
         <dependency groupId="com.googlecode.java-diff-utils" artifactId="diffutils" version="1.3.0"/>
         <dependency groupId="org.scala-tools.testing" artifactId="test-interface" version="0.5" />
       </artifact:dependencies>
+      <copy-deps fileset.prefix="partest.extras" out="partest"/>
 
       <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.deps.fileset" versionsId="repl.deps.versions">
         <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
       </artifact:dependencies>
+      <copy-deps fileset.prefix="repl.deps" out="repl"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
