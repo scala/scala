@@ -780,7 +780,7 @@ trait DirectRunner {
     //val parentClassLoader = ScalaClassLoader fromURLs (List(scalaCheck.toURL), getClass().getClassLoader)
     val pool              = Executors newFixedThreadPool numThreads
     val manager           = new RunnerManager(kind, fileManager, TestRunParams(parentClassLoader))
-    val futures           = kindFiles map (f => pool submit callable(manager runTest f))
+    val futures           = kindFiles map (f => pool submit callable(manager runTest f.getAbsoluteFile))
 
     pool.shutdown()
     Try (pool.awaitTermination(waitTime) {

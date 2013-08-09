@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #
-
 ##############################################################################
 # Scala test runner 2.10.0
 ##############################################################################
@@ -10,6 +9,17 @@
 # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 ##############################################################################
+
+findScalaHome () {
+  # see SI-2092 and SI-5792
+  local source="${BASH_SOURCE[0]}"
+  while [ -h "$source" ] ; do
+    local linked="$(readlink "$source")"
+    local dir="$( cd -P $(dirname "$source") && cd -P $(dirname "$linked") && pwd )"
+    source="$dir/$(basename "$linked")"
+  done
+  ( ( cd -P "$(dirname "$source")/.." > /dev/null ) && pwd )
+}
 
 # Use tput to detect color-capable terminal.
 term_colors=$(tput colors 2>/dev/null)
@@ -29,23 +39,7 @@ case "`uname`" in
 esac
 
 # Finding the root folder for this Scala distribution
-SOURCE=$0;
-SCRIPT=`basename "$SOURCE"`;
-while [ -h "$SOURCE" ]; do
-    SCRIPT=`basename "$SOURCE"`;
-    LOOKUP=`ls -ld "$SOURCE"`;
-    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
-    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
-        SOURCE=${TARGET:-.};
-    else
-        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
-    fi;
-done;
-
-# see #2092
-SCALA_HOME=`dirname "$SOURCE"`
-SCALA_HOME=`cd "$SCALA_HOME"; pwd -P`
-SCALA_HOME=`cd "$SCALA_HOME"/..; pwd`
+SCALA_HOME="$(findScalaHome)"
 
 if $cygwin; then
     SCALA_HOME=`cygpath --windows --short-name "$SCALA_HOME"`
