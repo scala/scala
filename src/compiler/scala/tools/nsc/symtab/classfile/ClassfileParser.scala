@@ -1036,10 +1036,11 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
-        val file = classPath.findSourceFile(entry.externalName.toString) getOrElse {
-          throw new AssertionError(entry.externalName)
-        }
-        enterClassAndModule(entry, file)
+        val file = classPath.findSourceFile(entry.externalName.toString).get
+        if(file == None)
+         debugwarn(s"Class file for ${entry.externalName} not found")
+        else
+         enterClassAndModule(entry, file)
       }
     }
   }
