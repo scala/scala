@@ -15,7 +15,8 @@ import scala.util.Sorting
 import scala.collection.mutable
 import scala.tools.nsc.io.{ AbstractFile, MsilFile }
 import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
-import ClassPath.{ ClassPathContext, isTraitImplementation }
+import ClassPath.ClassPathContext
+import scala.reflect.runtime.ReflectionUtils.isTraitImplementation
 
 /** Keeping the MSIL classpath code in its own file is important to make sure
  *  we don't accidentally introduce a dependency on msil.jar in the jvm.
