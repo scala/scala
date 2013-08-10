@@ -312,7 +312,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef with ValDefApi
   object ValDef extends ValDefExtractor
 
-  case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
+  case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef with DefDefApi
   object DefDef extends DefDefExtractor
 

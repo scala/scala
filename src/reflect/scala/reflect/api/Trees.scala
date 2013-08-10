@@ -572,8 +572,8 @@ trait Trees { self: Universe =>
    *  @group Extractors
    */
   abstract class DefDefExtractor {
-    def apply(mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
-    def unapply(defDef: DefDef): Option[(Modifiers, Name, List[TypeDef], List[List[ValDef]], Tree, Tree)]
+    def apply(mods: Modifiers, name: TermName, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
+    def unapply(defDef: DefDef): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)]
   }
 
   /** The API that all def defs support
@@ -584,7 +584,7 @@ trait Trees { self: Universe =>
     def mods: Modifiers
 
     /** @inheritdoc */
-    def name: Name
+    def name: TermName
 
     /** The type parameters of the method. */
     def tparams: List[TypeDef]

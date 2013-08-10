@@ -91,7 +91,7 @@ trait ArbitraryTreesAndNames {
       yield CompoundTypeTree(templ)
 
   def genDefDef(size: Int) =
-    for(mods <- genModifiers; name <- genName;
+    for(mods <- genModifiers; name <- genTermName;
         tpt <- genTree(size -1); rhs <- genTree(size - 1);
         tparams <- smallList(size, genTypeDef(size - 1));
         vparamss <- smallList(size, smallList(size, genValDef(size - 1))))
