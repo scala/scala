@@ -1,0 +1,19 @@
+compile-time-only-a.scala:41: error: C5
+  2.ext
+  ^
+compile-time-only-a.scala:42: error: C5
+  C5(2)
+  ^
+compile-time-only-a.scala:45: error: C6.x
+  val _ = c6.x
+             ^
+compile-time-only-a.scala:46: error: C6.foo
+  c6.foo
+     ^
+compile-time-only-a.scala:48: error: C6.y
+  c6.y = c6.y
+     ^
+compile-time-only-a.scala:48: error: C6.y
+  c6.y = c6.y
+            ^
+6 errors found
