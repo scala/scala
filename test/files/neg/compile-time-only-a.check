@@ -16,4 +16,13 @@ compile-time-only-a.scala:48: error: C6.y
 compile-time-only-a.scala:48: error: C6.y
   c6.y = c6.y
             ^
-6 errors found
+compile-time-only-a.scala:54: error: placebo
+@placebo
+ ^
+compile-time-only-a.scala:56: error: placebo
+  @placebo def x = (2: @placebo)
+   ^
+compile-time-only-a.scala:56: error: placebo
+  @placebo def x = (2: @placebo)
+                        ^
+9 errors found
