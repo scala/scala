@@ -113,7 +113,7 @@ abstract class ClassfileParser {
 
   private def parseErrorHandler[T]: PartialFunction[Throwable, T] = {
     case e: MissingRequirementError => handleMissing(e)
-    case e: RuntimeException        => handleError(e);
+    case e: RuntimeException        => handleError(e)
   }
   @inline private def pushBusy[T](sym: Symbol)(body: => T): T = {
     if (busy eq sym)
