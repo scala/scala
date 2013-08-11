@@ -1,0 +1,4 @@
+t3346c.scala:60: error: value bar is not a member of Either[Int,String]
+  eii.bar
+      ^
+one error found
