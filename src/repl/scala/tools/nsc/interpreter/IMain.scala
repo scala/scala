@@ -7,6 +7,8 @@ package scala
 package tools.nsc
 package interpreter
 
+import PartialFunction.cond
+
 import scala.language.implicitConversions
 
 import scala.collection.mutable
@@ -20,7 +22,7 @@ import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
-import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter }
+import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter, stackTracePrefixString }
 import scala.tools.nsc.util.Exceptional.unwrap
 
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
@@ -728,10 +730,18 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         throw t
 
       val unwrapped = unwrap(t)
+
+      // Example input: $line3.$read$$iw$$iw$
+      val classNameRegex = (naming.lineRegex + ".*").r
+      def isWrapperInit(x: StackTraceElement) = cond(x.getClassName) {
+        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded => true
+      }
+      val stackTrace = util.stackTracePrefixString(unwrapped)(!isWrapperInit(_))
+
       withLastExceptionLock[String]({
         directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable])
-        util.stackTraceString(unwrapped)
-      }, util.stackTraceString(unwrapped))
+        stackTrace
+      }, stackTrace)
     }
 
     // TODO: split it out into a package object and a regular

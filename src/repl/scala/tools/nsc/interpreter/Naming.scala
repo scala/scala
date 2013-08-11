@@ -40,7 +40,7 @@ trait Naming {
   //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
 
   private def noMeta(s: String) = "\\Q" + s + "\\E"
-  private lazy val lineRegex = {
+  lazy val lineRegex = {
     val sn = sessionNames
     val members = List(sn.read, sn.eval, sn.print) map noMeta mkString ("(?:", "|", ")")
     debugging("lineRegex")(noMeta(sn.line) + """\d+[./]""" + members + """[$.]""")
