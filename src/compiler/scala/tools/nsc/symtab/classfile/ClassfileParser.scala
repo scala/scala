@@ -100,10 +100,13 @@ abstract class ClassfileParser {
     if (settings.debug) e.printStackTrace
     throw new IOException(s"Missing dependency '${e.req}', required by ${in.file}")
   }
+
   private def handleError(e: Exception) = {
     if (settings.debug) e.printStackTrace()
     throw new IOException(s"class file '${in.file}' is broken\n(${e.getClass}/${e.getMessage})")
   }
+
+
   private def mismatchError(c: Symbol) = {
     throw new IOException(s"class file '${in.file}' has location not matching its contents: contains $c")
   }
@@ -117,7 +120,7 @@ abstract class ClassfileParser {
       throw new IOException(s"unsatisfiable cyclic dependency in '$sym'")
     else if ((busy ne null) && (busy ne NoSymbol))
       throw new IOException(s"illegal class file dependency between '$sym' and '$busy'")
-
+    
     busy = sym
     try body
     catch parseErrorHandler
@@ -131,21 +134,25 @@ abstract class ClassfileParser {
 
   def parse(file: AbstractFile, root: Symbol): Unit = {
     debuglog("[class] >> " + root.fullName)
-
-    pushBusy(root) {
-      this.in           = new AbstractFileReader(file)
-      this.clazz        = if (root.isModule) root.companionClass else root
-      // WARNING! do no use clazz.companionModule to find staticModule.
-      // In a situation where root can be defined, but its companionClass not,
-      // this would give incorrect results (see SI-5031 in separate compilation scenario)
-      this.staticModule = if (root.isModule) root else root.companionModule
-      this.isScala      = false
-
-      parseHeader()
-      this.pool = newConstantPool
-      parseClass()
-    }
-  }
+    try{
+      pushBusy(root) {
+        this.in           = new AbstractFileReader(file)
+        this.clazz        = if (root.isModule) root.companionClass else root
+        // WARNING! do no use clazz.companionModule to find staticModule.
+        // In a situation where root can be defined, but its companionClass not,
+        // this would give incorrect results (see SI-5031 in separate compilation scenario)
+        this.staticModule = if (root.isModule) root else root.companionModule
+        this.isScala      = false
+        parseHeader()
+        this.pool = newConstantPool
+        parseClass()
+      }
+    }catch{
+       case t:Throwable => {
+              if(!settings.ignoreinnercls.value) throw t
+           }
+   }
+ }
 
   private def parseHeader() {
     val magic = u4
@@ -1036,10 +1043,11 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
-        val file = classPath.findSourceFile(entry.externalName.toString) getOrElse {
-          throw new AssertionError(entry.externalName)
-        }
-        enterClassAndModule(entry, file)
+        val file = classPath.findSourceFile(entry.externalName.toString).get
+        if(file == None && settings.ignoreinnercls)
+         debugwarn(s"Class file for ${entry.externalName} not found")
+        else
+         enterClassAndModule(entry, file)
       }
     }
   }
