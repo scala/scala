@@ -706,7 +706,8 @@ abstract class Erasure extends AddInterfaces
 //                }
               typed(untyped)
             }
-          } else tree
+          } else qual1
+
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
