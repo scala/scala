@@ -256,7 +256,7 @@ trait Reshape {
       val flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
       val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
       val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
-      ValDef(mods2, name1.toTermName, tpt0, extractRhs(rhs0))
+      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
     }
 
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {

@@ -2542,7 +2542,7 @@ self =>
             }
             expr()
           }
-        DefDef(newmods, name, tparams, vparamss, restype, rhs)
+        DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
       }
       signalParseProgress(result.pos)
       result
