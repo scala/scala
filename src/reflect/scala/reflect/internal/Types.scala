@@ -80,7 +80,8 @@ trait Types
   with tpe.CommonOwners
   with tpe.GlbLubs
   with tpe.TypeMaps
-  with tpe.TypeConstraints { self: SymbolTable =>
+  with tpe.TypeConstraints
+  with util.Collections { self: SymbolTable =>
 
   import definitions._
   import TypesStats._
@@ -4316,18 +4317,6 @@ trait Types
           matchingParams(rest1, rest2, syms1isJava, syms2isJava)
       }
   }
-
-  /** like map2, but returns list `xs` itself - instead of a copy - if function
-   *  `f` maps all elements to themselves.
-   */
-  def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] =
-    if (xs.isEmpty || ys.isEmpty) xs
-    else {
-      val x1 = f(xs.head, ys.head)
-      val xs1 = map2Conserve(xs.tail, ys.tail)(f)
-      if ((x1 eq xs.head) && (xs1 eq xs.tail)) xs
-      else x1 :: xs1
-    }
 
   /** Do type arguments `targs` conform to formal parameters `tparams`?
    */
