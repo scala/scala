@@ -1017,14 +1017,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
   trait CannotHaveAttrs extends Tree {
     override def canHaveAttrs = false
 
-    private def unsupported(what: String, args: Any*) =
-      throw new UnsupportedOperationException(s"$what($args) inapplicable for "+self.toString)
+    private def requireLegal(value: Any, allowed: Any, what: String) =
+      require(value == allowed, s"can't set $what for $self to value other than $allowed")
 
     super.setPos(NoPosition)
-    override def setPos(pos: Position) = unsupported("setPos", pos)
+    override def setPos(pos: Position) = { requireLegal(pos, NoPosition, "pos"); this }
+    override def pos_=(pos: Position) = setPos(pos)
 
     super.setType(NoType)
-    override def tpe_=(t: Type) = if (t != NoType) unsupported("tpe_=", t)
+    override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
+    override def tpe_=(t: Type) = setType(t)
   }
 
   case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }
