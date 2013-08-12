@@ -544,6 +544,13 @@ trait Types
       else Nil
     )
 
+    /** As dealiasWiden, but also chase through abstract type upper bounds.
+     */
+    def dealiasWidenUpper: Type = dealiasWiden match {
+      case TypeRef(_, sym, _) if sym.isAbstractType => sym.info.bounds.hi.dealiasWidenUpper
+      case tp                                       => tp
+    }
+
     def etaExpand: Type = this
 
     /** Performs a single step of beta-reduction on types.
@@ -4523,10 +4530,6 @@ trait Types
     try { explainSwitch = true; op } finally { explainSwitch = s }
   }
 
-  def isUnboundedGeneric(tp: Type) = tp match {
-    case t @ TypeRef(_, sym, _) => sym.isAbstractType && !(t <:< AnyRefTpe)
-    case _                      => false
-  }
   def isBoundedGeneric(tp: Type) = tp match {
     case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefTpe)
     case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)

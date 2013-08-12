@@ -271,6 +271,22 @@ private[internal] trait GlbLubs {
     }
   }
 
+  def lubOfArrayElements(elems: List[Type]): Type = logResult(s"lubOfArrayElements")(elems match {
+    case Nil         => ObjectArrayTpe
+    case elem :: Nil => arrayType(elem)
+    case _           =>
+      val esyms = elems.map(_.typeSymbol).distinct
+
+      if (elems exists (tp => !(tp <:< ObjectTpe)))
+        ObjectTpe
+      else if (elems exists (_ <:< NothingTpe))
+        ObjectTpe
+      else if (elems exists (_.typeSymbol.isAbstractType))
+        ObjectArrayTpe
+      else
+        arrayType(lub(elems))
+  })
+
   def lub(ts: List[Type]): Type = ts match {
     case Nil      => NothingTpe
     case t :: Nil => t

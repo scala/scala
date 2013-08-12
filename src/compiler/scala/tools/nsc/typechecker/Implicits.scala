@@ -1225,7 +1225,7 @@ trait Implicits {
             // refinement is not generated yet
             if (hasLength(parents, 1)) findManifest(parents.head)
             else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
-            else mot(erasure.intersectionDominator(parents), from, to)
+            else mot(erasure.scalaErasure.intersectionDominator(parents), from, to)
           case ExistentialType(tparams, result) =>
             mot(tp1.skolemizeExistential, from, to)
           case _ =>

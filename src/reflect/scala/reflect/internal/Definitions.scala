@@ -277,6 +277,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NothingTpe      = NothingClass.tpe
     lazy val NullTpe         = NullClass.tpe
     lazy val ObjectTpe       = ObjectClass.tpe
+    lazy val ObjectArrayTpe  = arrayType(ObjectTpe)
     lazy val SerializableTpe = SerializableClass.tpe
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
@@ -434,7 +435,6 @@ trait Definitions extends api.StandardDefinitions {
     def repeatedToSingle(tp: Type): Type                     = elementExtract(RepeatedParamClass, tp) orElse tp
     def repeatedToSeq(tp: Type): Type                        = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
     def seqToRepeated(tp: Type): Type                        = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
-    def isReferenceArray(tp: Type)                           = elementTest(ArrayClass, tp)(_ <:< AnyRefTpe)
     def isArrayOfSymbol(tp: Type, elem: Symbol)              = elementTest(ArrayClass, tp)(_.typeSymbol == elem)
     def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
     object ExprClassOf { def unapply(tp: Type): Option[Type] = elementExtractOption(ExprClass, tp) }
@@ -463,6 +463,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Array_update                = getMemberMethod(ArrayClass, nme.update)
       lazy val Array_length                = getMemberMethod(ArrayClass, nme.length)
       lazy val Array_clone                 = getMemberMethod(ArrayClass, nme.clone_)
+      lazy val Array_update_lastParam      = Array_update.paramss.head.last
 
     // reflection / structural types
     lazy val SoftReferenceClass     = requiredClass[java.lang.ref.SoftReference[_]]
@@ -683,9 +684,22 @@ trait Definitions extends api.StandardDefinitions {
       case _         => tp
     }
 
-    def isPartialFunctionType(tp: Type): Boolean = {
-      val sym = tp.typeSymbol
-      (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
+    def isPartialFunctionType(tp: Type): Boolean = tp.typeSymbol match {
+      case PartialFunctionClass | AbstractPartialFunctionClass => true
+      case _                                                   => false
+    }
+
+    def arrayElementType(tp: Type): Type = tp match {
+      case TypeRef(_, ArrayClass, elem :: Nil) => elem
+      case _                                   => NoType
+    }
+
+    def arrayElementTypes(tps: List[Type]): List[Type] =
+      tps map arrayElementType filterNot (_ eq NoType) distinct
+
+    def seqElementType(tp: Type): Type = tp baseType SeqClass match {
+      case TypeRef(_, SeqClass, arg :: Nil) => arg
+      case _                                => NoType
     }
 
     def arrayType(arg: Type)         = appliedType(ArrayClass, arg)
@@ -695,6 +709,52 @@ trait Definitions extends api.StandardDefinitions {
     def optionType(tp: Type)         = appliedType(OptionClass, tp)
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
+
+    /* A Java Array<T> is erased to Array[Object] (T can only be a reference
+     * type) whereas a Scala Array[T] is erased to Object. However, there is
+     * only a single symbol for the Array class. So to make the distinction
+     * between Java and Scala arrays, we check if the owner of T comes from
+     * a Java class. This turned out to be insufficient: the type parameters
+     * of an existential type can have arbitrary owners, including surrounding
+     * package classes (all of which are "java defined" symbols.)
+     *
+     * So the test for being scala defined is slightly looser; either it is
+     * an existential, or its owner is not java-defined, neither of which should
+     * ever be true for genuinely java-defined symbols. See SI-5654 for more.
+     */
+    def isScalaDefined(sym: Symbol)   = !sym.enclClass.isJavaDefined || sym.isExistential
+    def isScalaAbstract(sym: Symbol)  = sym.isAbstractType &&  isScalaDefined(sym)
+    def isJavaAbstract(sym: Symbol)   = sym.isAbstractType && !isScalaDefined(sym)
+    def isAbstractType(tp: Type)      = tp.typeSymbol.isAbstractType
+    def isReferenceType(tp: Type)     = tp.typeSymbol isSubClass ObjectClass
+    def isBottomType(tp: Type)        = tp <:< NullTpe  // of course anything which <:< NothingTpe will <:< NullTpe
+
+    // "arrayElementType(tp) <:< ObjectTpe" fails on e.g. Array[Class]
+    // because isSubType short-circuits if either operand is a type constructor,
+    // which means Class <:< Object after erasure, but not before.
+    // Since Any and Nothing are special-cased for kind-polymorphism,
+    // Class <:< Any before and after erasure. I find it pretty questionable.
+    def isArrayType(tp: Type)                   = arrayElementType(tp) != NoType
+    def isReferenceArray(tp: Type)              = isReferenceType(arrayElementType(tp))
+    def isPrimitiveArray(tp: Type)              = arrayElementType(tp).typeSymbol match {
+      case UnitClass => false
+      case sym       => isPrimitiveValueClass(sym)
+    }
+
+    /** Is `tp` an unbounded generic type, i.e. one which could be
+     *  instantiated with multiple underlying Array representations?
+     *  Such types must be erased to Object: they include Array[T] where T
+     *  is not bounded by AnyRef, Arrays with existentially defined element
+     *  types, and types which have any of the preceding as a parent.
+     *  This occurs despite Array's finality by way of tagged types, e.g.
+     *    type Tagged[T] = Array[T] with Tag[Foo]
+     */
+    def isUnboundedGeneric(elem: Type): Boolean = elem.dealiasWiden match {
+      case RefinedType(parents, _) => parents forall isUnboundedGeneric
+      case ExistentialType(_, _)   => !isReferenceType(elem)
+      case TypeRef(_, sym, _)      => sym.isAbstractType && !(sym isSubClass ObjectClass)
+      case _                       => false
+    }
 
     def ClassType(arg: Type) = if (phase.erasedTypes) ClassClass.tpe else appliedType(ClassClass, arg)
 
@@ -781,7 +841,7 @@ trait Definitions extends api.StandardDefinitions {
         val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
         val upperBound = (
           if (isPhantomClass(sym)) AnyTpe
-          else if (sym.isLocalClass) erasure.intersectionDominator(tp.parents)
+          else if (sym.isLocalClass) erasure.scalaErasure.intersectionDominator(tp.parents)
           else tp.widen
         )
 
