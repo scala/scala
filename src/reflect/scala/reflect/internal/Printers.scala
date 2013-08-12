@@ -564,6 +564,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
                     case refTree: RefTree =>
                       if (tree.symbol.name != refTree.name) print("[", tree.symbol, " aka ", refTree.name, "]")
                       else print(tree.symbol)
+                    case defTree: DefTree =>
+                      print(tree.symbol)
                     case _ =>
                       print(tree.symbol.name)
                   }
