@@ -138,7 +138,7 @@ class ConsoleRunner(argstr: String) extends {
     val rerunTests = if (isRerun) TestKinds.failedTests else Nil
     def miscTests = partestTests ++ individualTests ++ greppedTests ++ rerunTests
 
-    val givenKinds = standardKinds filter parsed.isSet
+    val givenKinds = standardKinds filter (parsed isSet "--" + _)
     val kinds = (
       if (optAll) standardKinds
       else if (givenKinds.nonEmpty) givenKinds
@@ -197,7 +197,7 @@ class ConsoleRunner(argstr: String) extends {
         val num = paths.size
         val ss = if (num == 1) "" else "s"
         comment(s"starting $num test$ss in $kind")
-        val results = runTestsForFiles(paths map (_.jfile), kind)
+        val results = runTestsForFiles(paths map (_.jfile.getAbsoluteFile), kind)
         val (passed, failed) = results partition (_.isOk)
 
         passedTests ++= passed
