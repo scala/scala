@@ -187,7 +187,7 @@ trait TreeDSL {
       def vparamss: List[List[ValDef]]
 
       type ResultTreeType = DefDef
-      def mkTree(rhs: Tree): DefDef = DefDef(mods, name, tparams, vparamss, tpt, rhs)
+      def mkTree(rhs: Tree): DefDef = DefDef(mods, name.toTermName, tparams, vparamss, tpt, rhs)
     }
 
     class DefSymStart(val sym: Symbol) extends SymVODDStart with DefCreator {
