@@ -37,6 +37,7 @@ object Elem {
   }
 
   import scala.sys.process._
+  import scala.language.implicitConversions
   /** Implicitly convert a [[scala.xml.Elem]] into a
     * [[scala.sys.process.ProcessBuilder]]. This is done by obtaining the text
     * elements of the element, trimming spaces, and then converting the result

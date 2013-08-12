@@ -7,7 +7,6 @@ package scala.tools.nsc
 package doc
 
 import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
-import scala.reflect.internal.Chars._
 import symtab._
 import reporters.Reporter
 import typechecker.Analyzer

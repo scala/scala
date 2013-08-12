@@ -216,16 +216,16 @@ package object partest {
 
     c.Expr(Block(
       List(Apply(
-        Select(Ident(PredefModule), newTermName("println")),
+        Select(Ident(PredefModule), TermName("println")),
         List(Apply(
           Select(Apply(
-            Select(Ident(ScalaPackage), newTermName("StringContext")),
+            Select(Ident(ScalaPackage), TermName("StringContext")),
             List(
               Literal(Constant("trace> ")),
               Literal(Constant("\\nres: ")),
               Literal(Constant(" = ")),
               Literal(Constant("\\n")))),
-          newTermName("s")),
+          TermName("s")),
           List(
             Literal(Constant(show(a.tree))),
             Literal(Constant(show(a.actualType))),

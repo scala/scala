@@ -305,10 +305,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       else None
     }
 
+    private def templateAndType(ancestor: Symbol): (TemplateImpl, TypeEntity) = (makeTemplate(ancestor), makeType(reprSymbol.info.baseType(ancestor), this))
     lazy val (linearizationTemplates, linearizationTypes) =
-      reprSymbol.ancestors map { ancestor =>
-        (makeTemplate(ancestor), makeType(reprSymbol.info.baseType(ancestor), this))
-      } unzip
+      (reprSymbol.ancestors map templateAndType).unzip
 
     /* Subclass cache */
     private lazy val subClassesCache = (
@@ -321,7 +320,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     }
     def directSubClasses = if (subClassesCache == null) Nil else subClassesCache.toList
 
-    /* Implcitly convertible class cache */
+    /* Implicitly convertible class cache */
     private var implicitlyConvertibleClassesCache: mutable.ListBuffer[(DocTemplateImpl, ImplicitConversionImpl)] = null
     def registerImplicitlyConvertibleClass(dtpl: DocTemplateImpl, conv: ImplicitConversionImpl): Unit = {
       if (implicitlyConvertibleClassesCache == null)
@@ -841,7 +840,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                 def value = tree
               }
             }
-          case None => 
+          case None =>
             argTrees map { tree =>
               new ValueArgument {
                 def parameter = None
