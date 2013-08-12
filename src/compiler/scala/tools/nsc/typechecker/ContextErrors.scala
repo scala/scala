@@ -697,7 +697,7 @@ trait ContextErrors {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
         val errorPos = if (pos != NoPosition) pos else (if (expandee.pos != NoPosition) expandee.pos else enclosingMacroPosition)
-        if (msg != null) context.error(pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
+        if (msg != null) context.error(errorPos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
         setError(expandee)
         throw MacroExpansionException
       }
