@@ -1,0 +1,5 @@
+t7746.scala:2: error: match may not be exhaustive.
+It would fail on the following inputs: None, Some((x: T forSome x not in Some[?])), Some(Some((x: Any forSome x not in 5)))
+  def f[T](x: Option[T]) = x match {
+                           ^
+one error found

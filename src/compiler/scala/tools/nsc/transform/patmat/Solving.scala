@@ -168,7 +168,7 @@ trait Solving extends Logic {
             }
             debug.patmat("forced "+ forced)
             val negated = negateModel(model)
-            findAllModels(f :+ negated, model :: (forced ++ models), recursionDepthAllowed - 1)
+            findAllModels(f :+ negated, model :: models, recursionDepthAllowed - 1)
           }
           else models
         }
