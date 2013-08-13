@@ -76,4 +76,10 @@ private[scala] object ReflectionUtils {
     accessor setAccessible true
     accessor invoke outer
   }
+
+  def isTraitImplementation(fileName: String) = fileName endsWith "$class.class"
+
+  def scalacShouldntLoadClassfile(fileName: String) = isTraitImplementation(fileName)
+
+  def scalacShouldntLoadClass(name: scala.reflect.internal.SymbolTable#Name) = scalacShouldntLoadClassfile(name + ".class")
 }
