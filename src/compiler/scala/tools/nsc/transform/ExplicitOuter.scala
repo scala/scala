@@ -381,9 +381,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       /*  If we don't re-type the tree, we see self-type related crashes like #266.
        */
-      localTyper typed {
-        (DEF(outerAcc) withPos currentClass.pos withType null) === rhs
-      }
+      localTyper typed (DefDef(outerAcc, rhs) setPos currentClass.pos.focus)
     }
 
     /** The definition tree of the outer accessor for class mixinClass.

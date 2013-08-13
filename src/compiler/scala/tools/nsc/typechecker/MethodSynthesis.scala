@@ -408,14 +408,11 @@ trait MethodSynthesis {
         // expects to be able to identify escaping locals in typedDefDef, and fails to
         // spot that brand of them. In other words it's an artifact of the implementation.
         val tpt = derivedSym.tpe.finalResultType match {
-          case ExistentialType(_, _)  => TypeTree()
-          case _ if mods.isDeferred   => TypeTree()
+          case ExistentialType(_, _)  => TypeTree() setOriginal tree.tpt
+          case _ if mods.isDeferred   => TypeTree() setOriginal tree.tpt
           case tp                     => TypeTree(tp)
         }
         tpt setPos derivedSym.pos.focus
-        // keep type tree of original abstract field
-        if (mods.isDeferred)
-          tpt setOriginal tree.tpt
 
         // TODO - reconcile this with the DefDef creator in Trees (which
         //   at this writing presented no way to pass a tree in for tpt.)

@@ -5241,11 +5241,13 @@ trait Typers extends Adaptations with Tags with TypersTracking {
             case _ => tree
           }
         }
-        else
+        else {
           // we should get here only when something before failed
           // and we try again (@see tryTypedApply). In that case we can assign
           // whatever type to tree; we just have to survive until a real error message is issued.
+          devWarning(s"TypeTree reached typedTypeTree with null original. Assigning Any in desperation.")
           tree setType AnyTpe
+        }
       }
       def typedFunction(fun: Function) = {
         if (fun.symbol == NoSymbol)
