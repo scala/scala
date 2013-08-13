@@ -1,0 +1,7 @@
+t7694b.scala:8: error: type arguments [_3,_4] do not conform to trait L's type parameter bounds [A2,B2 <: A2]
+  def d = if (true) (null: L[A, A]) else (null: L[B, B])
+      ^
+t7694b.scala:9: error: type arguments [_1,_2] do not conform to trait L's type parameter bounds [A2,B2 <: A2]
+  val v = if (true) (null: L[A, A]) else (null: L[B, B])
+      ^
+two errors found

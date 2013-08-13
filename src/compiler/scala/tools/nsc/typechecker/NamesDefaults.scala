@@ -164,7 +164,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos) setInfo qual.tpe
+        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos) setInfo uncheckedBounds(qual.tpe)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: SI-5720, SI-5727
@@ -289,9 +289,10 @@ trait NamesDefaults { self: Analyzer =>
               // We have to deconst or types inferred from literal arguments will be Constant(_), e.g. pos/z1730.scala.
               gen.stableTypeFor(arg).filter(_ <:< paramTpe).getOrElse(arg.tpe).deconst
           )
-          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo (
-            if (byName) functionType(Nil, argTpe) else argTpe
-          )
+          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos) setInfo {
+            val tp = if (byName) functionType(Nil, argTpe) else argTpe
+            uncheckedBounds(tp)
+          }
           Some((context.scope.enter(s), byName, repeated))
       })
       map2(symPs, args) {
