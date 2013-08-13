@@ -36,7 +36,7 @@ trait TypeDebugging {
       case ObjectClass             => true
       case _                       => sym.hasPackageFlag
     }
-    def skipType(tpe: Type): Boolean = skipSym(tpe.typeSymbolDirect)
+    def skipType(tpe: Type): Boolean = (tpe eq null) || skipSym(tpe.typeSymbolDirect)
 
     def skip(t: Tree): Boolean = t match {
       case EmptyTree                                           => true
