@@ -4,6 +4,7 @@ package runtime
 import internal.Flags
 import java.lang.{Class => jClass, Package => jPackage}
 import scala.collection.mutable
+import scala.reflect.runtime.ReflectionUtils.scalacShouldntLoadClass
 
 private[reflect] trait SymbolLoaders { self: SymbolTable =>
 
@@ -89,14 +90,6 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     }
   }
 
-  /** Is the given name valid for a top-level class? We exclude names with embedded $-signs, because
-   *  these are nested classes or anonymous classes,
-   */
-  def isInvalidClassName(name: Name) = {
-    val dp = name pos '$'
-    0 < dp && dp < (name.length - 1)
-  }
-
   class PackageScope(pkgClass: Symbol) extends Scope(initFingerPrints = -1L) // disable fingerprinting as we do not know entries beforehand
       with SynchronizedScope {
     assert(pkgClass.isType)
@@ -106,7 +99,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       val e = super.lookupEntry(name)
       if (e != null)
         e
-      else if (isInvalidClassName(name) || (negatives contains name))
+      else if (scalacShouldntLoadClass(name) || (negatives contains name))
         null
       else {
         val path =

@@ -16,6 +16,7 @@ import Jar.isJarOrZip
 import File.pathSeparator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
+import scala.reflect.runtime.ReflectionUtils
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -100,7 +101,7 @@ object ClassPath {
   }
 
   /** A useful name filter. */
-  def isTraitImplementation(name: String) = name endsWith "$class.class"
+  def isTraitImplementation(name: String) = ReflectionUtils.isTraitImplementation(name)
 
   def specToURL(spec: String): Option[URL] =
     try Some(new URL(spec))
@@ -161,7 +162,7 @@ object ClassPath {
   }
 
   object DefaultJavaContext extends JavaContext {
-    override def isValidName(name: String) = !isTraitImplementation(name)
+    override def isValidName(name: String) = !ReflectionUtils.scalacShouldntLoadClassfile(name)
   }
 
   private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
