@@ -30,6 +30,7 @@ class SpecVersionTest {
     assert(sut isJavaAtLeast "1.6")
     assert(sut isJavaAtLeast "1.7")
     assert(!(sut isJavaAtLeast "1.8"))
+    assert(!(sut isJavaAtLeast "1.71"))
   }
   @Test(expected = classOf[NumberFormatException])
   def badVersion(): Unit = {
@@ -38,6 +39,18 @@ class SpecVersionTest {
   @Test(expected = classOf[NumberFormatException])
   def missingVersion(): Unit = {
     sut isJavaAtLeast "1"
+  }
+  @Test(expected = classOf[NumberFormatException])
+  def noVersion(): Unit = {
+    sut isJavaAtLeast ""
+  }
+  @Test(expected = classOf[NumberFormatException])
+  def dotOnly(): Unit = {
+    sut isJavaAtLeast "."
+  }
+  @Test(expected = classOf[NumberFormatException])
+  def leadingDot(): Unit = {
+    sut isJavaAtLeast ".5"
   }
   @Test(expected = classOf[NumberFormatException])
   def notASpec(): Unit = {
