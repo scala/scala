@@ -577,7 +577,7 @@ trait Namers extends MethodSynthesis {
       }
 
       sym setInfo {
-        mkTypeCompleter(copyDef) { sym =>
+        mkFlagAgnosticCompleter(copyDef) { sym =>
           assignParamTypes()
           lazyType complete sym
         }
@@ -722,7 +722,7 @@ trait Namers extends MethodSynthesis {
       NoSymbol
     }
 
-    def monoTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+    def monoTypeCompleter(tree: Tree) = mkFlagAgnosticCompleter(tree) { sym =>
       // this early test is there to avoid infinite baseTypes when
       // adding setters and getters --> bug798
       // It is a def in an attempt to provide some insulation against
@@ -755,7 +755,7 @@ trait Namers extends MethodSynthesis {
     }
 
     def moduleClassTypeCompleter(tree: ModuleDef) = {
-      mkTypeCompleter(tree) { sym =>
+      mkFlagAgnosticCompleter(tree) { sym =>
         val moduleSymbol = tree.symbol
         assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
         moduleSymbol.info // sets moduleClass info as a side effect.
@@ -763,7 +763,7 @@ trait Namers extends MethodSynthesis {
     }
 
     /* Explicit isSetter required for bean setters (beanSetterSym.isSetter is false) */
-    def accessorTypeCompleter(tree: ValDef, isSetter: Boolean) = mkTypeCompleter(tree) { sym =>
+    def accessorTypeCompleter(tree: ValDef, isSetter: Boolean) = mkFlagAgnosticCompleter(tree) { sym =>
       logAndValidate(sym) {
         sym setInfo {
           val tp = if (isSetter) MethodType(List(sym.newSyntheticValueParam(typeSig(tree))), UnitTpe)
@@ -773,7 +773,7 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def selfTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+    def selfTypeCompleter(tree: Tree) = mkFlagAgnosticCompleter(tree) { sym =>
       val selftpe = typer.typedType(tree).tpe
       sym setInfo {
         if (selftpe.typeSymbol isNonBottomSubClass sym.owner) selftpe
@@ -1603,11 +1603,6 @@ trait Namers extends MethodSynthesis {
     val tree: Tree
   }
 
-  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter {
-    val tree = t
-    def completeImpl(sym: Symbol) = c(sym)
-  }
-
   trait LockingTypeCompleter extends TypeCompleter {
     def completeImpl(sym: Symbol): Unit
 
@@ -1616,6 +1611,16 @@ trait Namers extends MethodSynthesis {
       try completeImpl(sym)
       finally _lockedCount -= 1
     }
+  }
+
+  /**
+   * Creates a completer for a given tree from a given function.
+   * Callers of this method promise that the function adheres to the FlagAgnosticCompleter contract,
+   * i.e. that it doesn't assign flags to its completees.
+   */
+  def mkFlagAgnosticCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter with FlagAgnosticCompleter {
+    val tree = t
+    def completeImpl(sym: Symbol) = c(sym)
   }
 
   /**
