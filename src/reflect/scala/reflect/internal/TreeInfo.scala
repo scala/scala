@@ -773,6 +773,17 @@ abstract class TreeInfo {
       unapply(dissectApplied(tree))
   }
 
+  /** Locates the synthetic Apply node corresponding to an extractor's call to
+   *  unapply (unwrapping nested Applies) and returns the fun part of that Apply.
+   */
+  object Unapplied {
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case Apply(fun, Ident(nme.SELECTOR_DUMMY) :: Nil) => Some(fun)
+      case Apply(fun, _)                                => unapply(fun)
+      case _                                            => None
+    }
+  }
+
   /** Is this file the body of a compilation unit which should not
    *  have Predef imported? This is the case iff the first import in the
    *  unit explicitly refers to Predef.
