@@ -366,11 +366,14 @@ trait TypeDiagnostics {
     val strings = mutable.Map[String, Set[TypeDiag]]() withDefaultValue Set()
     val names   = mutable.Map[Name, Set[TypeDiag]]() withDefaultValue Set()
 
-    def record(t: Type, sym: Symbol) = {
-      val diag = TypeDiag(t, sym)
+    val localsSet = locals.toSet
 
-      strings("" + t) += diag
-      names(sym.name) += diag
+    def record(t: Type, sym: Symbol) = {
+      if (!localsSet(sym)) {
+        val diag = TypeDiag(t, sym)
+        strings("" + t) += diag
+        names(sym.name) += diag
+      }
     }
     for (tpe <- types ; t <- tpe) {
       t match {

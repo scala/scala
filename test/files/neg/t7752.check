@@ -1,0 +1,27 @@
+t7752.scala:25: error: overloaded method value foo with alternatives:
+  [A](heading: String, rows: A*)(A,) <and>
+  [A, B](heading: (String, String), rows: (A, B)*)(A, B) <and>
+  [A, B, C](heading: (String, String, String), rows: (A, B, C)*)(A, B, C) <and>
+  [A, B, C, D](heading: (String, String, String, String), rows: (A, B, C, D)*)(A, B, C, D) <and>
+  [A, B, C, D, E](heading: (String, String, String, String, String), rows: (A, B, C, D, E)*)(A, B, C, D, E) <and>
+  [A, B, C, D, E, F](heading: (String, String, String, String, String, String), rows: (A, B, C, D, E, F)*)(A, B, C, D, E, F) <and>
+  [A, B, C, D, E, F, G](heading: (String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G)*)(A, B, C, D, E, F, G) <and>
+  [A, B, C, D, E, F, G, H](heading: (String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H)*)(A, B, C, D, E, F, G, H) <and>
+  [A, B, C, D, E, F, G, H, I](heading: (String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I)*)(A, B, C, D, E, F, G, H, I) <and>
+  [A, B, C, D, E, F, G, H, I, J](heading: (String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J)*)(A, B, C, D, E, F, G, H, I, J) <and>
+  [A, B, C, D, E, F, G, H, I, J, K](heading: (String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K)*)(A, B, C, D, E, F, G, H, I, J, K) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L](heading: (String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L)*)(A, B, C, D, E, F, G, H, I, J, K, L) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M)*)(A, B, C, D, E, F, G, H, I, J, K, L, M) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) <and>
+  [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V](heading: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String), rows: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V)*)(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V)
+ cannot be applied to (Int)
+  foo((1))
+  ^
+one error found
