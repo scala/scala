@@ -1673,7 +1673,7 @@ TODO:
                                   BINARY COMPATIBILITY TESTING
 ============================================================================ -->
   <target name="bc.init" depends="init" unless="maven-deps-done-mima">
-    <property name="bc-reference-version" value="2.11.0"/>
+    <property name="bc-reference-version" value="${starr.version}"/>
 
     <property name="bc-build.dir" value="${build.dir}/bc"/>
     <!-- Obtain mima -->
@@ -1686,6 +1686,7 @@ TODO:
       <dependency groupId="org.scala-lang" artifactId="scala-swing" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${bc-reference-version}"/>
+      <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${bc-reference-version}"/>
     </artifact:dependencies>
     <property name="maven-deps-done-mima" value="true"/>
   </target>
@@ -1723,22 +1724,21 @@ TODO:
                 prev="${org.scala-lang:@{jar-name}:jar}"
                 curr="${build-pack.dir}/lib/@{jar-name}.jar"
                 direction="backward"/>
-        <bc.run-mima
+        <!-- <bc.run-mima
                 jar-name="@{jar-name}"
                 prev="${build-pack.dir}/lib/@{jar-name}.jar"
                 curr="${org.scala-lang:@{jar-name}:jar}"
-                direction="forward"/>
+                direction="forward"/> -->
     </sequential>
   </macrodef>
 
   <target name="test.bc-opt" description="Optimized version of test.bc."> <optimized name="test.bc"/></target>
 
-  <!-- Enable after the release of the 2.11.0 or a prior RC that estabilishes the new baseline. -->
-  <target name="test.bc"></target>
-  <target name="test.bc.disabled" depends="bc.init, pack.lib, pack.reflect, pack.swing">
+  <target name="test.bc" depends="bc.init, pack.comp, pack.lib, pack.reflect, pack.swing">
+    <bc.check jar-name="scala-swing"/>
     <bc.check jar-name="scala-library"/>
     <bc.check jar-name="scala-reflect"/>
-    <bc.check jar-name="scala-swing"/>
+    <bc.check jar-name="scala-compiler"/>
   </target>
 
 <!-- ===========================================================================
