@@ -309,6 +309,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def rhs: Tree
   }
 
+  object ValOrDefDef {
+    def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)] = tree match {
+      case ValDef(mods, name, tpt, rhs)       => Some((mods, name, tpt, rhs))
+      case DefDef(mods, name, _, _, tpt, rhs) => Some((mods, name, tpt, rhs))
+      case _                                  => None
+    }
+  }
+
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef with ValDefApi
   object ValDef extends ValDefExtractor
 
