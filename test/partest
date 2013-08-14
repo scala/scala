@@ -119,10 +119,13 @@ if [ ! -z "${PARTEST_DEBUG}" ] ; then
   partestDebugStr="-Dpartest.debug=${PARTEST_DEBUG}"
 fi
 
+# note that variables which may intentionally be empty must not
+# be quoted: otherwise an empty string will appear as a command line
+# argument, and java will think that is the program to run.
 "${JAVACMD:=java}" \
   $JAVA_OPTS -cp "$EXT_CLASSPATH" \
   ${partestDebugStr} \
-  "$color_opts" \
+  ${color_opts} \
   -Dfile.encoding=UTF-8 \
   -Dscala.home="${SCALA_HOME}" \
   -Dpartest.javacmd="${JAVACMD}" \
