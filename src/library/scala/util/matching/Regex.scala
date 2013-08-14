@@ -194,6 +194,44 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     else None
   }
 
+  /** Tries to match the String representation of a [[scala.Char]].
+   *  If the match succeeds, the result is the first matching
+   *  group if any groups are defined, or an empty Sequence otherwise.
+   *
+   *  For example:
+   *
+   *  {{{
+   *  val cat = "cat"
+   *  // the case must consume the group to match
+   *  val r = """(\p{Lower})""".r
+   *  cat(0) match { case r(x) => true }
+   *  cat(0) match { case r(_) => true }
+   *  cat(0) match { case r(_*) => true }
+   *  cat(0) match { case r() => true }     // no match
+   *
+   *  // there is no group to extract
+   *  val r = """\p{Lower}""".r
+   *  cat(0) match { case r(x) => true }    // no match
+   *  cat(0) match { case r(_) => true }    // no match
+   *  cat(0) match { case r(_*) => true }   // matches
+   *  cat(0) match { case r() => true }     // matches
+   *
+   *  // even if there are multiple groups, only one is returned
+   *  val r = """((.))""".r
+   *  cat(0) match { case r(_) => true }    // matches
+   *  cat(0) match { case r(_,_) => true }  // no match
+   *  }}}
+   *
+   *  @param  c     The Char to match
+   *  @return       The match
+   */
+  def unapplySeq(c: Char): Option[Seq[Char]] = {
+    val m = pattern matcher c.toString
+    if (runMatcher(m)) {
+      if (m.groupCount > 0) Some(m group 1) else Some(Nil)
+    } else None
+  }
+
   /** Tries to match on a [[scala.util.matching.Regex.Match]].
    *  A previously failed match results in None.
    *  If a successful match was made against the current pattern, then that result is used.
