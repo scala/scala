@@ -10,7 +10,7 @@
 package scala.tools.partest
 package utils
 
-/** Loads partest.properties from the jar. */
+/** Loads partest.properties from the jar. TODO: standardize on scala-partest.properties */
 object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "partest"
   protected def pickJarBasedOn  = classOf[nest.Runner]
