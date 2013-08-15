@@ -488,7 +488,7 @@ abstract class TreeInfo {
   }
 
   object WildcardStarArg {
-    def unapply(tree: Typed): Option[Tree] = tree match {
+    def unapply(tree: Tree): Option[Tree] = tree match {
       case Typed(expr, Ident(tpnme.WILDCARD_STAR)) => Some(expr)
       case _                                       => None
     }
@@ -628,11 +628,12 @@ abstract class TreeInfo {
    * case Extractor(a @ (b, c)) => 2
    * }}}
    */
-  def effectivePatternArity(args: List[Tree]): Int = (args.map(unbind) match {
+  def effectivePatternArity(args: List[Tree]): Int = flattenedPatternArgs(args).length
+
+  def flattenedPatternArgs(args: List[Tree]): List[Tree] = args map unbind match {
     case Apply(fun, xs) :: Nil if isTupleSymbol(fun.symbol) => xs
     case xs                                                 => xs
-  }).length
-
+  }
 
   // used in the symbols for labeldefs and valdefs emitted by the pattern matcher
   // tailcalls, cps,... use this flag combination to detect translated matches
