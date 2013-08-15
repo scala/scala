@@ -704,7 +704,7 @@ trait Types
       case OverloadedType(_, alts) =>
         OverloadedType(this, alts)
       case tp =>
-        tp.asSeenFrom(this, sym.owner)
+        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
