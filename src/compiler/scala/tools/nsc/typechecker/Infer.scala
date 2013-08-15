@@ -25,18 +25,27 @@ trait Infer extends Checkable {
 
   /** The formal parameter types corresponding to `formals`.
    *  If `formals` has a repeated last parameter, a list of
-   *  (nargs - params.length + 1) copies of its type is returned.
-   *  By-name types are replaced with their underlying type.
+   *  (numArgs - numFormals + 1) copies of its type is appended
+   *  to the other formals. By-name types are replaced with their
+   *  underlying type.
    *
    *  @param removeByName allows keeping ByName parameters. Used in NamesDefaults.
    *  @param removeRepeated allows keeping repeated parameter (if there's one argument). Used in NamesDefaults.
    */
-  def formalTypes(formals: List[Type], nargs: Int, removeByName: Boolean = true, removeRepeated: Boolean = true): List[Type] = {
-    val formals1 = if (removeByName) formals mapConserve dropByName else formals
-    if (isVarArgTypes(formals1) && (removeRepeated || formals.length != nargs)) {
-      val ft = formals1.last.dealiasWiden.typeArgs.head
-      formals1.init ::: (for (i <- List.range(formals1.length - 1, nargs)) yield ft)
-    } else formals1
+  def formalTypes(formals: List[Type], numArgs: Int, removeByName: Boolean = true, removeRepeated: Boolean = true): List[Type] = {
+    val numFormals = formals.length
+    val formals1   = if (removeByName) formals mapConserve dropByName else formals
+    val expandLast = (
+         (removeRepeated || numFormals != numArgs)
+      && isVarArgTypes(formals1)
+    )
+    def lastType = formals1.last.dealiasWiden.typeArgs.head
+    def expanded(n: Int) = (1 to n).toList map (_ => lastType)
+
+    if (expandLast)
+      formals1.init ::: expanded(numArgs - numFormals + 1)
+    else
+      formals1
   }
 
   /** Sorts the alternatives according to the given comparison function.
@@ -65,96 +74,6 @@ trait Infer extends Checkable {
   private object CheckAccessibleMacroCycle extends TypeCompleter {
     val tree = EmptyTree
     override def complete(sym: Symbol) = ()
-  }
-
-  /** Returns `(formals, formalsExpanded)` where `formalsExpanded` are the expected types
-   * for the `nbSubPats` sub-patterns of an extractor pattern, of which the corresponding
-   * unapply[Seq] call is assumed to have result type `resTp`.
-   *
-   * `formals` are the formal types before expanding a potential repeated parameter (must come last in `formals`, if at all)
-   *
-   * @param nbSubPats          The number of arguments to the extractor pattern
-   * @param effectiveNbSubPats `nbSubPats`, unless there is one sub-pattern which, after unwrapping
-   *                           bind patterns, is a Tuple pattern, in which case it is the number of
-   *                           elements. Used to issue warnings about binding a `TupleN` to a single value.
-   * @throws TypeError when the unapply[Seq] definition is ill-typed
-   * @returns (null, null) when the expected number of sub-patterns cannot be satisfied by the given extractor
-   *
-   * This is the spec currently implemented -- TODO: update it.
-   *
-   *   8.1.8 ExtractorPatterns
-   *
-   *   An extractor pattern x(p1, ..., pn) where n ≥ 0 is of the same syntactic form as a constructor pattern.
-   *   However, instead of a case class, the stable identifier x denotes an object which has a member method named unapply or unapplySeq that matches the pattern.
-   *
-   *   An `unapply` method with result type `R` in an object `x` matches the
-   *   pattern `x(p_1, ..., p_n)` if it takes exactly one argument and, either:
-   *     - `n = 0` and `R =:= Boolean`, or
-   *     - `n = 1` and `R <:< Option[T]`, for some type `T`.
-   *        The argument pattern `p1` is typed in turn with expected type `T`.
-   *     - Or, `n > 1` and `R <:< Option[Product_n[T_1, ..., T_n]]`, for some
-   *       types `T_1, ..., T_n`. The argument patterns `p_1, ..., p_n` are
-   *       typed with expected types `T_1, ..., T_n`.
-   *
-   *   An `unapplySeq` method in an object `x` matches the pattern `x(p_1, ..., p_n)`
-   *   if it takes exactly one argument and its result type is of the form `Option[S]`,
-   *   where either:
-   *     - `S` is a subtype of `Seq[U]` for some element type `U`, (set `m = 0`)
-   *     - or `S` is a `ProductX[T_1, ..., T_m]` and `T_m <: Seq[U]` (`m <= n`).
-   *
-   *   The argument patterns `p_1, ..., p_n` are typed with expected types
-   *   `T_1, ..., T_m, U, ..., U`. Here, `U` is repeated `n-m` times.
-   *
-   */
-  def extractorFormalTypes(pos: Position, resTp: Type, nbSubPats: Int,
-                           unappSym: Symbol, effectiveNbSubPats: Int): (List[Type], List[Type]) = {
-    val isUnapplySeq     = unappSym.name == nme.unapplySeq
-    val booleanExtractor = resTp.typeSymbolDirect == BooleanClass
-
-    def seqToRepeatedChecked(tp: Type) = {
-      val toRepeated = seqToRepeated(tp)
-      if (tp eq toRepeated) throw new TypeError("(the last tuple-component of) the result type of an unapplySeq must be a Seq[_]")
-      else toRepeated
-    }
-
-    // empty list --> error, otherwise length == 1
-    lazy val optionArgs = resTp.baseType(OptionClass).typeArgs
-    // empty list --> not a ProductN, otherwise product element types
-    def productArgs = getProductArgs(optionArgs.head)
-
-    val formals =
-      // convert Seq[T] to the special repeated argument type
-      // so below we can use formalTypes to expand formals to correspond to the number of actuals
-      if (isUnapplySeq) {
-        if (optionArgs.nonEmpty)
-          productArgs match {
-            case Nil => List(seqToRepeatedChecked(optionArgs.head))
-            case normalTps :+ seqTp => normalTps :+ seqToRepeatedChecked(seqTp)
-          }
-        else throw new TypeError(s"result type $resTp of unapplySeq defined in ${unappSym.fullLocationString} does not conform to Option[_]")
-      } else {
-        if (booleanExtractor && nbSubPats == 0) Nil
-        else if (optionArgs.nonEmpty)
-          if (nbSubPats == 1) {
-            val productArity = productArgs.size
-            if (productArity > 1 && productArity != effectiveNbSubPats && settings.lint)
-              global.currentUnit.warning(pos,
-                s"extractor pattern binds a single value to a Product${productArity} of type ${optionArgs.head}")
-            optionArgs
-          }
-          // TODO: update spec to reflect we allow any ProductN, not just TupleN
-          else productArgs
-        else
-          throw new TypeError(s"result type $resTp of unapply defined in ${unappSym.fullLocationString} does not conform to Option[_] or Boolean")
-      }
-
-    // for unapplySeq, replace last vararg by as many instances as required by nbSubPats
-    val formalsExpanded =
-      if (isUnapplySeq && formals.nonEmpty) formalTypes(formals, nbSubPats)
-      else formals
-
-    if (formalsExpanded.lengthCompare(nbSubPats) != 0) (null, null)
-    else (formals, formalsExpanded)
   }
 
   /** A fresh type variable with given type parameter as origin.
@@ -1190,6 +1109,17 @@ trait Infer extends Checkable {
       val tparam                    = tvar.origin.typeSymbol
       val TypeBounds(lo0, hi0)      = tparam.info.bounds
       val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
+      val enclCase                  = context.enclosingCaseDef
+
+      log("\n" + sm"""
+        |-----
+        |  enclCase: ${enclCase.tree}
+        |     saved: ${enclCase.savedTypeBounds}
+        |    tparam: ${tparam.shortSymbolClass}
+        |     def_s: ${tparam.defString}
+        |    seen_s: ${tparam.defStringSeenAs(tb)}
+        |-----
+        """.trim)
 
       if (lo1 <:< hi1) {
         if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved
@@ -1197,7 +1127,7 @@ trait Infer extends Checkable {
         else if (tparam == lo1.typeSymbolDirect || tparam == hi1.typeSymbolDirect)
           log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
         else {
-          context.enclosingCaseDef pushTypeBounds tparam
+          enclCase pushTypeBounds tparam
           tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
         }
       }
@@ -1227,7 +1157,6 @@ trait Infer extends Checkable {
       val tpparams  = freeTypeParamsOfTerms(pattp)
 
       def ptMatchesPattp = pt matchesPattern pattp.widen
-      def pattpMatchesPt = pattp matchesPattern pt
 
       /* If we can absolutely rule out a match we can fail early.
        * This is the case if the scrutinee has no unresolved type arguments
@@ -1237,9 +1166,15 @@ trait Infer extends Checkable {
         IncompatibleScrutineeTypeError(tree0, pattp, pt)
         return ErrorType
       }
+      // This performs the "reverse" propagation of type information already used
+      // in pattern matcher checkability testing. See pos/t2486.scala for sample
+      // code which would not compile without such propagation.
+      def propagated = propagateKnownTypes(pt, pattp.widen.typeSymbol)
 
-      checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy)
+      checkCheckable(tree0, pattp, pt0, inPattern = true, canRemedy)
       if (pattp <:< pt) ()
+      else if (pattp <:< propagated)
+        log(s"!($pattp <:< $pt), but after propagateKnownTypes we find ($pattp <:< $propagated) - pattern inference improved")
       else {
         debuglog("free type params (1) = " + tpparams)
 
@@ -1256,9 +1191,7 @@ trait Infer extends Checkable {
           val ptvars = ptparams map freshVar
           val pt1    = pt.instantiateTypeParams(ptparams, ptvars)
 
-          // See ticket #2486 for an example of code which would incorrectly
-          // fail if we didn't allow for pattpMatchesPt.
-          if (isPopulated(tp, pt1) && isInstantiatable(tvars ++ ptvars) || pattpMatchesPt)
+          if (isPopulated(tp, pt1) && isInstantiatable(tvars ++ ptvars))
              ptvars foreach instantiateTypeVar
           else {
             PatternTypeIncompatibleWithPtError1(tree0, pattp, pt)
@@ -1311,10 +1244,10 @@ trait Infer extends Checkable {
       // properly, we can avoid it by ignoring type parameters which
       // have type constructors amongst their bounds. See SI-4070.
       def isFreeTypeParamOfTerm(sym: Symbol) = (
-        sym.isAbstractType
-          && sym.owner.isTerm
-          && !sym.info.bounds.exists(_.typeParams.nonEmpty)
-        )
+           sym.isAbstractType
+        && sym.owner.isTerm
+        && !sym.info.bounds.exists(_.typeParams.nonEmpty)
+      )
 
       // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
       // and collect symbols from the result type of any resulting `PolyType`s, which

@@ -201,6 +201,16 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
       def extraStoredBinders: Set[Symbol] = Set()
 
+      debug.patmat(s"""
+        |ExtractorTreeMaker($extractor, $extraCond, $nextBinder) {
+        |  $subPatBinders
+        |  $subPatRefs
+        |  $extractorReturnsBoolean
+        |  $checkedLength
+        |  $prevBinder
+        |  $ignoredSubPatBinders
+        |}""".stripMargin)
+
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         val condAndNext = extraCond match {
           case Some(cond) =>
@@ -426,7 +436,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           case _ if testedBinder.info.widen <:< expectedTp =>
             // if the expected type is a primitive value type, it cannot be null and it cannot have an outer pointer
             // since the types conform, no further checking is required
-            if (expectedTp.typeSymbol.isPrimitiveValueClass) tru
+            if (isPrimitiveValueType(expectedTp)) tru
             // have to test outer and non-null only when it's a reference type
             else if (expectedTp <:< AnyRefTpe) {
               // do non-null check first to ensure we won't select outer on null

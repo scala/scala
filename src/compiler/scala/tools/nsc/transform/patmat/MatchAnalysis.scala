@@ -21,7 +21,7 @@ trait TreeAndTypeAnalysis extends Debugging {
   // unfortunately this is not true in general:
   // SI-6022 expects instanceOfTpImplies(ProductClass.tpe, AnyRefTpe)
   def instanceOfTpImplies(tp: Type, tpImplied: Type) = {
-    val tpValue    = tp.typeSymbol.isPrimitiveValueClass
+    val tpValue = isPrimitiveValueType(tp)
 
     // pretend we're comparing to Any when we're actually comparing to AnyVal or AnyRef
     // (and the subtype is respectively a value type or not a value type)
@@ -59,17 +59,20 @@ trait TreeAndTypeAnalysis extends Debugging {
           debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
           None
         case sym =>
-          val subclasses = (
-            sym.sealedDescendants.toList sortBy (_.sealedSortName)
+          val subclasses = debug.patmatResult(s"enum $sym sealed, subclasses")(
             // symbols which are both sealed and abstract need not be covered themselves, because
             // all of their children must be and they cannot otherwise be created.
-            filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x)))
-          debug.patmat("enum sealed -- subclasses: "+ ((sym, subclasses)))
+            sym.sealedDescendants.toList
+              sortBy (_.sealedSortName)
+              filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
+          )
 
           val tpApprox = typer.infer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
+
+          Some(debug.patmatResult("enum sealed tp=$tp, tpApprox=$tpApprox as") {
           // valid subtypes are turned into checkable types, as we are entering the realm of the dynamic
-          val validSubTypes = (subclasses flatMap {sym =>
+            subclasses flatMap { sym =>
               // have to filter out children which cannot match: see ticket #3683 for an example
               // compare to the fully known type `tp` (modulo abstract types),
               // so that we can rule out stuff like: sealed trait X[T]; class XInt extends X[Int] --> XInt not valid when enumerating X[String]
@@ -81,9 +84,8 @@ trait TreeAndTypeAnalysis extends Debugging {
               // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
               else None
-            })
-          debug.patmat("enum sealed "+ ((tp, tpApprox)) + " as "+ validSubTypes)
-          Some(validSubTypes)
+            }
+          })
       }
 
     // approximate a type to the static type that is fully checkable at run time,
@@ -104,10 +106,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             mapOver(tp)
         }
       }
-
-      val res = typeArgsToWildcardsExceptArray(tp)
-      debug.patmat("checkable "+((tp, res)))
-      res
+      debug.patmatResult(s"checkableType($tp)")(typeArgsToWildcardsExceptArray(tp))
     }
 
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
@@ -136,19 +135,16 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       var currId = 0
     }
     case class Test(prop: Prop, treeMaker: TreeMaker) {
-      // private val reusedBy = new scala.collection.mutable.HashSet[Test]
+      // private val reusedBy = new mutable.HashSet[Test]
       var reuses: Option[Test] = None
       def registerReuseBy(later: Test): Unit = {
         assert(later.reuses.isEmpty, later.reuses)
         // reusedBy += later
         later.reuses = Some(this)
       }
-
       val id = { Test.currId += 1; Test.currId}
-      override def toString =
-        "T"+ id + "C("+ prop +")"  //+ (reuses map ("== T"+_.id) getOrElse (if(reusedBy.isEmpty) treeMaker else reusedBy mkString (treeMaker+ " -->(", ", ",")")))
+      override def toString = s"T${id}C($prop)"
     }
-
 
     class TreeMakersToPropsIgnoreNullChecks(root: Symbol) extends TreeMakersToProps(root) {
       override def uniqueNonNullProp(p: Tree): Prop = True
@@ -158,9 +154,9 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
     class TreeMakersToProps(val root: Symbol) {
       prepareNewAnalysis() // reset hash consing for Var and Const
 
-      private[this] val uniqueEqualityProps = new scala.collection.mutable.HashMap[(Tree, Tree), Eq]
-      private[this] val uniqueNonNullProps = new scala.collection.mutable.HashMap[Tree, Not]
-      private[this] val uniqueTypeProps = new scala.collection.mutable.HashMap[(Tree, Type), Eq]
+      private[this] val uniqueEqualityProps = new mutable.HashMap[(Tree, Tree), Eq]
+      private[this] val uniqueNonNullProps  = new mutable.HashMap[Tree, Not]
+      private[this] val uniqueTypeProps     = new mutable.HashMap[(Tree, Type), Eq]
 
       def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
         uniqueEqualityProps getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
@@ -686,8 +682,7 @@ trait MatchAnalysis extends MatchApproximation {
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
               case _ => NoExample
             }
-            debug.patmat("described as: "+ res)
-            res
+            debug.patmatResult("described as")(res)
           }
 
         override def toString = toCounterExample().toString

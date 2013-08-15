@@ -593,7 +593,12 @@ trait ContextErrors {
       }
 
       def CaseClassConstructorError(tree: Tree) = {
-        issueNormalTypeError(tree, tree.symbol + " is not a case class constructor, nor does it have an unapply/unapplySeq method")
+        val baseMessage = tree.symbol + " is not a case class constructor, nor does it have an unapply/unapplySeq method"
+        val addendum = directUnapplyMember(tree.symbol.info) match {
+          case sym if hasMultipleNonImplicitParamLists(sym) => s"\nNote: ${sym.defString} exists in ${tree.symbol}, but it cannot be used as an extractor due to its second non-implicit parameter list"
+          case _                                            => ""
+        }
+        issueNormalTypeError(tree, baseMessage + addendum)
         setError(tree)
       }
 
