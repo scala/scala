@@ -83,6 +83,7 @@ trait TreeDSL {
 
       def INT_>=  (other: Tree)     = fn(target, getMember(IntClass, nme.GE), other)
       def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
+      def INT_-   (other: Tree)     = fn(target, getMember(IntClass, nme.MINUS), other)
 
       // generic operations on ByteClass, IntClass, LongClass
       def GEN_|   (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.OR), other)
