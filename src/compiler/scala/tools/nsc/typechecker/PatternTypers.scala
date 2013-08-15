@@ -59,6 +59,45 @@ trait PatternTypers {
 
     private def unit = context.unit
 
+    // If the tree's symbol's type does not define an extractor, maybe the tree's type does.
+    // this is the case when we encounter an arbitrary tree as the target of an unapply call
+    // (rather than something that looks like a constructor call.) (for now, this only happens
+    // due to wrapClassTagUnapply, but when we support parameterized extractors, it will become
+    // more common place)
+    private def hasUnapplyMember(tpe: Type): Boolean   = reallyExists(unapplyMember(tpe))
+    private def hasUnapplyMember(sym: Symbol): Boolean = hasUnapplyMember(sym.tpe_*)
+    private def hasUnapplyMember(fun: Tree): Boolean   = hasUnapplyMember(fun.symbol) || hasUnapplyMember(fun.tpe)
+
+    // ad-hoc overloading resolution to deal with unapplies and case class constructors
+    // If some but not all alternatives survive filtering the tree's symbol with `p`,
+    // then update the tree's symbol and type to exclude the filtered out alternatives.
+    private def inPlaceAdHocOverloadingResolution(fun: Tree)(p: Symbol => Boolean): Tree = fun.symbol filter p match {
+      case sym if sym.exists && (sym ne fun.symbol) => fun setSymbol sym modifyType (tp => filterOverloadedAlts(tp)(p))
+      case _                                        => fun
+    }
+    private def filterOverloadedAlts(tpe: Type)(p: Symbol => Boolean): Type = tpe match {
+      case OverloadedType(pre, alts) => overloadedType(pre, alts filter p)
+      case tp                        => tp
+    }
+
+    def typedConstructorPattern(fun0: Tree, pt: Type) = {
+      // Do some ad-hoc overloading resolution and update the tree's symbol and type
+      // do not update the symbol if the tree's symbol's type does not define an unapply member
+      // (e.g. since it's some method that returns an object with an unapply member)
+      val fun       = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
+      def caseClass = fun.tpe.typeSymbol.linkedClassOfClass
+
+      // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
+      // A case class with 23+ params has no unapply method.
+      // A case class constructor be overloaded with unapply methods in the companion.
+      if (caseClass.isCase && !unapplyMember(fun.tpe).isOverloaded)
+        convertToCaseConstructor(fun, caseClass, pt)
+      else if (hasUnapplyMember(fun))
+        fun
+      else
+        CaseClassConstructorError(fun)
+    }
+
     def expectedPatternTypes(fun: Tree, args: List[Tree]): List[Type] =
       newExtractorShape(fun, args).expectedPatternTypes
 
@@ -146,7 +185,6 @@ trait PatternTypers {
 
     case class UnapplyMethodInfo(unapply: Symbol, tpe: Type) {
       def name         = unapply.name
-      def isUnapply    = name == nme.unapply
       def isUnapplySeq = name == nme.unapplySeq
       def unapplyType  = tpe memberType method
       def resultType   = tpe.finalResultType
@@ -169,11 +207,8 @@ trait PatternTypers {
       def pos            = fun.pos
       private def symbol = fun.symbol
       private def tpe    = fun.tpe
-      private def prefix = tpe.prefix
-      private def member = unapplyMember(tpe)
-      private def linked = tpe.typeSymbol.linkedClassOfClass
 
-      val ccInfo = linked match {
+      val ccInfo = tpe.typeSymbol.linkedClassOfClass match {
         case clazz if clazz.isCase => CaseClassInfo(clazz, tpe)
         case _                     => NoCaseClassInfo
       }
@@ -182,14 +217,11 @@ trait PatternTypers {
 
       override def toString = s"ExtractorShape($fun, $args)"
 
-      def unapply          = symbol
       def unapplyMethod    = exInfo.method
       def unapplyType      = exInfo.unapplyType
       def unapplyParamType = exInfo.paramType
-      def unapplyResult    = exInfo.resultType
-
-      def caseClass = ccInfo.clazz
-      def enclClass = symbol.enclClass
+      def caseClass        = ccInfo.clazz
+      def enclClass        = symbol.enclClass
 
       def formals   = (
         if (isUnapplySeq) productTypes :+ varargsType
@@ -222,28 +254,6 @@ trait PatternTypers {
 
         rawGet :: Nil
       }
-      // [1] if the tree's symbol's type does not define an extractor, maybe the tree's type does.
-      // this is the case when we encounter an arbitrary tree as the target of an unapply call
-      // (rather than something that looks like a constructor call.) (for now, this only happens
-      // due to wrapClassTagUnapply, but when we support parameterized extractors, it will become
-      // more common place)
-      // [2] if we did some ad-hoc overloading resolution, update the tree's symbol
-      // do not update the symbol if the tree's symbol's type does not define an unapply member
-      // (e.g. since it's some method that returns an object with an unapply member)
-      def applicableUnapply: Symbol = symbol filter hasUnapplyMember match {
-        case NoSymbol => unapplyMethod // [1]
-        case filtered =>               // [2]
-          if (filtered ne symbol)
-            logResult(s"Narrowing overloaded unapply symbol and type")(fun setSymbol filtered modifyType (tp => filterOverloadedAlts(tp)(hasUnapplyMember)))
-
-          filtered
-      }
-      def applicableApply: Symbol = applicableUnapply match {
-        case sym if sym.exists && caseClass.isCase  => unapplyParamType.typeSymbol
-        case sym if !sym.exists && caseClass.isCase => caseClass
-        case _                                      => NoSymbol
-      }
-
       def patternFixedArity = treeInfo effectivePatternArity args
       def productArity      = productTypes.size
       def elementArity      = patternFixedArity - productArity
@@ -283,30 +293,6 @@ trait PatternTypers {
         case tp1 => tp1
       }
     }
-
-    // We might find the right symbol either as the parameter type to an unapply method,
-    // or as the companion class of the object which types the constructor pattern.
-    // We can't only use the unapply method because case classes with 23+ params have none.
-    // We can't only use the companion class because a case class constructor can coexist
-    // with an unapply method in its companion object which accepts a weaker type than the case
-    // class itself. (I wouldn't know that, except it is actually done in quasiquotes/Holes.scala.)
-    // So we have to check both.
-    def typedConstructorPattern(fun: Tree, pt: Type) = {
-      val shape  = newExtractorShape(fun, Nil)
-
-      shape.applicableApply match {
-        case NoSymbol => if (shape.applicableUnapply.exists || shape.exInfo.isCase) fun else CaseClassConstructorError(fun)
-        case sym      => convertToCaseConstructor(fun, sym, pt)
-      }
-    }
-
-    private def hasUnapplyMember(sym: Symbol) = reallyExists(unapplyMember(sym.tpe))
-
-    private def filterOverloadedAlts(tpe: Type)(p: Symbol => Boolean): Type = tpe match {
-      case OverloadedType(pre, alts) => overloadedType(pre, alts filter p)
-      case tp                        => tp
-    }
-
     /*
      * To deal with the type slack between actual (run-time) types and statically known types, for each abstract type T,
      * reflect its variance as a skolem that is upper-bounded by T (covariant position), or lower-bounded by T (contravariant).
@@ -335,11 +321,9 @@ trait PatternTypers {
      * see test/files/../t5189*.scala
      */
     private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, pt: Type): Tree = {
-      val variantToSkolem = new VariantToSkolemMap
-      // val shape = newExtractorShape(tree)
+      val variantToSkolem     = new VariantToSkolemMap
       val caseConstructorType = tree.tpe.prefix memberType caseClass memberType caseClass.primaryConstructor
-      // convert synthetic unapply of case class to case class constructor
-      val tree1 = TypeTree(caseConstructorType) setOriginal tree
+      val tree1               = TypeTree(caseConstructorType) setOriginal tree
 
       // have to open up the existential and put the skolems in scope
       // can't simply package up pt in an ExistentialType, because that takes us back to square one (List[_ <: T] == List[T] due to covariance)
@@ -350,8 +334,9 @@ trait PatternTypers {
       // as instantiateTypeVar's bounds would end up there
       log(sm"""|convert to case constructor {
                |         tree: $tree: ${tree.tpe}
+               |       ptSafe: $ptSafe
                | context.tree: ${context.tree}: ${context.tree.tpe}
-               |}""")
+               |}""".trim)
 
       val ctorContext = context.makeNewScope(tree, context.owner)
       freeVars foreach ctorContext.scope.enter
