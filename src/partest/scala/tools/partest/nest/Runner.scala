@@ -17,11 +17,10 @@ import scala.reflect.internal.FatalError
 import scala.sys.process.{ Process, ProcessLogger }
 import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
-import scala.tools.nsc.io.{ AbstractFile, PlainFile }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
-import scala.tools.scalap.scalax.rules.scalasig.ByteCode
+import scala.tools.scalap.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import PartestDefaults.{ javaCmd, javacCmd }
@@ -86,7 +85,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
   type RanOneTest = (Boolean, LogContext)
 
   def showCrashInfo(t: Throwable) {
-    System.err.println("Crashed running test $testIdent: " + t)
+    System.err.println(s"Crashed running test $testIdent: $t")
     if (!isPartestTerse)
       System.err.println(stackTraceString(t))
   }
@@ -490,13 +489,7 @@ class Runner(val testFile: File, fileManager: FileManager, val testRunParams: Te
 
     def fsString = fs map (_.toString stripPrefix parentFile.toString + "/") mkString " "
     def isOk = result.isOk
-    def mkScalacString(): String = {
-      val flags = file2String(flagsFile) match {
-        case ""   => ""
-        case s    => " " + s
-      }
-      s"""scalac $fsString"""
-    }
+    def mkScalacString(): String = s"""scalac $fsString"""
     override def toString = description + ( if (result.isOk) "" else "\n" + result.status )
   }
   case class OnlyJava(fs: List[File]) extends CompileRound {
@@ -770,7 +763,7 @@ trait DirectRunner {
   import PartestDefaults.{ numThreads, waitTime }
 
   setUncaughtHandler
-  
+
   def runTestsForFiles(kindFiles: List[File], kind: String): List[TestState] = {
 
     NestUI.resetTestNumber(kindFiles.size)
@@ -866,7 +859,6 @@ object Output {
 
 /** Use a Runner to run a test. */
 class RunnerManager(kind: String, fileManager: FileManager, params: TestRunParams) {
-  import fileManager._
   fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
   fileManager.CLASSPATH += File.pathSeparator + PathSettings.diffUtils // needed to put diffutils on test/partest's classpath
 
@@ -878,7 +870,7 @@ class RunnerManager(kind: String, fileManager: FileManager, params: TestRunParam
     if (fileManager.failed && !runner.logFile.canRead)
       runner.genPass()
     else {
-      val (state, elapsed) =
+      val (state, _) =
         try timed(runner.run())
         catch {
           case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)

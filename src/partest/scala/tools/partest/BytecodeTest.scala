@@ -55,7 +55,7 @@ abstract class BytecodeTest extends ASMConverters {
     val name2 = clazzB.name
 
     if (ms1.length != ms2.length) {
-      println("Different member counts in $name1 and $name2")
+      println(s"Different member counts in $name1 and $name2")
       false
     }
     else (ms1, ms2).zipped forall { (m1, m2) =>
