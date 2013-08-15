@@ -395,7 +395,7 @@ private[internal] trait TypeMaps {
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
           }
           if (!repl.typeSymbol.isBottomClass && count == 1 && !containsTypeParam)
-            logResult(msg)(repl)
+            debuglogResult(msg)(repl)
           else
             tp1
         case _ =>
