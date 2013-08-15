@@ -11,7 +11,7 @@ import scala.reflect.internal.util.OffsetPosition
 
 @RunWith(classOf[JUnit4])
 class CannotHaveAttrsTest {
-  class CustomSymbolTable extends SymbolTableForUnitTesting {
+  object symbolTable extends SymbolTableForUnitTesting {
     object CHA extends CannotHaveAttrs {
       def canEqual(that: Any): Boolean = ???
       def productArity: Int = ???
@@ -19,17 +19,16 @@ class CannotHaveAttrsTest {
     }
     val attrlessTrees = List(CHA, EmptyTree, emptyValDef, pendingSuperCall)
   }
-  def withCtx(body: CustomSymbolTable => Unit) = body(new CustomSymbolTable)
+  import symbolTable._
 
   @Test
-  def canHaveAttrsIsFalse = withCtx { st => import st._
+  def canHaveAttrsIsFalse =
     attrlessTrees.foreach { t =>
       assertFalse(t.canHaveAttrs)
     }
-  }
 
   @Test
-  def defaultPosAssignment = withCtx { st => import st._
+  def defaultPosAssignment =
     attrlessTrees.foreach { t =>
       assertEquals(t.pos, NoPosition)
       t.pos = NoPosition
@@ -37,10 +36,9 @@ class CannotHaveAttrsTest {
       t.setPos(NoPosition)
       assertEquals(t.pos, NoPosition)
     }
-  }
 
   @Test
-  def defaultTpeAssignment = withCtx { st => import st._
+  def defaultTpeAssignment =
     attrlessTrees.foreach { t =>
       assertEquals(t.tpe, NoType)
       t.tpe = NoType
@@ -48,10 +46,9 @@ class CannotHaveAttrsTest {
       t.setType(NoType)
       assertEquals(t.tpe, NoType)
     }
-  }
 
   @Test
-  def nonDefaultPosAssignmentFails = withCtx { st => import st._
+  def nonDefaultPosAssignmentFails = {
     val pos = new OffsetPosition(null, 0)
     attrlessTrees.foreach { t =>
       assertThrows[IllegalArgumentException] { t.pos = pos }
@@ -60,7 +57,7 @@ class CannotHaveAttrsTest {
   }
 
   @Test
-  def nonDefaultTpeAssignmentFails = withCtx { st => import st._
+  def nonDefaultTpeAssignmentFails = {
     val tpe = typeOf[Int]
     attrlessTrees.foreach { t =>
       assertThrows[IllegalArgumentException] { t.tpe = tpe }

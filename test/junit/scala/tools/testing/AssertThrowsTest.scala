@@ -10,16 +10,25 @@ import AssertUtil.assertThrows
 @RunWith(classOf[JUnit4])
 class AssertThrowsTest {
   class Foo extends Exception
+  class SubFoo extends Foo
   class Bar extends Exception
 
   @Test
   def catchFoo = assertThrows[Foo] { throw new Foo }
 
   @Test
+  def catchSubclass = assertThrows[Foo] { throw new SubFoo }
+
+  @Test
   def rethrowBar =
-    try assertThrows[Foo] { throw new Bar }
-    catch {
-      case bar: Bar =>
-      case e: Throwable => fail(s"expected Bar but got $e")
-    }
+    assertTrue("exception wasn't rethrown", {
+      try {
+        assertThrows[Foo] { throw new Bar }
+        false
+      } catch {
+        case bar: Bar => true
+        case e: Throwable => fail(s"expected Bar but got $e"); false
+      }
+    })
+
 }
