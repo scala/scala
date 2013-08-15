@@ -13,7 +13,6 @@ import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.HashSet
 
-
 trait Logic extends Debugging  {
   import PatternMatchingStats._
 
@@ -494,7 +493,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
 
     import global.{ConstantType, Constant, SingletonType, Literal, Ident, singleType}
-    import global.definitions.{AnyClass, UnitClass}
+    import global.definitions._
 
 
     // all our variables range over types
@@ -549,7 +548,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       def tp: Type
       def wideTp: Type
 
-      def isAny = wideTp.typeSymbol == AnyClass
+      def isAny = wideTp =:= AnyTpe
       def isValue: Boolean //= tp.isStable
 
       // note: use reference equality on Const since they're hash-consed (doing type equality all the time is too expensive)
@@ -606,7 +605,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
             if (tp.isInstanceOf[SingletonType]) tp
             else p match {
               case Literal(c) =>
-                if (c.tpe.typeSymbol == UnitClass) c.tpe
+                if (c.tpe =:= UnitTpe) c.tpe
                 else ConstantType(c)
               case Ident(_) if p.symbol.isStable =>
                 // for Idents, can encode uniqueness of symbol as uniqueness of the corresponding singleton type
