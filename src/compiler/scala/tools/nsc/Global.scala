@@ -1112,7 +1112,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         "symbol owners"      -> ownerChainString(sym),
         "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
       )
-      ("\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
+      ("\n  " + errorMessage + "\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
     }
     catch { case _: Exception | _: TypeError => errorMessage }
   }

@@ -70,7 +70,7 @@ trait TreeAndTypeAnalysis extends Debugging {
           val tpApprox = typer.infer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
 
-          Some(debug.patmatResult("enum sealed tp=$tp, tpApprox=$tpApprox as") {
+          Some(debug.patmatResult(s"enum sealed tp=$tp, tpApprox=$tpApprox as") {
           // valid subtypes are turned into checkable types, as we are entering the realm of the dynamic
             subclasses flatMap { sym =>
               // have to filter out children which cannot match: see ticket #3683 for an example
