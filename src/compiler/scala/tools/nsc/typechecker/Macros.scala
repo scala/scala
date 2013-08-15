@@ -713,9 +713,11 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
             var expectedTpe = expandee.tpe
             if (isNullaryInvocation(expandee)) expectedTpe = expectedTpe.finalResultType
-            var typechecked = typecheck("macro def return type", expanded, expectedTpe)
-            typechecked = typecheck("expected type", typechecked, pt)
-            typechecked
+            // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
+            val expanded0 = duplicateAndKeepPositions(expanded)
+            val expanded1 = typecheck("macro def return type", expanded0, expectedTpe)
+            val expanded2 = typecheck("expected type", expanded1, pt)
+            expanded2
           } finally {
             popMacroContext()
           }
