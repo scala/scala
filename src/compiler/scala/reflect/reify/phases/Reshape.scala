@@ -8,6 +8,7 @@ trait Reshape {
 
   import global._
   import definitions._
+  import treeInfo.Unapplied
 
   /**
    *  Rolls back certain changes that were introduced during typechecking of the reifee.
@@ -65,22 +66,9 @@ trait Reshape {
         case block @ Block(stats, expr) =>
           val stats1 = reshapeLazyVals(trimSyntheticCaseClassCompanions(stats))
           Block(stats1, expr).copyAttrs(block)
-        case unapply @ UnApply(fun, args) =>
-          def extractExtractor(tree: Tree): Tree = {
-            val Apply(fun, args) = tree
-            args match {
-              case List(Ident(special)) if special == nme.SELECTOR_DUMMY =>
-                val Select(extractor, flavor) = fun
-                assert(flavor == nme.unapply || flavor == nme.unapplySeq)
-                extractor
-              case _ =>
-                extractExtractor(fun)
-            }
-          }
-
+        case unapply @ UnApply(Unapplied(Select(fun, nme.unapply | nme.unapplySeq)), args) =>
           if (reifyDebug) println("unapplying unapply: " + tree)
-          val fun1 = extractExtractor(fun)
-          Apply(fun1, args).copyAttrs(unapply)
+          Apply(fun, args).copyAttrs(unapply)
         case _ =>
           tree
       }
