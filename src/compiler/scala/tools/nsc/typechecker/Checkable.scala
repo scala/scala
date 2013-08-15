@@ -246,8 +246,8 @@ trait Checkable {
       uncheckedOk(P0) || (P0.widen match {
         case TypeRef(_, NothingClass | NullClass | AnyValClass, _) => false
         case RefinedType(_, decls) if !decls.isEmpty               => false
-        case p                                                     =>
-          new CheckabilityChecker(AnyTpe, p) isCheckable
+        case RefinedType(parents, _)                               => parents forall isCheckable
+        case p                                                     => new CheckabilityChecker(AnyTpe, p) isCheckable
       })
     )
 
@@ -273,6 +273,8 @@ trait Checkable {
         // Matching on types like case _: AnyRef { def bippy: Int } => doesn't work -- yet.
         case RefinedType(_, decls) if !decls.isEmpty =>
           getContext.unit.warning(tree.pos, s"a pattern match on a refinement type is unchecked")
+        case RefinedType(parents, _) =>
+          parents foreach (p => checkCheckable(tree, p, X, inPattern, canRemedy))
         case _ =>
           val checker = new CheckabilityChecker(X, P)
           log(checker.summaryString)
