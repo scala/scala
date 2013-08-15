@@ -10,8 +10,6 @@ trait JavaReflectionRuntimes {
   trait JavaReflectionResolvers {
     self: MacroRuntimeResolver =>
 
-    import global._
-
     def resolveJavaReflectionRuntime(classLoader: ClassLoader): MacroRuntime = {
       val implClass = Class.forName(className, true, classLoader)
       val implMeths = implClass.getDeclaredMethods.find(_.getName == methName)

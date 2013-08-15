@@ -5,13 +5,11 @@
 **
 */
 
-
 package scala.tools.scalap
 
-import java.io._
 import scala.reflect.NameTransformer
 
-class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer) {
+class JavaWriter(classfile: Classfile, writer: java.io.Writer) extends CodeWriter(writer) {
 
   val cf = classfile
 

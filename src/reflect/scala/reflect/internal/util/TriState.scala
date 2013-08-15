@@ -3,6 +3,8 @@ package reflect
 package internal
 package util
 
+import scala.language.implicitConversions
+
 import TriState._
 
 /** A simple true/false/unknown value, for those days when

@@ -9,8 +9,6 @@ trait ScalaReflectionRuntimes {
   trait ScalaReflectionResolvers {
     self: MacroRuntimeResolver =>
 
-    import global._
-
     def resolveScalaReflectionRuntime(classLoader: ClassLoader): MacroRuntime = {
       val macroMirror: ru.JavaMirror = ru.runtimeMirror(classLoader)
       val implContainerSym = macroMirror.classSymbol(Class.forName(className, true, classLoader))

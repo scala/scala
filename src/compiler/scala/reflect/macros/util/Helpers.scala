@@ -23,7 +23,7 @@ trait Helpers {
    *  or to streamline creation of the list of macro arguments.
    */
   def transformTypeTagEvidenceParams(macroImplRef: Tree, transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
-    val treeInfo.MacroImplReference(isBundle, owner, macroImpl, _) = macroImplRef
+    val treeInfo.MacroImplReference(isBundle, _, macroImpl, _) = macroImplRef
     val paramss = macroImpl.paramss
     if (paramss.isEmpty || paramss.last.isEmpty) return paramss // no implicit parameters in the signature => nothing to do
     val rc =
@@ -42,11 +42,6 @@ trait Helpers {
     }
     val transformed = paramss.last map transformTag filter (_ ne NoSymbol)
     if (transformed.isEmpty) paramss.init else paramss.init :+ transformed
-  }
-
-  private def dealiasAndRewrap(tp: Type)(fn: Type => Type): Type = {
-    if (isRepeatedParamType(tp)) scalaRepeatedType(fn(tp.typeArgs.head.dealias))
-    else fn(tp.dealias)
   }
 
   /** Increases metalevel of the type, i.e. transforms:
