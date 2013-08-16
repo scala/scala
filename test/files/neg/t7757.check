@@ -1,4 +1,0 @@
-t7757.scala:1: error: ';' expected but '@' found.
-trait Foo @annot
-          ^
-one error found
