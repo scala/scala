@@ -1425,14 +1425,6 @@ trait Namers extends MethodSynthesis {
               annCtx.setReportErrors()
               // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
               AnnotationInfo lazily {
-                if (typer.context ne ctx)
-                  log(sm"""|The var `typer.context` in ${Namer.this} was mutated before the annotation ${ann} was forced.
-                           |
-                           |current value  = ${typer.context}
-                           |original value = $ctx
-                           |
-                           |This confirms the hypothesis for the cause of SI-7603. If you see this message, please comment on that ticket.""")
-
                 beforeTyper(newTyper(annCtx) typedAnnotation ann)
               }
             }
