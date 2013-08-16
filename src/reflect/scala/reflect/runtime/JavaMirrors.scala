@@ -18,7 +18,7 @@ import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
 import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
-import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
+import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance, scalacShouldntLoadClass}
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
@@ -949,7 +949,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val cls =
           if (jclazz.isMemberClass && !nme.isImplClassName(jname))
             lookupClass
-          else if (jclazz.isLocalClass0 || isInvalidClassName(jname))
+          else if (jclazz.isLocalClass0 || scalacShouldntLoadClass(jname))
             // local classes and implementation classes not preserved by unpickling - treat as Java
             //
             // upd. but only if they cannot be loaded as top-level classes
