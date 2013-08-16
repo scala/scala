@@ -9,7 +9,6 @@
 
 package scala.actors
 
-import java.util.concurrent._
 import scheduler.{DelegatingScheduler, ForkJoinScheduler, ResizableThreadPoolScheduler, ThreadPoolConfig}
 
 /**

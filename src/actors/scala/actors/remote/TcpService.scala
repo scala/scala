@@ -67,7 +67,7 @@ object TcpService {
       timeout =>
         try {
           val to = timeout.toInt
-          Debug.info("Using socket timeout $to")
+          Debug.info(s"Using socket timeout $to")
           Some(to)
         } catch {
           case e: NumberFormatException =>

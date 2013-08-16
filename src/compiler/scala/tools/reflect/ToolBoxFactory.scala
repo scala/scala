@@ -274,16 +274,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       def parse(code: String): Tree = {
-        val run = new Run
         reporter.reset()
         val file = new BatchSourceFile("<toolbox>", code)
         val unit = new CompilationUnit(file)
-        phase = run.parserPhase
-        val parser = newUnitParser(unit)
-        val parsed = parser.templateStats()
-        parser.accept(EOF)
+        val parsed = newUnitParser(unit).parseStats()
         throwIfErrors()
         parsed match {
+          case Nil => EmptyTree
           case expr :: Nil => expr
           case stats :+ expr => Block(stats, expr)
         }

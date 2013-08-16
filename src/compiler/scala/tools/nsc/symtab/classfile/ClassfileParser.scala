@@ -74,7 +74,6 @@ abstract class ClassfileParser {
   def srcfile = srcfile0
 
   private def optimized         = settings.optimise.value
-  private def currentIsTopLevel = !(currentClass.decodedName containsChar '$')
 
   // u1, u2, and u4 are what these data types are called in the JVM spec.
   // They are an unsigned byte, unsigned char, and unsigned int respectively.
@@ -349,7 +348,7 @@ abstract class ClassfileParser {
 
     /** Throws an exception signaling a bad tag at given address. */
     protected def errorBadTag(start: Int) =
-      abort("bad constant pool tag ${in.buf(start)} at byte $start")
+      abort(s"bad constant pool tag ${in.buf(start)} at byte $start")
   }
 
   private def loadClassSymbol(name: Name): Symbol = {

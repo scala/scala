@@ -1,0 +1,26 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> :silent
+Switched off result printing.
+
+scala> class A { override def toString() = { println("!"); "A" } }
+
+scala> val a = new A
+
+scala> var b: A = new A
+
+scala> b = new A
+
+scala> new A
+
+scala> :silent
+Switched on result printing.
+
+scala> res0
+!
+res1: A = A
+
+scala> 

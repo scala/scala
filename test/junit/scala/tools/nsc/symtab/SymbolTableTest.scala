@@ -9,17 +9,15 @@ import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
 class SymbolTableTest {
-  private def createSymbolTable: SymbolTable = new SymbolTableForUnitTesting
+  object symbolTable extends SymbolTableForUnitTesting
 
   @Test
   def initDefinitions = {
-    val symbolTable = createSymbolTable
     symbolTable.definitions.init()
   }
 
   @Test
   def basicSubTypeCheck = {
-    val symbolTable = createSymbolTable
     symbolTable.definitions.init()
     val listClassTpe = symbolTable.definitions.ListClass.tpe
     val seqClassTpe = symbolTable.definitions.SeqClass.tpe
@@ -32,7 +30,6 @@ class SymbolTableTest {
    */
   @Test
   def customClassesSubTypeCheck: Unit = {
-    val symbolTable = createSymbolTable
     import symbolTable._
     symbolTable.definitions.init()
     val rootClass = symbolTable.rootMirror.RootClass

@@ -267,7 +267,18 @@ object ScalaRunTime {
     }
     def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
     def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
-    def isXmlClass(x: AnyRef)           = packageOf(x) startsWith "scala.xml."
+
+    // We use reflection because the scala.xml package might not be available
+    def isSubClassOf(potentialSubClass: Class[_], ofClass: String) =
+      try {
+        val classLoader = potentialSubClass.getClassLoader
+        val clazz = Class.forName(ofClass, /*initialize =*/ false, classLoader)
+        clazz.isAssignableFrom(potentialSubClass)
+      } catch {
+        case cnfe: ClassNotFoundException => false
+      }
+    def isXmlNode(potentialSubClass: Class[_])     = isSubClassOf(potentialSubClass, "scala.xml.Node")
+    def isXmlMetaData(potentialSubClass: Class[_]) = isSubClassOf(potentialSubClass, "scala.xml.MetaData")
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
@@ -279,11 +290,12 @@ object ScalaRunTime {
       case _: StringLike[_] => true
       // Don't want to evaluate any elements in a view
       case _: TraversableView[_, _] => true
-      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData] -> catch those and more by isXmlClass(x)
+      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
+      // -> catch those by isXmlNode and isXmlMetaData.
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlClass(x)
+      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }
@@ -324,7 +336,7 @@ object ScalaRunTime {
     // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
     try inner(arg)
     catch {
-      case _: StackOverflowError | _: UnsupportedOperationException | _: AssertionError => "" + arg
+      case _: UnsupportedOperationException | _: AssertionError => "" + arg
     }
   }
 
@@ -334,20 +346,6 @@ object ScalaRunTime {
     val nl = if (s contains "\n") "\n" else ""
 
     nl + s + "\n"
-  }
-  private[scala] def checkZip(what: String, coll1: TraversableOnce[_], coll2: TraversableOnce[_]) {
-    if (sys.props contains "scala.debug.zip") {
-      val xs = coll1.toIndexedSeq
-      val ys = coll2.toIndexedSeq
-      if (xs.length != ys.length) {
-        Console.err.println(
-          "Mismatched zip in " + what + ":\n" +
-          "  this: " + xs.mkString(", ") + "\n" +
-          "  that: " + ys.mkString(", ")
-        )
-        (new Exception).getStackTrace.drop(2).take(10).foreach(println)
-      }
-    }
   }
 
   def box[T](clazz: jClass[T]): jClass[_] = clazz match {
