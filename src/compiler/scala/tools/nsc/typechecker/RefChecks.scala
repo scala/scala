@@ -1826,9 +1826,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           case LabelDef(_, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
             val old = inPattern
             inPattern = true
-            val res = deriveLabelDef(result)(transform)
+            val res = deriveLabelDef(result)(transform) // TODO SI-7756 Too broad! The code from the original case body should be fully refchecked!
             inPattern = old
             res
+          case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
+            deriveValDef(result)(transform) // SI-7716 Don't refcheck the tpt of the synthetic val that holds the selector.
           case _ =>
             super.transform(result)
         }
