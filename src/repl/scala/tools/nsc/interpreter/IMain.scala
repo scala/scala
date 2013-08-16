@@ -446,9 +446,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
     val content = indentCode(line)
     val trees = parse(content) match {
-      case None         => return Left(IR.Incomplete)
-      case Some(Nil)    => return Left(IR.Error) // parse error or empty input
-      case Some(trees)  => trees
+      case parse.Incomplete     => return Left(IR.Incomplete)
+      case parse.Error          => return Left(IR.Error)
+      case parse.Success(trees) => trees
     }
     repltrace(
       trees map (t => {
@@ -466,7 +466,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     // If the last tree is a bare expression, pinpoint where it begins using the
     // AST node position and snap the line off there.  Rewrite the code embodied
     // by the last tree as a ValDef instead, so we can access the value.
-    trees.last match {
+    val last = trees.lastOption.getOrElse(EmptyTree)
+    last match {
       case _:Assign                        => // we don't want to include assignments
       case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
         val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
@@ -478,7 +479,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
           if (trees.size == 1) "val " + varName + " =\n" + content
           else {
             // The position of the last tree
-            val lastpos0 = earliestPosition(trees.last)
+            val lastpos0 = earliestPosition(last)
             // Oh boy, the parser throws away parens so "(2+2)" is mispositioned,
             // with increasingly hard to decipher positions as we move on to "() => 5",
             // (x: Int) => x + 1, and more.  So I abandon attempts to finesse and just
@@ -1096,7 +1097,24 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     val repl: IMain.this.type = imain
   } with ExprTyper { }
 
-  def parse(line: String): Option[List[Tree]] = exprTyper.parse(line)
+  /** Parse a line into and return parsing result (error, incomplete or success with list of trees) */
+  object parse {
+    abstract sealed class Result
+    case object Error extends Result
+    case object Incomplete extends Result
+    case class Success(trees: List[Tree]) extends Result
+
+    def apply(line: String): Result = debugging(s"""parse("$line")""")  {
+      var isIncomplete = false
+      reporter.withIncompleteHandler((_, _) => isIncomplete = true) {
+        reporter.reset()
+        val trees = newUnitParser(line).parseStats()
+        if (reporter.hasErrors) Error
+        else if (isIncomplete) Incomplete
+        else Success(trees)
+      }
+    }
+  }
 
   def symbolOfLine(code: String): Symbol =
     exprTyper.symbolOfLine(code)
@@ -1155,10 +1173,12 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
      */
     def isShow = code.lines exists (_.trim endsWith "// show")
     if (isReplDebug || isShow) {
-      beSilentDuring(parse(code)) foreach { ts =>
-        ts foreach { t =>
-          withoutUnwrapping(echo(asCompactString(t)))
-        }
+      beSilentDuring(parse(code)) match {
+        case parse.Success(ts) =>
+          ts foreach { t =>
+            withoutUnwrapping(echo(asCompactString(t)))
+          }
+        case _ =>
       }
     }
   }

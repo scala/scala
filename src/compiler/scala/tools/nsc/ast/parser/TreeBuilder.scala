@@ -39,7 +39,7 @@ abstract class TreeBuilder {
    *    x                  becomes      x @ _
    *    x: T               becomes      x @ (_: T)
    */
-  private object patvarTransformer extends Transformer {
+  object patvarTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if (treeInfo.isVarPattern(tree) && name != nme.WILDCARD) =>
         atPos(tree.pos)(Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD))))

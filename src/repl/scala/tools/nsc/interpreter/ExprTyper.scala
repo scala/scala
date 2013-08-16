@@ -16,32 +16,6 @@ trait ExprTyper {
   import syntaxAnalyzer.UnitParser
   import naming.freshInternalVarName
 
-  object codeParser {
-    val global: repl.global.type = repl.global
-    def applyRule[T](code: String, rule: UnitParser => T): T = {
-      reporter.reset()
-      val scanner = newUnitParser(code)
-      val result  = rule(scanner)
-
-      if (!reporter.hasErrors)
-        scanner.accept(EOF)
-
-      result
-    }
-    def stmts(code: String) = applyRule(code, _.templateStats())
-  }
-
-  /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
-  def parse(line: String): Option[List[Tree]] = debugging(s"""parse("$line")""")  {
-    var isIncomplete = false
-    reporter.withIncompleteHandler((_, _) => isIncomplete = true) {
-      val trees = codeParser.stmts(line)
-      if (reporter.hasErrors) Some(Nil)
-      else if (isIncomplete) None
-      else Some(trees)
-    }
-  }
-
   def symbolOfLine(code: String): Symbol = {
     def asExpr(): Symbol = {
       val name  = freshInternalVarName()
