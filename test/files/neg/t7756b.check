@@ -1,0 +1,4 @@
+t7756b.scala:3: error: comparing values of types Int and String using `==' will always yield false
+    case _ => 0 == ""
+                ^
+one error found
