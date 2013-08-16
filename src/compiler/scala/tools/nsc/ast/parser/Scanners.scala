@@ -741,6 +741,10 @@ trait Scanners extends ScannersCommon {
           finishStringPart()
           nextRawChar()
           next.token = LBRACE
+        } else if (ch == '_') {
+          finishStringPart()
+          nextRawChar()
+          next.token = USCORE
         } else if (Character.isUnicodeIdentifierStart(ch)) {
           finishStringPart()
           do {
