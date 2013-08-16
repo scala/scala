@@ -1,2 +1,2 @@
-java.lang.IllegalArgumentException: wrong number of arguments for interpolated string
-java.lang.IllegalArgumentException: wrong number of arguments for interpolated string
+java.lang.IllegalArgumentException: wrong number of arguments (1) for interpolated string with 3 parts
+java.lang.IllegalArgumentException: wrong number of arguments (1) for interpolated string with 1 parts
