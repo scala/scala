@@ -78,7 +78,7 @@ class MainGenericRunner {
         Right(false)
       case _  =>
         // We start the repl when no arguments are given.
-        Right(new interpreter.ILoop process settings)
+        Right(new interpreter.ILoop process(settings, new interpreter.ReplAdvancedConfig))
     }
 
     /** If -e and -i were both given, we want to execute the -e code after the

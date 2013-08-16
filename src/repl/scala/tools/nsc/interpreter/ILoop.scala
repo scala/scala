@@ -48,6 +48,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
+  var advancedConfig: ReplAdvancedConfig = new ReplAdvancedConfig //Default Settings
   var intp: IMain = _
 
   private var globalFuture: Future[Boolean] = _
@@ -57,7 +58,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     echo(s"""
       |Welcome to Scala $versionString ($javaVmName, Java $javaVersion).
       |Type in expressions to have them evaluated.
-      |Type :help for more information.""".trim.stripMargin
+      |Type :help for more information.""".trim.stripMargin + advancedConfig.welcomeMessage
     )
     replinfo("[info] started at " + new java.util.Date)
   }
@@ -105,7 +106,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  class ILoopInterpreter extends IMain(settings, out) {
+  class ILoopInterpreter extends IMain(settings, out, advancedConfig) {
     outer =>
 
     override lazy val formatting = new Formatting {
@@ -205,7 +206,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   import LoopCommand.{ cmd, nullary }
 
-  /** Standard commands **/
+  /** Standard commands */
   lazy val standardCommands = List(
     cmd("cp", "<path>", "add a jar or directory to the classpath", addClasspath),
     cmd("edit", "<id>|<line>", "edit history", editCommand),
@@ -548,7 +549,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     } else try {
       val s = what
       // line 123, 120+3, -3, 120-123, 120-, note -3 is not 0-3 but (cur-3,cur)
-      val (start, len) = 
+      val (start, len) =
         if ((s indexOf '+') > 0) {
           val (a,b) = s splitAt (s indexOf '+')
           (a.toInt, b.drop(1).toInt)
@@ -814,7 +815,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       SimpleReader()
     else try new JLineReader(
       if (settings.noCompletion) NoCompletion
-      else new JLineCompletion(intp)
+      else new JLineCompletion(intp, advancedConfig)
     )
     catch {
       case ex @ (_: Exception | _: NoClassDefFoundError) =>
@@ -845,6 +846,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       case _              =>
     }
   }
+
+  def process(settings:Settings, advancedConfig: ReplAdvancedConfig) :Boolean = savingContextLoader {
+    this.advancedConfig = advancedConfig
+    process(settings)
+  }
+
   def process(settings: Settings): Boolean = savingContextLoader {
     this.settings = settings
     createInterpreter()
@@ -876,7 +883,7 @@ object ILoop {
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
-  def runForTranscript(code: String, settings: Settings): String = {
+  def runForTranscript(code: String, settings: Settings, advancedConfig: ReplAdvancedConfig = new ReplAdvancedConfig): String = {
     import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
 
     stringFromStream { ostream =>
@@ -903,7 +910,7 @@ object ILoop {
         if (settings.classpath.isDefault)
           settings.classpath.value = sys.props("java.class.path")
 
-        repl process settings
+        repl.process(settings, advancedConfig)
       }
     }
   }
@@ -911,7 +918,7 @@ object ILoop {
   /** Creates an interpreter loop with default settings and feeds
    *  the given code to it as input.
    */
-  def run(code: String, sets: Settings = new Settings): String = {
+  def run(code: String, sets: Settings = new Settings, advancedConfig: ReplAdvancedConfig = new ReplAdvancedConfig): String = {
     import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
 
     stringFromStream { ostream =>
@@ -923,7 +930,7 @@ object ILoop {
         if (sets.classpath.isDefault)
           sets.classpath.value = sys.props("java.class.path")
 
-        repl process sets
+        repl.process(sets, advancedConfig)
       }
     }
   }

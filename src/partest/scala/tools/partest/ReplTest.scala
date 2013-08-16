@@ -31,6 +31,17 @@ abstract class ReplTest extends DirectTest {
   def show() = eval() foreach println
 }
 
+/** For testing repl code with class based wrappers. It drops the first line
+ *  of output because the real repl prints a version number.
+ */
+abstract class ReplClassBasedWrappersTest extends ReplTest {
+  override def eval() = {
+    val s = settings
+    log("eval(): settings = " + s)
+    ILoop.runForTranscript(code, s, new ReplClassBasedWrappers).lines drop 1
+  }
+}
+
 abstract class SessionTest extends ReplTest with FileUtil {
   def session: String
   override final def code = expected filter (_.startsWith(prompt)) map (_.drop(prompt.length)) mkString "\n"

@@ -131,11 +131,12 @@ trait Imports {
     // add code for a new object to hold some imports
     def addWrapper() {
       val impname = nme.INTERPRETER_IMPORT_WRAPPER
-      code append "object %s {\n".format(impname)
-      trailingBraces append "}\n"
-      accessPath append ("." + impname)
+      advancedConfig.codeWrapper(impname, code)
+      advancedConfig.trailBracesWrapper(impname, trailingBraces)
+      advancedConfig.accessPathWrapper(impname, accessPath)
       currentImps.clear()
     }
+
     def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
     def wrapBeforeAndAfter[T](op: => T): T = {
       addWrapper()
@@ -163,7 +164,7 @@ trait Imports {
           case x =>
             for (sym <- x.definedSymbols) {
               maybeWrap(sym.name)
-              code append s"import ${x.path}\n"
+              advancedConfig.codeIWrapper(req, x, code, sym.name.toString)
               currentImps += sym.name
             }
         }
