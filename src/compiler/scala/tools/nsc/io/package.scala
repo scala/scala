@@ -5,8 +5,6 @@
 
 package scala.tools.nsc
 
-import java.util.concurrent.{ Future, Callable }
-import java.util.{ Timer, TimerTask }
 import scala.language.implicitConversions
 
 package object io {
@@ -29,16 +27,4 @@ package object io {
   type JFile = java.io.File
 
   implicit def enrichManifest(m: JManifest): Jar.WManifest = Jar.WManifest(m)
-  private lazy val daemonThreadPool = DaemonThreadFactory.newPool()
-
-  def runnable(body: => Unit): Runnable       = new Runnable { override def run() = body }
-  def callable[T](body: => T): Callable[T]    = new Callable[T] { override def call() = body }
-  def spawn[T](body: => T): Future[T]         = daemonThreadPool submit callable(body)
-
-  def newThread(f: Thread => Unit)(body: => Unit): Thread = {
-    val thread = new Thread(runnable(body))
-    f(thread)
-    thread.start
-    thread
-  }
 }
