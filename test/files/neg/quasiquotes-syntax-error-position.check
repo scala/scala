@@ -1,0 +1,32 @@
+quasiquotes-syntax-error-position.scala:5: error: '=' expected but identifier found.
+  q"def $a f"
+           ^
+quasiquotes-syntax-error-position.scala:6: error: illegal start of simple expression
+  q"$a("
+       ^
+quasiquotes-syntax-error-position.scala:7: error: '}' expected but end of quote found.
+  q"class $t { def foo = $a"
+                           ^
+quasiquotes-syntax-error-position.scala:8: error: '.' expected but splicee found.
+  q"import $t $t"
+              ^
+quasiquotes-syntax-error-position.scala:9: error: illegal start of definition
+  q"package p"
+    ^
+quasiquotes-syntax-error-position.scala:10: error: ';' expected but '@' found.
+  q"foo@$a"
+       ^
+quasiquotes-syntax-error-position.scala:11: error: case classes without a parameter list are not allowed;
+use either case objects or case classes with an explicit `()' as a parameter list.
+  q"case class A"
+                ^
+quasiquotes-syntax-error-position.scala:12: error: identifier expected but ']' found.
+  tq"$t => $t $t]"
+                ^
+quasiquotes-syntax-error-position.scala:13: error: end of quote expected but 'case' found.
+  cq"pattern => body ; case pattern2 =>"
+                       ^
+quasiquotes-syntax-error-position.scala:14: error: ')' expected but end of quote found.
+  pq"$a(bar"
+           ^
+10 errors found
