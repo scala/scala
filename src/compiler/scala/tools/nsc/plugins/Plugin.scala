@@ -8,6 +8,7 @@ package plugins
 
 import scala.tools.nsc.io.{ Jar }
 import scala.tools.nsc.util.ScalaClassLoader
+import scala.tools.nsc.typechecker.Analyzer
 import scala.reflect.io.{ Directory, File, Path }
 import java.io.InputStream
 import java.util.zip.ZipException
@@ -54,6 +55,25 @@ abstract class Plugin {
    *  should be listed with the `-P:plugname:` part included.
    */
   val optionsHelp: Option[String] = None
+}
+
+/** Information about a plugin loaded from a jar file.
+ *
+ *  In addition to normal functionality exposed by `Plugin`,
+ *  `EarlyPlugin` lets its users modify the very backbone of the compiler:
+ *  the `analyzer` component that spawns namers and typers.
+ *
+ *  The concrete subclass must have a one-argument constructor
+ *  that accepts an instance of `global`.
+ *  {{{
+ *    (val global: Global)
+ *  }}}
+ */
+abstract class EarlyPlugin extends Plugin {
+  /** The custom analyzer that this plugin requires, if any.
+   *  If multiple plugins require custom analyzers, an error is raised.
+   */
+  val analyzer: Option[Analyzer] = None
 }
 
 /** ...
@@ -143,5 +163,11 @@ object Plugin {
    */
   def instantiate(clazz: AnyClass, global: Global): Plugin = {
     (clazz getConstructor classOf[Global] newInstance global).asInstanceOf[Plugin]
+  }
+}
+
+object EarlyPlugin {
+  def instantiate(clazz: Class[_], global: Global): EarlyPlugin = {
+    Plugin.instantiate(clazz, global).asInstanceOf[EarlyPlugin]
   }
 }
