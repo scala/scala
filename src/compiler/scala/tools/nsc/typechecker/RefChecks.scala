@@ -1399,17 +1399,35 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         false
     }
 
-    private def checkTypeRef(tp: Type, tree: Tree) = tp match {
+    private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean) = tp match {
       case TypeRef(pre, sym, args) =>
         checkDeprecated(sym, tree.pos)
         if(sym.isJavaDefined)
           sym.typeParams foreach (_.cookJavaRawInfo())
-        if (!tp.isHigherKinded)
+        if (!tp.isHigherKinded && !skipBounds)
           checkBounds(tree, pre, sym.owner, sym.typeParams, args)
       case _ =>
     }
 
-    private def checkAnnotations(tpes: List[Type], tree: Tree) = tpes foreach (tp => checkTypeRef(tp, tree))
+    private def checkTypeRefBounds(tp: Type, tree: Tree) = {
+      var skipBounds = false
+      tp match {
+        case AnnotatedType(ann :: Nil, underlying, selfSym) if ann.symbol == UncheckedBoundsClass =>
+          skipBounds = true
+          underlying
+        case TypeRef(pre, sym, args) =>
+          if (!tp.isHigherKinded && !skipBounds)
+            checkBounds(tree, pre, sym.owner, sym.typeParams, args)
+          tp
+        case _ =>
+          tp
+      }
+    }
+
+    private def checkAnnotations(tpes: List[Type], tree: Tree) = tpes foreach { tp =>
+      checkTypeRef(tp, tree, skipBounds = false)
+      checkTypeRefBounds(tp, tree)
+    }
     private def doTypeTraversal(tree: Tree)(f: Type => Unit) = if (!inPattern) tree.tpe foreach f
 
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
@@ -1437,8 +1455,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
 
           doTypeTraversal(tree) {
-            case AnnotatedType(annots, _, _)  => applyChecks(annots)
-            case _ =>
+            case tp @ AnnotatedType(annots, _, _)  =>
+              applyChecks(annots)
+            case tp =>
           }
         case _ =>
       }
@@ -1619,13 +1638,27 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             }
 
             val existentialParams = new ListBuffer[Symbol]
-            doTypeTraversal(tree) { // check all bounds, except those that are existential type parameters
-              case ExistentialType(tparams, tpe) =>
+            var skipBounds = false
+            // check all bounds, except those that are existential type parameters
+            // or those within typed annotated with @uncheckedBounds
+            doTypeTraversal(tree) {
+              case tp @ ExistentialType(tparams, tpe) =>
                 existentialParams ++= tparams
-              case t: TypeRef =>
-                checkTypeRef(deriveTypeWithWildcards(existentialParams.toList)(t), tree)
+              case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
+                // SI-7694 Allow code synthetizers to disable checking of bounds for TypeTrees based on inferred LUBs
+                // which might not conform to the constraints.
+                skipBounds = true
+              case tp: TypeRef =>
+                val tpWithWildcards = deriveTypeWithWildcards(existentialParams.toList)(tp)
+                checkTypeRef(tpWithWildcards, tree, skipBounds)
               case _ =>
             }
+            if (skipBounds) {
+              tree.tpe = tree.tpe.map {
+                _.filterAnnotations(_.symbol != UncheckedBoundsClass)
+              }
+            }
+
             tree
 
           case TypeApply(fn, args) =>

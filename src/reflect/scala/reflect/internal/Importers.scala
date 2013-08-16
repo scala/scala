@@ -412,7 +412,12 @@ trait Importers extends api.Importers { to: SymbolTable =>
         addFixup(recreatedTreeCompleter(their, my))
         tryFixup()
       }
-      my
+      // we have to be careful with position import as some shared trees
+      // like EmptyTree, emptyValDef don't support position assignment
+      if (their.pos != NoPosition)
+        my.setPos(importPosition(their.pos))
+      else
+        my
     }
 
     // ============== MISCELLANEOUS ==============

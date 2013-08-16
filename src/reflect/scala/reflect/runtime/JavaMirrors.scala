@@ -18,7 +18,7 @@ import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
 import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
-import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance}
+import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance, scalacShouldntLoadClass}
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
@@ -696,8 +696,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val parents = try {
           parentsLevel += 1
           val jsuperclazz = jclazz.getGenericSuperclass
-          val superclazz = if (jsuperclazz == null) AnyTpe else typeToScala(jsuperclazz)
-          superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
+          val ifaces = jclazz.getGenericInterfaces.toList map typeToScala
+          val isAnnotation = JavaAccFlags(jclazz).isAnnotation
+          if (isAnnotation) AnnotationClass.tpe :: ClassfileAnnotationClass.tpe :: ifaces
+          else (if (jsuperclazz == null) AnyTpe else typeToScala(jsuperclazz)) :: ifaces
         } finally {
           parentsLevel -= 1
         }
@@ -709,6 +711,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         def enter(sym: Symbol, mods: JavaAccFlags) =
           ( if (mods.isStatic) module.moduleClass else clazz ).info.decls enter sym
 
+        def enterEmptyCtorIfNecessary(): Unit = {
+          if (jclazz.getConstructors.isEmpty)
+            clazz.info.decls.enter(clazz.newClassConstructor(NoPosition))
+        }
+
         for (jinner <- jclazz.getDeclaredClasses)
           jclassAsScala(jinner) // inner class is entered as a side-effect
                                 // no need to call enter explicitly
@@ -717,6 +724,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           jclazz.getDeclaredFields  foreach (f => enter(jfieldAsScala(f),  f.javaFlags))
           jclazz.getDeclaredMethods foreach (m => enter(jmethodAsScala(m), m.javaFlags))
           jclazz.getConstructors    foreach (c => enter(jconstrAsScala(c), c.javaFlags))
+          enterEmptyCtorIfNecessary()
         }
 
         if (parentsLevel == 0) {
@@ -949,7 +957,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val cls =
           if (jclazz.isMemberClass && !nme.isImplClassName(jname))
             lookupClass
-          else if (jclazz.isLocalClass0 || isInvalidClassName(jname))
+          else if (jclazz.isLocalClass0 || scalacShouldntLoadClass(jname))
             // local classes and implementation classes not preserved by unpickling - treat as Java
             //
             // upd. but only if they cannot be loaded as top-level classes
