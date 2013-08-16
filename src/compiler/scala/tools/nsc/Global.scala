@@ -220,12 +220,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
-  def error(msg: String)                = globalError(msg)
-  override def inform(msg: String)      = reporter.echo(msg)
-  override def globalError(msg: String) = reporter.error(NoPosition, msg)
-  override def warning(msg: String)     =
-    if (settings.fatalWarnings) globalError(msg)
-    else reporter.warning(NoPosition, msg)
+  def error(msg: String) = globalError(msg)
+
+  override def inform(msg: String)      = inform(NoPosition, msg)
+  override def globalError(msg: String) = globalError(NoPosition, msg)
+  override def warning(msg: String)     = warning(NoPosition, msg)
+
+  def globalError(pos: Position, msg: String) = reporter.error(pos, msg)
+  def warning(pos: Position, msg: String)     = if (settings.fatalWarnings) globalError(pos, msg) else reporter.warning(pos, msg)
+  def inform(pos: Position, msg: String)      = reporter.echo(pos, msg)
 
   // Getting in front of Predef's asserts to supplement with more info.
   // This has the happy side effect of masking the one argument forms
@@ -264,11 +267,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  logging mechanism. !!! is prefixed to all messages issued via this route
    *  to make them visually distinct.
    */
-  @inline final override def devWarning(msg: => String) {
+  @inline final override def devWarning(msg: => String): Unit = devWarning(NoPosition, msg)
+  @inline final def devWarning(pos: Position, msg: => String) {
+    def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
     if (settings.developer || settings.debug)
-      warning("!!! " + msg)
+      warning(pos, "!!! " + msg)
     else
-      log("!!! " + msg) // such warnings always at least logged
+      log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
 
   def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
@@ -1107,7 +1112,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         "symbol owners"      -> ownerChainString(sym),
         "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
       )
-      ("\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
+      ("\n  " + errorMessage + "\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
     }
     catch { case _: Exception | _: TypeError => errorMessage }
   }
