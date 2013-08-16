@@ -107,7 +107,7 @@ trait MemberHandlers {
 
     override def resultExtractionCode(req: Request): String = {
       val isInternal = isUserVarName(name) && req.lookupTypeOf(name) == "Unit"
-      if (!mods.isPublic || isInternal) ""
+      if (!mods.isPublic || isInternal || !req.printResults) ""
       else {
         // if this is a lazy val we avoid evaluating it here
         val resultString =
@@ -151,11 +151,11 @@ trait MemberHandlers {
       """val %s = %s""".format(name, lhs)
 
     /** Print out lhs instead of the generated varName */
-    override def resultExtractionCode(req: Request) = {
+    override def resultExtractionCode(req: Request) = if (req.printResults) {
       val lhsType = string2code(req lookupTypeOf name)
       val res     = string2code(req fullPath name)
       """ + "%s: %s = " + %s + "\n" """.format(string2code(lhs.toString), lhsType, res) + "\n"
-    }
+    } else ""
   }
 
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
