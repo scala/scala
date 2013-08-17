@@ -48,6 +48,11 @@ trait MatchTranslation extends CpsPatternHacks {
   import global._
   import definitions._
   import global.analyzer.{ErrorUtils, formalTypes}
+  import treeInfo.{ Unapplied, isStar }
+
+  // Always map repeated params to sequences
+  private def setVarInfo(sym: Symbol, info: Type) =
+    sym setInfo debug.patmatResult(s"changing ${sym.defString} to")(repeatedToSeq(info))
 
   trait MatchTranslator extends TreeMakers {
     import typer.context
@@ -134,10 +139,8 @@ trait MatchTranslation extends CpsPatternHacks {
       val Match(selector, cases) = match_
 
       val (nonSyntheticCases, defaultOverride) = cases match {
-        case init :+ last if treeInfo isSyntheticDefaultCase last =>
-          (init, Some(((scrut: Tree) => last.body)))
-        case _ =>
-          (cases, None)
+        case init :+ last if treeInfo isSyntheticDefaultCase last => (init, Some(((scrut: Tree) => last.body)))
+        case _                                                    => (cases, None)
       }
 
       checkMatchVariablePatterns(nonSyntheticCases)
@@ -245,50 +248,49 @@ trait MatchTranslation extends CpsPatternHacks {
     }
 
     def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
+      val pos       = patTree.pos
+      def patType   = patBinder.info.dealiasWiden // the type of the variable bound to the pattern
+
+      def glbWithBinder(other: Type) = glb(patType :: other :: Nil).normalize
+
       def withSubPats(treeMakers: List[TreeMaker], subpats: (Symbol, Tree)*): TranslationStep = TranslationStep(treeMakers, subpats.toList)
       def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = TranslationStep(treeMakers.toList, Nil)
 
-      val pos = patTree.pos
-
       def translateExtractorPattern(extractor: ExtractorCall): TranslationStep = {
-        if (!extractor.isTyped) ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
-        // if (extractor.resultInMonad == ErrorType) throw new TypeError(pos, "Unsupported extractor type: "+ extractor.tpe)
+        import extractor.paramType  // the type expected by the unapply
 
-        debug.patmat("translateExtractorPattern checking parameter type: "+ ((patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType)))
+        def patConforms = patType <:< paramType
+        def patEquiv    = patType =:= paramType
 
-        // must use type `tp`, which is provided by extractor's result, not the type expected by binder,
-        // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
-        // (it will later result in a type test when `tp` is not a subtype of `b.info`)
-        // TODO: can we simplify this, together with the Bound case?
-        (extractor.subPatBinders, extractor.subPatTypes).zipped foreach { case (b, tp) =>
-          debug.patmat("changing "+ b +" : "+ b.info +" -> "+ tp)
-          b setInfo tp
-        }
+        if (!extractor.isTyped)
+          ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
+
+        debug.patmat("translateExtractorPattern checking parameter type: " + ((patBinder, patType, paramType, patConforms)))
 
         // example check: List[Int] <:< ::[Int]
         // TODO: extractor.paramType may contain unbound type params (run/t2800, run/t3530)
         // `patBinderOrCasted` is assigned the result of casting `patBinder` to `extractor.paramType`
         val (typeTestTreeMaker, patBinderOrCasted, binderKnownNonNull) =
-          if (patBinder.info.widen <:< extractor.paramType) {
+          if (patConforms) {
             // no type test needed, but the tree maker relies on `patBinderOrCasted` having type `extractor.paramType` (and not just some type compatible with it)
             // SI-6624 shows this is necessary because apparently patBinder may have an unfortunate type (.decls don't have the case field accessors)
             // TODO: get to the bottom of this -- I assume it happens when type checking infers a weird type for an unapply call
             // by going back to the parameterType for the extractor call we get a saner type, so let's just do that for now
-            /* TODO: uncomment when `settings.developer` and `devWarning` become available
-              if (settings.developer.value && !(patBinder.info =:= extractor.paramType))
-                devWarning(s"resetting info of $patBinder: ${patBinder.info} to ${extractor.paramType}")
-            */
-            (Nil, patBinder setInfo extractor.paramType, false)
-          } else {
+            if (!patEquiv)
+              devWarning(s"resetting info of $patBinder: $patType to $paramType")
+
+            (Nil, setVarInfo(patBinder, paramType), false)
+          }
+          else {
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
             // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
-            val treeMaker = TypeTestTreeMaker(patBinder, patBinder, extractor.paramType, extractor.paramType)(pos, extractorArgTypeTest = true)
+            val treeMaker = TypeTestTreeMaker(patBinder, patBinder, paramType, paramType)(pos, extractorArgTypeTest = true)
 
             // check whether typetest implies patBinder is not null,
             // even though the eventual null check will be on patBinderOrCasted
-            // it'll be equal to patBinder casted to extractor.paramType anyway (and the type test is on patBinder)
+            // it'll be equal to patBinder casted to paramType anyway (and the type test is on patBinder)
             (List(treeMaker), treeMaker.nextBinder, treeMaker.impliesBinderNonNull(patBinder))
           }
 
@@ -413,6 +415,7 @@ trait MatchTranslation extends CpsPatternHacks {
          The type of r must conform to the expected type of the pattern.
     */
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // helper methods: they analyze types and trees in isolation, but they are not (directly) concerned with the structure of the overall translation
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -444,14 +447,23 @@ trait MatchTranslation extends CpsPatternHacks {
 
       // `subPatBinders` are the variables bound by this pattern in the following patterns
       // subPatBinders are replaced by references to the relevant part of the extractor's result (tuple component, seq element, the result as-is)
-      lazy val subPatBinders = args map {
-        case Bound(b, p) => b
-        case p => freshSym(p.pos, prefix = "p")
-      }
+      // must set infos to `subPatTypes`, which are provided by extractor's result,
+      // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
+      // (it will later result in a type test when `tp` is not a subtype of `b.info`)
+      // TODO: can we simplify this, together with the Bound case?
+      lazy val subPatBinders = {
+        val binders = args map { case Bound(b, _) => b ; case p => freshSym(p.pos, prefix = "p") }
+        if (binders.length != subPatTypes.length)
+          devWarning(s"Mismatched binders and subpatterns: binders=$binders, subPatTypes=$subPatTypes")
 
-      lazy val subBindersAndPatterns: List[(Symbol, Tree)] = (subPatBinders zip args) map {
-        case (b, Bound(_, p)) => (b, p)
-        case bp => bp
+        (binders, subPatTypes).zipped map setVarInfo
+      }
+      lazy val subBindersAndPatterns: List[(Symbol, Tree)] = subPatBinders zip unboundArgs
+
+      private def unboundArgs = args map unBound
+      private def unBound(t: Tree): Tree = t match {
+        case Bound(_, p) => p
+        case _           => t
       }
 
       // never store these in local variables (for PreserveSubPatBinders)
@@ -480,8 +492,8 @@ trait MatchTranslation extends CpsPatternHacks {
       protected def seqTree(binder: Symbol)  = tupleSel(binder)(firstIndexingBinder+1)
       protected def tupleSel(binder: Symbol)(i: Int): Tree = codegen.tupleSel(binder)(i)
 
-      // the trees that select the subpatterns on the extractor's result, referenced by `binder`
-      // require isSeq
+      // the trees that select the subpatterns on the extractor's result,
+      // referenced by `binder`
       protected def subPatRefsSeq(binder: Symbol): List[Tree] = {
         val indexingIndices   = (0 to (lastIndexingBinder-firstIndexingBinder))
         val nbIndexingIndices = indexingIndices.length
