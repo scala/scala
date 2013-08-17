@@ -313,23 +313,25 @@ trait PatternTypers {
 
     def wrapClassTagUnapply(uncheckedPattern: Tree, classTagExtractor: Tree, pt: Type): Tree = {
       // TODO: disable when in unchecked match
-      // we don't create a new Context for a Match, so find the CaseDef, then go out one level and navigate back to the match that has this case
-      // val thisCase = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
-      // val unchecked = thisCase.outer.tree.collect{case Match(selector, cases) if cases contains thisCase => selector} match {
-      //   case List(Typed(_, tpt)) if tpt.tpe hasAnnotation UncheckedClass => true
-      //   case t => println("outer tree: "+ (t, thisCase, thisCase.outer.tree)); false
-      // }
-      // println("wrapClassTagUnapply"+ (!isPastTyper && infer.containsUnchecked(pt), pt, uncheckedPattern))
-      // println("wrapClassTagUnapply: "+ extractor)
-      // println(util.Position.formatMessage(uncheckedPattern.pos, "made unchecked type test into a checked one", true))
-
+      // we don't create a new Context for a Match, so find the CaseDef,
+      // then go out one level and navigate back to the match that has this case
       val args = List(uncheckedPattern)
       val app  = atPos(uncheckedPattern.pos)(Apply(classTagExtractor, args))
       // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
       // and re-typechecks of the target of the unapply call in PATTERNmode,
       // this breaks down when the classTagExtractor (which defineds the unapply member) is not a simple reference to an object,
       // but an arbitrary tree as is the case here
-      doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
+      val res = doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
+
+      log(sm"""
+        |wrapClassTagUnapply {
+        |  pattern: $uncheckedPattern
+        |  extract: $classTagExtractor
+        |       pt: $pt
+        |      res: $res
+        |}""".trim)
+
+      res
     }
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test

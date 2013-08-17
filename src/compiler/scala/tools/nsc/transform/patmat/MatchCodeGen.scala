@@ -145,9 +145,8 @@ trait MatchCodeGen extends Interface {
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
-        val matchEnd = newSynthCaseLabel("matchEnd")
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, newFlags = SYNTHETIC) setInfo restpe.withoutAnnotations
-        matchEnd setInfo MethodType(List(matchRes), restpe)
+        val matchEnd = newSynthCaseLabel("matchEnd") setInfo MethodType(List(matchRes), restpe)
 
         def newCaseSym = newSynthCaseLabel("case") setInfo MethodType(Nil, restpe)
         var _currCase = newCaseSym
@@ -159,7 +158,6 @@ trait MatchCodeGen extends Interface {
 
           LabelDef(currCase, Nil, mkCase(new OptimizedCasegen(matchEnd, nextCase)))
         }
-
         // must compute catchAll after caseLabels (side-effects nextCase)
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
@@ -173,9 +171,9 @@ trait MatchCodeGen extends Interface {
         val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
-          // the assumption is once we encounter a case, the remainder of the block will consist of cases
-          // the prologue may be empty, usually it is the valdef that stores the scrut
-          // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
+        // the assumption is once we encounter a case, the remainder of the block will consist of cases
+        // the prologue may be empty, usually it is the valdef that stores the scrut
+        // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
         Block(
           scrutDef ++ caseDefs ++ catchAllDef,
           LabelDef(matchEnd, List(matchRes), REF(matchRes))

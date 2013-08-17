@@ -538,23 +538,17 @@ trait MatchTranslation extends CpsPatternHacks {
         // no need to check unless it's an unapplySeq and the minimal length is non-trivially satisfied
         if (!isSeq || (expectedLength < minLenToCheck)) None
         else Some(expectedLength)
-
     }
 
     // TODO: to be called when there's a def unapplyProd(x: T): U
     // U must have N members _1,..., _N -- the _i are type checked, call their type Ti,
-    //
     // for now only used for case classes -- pretending there's an unapplyProd that's the identity (and don't call it)
     class ExtractorCallProd(fun: Tree, args: List[Tree]) extends ExtractorCall(args) {
       // TODO: fix the illegal type bound in pos/t602 -- type inference messes up before we get here:
       /*override def equals(x$1: Any): Boolean = ...
              val o5: Option[com.mosol.sl.Span[Any]] =  // Span[Any] --> Any is not a legal type argument for Span!
       */
-      // private val orig            = fun match {case tpt: TypeTree => tpt.original case _ => fun}
-      // private val origExtractorTp = unapplyMember(orig.symbol.filter(sym => reallyExists(unapplyMember(sym.tpe))).tpe).tpe
-      // private val extractorTp     = if (wellKinded(fun.tpe)) fun.tpe else existentialAbstraction(origExtractorTp.typeParams, origExtractorTp.resultType)
-      // debug.patmat("ExtractorCallProd: "+ (fun.tpe, existentialAbstraction(origExtractorTp.typeParams, origExtractorTp.resultType)))
-      // debug.patmat("ExtractorCallProd: "+ (fun.tpe, args map (_.tpe)))
+
       private def constructorTp = fun.tpe
 
       def isTyped    = fun.isTyped
@@ -562,7 +556,8 @@ trait MatchTranslation extends CpsPatternHacks {
       // to which type should the previous binder be casted?
       def paramType  = constructorTp.finalResultType
 
-      def isSeq: Boolean = rawSubPatTypes.nonEmpty && isRepeatedParamType(rawSubPatTypes.last)
+      def isSeq = isVarArgTypes(rawSubPatTypes)
+
       protected def rawSubPatTypes = constructorTp.paramTypes
 
       /** Create the TreeMaker that embodies this extractor call
@@ -604,6 +599,7 @@ trait MatchTranslation extends CpsPatternHacks {
       def paramType  = tpe.paramTypes.head
       def resultType = tpe.finalResultType
       def isSeq      = extractorCall.symbol.name == nme.unapplySeq
+      def isBool     = resultType =:= BooleanTpe
 
       /** Create the TreeMaker that embodies this extractor call
        *
@@ -616,10 +612,22 @@ trait MatchTranslation extends CpsPatternHacks {
        *    Perhaps it hasn't reached critical mass, but it would already clean things up a touch.
        */
       def treeMaker(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
-        // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
+        // the extractor call (applied to the binder bound by the flatMap corresponding
+        // to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
-        val binder         = freshSym(pos, pureType(resultInMonad)) // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
-        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(subPatBinders, subPatRefs(binder), resultType.typeSymbol == BooleanClass, checkedLength, patBinderOrCasted, ignoredSubPatBinders)
+        // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely
+        // wrong when isSeq, and resultInMonad should always be correct since it comes
+        // directly from the extractor's result type
+        val binder         = freshSym(pos, pureType(resultInMonad))
+
+        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
+          subPatBinders,
+          subPatRefs(binder),
+          isBool,
+          checkedLength,
+          patBinderOrCasted,
+          ignoredSubPatBinders
+        )
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -636,19 +644,17 @@ trait MatchTranslation extends CpsPatternHacks {
         object splice extends Transformer {
           override def transform(t: Tree) = t match {
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
-              treeCopy.Apply(t, x, List(CODE.REF(binder).setPos(i.pos)))
-            case _ => super.transform(t)
+              treeCopy.Apply(t, x, List(CODE.REF(binder) setPos i.pos))
+            case _ =>
+              super.transform(t)
           }
         }
-        splice.transform(extractorCallIncludingDummy)
+        splice transform extractorCallIncludingDummy
       }
 
       // what's the extractor's result type in the monad?
       // turn an extractor's result type into something `monadTypeToSubPatTypesAndRefs` understands
-      protected lazy val resultInMonad: Type = if(!hasLength(tpe.paramTypes, 1)) ErrorType else {
-        if (resultType.typeSymbol == BooleanClass) UnitTpe
-        else matchMonadResult(resultType)
-      }
+      protected lazy val resultInMonad: Type = if (isBool) UnitTpe else matchMonadResult(resultType) // the type of "get"
 
       protected lazy val rawSubPatTypes =
         if (resultInMonad.typeSymbol eq UnitClass) Nil
@@ -670,7 +676,7 @@ trait MatchTranslation extends CpsPatternHacks {
         case Ident(nme.WILDCARD)                   => true
         case Star(WildcardPattern())               => true
         case x: Ident                              => treeInfo.isVarPattern(x)
-        case Alternative(ps)                       => ps forall (WildcardPattern.unapply(_))
+        case Alternative(ps)                       => ps forall unapply
         case EmptyTree                             => true
         case _                                     => false
       }
@@ -680,7 +686,7 @@ trait MatchTranslation extends CpsPatternHacks {
       def unapply(pat: Tree): Boolean = pat match {
         case Bind(nme.WILDCARD, _)                => true // don't skip when binding an interesting symbol!
         case Ident(nme.WILDCARD)                  => true
-        case Alternative(ps)                      => ps forall (PatternBoundToUnderscore.unapply(_))
+        case Alternative(ps)                      => ps forall unapply
         case Typed(PatternBoundToUnderscore(), _) => true
         case _                                    => false
       }

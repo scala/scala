@@ -94,7 +94,7 @@ trait Debugging {
   // TODO: the inliner fails to inline the closures to debug.patmat unless the method is nested in an object
   object debug {
     val printPatmat = global.settings.Ypatmatdebug.value
-    @inline final def patmat(s: => String) = if (printPatmat) println(s)
+    @inline final def patmat(s: => String) = if (printPatmat) Console.err.println(s)
     @inline final def patmatResult[T](s: => String)(result: T): T = {
       if (printPatmat) Console.err.println(s + ": " + result)
       result
@@ -103,7 +103,8 @@ trait Debugging {
 }
 
 trait Interface extends ast.TreeDSL {
-  import global.{newTermName, analyzer, Type, ErrorType, Symbol, Tree}
+  import global._
+  import definitions._
   import analyzer.Typer
 
   // 2.10/2.11 compatibility
