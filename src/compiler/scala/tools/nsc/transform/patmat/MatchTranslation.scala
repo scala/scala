@@ -293,18 +293,26 @@ trait MatchTranslation extends CpsPatternHacks {
 
 
       object MaybeBoundTyped {
+        object NonNullTyped {
+          // the Ident subpattern can be ignored, subpatBinder or patBinder tell us all we need to know about it
+          def unapply(tree: Typed): Option[Type] = tree match {
+            case Typed(Ident(_), _) if tree.tpe != null => Some((tree.tpe))
+            case _                                      => None
+          }
+        }
+
         /** Decompose the pattern in `tree`, of shape C(p_1, ..., p_N), into a list of N symbols, and a list of its N sub-trees
           * The list of N symbols contains symbols for every bound name as well as the un-named sub-patterns (fresh symbols are generated here for these).
           * The returned type is the one inferred by inferTypedPattern (`owntype`)
           *
-          * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
+          * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor
+          *      (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
         */
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          // the Ident subpattern can be ignored, subpatBinder or patBinder tell us all we need to know about it
-          case Bound(subpatBinder, typed@Typed(Ident(_), tpt)) if typed.tpe ne null => Some((subpatBinder, typed.tpe))
-          case Bind(_, typed@Typed(Ident(_), tpt))             if typed.tpe ne null => Some((patBinder, typed.tpe))
-          case Typed(Ident(_), tpt)                            if tree.tpe ne null  => Some((patBinder, tree.tpe))
-          case _  => None
+          case Bound(binder, MaybeBoundTyped(_, tpe)) => Some((binder, tpe))     // possible nested bindings - use the outermost
+          case NonNullTyped(tpe)                      => Some((patBinder, tpe))  // patBinder used if no local bindings
+          case Bind(_, expr)                          => unapply(expr)
+          case _                                      => None
         }
       }
 
