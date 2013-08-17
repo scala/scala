@@ -62,30 +62,21 @@ trait MatchCodeGen extends Interface {
     def codegen: AbsCodegen
 
     abstract class CommonCodegen extends AbsCodegen { import CODE._
-      def fun(arg: Symbol, body: Tree): Tree           = Function(List(ValDef(arg)), body)
-      def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
-      def index(tgt: Tree)(i: Int): Tree               = tgt APPLY (LIT(i))
-      def drop(tgt: Tree)(n: Int): Tree                = (tgt DOT vpmName.drop) (LIT(n))
-      def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
+      def fun(arg: Symbol, body: Tree): Tree     = Function(List(ValDef(arg)), body)
+      def tupleSel(binder: Symbol)(i: Int): Tree = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
+      def index(tgt: Tree)(i: Int): Tree         = tgt APPLY (LIT(i))
+      def drop(tgt: Tree)(n: Int): Tree          = gen.mkMethodCall(traversableDropMethod, tgt :: LIT(n) :: Nil)
+
+      // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
+      def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
       def _asInstanceOf(b: Symbol, tp: Type): Tree = if (b.info <:< tp) REF(b) else gen.mkCastPreservingAnnotations(REF(b), tp)
       def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, any = true, wrapInApply = false)
 
-      // duplicated out of frustration with cast generation
-      def mkZero(tp: Type): Tree = {
-        tp.typeSymbol match {
-          case UnitClass    => Literal(Constant(()))
-          case BooleanClass => Literal(Constant(false))
-          case FloatClass   => Literal(Constant(0.0f))
-          case DoubleClass  => Literal(Constant(0.0d))
-          case ByteClass    => Literal(Constant(0.toByte))
-          case ShortClass   => Literal(Constant(0.toShort))
-          case IntClass     => Literal(Constant(0))
-          case LongClass    => Literal(Constant(0L))
-          case CharClass    => Literal(Constant(0.toChar))
-          case _            => gen.mkAsInstanceOf(Literal(Constant(null)), tp, any = true, wrapInApply = false) // the magic incantation is true/false here
-        }
+      def mkZero(tp: Type): Tree = gen.mkConstantZero(tp) match {
+        case Constant(null) => gen.mkAsInstanceOf(Literal(Constant(null)), tp, any = true, wrapInApply = false) // the magic incantation is true/false here
+        case const          => Literal(const)
       }
     }
   }
