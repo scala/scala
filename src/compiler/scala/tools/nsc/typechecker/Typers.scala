@@ -1091,7 +1091,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree))
           macroExpandApply(this, tree, mode, pt)
         else if (mode.typingConstructorPattern)
-          adaptConstrPattern(tree, pt)
+          typedConstructorPattern(tree, pt)
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
@@ -3154,7 +3154,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (noExpectedType)
                     typedArgs(args, forArgMode(fun, mode))
                   else
-                    typedArgs(args, forArgMode(fun, mode), paramTypes, formals)
+                    typedArgsForFormals(args, paramTypes, forArgMode(fun, mode))
                 )
 
                 // instantiate dependent method types, must preserve singleton types where possible (stableTypeFor) -- example use case:
@@ -4937,7 +4937,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // we should get here only when something before failed
           // and we try again (@see tryTypedApply). In that case we can assign
           // whatever type to tree; we just have to survive until a real error message is issued.
-          devWarning(tree.pos, s"Assigning Any type to TypeTree because tree.original == null")
+          devWarning(tree.pos, s"Assigning Any type to TypeTree because tree.original is null: tree is $tree/${System.identityHashCode(tree)}, sym=${tree.symbol}, tpe=${tree.tpe}")
           tree setType AnyTpe
         }
       }

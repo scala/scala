@@ -171,6 +171,42 @@ trait Interface extends ast.TreeDSL {
   trait MatchMonadInterface {
     val typer: Typer
     val matchOwner = typer.context.owner
+    def pureType(tp: Type): Type = tp
+
+    // Extracting from the monad: tp == Option[T], result == T
+    def matchMonadResult(tp: Type) = definitions typeOfMemberNamedGet tp
+
+    // prev == CC[T]
+    // elem == U
+    // result == CC[U]
+    // where "CC" here is Option or any other single-type-parameter container
+    //
+    // TODO - what if it has multiple type parameters?
+    // If we have access to the zero, maybe we can infer the
+    // type parameter by contrasting with the zero's application.
+    def mapResultType(prev: Type, elem: Type): Type = {
+      // default to Option[U] if we can't reliably infer the types
+      def fallback(elem: Type): Type = elem match {
+        case TypeRef(_, sym, _) if sym.isTypeParameterOrSkolem => fallback(sym.info.bounds.hi)
+        case _                                                 => optionType(elem)
+      }
+
+      // optionType(elem) //pack(elem))
+      // The type of "get" in CC[T] is what settles what was wrapped.
+      val prevElem = matchMonadResult(prev)
+      if (prevElem =:= elem) prev
+      else prev.typeArgs match {
+        case targ :: Nil if targ =:= prevElem =>
+          // the type of "get" in the result should be elem.
+          // If not, the type arguments are doing something nonobvious
+          // so fall back on Option.
+          val result  = appliedType(prev.typeConstructor, elem :: Nil)
+          val newElem = matchMonadResult(result)
+          if (elem =:= newElem) result else fallback(newElem)
+        case _ =>
+          fallback(AnyTpe)
+      }
+    }
 
     def reportUnreachable(pos: Position) = typer.context.unit.warning(pos, "unreachable code")
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {
@@ -180,16 +216,6 @@ trait Interface extends ast.TreeDSL {
 
       typer.context.unit.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
     }
-
-    def inMatchMonad(tp: Type): Type
-    def pureType(tp: Type): Type
-    final def matchMonadResult(tp: Type): Type =
-      tp.baseType(matchMonadSym).typeArgs match {
-        case arg :: Nil => arg
-        case _ => ErrorType
-      }
-
-    protected def matchMonadSym: Symbol
   }
 
 

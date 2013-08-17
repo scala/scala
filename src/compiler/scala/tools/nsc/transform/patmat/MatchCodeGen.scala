@@ -83,15 +83,14 @@ trait MatchCodeGen extends Interface {
 
   trait PureMatchMonadInterface extends MatchMonadInterface {
     val matchStrategy: Tree
-
-    def inMatchMonad(tp: Type): Type = appliedType(oneSig, List(tp)).finalResultType
-    def pureType(tp: Type): Type     = appliedType(oneSig, List(tp)).paramTypes.headOption getOrElse NoType // fail gracefully (otherwise we get crashes)
-    protected def matchMonadSym      = oneSig.finalResultType.typeSymbol
-
     import CODE._
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
-    private lazy val oneSig: Type = typer.typedOperator(_match(vpmName.one)).tpe  // TODO: error message
+    // TODO: error message
+    private lazy val oneType                                 = typer.typedOperator(_match(vpmName.one)).tpe
+    private def oneApplied(tp: Type): Type                   = appliedType(oneType, tp :: Nil)
+    override def pureType(tp: Type): Type                    = firstParamType(oneApplied(tp))
+    override def mapResultType(prev: Type, elem: Type): Type = oneApplied(elem).finalResultType
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
@@ -123,13 +122,7 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait OptimizedMatchMonadInterface extends MatchMonadInterface {
-    override def inMatchMonad(tp: Type): Type = optionType(tp)
-    override def pureType(tp: Type): Type     = tp
-    override protected def matchMonadSym      = OptionClass
-  }
-
-  trait OptimizedCodegen extends CodegenCore with TypedSubstitution with OptimizedMatchMonadInterface {
+  trait OptimizedCodegen extends CodegenCore with TypedSubstitution with MatchMonadInterface {
     override def codegen: AbsCodegen = optimizedCodegen
 
     // when we know we're targetting Option, do some inlining the optimizer won't do
@@ -195,15 +188,14 @@ trait MatchCodeGen extends Interface {
         // next: MatchMonad[U]
         // returns MatchMonad[U]
         def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = {
-          val tp      = inMatchMonad(b.tpe)
-          val prevSym = freshSym(prev.pos, tp, "o")
-          val isEmpty = tp member vpmName.isEmpty
-          val get     = tp member vpmName.get
-
+          val prevSym = freshSym(prev.pos, prev.tpe, "o")
           BLOCK(
             VAL(prevSym) === prev,
             // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
-            ifThenElseZero(NOT(prevSym DOT isEmpty), Substitution(b, prevSym DOT get)(next))
+            ifThenElseZero(
+              NOT(prevSym DOT vpmName.isEmpty),
+              Substitution(b, prevSym DOT vpmName.get)(next)
+            )
           )
         }
 

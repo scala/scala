@@ -30,22 +30,6 @@ trait Unapplies extends ast.TreeDSL {
   // moduleClass symbol of the companion module.
   class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
 
-  /** returns type list for return type of the extraction
-   * @see extractorFormalTypes
-   */
-  def unapplyTypeList(pos: Position, ufn: Symbol, ufntpe: Type, args: List[Tree]) = {
-    assert(ufn.isMethod, ufn)
-    val nbSubPats = args.length
-    //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
-    ufn.name match {
-      case nme.unapply | nme.unapplySeq =>
-        val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn, treeInfo.effectivePatternArity(args))
-        if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
-        else formals
-      case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
-    }
-  }
-
   /** Returns unapply or unapplySeq if available, without further checks.
    */
   def directUnapplyMember(tp: Type): Symbol = (tp member nme.unapply) orElse (tp member nme.unapplySeq)
@@ -57,12 +41,6 @@ trait Unapplies extends ast.TreeDSL {
 
   object ExtractorType {
     def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
-  }
-
-  /** returns unapply member's parameter type. */
-  def unapplyParameterType(extractor: Symbol) = extractor.tpe.params match {
-    case p :: Nil => p.tpe.typeSymbol
-    case _        => NoSymbol
   }
 
   def copyUntyped[T <: Tree](tree: T): T =
