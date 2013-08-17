@@ -135,7 +135,7 @@ class ConsoleRunner(argstr: String) extends {
     val rerunTests = if (isRerun) TestKinds.failedTests else Nil
     def miscTests = partestTests ++ individualTests ++ greppedTests ++ rerunTests
 
-    val givenKinds = standardKinds.filter(kind => parsed.isSet("--" + kind))
+    val givenKinds = standardKinds filter parsed.isSet
     val kinds = (
       if (givenKinds.nonEmpty) givenKinds
       else if (miscTests.isEmpty) standardKinds // If no kinds, --grep, or individual tests were given, assume --all
