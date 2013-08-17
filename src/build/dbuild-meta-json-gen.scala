@@ -33,12 +33,6 @@ val meta =
     Project("scala-actors", "org.scala-lang",
       Seq(ProjectRef("scala-actors", "org.scala-lang")),
       Seq(ProjectRef("scala-library", "org.scala-lang"))),
-    Project("scala-xml", "org.scala-lang",
-      Seq(ProjectRef("scala-xml", "org.scala-lang")),
-      Seq(ProjectRef("scala-library", "org.scala-lang"))),
-    Project("scala-parser-combinators", "org.scala-lang",
-      Seq(ProjectRef("scala-parser-combinators", "org.scala-lang")),
-      Seq(ProjectRef("scala-library", "org.scala-lang"))),
 
     Project("scaladoc", "org.scala-lang",
       Seq(ProjectRef("scaladoc", "org.scala-lang")),
