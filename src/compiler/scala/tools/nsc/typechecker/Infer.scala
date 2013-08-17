@@ -25,18 +25,27 @@ trait Infer extends Checkable {
 
   /** The formal parameter types corresponding to `formals`.
    *  If `formals` has a repeated last parameter, a list of
-   *  (nargs - params.length + 1) copies of its type is returned.
-   *  By-name types are replaced with their underlying type.
+   *  (numArgs - numFormals + 1) copies of its type is appended
+   *  to the other formals. By-name types are replaced with their
+   *  underlying type.
    *
    *  @param removeByName allows keeping ByName parameters. Used in NamesDefaults.
    *  @param removeRepeated allows keeping repeated parameter (if there's one argument). Used in NamesDefaults.
    */
-  def formalTypes(formals: List[Type], nargs: Int, removeByName: Boolean = true, removeRepeated: Boolean = true): List[Type] = {
-    val formals1 = if (removeByName) formals mapConserve dropByName else formals
-    if (isVarArgTypes(formals1) && (removeRepeated || formals.length != nargs)) {
-      val ft = formals1.last.dealiasWiden.typeArgs.head
-      formals1.init ::: (for (i <- List.range(formals1.length - 1, nargs)) yield ft)
-    } else formals1
+  def formalTypes(formals: List[Type], numArgs: Int, removeByName: Boolean = true, removeRepeated: Boolean = true): List[Type] = {
+    val numFormals = formals.length
+    val formals1   = if (removeByName) formals mapConserve dropByName else formals
+    val expandLast = (
+         (removeRepeated || numFormals != numArgs)
+      && isVarArgTypes(formals1)
+    )
+    def lastType = formals1.last.dealiasWiden.typeArgs.head
+    def expanded(n: Int) = (1 to n).toList map (_ => lastType)
+
+    if (expandLast)
+      formals1.init ::: expanded(numArgs - numFormals + 1)
+    else
+      formals1
   }
 
   /** Sorts the alternatives according to the given comparison function.
