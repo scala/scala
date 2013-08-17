@@ -1,0 +1,9 @@
+Test_2.scala:4: error: type mismatch;
+ found   : Int
+ required: String
+    case t"$x" => println(x)
+         ^
+Test_2.scala:4: error: not found: value x
+    case t"$x" => println(x)
+                          ^
+two errors found

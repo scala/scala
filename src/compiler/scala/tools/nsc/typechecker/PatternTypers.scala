@@ -413,6 +413,8 @@ trait PatternTypers {
 
       if (fun1.tpe.isErroneous)
         duplErrTree
+      else if (unapplyMethod.isMacro && !fun1.isInstanceOf[Apply])
+        duplErrorTree(WrongShapeExtractorExpansion(tree))
       else
         makeTypedUnApply()
     }
