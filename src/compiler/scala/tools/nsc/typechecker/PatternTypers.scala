@@ -121,6 +121,129 @@ trait PatternTypers {
         treeTyped setType tptTyped.tpe
     }
 
+    case class CaseClassInfo(clazz: Symbol, classType: Type) {
+      def constructor     = clazz.primaryConstructor
+      def constructorType = classType.prefix memberType clazz memberType constructor
+      def paramTypes      = constructorType.paramTypes
+      def accessors       = clazz.caseFieldAccessors
+      def accessorTypes   = accessors map (m => (classType memberType m).finalResultType)
+      // def inverted        = MethodType(clazz :: Nil, tupleType(accessorTypes))
+    }
+    object NoCaseClassInfo extends CaseClassInfo(NoSymbol, NoType) {
+      override def toString = "NoCaseClassInfo"
+    }
+
+    case class UnapplyMethodInfo(unapply: Symbol, tpe: Type) {
+      def name         = unapply.name
+      def isUnapplySeq = name == nme.unapplySeq
+      def unapplyType  = tpe memberType method
+      def resultType   = tpe.finalResultType
+      def method       = unapplyMember(tpe)
+      def paramType    = firstParamType(unapplyType)
+      def rawGet       = if (isBool) UnitTpe else resultOfMatchingMethod(resultType, "get")()
+      def rawTypes     = if (isBool) Nil else if (rawProduct.isEmpty) rawGet :: Nil else rawProduct
+      def rawArity     = rawTypes.size
+      def isBool       = resultType =:= BooleanTpe   // aka "Tuple0" or "Option[Unit]"
+      def isCase       = method.isCase
+
+      private def rawProduct = getNameBasedProductSelectorTypes(rawGet)
+    }
+
+    object NoUnapplyMethodInfo extends UnapplyMethodInfo(NoSymbol, NoType) {
+      override def toString = "NoUnapplyMethodInfo"
+    }
+
+    case class ExtractorShape(fun: Tree, args: List[Tree]) {
+      def pos            = fun.pos
+      private def symbol = fun.symbol
+      private def tpe    = fun.tpe
+
+      val ccInfo = tpe.typeSymbol.linkedClassOfClass match {
+        case clazz if clazz.isCase => CaseClassInfo(clazz, tpe)
+        case _                     => NoCaseClassInfo
+      }
+      val exInfo = UnapplyMethodInfo(symbol, tpe)
+      import exInfo.{ rawTypes, isUnapplySeq, rawGet }
+
+      override def toString = s"ExtractorShape($fun, $args)"
+
+      def unapplyMethod    = exInfo.method
+      def unapplyType      = exInfo.unapplyType
+      def unapplyParamType = exInfo.paramType
+      def caseClass        = ccInfo.clazz
+      def enclClass        = symbol.enclClass
+
+      def formals   = (
+        if (isUnapplySeq) productTypes :+ varargsType
+        else if (elementArity == 0) productTypes
+        else if (patternFixedArity == 1) squishIntoOne()
+        else wrongArity(patternFixedArity)
+      )
+
+      def rawLast     = if (rawTypes.isEmpty) rawGet else rawTypes.last
+      def elementType = unapplySeqElementType(rawLast)
+
+      private def hasBogusExtractor = directUnapplyMember(tpe).exists && !unapplyMethod.exists
+      private def expectedArity = "" + productArity + ( if (isUnapplySeq) "+" else "")
+      private def wrongArityMsg(n: Int) = (
+        if (hasBogusExtractor) s"$enclClass does not define a valid extractor method"
+        else s"wrong number of patterns for $enclClass offering $rawTypes_s: expected $expectedArity, found $n"
+      )
+      private def rawTypes_s = rawTypes match {
+        case Nil       => "()"
+        case tp :: Nil => "" + tp
+        case tps       => tps.mkString("(", ", ", ")")
+      }
+
+      private def err(msg: String)    = { unit.error(pos, msg) ; throw new TypeError(msg) }
+      private def wrongArity(n: Int)  = err(wrongArityMsg(n))
+
+      def squishIntoOne()     = {
+        if (settings.lint)
+          unit.warning(pos, s"$enclClass expects $expectedArity patterns to hold $rawGet but crushing into $productArity-tuple to fit single pattern (SI-6675)")
+
+        rawGet :: Nil
+      }
+      def patternFixedArity = treeInfo effectivePatternArity args
+      def productArity      = productTypes.size
+      def elementArity      = patternFixedArity - productArity
+
+      def productTypes = if (isUnapplySeq) rawTypes dropRight 1 else rawTypes
+      def elementTypes = List.fill(elementArity)(elementType)
+      def varargsType  = scalaRepeatedType(elementType)
+
+      def expectedPatternTypes = elementArity match {
+        case 0                                               => productTypes
+        case _ if elementArity > 0 && exInfo.isUnapplySeq    => productTypes ::: elementTypes
+        case _ if productArity > 1 && patternFixedArity == 1 => squishIntoOne()
+        case _                                               => wrongArity(patternFixedArity)
+      }
+    }
+
+    private class VariantToSkolemMap extends TypeMap(trackVariance = true) {
+      private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
+
+      def skolems = try skolemBuffer.toList finally skolemBuffer.clear()
+      def apply(tp: Type): Type = mapOver(tp) match {
+        // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see SI-5189
+        case tp @ TypeRef(NoPrefix, tpSym, Nil) if tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
+          if (variance.isInvariant) {
+            // if (variance.isInvariant) tpSym.tpeHK.bounds
+            devWarning(s"variantToSkolem skipping rewrite of $tpSym due to invariance")
+            return tp
+          }
+          val bounds = (
+            if (variance.isPositive) TypeBounds.upper(tpSym.tpeHK)
+            else TypeBounds.lower(tpSym.tpeHK)
+          )
+          // origin must be the type param so we can deskolemize
+          val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
+          skolemBuffer += skolem
+          skolem.tpe_*
+        case tp1 => tp1
+      }
+    }
+
     /*
      * To deal with the type slack between actual (run-time) types and statically known types, for each abstract type T,
      * reflect its variance as a skolem that is upper-bounded by T (covariant position), or lower-bounded by T (contravariant).
