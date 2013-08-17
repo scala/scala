@@ -78,6 +78,49 @@ trait PatternTypers {
       loop(args0, formals0, adapted0)
     }
 
+    protected def typedStarInPattern(tree: Tree, mode: Mode, pt: Type) = {
+      val Typed(expr, tpt) = tree
+      val exprTyped = typed(expr, mode.onlySticky)
+      def subArrayType(pt: Type) =
+        if (isPrimitiveValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
+        else {
+          val tparam = context.owner freshExistential "" setInfo TypeBounds.upper(pt)
+          newExistentialType(List(tparam), arrayType(tparam.tpe))
+        }
+
+      val (exprAdapted, baseClass) = exprTyped.tpe.typeSymbol match {
+        case ArrayClass => (adapt(exprTyped, mode.onlySticky, subArrayType(pt)), ArrayClass)
+        case _          => (adapt(exprTyped, mode.onlySticky, seqType(pt)), SeqClass)
+      }
+      exprAdapted.tpe.baseType(baseClass) match {
+        case TypeRef(_, _, List(elemtp)) =>
+          treeCopy.Typed(tree, exprAdapted, tpt setType elemtp) setType elemtp
+        case _ =>
+          setError(tree)
+      }
+    }
+
+    protected def typedInPattern(tree: Typed, mode: Mode, pt: Type) = {
+      val Typed(expr, tpt) = tree
+      val tptTyped = typedType(tpt, mode)
+      val exprTyped = typed(expr, mode.onlySticky, tptTyped.tpe.deconst)
+      val treeTyped = treeCopy.Typed(tree, exprTyped, tptTyped)
+
+      if (mode.inPatternMode) {
+        val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
+        // make fully defined to avoid bounded wildcard types that may be in pt from calling dropExistential (SI-2038)
+        val ptDefined = ensureFullyDefined(pt) // FIXME this is probably redundant now that we don't dropExistenial in pattern mode.
+        val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, ptDefined, canRemedy = uncheckedTypeExtractor.nonEmpty)
+        treeTyped setType ownType
+
+        uncheckedTypeExtractor match {
+          case None => treeTyped
+          case Some(extractor) => wrapClassTagUnapply(treeTyped, extractor, tptTyped.tpe)
+        }
+      } else
+        treeTyped setType tptTyped.tpe
+    }
+
     /*
      * To deal with the type slack between actual (run-time) types and statically known types, for each abstract type T,
      * reflect its variance as a skolem that is upper-bounded by T (covariant position), or lower-bounded by T (contravariant).

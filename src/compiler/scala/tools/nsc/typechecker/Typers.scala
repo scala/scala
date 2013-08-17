@@ -4773,61 +4773,28 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedTyped(tree: Typed) = {
-        val expr = tree.expr
-        val tpt = tree.tpt
-        tpt match {
-          case Function(List(), EmptyTree) =>
-            // find out whether the programmer is trying to eta-expand a macro def
-            // to do that we need to typecheck the tree first (we need a symbol of the eta-expandee)
-            // that typecheck must not trigger macro expansions, so we explicitly prohibit them
-            // however we cannot do `context.withMacrosDisabled`
-            // because `expr` might contain nested macro calls (see SI-6673)
-            val exprTyped = typed1(suppressMacroExpansion(expr), mode, pt)
-            exprTyped match {
-              case macroDef if treeInfo.isMacroApplication(macroDef) =>
-                MacroEtaError(exprTyped)
-              case _ =>
-                typedEta(checkDead(exprTyped))
+        if (treeInfo isWildcardStarType tree.tpt)
+          typedStarInPattern(tree, mode.onlySticky, pt)
+        else if (mode.inPatternMode)
+          typedInPattern(tree, mode.onlySticky, pt)
+        else tree match {
+          // find out whether the programmer is trying to eta-expand a macro def
+          // to do that we need to typecheck the tree first (we need a symbol of the eta-expandee)
+          // that typecheck must not trigger macro expansions, so we explicitly prohibit them
+          // however we cannot do `context.withMacrosDisabled`
+          // because `expr` might contain nested macro calls (see SI-6673)
+          //
+          // Note: apparently `Function(Nil, EmptyTree)` is the secret parser marker
+          // which means trailing underscore.
+          case Typed(expr, Function(Nil, EmptyTree)) =>
+            typed1(suppressMacroExpansion(expr), mode, pt) match {
+              case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
+              case exprTyped                                         => typedEta(checkDead(exprTyped))
             }
-
-          case t if treeInfo isWildcardStarType t =>
-            val exprTyped = typed(expr, mode.onlySticky)
-            def subArrayType(pt: Type) =
-              if (isPrimitiveValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
-              else {
-                val tparam = context.owner freshExistential "" setInfo TypeBounds.upper(pt)
-                newExistentialType(List(tparam), arrayType(tparam.tpe))
-              }
-
-            val (exprAdapted, baseClass) = exprTyped.tpe.typeSymbol match {
-              case ArrayClass => (adapt(exprTyped, mode.onlySticky, subArrayType(pt)), ArrayClass)
-              case _          => (adapt(exprTyped, mode.onlySticky, seqType(pt)), SeqClass)
-            }
-            exprAdapted.tpe.baseType(baseClass) match {
-              case TypeRef(_, _, List(elemtp)) =>
-                treeCopy.Typed(tree, exprAdapted, tpt setType elemtp) setType elemtp
-              case _ =>
-                setError(tree)
-            }
-
-          case _ =>
-            val tptTyped = typedType(tpt, mode)
-            val exprTyped = typed(expr, mode.onlySticky, tptTyped.tpe.deconst)
-            val treeTyped = treeCopy.Typed(tree, exprTyped, tptTyped)
-
-            if (mode.inPatternMode) {
-              val uncheckedTypeExtractor = extractorForUncheckedType(tpt.pos, tptTyped.tpe)
-              // make fully defined to avoid bounded wildcard types that may be in pt from calling dropExistential (SI-2038)
-              val ptDefined = ensureFullyDefined(pt) // FIXME this is probably redundant now that we don't dropExistenial in pattern mode.
-              val ownType = inferTypedPattern(tptTyped, tptTyped.tpe, ptDefined, canRemedy = uncheckedTypeExtractor.nonEmpty)
-              treeTyped setType ownType
-
-              uncheckedTypeExtractor match {
-                case None => treeTyped
-                case Some(extractor) => wrapClassTagUnapply(treeTyped, extractor, tptTyped.tpe)
-              }
-            } else
-              treeTyped setType tptTyped.tpe
+          case Typed(expr, tpt) =>
+            val tpt1  = typedType(tpt, mode)                           // type the ascribed type first
+            val expr1 = typed(expr, mode.onlySticky, tpt1.tpe.deconst) // then type the expression with tpt1 as the expected type
+            treeCopy.Typed(tree, expr1, tpt1) setType tpt1.tpe
         }
       }
 
