@@ -43,7 +43,8 @@ trait PatternMatching extends Transform with TypingTransformers
                       with ScalaLogic
                       with Solving
                       with MatchAnalysis
-                      with MatchOptimization {
+                      with MatchOptimization
+                      with MatchWarnings {
   import global._
 
   val phaseName: String = "patmat"

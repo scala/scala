@@ -54,16 +54,32 @@ trait MatchTranslation extends CpsPatternHacks {
   private def setVarInfo(sym: Symbol, info: Type) =
     sym setInfo debug.patmatResult(s"changing ${sym.defString} to")(repeatedToSeq(info))
 
-  trait MatchTranslator extends TreeMakers {
+  private def hasSym(t: Tree) = t.symbol != null && t.symbol != NoSymbol
+
+  trait MatchTranslator extends TreeMakers with TreeMakerWarnings {
     import typer.context
 
+    object SymbolBound {
+      def unapply(tree: Tree): Option[(Symbol, Tree)] = tree match {
+        case Bind(_, expr) if hasSym(tree) => Some(tree.symbol -> expr)
+        case _                             => None
+      }
+    }
+
+    def newBoundTree(tree: Tree, pt: Type): BoundTree = tree match {
+      case SymbolBound(sym, expr) => BoundTree(setVarInfo(sym, pt), expr)
+      case _                      => BoundTree(setVarInfo(freshSym(tree.pos, prefix = "p"), pt), tree)
+    }
+
     final case class BoundTree(binder: Symbol, tree: Tree) {
+      private lazy val extractor = ExtractorCall(tree)
+
       def pos     = tree.pos
       def tpe     = binder.info.dealiasWiden  // the type of the variable bound to the pattern
       def pt      = unbound match {
-        case Star(tpt)             => this glbWith seqType(tpt.tpe)
-        case Typed(_, tpt)         => tpt.tpe
-        case tree                  => tree.tpe
+        case Star(tpt)      => this glbWith seqType(tpt.tpe)
+        case TypeBound(tpe) => tpe
+        case tree           => tree.tpe
       }
       def repeatedType = unbound match {
         case Star(tpt) => tpt.tpe
@@ -71,29 +87,18 @@ trait MatchTranslation extends CpsPatternHacks {
       }
       def glbWith(other: Type) = glb(tpe :: other :: Nil).normalize
 
-      private lazy val extractor = ExtractorCall(tree)
-
-      object MaybeBoundTyped {
-        object NonNullTyped {
-          // the Ident subpattern can be ignored, subpatBinder or patBinder tell us all we need to know about it
-          def unapply(tree: Typed): Option[Type] = tree match {
-            case Typed(Ident(_), _) if tree.tpe != null => Some((tree.tpe))
-            case _                                      => None
-          }
-        }
-
-        /** Decompose the pattern in `tree`, of shape C(p_1, ..., p_N), into a list of N symbols, and a list of its N sub-trees
-          * The list of N symbols contains symbols for every bound name as well as the un-named sub-patterns (fresh symbols are generated here for these).
-          * The returned type is the one inferred by inferTypedPattern (`owntype`)
-          *
-          * @arg patBinder  symbol used to refer to the result of the previous pattern's extractor
-          *      (will later be replaced by the outer tree with the correct tree to refer to that patterns result)
-        */
+      object SymbolAndTypeBound {
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          case Bound(namedBinder, MaybeBoundTyped(_, tpe)) => Some((namedBinder, tpe))  // possible nested bindings - use the outermost
-          case NonNullTyped(tpe)                           => Some((binder, tpe))  // binder used if no local bindings
-          case Bind(_, expr)                               => unapply(expr)
-          case _                                           => None
+          case SymbolBound(sym, SymbolAndTypeBound(_, tpe)) => Some(sym -> tpe)
+          case TypeBound(tpe)                               => Some(binder -> tpe)
+          case _                                            => None
+        }
+      }
+
+      object TypeBound {
+        def unapply(tree: Tree): Option[Type] = unbind(tree) match {
+          case Typed(Ident(_), _) if tree.tpe != null => Some(tree.tpe)
+          case _                                      => None
         }
       }
 
@@ -108,15 +113,12 @@ trait MatchTranslation extends CpsPatternHacks {
       private def noStep()                                   = step()()
 
       private def unsupportedPatternMsg = sm"""
-        |unsupported pattern: $this (this is a scalac bug.)
-        |Tree diagnostics:
-        |  ${asCompactDebugString(tree)}
+        |unsupported pattern: ${tree.shortClass} / $this (this is a scalac bug.)
         |""".trim
-
 
       // example check: List[Int] <:< ::[Int]
       private def extractorStep(): TranslationStep = {
-        import extractor.{ paramType, treeMaker, subBindersAndPatterns }
+        import extractor.{ paramType, treeMaker }
         if (!extractor.isTyped)
           ErrorUtils.issueNormalTypeError(tree, "Could not typecheck extractor call: "+ extractor)(context)
 
@@ -137,7 +139,7 @@ trait MatchTranslation extends CpsPatternHacks {
           if (this ensureConformsTo paramType) treeMaker(binder, false, pos) :: Nil
           else typeTest :: extraction :: Nil
         )
-        step(makers: _*)(subBindersAndPatterns: _*)
+        step(makers: _*)(extractor.subBoundTrees: _*)
       }
 
       // Summary of translation cases. I moved the excerpts from the specification further below so all
@@ -157,20 +159,14 @@ trait MatchTranslation extends CpsPatternHacks {
       def nextStep(): TranslationStep = tree match {
         case WildcardPattern()                                        => noStep()
         case _: UnApply | _: Apply                                    => extractorStep()
-        case MaybeBoundTyped(sub, subPt)                              => typeTestStep(sub, subPt)
-        case Bound(sub, subTree)                                      => bindingStep(sub, subTree)
+        case SymbolAndTypeBound(sym, tpe)                             => typeTestStep(sym, tpe)
+        case TypeBound(tpe)                                           => typeTestStep(binder, tpe)
+        case SymbolBound(sym, expr)                                   => bindingStep(sym, expr)
         case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) => equalityTestStep()
         case Alternative(alts)                                        => alternativesStep(alts)
-        case Bind(_, _)                                               => devWarning(s"Bind tree with unbound symbol $tree") ; noStep()
         case _                                                        => context.unit.error(pos, unsupportedPatternMsg) ; noStep()
       }
-      def translate(): List[TreeMaker] = tree match {
-        case CaseDef(pat, guard, body)     => BoundTree(binder, pat).translate() ++ translateGuard(guard) ++ translateBody(body)
-        case _                             => nextStep() merge (_.translate())
-      }
-      def translatePat(pat: Tree)     = nextStep()
-      def translateGuard(guard: Tree) = if (tree eq EmptyTree) Nil else GuardTreeMaker(guard) :: Nil
-      def translateBody(body: Tree)   = BodyTreeMaker(body, pt) :: Nil
+      def translate(): List[TreeMaker] = nextStep() merge (_.translate())
 
       private def setInfo(paramType: Type): Boolean = {
         devWarning(s"resetting info of $this to $paramType")
@@ -202,69 +198,6 @@ trait MatchTranslation extends CpsPatternHacks {
     final case class TranslationStep(makers: List[TreeMaker], subpatterns: List[BoundTree]) {
       def merge(f: BoundTree => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f)
       override def toString = if (subpatterns.isEmpty) "" else subpatterns.mkString("(", ", ", ")")
-    }
-
-    // Why is it so difficult to say "here's a name and a context, give me any
-    // matching symbol in scope" ? I am sure this code is wrong, but attempts to
-    // use the scopes of the contexts in the enclosing context chain discover
-    // nothing. How to associate a name with a symbol would would be a wonderful
-    // linkage for which to establish a canonical acquisition mechanism.
-    def matchingSymbolInScope(pat: Tree): Symbol = {
-      def declarationOfName(tpe: Type, name: Name): Symbol = tpe match {
-        case PolyType(tparams, restpe)  => tparams find (_.name == name) getOrElse declarationOfName(restpe, name)
-        case MethodType(params, restpe) => params find (_.name == name) getOrElse declarationOfName(restpe, name)
-        case ClassInfoType(_, _, clazz) => clazz.rawInfo member name
-        case _                          => NoSymbol
-      }
-      pat match {
-        case Bind(name, _) =>
-          context.enclosingContextChain.foldLeft(NoSymbol: Symbol)((res, ctx) =>
-            res orElse declarationOfName(ctx.owner.rawInfo, name))
-        case _ => NoSymbol
-      }
-    }
-
-    // Issue better warnings than "unreachable code" when people mis-use
-    // variable patterns thinking they bind to existing identifiers.
-    //
-    // Possible TODO: more deeply nested variable patterns, like
-    //   case (a, b) => 1 ; case (c, d) => 2
-    // However this is a pain (at least the way I'm going about it)
-    // and I have to think these detailed errors are primarily useful
-    // for beginners, not people writing nested pattern matches.
-    def checkMatchVariablePatterns(cases: List[CaseDef]) {
-      // A string describing the first variable pattern
-      var vpat: String = null
-      // Using an iterator so we can recognize the last case
-      val it = cases.iterator
-
-      def addendum(pat: Tree) = {
-        matchingSymbolInScope(pat) match {
-          case NoSymbol   => ""
-          case sym        =>
-            val desc = if (sym.isParameter) s"parameter ${sym.nameString} of" else sym + " in"
-            s"\nIf you intended to match against $desc ${sym.owner}, you must use backticks, like: case `${sym.nameString}` =>"
-        }
-      }
-
-      while (it.hasNext) {
-        val cdef = it.next()
-        // If a default case has been seen, then every succeeding case is unreachable.
-        if (vpat != null)
-          context.unit./*error*/warning(cdef.body.pos, "unreachable code due to " + vpat + addendum(cdef.pat))
-        // If this is a default case and more cases follow, warn about this one so
-        // we have a reason to mention its pattern variable name and any corresponding
-        // symbol in scope.  Errors will follow from the remaining cases, at least
-        // once we make the above warning an error.
-        else if (it.hasNext && (treeInfo isDefaultCase cdef)) {
-          val vpatName = cdef.pat match {
-            case Bind(name, _)   => s" '$name'"
-            case _               => ""
-          }
-          vpat = s"variable pattern$vpatName on line ${cdef.pat.pos.line}"
-          context.unit.warning(cdef.pos, s"patterns after a variable pattern cannot match (SLS 8.1.1)" + addendum(cdef.pat))
-        }
-      }
     }
 
     /** Implement a pattern match by turning its cases (including the implicit failure case)
@@ -497,20 +430,8 @@ trait MatchTranslation extends CpsPatternHacks {
       // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
       // (it will later result in a type test when `tp` is not a subtype of `b.info`)
       // TODO: can we simplify this, together with the Bound case?
-      lazy val subPatBinders = {
-        val binders = args map { case Bound(b, _) => b ; case p => freshSym(p.pos, prefix = "p") }
-        if (binders.length != subPatTypes.length)
-          devWarning(s"Mismatched binders and subpatterns: binders=$binders, subPatTypes=$subPatTypes")
-
-        (binders, subPatTypes).zipped map setVarInfo
-      }
-      lazy val subBindersAndPatterns: List[BoundTree] = (subPatBinders, unboundArgs).zipped map BoundTree
-
-      private def unboundArgs = args map unBound
-      private def unBound(t: Tree): Tree = t match {
-        case Bound(_, p) => p
-        case _           => t
-      }
+      def subPatBinders = subBoundTrees map (_.binder)
+      lazy val subBoundTrees = (args, subPatTypes).zipped map newBoundTree
 
       // never store these in local variables (for PreserveSubPatBinders)
       lazy val ignoredSubPatBinders: Set[Symbol] = subPatBinders zip args collect { case (b, PatternBoundToUnderscore()) => b } toSet
@@ -632,11 +553,12 @@ trait MatchTranslation extends CpsPatternHacks {
         // binders corresponding to mutable fields should be stored (SI-5158, SI-6070)
         // make an exception for classes under the scala package as they should be well-behaved,
         // to optimize matching on List
-        val mutableBinders =
+        val mutableBinders = (
           if (!binder.info.typeSymbol.hasTransOwner(ScalaPackageClass) &&
               (paramAccessors exists (_.isMutable)))
             subPatBinders.zipWithIndex.collect{ case (binder, idx) if paramAccessors(idx).isMutable => binder }
           else Nil
+        )
 
         // checks binder ne null before chaining to the next extractor
         ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull, ignoredSubPatBinders)
@@ -735,7 +657,6 @@ trait MatchTranslation extends CpsPatternHacks {
     object WildcardPattern {
       def unapply(pat: Tree): Boolean = pat match {
         case Bind(nme.WILDCARD, WildcardPattern()) => true // don't skip when binding an interesting symbol!
-        case Ident(nme.WILDCARD)                   => true
         case Star(WildcardPattern())               => true
         case x: Ident                              => treeInfo.isVarPattern(x)
         case Alternative(ps)                       => ps forall unapply
