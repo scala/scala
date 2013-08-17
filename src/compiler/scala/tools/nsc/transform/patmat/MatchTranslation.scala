@@ -316,86 +316,39 @@ trait MatchTranslation extends CpsPatternHacks {
         }
       }
 
+      def unsupportedPatternMsg = sm"""
+        |unsupported pattern: ${patTree.shortClass} $patTree (this is a scalac bug.)
+        |Tree diagnostics:
+        |  ${asCompactDebugString(patTree)}
+        |""".trim
+
+      def one(maker: TreeMaker) = noFurtherSubPats(maker)
+      def none()                = noFurtherSubPats()
+
+      // Summary of translation cases. I moved the excerpts from the specification further below so all
+      // the logic can be seen at once.
+      //
+      // [1] skip wildcard trees -- no point in checking them
+      // [2] extractor and constructor patterns
+      // [3] replace subpatBinder by patBinder, as if the Bind was not there.
+      //     It must be patBinder, as subpatBinder has the wrong info: even if the bind assumes a better type,
+      //     this is not guaranteed until we cast
+      // [4] typed patterns - a typed pattern never has any subtrees
+      //     must treat Typed and Bind together -- we need to know the patBinder of the Bind pattern to get at the actual type
+      // [5] literal and stable id patterns
+      // [6] pattern alternatives
+      // [7] symbol-less bind patterns - this happens in certain ill-formed programs, there'll be an error later
+      //     don't fail here though (or should we?)
       val (treeMakers, subpats) = patTree match {
-        // skip wildcard trees -- no point in checking them
-        case WildcardPattern() => noFurtherSubPats()
-        case UnApply(unfun, args) =>
-          // TODO: check unargs == args
-          // debug.patmat("unfun: "+ (unfun.tpe, unfun.symbol.ownerChain, unfun.symbol.info, patBinder.info))
-          translateExtractorPattern(ExtractorCall(unfun, args))
-
-        /* A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
-          It consists of a stable identifier c, followed by element patterns p1, ..., pn.
-          The constructor c is a simple or qualified name which denotes a case class (§5.3.2).
-
-          If the case class is monomorphic, then it must conform to the expected type of the pattern,
-          and the formal parameter types of x’s primary constructor (§5.3) are taken as the expected types of the element patterns p1, ..., pn.
-
-          If the case class is polymorphic, then its type parameters are instantiated so that the instantiation of c conforms to the expected type of the pattern.
-          The instantiated formal parameter types of c’s primary constructor are then taken as the expected types of the component patterns p1, ..., pn.
-
-          The pattern matches all objects created from constructor invocations c(v1, ..., vn) where each element pattern pi matches the corresponding value vi .
-          A special case arises when c’s formal parameter types end in a repeated parameter. This is further discussed in (§8.1.9).
-        **/
-        case Apply(fun, args)     =>
-          ExtractorCall.fromCaseClass(fun, args) map translateExtractorPattern getOrElse {
-            ErrorUtils.issueNormalTypeError(patTree, "Could not find unapply member for "+ fun +" with args "+ args)(context)
-            noFurtherSubPats()
-          }
-
-        /* A typed pattern x : T consists of a pattern variable x and a type pattern T.
-           The type of x is the type pattern T, where each type variable and wildcard is replaced by a fresh, unknown type.
-           This pattern matches any value matched by the type pattern T (§8.2); it binds the variable name to that value.
-        */
-        // must treat Typed and Bind together -- we need to know the patBinder of the Bind pattern to get at the actual type
-        case MaybeBoundTyped(subPatBinder, pt) =>
-          val next = glb(List(dealiasWiden(patBinder.info), pt)).normalize
-          // a typed pattern never has any subtrees
-          noFurtherSubPats(TypeTestTreeMaker(subPatBinder, patBinder, pt, next)(pos))
-
-        /* A pattern binder x@p consists of a pattern variable x and a pattern p.
-           The type of the variable x is the static type T of the pattern p.
-           This pattern matches any value v matched by the pattern p,
-           provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
-           and it binds the variable name to that value.
-        */
-        case Bound(subpatBinder, p)          =>
-          // replace subpatBinder by patBinder (as if the Bind was not there)
-          withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)),
-            // must be patBinder, as subpatBinder has the wrong info: even if the bind assumes a better type, this is not guaranteed until we cast
-            (patBinder, p)
-          )
-
-        /* 8.1.4 Literal Patterns
-             A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
-             The type of L must conform to the expected type of the pattern.
-
-           8.1.5 Stable Identifier Patterns  (a stable identifier r (see §3.1))
-             The pattern matches any value v such that r == v (§12.1).
-             The type of r must conform to the expected type of the pattern.
-        */
-        case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) =>
-          noFurtherSubPats(EqualityTestTreeMaker(patBinder, patTree, pos))
-
-        case Alternative(alts)    =>
-          noFurtherSubPats(AlternativesTreeMaker(patBinder, alts map (translatePattern(patBinder, _)), alts.head.pos))
-
-      /* TODO: Paul says about future version: I think this should work, and always intended to implement if I can get away with it.
-          case class Foo(x: Int, y: String)
-          case class Bar(z: Int)
-
-          def f(x: Any) = x match { case Foo(x, _) | Bar(x) => x } // x is lub of course.
-      */
-
-        case Bind(n, p) => // this happens in certain ill-formed programs, there'll be an error later
-          debug.patmat("WARNING: Bind tree with unbound symbol "+ patTree)
-          noFurtherSubPats() // there's no symbol -- something's wrong... don't fail here though (or should we?)
-
-        // case Star(_) | ArrayValue  => error("stone age pattern relics encountered!")
-
-        case _                       =>
-          typer.context.unit.error(patTree.pos, s"unsupported pattern: $patTree (a ${patTree.getClass}).\n This is a scalac bug. Tree diagnostics: ${asCompactDebugString(patTree)}.")
-          noFurtherSubPats()
+        case WildcardPattern()                                        => none()
+        case UnApply(unfun, args)                                     => translateExtractorPattern(ExtractorCall(unfun, args))
+        case Apply(fun, args)                                         => ExtractorCall.fromCaseClass(fun, args) map translateExtractorPattern getOrElse noFurtherSubPats()
+        case MaybeBoundTyped(subPatBinder, pt)                        => one(TypeTestTreeMaker(subPatBinder, patBinder, pt, glb(List(dealiasWiden(patBinder.info), pt)).normalize)(pos))
+        case Bound(subpatBinder, p)                                   => withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)), (patBinder, p))
+        case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) => one(EqualityTestTreeMaker(patBinder, patTree, pos))
+        case Alternative(alts)                                        => one(AlternativesTreeMaker(patBinder, alts map (translatePattern(patBinder, _)), alts.head.pos))
+        case Bind(_, _)                                               => devWarning(s"Bind tree with unbound symbol $patTree") ; none()
+        case _                                                        => context.unit.error(patTree.pos, unsupportedPatternMsg) ; none()
       }
 
       treeMakers ++ subpats.flatMap { case (binder, pat) =>
@@ -416,6 +369,47 @@ trait MatchTranslation extends CpsPatternHacks {
     def translateBody(body: Tree, matchPt: Type): TreeMaker =
       BodyTreeMaker(body, matchPt)
 
+    // Some notes from the specification
+
+    /*A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
+      It consists of a stable identifier c, followed by element patterns p1, ..., pn.
+      The constructor c is a simple or qualified name which denotes a case class (§5.3.2).
+
+      If the case class is monomorphic, then it must conform to the expected type of the pattern,
+      and the formal parameter types of x’s primary constructor (§5.3) are taken as the expected
+      types of the element patterns p1, ..., pn.
+
+      If the case class is polymorphic, then its type parameters are instantiated so that the
+      instantiation of c conforms to the expected type of the pattern.
+      The instantiated formal parameter types of c’s primary constructor are then taken as the
+      expected types of the component patterns p1, ..., pn.
+
+      The pattern matches all objects created from constructor invocations c(v1, ..., vn)
+      where each element pattern pi matches the corresponding value vi .
+      A special case arises when c’s formal parameter types end in a repeated parameter.
+      This is further discussed in (§8.1.9).
+    **/
+
+    /* A typed pattern x : T consists of a pattern variable x and a type pattern T.
+       The type of x is the type pattern T, where each type variable and wildcard is replaced by a fresh, unknown type.
+       This pattern matches any value matched by the type pattern T (§8.2); it binds the variable name to that value.
+    */
+
+    /* A pattern binder x@p consists of a pattern variable x and a pattern p.
+       The type of the variable x is the static type T of the pattern p.
+       This pattern matches any value v matched by the pattern p,
+       provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
+       and it binds the variable name to that value.
+    */
+
+    /* 8.1.4 Literal Patterns
+         A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
+         The type of L must conform to the expected type of the pattern.
+
+       8.1.5 Stable Identifier Patterns  (a stable identifier r (see §3.1))
+         The pattern matches any value v such that r == v (§12.1).
+         The type of r must conform to the expected type of the pattern.
+    */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // helper methods: they analyze types and trees in isolation, but they are not (directly) concerned with the structure of the overall translation
