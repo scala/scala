@@ -48,7 +48,7 @@ trait MatchTranslation extends CpsPatternHacks {
   import global._
   import definitions._
   import global.analyzer.{ErrorUtils, formalTypes}
-  import treeInfo.{ Unapplied, isStar }
+  import treeInfo.{ WildcardStarArg, Unapplied, isStar, unbind }
 
   // Always map repeated params to sequences
   private def setVarInfo(sym: Symbol, info: Type) =
@@ -57,11 +57,53 @@ trait MatchTranslation extends CpsPatternHacks {
   trait MatchTranslator extends TreeMakers {
     import typer.context
 
-    case class BoundTree(binder: Symbol, tree: Tree)
+    case class BoundTree(binder: Symbol, tree: Tree) {
+      def pos     = tree.pos
+      def tpe     = binder.info.dealiasWiden  // the type of the variable bound to the pattern
+      def pt      = unbound match {
+        case Star(tpt)             => this glbWith seqType(tpt.tpe)
+        case Typed(_, tpt)         => tpt.tpe
+        case tree                  => tree.tpe
+      }
+      def repeatedType = unbound match {
+        case Star(tpt) => tpt.tpe
+        case _         => NoType
+      }
+      def glbWith(other: Type) = glb(tpe :: other :: Nil).normalize
+
+      private def setInfo(paramType: Type): Boolean = {
+        devWarning(s"resetting info of $this to $paramType")
+        setVarInfo(binder, paramType)
+        true
+      }
+      // If <:< but not =:=, no type test needed, but the tree maker relies on the binder having
+      // exactly paramType (and not just some type compatible with it.) SI-6624 shows this is necessary
+      // because apparently patBinder may have an unfortunate type (.decls don't have the case field
+      // accessors) TODO: get to the bottom of this -- I assume it happens when type checking
+      // infers a weird type for an unapply call. By going back to the parameterType for the
+      // extractor call we get a saner type, so let's just do that for now.
+      def ensureConformsTo(paramType: Type): Boolean = (
+           (tpe =:= paramType)
+        || (tpe <:< paramType) && setInfo(paramType)
+      )
+
+      private def concreteType = tpe.bounds.hi
+      private def unbound = unbind(tree)
+      private def tpe_s = if (pt <:< concreteType) "" + pt else s"$pt (binder: $tpe)"
+      private def at_s = unbound match {
+        case WildcardPattern() => ""
+        case pat               => s" @ $pat"
+      }
+      override def toString = s"${binder.name}: $tpe_s$at_s"
+    }
 
     // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
     private case class TranslationStep(makers: List[TreeMaker], subpatterns: List[BoundTree]) {
+      if ((sys.props contains "patmat") && subpatterns.nonEmpty)
+        Console.err.println(this)
+
       def merge(f: BoundTree => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f)
+      override def toString = if (subpatterns.isEmpty) "" else subpatterns.mkString("(", ", ", ")")
     }
 
     // Why is it so difficult to say "here's a name and a context, give me any
@@ -246,60 +288,44 @@ trait MatchTranslation extends CpsPatternHacks {
       */
     def translateCase(scrutSym: Symbol, pt: Type)(caseDef: CaseDef) = {
       val CaseDef(pattern, guard, body) = caseDef
-      translatePattern(scrutSym, pattern) ++ translateGuard(guard) :+ translateBody(body, pt)
+      translatePattern(BoundTree(scrutSym, pattern)) ++ translateGuard(guard) :+ translateBody(body, pt)
     }
 
-    def translatePattern(bound: BoundTree): List[TreeMaker] = translatePattern(bound.binder, bound.tree)
-    def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
-      val pos       = patTree.pos
-      def patType   = patBinder.info.dealiasWiden // the type of the variable bound to the pattern
-
-      def glbWithBinder(other: Type) = glb(patType :: other :: Nil).normalize
+    def translatePattern(bound: BoundTree): List[TreeMaker] = {
+      def patBinder = bound.binder
+      def patTree   = bound.tree
+      def patType   = bound.tpe
+      def pos       = bound.pos
 
       def withSubPats(treeMakers: List[TreeMaker], subpats: BoundTree*): TranslationStep = TranslationStep(treeMakers, subpats.toList)
       def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = TranslationStep(treeMakers.toList, Nil)
 
+      // example check: List[Int] <:< ::[Int]
       def translateExtractorPattern(extractor: ExtractorCall): TranslationStep = {
-        import extractor.paramType  // the type expected by the unapply
-
-        def patConforms = patType <:< paramType
-        def patEquiv    = patType =:= paramType
-
+        import extractor.{ paramType, treeMaker, subBindersAndPatterns }
         if (!extractor.isTyped)
           ErrorUtils.issueNormalTypeError(patTree, "Could not typecheck extractor call: "+ extractor)(context)
 
-        debug.patmat("translateExtractorPattern checking parameter type: " + ((patBinder, patType, paramType, patConforms)))
+        // chain a type-testing extractor before the actual extractor call
+        // it tests the type, checks the outer pointer and casts to the expected type
+        // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
+        // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
+        lazy val typeTest = TypeTestTreeMaker(patBinder, patBinder, paramType, paramType)(pos, extractorArgTypeTest = true)
+        // check whether typetest implies patBinder is not null,
+        // even though the eventual null check will be on typeTest.nextBinder
+        // it'll be equal to patBinder casted to paramType anyway (and the type test is on patBinder)
+        def extraction: TreeMaker = treeMaker(typeTest.nextBinder, typeTest impliesBinderNonNull patBinder, pos)
 
-        // example check: List[Int] <:< ::[Int]
-        // TODO: extractor.paramType may contain unbound type params (run/t2800, run/t3530)
-        // `patBinderOrCasted` is assigned the result of casting `patBinder` to `extractor.paramType`
-        val (typeTestTreeMaker, patBinderOrCasted, binderKnownNonNull) =
-          if (patConforms) {
-            // no type test needed, but the tree maker relies on `patBinderOrCasted` having type `extractor.paramType` (and not just some type compatible with it)
-            // SI-6624 shows this is necessary because apparently patBinder may have an unfortunate type (.decls don't have the case field accessors)
-            // TODO: get to the bottom of this -- I assume it happens when type checking infers a weird type for an unapply call
-            // by going back to the parameterType for the extractor call we get a saner type, so let's just do that for now
-            if (!patEquiv)
-              devWarning(s"resetting info of $patBinder: $patType to $paramType")
+        // paramType = the type expected by the unapply
+        // TODO: paramType may contain unbound type params (run/t2800, run/t3530)
+        val makers = (
+          // Statically conforms to paramType
+          if (bound ensureConformsTo paramType) treeMaker(patBinder, false, pos) :: Nil
+          else typeTest :: extraction :: Nil
+        )
 
-            (Nil, setVarInfo(patBinder, paramType), false)
-          }
-          else {
-            // chain a type-testing extractor before the actual extractor call
-            // it tests the type, checks the outer pointer and casts to the expected type
-            // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
-            // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
-            val treeMaker = TypeTestTreeMaker(patBinder, patBinder, paramType, paramType)(pos, extractorArgTypeTest = true)
-
-            // check whether typetest implies patBinder is not null,
-            // even though the eventual null check will be on patBinderOrCasted
-            // it'll be equal to patBinder casted to paramType anyway (and the type test is on patBinder)
-            (List(treeMaker), treeMaker.nextBinder, treeMaker.impliesBinderNonNull(patBinder))
-          }
-
-        withSubPats(typeTestTreeMaker :+ extractor.treeMaker(patBinderOrCasted, binderKnownNonNull, pos), extractor.subBindersAndPatterns: _*)
+        withSubPats(makers, subBindersAndPatterns: _*)
       }
-
 
       object MaybeBoundTyped {
         object NonNullTyped {
@@ -331,8 +357,9 @@ trait MatchTranslation extends CpsPatternHacks {
         |  ${asCompactDebugString(patTree)}
         |""".trim
 
-      def one(maker: TreeMaker) = noFurtherSubPats(maker)
-      def none()                = noFurtherSubPats()
+      def one(maker: TreeMaker)            = noFurtherSubPats(maker)
+      def none()                           = noFurtherSubPats()
+      def translatedAlts(alts: List[Tree]) = alts map (alt => translatePattern(BoundTree(patBinder, alt)))
 
       // Summary of translation cases. I moved the excerpts from the specification further below so all
       // the logic can be seen at once.
@@ -351,10 +378,10 @@ trait MatchTranslation extends CpsPatternHacks {
       val translationStep = patTree match {
         case WildcardPattern()                                        => none()
         case _: UnApply | _: Apply                                    => translateExtractorPattern(ExtractorCall(patTree))
-        case MaybeBoundTyped(subPatBinder, pt)                        => one(TypeTestTreeMaker(subPatBinder, patBinder, pt, glbWithBinder(pt))(pos))
+        case MaybeBoundTyped(subPatBinder, pt)                        => one(TypeTestTreeMaker(subPatBinder, patBinder, pt, bound glbWith pt)(pos))
         case Bound(subpatBinder, p)                                   => withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)), BoundTree(patBinder, p))
         case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) => one(EqualityTestTreeMaker(patBinder, patTree, pos))
-        case Alternative(alts)                                        => one(AlternativesTreeMaker(patBinder, alts map (translatePattern(patBinder, _)), alts.head.pos))
+        case Alternative(alts)                                        => one(AlternativesTreeMaker(patBinder, translatedAlts(alts), alts.head.pos))
         case Bind(_, _)                                               => devWarning(s"Bind tree with unbound symbol $patTree") ; none()
         case _                                                        => context.unit.error(patTree.pos, unsupportedPatternMsg) ; none()
       }
