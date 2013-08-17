@@ -1199,6 +1199,17 @@ trait Infer extends Checkable {
       val tparam                    = tvar.origin.typeSymbol
       val TypeBounds(lo0, hi0)      = tparam.info.bounds
       val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
+      val enclCase                  = context.enclosingCaseDef
+
+      log("\n" + sm"""
+        |-----
+        |  enclCase: ${enclCase.tree}
+        |     saved: ${enclCase.savedTypeBounds}
+        |    tparam: ${tparam.shortSymbolClass}
+        |     def_s: ${tparam.defString}
+        |    seen_s: ${tparam.defStringSeenAs(tb)}
+        |-----
+        """.trim)
 
       if (lo1 <:< hi1) {
         if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved
@@ -1206,7 +1217,7 @@ trait Infer extends Checkable {
         else if (tparam == lo1.typeSymbolDirect || tparam == hi1.typeSymbolDirect)
           log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
         else {
-          context.enclosingCaseDef pushTypeBounds tparam
+          enclCase pushTypeBounds tparam
           tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
         }
       }
