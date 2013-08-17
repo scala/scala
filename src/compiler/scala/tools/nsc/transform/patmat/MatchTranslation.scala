@@ -52,6 +52,11 @@ trait MatchTranslation extends CpsPatternHacks {
   trait MatchTranslator extends TreeMakers {
     import typer.context
 
+    // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
+    private case class TranslationStep(makers: List[TreeMaker], subpatterns: List[(Symbol, Tree)]) {
+      def merge(f: (Symbol, Tree) => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f.tupled)
+    }
+
     // Why is it so difficult to say "here's a name and a context, give me any
     // matching symbol in scope" ? I am sure this code is wrong, but attempts to
     // use the scopes of the contexts in the enclosing context chain discover
@@ -234,15 +239,14 @@ trait MatchTranslation extends CpsPatternHacks {
       *    a function that will take care of binding and substitution of the next ast (to the right).
       *
       */
-    def translateCase(scrutSym: Symbol, pt: Type)(caseDef: CaseDef) = caseDef match { case CaseDef(pattern, guard, body) =>
+    def translateCase(scrutSym: Symbol, pt: Type)(caseDef: CaseDef) = {
+      val CaseDef(pattern, guard, body) = caseDef
       translatePattern(scrutSym, pattern) ++ translateGuard(guard) :+ translateBody(body, pt)
     }
 
     def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
-      // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
-      type TranslationStep = (List[TreeMaker], List[(Symbol, Tree)])
-      def withSubPats(treeMakers: List[TreeMaker], subpats: (Symbol, Tree)*): TranslationStep = (treeMakers, subpats.toList)
-      def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = (treeMakers.toList, Nil)
+      def withSubPats(treeMakers: List[TreeMaker], subpats: (Symbol, Tree)*): TranslationStep = TranslationStep(treeMakers, subpats.toList)
+      def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = TranslationStep(treeMakers.toList, Nil)
 
       val pos = patTree.pos
 
@@ -339,7 +343,7 @@ trait MatchTranslation extends CpsPatternHacks {
       // [6] pattern alternatives
       // [7] symbol-less bind patterns - this happens in certain ill-formed programs, there'll be an error later
       //     don't fail here though (or should we?)
-      val (treeMakers, subpats) = patTree match {
+      val translationStep = patTree match {
         case WildcardPattern()                                        => none()
         case UnApply(unfun, args)                                     => translateExtractorPattern(ExtractorCall(unfun, args))
         case Apply(fun, args)                                         => ExtractorCall.fromCaseClass(fun, args) map translateExtractorPattern getOrElse noFurtherSubPats()
@@ -351,9 +355,7 @@ trait MatchTranslation extends CpsPatternHacks {
         case _                                                        => context.unit.error(patTree.pos, unsupportedPatternMsg) ; none()
       }
 
-      treeMakers ++ subpats.flatMap { case (binder, pat) =>
-        translatePattern(binder, pat) // recurse on subpatterns
-      }
+      translationStep merge translatePattern
     }
 
     def translateGuard(guard: Tree): List[TreeMaker] =
