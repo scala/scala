@@ -9,7 +9,7 @@ object PartestDefaults {
   def sourcePath  = propOrElse("partest.srcdir", "files")
   def javaCmd     = propOrElse("partest.javacmd", "java")
   def javacCmd    = propOrElse("partest.javac_cmd", "javac")
-  def javaOpts    = propOrElse("partest.java_opts", "")
+  def javaOpts    = propOrElse("partest.java_opts", "") // opts when running java during tests
   def scalacOpts  = propOrElse("partest.scalac_opts", "")
 
   def testBuild  = propOrNone("partest.build")

@@ -33,7 +33,7 @@ import java.net.URLClassLoader
  *  - `junitreportdir`.
  *
  *  It also takes the following parameters as nested elements:
- *  - `compilationpath`.
+ *  - `compilationpath`. -- TODO: this parameter is now redundant: it's the same as the classpath used to run the task
  *
  *  @author Philipp Haller, Adriaan Moors
  */
