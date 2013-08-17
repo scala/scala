@@ -36,7 +36,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
-    // printResult(s"forArgMode($fun, $mode) gets SCCmode")(mode | SCCmode)
   // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
   // is cached here and re-used in typedDefDef / typedValDef
   // Also used to cache imports type-checked by namer.
@@ -90,7 +89,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
   private final val InterpolatorIdentRegex = """\$\w+""".r
 
-  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with TyperContextErrors with PatternTyper {
+  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine, inGreen, inRed }
     import TyperErrorGen._
@@ -905,6 +904,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _          => TypeTree(tree.tpe) setOriginal tree
         }
       }
+
       def insertApply(): Tree = {
         assert(!context.inTypeConstructorAllowed, mode) //@M
         val adapted = adaptToName(tree, nme.apply)
@@ -2373,7 +2373,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // list, so substitute the final result type of the method, i.e. the type
       // of the case class.
       if (pat1.tpe.paramSectionCount > 0)
-        pat1 setType pat1.tpe.finalResultType
+        pat1 modifyType (_.finalResultType)
 
       for (bind @ Bind(name, _) <- cdef.pat)
         if (name.toTermName != nme.WILDCARD && bind.symbol != null && bind.symbol != NoSymbol)
@@ -2388,8 +2388,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // insert a cast if something typechecked under the GADT constraints,
         // but not in real life (i.e., now that's we've reset the method's type skolems'
         //   infos back to their pre-GADT-constraint state)
-        if (isFullyDefined(pt) && !(body1.tpe <:< pt))
+        if (isFullyDefined(pt) && !(body1.tpe <:< pt)) {
+          log(s"Adding cast to pattern because ${body1.tpe} does not conform to expected type $pt")
           body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.dealiasWiden))
+        }
       }
 
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
@@ -3140,22 +3142,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val tparams = context.extractUndetparams()
             if (tparams.isEmpty) { // all type params are defined
               def handleMonomorphicCall: Tree = {
-                // In order for checkDead not to be misled by the unfortunate special
-                // case of AnyRef#synchronized (which is implemented with signature T => T
-                // but behaves as if it were (=> T) => T) we need to know what is the actual
-                // target of a call.  Since this information is no longer available from
-                // typedArg, it is recorded here.
-                val args1 =
-                  // no expected type when jumping to a match label -- anything goes (this is ok since we're typing the translation of well-typed code)
-                  // ... except during erasure: we must take the expected type into account as it drives the insertion of casts!
-                  // I've exhausted all other semi-clean approaches I could think of in balancing GADT magic, SI-6145, CPS type-driven transforms and other existential trickiness
-                  // (the right thing to do -- packing existential types -- runs into limitations in subtyping existential types,
-                  //  casting breaks SI-6145,
-                  //  not casting breaks GADT typing as it requires sneaking ill-typed trees past typer)
-                  if (!phase.erasedTypes && fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol))
+                // no expected type when jumping to a match label -- anything goes (this is ok since we're typing the translation of well-typed code)
+                // ... except during erasure: we must take the expected type into account as it drives the insertion of casts!
+                // I've exhausted all other semi-clean approaches I could think of in balancing GADT magic, SI-6145, CPS type-driven transforms and other existential trickiness
+                // (the right thing to do -- packing existential types -- runs into limitations in subtyping existential types,
+                //  casting breaks SI-6145,
+                //  not casting breaks GADT typing as it requires sneaking ill-typed trees past typer)
+                def noExpectedType = !phase.erasedTypes && fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol)
+
+                val args1 = (
+                  if (noExpectedType)
                     typedArgs(args, forArgMode(fun, mode))
                   else
                     typedArgs(args, forArgMode(fun, mode), paramTypes, formals)
+                )
 
                 // instantiate dependent method types, must preserve singleton types where possible (stableTypeFor) -- example use case:
                 // val foo = "foo"; def precise(x: String)(y: x.type): x.type = {...}; val bar : foo.type = precise(foo)(foo)
@@ -3486,11 +3486,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** convert local symbols and skolems to existentials */
     def packedType(tree: Tree, owner: Symbol): Type = {
-      def defines(tree: Tree, sym: Symbol) =
-        sym.isExistentialSkolem && sym.unpackLocation == tree ||
-        tree.isDef && tree.symbol == sym
-      def isVisibleParameter(sym: Symbol) =
-        sym.isParameter && (sym.owner == owner) && (sym.isType || !owner.isAnonymousFunction)
+      def defines(tree: Tree, sym: Symbol) = (
+           sym.isExistentialSkolem && sym.unpackLocation == tree
+        || tree.isDef && tree.symbol == sym
+      )
+      def isVisibleParameter(sym: Symbol) = (
+           sym.isParameter
+        && (sym.owner == owner)
+        && (sym.isType || !owner.isAnonymousFunction)
+      )
       def containsDef(owner: Symbol, sym: Symbol): Boolean =
         (!sym.hasPackageFlag) && {
           var o = sym.owner
@@ -4721,7 +4725,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         treeCopy.Star(tree, typed(tree.elem, mode, pt)) setType makeFullyDefined(pt)
       }
-
       def issueTryWarnings(tree: Try): Try = {
         def checkForCatchAll(cdef: CaseDef) {
           def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
@@ -4930,11 +4933,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ => tree
           }
         }
-        else
+        else {
           // we should get here only when something before failed
           // and we try again (@see tryTypedApply). In that case we can assign
           // whatever type to tree; we just have to survive until a real error message is issued.
+          devWarning(tree.pos, s"Assigning Any type to TypeTree because tree.original == null")
           tree setType AnyTpe
+        }
       }
       def typedFunction(fun: Function) = {
         if (fun.symbol == NoSymbol)
