@@ -10,9 +10,40 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 
+
+/** Segregating this super hacky code. */
+trait CpsPatternHacks {
+  self: PatternMatching =>
+
+  import global._
+
+  // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)
+  private object CpsSymbols {
+    val MarkerCPSAdaptPlus  = rootMirror.getClassIfDefined("scala.util.continuations.cpsPlus")
+    val MarkerCPSAdaptMinus = rootMirror.getClassIfDefined("scala.util.continuations.cpsMinus")
+    val MarkerCPSSynth      = rootMirror.getClassIfDefined("scala.util.continuations.cpsSynth")
+    val MarkerCPSTypes      = rootMirror.getClassIfDefined("scala.util.continuations.cpsParam")
+    val stripTriggerCPSAnns = Set[Symbol](MarkerCPSSynth, MarkerCPSAdaptMinus, MarkerCPSAdaptPlus)
+    val strippedCPSAnns     = stripTriggerCPSAnns + MarkerCPSTypes
+
+    // when one of the internal cps-type-state annotations is present, strip all CPS annotations
+    // a cps-type-state-annotated type makes no sense as an expected type (matchX.tpe is used as pt in translateMatch)
+    // (only test availability of MarkerCPSAdaptPlus assuming they are either all available or none of them are)
+    def removeCPSFromPt(pt: Type): Type = (
+      if (MarkerCPSAdaptPlus.exists && (stripTriggerCPSAnns exists pt.hasAnnotation))
+        pt filterAnnotations (ann => !(strippedCPSAnns exists ann.matches))
+      else
+        pt
+    )
+  }
+  def removeCPSFromPt(pt: Type): Type = CpsSymbols removeCPSFromPt pt
+}
+
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
-trait MatchTranslation { self: PatternMatching  =>
+trait MatchTranslation extends CpsPatternHacks {
+  self: PatternMatching =>
+
   import PatternMatchingStats._
   import global._
   import definitions._
@@ -84,15 +115,6 @@ trait MatchTranslation { self: PatternMatching  =>
       }
     }
 
-    // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)
-    private lazy val MarkerCPSAdaptPlus  = rootMirror.getClassIfDefined("scala.util.continuations.cpsPlus")
-    private lazy val MarkerCPSAdaptMinus = rootMirror.getClassIfDefined("scala.util.continuations.cpsMinus")
-    private lazy val MarkerCPSSynth      = rootMirror.getClassIfDefined("scala.util.continuations.cpsSynth")
-    private lazy val stripTriggerCPSAnns = List(MarkerCPSSynth, MarkerCPSAdaptMinus, MarkerCPSAdaptPlus)
-    private lazy val MarkerCPSTypes      = rootMirror.getClassIfDefined("scala.util.continuations.cpsParam")
-    private lazy val strippedCPSAnns     = MarkerCPSTypes :: stripTriggerCPSAnns
-    private def removeCPSAdaptAnnotations(tp: Type) = tp filterAnnotations (ann => !(strippedCPSAnns exists (ann matches _)))
-
     /** Implement a pattern match by turning its cases (including the implicit failure case)
       * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
       *
@@ -127,18 +149,11 @@ trait MatchTranslation { self: PatternMatching  =>
 
       val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
-      val origPt  = match_.tpe
       // when one of the internal cps-type-state annotations is present, strip all CPS annotations
-      // a cps-type-state-annotated type makes no sense as an expected type (matchX.tpe is used as pt in translateMatch)
-      // (only test availability of MarkerCPSAdaptPlus assuming they are either all available or none of them are)
-      val ptUnCPS =
-        if (MarkerCPSAdaptPlus != NoSymbol && (stripTriggerCPSAnns exists origPt.hasAnnotation))
-          removeCPSAdaptAnnotations(origPt)
-        else origPt
-
+      val origPt  = removeCPSFromPt(match_.tpe)
       // relevant test cases: pos/existentials-harmful.scala, pos/gadt-gilles.scala, pos/t2683.scala, pos/virtpatmat_exist4.scala
       // pt is the skolemized version
-      val pt = repeatedToSeq(ptUnCPS)
+      val pt = repeatedToSeq(origPt)
 
       // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
       val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
@@ -190,8 +205,6 @@ trait MatchTranslation { self: PatternMatching  =>
 
         typer.typedCases(catches, ThrowableTpe, WildcardType)
       }
-
-
 
     /**  The translation of `pat if guard => body` has two aspects:
       *     1) the substitution due to the variables bound by patterns
