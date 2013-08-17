@@ -1,4 +1,5 @@
-t4425.scala:3: error: isInstanceOf cannot test if value types are references.
+t4425.scala:3: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: Int)(y: Option[Int]): None.type exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
   42 match { case _ X _ => () }
                     ^
 one error found

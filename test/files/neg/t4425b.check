@@ -1,0 +1,55 @@
+t4425b.scala:5: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
+    println(      "" match { case _ X _   => "ok" ; case _ => "fail" })
+                                    ^
+t4425b.scala:6: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
+    println((X: Any) match { case _ X _   => "ok" ; case _ => "fail" })
+                                    ^
+t4425b.scala:7: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
+    println(      "" match { case X(_)    => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:8: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
+    println((X: Any) match { case X(_)    => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:9: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
+    println(      "" match { case X(_, _) => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:10: error: object X is not a case class constructor, nor does it have an unapply/unapplySeq method
+Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
+    println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:18: error: result type Nothing of unapply defined in method unapply in object X does not conform to Option[_] or Boolean
+    println(      "" match { case _ X _   => "ok" ; case _ => "fail" })
+                                    ^
+t4425b.scala:19: error: result type Nothing of unapply defined in method unapply in object X does not conform to Option[_] or Boolean
+    println((X: Any) match { case _ X _   => "ok" ; case _ => "fail" })
+                                    ^
+t4425b.scala:20: error: result type Nothing of unapply defined in method unapply in object X does not conform to Option[_] or Boolean
+    println(      "" match { case X(_)    => "ok" ; case _ => "fail" })
+                                   ^
+t4425b.scala:21: error: result type Nothing of unapply defined in method unapply in object X does not conform to Option[_] or Boolean
+    println((X: Any) match { case X(_)    => "ok" ; case _ => "fail" })
+                                   ^
+t4425b.scala:22: error: result type Nothing of unapply defined in method unapply in object X does not conform to Option[_] or Boolean
+    println(      "" match { case X(_, _) => "ok" ; case _ => "fail" })
+                                   ^
+t4425b.scala:23: error: result type Nothing of unapply defined in method unapply in object X does not conform to Option[_] or Boolean
+    println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
+                                   ^
+t4425b.scala:31: error: wrong number of arguments for object X
+    println(      "" match { case _ X _   => "ok" ; case _ => "fail" })
+                                    ^
+t4425b.scala:32: error: wrong number of arguments for object X
+    println((X: Any) match { case _ X _   => "ok" ; case _ => "fail" })
+                                    ^
+t4425b.scala:35: error: wrong number of arguments for object X
+    println(      "" match { case X(_, _) => "ok" ; case _ => "fail" })
+                                   ^
+t4425b.scala:36: error: wrong number of arguments for object X
+    println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
+                                   ^
+16 errors found
