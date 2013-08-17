@@ -57,9 +57,11 @@ trait MatchTranslation extends CpsPatternHacks {
   trait MatchTranslator extends TreeMakers {
     import typer.context
 
+    case class BoundTree(binder: Symbol, tree: Tree)
+
     // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
-    private case class TranslationStep(makers: List[TreeMaker], subpatterns: List[(Symbol, Tree)]) {
-      def merge(f: (Symbol, Tree) => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f.tupled)
+    private case class TranslationStep(makers: List[TreeMaker], subpatterns: List[BoundTree]) {
+      def merge(f: BoundTree => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f)
     }
 
     // Why is it so difficult to say "here's a name and a context, give me any
@@ -247,13 +249,14 @@ trait MatchTranslation extends CpsPatternHacks {
       translatePattern(scrutSym, pattern) ++ translateGuard(guard) :+ translateBody(body, pt)
     }
 
+    def translatePattern(bound: BoundTree): List[TreeMaker] = translatePattern(bound.binder, bound.tree)
     def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
       val pos       = patTree.pos
       def patType   = patBinder.info.dealiasWiden // the type of the variable bound to the pattern
 
       def glbWithBinder(other: Type) = glb(patType :: other :: Nil).normalize
 
-      def withSubPats(treeMakers: List[TreeMaker], subpats: (Symbol, Tree)*): TranslationStep = TranslationStep(treeMakers, subpats.toList)
+      def withSubPats(treeMakers: List[TreeMaker], subpats: BoundTree*): TranslationStep = TranslationStep(treeMakers, subpats.toList)
       def noFurtherSubPats(treeMakers: TreeMaker*): TranslationStep = TranslationStep(treeMakers.toList, Nil)
 
       def translateExtractorPattern(extractor: ExtractorCall): TranslationStep = {
@@ -349,7 +352,7 @@ trait MatchTranslation extends CpsPatternHacks {
         case WildcardPattern()                                        => none()
         case _: UnApply | _: Apply                                    => translateExtractorPattern(ExtractorCall(patTree))
         case MaybeBoundTyped(subPatBinder, pt)                        => one(TypeTestTreeMaker(subPatBinder, patBinder, pt, glbWithBinder(pt))(pos))
-        case Bound(subpatBinder, p)                                   => withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)), (patBinder, p))
+        case Bound(subpatBinder, p)                                   => withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)), BoundTree(patBinder, p))
         case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) => one(EqualityTestTreeMaker(patBinder, patTree, pos))
         case Alternative(alts)                                        => one(AlternativesTreeMaker(patBinder, alts map (translatePattern(patBinder, _)), alts.head.pos))
         case Bind(_, _)                                               => devWarning(s"Bind tree with unbound symbol $patTree") ; none()
@@ -472,7 +475,7 @@ trait MatchTranslation extends CpsPatternHacks {
 
         (binders, subPatTypes).zipped map setVarInfo
       }
-      lazy val subBindersAndPatterns: List[(Symbol, Tree)] = subPatBinders zip unboundArgs
+      lazy val subBindersAndPatterns: List[BoundTree] = (subPatBinders, unboundArgs).zipped map BoundTree
 
       private def unboundArgs = args map unBound
       private def unBound(t: Tree): Tree = t match {
@@ -724,9 +727,8 @@ trait MatchTranslation extends CpsPatternHacks {
 
     object Bound {
       def unapply(t: Tree): Option[(Symbol, Tree)] = t match {
-        case t@Bind(n, p) if (t.symbol ne null) && (t.symbol ne NoSymbol) => // pos/t2429 does not satisfy these conditions
-          Some((t.symbol, p))
-        case _ => None
+        case t@Bind(n, p) if (t.symbol ne null) && (t.symbol ne NoSymbol) => Some((t.symbol, p)) // pos/t2429 does not satisfy these conditions
+        case _                                                            => None
       }
     }
   }
