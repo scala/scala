@@ -838,8 +838,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     def imports    = importedSymbols
     def value      = Some(handlers.last) filter (h => h.definesValue) map (h => definedSymbols(h.definesTerm.get)) getOrElse NoSymbol
 
-    val printResults = IMain.this.printResults
-
     val lineRep = new ReadEvalPrint()
 
     private var _originalLine: String = null
@@ -948,7 +946,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         }
 
         // compile the result-extraction object
-        withoutWarnings(lineRep compile ResultObjectSourceCode(handlers))
+        val handls = if (printResults) handlers else Nil
+        withoutWarnings(lineRep compile ResultObjectSourceCode(handls))
       }
     }
 
