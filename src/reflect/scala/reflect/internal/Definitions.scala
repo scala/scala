@@ -725,7 +725,8 @@ trait Definitions extends api.StandardDefinitions {
     // this method is about a type member which just happens to be named get.
     def typeOfMemberNamedGet(tp: Type)       = resultOfMatchingMethod(tp, nme.get)()
     def typeOfMemberNamedHead(tp: Type)      = resultOfMatchingMethod(tp, nme.head)()
-    def typeOfMemberNamedApply(tp: Type)     = resultOfMatchingMethod(tp, nme.apply)()
+    def typeOfMemberNamedApply(tp: Type)     = resultOfMatchingMethod(tp, nme.apply)(IntTpe)
+    def typeOfMemberNamedDrop(tp: Type)      = resultOfMatchingMethod(tp, nme.drop)(IntTpe)
     def typeOfMemberNamedGetOrSelf(tp: Type) = typeOfMemberNamedGet(tp) orElse tp
     def typesOfSelectors(tp: Type)           = getterMemberTypes(tp, productSelectors(tp))
     def typesOfCaseAccessors(tp: Type)       = getterMemberTypes(tp, tp.typeSymbol.caseFieldAccessors)

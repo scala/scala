@@ -65,7 +65,18 @@ trait MatchCodeGen extends Interface {
       def fun(arg: Symbol, body: Tree): Tree     = Function(List(ValDef(arg)), body)
       def tupleSel(binder: Symbol)(i: Int): Tree = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
       def index(tgt: Tree)(i: Int): Tree         = tgt APPLY (LIT(i))
-      def drop(tgt: Tree)(n: Int): Tree          = gen.mkMethodCall(traversableDropMethod, tgt :: LIT(n) :: Nil)
+
+      private def definesDrop(tgt: Tree) = (tgt.tpe ne null) && (typeOfMemberNamedDrop(tgt.tpe) != NoType)
+
+      // Right now this calls a direct drop member if it sees one, otherwise calls
+      // into the drop helper in ScalaRunTime. You should not actually have to write
+      // a method called drop for things to work, it's just not finished yet.
+      def drop(tgt: Tree)(n: Int): Tree = (
+        if (definesDrop(tgt))
+          Apply(Select(tgt, nme.drop), LIT(n) :: Nil)
+        else
+          gen.mkMethodCall(traversableDropMethod, tgt :: LIT(n) :: Nil)
+      )
 
       // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)
