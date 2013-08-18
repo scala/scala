@@ -788,7 +788,7 @@ class SuiteRunner(
     NestUI.resetTestNumber(kindFiles.size)
 
     val pool              = Executors newFixedThreadPool numThreads
-    val futures           = kindFiles map (f => pool submit callable(runTest(f)))
+    val futures           = kindFiles map (f => pool submit callable(runTest(f.getAbsoluteFile)))
 
     pool.shutdown()
     Try (pool.awaitTermination(waitTime) {

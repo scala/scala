@@ -164,7 +164,7 @@ class ConsoleRunner(argstr: String) extends {
         val num = paths.size
         val ss = if (num == 1) "" else "s"
         comment(s"starting $num test$ss in $kind")
-        val results = runTestsForFiles(paths map (_.jfile), kind)
+        val results = runTestsForFiles(paths map (_.jfile.getAbsoluteFile), kind)
         val (passed, failed) = results partition (_.isOk)
 
         passedTests ++= passed

@@ -55,7 +55,7 @@ class DirectCompiler(val runner: Runner) {
         val srcpath = Path(srcdir.path)
         val pd = (srcpath / plugxml).toFile
         if (pd.exists) pd copyTo (pout / plugxml)
-        pout
+        pout.toAbsolute
       } else Path(p)
     def absolutize(path: String) = pathOrCwd(path) match {
       case x if x.isAbsolute => x.path
