@@ -517,6 +517,9 @@ trait ContextErrors {
       def TooManyArgsPatternError(fun: Tree) =
         NormalTypeError(fun, "too many arguments for unapply pattern, maximum = "+definitions.MaxTupleArity)
 
+      def WrongShapeExtractorExpansion(fun: Tree) =
+        NormalTypeError(fun, "extractor macros can only expand into extractor calls")
+
       def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
 

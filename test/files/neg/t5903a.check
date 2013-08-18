@@ -1,0 +1,7 @@
+Test_2.scala:4: error: wrong number of patterns for <$anon: AnyRef> offering (SomeTree.type, SomeTree.type): expected 2, found 3
+    case nq"$x + $y + $z" => println((x, y))
+         ^
+Test_2.scala:4: error: not found: value x
+    case nq"$x + $y + $z" => println((x, y))
+                                      ^
+two errors found
