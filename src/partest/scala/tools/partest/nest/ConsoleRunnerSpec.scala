@@ -35,10 +35,10 @@ trait ConsoleRunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   val optSourcePath   = "srcpath"      / "set (relative) path to test source files (ex.: --srcpath pending)"              --|
 
   heading("Test output options:")
-  val optShowDiff     = "show-diff"    / "show diffs for failed tests"       --?
-  val optVerbose      = "verbose"      / "show verbose progress information" --?
-  val optTerse        = "terse"        / "show terse progress information"   --?
-  val optDebug        = "debug"        / "enable debugging output"           --?
+  val optShowDiff     = "show-diff"    / "show diffs for failed tests"       --> NestUI.setDiffOnFail()
+  val optVerbose      = "verbose"      / "show verbose progress information" --> NestUI.setVerbose()
+  val optTerse        = "terse"        / "show terse progress information"   --> NestUI.setTerse()
+  val optDebug        = "debug"        / "enable debugging output"           --> NestUI.setDebug()
   
   heading("Other options:")
   val optVersion      = "version"      / "show Scala version and exit"  --?
