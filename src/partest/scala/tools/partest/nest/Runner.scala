@@ -677,6 +677,9 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
   }
 
   def run(): TestState = {
+    // javac runner, for one, would merely append to an existing log file, so just delete it before we start
+    logFile.delete()
+
     if (kind == "neg" || (kind endsWith "-neg")) runNegTest()
     else kind match {
       case "pos"          => runTestCommon(true)
